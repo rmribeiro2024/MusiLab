@@ -1554,7 +1554,7 @@
             const adicionarDataEdicao = () => { if(dataEdicao && !(planoEditando.historicoDatas||[]).includes(dataEdicao)) setPlanoEditando({...planoEditando, historicoDatas: [...(planoEditando.historicoDatas||[]), dataEdicao].sort()}); setDataEdicao(""); };
             const removerDataEdicao = (d) => { setPlanoEditando({...planoEditando, historicoDatas: planoEditando.historicoDatas.filter(x=>x!==d)}); };
             const adicionarDataAulaVisualizacao = () => { if(novaDataAula && !(planoSelecionado.historicoDatas||[]).includes(novaDataAula)){ const n = {...planoSelecionado, historicoDatas: [...(planoSelecionado.historicoDatas||[]), novaDataAula].sort()}; setPlanos(planos.map(p=>p.id===n.id?n:p)); setPlanoSelecionado(n); } setNovaDataAula(""); };
-            const removerDataAulaVisualizacao = (d) => { confirmar({ titulo: "Remover data?", icone: "🗑️", labelConfirmar: "Remover", perigo: true }).then(ok => { if(!ok) return; const n = {...planoSelecionado, historicoDatas: planoSelecionado.historicoDatas.filter(x=>x!==d)}; setPlanos(planos.map(p=>p.id===n.id?n:p)); setPlanoSelecionado(n); } };
+            const removerDataAulaVisualizacao = (d) => { confirmar({ titulo: "Remover data?", icone: "🗑️", labelConfirmar: "Remover", perigo: true }).then(ok => { if(!ok) return; const n = {...planoSelecionado, historicoDatas: planoSelecionado.historicoDatas.filter(x=>x!==d)}; setPlanos(planos.map(p=>p.id===n.id?n:p)); setPlanoSelecionado(n); }); };
             const adicionarConceitoNovo = () => { if(novoConceito.trim()){ const c=novoConceito.trim(); if(!(planoEditando.conceitos||[]).includes(c)) setPlanoEditando({...planoEditando, conceitos:[...(planoEditando.conceitos||[]), c]}); if(!conceitos.includes(c)) setConceitos([...conceitos, c].sort()); setNovoConceito(""); setAdicionandoConceito(false); } };
             
             // Funções para TAGS (simetria com Conceitos)
@@ -6237,7 +6237,7 @@ Deseja registrar aula mesmo assim?', icone: '📅', labelConfirmar: 'Registrar m
                                                                         tags: planoEditando.tags.filter(t => t !== tag)
                                                                     });
                                                                 }
-                                                            }
+                                                            } });
                                                         }}
                                                         className="text-gray-400 hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-r-full transition-all"
                                                     >
@@ -6400,8 +6400,7 @@ Deseja registrar aula mesmo assim?', icone: '📅', labelConfirmar: 'Registrar m
                                                                                 };
                                                                                 setAtividades(atividades.map(a => a.id === existe.id ? atualizada : a));
                                                                                 mostrarToast('Atividade atualizada no Banco de Atividades!');
-                                                                            }
-                                                                        } else {
+                                                                            } }); } else {
                                                                             const nova = {
                                                                                 id: Date.now(),
                                                                                 nome: atividade.nome,
@@ -6703,7 +6702,7 @@ Deseja registrar aula mesmo assim?', icone: '📅', labelConfirmar: 'Registrar m
                                                                                     materiais: planoEditando.materiais.filter(m => m !== mat)
                                                                                 });
                                                                             }
-                                                                        }
+                                                                        } });
                                                                     }}
                                                                     className="text-gray-400 hover:text-red-500 text-xs font-bold px-1"
                                                                     title="Remover das sugestões"
@@ -7235,7 +7234,7 @@ Deseja registrar aula mesmo assim?', icone: '📅', labelConfirmar: 'Registrar m
                                                                         conceitos: atividadeEditando.conceitos.filter(c => c !== conceito)
                                                                     });
                                                                 }
-                                                            }
+                                                            } });
                                                         }}
                                                         className="text-gray-400 hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-r-full transition-all"
                                                     >
@@ -7332,7 +7331,7 @@ Deseja registrar aula mesmo assim?', icone: '📅', labelConfirmar: 'Registrar m
                                                                         tags: atividadeEditando.tags.filter(t => t !== tag)
                                                                     });
                                                                 }
-                                                            }
+                                                            } });
                                                         }}
                                                         className="text-gray-400 hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-r-full transition-all"
                                                     >
@@ -7813,9 +7812,10 @@ Deseja registrar aula mesmo assim?', icone: '📅', labelConfirmar: 'Registrar m
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <button onClick={() => {
-                                                                await confirmar({ titulo: `Aplicar template "${tmpl.nome}"?`, mensagem: 'Isso substituirá o roteiro atual.', icone: '📋', labelConfirmar: 'Aplicar' }).then(ok => { if (!ok) return;
+                                                                confirmar({ titulo: `Aplicar template "${tmpl.nome}"?`, mensagem: 'Isso substituirá o roteiro atual.', icone: '📋', labelConfirmar: 'Aplicar' }).then(ok => { if (!ok) return;
                                                                 setPlanoEditando({...planoEditando, atividadesRoteiro: tmpl.atividades.map(a=>({...a, id:gerarIdSeguro()}))});
                                                                 setModalTemplates(false);
+                                                                });
                                                             }} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold">▶ Aplicar</button>
                                                             <button onClick={() => { confirmar({ titulo: `Excluir template "${tmpl.nome}"?`, icone: '🗑️', labelConfirmar: 'Excluir', perigo: true }).then(ok => { if(ok) setTemplatesRoteiro(prev=>prev.filter(t=>t.id!==tmpl.id)); }); }}
                                                                 className="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-sm font-bold">🗑️</button>
@@ -7885,6 +7885,7 @@ Deseja registrar aula mesmo assim?', icone: '📅', labelConfirmar: 'Registrar m
                                                         ...p,
                                                         faixaEtaria: (p.faixaEtaria||[]).filter(fe => fe !== f)
                                                     })));
+                                                    });
                                                 }}
                                                 className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 font-bold px-2 py-1 rounded-lg hover:bg-red-50 transition text-lg leading-none"
                                                 title="Remover faixa">×</button>
