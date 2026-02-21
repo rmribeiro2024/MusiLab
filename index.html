@@ -4,12 +4,73 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎵 MusiLab - Criação e Planejamento Musical</title>
+    <!-- Preconnect para reduzir latência -->
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://eufwttfndthjrvxtturl.supabase.co" crossorigin>
+
+    <!-- DNS prefetch como fallback -->
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
+    <!-- Recursos críticos: React carrega primeiro, resto depois -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-        <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+    // Service Worker: cacheia todos os recursos após o primeiro acesso
+    // Do 2º acesso em diante, o app abre instantaneamente (offline-first)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            const swCode = `
+const CACHE = 'musilab-v3';
+const URLS = [
+    'https://unpkg.com/react@18/umd/react.production.min.js',
+    'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
+    'https://cdn.tailwindcss.com',
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+];
+self.addEventListener('install', e => {
+    e.waitUntil(
+        caches.open(CACHE).then(c => c.addAll(URLS).catch(()=>{}))
+    );
+    self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+    e.waitUntil(caches.keys().then(keys =>
+        Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ));
+    self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+    e.respondWith(
+        caches.match(e.request).then(cached => {
+            if (cached) return cached;
+            return fetch(e.request).then(resp => {
+                if (resp && resp.status === 200 && resp.type !== 'opaque') {
+                    const clone = resp.clone();
+                    caches.open(CACHE).then(c => c.put(e.request, clone));
+                }
+                return resp;
+            }).catch(() => cached);
+        })
+    );
+});`;
+            const blob = new Blob([swCode], {type: 'application/javascript'});
+            const url = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(url).catch(() => {});
+        });
+    }
+    </script>
     <style>
         .modal-enter { opacity: 0; transform: scale(0.95); }
         .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 300ms, transform 300ms; }
@@ -50,6 +111,33 @@
     </style>
 </head>
 <body>
+    <!-- Splash screen: aparece imediatamente enquanto o JS carrega -->
+    <div id="splash" style="position:fixed;inset:0;background:linear-gradient(135deg,#312e81,#581c87);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.4s">
+        <div style="font-size:4rem;margin-bottom:1rem">🎵</div>
+        <div style="color:white;font-size:1.5rem;font-weight:bold;font-family:sans-serif">MusiLab</div>
+        <div style="color:#a5b4fc;font-size:0.9rem;margin-top:0.5rem;font-family:sans-serif">Carregando...</div>
+        <div style="margin-top:2rem;width:120px;height:4px;background:rgba(255,255,255,0.2);border-radius:9999px;overflow:hidden">
+            <div id="progress-bar" style="height:100%;width:0%;background:#818cf8;border-radius:9999px;transition:width 0.3s"></div>
+        </div>
+    </div>
+    <script>
+        // Simula progresso visual enquanto carrega
+        let p = 0;
+        const bar = document.getElementById('progress-bar');
+        const iv = setInterval(() => {
+            p = Math.min(p + Math.random() * 15, 90);
+            if (bar) bar.style.width = p + '%';
+        }, 200);
+        window._hideSplash = () => {
+            clearInterval(iv);
+            if (bar) bar.style.width = '100%';
+            setTimeout(() => {
+                const s = document.getElementById('splash');
+                if (s) { s.style.opacity = '0'; setTimeout(() => s.remove(), 400); }
+            }, 200);
+        };
+    </script>
+
     <div id="root"></div>
 
     <script>
@@ -430,7 +518,7 @@ const novaMusica={id:Date.now(),titulo,autor:novaMusicaInline.autor.trim(),orige
 setRepertorio(prev=>[...prev,novaMusica]);// Vincula à atividade pendente
 if(pendingAtividadeId&&planoEditando){const atualizado=[...(planoEditando.atividadesRoteiro||[])];const idx=atualizado.findIndex(a=>a.id===pendingAtividadeId);if(idx!==-1){atualizado[idx]={...atualizado[idx],musicasVinculadas:[...(atualizado[idx].musicasVinculadas||[]),{id:novaMusica.id,titulo:novaMusica.titulo,autor:novaMusica.autor}]};setPlanoEditando({...planoEditando,atividadesRoteiro:atualizado});}}setPendingAtividadeId(null);setModalNovaMusicaInline(false);setAtividadeVinculandoMusica(null);alert(`✅ Música "${titulo}" salva e vinculada! Complete os detalhes depois em Repertório Inteligente.`);},className:"flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold"},"\uD83C\uDFB5 Salvar e Vincular")))),modalTemplates&&/*#__PURE__*/React.createElement("div",{className:"fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50",onClick:()=>setModalTemplates(false)},/*#__PURE__*/React.createElement("div",{className:"bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto",onClick:e=>e.stopPropagation()},/*#__PURE__*/React.createElement("div",{className:"bg-purple-600 text-white p-5 flex justify-between items-center rounded-t-2xl"},/*#__PURE__*/React.createElement("div",null,/*#__PURE__*/React.createElement("h2",{className:"text-xl font-bold"},"\uD83D\uDCD0 Templates de Roteiro"),/*#__PURE__*/React.createElement("p",{className:"text-purple-200 text-sm mt-0.5"},"Salve e reutilize estruturas de aula")),/*#__PURE__*/React.createElement("button",{onClick:()=>setModalTemplates(false),className:"text-white text-2xl font-bold"},"\u2715")),/*#__PURE__*/React.createElement("div",{className:"p-5 space-y-4"},planoEditando&&(planoEditando.atividadesRoteiro||[]).length>0&&/*#__PURE__*/React.createElement("div",{className:"bg-purple-50 border-2 border-purple-200 rounded-xl p-4"},/*#__PURE__*/React.createElement("p",{className:"font-bold text-purple-800 mb-2"},"\uD83D\uDCBE Salvar roteiro atual como template"),/*#__PURE__*/React.createElement("p",{className:"text-xs text-purple-600 mb-3"},(planoEditando.atividadesRoteiro||[]).length," atividade(s) ser\xE3o salvas"),/*#__PURE__*/React.createElement("div",{className:"flex gap-2"},/*#__PURE__*/React.createElement("input",{type:"text",value:nomeNovoTemplate,onChange:e=>setNomeNovoTemplate(e.target.value),placeholder:"Nome do template (ex: Aula padr\xE3o 80min)...",className:"flex-1 px-3 py-2 border-2 border-purple-300 rounded-lg text-sm focus:border-purple-500 outline-none"}),/*#__PURE__*/React.createElement("button",{onClick:()=>{if(!nomeNovoTemplate.trim())return;setTemplatesRoteiro(prev=>[...prev,{id:Date.now(),nome:nomeNovoTemplate.trim(),criadoEm:new Date().toLocaleDateString('pt-BR'),atividades:(planoEditando.atividadesRoteiro||[]).map(a=>({nome:a.nome,duracao:a.duracao,descricao:a.descricao}))}]);setNomeNovoTemplate('');},className:"bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold text-sm"},"Salvar"))),templatesRoteiro.length===0?/*#__PURE__*/React.createElement("div",{className:"text-center py-10 text-gray-400"},/*#__PURE__*/React.createElement("p",{className:"text-4xl mb-2"},"\uD83D\uDCD0"),/*#__PURE__*/React.createElement("p",{className:"font-bold"},"Nenhum template salvo ainda"),/*#__PURE__*/React.createElement("p",{className:"text-sm mt-1"},"Monte um roteiro e salve como template para reutilizar")):/*#__PURE__*/React.createElement("div",{className:"space-y-3"},/*#__PURE__*/React.createElement("p",{className:"font-bold text-gray-700"},templatesRoteiro.length," template(s) salvo(s)"),templatesRoteiro.map(tmpl=>/*#__PURE__*/React.createElement("div",{key:tmpl.id,className:"bg-white border-2 border-gray-200 rounded-xl p-4 hover:border-purple-300 transition"},/*#__PURE__*/React.createElement("div",{className:"flex justify-between items-start mb-2"},/*#__PURE__*/React.createElement("div",null,/*#__PURE__*/React.createElement("p",{className:"font-bold text-gray-800"},tmpl.nome),/*#__PURE__*/React.createElement("p",{className:"text-xs text-gray-400"},tmpl.atividades.length," atividade(s) \xB7 Criado em ",tmpl.criadoEm)),/*#__PURE__*/React.createElement("div",{className:"flex gap-2"},/*#__PURE__*/React.createElement("button",{onClick:()=>{if(!confirm(`Aplicar template "${tmpl.nome}"?\n\nIsso substituirá o roteiro atual.`))return;setPlanoEditando({...planoEditando,atividadesRoteiro:tmpl.atividades.map(a=>({...a,id:Date.now()+Math.random()}))});setModalTemplates(false);},className:"bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold"},"\u25B6 Aplicar"),/*#__PURE__*/React.createElement("button",{onClick:()=>{if(confirm(`Excluir template "${tmpl.nome}"?`))setTemplatesRoteiro(prev=>prev.filter(t=>t.id!==tmpl.id));},className:"bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-sm font-bold"},"\uD83D\uDDD1\uFE0F"))),/*#__PURE__*/React.createElement("div",{className:"space-y-1 mt-2"},tmpl.atividades.map((a,i)=>/*#__PURE__*/React.createElement("div",{key:i,className:"flex items-center gap-2 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded"},/*#__PURE__*/React.createElement("span",{className:"bg-purple-200 text-purple-800 font-bold px-1.5 py-0.5 rounded-full"},i+1),/*#__PURE__*/React.createElement("span",{className:"font-medium"},a.nome||'(sem nome)'),a.duracao&&/*#__PURE__*/React.createElement("span",{className:"text-gray-400"},"\xB7 ",a.duracao," min")))))))))),modalNovaFaixa&&(()=>{// #14: estado local para renomear inline
 return/*#__PURE__*/React.createElement("div",{className:"fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]",onClick:()=>setModalNovaFaixa(false)},/*#__PURE__*/React.createElement("div",{className:"bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[90vh] flex flex-col",onClick:e=>e.stopPropagation()},/*#__PURE__*/React.createElement("div",{className:"bg-indigo-600 text-white p-5 rounded-t-2xl flex items-center justify-between"},/*#__PURE__*/React.createElement("div",null,/*#__PURE__*/React.createElement("h2",{className:"text-lg font-bold"},"\uD83D\uDC65 Faixas Et\xE1rias"),/*#__PURE__*/React.createElement("p",{className:"text-indigo-200 text-xs mt-0.5"},"Adicione, renomeie ou remova r\xF3tulos")),/*#__PURE__*/React.createElement("button",{onClick:()=>setModalNovaFaixa(false),className:"text-white/70 hover:text-white text-2xl leading-none font-bold"},"\xD7")),/*#__PURE__*/React.createElement("div",{className:"flex-1 overflow-y-auto p-5 space-y-2"},faixas.slice(1).map((f,idx)=>/*#__PURE__*/React.createElement("div",{key:f,className:"flex items-center gap-2 group"},/*#__PURE__*/React.createElement("input",{type:"text",defaultValue:f,onBlur:e=>{const novo=e.target.value.trim();if(!novo){e.target.value=f;return;}if(novo===f)return;if(faixas.includes(novo)){alert('Já existe uma faixa com esse nome!');e.target.value=f;return;}setFaixas(faixas.map(x=>x===f?novo:x));// Atualizar planos que usavam o nome antigo
-setPlanos(planos.map(p=>({...p,faixaEtaria:(p.faixaEtaria||[]).map(fe=>fe===f?novo:fe)})));},onKeyDown:e=>{if(e.key==='Enter')e.target.blur();if(e.key==='Escape'){e.target.value=f;e.target.blur();}},className:"flex-1 px-3 py-2 border-2 border-transparent hover:border-indigo-200 focus:border-indigo-500 rounded-lg text-sm font-medium outline-none bg-indigo-50 focus:bg-white transition"}),/*#__PURE__*/React.createElement("button",{onClick:()=>{if(!confirm(`Remover a faixa "${f}"? Os planos que a usam perderão esse rótulo.`))return;setFaixas(faixas.filter(x=>x!==f));setPlanos(planos.map(p=>({...p,faixaEtaria:(p.faixaEtaria||[]).filter(fe=>fe!==f)})));},className:"opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 font-bold px-2 py-1 rounded-lg hover:bg-red-50 transition text-lg leading-none",title:"Remover faixa"},"\xD7"))),faixas.slice(1).length===0&&/*#__PURE__*/React.createElement("p",{className:"text-sm text-gray-400 text-center py-4"},"Nenhuma faixa cadastrada ainda.")),/*#__PURE__*/React.createElement("div",{className:"p-5 pt-0 border-t border-gray-100"},/*#__PURE__*/React.createElement("div",{className:"flex gap-2"},/*#__PURE__*/React.createElement("input",{type:"text",value:novaFaixaNome,onChange:e=>setNovaFaixaNome(e.target.value),onKeyDown:e=>{if(e.key==='Enter')salvarNovaFaixa();},placeholder:"Nova faixa (ex: Maternal, EJA...)",className:"flex-1 px-3 py-2.5 border-2 border-indigo-200 focus:border-indigo-500 rounded-xl text-sm outline-none"}),/*#__PURE__*/React.createElement("button",{onClick:salvarNovaFaixa,className:"bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition"},"+ Add")))));})(),modalNovaEscola&&/*#__PURE__*/React.createElement("div",{className:"fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]"},/*#__PURE__*/React.createElement("div",{className:"bg-white rounded-2xl shadow-2xl w-full max-w-md"},/*#__PURE__*/React.createElement("div",{className:"bg-indigo-600 text-white p-5 rounded-t-2xl flex items-center justify-between"},/*#__PURE__*/React.createElement("div",null,/*#__PURE__*/React.createElement("h2",{className:"text-xl font-bold"},"\uD83C\uDFEB Nova Escola"),/*#__PURE__*/React.createElement("p",{className:"text-indigo-200 text-sm mt-0.5"},"A escola ser\xE1 cadastrada no sistema")),/*#__PURE__*/React.createElement("button",{onClick:()=>setModalNovaEscola(false),className:"text-white/70 hover:text-white text-2xl leading-none font-bold"},"\xD7")),/*#__PURE__*/React.createElement("div",{className:"p-6 space-y-5"},/*#__PURE__*/React.createElement("div",null,/*#__PURE__*/React.createElement("label",{className:"block font-bold text-gray-700 mb-2"},"Nome da Escola *"),/*#__PURE__*/React.createElement("input",{type:"text",value:novaEscolaNome,onChange:e=>setNovaEscolaNome(e.target.value),onKeyDown:e=>{if(e.key==='Enter')salvarNovaEscola();},placeholder:"Ex: EMEF Jo\xE3o da Silva",autoFocus:true,className:"w-full px-4 py-3 border-2 border-indigo-200 focus:border-indigo-500 rounded-xl text-base outline-none"})),/*#__PURE__*/React.createElement("div",null,/*#__PURE__*/React.createElement("label",{className:"block font-bold text-gray-700 mb-2"},"Vincular ao Ano Letivo"),anosLetivos.length===0?/*#__PURE__*/React.createElement("div",{className:"bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700"},"\u26A0\uFE0F Nenhum ano letivo cadastrado. A escola ser\xE1 salva apenas no plano atual.",/*#__PURE__*/React.createElement("br",null),/*#__PURE__*/React.createElement("span",{className:"text-xs mt-1 block"},"Acesse ",/*#__PURE__*/React.createElement("b",null,"Turmas")," para criar anos letivos.")):/*#__PURE__*/React.createElement("select",{value:novaEscolaAnoId,onChange:e=>setNovaEscolaAnoId(e.target.value),className:"w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base"},/*#__PURE__*/React.createElement("option",{value:""},"\u2014 Selecione um ano letivo (opcional) \u2014"),anosLetivos.map(a=>/*#__PURE__*/React.createElement("option",{key:a.id,value:a.id},a.ano,a.status==='ativo'?' ✓ (ativo)':'')))),anosLetivos.flatMap(a=>a.escolas).length>0&&/*#__PURE__*/React.createElement("div",null,/*#__PURE__*/React.createElement("label",{className:"block text-sm font-semibold text-gray-500 mb-2"},"Escolas j\xE1 cadastradas:"),/*#__PURE__*/React.createElement("div",{className:"flex flex-wrap gap-2 max-h-24 overflow-y-auto"},anosLetivos.flatMap(a=>a.escolas.map(e=>({nome:e.nome,ano:a.ano}))).map((item,i)=>/*#__PURE__*/React.createElement("span",{key:i,onClick:()=>{if(modalNovaEscola==='plano')setPlanoEditando({...planoEditando,escola:item.nome});setModalNovaEscola(false);},className:"cursor-pointer bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium transition",title:`Clique para usar: ${item.nome} (${item.ano})`},item.nome))),/*#__PURE__*/React.createElement("p",{className:"text-xs text-gray-400 mt-1"},"Clique em uma escola existente para selecion\xE1-la direto."))),/*#__PURE__*/React.createElement("div",{className:"p-5 pt-0 flex gap-3"},/*#__PURE__*/React.createElement("button",{onClick:()=>setModalNovaEscola(false),className:"flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold transition"},"Cancelar"),/*#__PURE__*/React.createElement("button",{onClick:salvarNovaEscola,className:"flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold transition"},"\uD83C\uDFEB Cadastrar Escola")))));}ReactDOM.render(/*#__PURE__*/React.createElement(AppRoot,null),document.getElementById('root'));
+setPlanos(planos.map(p=>({...p,faixaEtaria:(p.faixaEtaria||[]).map(fe=>fe===f?novo:fe)})));},onKeyDown:e=>{if(e.key==='Enter')e.target.blur();if(e.key==='Escape'){e.target.value=f;e.target.blur();}},className:"flex-1 px-3 py-2 border-2 border-transparent hover:border-indigo-200 focus:border-indigo-500 rounded-lg text-sm font-medium outline-none bg-indigo-50 focus:bg-white transition"}),/*#__PURE__*/React.createElement("button",{onClick:()=>{if(!confirm(`Remover a faixa "${f}"? Os planos que a usam perderão esse rótulo.`))return;setFaixas(faixas.filter(x=>x!==f));setPlanos(planos.map(p=>({...p,faixaEtaria:(p.faixaEtaria||[]).filter(fe=>fe!==f)})));},className:"opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 font-bold px-2 py-1 rounded-lg hover:bg-red-50 transition text-lg leading-none",title:"Remover faixa"},"\xD7"))),faixas.slice(1).length===0&&/*#__PURE__*/React.createElement("p",{className:"text-sm text-gray-400 text-center py-4"},"Nenhuma faixa cadastrada ainda.")),/*#__PURE__*/React.createElement("div",{className:"p-5 pt-0 border-t border-gray-100"},/*#__PURE__*/React.createElement("div",{className:"flex gap-2"},/*#__PURE__*/React.createElement("input",{type:"text",value:novaFaixaNome,onChange:e=>setNovaFaixaNome(e.target.value),onKeyDown:e=>{if(e.key==='Enter')salvarNovaFaixa();},placeholder:"Nova faixa (ex: Maternal, EJA...)",className:"flex-1 px-3 py-2.5 border-2 border-indigo-200 focus:border-indigo-500 rounded-xl text-sm outline-none"}),/*#__PURE__*/React.createElement("button",{onClick:salvarNovaFaixa,className:"bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition"},"+ Add")))));})(),modalNovaEscola&&/*#__PURE__*/React.createElement("div",{className:"fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]"},/*#__PURE__*/React.createElement("div",{className:"bg-white rounded-2xl shadow-2xl w-full max-w-md"},/*#__PURE__*/React.createElement("div",{className:"bg-indigo-600 text-white p-5 rounded-t-2xl flex items-center justify-between"},/*#__PURE__*/React.createElement("div",null,/*#__PURE__*/React.createElement("h2",{className:"text-xl font-bold"},"\uD83C\uDFEB Nova Escola"),/*#__PURE__*/React.createElement("p",{className:"text-indigo-200 text-sm mt-0.5"},"A escola ser\xE1 cadastrada no sistema")),/*#__PURE__*/React.createElement("button",{onClick:()=>setModalNovaEscola(false),className:"text-white/70 hover:text-white text-2xl leading-none font-bold"},"\xD7")),/*#__PURE__*/React.createElement("div",{className:"p-6 space-y-5"},/*#__PURE__*/React.createElement("div",null,/*#__PURE__*/React.createElement("label",{className:"block font-bold text-gray-700 mb-2"},"Nome da Escola *"),/*#__PURE__*/React.createElement("input",{type:"text",value:novaEscolaNome,onChange:e=>setNovaEscolaNome(e.target.value),onKeyDown:e=>{if(e.key==='Enter')salvarNovaEscola();},placeholder:"Ex: EMEF Jo\xE3o da Silva",autoFocus:true,className:"w-full px-4 py-3 border-2 border-indigo-200 focus:border-indigo-500 rounded-xl text-base outline-none"})),/*#__PURE__*/React.createElement("div",null,/*#__PURE__*/React.createElement("label",{className:"block font-bold text-gray-700 mb-2"},"Vincular ao Ano Letivo"),anosLetivos.length===0?/*#__PURE__*/React.createElement("div",{className:"bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700"},"\u26A0\uFE0F Nenhum ano letivo cadastrado. A escola ser\xE1 salva apenas no plano atual.",/*#__PURE__*/React.createElement("br",null),/*#__PURE__*/React.createElement("span",{className:"text-xs mt-1 block"},"Acesse ",/*#__PURE__*/React.createElement("b",null,"Turmas")," para criar anos letivos.")):/*#__PURE__*/React.createElement("select",{value:novaEscolaAnoId,onChange:e=>setNovaEscolaAnoId(e.target.value),className:"w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base"},/*#__PURE__*/React.createElement("option",{value:""},"\u2014 Selecione um ano letivo (opcional) \u2014"),anosLetivos.map(a=>/*#__PURE__*/React.createElement("option",{key:a.id,value:a.id},a.ano,a.status==='ativo'?' ✓ (ativo)':'')))),anosLetivos.flatMap(a=>a.escolas).length>0&&/*#__PURE__*/React.createElement("div",null,/*#__PURE__*/React.createElement("label",{className:"block text-sm font-semibold text-gray-500 mb-2"},"Escolas j\xE1 cadastradas:"),/*#__PURE__*/React.createElement("div",{className:"flex flex-wrap gap-2 max-h-24 overflow-y-auto"},anosLetivos.flatMap(a=>a.escolas.map(e=>({nome:e.nome,ano:a.ano}))).map((item,i)=>/*#__PURE__*/React.createElement("span",{key:i,onClick:()=>{if(modalNovaEscola==='plano')setPlanoEditando({...planoEditando,escola:item.nome});setModalNovaEscola(false);},className:"cursor-pointer bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium transition",title:`Clique para usar: ${item.nome} (${item.ano})`},item.nome))),/*#__PURE__*/React.createElement("p",{className:"text-xs text-gray-400 mt-1"},"Clique em uma escola existente para selecion\xE1-la direto."))),/*#__PURE__*/React.createElement("div",{className:"p-5 pt-0 flex gap-3"},/*#__PURE__*/React.createElement("button",{onClick:()=>setModalNovaEscola(false),className:"flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold transition"},"Cancelar"),/*#__PURE__*/React.createElement("button",{onClick:salvarNovaEscola,className:"flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold transition"},"\uD83C\uDFEB Cadastrar Escola")))));}ReactDOM.render(/*#__PURE__*/React.createElement(AppRoot,null),document.getElementById('root'),()=>{if(window._hideSplash)window._hideSplash();});
 </script>
 </body>
 </html>
