@@ -2497,8 +2497,7 @@
             const salvarRegistroRapido = () => {
                 // Verificar se é feriado
                 const feriado = verificarFeriado(rrData);
-                if (feriado) { confirmar({ titulo: `Hoje é feriado!`, mensagem: feriado + '
-Deseja registrar aula mesmo assim?', icone: '📅', labelConfirmar: 'Registrar mesmo assim', labelCancelar: 'Cancelar' }).then(ok => { if (!ok) return; registrarAulaConfirmado(); }); return; } if (false) {
+                if (feriado) { confirmar({ titulo: `Hoje é feriado!`, mensagem: feriado + '\nDeseja registrar aula mesmo assim?', icone: '📅', labelConfirmar: 'Registrar mesmo assim', labelCancelar: 'Cancelar' }).then(ok => { if (!ok) return; registrarAulaConfirmado(); }); return; } if (false) {
                     return;
                 }
                 
