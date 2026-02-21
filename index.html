@@ -204,7 +204,7 @@
                 setLoading(true); setErro('');
                 const { error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
-                    options: { redirectTo: window.location.origin + window.location.pathname }
+                    options: { redirectTo: window.location.href }
                 });
                 if (error) { setErro(error.message); setLoading(false); }
             };
@@ -845,6 +845,14 @@
                 if(syncTimeout.current[key]) clearTimeout(syncTimeout.current[key]);
                 syncTimeout.current[key] = setTimeout(fn, 2000);
             };
+
+            // ── CLEANUP DE TIMEOUTS NO UNMOUNT (evita memory leaks e erros pós-logout) ──
+            useEffect(() => {
+                return () => {
+                    Object.values(syncTimeout.current).forEach(id => clearTimeout(id));
+                    if (timeoutSalvamento.current) clearTimeout(timeoutSalvamento.current);
+                };
+            }, []);
             useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('planos', ()=>syncToSupabase('planos',planos,userId,onSyncStatus)); }, [planos]);
             useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('atividades', ()=>syncToSupabase('atividades',atividades,userId,onSyncStatus)); }, [atividades]);
             useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('repertorio', ()=>syncToSupabase('repertorio',repertorio,userId,onSyncStatus)); }, [repertorio]);
