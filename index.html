@@ -22,6 +22,32 @@
         .rich-editor-area ul { list-style: disc; padding-left: 1.5rem; margin: 0.25rem 0; }
         .rich-editor-area ol { list-style: decimal; padding-left: 1.5rem; margin: 0.25rem 0; }
         .rich-editor-area li { margin: 0.15rem 0; }
+
+        /* ── MODO ESCURO ── */
+        .dark body { background: #0f172a; color: #e2e8f0; }
+        .dark .bg-slate-50, .dark .bg-white { background: #1e293b !important; }
+        .dark .bg-gray-50 { background: #1e293b !important; }
+        .dark .bg-gray-100 { background: #273344 !important; }
+        .dark .bg-gray-200 { background: #334155 !important; }
+        .dark .text-gray-900, .dark .text-gray-800, .dark .text-gray-700 { color: #e2e8f0 !important; }
+        .dark .text-gray-600, .dark .text-gray-500 { color: #94a3b8 !important; }
+        .dark .border-gray-200, .dark .border-gray-100 { border-color: #334155 !important; }
+        .dark .shadow, .dark .shadow-md, .dark .shadow-lg, .dark .shadow-xl, .dark .shadow-2xl { box-shadow: 0 4px 24px rgba(0,0,0,0.5) !important; }
+        .dark input, .dark textarea, .dark select { background: #273344 !important; color: #e2e8f0 !important; border-color: #475569 !important; }
+        .dark .bg-indigo-50 { background: #1e1b4b !important; }
+        .dark .bg-blue-50 { background: #172554 !important; }
+        .dark .bg-green-50 { background: #052e16 !important; }
+        .dark .bg-orange-50 { background: #431407 !important; }
+        .dark .bg-purple-50 { background: #2e1065 !important; }
+        .dark .bg-amber-50 { background: #451a03 !important; }
+        .dark .hover\:bg-gray-50:hover { background: #273344 !important; }
+        .dark .hover\:bg-gray-100:hover { background: #334155 !important; }
+
+        /* Drag handle */
+        .drag-handle { cursor: grab; }
+        .drag-handle:active { cursor: grabbing; }
+        .dragging { opacity: 0.4; }
+        .drag-over { border-top: 2px solid #6366f1 !important; }
     </style>
 </head>
 <body>
@@ -122,16 +148,48 @@
 
         // --- BASE DE DADOS BNCC ---
         const bancoBNCC = [
-            { codigo: "EF15AR13", desc: "Identificar e apreciar criticamente diversas formas e gêneros de expressão musical.", keywords: ["apreciar", "gêneros", "contextos", "escuta", "identificar"] },
-            { codigo: "EF15AR14", desc: "Perceber e explorar os elementos constitutivos da música (altura, intensidade, timbre, melodia, ritmo e duração).", keywords: ["altura", "intensidade", "timbre", "melodia", "ritmo", "duração", "elementos", "jogo"] },
-            { codigo: "EF15AR15", desc: "Explorar fontes sonoras diversas (corpo, natureza, objetos e instrumentos).", keywords: ["fontes sonoras", "corpo", "percussão corporal", "voz", "cotidiano", "instrumentos"] },
-            { codigo: "EF15AR16", desc: "Explorar diferentes formas de registro musical não convencional e convencional.", keywords: ["registro", "grafia", "partitura", "desenho", "gravação"] },
-            { codigo: "EF15AR17", desc: "Experimentar improvisações, composições e sonorização de histórias.", keywords: ["improvisação", "criação", "composição", "história", "sonorização", "criar"] },
-            { codigo: "EF15AR18", desc: "Reconhecer e apreciar o papel de músicos e grupos brasileiros e estrangeiros.", keywords: ["cultura", "brasileira", "artista", "compositor", "grupo"] },
-            { codigo: "EF15AR19", desc: "Descobrir e experimentar sonoridades e ritmos de diferentes matrizes estéticas e culturais.", keywords: ["cultura", "indígena", "africana", "matrizes", "folclore"] },
-            { codigo: "EF15AR23", desc: "Reconhecer e experimentar, em projetos temáticos, as relações entre linguagens artísticas.", keywords: ["integrada", "dança", "teatro", "artes visuais"] },
-            { codigo: "EF15AR24", desc: "Caracterizar e experimentar brinquedos, brincadeiras, jogos, danças e canções.", keywords: ["brincadeira", "roda", "dança", "jogo"] },
-            { codigo: "EF15AR25", desc: "Conhecer e valorizar o patrimônio cultural, material e imaterial.", keywords: ["patrimônio", "cultura", "popular"] }
+            // ── EDUCAÇÃO INFANTIL ── Campos de Experiências (música)
+            { codigo: "EI02EO01", segmento: "Infantil", desc: "Demonstrar atitudes de cuidado e solidariedade na interação com crianças e adultos.", keywords: ["convivência", "interação", "cuidado", "música coletiva"] },
+            { codigo: "EI03EO01", segmento: "Infantil", desc: "Demonstrar empatia pelos outros, percebendo que as pessoas têm diferentes sentimentos, necessidades e maneiras de pensar e agir.", keywords: ["empatia", "sentimentos", "expressão musical"] },
+            { codigo: "EI02CG01", segmento: "Infantil", desc: "Apropriar-se de gestos e movimentos de sua cultura no cuidado de si e nos jogos e brincadeiras.", keywords: ["movimento", "gesto", "dança", "corpo", "brincadeira"] },
+            { codigo: "EI03CG01", segmento: "Infantil", desc: "Criar com o corpo formas diversificadas de expressão de sentimentos, sensações e emoções, tanto nas situações do cotidiano quanto em brincadeiras, dança, teatro, música.", keywords: ["expressão corporal", "dança", "movimento", "emoção", "sentimento"] },
+            { codigo: "EI02CG03", segmento: "Infantil", desc: "Explorar formas de deslocamento no espaço (pular, saltar, dançar), combinando movimentos e seguindo orientações.", keywords: ["dança", "movimento", "deslocamento", "ritmo corporal"] },
+            { codigo: "EI01TS01", segmento: "Infantil", desc: "Explorar sons produzidos com o próprio corpo e com objetos do ambiente.", keywords: ["sons", "corpo", "percussão corporal", "objetos sonoros", "exploração"] },
+            { codigo: "EI02TS01", segmento: "Infantil", desc: "Criar sons com materiais, objetos e instrumentos musicais, para acompanhar diversos ritmos de música.", keywords: ["ritmo", "instrumentos", "criação", "sons", "acompanhamento"] },
+            { codigo: "EI03TS01", segmento: "Infantil", desc: "Utilizar sons produzidos por materiais, objetos e instrumentos musicais durante brincadeiras de faz de conta, encenações, criações musicais, festas.", keywords: ["criação musical", "instrumentos", "brincadeira", "encenação", "festa"] },
+            { codigo: "EI02TS02", segmento: "Infantil", desc: "Utilizar materiais variados com possibilidades de manipulação (argila, massa de modelar), explorando cores, formas, texturas, e sons.", keywords: ["exploração", "sons", "texturas", "sensorial"] },
+            { codigo: "EI01EF06", segmento: "Infantil", desc: "Comunicar-se com outras pessoas usando movimentos, gestos, balbucios, fala e outras formas de expressão.", keywords: ["comunicação", "expressão", "voz", "canto"] },
+            { codigo: "EI02EF06", segmento: "Infantil", desc: "Criar e contar histórias oralmente, com base em imagens ou temas sugeridos.", keywords: ["história", "sonorização", "narrativa", "voz"] },
+            { codigo: "EI03EF06", segmento: "Infantil", desc: "Produzir suas próprias histórias orais e escritas (escrita espontânea), em situações com função social significativa.", keywords: ["criação", "narrativa", "sonorização de história"] },
+            { codigo: "EI03EF09", segmento: "Infantil", desc: "Levantar hipóteses em relação à linguagem escrita, realizando registros de palavras e textos, por meio de representações gráficas.", keywords: ["registro", "grafia musical", "notação"] },
+
+            // ── EF 1º AO 5º ANO ──
+            { codigo: "EF15AR13", segmento: "EF1-5", desc: "Identificar e apreciar criticamente diversas formas e gêneros de expressão musical.", keywords: ["apreciar", "gêneros", "contextos", "escuta", "identificar"] },
+            { codigo: "EF15AR14", segmento: "EF1-5", desc: "Perceber e explorar os elementos constitutivos da música (altura, intensidade, timbre, melodia, ritmo e duração).", keywords: ["altura", "intensidade", "timbre", "melodia", "ritmo", "duração", "elementos", "jogo"] },
+            { codigo: "EF15AR15", segmento: "EF1-5", desc: "Explorar fontes sonoras diversas (corpo, natureza, objetos e instrumentos).", keywords: ["fontes sonoras", "corpo", "percussão corporal", "voz", "cotidiano", "instrumentos"] },
+            { codigo: "EF15AR16", segmento: "EF1-5", desc: "Explorar diferentes formas de registro musical não convencional e convencional.", keywords: ["registro", "grafia", "partitura", "desenho", "gravação"] },
+            { codigo: "EF15AR17", segmento: "EF1-5", desc: "Experimentar improvisações, composições e sonorização de histórias.", keywords: ["improvisação", "criação", "composição", "história", "sonorização", "criar"] },
+            { codigo: "EF15AR18", segmento: "EF1-5", desc: "Reconhecer e apreciar o papel de músicos e grupos brasileiros e estrangeiros.", keywords: ["cultura", "brasileira", "artista", "compositor", "grupo"] },
+            { codigo: "EF15AR19", segmento: "EF1-5", desc: "Descobrir e experimentar sonoridades e ritmos de diferentes matrizes estéticas e culturais.", keywords: ["cultura", "indígena", "africana", "matrizes", "folclore"] },
+            { codigo: "EF15AR23", segmento: "EF1-5", desc: "Reconhecer e experimentar, em projetos temáticos, as relações entre linguagens artísticas.", keywords: ["integrada", "dança", "teatro", "artes visuais"] },
+            { codigo: "EF15AR24", segmento: "EF1-5", desc: "Caracterizar e experimentar brinquedos, brincadeiras, jogos, danças e canções.", keywords: ["brincadeira", "roda", "dança", "jogo"] },
+            { codigo: "EF15AR25", segmento: "EF1-5", desc: "Conhecer e valorizar o patrimônio cultural, material e imaterial.", keywords: ["patrimônio", "cultura", "popular"] },
+
+            // ── EF 6º AO 9º ANO ──
+            { codigo: "EF69AR16", segmento: "EF6-9", desc: "Analisar criticamente, por meio da apreciação musical, usos e funções da música em seus contextos de produção e circulação.", keywords: ["apreciação", "análise", "contexto", "função", "crítica"] },
+            { codigo: "EF69AR17", segmento: "EF6-9", desc: "Explorar e analisar, criticamente, diferentes meios e equipamentos culturais de acesso à produção e à apreciação artística.", keywords: ["mídia", "tecnologia", "acesso", "digital", "streaming"] },
+            { codigo: "EF69AR18", segmento: "EF6-9", desc: "Reconhecer e apreciar o papel de músicos e grupos de música brasileira e mundial, em diferentes épocas, contextos e estilos musicais.", keywords: ["história da música", "artistas", "estilos", "época", "mundo"] },
+            { codigo: "EF69AR19", segmento: "EF6-9", desc: "Identificar e analisar diferentes estilos musicais, contextualizando-os no tempo e no espaço, de modo a aprimorar a capacidade de apreciação da estética musical.", keywords: ["estilos musicais", "contextualização", "história", "estética"] },
+            { codigo: "EF69AR20", segmento: "EF6-9", desc: "Explorar e analisar elementos constitutivos da música (altura, intensidade, timbre, melodia, ritmo, harmonia, textura, forma, entre outros), por meio de recursos tecnológicos.", keywords: ["harmonia", "textura", "forma", "altura", "timbre", "ritmo", "melodia", "elementos"] },
+            { codigo: "EF69AR21", segmento: "EF6-9", desc: "Explorar e criar improvisações, composições, arranjos, jingles, trilhas sonoras, entre outros, utilizando vozes, sons corporais e/ou instrumentos acústicos ou eletrônicos.", keywords: ["composição", "arranjo", "improvisação", "trilha sonora", "jingle", "criação", "eletrônico"] },
+            { codigo: "EF69AR22", segmento: "EF6-9", desc: "Explorar e identificar diferentes formas de registro musical (notação musical tradicional, formas alternativas de notação musical e registro em áudio e vídeo).", keywords: ["notação", "partitura", "registro", "gravação", "áudio", "vídeo"] },
+            { codigo: "EF69AR23", segmento: "EF6-9", desc: "Explorar e criar experimentações sonoras e músicas com tecnologias digitais.", keywords: ["tecnologia", "digital", "experimentação", "eletrônico", "computador"] },
+            { codigo: "EF69AR24", segmento: "EF6-9", desc: "Explorar e analisar formas distintas de manifestações do movimento (de pessoas e grupos) presentes em diferentes contextos.", keywords: ["movimento", "dança", "corpo", "performance"] },
+            { codigo: "EF69AR31", segmento: "EF6-9", desc: "Relacionar as práticas artísticas às diferentes dimensões da vida social, cultural, política, histórica, econômica, estética e ética.", keywords: ["sociedade", "política", "cultura", "história", "interdisciplinar"] },
+            { codigo: "EF69AR32", segmento: "EF6-9", desc: "Analisar e explorar, em projetos temáticos, as relações processuais entre diversas linguagens artísticas.", keywords: ["projeto", "interdisciplinar", "linguagens", "integrado"] },
+            { codigo: "EF69AR33", segmento: "EF6-9", desc: "Analisar aspectos históricos, sociais e políticos da produção artística, problematizando as narrativas eurocêntricas e as outras representações hegemônicas.", keywords: ["história", "africana", "indígena", "diversidade", "cultura popular", "patrimônio"] },
+            { codigo: "EF69AR34", segmento: "EF6-9", desc: "Analisar e valorizar o patrimônio cultural, material e imaterial, de culturas diversas.", keywords: ["patrimônio", "cultura", "popular", "folclore", "diversidade"] },
+            { codigo: "EF69AR35", segmento: "EF6-9", desc: "Identificar e manipular diferentes tecnologias e recursos digitais para acessar, apreciar, produzir, registrar e compartilhar práticas e repertórios musicais.", keywords: ["tecnologia", "digital", "compartilhar", "produção", "registro"] }
         ];
 
         const planosIniciais = []; 
@@ -384,6 +442,24 @@
             }, [planos]);
             
             const [statusSalvamento, setStatusSalvamento] = useState('');
+            const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
+            const dragItem = useRef(null);
+            const dragOverItem = useRef(null);
+            const handleDragStart = (index) => { dragItem.current = index; };
+            const handleDragEnter = (index) => { dragOverItem.current = index; };
+            const handleDragEnd = () => {
+                const roteiro = [...(planoEditando.atividadesRoteiro || [])];
+                const draggedItem = roteiro.splice(dragItem.current, 1)[0];
+                roteiro.splice(dragOverItem.current, 0, draggedItem);
+                dragItem.current = null;
+                dragOverItem.current = null;
+                setPlanoEditando({ ...planoEditando, atividadesRoteiro: roteiro });
+            };
+            useEffect(() => {
+                localStorage.setItem('darkMode', darkMode);
+                if (darkMode) { document.documentElement.classList.add('dark'); }
+                else { document.documentElement.classList.remove('dark'); }
+            }, [darkMode]);
             const [busca, setBusca] = useState("");
             
             // Filtros
@@ -723,15 +799,36 @@
                     (planoEditando.conceitos || []).join(" ")
                 ).toLowerCase();
 
-                const sugestoes = bancoBNCC.filter(item => item.keywords.some(key => textoAnalise.includes(key)));
-                if (sugestoes.length === 0) { alert("Adicione mais texto (título, objetivos) para receber sugestões."); return; }
+                // Filtrar por segmento se faixa etária for Infantil
+                const faixas = planoEditando.faixaEtaria || [];
+                const ehInfantil = faixas.some(f => f.toLowerCase().includes('infantil') || f.toLowerCase().includes('berçário') || f.toLowerCase().includes('maternal'));
+                const ehEF69 = faixas.some(f => ['6°','7°','8°','9°','6º','7º','8º','9º'].some(s => f.includes(s)));
 
-                const formatadas = sugestoes.map(s => `${s.codigo} - ${s.desc}`);
+                const sugestoes = bancoBNCC.filter(item => {
+                    const keyMatch = item.keywords.some(key => textoAnalise.includes(key));
+                    if (!keyMatch) return false;
+                    if (ehInfantil && item.segmento === 'Infantil') return true;
+                    if (ehEF69 && item.segmento === 'EF6-9') return true;
+                    if (!ehInfantil && !ehEF69 && item.segmento === 'EF1-5') return true;
+                    if (!item.segmento) return true; // compatibilidade
+                    return false;
+                });
+
+                if (sugestoes.length === 0) {
+                    // fallback sem filtro de segmento
+                    const todas = bancoBNCC.filter(item => item.keywords.some(key => textoAnalise.includes(key)));
+                    if (todas.length === 0) { alert("Adicione mais texto (título, objetivos) para receber sugestões."); return; }
+                    const formatadas = todas.map(s => `[${s.segmento||'BNCC'}] ${s.codigo} - ${s.desc}`);
+                    const atuais = planoEditando.habilidadesBNCC || [];
+                    setPlanoEditando({ ...planoEditando, habilidadesBNCC: [...new Set([...atuais, ...formatadas])] });
+                    alert(`✨ ${todas.length} sugestões encontradas!`);
+                    return;
+                }
+
+                const formatadas = sugestoes.map(s => `[${s.segmento}] ${s.codigo} - ${s.desc}`);
                 const atuais = planoEditando.habilidadesBNCC || [];
-                const unicas = [...new Set([...atuais, ...formatadas])];
-
-                setPlanoEditando({ ...planoEditando, habilidadesBNCC: unicas });
-                alert(`✨ ${sugestoes.length} sugestões encontradas!`);
+                setPlanoEditando({ ...planoEditando, habilidadesBNCC: [...new Set([...atuais, ...formatadas])] });
+                alert(`✨ ${sugestoes.length} sugestão(ões) encontrada(s) para ${ehInfantil ? 'Ed. Infantil' : ehEF69 ? 'EF 6-9' : 'EF 1-5'}!`);
             };
 
             // --- PDF PREMIUM (CORRIGIDO: SEM EMOJIS) ---
@@ -1138,9 +1235,26 @@
                     materiais: planoEditando.materiais.filter(i => i.trim() !== "")
                 };
                 const existe = planos.find(p => p.id === planoParaSalvar.id);
-                if (existe) { setPlanos(planos.map(p => p.id === planoParaSalvar.id ? planoParaSalvar : p)); } 
-                else { setPlanos([...planos, planoParaSalvar]); }
+                if (existe) {
+                    // Salvar histórico de versões (últimas 3)
+                    const versaoAnterior = { ...existe, _versaoSalvaEm: new Date().toISOString() };
+                    const historicoAtual = existe._historicoVersoes || [];
+                    const novoHistorico = [versaoAnterior, ...historicoAtual].slice(0, 3);
+                    setPlanos(planos.map(p => p.id === planoParaSalvar.id ? { ...planoParaSalvar, _historicoVersoes: novoHistorico } : p));
+                } else { setPlanos([...planos, planoParaSalvar]); }
                 setModoEdicao(false); setPlanoEditando(null);
+            };
+
+            // Restaurar versão anterior do plano
+            const restaurarVersao = (plano, versao) => {
+                if (!confirm(`Restaurar versão de ${new Date(versao._versaoSalvaEm).toLocaleString('pt-BR')}?
+
+A versão atual será substituída.`)) return;
+                const historicoAtual = plano._historicoVersoes || [];
+                const versaoRestaurada = { ...versao, _historicoVersoes: historicoAtual, _versaoSalvaEm: undefined };
+                delete versaoRestaurada._versaoSalvaEm;
+                setPlanos(planos.map(p => p.id === plano.id ? versaoRestaurada : p));
+                alert('✅ Versão restaurada!');
             };
 
             const excluirPlano = (id) => { if (confirm("Excluir?")) { setPlanos(planos.filter(p => p.id !== id)); setPlanoSelecionado(null); } };
@@ -2820,6 +2934,9 @@
                                             Planejamento Musical · {userName}
                                             <span className="text-slate-500 text-xs" title="Atalhos: N = Nova aula | Esc = Fechar | Ctrl+S = Salvar">⌨ atalhos</span>
                                             <button onClick={fazerLogout} className="text-slate-400 hover:text-red-400 transition text-xs">⎋ sair</button>
+                                            <button onClick={()=>setDarkMode(!darkMode)} className="text-slate-400 hover:text-yellow-300 transition text-xs ml-1" title="Alternar modo escuro">
+                                                {darkMode ? '☀️' : '🌙'}
+                                            </button>
                                         </p>
                                     </div>
                                 </div>
@@ -5008,6 +5125,27 @@
                                         </div>
                                     )}
 
+                                    {/* Histórico de Versões */}
+                                    {(planoSelecionado._historicoVersoes || []).length > 0 && (
+                                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-2">
+                                            <p className="text-sm font-bold text-amber-700 mb-2">🕐 Versões anteriores</p>
+                                            <div className="space-y-2">
+                                                {(planoSelecionado._historicoVersoes || []).map((versao, i) => (
+                                                    <div key={i} className="flex items-center justify-between bg-white border border-amber-100 rounded-lg px-3 py-2">
+                                                        <div>
+                                                            <p className="text-xs font-semibold text-gray-700">{versao.titulo}</p>
+                                                            <p className="text-xs text-gray-400">Salva em {new Date(versao._versaoSalvaEm).toLocaleString('pt-BR')}</p>
+                                                        </div>
+                                                        <button onClick={()=>restaurarVersao(planoSelecionado, versao)}
+                                                            className="text-xs bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-lg font-bold transition">
+                                                            Restaurar
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Botões de ação — corrigidos (sem duplicata) */}
                                     <div className="flex gap-2 pt-4 border-t">
                                         <button onClick={()=>editarPlano(planoSelecionado)} className="flex-1 bg-blue-500 text-white py-3 rounded-xl font-bold">✏️ Editar</button>
@@ -5942,9 +6080,18 @@
                                         ) : (
                                             <div className="space-y-4">
                                                 {(planoEditando.atividadesRoteiro || []).map((atividade, index) => (
-                                                    <div key={atividade.id} className="bg-white p-4 rounded-lg border-2 border-indigo-200">
+                                                    <div key={atividade.id}
+                                                        draggable
+                                                        onDragStart={() => handleDragStart(index)}
+                                                        onDragEnter={() => handleDragEnter(index)}
+                                                        onDragEnd={handleDragEnd}
+                                                        onDragOver={e => e.preventDefault()}
+                                                        className="bg-white p-4 rounded-lg border-2 border-indigo-200 cursor-grab active:cursor-grabbing active:opacity-50 transition-opacity">
                                                         <div className="flex justify-between items-center mb-3">
-                                                            <span className="font-bold text-indigo-700">Atividade {index + 1}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-gray-300 hover:text-indigo-400 transition text-lg select-none" title="Arraste para reordenar">⠿</span>
+                                                                <span className="font-bold text-indigo-700">Atividade {index + 1}</span>
+                                                            </div>
                                                             <div className="flex gap-2">
                                                                 <button 
                                                                     type="button"
