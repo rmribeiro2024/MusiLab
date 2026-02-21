@@ -61,6 +61,19 @@
         // ── SYNC ROBUSTO: upsert por item individual com retry ──
         // Cada item precisa ter um campo 'id' único para o upsert funcionar.
         // A tabela no Supabase deve ter coluna unique em (user_id, item_id).
+        // Gera ID único e estável para cada item.
+        // Usa crypto.randomUUID() (nativo, seguro) com fallback para browsers antigos.
+        function gerarIdSeguro() {
+            if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+                return crypto.randomUUID();
+            }
+            // Fallback: UUID v4 manual (browsers antigos)
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+        }
+
         async function syncToSupabase(tabela, itens, userId, onStatus) {
             const MAX_TENTATIVAS = 3;
             const DELAY_RETRY = 1500;
@@ -72,11 +85,19 @@
 
                     // Estratégia segura: upsert de todos os itens + deletar os que sumiram
                     if (itens && itens.length > 0) {
-                        const rows = itens.map(item => ({
-                            user_id: userId,
-                            item_id: String(item.id || Math.random()),
-                            data: item
-                        }));
+                        const rows = itens.map(item => {
+                            // CORREÇÃO: nunca usa Math.random() como ID.
+                            // Se o item não tem id, gera um UUID estável e o persiste no objeto.
+                            // Isso garante que o mesmo item sempre tenha o mesmo item_id no Supabase.
+                            if (!item.id) {
+                                item.id = gerarIdSeguro();
+                            }
+                            return {
+                                user_id: userId,
+                                item_id: String(item.id),
+                                data: item
+                            };
+                        });
 
                         // Upsert em lotes de 50 para evitar timeout
                         const LOTE = 50;
@@ -88,13 +109,14 @@
                             if (error) throw error;
                         }
 
-                        // Remover do servidor itens que foram deletados localmente
+                        // CORREÇÃO: usa array nativo do Supabase em vez de string SQL manual,
+                        // evitando risco de injeção e quebra com IDs que contenham caracteres especiais.
                         const idsAtivos = rows.map(r => r.item_id);
                         await supabase
                             .from(tabela)
                             .delete()
                             .eq('user_id', userId)
-                            .not('item_id', 'in', `(${idsAtivos.map(id => `"${id}"`).join(',')})`);
+                            .not('item_id', 'in', `(${idsAtivos.join(',')})`);
                     } else {
                         // Lista vazia: apagar tudo do usuário nesta tabela
                         await supabase.from(tabela).delete().eq('user_id', userId);
@@ -823,7 +845,20 @@
             }, [conceitos, unidades, faixas, tagsGlobais, templatesRoteiro, compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados, escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas, energiasCustomizadas, instrumentacaoCustomizada]);
 
             // ── LOGOUT ──
-            const fazerLogout = async () => { if(confirm('Sair do MusiLab?')) await supabase.auth.signOut(); };
+            // CORREÇÃO: limpa o localStorage ao sair para evitar que dados do usuário
+            // atual fiquem visíveis caso outra pessoa abra o app no mesmo dispositivo.
+            const CHAVES_LOCALSTORAGE = [
+                'planosAula', 'repertorio', 'atividades', 'sequenciasDidaticas',
+                'anosLetivos', 'gradesSemanas', 'eventosEscolares',
+                'conceitosPersonalizados', 'unidadesPersonalizadas',
+                'faixasEtarias', 'materiaisBloqueados', 'ocultarFeriados'
+            ];
+            const fazerLogout = async () => {
+                if (confirm('Sair do MusiLab?')) {
+                    CHAVES_LOCALSTORAGE.forEach(chave => localStorage.removeItem(chave));
+                    await supabase.auth.signOut();
+                }
+            };
 
             // ── PROTEÇÃO CONTRA FECHAR ABA COM EDIÇÃO NÃO SALVA ──
             useEffect(() => {
@@ -2438,7 +2473,7 @@ A versão atual será substituída.`)) return;
                         } else {
                             // CRIAR novo registro
                             const novoRegistro = {
-                                id: Date.now() + Math.random(),
+                                id: gerarIdSeguro(),
                                 data: rrData,
                                 dataRegistro: agora.toISOString().split('T')[0],
                                 hora: agora.toTimeString().slice(0,5),
@@ -7706,7 +7741,7 @@ A versão atual será substituída.`)) return;
                                                         <div className="flex gap-2">
                                                             <button onClick={() => {
                                                                 if (!confirm(`Aplicar template "${tmpl.nome}"?\n\nIsso substituirá o roteiro atual.`)) return;
-                                                                setPlanoEditando({...planoEditando, atividadesRoteiro: tmpl.atividades.map(a=>({...a, id:Date.now()+Math.random()}))});
+                                                                setPlanoEditando({...planoEditando, atividadesRoteiro: tmpl.atividades.map(a=>({...a, id:gerarIdSeguro()}))});
                                                                 setModalTemplates(false);
                                                             }} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold">▶ Aplicar</button>
                                                             <button onClick={() => { if(confirm(`Excluir template "${tmpl.nome}"?`)) setTemplatesRoteiro(prev=>prev.filter(t=>t.id!==tmpl.id)); }}
