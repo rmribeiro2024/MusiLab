@@ -11,6 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
     <style>
         .modal-enter { opacity: 0; transform: scale(0.95); }
         .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 300ms, transform 300ms; }
@@ -57,6 +58,18 @@
         var SUPABASE_URL = 'https://eufwttfndthjrvxtturl.supabase.co';
         var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1Znd0dGZuZHRoanJ2eHR0dXJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2Mzg4NjgsImV4cCI6MjA4NzIxNDg2OH0.-4soPgR28aL_EwjJXcrBzfLGF4MblxG2iDZC2LD6B0Y';
         var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ── SANITIZAÇÃO XSS ──
+        // Usa DOMPurify para limpar HTML antes de renderizar no DOM.
+        // Permite apenas tags seguras de formatação de texto (sem script, iframe, etc).
+        function sanitizar(html) {
+            if (!html) return '';
+            if (typeof DOMPurify === 'undefined') return html; // fallback se CDN falhar
+            return DOMPurify.sanitize(html, {
+                ALLOWED_TAGS: ['b', 'i', 'u', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'p', 'span'],
+                ALLOWED_ATTR: [], // nenhum atributo permitido (bloqueia onclick, href malicioso, etc)
+            });
+        }
 
         // ── SYNC ROBUSTO: upsert por item individual com retry ──
         // Cada item precisa ter um campo 'id' único para o upsert funcionar.
@@ -287,99 +300,66 @@
         const conceitosIniciais = ["Pulsação", "Ritmo", "Melodia", "Movimento", "Canto", "Instrumentos", "Percussão Corporal", "Criação", "Improvisação"];
         const unidadesIniciais = ["Flauta Doce", "Canto Coral", "Instrumentos Orff", "Educação Musical Geral", "Música e Movimento"];
 
-        // ── FERIADOS: cálculo automático para qualquer ano ──
-        // Algoritmo de Meeus/Jones/Butcher para calcular a Páscoa
-        function calcularPascoa(ano) {
-            const a = ano % 19;
-            const b = Math.floor(ano / 100);
-            const c = ano % 100;
-            const d = Math.floor(b / 4);
-            const e = b % 4;
-            const f = Math.floor((b + 8) / 25);
-            const g = Math.floor((b - f + 1) / 3);
-            const h = (19 * a + b - d - g + 15) % 30;
-            const i = Math.floor(c / 4);
-            const k = c % 4;
-            const l = (32 + 2 * e + 2 * i - h - k) % 7;
-            const m = Math.floor((a + 11 * h + 22 * l) / 451);
-            const mes = Math.floor((h + l - 7 * m + 114) / 31);
-            const dia = ((h + l - 7 * m + 114) % 31) + 1;
-            return new Date(ano, mes - 1, dia);
-        }
-
-        function getFeriadosMoveis(ano) {
-            const pascoa = calcularPascoa(ano);
-            const fmt = (d) => d.toISOString().split('T')[0];
-            const addDias = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
-            return [
-                { data: fmt(addDias(pascoa, -48)), nome: 'Carnaval' },
-                { data: fmt(addDias(pascoa, -2)),  nome: 'Sexta-feira Santa' },
-                { data: fmt(pascoa),                nome: 'Páscoa' },
-                { data: fmt(addDias(pascoa, 60)),  nome: 'Corpus Christi' },
-            ];
-        }
-
+        // Base de Feriados Nacionais do Brasil (2024-2030)
         const feriadosNacionais = {
+            // Feriados fixos
             fixos: [
-                { mes: 1,  dia: 1,  nome: "Ano Novo" },
-                { mes: 4,  dia: 21, nome: "Tiradentes" },
-                { mes: 5,  dia: 1,  nome: "Dia do Trabalho" },
-                { mes: 9,  dia: 7,  nome: "Independência do Brasil" },
+                { mes: 1, dia: 1, nome: "Ano Novo" },
+                { mes: 4, dia: 21, nome: "Tiradentes" },
+                { mes: 5, dia: 1, nome: "Dia do Trabalho" },
+                { mes: 9, dia: 7, nome: "Independência do Brasil" },
                 { mes: 10, dia: 12, nome: "Nossa Senhora Aparecida" },
-                { mes: 11, dia: 2,  nome: "Finados" },
+                { mes: 11, dia: 2, nome: "Finados" },
                 { mes: 11, dia: 15, nome: "Proclamação da República" },
                 { mes: 11, dia: 20, nome: "Consciência Negra" },
                 { mes: 12, dia: 25, nome: "Natal" }
             ],
-            // moveis agora é calculado dinamicamente — sem limite de ano
-            moveis: new Proxy({}, {
-                get(_, ano) {
-                    const n = Number(ano);
-                    if (isNaN(n)) return undefined;
-                    return getFeriadosMoveis(n);
-                }
-            })
+            // Feriados móveis (Carnaval, Páscoa, Corpus Christi)
+            moveis: {
+                2024: [
+                    { data: '2024-02-13', nome: 'Carnaval' },
+                    { data: '2024-03-29', nome: 'Sexta-feira Santa' },
+                    { data: '2024-03-31', nome: 'Páscoa' },
+                    { data: '2024-05-30', nome: 'Corpus Christi' }
+                ],
+                2025: [
+                    { data: '2025-03-04', nome: 'Carnaval' },
+                    { data: '2025-04-18', nome: 'Sexta-feira Santa' },
+                    { data: '2025-04-20', nome: 'Páscoa' },
+                    { data: '2025-06-19', nome: 'Corpus Christi' }
+                ],
+                2026: [
+                    { data: '2026-02-17', nome: 'Carnaval' },
+                    { data: '2026-04-03', nome: 'Sexta-feira Santa' },
+                    { data: '2026-04-05', nome: 'Páscoa' },
+                    { data: '2026-06-04', nome: 'Corpus Christi' }
+                ],
+                2027: [
+                    { data: '2027-02-09', nome: 'Carnaval' },
+                    { data: '2027-03-26', nome: 'Sexta-feira Santa' },
+                    { data: '2027-03-28', nome: 'Páscoa' },
+                    { data: '2027-05-27', nome: 'Corpus Christi' }
+                ],
+                2028: [
+                    { data: '2028-02-29', nome: 'Carnaval' },
+                    { data: '2028-04-14', nome: 'Sexta-feira Santa' },
+                    { data: '2028-04-16', nome: 'Páscoa' },
+                    { data: '2028-06-15', nome: 'Corpus Christi' }
+                ],
+                2029: [
+                    { data: '2029-02-13', nome: 'Carnaval' },
+                    { data: '2029-03-30', nome: 'Sexta-feira Santa' },
+                    { data: '2029-04-01', nome: 'Páscoa' },
+                    { data: '2029-05-31', nome: 'Corpus Christi' }
+                ],
+                2030: [
+                    { data: '2030-03-05', nome: 'Carnaval' },
+                    { data: '2030-04-19', nome: 'Sexta-feira Santa' },
+                    { data: '2030-04-21', nome: 'Páscoa' },
+                    { data: '2030-06-20', nome: 'Corpus Christi' }
+                ]
+            }
         };
-
-        // ── COMPONENTES GLOBAIS: Modal de Confirmação e Toast ──
-        // Substitui confirm() e alert() nativos por UI React bonita e mobile-friendly
-        function ModalConfirmacao({ config, onConfirm, onCancel }) {
-            if (!config) return null;
-            return (
-                <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center p-4 z-[9999]" onClick={onCancel}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
-                        {config.icone && <div className="text-4xl text-center mb-3">{config.icone}</div>}
-                        <h3 className="text-lg font-bold text-gray-800 text-center mb-2">{config.titulo}</h3>
-                        {config.mensagem && <p className="text-gray-600 text-sm text-center mb-6 whitespace-pre-line">{config.mensagem}</p>}
-                        <div className="flex gap-3">
-                            <button onClick={onCancel}
-                                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold transition text-sm">
-                                {config.labelCancelar || 'Cancelar'}
-                            </button>
-                            <button onClick={onConfirm}
-                                className={`flex-1 py-3 rounded-xl font-bold transition text-sm text-white ${config.perigo ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
-                                {config.labelConfirmar || 'Confirmar'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        function ToastNotificacao({ toasts }) {
-            if (!toasts || toasts.length === 0) return null;
-            return (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 items-center pointer-events-none">
-                    {toasts.map(t => (
-                        <div key={t.id} className={`px-5 py-3 rounded-2xl shadow-lg text-white text-sm font-semibold flex items-center gap-2 animate-pulse
-                            ${t.tipo === 'erro' ? 'bg-red-500' : t.tipo === 'aviso' ? 'bg-amber-500' : 'bg-emerald-500'}`}>
-                            <span>{t.tipo === 'erro' ? '❌' : t.tipo === 'aviso' ? '⚠️' : '✅'}</span>
-                            {t.mensagem}
-                        </div>
-                    ))}
-                </div>
-            );
-        }
 
         function BancoPlanos({ session }) {
             const userId = session?.user?.id;
@@ -408,20 +388,8 @@
             const [filtroCompasso, setFiltroCompasso] = useState('Todos');
             const [filtroAndamento, setFiltroAndamento] = useState('Todos');
             const [filtroEstrutura, setFiltroEstrutura] = useState('Todas'); 
-
-            // ── MODAL DE CONFIRMAÇÃO E TOAST (substitui confirm/alert nativos) ──
-            const [modalConfirm, setModalConfirm] = useState(null); // { titulo, mensagem, icone, labelConfirmar, labelCancelar, perigo, onConfirm }
-            const [toasts, setToasts] = useState([]);
-
-            const mostrarToast = (mensagem, tipo = 'sucesso') => {
-                const id = Date.now();
-                setToasts(prev => [...prev, { id, mensagem, tipo }]);
-                setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
-            };
-
-            const confirmar = (config) => new Promise(resolve => {
-                setModalConfirm({ ...config, onConfirm: () => { setModalConfirm(null); resolve(true); }, onCancel: () => { setModalConfirm(null); resolve(false); } });
-            });
+            
+            // Opções dos elementos musicais
             const ESTILOS_OPCOES = ['Canção Infantil', 'Cantiga de Roda', 'Folclórica Brasileira', 'MPB', 'Samba', 'Bossa Nova', 'Forró', 'Pop', 'Rock', 'Música Erudita', 'Coral', 'Instrumental', 'Percussão Corporal', 'Jogo Musical', 'Música Temática', 'Música Clássica'];
             const COMPASSOS_OPCOES = ['2/4', '3/4', '4/4', '6/8'];
             const TONALIDADES_OPCOES = ['Maior', 'Menor', 'Pentatônica', 'Modal'];
@@ -650,7 +618,7 @@
                         if (modalGradeSemanal)     { setModalGradeSemanal(false); return; }
                         if (modalEventos)          { setModalEventos(false); return; }
                         if (statusDropdownId)      { setStatusDropdownId(null); return; }
-                        if (modoEdicao)            { confirmar({ titulo: 'Sair sem salvar?', mensagem: 'As alterações não salvas serão perdidas.', icone: '⚠️', labelConfirmar: 'Sair', perigo: true }).then(ok => { if(ok) fecharModal(); }); return; }
+                        if (modoEdicao)            { if(confirm('Sair sem salvar?')) fecharModal(); return; }
                         if (planoSelecionado)      { fecharModal(); return; }
                         return;
                     }
@@ -877,16 +845,6 @@
                 if(syncTimeout.current[key]) clearTimeout(syncTimeout.current[key]);
                 syncTimeout.current[key] = setTimeout(fn, 2000);
             };
-
-            // ── CLEANUP DE TIMEOUTS NO UNMOUNT (evita memory leaks e erros pós-logout) ──
-            useEffect(() => {
-                return () => {
-                    // Cancela todos os timeouts de sync pendentes
-                    Object.values(syncTimeout.current).forEach(id => clearTimeout(id));
-                    // Cancela timeout do indicador de salvamento
-                    if (timeoutSalvamento.current) clearTimeout(timeoutSalvamento.current);
-                };
-            }, []);
             useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('planos', ()=>syncToSupabase('planos',planos,userId,onSyncStatus)); }, [planos]);
             useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('atividades', ()=>syncToSupabase('atividades',atividades,userId,onSyncStatus)); }, [atividades]);
             useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('repertorio', ()=>syncToSupabase('repertorio',repertorio,userId,onSyncStatus)); }, [repertorio]);
@@ -909,8 +867,7 @@
                 'faixasEtarias', 'materiaisBloqueados', 'ocultarFeriados'
             ];
             const fazerLogout = async () => {
-                const ok = await confirmar({ titulo: 'Sair do MusiLab?', mensagem: 'Seus dados estão salvos na nuvem.', icone: '👋', labelConfirmar: 'Sair', labelCancelar: 'Ficar' });
-                if (ok) {
+                if (confirm('Sair do MusiLab?')) {
                     CHAVES_LOCALSTORAGE.forEach(chave => localStorage.removeItem(chave));
                     await supabase.auth.signOut();
                 }
@@ -987,7 +944,7 @@
                 });
             }, [planos, busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroFavorito, filtroStatus, ordenacaoCards]);
 
-            const sugerirBNCC = async () => {
+            const sugerirBNCC = () => {
                 const textoAnalise = (
                     (planoEditando.titulo || "") + " " + 
                     (planoEditando.tema || "") + " " + 
@@ -996,56 +953,36 @@
                     (planoEditando.conceitos || []).join(" ")
                 ).toLowerCase();
 
-                // Detecção de segmento mais abrangente
-                const faixasPlano = planoEditando.faixaEtaria || [];
-                const faixasStr = faixasPlano.join(' ').toLowerCase();
-
-                const ehInfantil = faixasPlano.some(f => {
-                    const fl = f.toLowerCase();
-                    return fl.includes('infantil') || fl.includes('berçário') || 
-                           fl.includes('maternal') || fl.includes('creche') ||
-                           fl.includes('pré') || fl.includes('pre-escola');
-                });
-
-                const ehEF69 = faixasPlano.some(f => 
-                    ['6°','7°','8°','9°','6º','7º','8º','9º','6o','7o','8o','9o'].some(s => f.includes(s))
-                );
-
-                // EJA e Adultos usam habilidades do EF6-9 como referência
-                const ehEJAouAdultos = faixasStr.includes('eja') || faixasStr.includes('adulto') || 
-                                       faixasStr.includes('jovens') || faixasStr.includes('médio') ||
-                                       faixasStr.includes('medio');
-
-                const segmentoDetectado = ehInfantil ? 'Ed. Infantil' : 
-                                          (ehEF69 || ehEJAouAdultos) ? 'EF 6-9' : 'EF 1-5';
+                // Filtrar por segmento se faixa etária for Infantil
+                const faixas = planoEditando.faixaEtaria || [];
+                const ehInfantil = faixas.some(f => f.toLowerCase().includes('infantil') || f.toLowerCase().includes('berçário') || f.toLowerCase().includes('maternal'));
+                const ehEF69 = faixas.some(f => ['6°','7°','8°','9°','6º','7º','8º','9º'].some(s => f.includes(s)));
 
                 const sugestoes = bancoBNCC.filter(item => {
                     const keyMatch = item.keywords.some(key => textoAnalise.includes(key));
                     if (!keyMatch) return false;
                     if (ehInfantil && item.segmento === 'Infantil') return true;
-                    if ((ehEF69 || ehEJAouAdultos) && item.segmento === 'EF6-9') return true;
-                    if (!ehInfantil && !ehEF69 && !ehEJAouAdultos && item.segmento === 'EF1-5') return true;
-                    if (!item.segmento) return true;
+                    if (ehEF69 && item.segmento === 'EF6-9') return true;
+                    if (!ehInfantil && !ehEF69 && item.segmento === 'EF1-5') return true;
+                    if (!item.segmento) return true; // compatibilidade
                     return false;
                 });
 
                 if (sugestoes.length === 0) {
+                    // fallback sem filtro de segmento
                     const todas = bancoBNCC.filter(item => item.keywords.some(key => textoAnalise.includes(key)));
-                    if (todas.length === 0) {
-                        mostrarToast('Adicione mais texto (título, objetivos) para receber sugestões.', 'aviso');
-                        return;
-                    }
+                    if (todas.length === 0) { alert("Adicione mais texto (título, objetivos) para receber sugestões."); return; }
                     const formatadas = todas.map(s => `[${s.segmento||'BNCC'}] ${s.codigo} - ${s.desc}`);
                     const atuais = planoEditando.habilidadesBNCC || [];
                     setPlanoEditando({ ...planoEditando, habilidadesBNCC: [...new Set([...atuais, ...formatadas])] });
-                    mostrarToast(`✨ ${todas.length} sugestões encontradas!`);
+                    alert(`✨ ${todas.length} sugestões encontradas!`);
                     return;
                 }
 
                 const formatadas = sugestoes.map(s => `[${s.segmento}] ${s.codigo} - ${s.desc}`);
                 const atuais = planoEditando.habilidadesBNCC || [];
                 setPlanoEditando({ ...planoEditando, habilidadesBNCC: [...new Set([...atuais, ...formatadas])] });
-                mostrarToast(`✨ ${sugestoes.length} sugestão(ões) para ${segmentoDetectado}!`);
+                alert(`✨ ${sugestoes.length} sugestão(ões) encontrada(s) para ${ehInfantil ? 'Ed. Infantil' : ehEF69 ? 'EF 6-9' : 'EF 1-5'}!`);
             };
 
             // --- PDF PREMIUM (CORRIGIDO: SEM EMOJIS) ---
@@ -1371,10 +1308,16 @@
                 reader.onload = (e) => {
                     try {
                         const backup = JSON.parse(e.target.result);
-                        if (!backup.planos) { mostrarToast('Arquivo inválido.', 'erro'); return; }
-                        const resumo = `Backup de ${backup.timestamp ? new Date(backup.timestamp).toLocaleString('pt-BR') : 'data desconhecida'}\n\n${backup.planos?.length||0} planos • ${backup.atividades?.length||0} atividades • ${backup.sequencias?.length||0} sequências • ${backup.repertorio?.length||0} músicas\n\nOs dados atuais serão substituídos.`;
-                        confirmar({ titulo: 'Restaurar backup?', mensagem: resumo, icone: '📦', labelConfirmar: 'Restaurar', perigo: true }).then(ok => {
-                        if (ok) {
+                        if (!backup.planos) { alert('❌ Arquivo inválido.'); return; }
+                        const resumo = `📦 Backup de ${backup.timestamp ? new Date(backup.timestamp).toLocaleString('pt-BR') : 'data desconhecida'}
+
+• ${backup.planos?.length||0} planos
+• ${backup.atividades?.length||0} atividades
+• ${backup.sequencias?.length||0} sequências
+• ${backup.repertorio?.length||0} músicas
+
+⚠️ Os dados atuais serão substituídos. Continuar?`;
+                        if (confirm(resumo)) {
                             setPlanos(backup.planos);
                             if(backup.conceitos) setConceitos(backup.conceitos);
                             if(backup.unidades) setUnidades(backup.unidades);
@@ -1395,10 +1338,9 @@
                             if(backup.dinamicasCustomizadas) setDinamicasCustomizadas(backup.dinamicasCustomizadas);
                             if(backup.energiasCustomizadas) setEnergiasCustomizadas(backup.energiasCustomizadas);
                             if(backup.instrumentacaoCustomizada) setInstrumentacaoCustomizada(backup.instrumentacaoCustomizada);
-                            mostrarToast('Backup restaurado com sucesso!');
-                        } // fim if ok
-                        }); // fim confirmar
-                    } catch { mostrarToast('Arquivo inválido ou corrompido.', 'erro'); }
+                            alert('✅ Backup restaurado! ' + backup.planos.length + ' planos | ' + (backup.repertorio?.length||0) + ' musicas | ' + (backup.atividades?.length||0) + ' atividades');
+                        }
+                    } catch { alert('❌ Arquivo inválido ou corrompido.'); }
                 }; reader.readAsText(file); event.target.value = '';
             };
 
@@ -1440,11 +1382,11 @@
 
             const salvarPlano = () => {
                 if (!planoEditando.titulo || !planoEditando.titulo.trim()) { 
-                    mostrarToast('Preencha o título do plano antes de salvar.', 'aviso'); 
+                    alert("⚠️ Preencha o título do plano antes de salvar."); 
                     return; 
                 }
                 if (!planoEditando.objetivoGeral || !planoEditando.objetivoGeral.trim()) { 
-                    mostrarToast('Preencha o objetivo geral antes de salvar.', 'aviso'); 
+                    alert("⚠️ Preencha o objetivo geral antes de salvar."); 
                     return; 
                 }
                 const planoParaSalvar = {
@@ -1456,6 +1398,7 @@
                 };
                 const existe = planos.find(p => p.id === planoParaSalvar.id);
                 if (existe) {
+                    // Salvar histórico de versões (últimas 3)
                     const versaoAnterior = { ...existe, _versaoSalvaEm: new Date().toISOString() };
                     const historicoAtual = existe._historicoVersoes || [];
                     const novoHistorico = [versaoAnterior, ...historicoAtual].slice(0, 3);
@@ -1463,24 +1406,22 @@
                 } else { 
                     setPlanos([...planos, planoParaSalvar]); 
                 }
-                mostrarToast('Plano salvo com sucesso!');
                 setModoEdicao(false); setPlanoEditando(null);
             };
 
-            const restaurarVersao = async (plano, versao) => {
-                const ok = await confirmar({ titulo: 'Restaurar versão?', mensagem: `Versão de ${new Date(versao._versaoSalvaEm).toLocaleString('pt-BR')}\n\nA versão atual será substituída.`, icone: '🔄', labelConfirmar: 'Restaurar', perigo: true });
-                if (!ok) return;
+            // Restaurar versão anterior do plano
+            const restaurarVersao = (plano, versao) => {
+                if (!confirm(`Restaurar versão de ${new Date(versao._versaoSalvaEm).toLocaleString('pt-BR')}?
+
+A versão atual será substituída.`)) return;
                 const historicoAtual = plano._historicoVersoes || [];
                 const versaoRestaurada = { ...versao, _historicoVersoes: historicoAtual, _versaoSalvaEm: undefined };
                 delete versaoRestaurada._versaoSalvaEm;
                 setPlanos(planos.map(p => p.id === plano.id ? versaoRestaurada : p));
-                mostrarToast('Versão restaurada!');
+                alert('✅ Versão restaurada!');
             };
 
-            const excluirPlano = async (id) => {
-                const ok = await confirmar({ titulo: 'Excluir plano?', mensagem: 'Esta ação não pode ser desfeita.', icone: '🗑️', labelConfirmar: 'Excluir', perigo: true });
-                if (ok) { setPlanos(planos.filter(p => p.id !== id)); setPlanoSelecionado(null); }
-            };
+            const excluirPlano = (id) => { if (confirm("Excluir?")) { setPlanos(planos.filter(p => p.id !== id)); setPlanoSelecionado(null); } };
             const fecharModal = () => { setPlanoSelecionado(null); setModoEdicao(false); setPlanoEditando(null); setNovoRecursoUrl(""); };
 
             const toggleConceito = (c) => { const atual = planoEditando.conceitos || []; setPlanoEditando({...planoEditando, conceitos: atual.includes(c) ? atual.filter(x=>x!==c) : [...atual, c]}); };
@@ -1548,13 +1489,13 @@
                     recursos: recursosUnicos
                 });
                 
-                mostrarToast('Atividade vinculada ao plano!');
+                alert(`✅ Atividade "${atividade.nome}" vinculada ao plano!\n\nDados exportados:\n• Nome e descrição → Setlist\n• Tags → Tags do plano\n• Materiais → Materiais do plano\n• Links/Imagens → Recursos do plano`);
             };
             
             const adicionarDataEdicao = () => { if(dataEdicao && !(planoEditando.historicoDatas||[]).includes(dataEdicao)) setPlanoEditando({...planoEditando, historicoDatas: [...(planoEditando.historicoDatas||[]), dataEdicao].sort()}); setDataEdicao(""); };
             const removerDataEdicao = (d) => { setPlanoEditando({...planoEditando, historicoDatas: planoEditando.historicoDatas.filter(x=>x!==d)}); };
             const adicionarDataAulaVisualizacao = () => { if(novaDataAula && !(planoSelecionado.historicoDatas||[]).includes(novaDataAula)){ const n = {...planoSelecionado, historicoDatas: [...(planoSelecionado.historicoDatas||[]), novaDataAula].sort()}; setPlanos(planos.map(p=>p.id===n.id?n:p)); setPlanoSelecionado(n); } setNovaDataAula(""); };
-            const removerDataAulaVisualizacao = (d) => { confirmar({ titulo: "Remover data?", icone: "🗑️", labelConfirmar: "Remover", perigo: true }).then(ok => { if(!ok) return; const n = {...planoSelecionado, historicoDatas: planoSelecionado.historicoDatas.filter(x=>x!==d)}; setPlanos(planos.map(p=>p.id===n.id?n:p)); setPlanoSelecionado(n); }); };
+            const removerDataAulaVisualizacao = (d) => { if(confirm("Remover?")){ const n = {...planoSelecionado, historicoDatas: planoSelecionado.historicoDatas.filter(x=>x!==d)}; setPlanos(planos.map(p=>p.id===n.id?n:p)); setPlanoSelecionado(n); } };
             const adicionarConceitoNovo = () => { if(novoConceito.trim()){ const c=novoConceito.trim(); if(!(planoEditando.conceitos||[]).includes(c)) setPlanoEditando({...planoEditando, conceitos:[...(planoEditando.conceitos||[]), c]}); if(!conceitos.includes(c)) setConceitos([...conceitos, c].sort()); setNovoConceito(""); setAdicionandoConceito(false); } };
             
             // Funções para TAGS (simetria com Conceitos)
@@ -1602,7 +1543,7 @@
                         const musicasVinculadas = atualizado[atividadeIndex].musicasVinculadas || [];
                         
                         if(musicasVinculadas.find(m => m.id === musica.id)) {
-                            mostrarToast('Música já vinculada a esta atividade!', 'aviso');
+                            alert('⚠️ Música já vinculada a esta atividade!');
                             return;
                         }
                         
@@ -1621,7 +1562,7 @@
                         localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
                         
                         setAtividadeVinculandoMusica(null);
-                        mostrarToast('Música vinculada!');
+                        alert('✅ Música vinculada!');
                         return;
                     }
                 }
@@ -1631,7 +1572,7 @@
                     const musicasVinculadas = atividadeEditando.musicasVinculadas || [];
                     
                     if(musicasVinculadas.find(m => m.id === musica.id)) {
-                        mostrarToast('Música já vinculada a esta atividade!', 'aviso');
+                        alert('⚠️ Música já vinculada a esta atividade!');
                         return;
                     }
                     
@@ -1657,7 +1598,7 @@
                     localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
                     
                     setAtividadeVinculandoMusica(null);
-                    mostrarToast('Música vinculada!');
+                    alert('✅ Música vinculada!');
                 }
             };
             
@@ -1686,7 +1627,7 @@
                 localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
                 
                 setModalImportarMusica(false);
-                mostrarToast('Música importada!');
+                alert('✅ Música importada!');
             };
             
             const importarAtividadeParaPlano = (atividade) => {
@@ -1707,7 +1648,7 @@
                 });
                 
                 setModalImportarAtividade(false);
-                mostrarToast('Atividade importada!');
+                alert('✅ Atividade importada!');
             };
             
             const toggleRecursosAtiv = (idx) => {
@@ -1771,7 +1712,7 @@
 
             const salvarRegistro = () => {
                 if (!novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.naoFuncionou && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
-                    mostrarToast("Preencha ao menos um campo!", "aviso"); return;
+                    alert("Preencha ao menos um campo!"); return;
                 }
                 const agora = new Date();
                 const { dataAula, ...camposRegistro } = novoRegistro;
@@ -1817,8 +1758,8 @@
                 setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('');
             };
 
-            const excluirRegistro = async (registroId) => {
-                const _okReg = await confirmar({ titulo: 'Excluir registro?', mensagem: 'Esta ação não pode ser desfeita.', icone: '🗑️', labelConfirmar: 'Excluir', perigo: true }); if(!_okReg) return;
+            const excluirRegistro = (registroId) => {
+                if(!confirm("Excluir este registro?")) return;
                 const atualizado = {
                     ...planoParaRegistro,
                     registrosPosAula: planoParaRegistro.registrosPosAula.filter(r => r.id !== registroId)
@@ -1878,11 +1819,11 @@
 
             const salvarEvento = () => {
                 if (!eventoEditando.nome.trim()) {
-                    mostrarToast('Preencha o nome do evento!', 'aviso');
+                    alert('⚠️ Preencha o nome do evento!');
                     return;
                 }
                 if (!eventoEditando.data) {
-                    mostrarToast('Preencha a data!', 'aviso');
+                    alert('⚠️ Preencha a data!');
                     return;
                 }
                 
@@ -1893,11 +1834,11 @@
                     setEventosEscolares([...eventosEscolares, eventoEditando]);
                 }
                 setEventoEditando(null);
-                mostrarToast('Evento salvo!');
+                alert('✅ Evento salvo!');
             };
 
-            const excluirEvento = async (id) => {
-                const _okEvt = await confirmar({ titulo: 'Excluir evento?', icone: '🗑️', labelConfirmar: 'Excluir', perigo: true }); if (_okEvt) {
+            const excluirEvento = (id) => {
+                if (confirm('Excluir evento?')) {
                     setEventosEscolares(eventosEscolares.filter(e => e.id !== id));
                 }
             };
@@ -1943,15 +1884,15 @@
 
             const salvarSequencia = () => {
                 if (!sequenciaEditando.titulo.trim()) {
-                    mostrarToast('Preencha o título da sequência!', 'aviso');
+                    alert('⚠️ Preencha o título da sequência!');
                     return;
                 }
                 if (!sequenciaEditando.escolaId) {
-                    mostrarToast('Selecione uma escola!', 'aviso');
+                    alert('⚠️ Selecione uma escola!');
                     return;
                 }
                 if (!sequenciaEditando.segmentos || sequenciaEditando.segmentos.length === 0) {
-                    mostrarToast('Selecione pelo menos um segmento!', 'aviso');
+                    alert('⚠️ Selecione pelo menos um segmento!');
                     return;
                 }
                 
@@ -1969,8 +1910,8 @@
                 setSequenciaEditando(null);
             };
 
-            const excluirSequencia = async (id) => {
-                const _okSeq = await confirmar({ titulo: 'Excluir sequência?', icone: '🗑️', labelConfirmar: 'Excluir', perigo: true }); if (_okSeq) {
+            const excluirSequencia = (id) => {
+                if (confirm('Excluir sequência?')) {
                     setSequencias(sequencias.filter(s => s.id !== id));
                 }
             };
@@ -2063,7 +2004,7 @@
 
             const salvarAtividade = () => {
                 if (!atividadeEditando.nome.trim()) {
-                    mostrarToast('Preencha o nome da atividade!', 'aviso');
+                    alert('⚠️ Preencha o nome da atividade!');
                     return;
                 }
                 const existe = atividades.find(a => a.id === atividadeEditando.id);
@@ -2073,11 +2014,11 @@
                     setAtividades([...atividades, atividadeEditando]);
                 }
                 setAtividadeEditando(null);
-                mostrarToast('Atividade salva!');
+                alert('✅ Atividade salva!');
             };
 
-            const excluirAtividade = async (id) => {
-                const _okAtv = await confirmar({ titulo: 'Excluir atividade?', icone: '🗑️', labelConfirmar: 'Excluir', perigo: true }); if (_okAtv) {
+            const excluirAtividade = (id) => {
+                if (confirm('Excluir atividade?')) {
                     setAtividades(atividades.filter(a => a.id !== id));
                 }
             };
@@ -2146,7 +2087,7 @@
                 }));
                 
                 setModalAdicionarAoPlano(null);
-                mostrarToast('Atividade vinculada ao plano!');
+                alert(`✅ Atividade "${atividade.nome}" vinculada ao plano "${plano.titulo}"!\n\n📦 Dados exportados:\n• Nome + Descrição → Setlist\n• Conceitos → Conceitos do plano\n• Tags → Tags do plano\n• Materiais → Materiais do plano\n• Links/Imagens → Recursos do plano\n• Unidade → Unidades do plano`);
             };
 
             // Funções auxiliares para tags
@@ -2156,15 +2097,15 @@
             const gtAddAno = () => {
                 const ano = gtAnoNovo.trim();
                 if (!ano) return;
-                if (anosLetivos.find(a => a.ano === ano)) { mostrarToast('Ano letivo já existe!', 'aviso'); return; }
+                if (anosLetivos.find(a => a.ano === ano)) { alert('Ano letivo já existe!'); return; }
                 setAnosLetivos([...anosLetivos, { id: Date.now(), ano, status: 'ativo', escolas: [] }]);
                 setGtAnoNovo('');
             };
             const gtMudarStatusAno = (anoId, novoStatus) => {
                 setAnosLetivos(anosLetivos.map(a => a.id === anoId ? { ...a, status: novoStatus } : a));
             };
-            const gtRemoveAno = async (anoId) => {
-                const _okAno = await confirmar({ titulo: 'Remover ano letivo?', mensagem: 'Todas as escolas e turmas vinculadas serão removidas.', icone: '🗑️', labelConfirmar: 'Remover', perigo: true }); if (!_okAno) return;
+            const gtRemoveAno = (anoId) => {
+                if (!confirm('Remover ano letivo e todas as suas escolas/turmas?')) return;
                 setAnosLetivos(anosLetivos.filter(a => a.id !== anoId));
                 if (gtAnoSel == anoId) { setGtAnoSel(''); setGtEscolaSel(''); setGtSegmentoSel(''); }
             };
@@ -2173,13 +2114,13 @@
                 if (!nome || !gtAnoSel) return;
                 setAnosLetivos(anosLetivos.map(a => {
                     if (a.id != gtAnoSel) return a;
-                    if (a.escolas.find(e => e.nome === nome)) { mostrarToast('Escola já existe neste ano!', 'aviso'); return a; }
+                    if (a.escolas.find(e => e.nome === nome)) { alert('Escola já existe neste ano!'); return a; }
                     return { ...a, escolas: [...a.escolas, { id: Date.now(), nome, segmentos: [] }] };
                 }));
                 setGtEscolaNome('');
             };
-            const gtRemoveEscola = async (anoId, escolaId) => {
-                const _okEsc = await confirmar({ titulo: 'Remover escola?', mensagem: 'Todos os segmentos e turmas serão removidos.', icone: '🗑️', labelConfirmar: 'Remover', perigo: true }); if (!_okEsc) return;
+            const gtRemoveEscola = (anoId, escolaId) => {
+                if (!confirm('Remover escola e todos os seus segmentos/turmas?')) return;
                 setAnosLetivos(anosLetivos.map(a => a.id != anoId ? a : { ...a, escolas: a.escolas.filter(e => e.id !== escolaId) }));
                 if (gtEscolaSel == escolaId) { setGtEscolaSel(''); setGtSegmentoSel(''); }
             };
@@ -2190,7 +2131,7 @@
                     if (a.id != gtAnoSel) return a;
                     return { ...a, escolas: a.escolas.map(e => {
                         if (e.id != gtEscolaSel) return e;
-                        if (e.segmentos.find(s => s.nome === nome)) { mostrarToast('Segmento já existe!', 'aviso'); return e; }
+                        if (e.segmentos.find(s => s.nome === nome)) { alert('Segmento já existe!'); return e; }
                         return { ...e, segmentos: [...e.segmentos, { id: Date.now(), nome, turmas: [] }] };
                     })};
                 }));
@@ -2215,7 +2156,7 @@
                         if (e.id != gtEscolaSel) return e;
                         return { ...e, segmentos: e.segmentos.map(s => {
                             if (s.id != gtSegmentoSel) return s;
-                            if (s.turmas.find(t => t.nome === nome)) { mostrarToast('Turma já existe!', 'aviso'); return s; }
+                            if (s.turmas.find(t => t.nome === nome)) { alert('Turma já existe!'); return s; }
                             return { ...s, turmas: [...s.turmas, { id: Date.now(), nome }] };
                         })};
                     })};
@@ -2238,8 +2179,8 @@
             // --- CADASTRO RÁPIDO DE FAIXA ETÁRIA ---
             const salvarNovaFaixa = () => {
                 const nome = novaFaixaNome.trim();
-                if (!nome) { mostrarToast('Digite o nome da faixa etária!', 'aviso'); return; }
-                if (faixas.includes(nome)) { mostrarToast('Essa faixa já existe!', 'aviso'); return; }
+                if (!nome) { alert('Digite o nome da faixa etária!'); return; }
+                if (faixas.includes(nome)) { alert('Essa faixa já existe!'); return; }
                 setFaixas([...faixas, nome]);
                 setNovaFaixaNome('');
                 setModalNovaFaixa(false);
@@ -2254,10 +2195,10 @@
                 const [italic, setItalic] = useState(false);
                 const [underline, setUnderline] = useState(false);
 
-                // Inicializa HTML apenas UMA vez na montagem
+                // Inicializa HTML apenas UMA vez na montagem — sanitizado contra XSS
                 useEffect(() => {
                     if (editorRef.current) {
-                        editorRef.current.innerHTML = value || '';
+                        editorRef.current.innerHTML = sanitizar(value || '');
                     }
                 }, []); // eslint-disable-line
 
@@ -2323,7 +2264,7 @@
             // --- CADASTRO RÁPIDO DE ESCOLA ---
             const salvarNovaEscola = () => {
                 const nome = novaEscolaNome.trim();
-                if (!nome) { mostrarToast('Digite o nome da escola!', 'aviso'); return; }
+                if (!nome) { alert('Digite o nome da escola!'); return; }
                 
                 // Determinar ano letivo alvo
                 const anoId = novaEscolaAnoId || (anosLetivos.find(a => a.status === 'ativo')?.id) || (anosLetivos[0]?.id);
@@ -2350,7 +2291,7 @@
                 setNovaEscolaNome('');
                 setNovaEscolaAnoId('');
                 setModalNovaEscola(false);
-                mostrarToast('Escola cadastrada com sucesso!');
+                alert(`✅ Escola "${nome}" cadastrada com sucesso!`);
             };
 
             // --- FUNÇÕES GESTÃO DE GRADE SEMANAL ---
@@ -2367,12 +2308,12 @@
 
             const salvarGradeSemanal = () => {
                 if (!gradeEditando.anoLetivoId || !gradeEditando.escolaId || !gradeEditando.dataInicio || !gradeEditando.dataFim) {
-                    mostrarToast('Preencha ano letivo, escola e período!', 'aviso');
+                    alert('⚠️ Preencha ano letivo, escola e período!');
                     return;
                 }
                 
                 if (gradeEditando.aulas.length === 0) {
-                    mostrarToast('Adicione pelo menos uma aula!', 'aviso');
+                    alert('⚠️ Adicione pelo menos uma aula!');
                     return;
                 }
                 
@@ -2384,11 +2325,11 @@
                 }
                 
                 setGradeEditando(null);
-                mostrarToast('Grade salva!');
+                alert('✅ Grade salva!');
             };
 
-            const excluirGradeSemanal = async (id) => {
-                const _okGrd = await confirmar({ titulo: 'Excluir grade semanal?', icone: '🗑️', labelConfirmar: 'Excluir', perigo: true }); if (_okGrd) {
+            const excluirGradeSemanal = (id) => {
+                if (confirm('Excluir grade semanal?')) {
                     setGradesSemanas(gradesSemanas.filter(g => g.id !== id));
                 }
             };
@@ -2497,7 +2438,7 @@
             const salvarRegistroRapido = () => {
                 // Verificar se é feriado
                 const feriado = verificarFeriado(rrData);
-                if (feriado) { confirmar({ titulo: `Hoje é feriado!`, mensagem: feriado + '\nDeseja registrar aula mesmo assim?', icone: '📅', labelConfirmar: 'Registrar mesmo assim', labelCancelar: 'Cancelar' }).then(ok => { if (!ok) return; registrarAulaConfirmado(); }); return; } if (false) {
+                if (feriado && !confirm(`⚠️ Hoje é feriado: ${feriado}\n\nDeseja registrar aula mesmo assim?`)) {
                     return;
                 }
                 
@@ -2583,10 +2524,10 @@
                     if (totalAtualizados > 0) msg += `${totalAtualizados} atualizado(s)`;
                     msg += '!';
                     
-                    mostrarToast(msg);
+                    alert(msg);
                     setModalRegistroRapido(false);
                 } else {
-                    mostrarToast('Preencha pelo menos uma turma e selecione um plano.', 'aviso');
+                    alert('⚠️ Preencha pelo menos uma turma e selecione um plano.');
                 }
             };
 
@@ -3609,10 +3550,10 @@
                                                 <button onClick={()=>{
                                                     // Salvar alterações
                                                     setSequencias([...sequencias]);
-                                                    mostrarToast('Alterações salvas!');
+                                                    alert('✅ Alterações salvas!');
                                                 }} className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold">💾 Salvar</button>
                                                 <button onClick={()=>exportarSequenciaPDF(seq)} className="bg-purple-500 text-white px-4 py-2 rounded-lg font-bold">📄 PDF</button>
-                                                <button onClick={()=>{ confirmar({ titulo: 'Excluir sequência?', icone: '🗑️', labelConfirmar: 'Excluir', perigo: true }).then(ok=>{ if(ok){ excluirSequencia(seq.id); setSequenciaDetalhe(null); } }); }} className="bg-red-100 text-red-600 px-4 py-2 rounded-lg font-bold">🗑️</button>
+                                                <button onClick={()=>{if(confirm('Excluir sequência?')){excluirSequencia(seq.id);setSequenciaDetalhe(null);}}} className="bg-red-100 text-red-600 px-4 py-2 rounded-lg font-bold">🗑️</button>
                                             </div>
                                         </div>
 
@@ -4265,7 +4206,7 @@
                                                         className="text-xs text-amber-600 hover:bg-amber-50 px-2 py-1.5 rounded-lg transition" title="Registro Pós-Aula">📝</button>
                                                     <button onClick={(e)=>{e.stopPropagation();editarPlano(plano)}}
                                                         className="text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-100 px-2 py-1.5 rounded-lg transition" title="Editar">✏️</button>
-                                                    <button onClick={(e)=>{e.stopPropagation(); const copia={...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}; setPlanos(prev=>[...prev, copia]); mostrarToast('Plano duplicado!');}}
+                                                    <button onClick={(e)=>{e.stopPropagation(); const copia={...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}; setPlanos(prev=>[...prev, copia]); alert('✅ Plano duplicado! Edite a cópia conforme necessário.');}}
                                                         className="text-xs text-green-500 hover:text-green-700 hover:bg-green-50 px-2 py-1.5 rounded-lg transition" title="Duplicar como novo plano">⎘</button>
                                                     <button onClick={(e)=>{e.stopPropagation();excluirPlano(plano.id)}}
                                                         className="text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1.5 rounded-lg transition" title="Excluir">🗑</button>
@@ -4638,7 +4579,7 @@
                                                         );
                                                     })()}
                                                     <button onClick={() => setMusicaEditando(m)} className="bg-blue-600 text-white px-4 py-1 rounded text-sm font-bold hover:bg-blue-700 mr-1">✏️ Editar</button>
-                                                    <button onClick={() => { confirmar({ titulo: `Excluir "${m.titulo}"?`, icone: '🗑️', labelConfirmar: 'Excluir', perigo: true }).then(ok => { if(ok) setRepertorio(repertorio.filter(r => r.id !== m.id)); }); }} className="bg-red-500 text-white px-4 py-1 rounded text-sm font-bold hover:bg-red-600">🗑️ Excluir</button>
+                                                    <button onClick={() => { if(confirm(`Excluir "${m.titulo}"?`)) { setRepertorio(repertorio.filter(r => r.id !== m.id)); } }} className="bg-red-500 text-white px-4 py-1 rounded text-sm font-bold hover:bg-red-600">🗑️ Excluir</button>
                                                 </div>
                                                 {/* #9: Player embutido */}
                                                 {ytPreviewId===m.id && (() => {
@@ -5251,7 +5192,7 @@
                                             <button 
                                                 onClick={() => {
                                                     if(!musicaEditando.titulo.trim()) {
-                                                        mostrarToast('Título é obrigatório!', 'aviso');
+                                                        alert('⚠️ Título é obrigatório!');
                                                         return;
                                                     }
                                                     if(!confirm('Deseja confirmar o salvamento desta música?')) {
@@ -5284,9 +5225,9 @@
                                                         setPendingAtividadeId(null);
                                                         // Volta para o modal de edição do plano
                                                         setViewMode('planos');
-                                                        mostrarToast('Música salva e vinculada!');
+                                                        alert('✅ Música salva e vinculada à atividade!');
                                                     } else {
-                                                        mostrarToast('Música salva!');
+                                                        alert('✅ Música salva!');
                                                     }
                                                     setMusicaEditando(null);
                                                 }}
@@ -5333,16 +5274,16 @@
 
                                     <div className="bg-blue-50 p-4 rounded-xl">
                                         <h3 className="font-bold mb-2">🎯 Objetivo Geral</h3>
-                                        <div className="rich-editor-area" dangerouslySetInnerHTML={{__html: planoSelecionado.objetivoGeral}} />
+                                        <div className="rich-editor-area" dangerouslySetInnerHTML={{__html: sanitizar(planoSelecionado.objetivoGeral)}} />
                                     </div>
                                     {planoSelecionado.objetivosEspecificos.length > 0 && (
                                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                                             <h3 className="font-bold mb-2 text-gray-800">🎯 Objetivos Específicos</h3>
-                                            <div className="rich-editor-area" dangerouslySetInnerHTML={{__html: 
+                                            <div className="rich-editor-area" dangerouslySetInnerHTML={{__html: sanitizar(
                                                 Array.isArray(planoSelecionado.objetivosEspecificos) && planoSelecionado.objetivosEspecificos.length === 1
                                                     ? planoSelecionado.objetivosEspecificos[0]
                                                     : planoSelecionado.objetivosEspecificos.join('<br/>')
-                                            }} />
+                                            )}} />
                                         </div>
                                     )}
                                     {planoSelecionado.habilidadesBNCC && planoSelecionado.habilidadesBNCC.length > 0 && (
@@ -6227,7 +6168,7 @@
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            confirmar({ titulo: `Remover "${tag}"?`, mensagem: 'Esta ação não pode ser desfeita.', icone: '🗑️', labelConfirmar: 'Remover', perigo: true }).then(ok => { if (ok) {
+                                                            if (confirm(`Remover "${tag}" da lista permanentemente?`)) {
                                                                 setTagsGlobais(tagsGlobais.filter(t => t !== tag));
                                                                 // Remover também do plano atual se estiver selecionada
                                                                 if ((planoEditando.tags||[]).includes(tag)) {
@@ -6236,7 +6177,7 @@
                                                                         tags: planoEditando.tags.filter(t => t !== tag)
                                                                     });
                                                                 }
-                                                            } });
+                                                            }
                                                         }}
                                                         className="text-gray-400 hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-r-full transition-all"
                                                     >
@@ -6380,12 +6321,12 @@
                                                                     type="button"
                                                                     onClick={() => {
                                                                         if(!atividade.nome?.trim()) {
-                                                                            mostrarToast('Nome obrigatório!', 'aviso');
+                                                                            alert('⚠️ Nome obrigatório!');
                                                                             return;
                                                                         }
                                                                         const existe = atividades.find(a => a.nome.toLowerCase().trim() === atividade.nome.toLowerCase().trim());
                                                                         if(existe) {
-                                                                            confirmar({ titulo: `"${atividade.nome}" já existe!`, mensagem: 'Deseja atualizar a atividade existente?', icone: '♻️', labelConfirmar: 'Atualizar' }).then(ok => { if (ok) {
+                                                                            if(confirm(`"${atividade.nome}" já existe no Banco de Atividades.\n\nAtualizar?`)) {
                                                                                 const atualizada = {
                                                                                     ...existe,
                                                                                     descricao: atividade.descricao || existe.descricao,
@@ -6398,8 +6339,9 @@
                                                                                     unidade: planoEditando.unidades?.[0] || existe.unidade
                                                                                 };
                                                                                 setAtividades(atividades.map(a => a.id === existe.id ? atualizada : a));
-                                                                                mostrarToast('Atividade atualizada no Banco de Atividades!');
-                                                                            } }); } else {
+                                                                                alert('✅ Atividade atualizada no Banco de Atividades!');
+                                                                            }
+                                                                        } else {
                                                                             const nova = {
                                                                                 id: Date.now(),
                                                                                 nome: atividade.nome,
@@ -6414,7 +6356,7 @@
                                                                                 unidade: planoEditando.unidades?.[0] || ''
                                                                             };
                                                                             setAtividades([...atividades, nova]);
-                                                                            mostrarToast('Atividade salva no Banco de Atividades!');
+                                                                            alert('✅ Atividade salva no Banco de Atividades!');
                                                                         }
                                                                     }}
                                                                     className="bg-green-500 text-white px-3 py-1 rounded text-sm font-bold hover:bg-green-600"
@@ -6692,7 +6634,7 @@
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => {
-                                                                        confirmar({ titulo: `Remover "${mat}"?`, mensagem: 'Esta ação não pode ser desfeita.', icone: '🗑️', labelConfirmar: 'Remover', perigo: true }).then(ok => { if (ok) {
+                                                                        if (confirm(`Remover "${mat}" das sugestões permanentemente?`)) {
                                                                             setMateriaisBloqueados([...materiaisBloqueados, mat]);
                                                                             // Se estava selecionado, remover também
                                                                             if (jaAdicionado) {
@@ -6701,7 +6643,7 @@
                                                                                     materiais: planoEditando.materiais.filter(m => m !== mat)
                                                                                 });
                                                                             }
-                                                                        } });
+                                                                        }
                                                                     }}
                                                                     className="text-gray-400 hover:text-red-500 text-xs font-bold px-1"
                                                                     title="Remover das sugestões"
@@ -7225,7 +7167,7 @@
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            confirmar({ titulo: `Remover "${conceito}"?`, mensagem: 'Esta ação não pode ser desfeita.', icone: '🗑️', labelConfirmar: 'Remover', perigo: true }).then(ok => { if (ok) {
+                                                            if (confirm(`Remover "${conceito}" da lista permanentemente?`)) {
                                                                 setConceitos(conceitos.filter(c => c !== conceito));
                                                                 if ((atividadeEditando.conceitos||[]).includes(conceito)) {
                                                                     setAtividadeEditando({
@@ -7233,7 +7175,7 @@
                                                                         conceitos: atividadeEditando.conceitos.filter(c => c !== conceito)
                                                                     });
                                                                 }
-                                                            } });
+                                                            }
                                                         }}
                                                         className="text-gray-400 hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-r-full transition-all"
                                                     >
@@ -7321,7 +7263,7 @@
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            confirmar({ titulo: `Remover "${tag}"?`, mensagem: 'Esta ação não pode ser desfeita.', icone: '🗑️', labelConfirmar: 'Remover', perigo: true }).then(ok => { if (ok) {
+                                                            if (confirm(`Remover "${tag}" da lista permanentemente?`)) {
                                                                 setTagsGlobais(tagsGlobais.filter(t => t !== tag));
                                                                 // Remover da atividade atual se estiver selecionada
                                                                 if ((atividadeEditando.tags||[]).includes(tag)) {
@@ -7330,7 +7272,7 @@
                                                                         tags: atividadeEditando.tags.filter(t => t !== tag)
                                                                     });
                                                                 }
-                                                            } });
+                                                            }
                                                         }}
                                                         className="text-gray-400 hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-r-full transition-all"
                                                     >
@@ -7720,7 +7662,7 @@
                                     </button>
                                     <button onClick={()=>{
                                         const titulo = novaMusicaInline.titulo.trim();
-                                        if (!titulo) { mostrarToast('Título é obrigatório!', 'aviso'); return; }
+                                        if (!titulo) { alert('⚠️ Título é obrigatório!'); return; }
                                         // Cria a música
                                         const novaMusica = {
                                             id: Date.now(),
@@ -7751,7 +7693,7 @@
                                         setPendingAtividadeId(null);
                                         setModalNovaMusicaInline(false);
                                         setAtividadeVinculandoMusica(null);
-                                        mostrarToast('Música salva e vinculada!');
+                                        alert(`✅ Música "${titulo}" salva e vinculada! Complete os detalhes depois em Repertório Inteligente.`);
                                     }} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold">
                                         🎵 Salvar e Vincular
                                     </button>
@@ -7811,12 +7753,11 @@
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <button onClick={() => {
-                                                                confirmar({ titulo: `Aplicar template "${tmpl.nome}"?`, mensagem: 'Isso substituirá o roteiro atual.', icone: '📋', labelConfirmar: 'Aplicar' }).then(ok => { if (!ok) return;
+                                                                if (!confirm(`Aplicar template "${tmpl.nome}"?\n\nIsso substituirá o roteiro atual.`)) return;
                                                                 setPlanoEditando({...planoEditando, atividadesRoteiro: tmpl.atividades.map(a=>({...a, id:gerarIdSeguro()}))});
                                                                 setModalTemplates(false);
-                                                                });
                                                             }} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold">▶ Aplicar</button>
-                                                            <button onClick={() => { confirmar({ titulo: `Excluir template "${tmpl.nome}"?`, icone: '🗑️', labelConfirmar: 'Excluir', perigo: true }).then(ok => { if(ok) setTemplatesRoteiro(prev=>prev.filter(t=>t.id!==tmpl.id)); }); }}
+                                                            <button onClick={() => { if(confirm(`Excluir template "${tmpl.nome}"?`)) setTemplatesRoteiro(prev=>prev.filter(t=>t.id!==tmpl.id)); }}
                                                                 className="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-sm font-bold">🗑️</button>
                                                         </div>
                                                     </div>
@@ -7865,7 +7806,7 @@
                                                     const novo = e.target.value.trim();
                                                     if (!novo) { e.target.value = f; return; }
                                                     if (novo === f) return;
-                                                    if (faixas.includes(novo)) { mostrarToast('Já existe uma faixa com esse nome!', 'aviso'); e.target.value = f; return; }
+                                                    if (faixas.includes(novo)) { alert('Já existe uma faixa com esse nome!'); e.target.value = f; return; }
                                                     setFaixas(faixas.map(x => x === f ? novo : x));
                                                     // Atualizar planos que usavam o nome antigo
                                                     setPlanos(planos.map(p => ({
@@ -7878,13 +7819,12 @@
                                             />
                                             <button
                                                 onClick={() => {
-                                                    confirmar({ titulo: `Remover faixa "${f}"?`, mensagem: 'Os planos que a usam perderão esse rótulo.', icone: '🗑️', labelConfirmar: 'Remover', perigo: true }).then(ok => { if (!ok) return;
+                                                    if (!confirm(`Remover a faixa "${f}"? Os planos que a usam perderão esse rótulo.`)) return;
                                                     setFaixas(faixas.filter(x => x !== f));
                                                     setPlanos(planos.map(p => ({
                                                         ...p,
                                                         faixaEtaria: (p.faixaEtaria||[]).filter(fe => fe !== f)
                                                     })));
-                                                    });
                                                 }}
                                                 className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 font-bold px-2 py-1 rounded-lg hover:bg-red-50 transition text-lg leading-none"
                                                 title="Remover faixa">×</button>
@@ -8003,13 +7943,6 @@
                         </div>
                     )}
                 </div>
-                {/* ── MODAL DE CONFIRMAÇÃO E TOAST GLOBAIS ── */}
-                <ModalConfirmacao
-                    config={modalConfirm}
-                    onConfirm={modalConfirm?.onConfirm}
-                    onCancel={modalConfirm?.onCancel}
-                />
-                <ToastNotificacao toasts={toasts} />
             );
         }
 
