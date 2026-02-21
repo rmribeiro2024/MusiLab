@@ -1817,7 +1817,7 @@
                 setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('');
             };
 
-            const excluirRegistro = (registroId) => {
+            const excluirRegistro = async (registroId) => {
                 const _okReg = await confirmar({ titulo: 'Excluir registro?', mensagem: 'Esta ação não pode ser desfeita.', icone: '🗑️', labelConfirmar: 'Excluir', perigo: true }); if(!_okReg) return;
                 const atualizado = {
                     ...planoParaRegistro,
@@ -1896,7 +1896,7 @@
                 mostrarToast('Evento salvo!');
             };
 
-            const excluirEvento = (id) => {
+            const excluirEvento = async (id) => {
                 const _okEvt = await confirmar({ titulo: 'Excluir evento?', icone: '🗑️', labelConfirmar: 'Excluir', perigo: true }); if (_okEvt) {
                     setEventosEscolares(eventosEscolares.filter(e => e.id !== id));
                 }
@@ -2163,7 +2163,7 @@
             const gtMudarStatusAno = (anoId, novoStatus) => {
                 setAnosLetivos(anosLetivos.map(a => a.id === anoId ? { ...a, status: novoStatus } : a));
             };
-            const gtRemoveAno = (anoId) => {
+            const gtRemoveAno = async (anoId) => {
                 const _okAno = await confirmar({ titulo: 'Remover ano letivo?', mensagem: 'Todas as escolas e turmas vinculadas serão removidas.', icone: '🗑️', labelConfirmar: 'Remover', perigo: true }); if (!_okAno) return;
                 setAnosLetivos(anosLetivos.filter(a => a.id !== anoId));
                 if (gtAnoSel == anoId) { setGtAnoSel(''); setGtEscolaSel(''); setGtSegmentoSel(''); }
@@ -2178,7 +2178,7 @@
                 }));
                 setGtEscolaNome('');
             };
-            const gtRemoveEscola = (anoId, escolaId) => {
+            const gtRemoveEscola = async (anoId, escolaId) => {
                 const _okEsc = await confirmar({ titulo: 'Remover escola?', mensagem: 'Todos os segmentos e turmas serão removidos.', icone: '🗑️', labelConfirmar: 'Remover', perigo: true }); if (!_okEsc) return;
                 setAnosLetivos(anosLetivos.map(a => a.id != anoId ? a : { ...a, escolas: a.escolas.filter(e => e.id !== escolaId) }));
                 if (gtEscolaSel == escolaId) { setGtEscolaSel(''); setGtSegmentoSel(''); }
@@ -2387,7 +2387,7 @@
                 mostrarToast('Grade salva!');
             };
 
-            const excluirGradeSemanal = (id) => {
+            const excluirGradeSemanal = async (id) => {
                 const _okGrd = await confirmar({ titulo: 'Excluir grade semanal?', icone: '🗑️', labelConfirmar: 'Excluir', perigo: true }); if (_okGrd) {
                     setGradesSemanas(gradesSemanas.filter(g => g.id !== id));
                 }
