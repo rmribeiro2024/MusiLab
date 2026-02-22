@@ -4736,27 +4736,31 @@
                                         </div>
                                     </>
                                 ) : (
-                                    <div>
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h2 className="text-3xl font-bold text-blue-700">🎼 {musicaEditando.id === Date.now() ? 'Nova Música' : 'Editar Música'}</h2>
-                                            <button onClick={() => setMusicaEditando(null)} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+                                    <div className="space-y-4">
+                                        {/* Cabeçalho do formulário */}
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <h2 className="text-2xl font-bold text-slate-800">🎼 {musicaEditando.id === Date.now() ? 'Nova Música' : 'Editar Música'}</h2>
+                                                <p className="text-sm text-slate-400 mt-0.5">Preencha os dados da música no repertório</p>
+                                            </div>
+                                            <button onClick={() => setMusicaEditando(null)} className="text-slate-400 hover:text-slate-600 text-xl font-light transition">✕</button>
                                         </div>
-                                        
+
                                         {/* Identificação */}
-                                        <div className="bg-purple-50 p-6 rounded-xl mb-4 border-2 border-purple-200">
-                                            <h3 className="text-xl font-bold text-purple-700 mb-4">🎵 Identificação</h3>
+                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-4">Identificação</p>
                                             <div className="space-y-3">
                                                 <div>
-                                                    <label className="block font-bold mb-1">Título *</label>
-                                                    <input type="text" value={musicaEditando.titulo} onChange={e => setMusicaEditando({...musicaEditando, titulo: e.target.value})} className="w-full px-4 py-2 border-2 rounded-lg" placeholder="Nome da música" />
+                                                    <label className="block text-sm font-semibold text-slate-600 mb-1">Título *</label>
+                                                    <input type="text" value={musicaEditando.titulo} onChange={e => setMusicaEditando({...musicaEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400" placeholder="Nome da música" />
                                                 </div>
                                                 <div>
-                                                    <label className="block font-bold mb-1">Autor</label>
-                                                    <input type="text" value={musicaEditando.autor} onChange={e => setMusicaEditando({...musicaEditando, autor: e.target.value})} className="w-full px-4 py-2 border-2 rounded-lg" placeholder="Compositor/Autor" />
+                                                    <label className="block text-sm font-semibold text-slate-600 mb-1">Autor</label>
+                                                    <input type="text" value={musicaEditando.autor} onChange={e => setMusicaEditando({...musicaEditando, autor: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400" placeholder="Compositor/Autor" />
                                                 </div>
                                                 <div>
-                                                    <label className="block font-bold mb-1">Origem</label>
-                                                    <select value={musicaEditando.origem} onChange={e => setMusicaEditando({...musicaEditando, origem: e.target.value})} className="w-full px-4 py-2 border-2 rounded-lg">
+                                                    <label className="block text-sm font-semibold text-slate-600 mb-1">Origem</label>
+                                                    <select value={musicaEditando.origem} onChange={e => setMusicaEditando({...musicaEditando, origem: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400">
                                                         <option value="">Selecione...</option>
                                                         <option>Folclórica</option>
                                                         <option>Autoral</option>
@@ -4769,25 +4773,25 @@
                                         </div>
                                         
                                         {/* Elementos Musicais */}
-                                        <div className="bg-green-50 p-6 rounded-xl mb-4 border-2 border-green-200">
-                                            <h3 className="text-xl font-bold text-green-700 mb-4">🎼 Elementos Musicais</h3>
+                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-4">Elementos Musicais</p>
                                             
                                             {/* Estilo */}
                                             <div className="mb-4">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <label className="font-bold text-sm">Estilo</label>
+                                                    <label className="text-sm font-semibold text-slate-600">Estilo</label>
                                                     <button type="button" onClick={() => {
                                                         const novo = prompt('Novo estilo:');
                                                         if(novo && !ESTILOS_OPCOES.includes(novo)) {
                                                             setMusicaEditando({...musicaEditando, estilos: [...(musicaEditando.estilos||[]), novo]});
                                                         }
-                                                    }} className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">+ Adicionar</button>
+                                                    }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
                                                 </div>
                                                 
                                                 {/* Estilos selecionados */}
                                                 <div className="flex flex-wrap gap-2 mb-2">
                                                     {(musicaEditando.estilos||[]).map((est, i) => (
-                                                        <span key={i} className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+                                                        <span key={i} className="bg-slate-800 text-white px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-1">
                                                             {est}
                                                             <button type="button" onClick={() => setMusicaEditando({...musicaEditando, estilos: musicaEditando.estilos.filter((_, idx) => idx !== i)})} className="hover:text-red-200 font-bold">×</button>
                                                         </span>
@@ -4831,7 +4835,7 @@
                                             {/* Compasso */}
                                             <div className="mb-4">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <label className="font-bold text-sm">Compasso</label>
+                                                    <label className="text-sm font-semibold text-slate-600">Compasso</label>
                                                     <div className="flex gap-2">
                                                         <button type="button" onClick={() => {
                                                             const novo = prompt('Novo compasso:');
@@ -4841,8 +4845,8 @@
                                                                 localStorage.setItem('compassosCustomizados', JSON.stringify(novos));
                                                                 setMusicaEditando({...musicaEditando, compassos: [...(musicaEditando.compassos||[]), novo]});
                                                             }
-                                                        }} className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('compasso')} className="bg-gray-500 text-white px-2 py-1 rounded text-xs font-bold">🗑️ Excluir</button>
+                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
+                                                        <button type="button" onClick={() => setEditandoElemento('compasso')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
@@ -4853,7 +4857,7 @@
                                                             <button key={comp} type="button" onClick={() => {
                                                                 const lista = musicaEditando.compassos||[];
                                                                 setMusicaEditando({...musicaEditando, compassos: lista.includes(comp) ? lista.filter(c => c !== comp) : [...lista, comp]});
-                                                            }} className={`px-3 py-1 rounded-full text-sm font-semibold transition ${isSelecionado ? 'bg-green-600 text-white' : 'bg-white border border-green-300 text-gray-700'}`}>
+                                                            }} className={`px-3 py-1 rounded-full text-sm font-semibold transition ${isSelecionado ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-400'}`}>
                                                                 {comp}
                                                             </button>
                                                         );
@@ -4864,7 +4868,7 @@
                                             {/* Tonalidade/Modo */}
                                             <div className="mb-4">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <label className="font-bold text-sm">Tonalidade / Modo</label>
+                                                    <label className="text-sm font-semibold text-slate-600">Tonalidade / Modo</label>
                                                     <div className="flex gap-2">
                                                         <button type="button" onClick={() => {
                                                             const novo = prompt('Nova tonalidade:');
@@ -4874,15 +4878,15 @@
                                                                 localStorage.setItem('tonalidadesCustomizadas', JSON.stringify(novos));
                                                                 setMusicaEditando({...musicaEditando, tonalidades: [...(musicaEditando.tonalidades||[]), novo]});
                                                             }
-                                                        }} className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('tonalidade')} className="bg-gray-500 text-white px-2 py-1 rounded text-xs font-bold">🗑️ Excluir</button>
+                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
+                                                        <button type="button" onClick={() => setEditandoElemento('tonalidade')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
                                                     {[...TONALIDADES_OPCOES, ...tonalidadesCustomizadas].map(ton => {
                                                         const isCustomizado = !TONALIDADES_OPCOES.includes(ton);
                                                         const isSelecionado = (musicaEditando.tonalidades||[]).includes(ton);
-                                                        return <div key={ton} className={`px-3 py-1 rounded-full text-sm font-semibold transition flex items-center gap-1 ${isSelecionado ? 'bg-green-600 text-white' : 'bg-white border border-green-300 text-gray-700'}`}><button type="button" onClick={() => {const lista = musicaEditando.tonalidades||[]; setMusicaEditando({...musicaEditando, tonalidades: lista.includes(ton) ? lista.filter(t => t !== ton) : [...lista, ton]});}} className="hover:opacity-80">{ton}</button>{isCustomizado && <button type="button" onClick={() => {const novos = tonalidadesCustomizadas.filter(t => t !== ton); setTonalidadesCustomizadas(novos); localStorage.setItem('tonalidadesCustomizadas', JSON.stringify(novos)); setMusicaEditando({...musicaEditando, tonalidades: (musicaEditando.tonalidades||[]).filter(t => t !== ton)});}} className="hover:text-red-300 font-bold ml-1">×</button>}</div>;
+                                                        return <div key={ton} className={`px-3 py-1 rounded-full text-sm font-semibold transition flex items-center gap-1 ${isSelecionado ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-400'}`}><button type="button" onClick={() => {const lista = musicaEditando.tonalidades||[]; setMusicaEditando({...musicaEditando, tonalidades: lista.includes(ton) ? lista.filter(t => t !== ton) : [...lista, ton]});}} className="hover:opacity-80">{ton}</button>{isCustomizado && <button type="button" onClick={() => {const novos = tonalidadesCustomizadas.filter(t => t !== ton); setTonalidadesCustomizadas(novos); localStorage.setItem('tonalidadesCustomizadas', JSON.stringify(novos)); setMusicaEditando({...musicaEditando, tonalidades: (musicaEditando.tonalidades||[]).filter(t => t !== ton)});}} className="hover:text-red-300 font-bold ml-1">×</button>}</div>;
                                                     })}
                                                 </div>
                                             </div>
@@ -4890,7 +4894,7 @@
                                             {/* Andamento */}
                                             <div className="mb-4">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <label className="font-bold text-sm">Andamento</label>
+                                                    <label className="text-sm font-semibold text-slate-600">Andamento</label>
                                                     <div className="flex gap-2">
                                                         <button type="button" onClick={() => {
                                                             const novo = prompt('Novo andamento:');
@@ -4900,8 +4904,8 @@
                                                                 localStorage.setItem('andamentosCustomizados', JSON.stringify(novos));
                                                                 setMusicaEditando({...musicaEditando, andamentos: [...(musicaEditando.andamentos||[]), novo]});
                                                             }
-                                                        }} className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('andamento')} className="bg-gray-500 text-white px-2 py-1 rounded text-xs font-bold">🗑️ Excluir</button>
+                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
+                                                        <button type="button" onClick={() => setEditandoElemento('andamento')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
@@ -4910,7 +4914,7 @@
                                                         return <button key={and} type="button" onClick={() => {
                                                             const lista = musicaEditando.andamentos||[];
                                                             setMusicaEditando({...musicaEditando, andamentos: lista.includes(and) ? lista.filter(a => a !== and) : [...lista, and]});
-                                                        }} className={`px-3 py-1 rounded-full text-sm font-semibold transition ${isSelecionado ? 'bg-green-600 text-white' : 'bg-white border border-green-300 text-gray-700'}`}>{and}</button>;
+                                                        }} className={`px-3 py-1 rounded-full text-sm font-semibold transition ${isSelecionado ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-400'}`}>{and}</button>;
                                                     })}
                                                 </div>
                                             </div>
@@ -4918,7 +4922,7 @@
                                             {/* Escala */}
                                             <div className="mb-4">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <label className="font-bold text-sm">Escala</label>
+                                                    <label className="text-sm font-semibold text-slate-600">Escala</label>
                                                     <div className="flex gap-2">
                                                         <button type="button" onClick={() => {
                                                             const novo = prompt('Nova escala:');
@@ -4928,8 +4932,8 @@
                                                                 localStorage.setItem('escalasCustomizadas', JSON.stringify(novos));
                                                                 setMusicaEditando({...musicaEditando, escalas: [...(musicaEditando.escalas||[]), novo]});
                                                             }
-                                                        }} className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('escala')} className="bg-gray-500 text-white px-2 py-1 rounded text-xs font-bold">🗑️ Excluir</button>
+                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
+                                                        <button type="button" onClick={() => setEditandoElemento('escala')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
@@ -4938,7 +4942,7 @@
                                                         return <button key={esc} type="button" onClick={() => {
                                                             const lista = musicaEditando.escalas||[];
                                                             setMusicaEditando({...musicaEditando, escalas: lista.includes(esc) ? lista.filter(e => e !== esc) : [...lista, esc]});
-                                                        }} className={`px-3 py-1 rounded-full text-sm font-semibold transition ${isSelecionado ? 'bg-green-600 text-white' : 'bg-white border border-green-300 text-gray-700'}`}>{esc}</button>;
+                                                        }} className={`px-3 py-1 rounded-full text-sm font-semibold transition ${isSelecionado ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-400'}`}>{esc}</button>;
                                                     })}
                                                 </div>
                                             </div>
@@ -4946,7 +4950,7 @@
                                             {/* Estrutura */}
                                             <div className="mb-4">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <label className="font-bold text-sm">Estrutura</label>
+                                                    <label className="text-sm font-semibold text-slate-600">Estrutura</label>
                                                     <div className="flex gap-2">
                                                         <button type="button" onClick={() => {
                                                             const novo = prompt('Nova estrutura:');
@@ -4956,8 +4960,8 @@
                                                                 localStorage.setItem('estruturasCustomizadas', JSON.stringify(novos));
                                                                 setMusicaEditando({...musicaEditando, estruturas: [...(musicaEditando.estruturas||[]), novo]});
                                                             }
-                                                        }} className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('estrutura')} className="bg-gray-500 text-white px-2 py-1 rounded text-xs font-bold">🗑️ Excluir</button>
+                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
+                                                        <button type="button" onClick={() => setEditandoElemento('estrutura')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
@@ -4966,7 +4970,7 @@
                                                         return <button key={est} type="button" onClick={() => {
                                                             const lista = musicaEditando.estruturas||[];
                                                             setMusicaEditando({...musicaEditando, estruturas: lista.includes(est) ? lista.filter(e => e !== est) : [...lista, est]});
-                                                        }} className={`px-3 py-1 rounded-full text-sm font-semibold transition ${isSelecionado ? 'bg-green-600 text-white' : 'bg-white border border-green-300 text-gray-700'}`}>{est}</button>;
+                                                        }} className={`px-3 py-1 rounded-full text-sm font-semibold transition ${isSelecionado ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-400'}`}>{est}</button>;
                                                     })}
                                                 </div>
                                             </div>
@@ -4974,7 +4978,7 @@
                                             {/* Dinâmica */}
                                             <div className="mb-4">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <label className="font-bold text-sm">Dinâmica</label>
+                                                    <label className="text-sm font-semibold text-slate-600">Dinâmica</label>
                                                     <div className="flex gap-2">
                                                         <button type="button" onClick={() => {
                                                             const novo = prompt('Nova dinâmica:');
@@ -4984,8 +4988,8 @@
                                                                 localStorage.setItem('dinamicasCustomizadas', JSON.stringify(novos));
                                                                 setMusicaEditando({...musicaEditando, dinamicas: [...(musicaEditando.dinamicas||[]), novo]});
                                                             }
-                                                        }} className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('dinamica')} className="bg-gray-500 text-white px-2 py-1 rounded text-xs font-bold">🗑️ Excluir</button>
+                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
+                                                        <button type="button" onClick={() => setEditandoElemento('dinamica')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
@@ -5006,7 +5010,7 @@
                                                         return (
                                                             <button key={val} type="button"
                                                                 onClick={() => { const l=musicaEditando.dinamicas||[]; setMusicaEditando({...musicaEditando, dinamicas: sel?l.filter(x=>x!==val):[...l,val]}); }}
-                                                                className={`px-3 py-1.5 rounded-full text-sm font-semibold border-2 transition-all ${sel ? cor+' shadow-md scale-105' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-400'}`}>
+                                                                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${sel ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-400'}`}>
                                                                 {label}
                                                             </button>
                                                         );
@@ -5017,7 +5021,7 @@
                                             {/* Instrumentação */}
                                             <div className="mb-4">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <label className="font-bold text-sm">Instrumentação</label>
+                                                    <label className="text-sm font-semibold text-slate-600">Instrumentação</label>
                                                     <div className="flex gap-2">
                                                         <button type="button" onClick={() => {
                                                             const novo = prompt('Novo instrumento:');
@@ -5027,8 +5031,8 @@
                                                                 localStorage.setItem('instrumentacaoCustomizada', JSON.stringify(novos));
                                                                 setMusicaEditando({...musicaEditando, instrumentacao:[...(musicaEditando.instrumentacao||[]), novo]});
                                                             }
-                                                        }} className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('instrumentacao')} className="bg-gray-500 text-white px-2 py-1 rounded text-xs font-bold">🗑️ Excluir</button>
+                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
+                                                        <button type="button" onClick={() => setEditandoElemento('instrumentacao')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2 mb-2">
@@ -5037,7 +5041,7 @@
                                                         return (
                                                             <button key={inst} type="button"
                                                                 onClick={() => { const l=musicaEditando.instrumentacao||[]; setMusicaEditando({...musicaEditando, instrumentacao: sel?l.filter(x=>x!==inst):[...l,inst]}); }}
-                                                                className={`px-3 py-1.5 rounded-full text-sm font-semibold border-2 transition-all ${sel ? 'bg-violet-600 text-white border-violet-600 shadow-md scale-105' : 'bg-white border-gray-200 text-gray-600 hover:border-violet-300'}`}>
+                                                                className={`px-3 py-1.5 rounded-full text-sm font-semibold border-2 transition-all ${sel ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-400'}`}>
                                                                 {inst}
                                                             </button>
                                                         );
@@ -5045,22 +5049,22 @@
                                                 </div>
                                                 {/* Instrumento destaque */}
                                                 <div className="mt-2">
-                                                    <label className="block text-xs text-gray-500 mb-1">Instrumento em destaque (solo/protagonista):</label>
+                                                    <label className="block text-xs text-slate-400 mb-1">Instrumento em destaque (solo/protagonista):</label>
                                                     <input type="text"
                                                         value={musicaEditando.instrumentoDestaque||''}
                                                         onChange={e=>setMusicaEditando({...musicaEditando, instrumentoDestaque: e.target.value})}
                                                         placeholder="Ex: violino solo, flauta doce..."
-                                                        className="w-full px-3 py-1.5 border-2 border-violet-200 rounded-lg text-sm outline-none focus:border-violet-400"/>
+                                                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400"/>
                                                 </div>
                                             </div>
 
                                         </div>
                                         
                                         {/* Energia */}
-                                        <div className="bg-pink-50 p-6 rounded-xl mb-4 border-2 border-pink-200">
-                                            <div className="flex justify-between items-center mb-3">
-                                                <h3 className="text-xl font-bold text-pink-700">⚡ Energia</h3>
-                                                <div className="flex gap-2">
+                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">⚡ Energia</p>
+                                                <div className="flex gap-3">
                                                     <button type="button" onClick={() => {
                                                         const novo = prompt('Nova energia:');
                                                         if(novo && !ENERGIAS_OPCOES.includes(novo) && !energiasCustomizadas.includes(novo)) {
@@ -5069,8 +5073,8 @@
                                                             localStorage.setItem('energiasCustomizadas', JSON.stringify(novos));
                                                             setMusicaEditando({...musicaEditando, energias:[...(musicaEditando.energias||[]), novo]});
                                                         }
-                                                    }} className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">+ Adicionar</button>
-                                                    <button type="button" onClick={() => setEditandoElemento('energia')} className="bg-gray-500 text-white px-2 py-1 rounded text-xs font-bold">🗑️ Excluir</button>
+                                                    }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
+                                                    <button type="button" onClick={() => setEditandoElemento('energia')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
                                                 </div>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
@@ -5081,7 +5085,7 @@
                                                     return (
                                                         <button key={e} type="button"
                                                             onClick={() => { const l=musicaEditando.energias||[]; setMusicaEditando({...musicaEditando, energias: sel?l.filter(x=>x!==e):[...l,e]}); }}
-                                                            className={`px-3 py-1.5 rounded-full text-sm font-semibold border-2 transition-all ${sel ? cor+' shadow-md scale-105' : 'bg-white border-gray-200 text-gray-500 hover:border-pink-300'}`}>
+                                                            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${sel ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-400'}`}>
                                                             {e}
                                                         </button>
                                                     );
@@ -5090,27 +5094,27 @@
                                         </div>
 
                                         {/* Observações */}
-                                        <div className="bg-gray-50 p-6 rounded-xl mb-4 border-2 border-gray-200">
-                                            <h3 className="text-xl font-bold text-gray-700 mb-4">📝 Observações</h3>
+                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">📝 Observações</p>
                                             <textarea 
                                                 value={musicaEditando.observacoes || ''} 
                                                 onChange={e => setMusicaEditando({...musicaEditando, observacoes: e.target.value})}
                                                 placeholder="Anotações sobre a música..."
-                                                className="w-full px-4 py-3 border-2 rounded-lg resize-none"
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 resize-none"
                                                 rows="4"
                                             ></textarea>
                                         </div>
                                         
                                         {/* Recursos */}
-                                        <div className="bg-amber-50 p-6 rounded-xl mb-4 border-2 border-amber-200">
-                                            <h3 className="text-xl font-bold text-amber-700 mb-4">📎 Recursos</h3>
-                                            <div className="flex gap-3 mb-4">
+                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">📎 Recursos</p>
+                                            <div className="flex gap-2 mb-3">
                                                 <button onClick={() => {
                                                     const url = prompt('Cole o link:');
                                                     if(url) setMusicaEditando({...musicaEditando, links: [...(musicaEditando.links||[]), url]});
-                                                }} className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg font-bold">🔗 Link</button>
+                                                }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold transition">🔗 Link</button>
                                                 
-                                                <label className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg font-bold text-center cursor-pointer hover:bg-red-600">
+                                                <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold text-center cursor-pointer transition">
                                                     📄 PDF
                                                     <input type="file" accept=".pdf" className="hidden" onChange={e => {
                                                         const file = e.target.files[0];
@@ -5125,7 +5129,7 @@
                                                     }} />
                                                 </label>
                                                 
-                                                <label className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-center cursor-pointer hover:bg-green-600">
+                                                <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold text-center cursor-pointer transition">
                                                     🎧 Áudio/Vídeo
                                                     <input type="file" accept="audio/*,video/*" className="hidden" onChange={e => {
                                                         const file = e.target.files[0];
@@ -5140,23 +5144,23 @@
                                                     }} />
                                                 </label>
                                             </div>
-                                            <div className="space-y-2 text-sm">
+                                            <div className="space-y-1.5 text-sm">
                                                 {(musicaEditando.links||[]).map((l, i) => (
-                                                    <div key={i} className="flex gap-2 items-center bg-white p-2 rounded">
-                                                        <a href={l} target="_blank" className="flex-1 truncate text-blue-600 hover:underline">🔗 {l}</a>
-                                                        <button onClick={() => setMusicaEditando({...musicaEditando, links: musicaEditando.links.filter((_, idx) => idx !== i)})} className="text-red-500 font-bold">✕</button>
+                                                    <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg">
+                                                        <a href={l} target="_blank" className="flex-1 truncate text-indigo-600 hover:underline text-xs">🔗 {l}</a>
+                                                        <button onClick={() => setMusicaEditando({...musicaEditando, links: musicaEditando.links.filter((_, idx) => idx !== i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button>
                                                     </div>
                                                 ))}
                                                 {(musicaEditando.pdfs||[]).map((p, i) => (
-                                                    <div key={i} className="flex gap-2 items-center bg-white p-2 rounded">
-                                                        <a href={typeof p === 'string' ? p : p.data} target="_blank" className="flex-1 truncate text-red-600 hover:underline">📄 {typeof p === 'string' ? p : p.nome}</a>
-                                                        <button onClick={() => setMusicaEditando({...musicaEditando, pdfs: musicaEditando.pdfs.filter((_, idx) => idx !== i)})} className="text-red-500 font-bold">✕</button>
+                                                    <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg">
+                                                        <a href={typeof p === 'string' ? p : p.data} target="_blank" className="flex-1 truncate text-slate-600 hover:underline text-xs">📄 {typeof p === 'string' ? p : p.nome}</a>
+                                                        <button onClick={() => setMusicaEditando({...musicaEditando, pdfs: musicaEditando.pdfs.filter((_, idx) => idx !== i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button>
                                                     </div>
                                                 ))}
                                                 {(musicaEditando.audios||[]).map((a, i) => (
-                                                    <div key={i} className="flex gap-2 items-center bg-white p-2 rounded">
-                                                        <a href={typeof a === 'string' ? a : a.data} target="_blank" className="flex-1 truncate text-green-600 hover:underline">🎧 {typeof a === 'string' ? a : a.nome}</a>
-                                                        <button onClick={() => setMusicaEditando({...musicaEditando, audios: musicaEditando.audios.filter((_, idx) => idx !== i)})} className="text-red-500 font-bold">✕</button>
+                                                    <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg">
+                                                        <a href={typeof a === 'string' ? a : a.data} target="_blank" className="flex-1 truncate text-slate-600 hover:underline text-xs">🎧 {typeof a === 'string' ? a : a.nome}</a>
+                                                        <button onClick={() => setMusicaEditando({...musicaEditando, audios: musicaEditando.audios.filter((_, idx) => idx !== i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button>
                                                     </div>
                                                 ))}
                                             </div>
@@ -5242,33 +5246,33 @@
                                         )}
                                         
                                         {/* Vincular a Atividade ou Aula */}
-                                        <div className="bg-blue-50 p-6 rounded-xl mb-4 border-2 border-blue-200">
-                                            <h3 className="text-xl font-bold text-blue-700 mb-1">🔗 Vincular a Atividade ou Aula</h3>
-                                            <p className="text-sm text-blue-500 mb-4">Associe esta música a uma aula ou atividade do banco</p>
+                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">🔗 Vínculos</p>
+                                            <p className="text-xs text-slate-400 mb-4">Associe esta música a uma aula ou atividade do banco</p>
 
                                             {/* Vincular a Aula (plano) */}
                                             <div className="mb-4">
-                                                <label className="block font-bold text-gray-700 mb-2">📋 Aulas (Planos de Aula)</label>
-                                                <input type="text" placeholder="🔍 Buscar aula pelo título..."
+                                                <label className="block text-sm font-semibold text-slate-600 mb-2">📋 Aulas (Planos de Aula)</label>
+                                                <input type="text" placeholder="🔍 Buscar aula pelo título..." 
                                                     onChange={e => { const el = document.getElementById('listaAulasVincular'); el.style.display = e.target.value ? 'block' : 'none'; }}
                                                     onFocus={e => { document.getElementById('listaAulasVincular').style.display = 'block'; }}
-                                                    className="w-full px-3 py-2 border-2 border-blue-200 rounded-lg text-sm outline-none focus:border-blue-400 mb-1"
+                                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 mb-1"
                                                     id="inputBuscaAulaVincular"
                                                 />
-                                                <div id="listaAulasVincular" style={{display:'none'}} className="max-h-40 overflow-y-auto border-2 border-blue-100 rounded-lg bg-white">
+                                                <div id="listaAulasVincular" style={{display:'none'}} className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg bg-white">
                                                     {planos.filter(p => {
                                                         const busca = document.getElementById('inputBuscaAulaVincular')?.value?.toLowerCase()||'';
                                                         return !busca || (p.titulo||'').toLowerCase().includes(busca);
                                                     }).map(p => {
                                                         const jaVinc = (musicaEditando.planosVinculados||[]).includes(p.id);
                                                         return (
-                                                            <div key={p.id} className={`flex items-center justify-between px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 ${jaVinc?'bg-blue-50':''}`}
+                                                            <div key={p.id} className={`flex items-center justify-between px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-gray-100 ${jaVinc?'bg-indigo-50':''}`}
                                                                 onClick={() => {
                                                                     const lista = musicaEditando.planosVinculados||[];
                                                                     setMusicaEditando({...musicaEditando, planosVinculados: jaVinc ? lista.filter(id=>id!==p.id) : [...lista, p.id]});
                                                                 }}>
                                                                 <span className="text-sm text-gray-800">{p.titulo||'Sem título'}</span>
-                                                                {jaVinc && <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">✓ vinculada</span>}
+                                                                {jaVinc && <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full">✓ vinculada</span>}
                                                             </div>
                                                         );
                                                     })}
@@ -5277,7 +5281,7 @@
                                                     <div className="flex flex-wrap gap-1 mt-2">
                                                         {(musicaEditando.planosVinculados||[]).map(id => {
                                                             const p = planos.find(pl=>pl.id===id);
-                                                            return p ? <span key={id} className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full flex items-center gap-1">📋 {p.titulo} <button type="button" onClick={()=>setMusicaEditando({...musicaEditando, planosVinculados:(musicaEditando.planosVinculados||[]).filter(x=>x!==id)})} className="hover:text-red-600 font-bold">×</button></span> : null;
+                                                            return p ? <span key={id} className="bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-full flex items-center gap-1">📋 {p.titulo} <button type="button" onClick={()=>setMusicaEditando({...musicaEditando, planosVinculados:(musicaEditando.planosVinculados||[]).filter(x=>x!==id)})} className="hover:text-red-600 font-bold">×</button></span> : null;
                                                         })}
                                                     </div>
                                                 )}
@@ -5285,27 +5289,27 @@
 
                                             {/* Vincular a Atividade do banco */}
                                             <div>
-                                                <label className="block font-bold text-gray-700 mb-2">🎯 Atividades do Banco</label>
+                                                <label className="block text-sm font-semibold text-slate-600 mb-2">🎯 Atividades do Banco</label>
                                                 <input type="text" placeholder="🔍 Buscar atividade pelo nome..."
                                                     id="inputBuscaAtivVincular"
                                                     onChange={e => { document.getElementById('listaAtivVincular').style.display = e.target.value ? 'block' : 'none'; }}
                                                     onFocus={() => { document.getElementById('listaAtivVincular').style.display = 'block'; }}
-                                                    className="w-full px-3 py-2 border-2 border-blue-200 rounded-lg text-sm outline-none focus:border-blue-400 mb-1"
+                                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 mb-1"
                                                 />
-                                                <div id="listaAtivVincular" style={{display:'none'}} className="max-h-40 overflow-y-auto border-2 border-blue-100 rounded-lg bg-white">
+                                                <div id="listaAtivVincular" style={{display:'none'}} className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg bg-white">
                                                     {atividades.filter(a => {
                                                         const busca = document.getElementById('inputBuscaAtivVincular')?.value?.toLowerCase()||'';
                                                         return !busca || (a.nome||'').toLowerCase().includes(busca);
                                                     }).map(a => {
                                                         const jaVinc = (musicaEditando.atividadesVinculadas||[]).find(x=>x.id===a.id);
                                                         return (
-                                                            <div key={a.id} className={`flex items-center justify-between px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 ${jaVinc?'bg-blue-50':''}`}
+                                                            <div key={a.id} className={`flex items-center justify-between px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-gray-100 ${jaVinc?'bg-indigo-50':''}`}
                                                                 onClick={() => {
                                                                     const lista = musicaEditando.atividadesVinculadas||[];
                                                                     setMusicaEditando({...musicaEditando, atividadesVinculadas: jaVinc ? lista.filter(x=>x.id!==a.id) : [...lista, {id:a.id, nome:a.nome}]});
                                                                 }}>
                                                                 <span className="text-sm text-gray-800">{a.nome||'Sem nome'}</span>
-                                                                {jaVinc && <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">✓ vinculada</span>}
+                                                                {jaVinc && <span className="text-xs bg-slate-700 text-white px-2 py-0.5 rounded-full">✓ vinculada</span>}
                                                             </div>
                                                         );
                                                     })}
@@ -5314,7 +5318,7 @@
                                                 {(musicaEditando.atividadesVinculadas||[]).length > 0 && (
                                                     <div className="flex flex-wrap gap-1 mt-2">
                                                         {(musicaEditando.atividadesVinculadas||[]).map(a => (
-                                                            <span key={a.id} className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full flex items-center gap-1">🎯 {a.nome} <button type="button" onClick={()=>setMusicaEditando({...musicaEditando, atividadesVinculadas:(musicaEditando.atividadesVinculadas||[]).filter(x=>x.id!==a.id)})} className="hover:text-red-600 font-bold">×</button></span>
+                                                            <span key={a.id} className="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded-full flex items-center gap-1">🎯 {a.nome} <button type="button" onClick={()=>setMusicaEditando({...musicaEditando, atividadesVinculadas:(musicaEditando.atividadesVinculadas||[]).filter(x=>x.id!==a.id)})} className="hover:text-red-600 font-bold">×</button></span>
                                                         ))}
                                                     </div>
                                                 )}
@@ -5322,7 +5326,7 @@
                                         </div>
 
                                         {/* Botão Salvar */}
-                                        <div className="flex gap-3">
+                                        <div className="flex gap-3 pb-4">
                                             <button 
                                                 onClick={() => {
                                                     if(!musicaEditando.titulo.trim()) {
@@ -5362,11 +5366,11 @@
                                                     };
                                                     setModalConfirm({ titulo: 'Salvar música?', conteudo: 'Deseja confirmar o salvamento desta música?', labelConfirm: 'Salvar', onConfirm: _salvarMusica });
                                                 }}
-                                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-bold text-lg"
+                                                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold text-sm transition shadow-sm"
                                             >
                                                 💾 Salvar Música
                                             </button>
-                                            <button onClick={() => setMusicaEditando(null)} className="bg-gray-300 hover:bg-gray-400 px-6 py-4 rounded-xl font-bold">Cancelar</button>
+                                            <button onClick={() => setMusicaEditando(null)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-3 rounded-xl font-bold text-sm transition">Cancelar</button>
                                         </div>
                                     </div>
                                 )}
@@ -7094,12 +7098,12 @@
                                                     <div>
                                                         <label className="block text-sm font-bold mb-1">Data Início</label>
                                                         <input type="date" value={gradeEditando.dataInicio} onChange={e=>setGradeEditando({...gradeEditando, dataInicio: e.target.value})}
-                                                            className="w-full px-3 py-2 border-2 rounded-lg" />
+                                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-sm font-bold mb-1">Data Término</label>
                                                         <input type="date" value={gradeEditando.dataFim} onChange={e=>setGradeEditando({...gradeEditando, dataFim: e.target.value})}
-                                                            className="w-full px-3 py-2 border-2 rounded-lg" />
+                                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -7564,7 +7568,7 @@
                                         <div>
                                             <label className="block text-sm font-bold text-gray-700 mb-1">📅 Data da Aula</label>
                                             <input type="date" value={rrData} onChange={e=>setRrData(e.target.value)} 
-                                                className="w-full px-3 py-2 border-2 rounded-lg" />
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-bold text-gray-700 mb-1">📆 Ano Letivo</label>
