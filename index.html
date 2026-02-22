@@ -4791,7 +4791,7 @@
                                                                 <span className={`text-slate-300 text-xs transition-transform duration-200 ${aberto ? 'rotate-180' : ''}`}>▼</span>
                                                             </div>
                                                         </button>
-                                                        {aberto && <div className="border-t border-slate-100 px-5 py-5 space-y-5" id={`acc-${id}`}></div>}
+                                                        {aberto && <div className="bg-slate-50 border-t border-slate-100 px-5 py-5 space-y-5" id={`acc-${id}`}></div>}
                                                     </div>
                                                 );
                                             };
@@ -4839,7 +4839,7 @@
                                                     </div>
                                                 </button>
                                                 {accordionAberto === 'forma' && (
-                                                    <div className="border-t border-slate-100 px-5 py-5 space-y-5">
+                                                    <div className="bg-slate-50 border-t border-slate-100 px-5 py-5 space-y-5">
                                                         {/* Estilo */}
                                                         <div>
                                                             {labelRow('Estilo',
@@ -4905,7 +4905,7 @@
                                                     </div>
                                                 </button>
                                                 {accordionAberto === 'tom' && (
-                                                    <div className="border-t border-slate-100 px-5 py-5 space-y-5">
+                                                    <div className="bg-slate-50 border-t border-slate-100 px-5 py-5 space-y-5">
                                                         {/* Tonalidade */}
                                                         <div>
                                                             {labelRow('Tonalidade / Modo',
@@ -4948,7 +4948,7 @@
                                                     </div>
                                                 </button>
                                                 {accordionAberto === 'expressao' && (
-                                                    <div className="border-t border-slate-100 px-5 py-5 space-y-5">
+                                                    <div className="bg-slate-50 border-t border-slate-100 px-5 py-5 space-y-5">
                                                         {/* Dinâmica */}
                                                         <div>
                                                             {labelRow('Dinâmica',
@@ -5018,7 +5018,7 @@
                                                     </div>
                                                 </button>
                                                 {accordionAberto === 'recursos' && (
-                                                    <div className="border-t border-slate-100 px-5 py-5 space-y-4">
+                                                    <div className="bg-slate-50 border-t border-slate-100 px-5 py-5 space-y-4">
                                                         <textarea value={musicaEditando.observacoes||''} onChange={e => setMusicaEditando({...musicaEditando, observacoes: e.target.value})}
                                                             placeholder="Anotações sobre a música..."
                                                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 resize-none" rows="3" />
@@ -5057,7 +5057,7 @@
                                                     </div>
                                                 </button>
                                                 {accordionAberto === 'vinculos' && (
-                                                    <div className="border-t border-slate-100 px-5 py-5 space-y-5">
+                                                    <div className="bg-slate-50 border-t border-slate-100 px-5 py-5 space-y-5">
                                                         {/* Aulas */}
                                                         <div>
                                                             <label className="block text-sm font-semibold text-slate-600 mb-2">📋 Aulas (Planos de Aula)</label>
