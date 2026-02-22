@@ -5147,6 +5147,51 @@
                                             </>);
                                         })()}
 
+                                        {/* Botão Salvar */}
+                                        <div className="flex gap-3 pb-4">
+                                            <button
+                                                onClick={() => {
+                                                    if(!musicaEditando.titulo.trim()) {
+                                                        setModalConfirm({ conteudo: '⚠️ Título é obrigatório!', somenteOk: true, labelConfirm: 'OK' });
+                                                        return;
+                                                    }
+                                                    const _salvarMusica = () => {
+                                                        const novoRepertorio = repertorio.find(r => r.id === musicaEditando.id)
+                                                            ? repertorio.map(r => r.id === musicaEditando.id ? musicaEditando : r)
+                                                            : [...repertorio, musicaEditando];
+                                                        setRepertorio(novoRepertorio);
+                                                        localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
+                                                        if (pendingAtividadeId && planoEditando) {
+                                                            const atualizado = [...(planoEditando.atividadesRoteiro || [])];
+                                                            const idx = atualizado.findIndex(a => a.id === pendingAtividadeId);
+                                                            if (idx !== -1) {
+                                                                const jaVinculada = (atualizado[idx].musicasVinculadas || []).find(m => m.id === musicaEditando.id);
+                                                                if (!jaVinculada) {
+                                                                    atualizado[idx] = {
+                                                                        ...atualizado[idx],
+                                                                        musicasVinculadas: [...(atualizado[idx].musicasVinculadas || []), {
+                                                                            id: musicaEditando.id,
+                                                                            titulo: musicaEditando.titulo,
+                                                                            autor: musicaEditando.autor
+                                                                        }]
+                                                                    };
+                                                                    setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
+                                                                }
+                                                            }
+                                                            setPendingAtividadeId(null);
+                                                            setViewMode('planos');
+                                                            setModalConfirm({ conteudo: '✅ Música salva e vinculada à atividade!', somenteOk: true, labelConfirm: 'OK' });
+                                                        } else {
+                                                            setModalConfirm({ conteudo: '✅ Música salva!', somenteOk: true, labelConfirm: 'OK' });
+                                                        }
+                                                        setMusicaEditando(null);
+                                                    };
+                                                    setModalConfirm({ titulo: 'Salvar música?', conteudo: 'Deseja confirmar o salvamento desta música?', labelConfirm: 'Salvar', onConfirm: _salvarMusica });
+                                                }}
+                                                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold text-sm transition shadow-sm"
+                                            >
+                                                💾 Salvar Música
+                                            </button>
                                             <button onClick={() => setMusicaEditando(null)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-3 rounded-xl font-bold text-sm transition">Cancelar</button>
                                         </div>
                                     </div>
