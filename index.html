@@ -709,6 +709,7 @@
             const [planoSelecionado, setPlanoSelecionado] = useState(null);
             const [modoEdicao, setModoEdicao] = useState(false);
             const [planoEditando, setPlanoEditando] = useState(null);
+            const [formExpandido, setFormExpandido] = useState(false);
             const [materiaisBloqueados, setMateriaisBloqueados] = useState(() => {
                 const saved = localStorage.getItem('materiaisBloqueados');
                 return saved ? JSON.parse(saved) : [];
@@ -6883,18 +6884,63 @@
                         </div>
                     )}                    {/* MODAL EDIÇÃO */}
                     {modoEdicao && planoEditando && (
-                        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-2 z-50">
-                            <div className="bg-white rounded-2xl w-full h-full max-w-[98vw] max-h-[97vh] flex flex-col shadow-2xl">
-                                <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center flex-shrink-0">
+                        <>
+                        {/* Overlay escuro — só no modo expandido */}
+                        {formExpandido && <div className="fixed inset-0 bg-black/60 z-40" onClick={()=>setFormExpandido(false)}/>}
+
+                        {/* Container externo — inline compacto OU tela cheia */}
+                        <div className={formExpandido ? "fixed inset-0 z-50 flex items-center justify-center p-2" : "max-w-3xl mx-auto mb-10"}>
+
+                            {/* Linha "Voltar" — só no modo compacto */}
+                            {!formExpandido && (
+                                <div className="flex items-center gap-3 mb-4">
+                                    <button type="button" onClick={fecharModal} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-semibold text-sm transition-colors flex items-center gap-1.5">← Voltar</button>
                                     <div>
-                                        <p className="text-xs font-semibold text-indigo-200 uppercase tracking-wide mb-0.5">{planoEditando.id ? 'Editar Plano' : 'Novo Plano'}</p>
-                                        <h2 className="text-xl font-bold truncate leading-tight">{planoEditando.titulo||"Sem título"}</h2>
+                                        <h2 className="text-lg font-bold text-slate-800">{planoEditando.id ? 'Editar plano' : 'Novo plano de aula'}</h2>
                                     </div>
-                                    <button onClick={()=>toggleFavorito(planoEditando)} className={`text-sm px-3 py-1.5 rounded-xl flex-shrink-0 transition-colors ${planoEditando.destaque ? 'bg-amber-400 text-amber-900 font-bold' : 'bg-white/20 hover:bg-white/30'}`}>
-                                        {planoEditando.destaque ? '★ Favorito' : '☆ Favoritar'}
-                                    </button>
                                 </div>
-                                <div className="p-6 space-y-0 flex-1 overflow-y-auto">
+                            )}
+
+                            {/* Card principal */}
+                            <div className={`bg-white rounded-2xl overflow-hidden flex flex-col ${formExpandido ? 'w-full h-full max-w-[98vw] max-h-[97vh] shadow-2xl' : 'shadow-sm border border-slate-200'}`}>
+
+                                {/* ── HEADER EXPANDIDO ── */}
+                                {formExpandido ? (
+                                    <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center flex-shrink-0">
+                                        <div>
+                                            <p className="text-xs font-semibold text-indigo-200 uppercase tracking-wide mb-0.5">{planoEditando.id ? 'Editar Plano' : 'Novo Plano'}</p>
+                                            <h2 className="text-xl font-bold truncate leading-tight">{planoEditando.titulo||"Sem título"}</h2>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={()=>toggleFavorito(planoEditando)} className={`text-sm px-3 py-1.5 rounded-xl flex-shrink-0 transition-colors ${planoEditando.destaque ? 'bg-amber-400 text-amber-900 font-bold' : 'bg-white/20 hover:bg-white/30'}`}>
+                                                {planoEditando.destaque ? '★ Favorito' : '☆ Favoritar'}
+                                            </button>
+                                            <button type="button" onClick={()=>setFormExpandido(false)} title="Compactar" className="p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-colors text-lg leading-none" title="Compactar">⤡</button>
+                                            <button type="button" onClick={fecharModal} title="Fechar" className="p-2 rounded-xl bg-white/20 hover:bg-red-500/60 text-white transition-colors text-lg leading-none">✕</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* ── HEADER COMPACTO ── */
+                                    <>
+                                        <div className="h-1.5 bg-gradient-to-r from-indigo-500 to-violet-500 flex-shrink-0"/>
+                                        <div className="px-5 py-3.5 flex justify-between items-center border-b border-slate-100 flex-shrink-0">
+                                            <div>
+                                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{planoEditando.id ? 'Editar' : 'Novo'}</p>
+                                                <h3 className="font-bold text-slate-800 text-sm leading-tight truncate max-w-xs">{planoEditando.titulo||"Sem título"}</h3>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <button onClick={()=>toggleFavorito(planoEditando)} className={`text-xs px-2.5 py-1.5 rounded-xl transition-colors ${planoEditando.destaque ? 'bg-amber-100 text-amber-700 border border-amber-200 font-semibold' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
+                                                    {planoEditando.destaque ? '★' : '☆'}
+                                                </button>
+                                                <button type="button" onClick={()=>setFormExpandido(true)} title="Expandir para tela cheia" className="p-2 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-500 text-slate-400 transition-colors text-base leading-none">⤢</button>
+                                                <button type="button" onClick={fecharModal} title="Fechar" className="p-2 rounded-xl bg-slate-100 hover:bg-red-50 hover:text-red-400 text-slate-400 transition-colors text-base leading-none">✕</button>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* ── CONTEÚDO DO FORM (igual nos dois modos) ── */}
+                                <div className={`p-6 space-y-0 overflow-y-auto ${formExpandido ? 'flex-1' : ''}`} style={!formExpandido ? {maxHeight:'calc(100vh - 260px)'} : {}}>
                                     <div className="grid grid-cols-2 gap-4 pb-5">
                                         <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Título *</label><input type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /></div>
                                         <div>
@@ -7562,10 +7608,14 @@
                                     
                                     <div className="border-t border-slate-100 py-5"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows="3" /></div>
 
-                                    <div className="px-4 py-4 bg-white border-t border-slate-200 flex gap-3 sticky bottom-0"><button type="button" onClick={fecharModal} className="flex-1 py-3 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Cancelar</button><button type="button" onClick={salvarPlano} className="flex-1 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-md">💾 Salvar Plano</button></div>
-                                </div>
-                            </div>
-                        </div>
+                                    <div className="px-4 py-4 bg-white border-t border-slate-100 flex gap-3 sticky bottom-0">
+                                        <button type="button" onClick={fecharModal} className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm">Cancelar</button>
+                                        <button type="button" onClick={salvarPlano} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-sm text-sm">💾 Salvar Plano</button>
+                                    </div>
+                                </div>{/* fim conteúdo */}
+                            </div>{/* fim card principal */}
+                        </div>{/* fim container externo */}
+                        </>{/* fim fragment */}
                     )}
 
                     {/* ═══════════ MODAL EVENTOS ESCOLARES ═══════════ */}
