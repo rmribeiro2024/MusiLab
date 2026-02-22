@@ -6885,20 +6885,23 @@
                     {modoEdicao && planoEditando && (
                         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-2 z-50">
                             <div className="bg-white rounded-2xl w-full h-full max-w-[98vw] max-h-[97vh] flex flex-col shadow-2xl">
-                                <div className="bg-green-600 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center flex-shrink-0">
-                                    <h2 className="text-xl font-bold truncate">{planoEditando.titulo||"Novo Plano"}</h2>
-                                    <button onClick={()=>toggleFavorito(planoEditando)} className={`text-sm px-3 py-1.5 rounded bg-green-700 hover:bg-green-800 flex-shrink-0`}>
-                                        {planoEditando.destaque ? '★ Favorito' : '☆ Marcar Favorito'}
+                                <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center flex-shrink-0">
+                                    <div>
+                                        <p className="text-xs font-semibold text-indigo-200 uppercase tracking-wide mb-0.5">{planoEditando.id ? 'Editar Plano' : 'Novo Plano'}</p>
+                                        <h2 className="text-xl font-bold truncate leading-tight">{planoEditando.titulo||"Sem título"}</h2>
+                                    </div>
+                                    <button onClick={()=>toggleFavorito(planoEditando)} className={`text-sm px-3 py-1.5 rounded-xl flex-shrink-0 transition-colors ${planoEditando.destaque ? 'bg-amber-400 text-amber-900 font-bold' : 'bg-white/20 hover:bg-white/30'}`}>
+                                        {planoEditando.destaque ? '★ Favorito' : '☆ Favoritar'}
                                     </button>
                                 </div>
                                 <div className="p-6 space-y-4 flex-1 overflow-y-auto">
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div><label className="block font-bold mb-2">Título *</label><input type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-4 py-2 border-2 rounded-lg" /></div>
+                                        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Título *</label><input type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /></div>
                                         <div>
-                                            <label className="block font-bold mb-2">Escola</label>
+                                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Escola</label>
                                             <div className="flex gap-2">
                                                 <div className="relative flex-1">
-                                                    <input type="text" value={planoEditando.escola} onChange={e=>setPlanoEditando({...planoEditando, escola: e.target.value})} className="w-full px-4 py-2 border-2 rounded-lg" list="escolas-list" placeholder="Selecione ou digite..." />
+                                                    <input type="text" value={planoEditando.escola} onChange={e=>setPlanoEditando({...planoEditando, escola: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" list="escolas-list" placeholder="Selecione ou digite..." />
                                                     <datalist id="escolas-list">
                                                         {/* Escolas dos anos letivos */}
                                                         {anosLetivos.flatMap(a => a.escolas.map(e => e.nome)).filter((v,i,arr)=>arr.indexOf(v)===i).map(e=><option key={e} value={e}/>)}
@@ -6912,17 +6915,17 @@
                                     </div>
                                     
                                     {/* Status do Planejamento */}
-                                    <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-4">
-                                        <label className="block font-bold mb-2 text-gray-700">📊 Status do Planejamento</label>
-                                        <div className="flex gap-3">
+                                    <div className="bg-white rounded-2xl border border-slate-200 p-4">
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">📊 Status do Planejamento</label>
+                                        <div className="flex gap-2">
                                             {[
-                                                {value: 'A Fazer', color: 'bg-gray-100 border-gray-300 text-gray-700', activeColor: 'bg-gray-500 border-gray-500 text-white'},
-                                                {value: 'Em Andamento', color: 'bg-yellow-50 border-yellow-300 text-yellow-700', activeColor: 'bg-yellow-500 border-yellow-500 text-white'},
-                                                {value: 'Concluído', color: 'bg-green-50 border-green-300 text-green-700', activeColor: 'bg-green-600 border-green-600 text-white'}
+                                                {value: 'A Fazer', color: 'bg-slate-50 border-slate-200 text-slate-500', activeColor: 'bg-slate-600 border-slate-600 text-white'},
+                                                {value: 'Em Andamento', color: 'bg-blue-50 border-blue-200 text-blue-600', activeColor: 'bg-blue-500 border-blue-500 text-white'},
+                                                {value: 'Concluído', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', activeColor: 'bg-emerald-500 border-emerald-500 text-white'}
                                             ].map(s => (
                                                 <button key={s.value} type="button"
                                                     onClick={()=>setPlanoEditando({...planoEditando, statusPlanejamento: s.value})}
-                                                    className={`flex-1 px-4 py-2 rounded-lg font-bold border-2 transition ${
+                                                    className={`flex-1 px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
                                                         (planoEditando.statusPlanejamento || 'A Fazer') === s.value ? s.activeColor : s.color
                                                     }`}>
                                                     {s.value}
@@ -6931,44 +6934,44 @@
                                         </div>
                                     </div>
                                     
-                                    <div className="bg-green-50 border border-green-200 p-4 rounded-xl"><label className="block font-bold mb-2 text-green-800">📅 Datas (Registrar)</label><div className="flex gap-2 mb-2"><input type="date" value={dataEdicao} onChange={e=>setDataEdicao(e.target.value)} className="border rounded px-2 py-1"/><button type="button" onClick={adicionarDataEdicao} className="bg-green-600 text-white px-3 py-1 rounded font-bold text-sm">Add</button></div><div className="flex flex-wrap gap-2">{planoEditando.historicoDatas?.map(d=><span key={d} className="bg-white border px-2 py-1 rounded text-sm">{new Date(d+'T12:00:00').toLocaleDateString('pt-BR')} <button type="button" onClick={()=>removerDataEdicao(d)} className="text-red-500 font-bold ml-1">×</button></span>)}</div></div>
+                                    <div className="bg-emerald-50/60 rounded-2xl border border-emerald-100 p-4"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📅 Datas</label><div className="flex gap-2 mb-2"><input type="date" value={dataEdicao} onChange={e=>setDataEdicao(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:border-indigo-400 outline-none"/><button type="button" onClick={adicionarDataEdicao} className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-semibold text-sm transition-colors">Add</button></div><div className="flex flex-wrap gap-2">{planoEditando.historicoDatas?.map(d=><span key={d} className="bg-white border border-emerald-200 px-2.5 py-1 rounded-full text-sm text-emerald-800 font-medium">{new Date(d+'T12:00:00').toLocaleDateString('pt-BR')} <button type="button" onClick={()=>removerDataEdicao(d)} className="text-red-400 hover:text-red-600 font-bold ml-1">×</button></span>)}</div></div>
                                     
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div><label className="block font-bold mb-2">Nível</label><select value={planoEditando.nivel} onChange={e=>setPlanoEditando({...planoEditando, nivel: e.target.value})} className="w-full px-3 py-2 border-2 rounded-lg">{niveis.slice(1).map(n=><option key={n}>{n}</option>)}</select></div>
+                                        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nível</label><select value={planoEditando.nivel} onChange={e=>setPlanoEditando({...planoEditando, nivel: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">{niveis.slice(1).map(n=><option key={n}>{n}</option>)}</select></div>
                                         <div>
-                                            <label className="block font-bold mb-2">Duração</label>
+                                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Duração</label>
                                             {/* AUTOCOMPLETE DE DURAÇÃO */}
-                                            <input type="text" value={planoEditando.duracao} onChange={e=>setPlanoEditando({...planoEditando, duracao: e.target.value})} className="w-full px-4 py-2 border-2 rounded-lg" placeholder="Ex: 50 min" list="duracoes-list" />
+                                            <input type="text" value={planoEditando.duracao} onChange={e=>setPlanoEditando({...planoEditando, duracao: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Ex: 50 min" list="duracoes-list" />
                                             <datalist id="duracoes-list">{duracoesSugestao.map(d=><option key={d} value={d}/>)}</datalist>
                                         </div>
                                     </div>
 
-                                    <div>
+                                    <div className="bg-white rounded-2xl border border-slate-200 p-4">
                                         <div className="flex items-center justify-between mb-2">
-                                            <label className="block font-bold">Faixa Et\u00e1ria</label>
+                                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Faixa Etária</label>
                                             <button type="button" onClick={()=>{ setNovaFaixaNome(''); setModalNovaFaixa(true); }}
-                                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-sm font-bold shadow"
-                                                title="Adicionar nova faixa et\u00e1ria">+ Nova faixa</button>
+                                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors"
+                                                title="Adicionar nova faixa etária">+ Nova faixa</button>
                                         </div>
                                         <div className="flex flex-wrap gap-2">
                                             {faixas.slice(1).map(faixa => (
                                                 <button key={faixa} type="button" onClick={() => toggleFaixa(faixa)}
-                                                    className={`px-4 py-2 rounded-lg font-bold ${planoEditando.faixaEtaria.includes(faixa) ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                                                    className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition-all ${planoEditando.faixaEtaria.includes(faixa) ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                                                     {faixa}
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
                                     
-                                    <div className="border-2 border-purple-200 rounded-xl p-4 bg-purple-50">
-                                        <div className="flex justify-between items-center mb-3"><label className="block font-bold text-purple-900">Conceitos Musicais</label>{!adicionandoConceito && (<button type="button" onClick={() => setAdicionandoConceito(true)} className="bg-purple-600 text-white px-3 py-1 rounded-lg text-sm font-bold shadow hover:bg-purple-700">➕ Novo</button>)}</div>
-                                        {adicionandoConceito && (<div className="mb-3 flex gap-2"><input type="text" value={novoConceito} onChange={(e) => setNovoConceito(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarConceitoNovo()} className="flex-1 px-3 py-2 border-2 rounded-lg" placeholder="Digite..." autoFocus /><button type="button" onClick={adicionarConceitoNovo} className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold">✓</button><button type="button" onClick={() => { setAdicionandoConceito(false); setNovoConceito(""); }} className="bg-gray-300 px-4 py-2 rounded-lg font-bold">✕</button></div>)}
-                                        <div className="flex flex-wrap gap-2">{(conceitos || []).map(conceito => (<button key={conceito} type="button" onClick={() => toggleConceito(conceito)} className={`px-3 py-1 rounded-full font-semibold transition-all ${(planoEditando.conceitos || []).includes(conceito) ? 'bg-purple-600 text-white shadow-md transform scale-105' : 'bg-white text-gray-600 border border-purple-200 hover:bg-purple-50'}`}>{conceito}</button>))}</div>
+                                    <div className="bg-violet-50/60 rounded-2xl border border-violet-100 p-4">
+                                        <div className="flex justify-between items-center mb-3"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🎵 Conceitos Musicais</label>{!adicionandoConceito && (<button type="button" onClick={() => setAdicionandoConceito(true)} className="bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">➕ Novo</button>)}</div>
+                                        {adicionandoConceito && (<div className="mb-3 flex gap-2"><input type="text" value={novoConceito} onChange={(e) => setNovoConceito(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarConceitoNovo()} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Digite..." autoFocus /><button type="button" onClick={adicionarConceitoNovo} className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-semibold transition-colors">✓</button><button type="button" onClick={() => { setAdicionandoConceito(false); setNovoConceito(""); }} className="bg-slate-200 hover:bg-slate-300 px-4 py-2 rounded-xl font-semibold transition-colors">✕</button></div>)}
+                                        <div className="flex flex-wrap gap-2">{(conceitos || []).map(conceito => (<button key={conceito} type="button" onClick={() => toggleConceito(conceito)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.conceitos || []).includes(conceito) ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-violet-200 hover:bg-violet-50'}`}>{conceito}</button>))}</div>
                                     </div>
 
 {/* TAGS (Formato/Dinâmica) */}
-                                    <div className="border-2 border-amber-200 rounded-xl p-4 bg-amber-50">
-                                        <label className="block font-bold text-amber-900 mb-3">🏷️ Tags (dinâmica/formato)</label>
+                                    <div className="bg-amber-50/60 rounded-2xl border border-amber-100 p-4">
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">🏷️ Tags (dinâmica/formato)</label>
                                         
                                         {/* Tags selecionadas em chips */}
                                         {(planoEditando.tags || []).length > 0 && (
@@ -7057,7 +7060,7 @@
                                                     e.target.value = '';
                                                 }
                                             }}
-                                            className="w-full px-4 py-2 border-2 border-amber-200 rounded-lg focus:border-amber-500" 
+                                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none"
                                             placeholder="Digite e pressione Enter... Ex: roda, jogos"
                                         />
                                     </div>
@@ -7065,14 +7068,14 @@
                                     {/* MATERIAIS
 
                                     {/* Unidades */}
-                                    <div className="bg-teal-50 p-4 rounded-xl border-2 border-teal-200">
-                                        <div className="flex justify-between items-center mb-3"><label className="block font-bold text-teal-900">Unidades</label>{!adicionandoUnidade && (<button type="button" onClick={() => setAdicionandoUnidade(true)} className="bg-teal-600 text-white px-3 py-1 rounded-lg text-sm font-bold shadow hover:bg-teal-700">➕ Novo</button>)}</div>
-                                        {adicionandoUnidade && (<div className="mb-3 flex gap-2"><input type="text" value={novaUnidade} onChange={(e) => setNovaUnidade(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarUnidadeNova()} className="flex-1 px-3 py-2 border-2 rounded-lg" placeholder="Digite..." autoFocus /><button type="button" onClick={adicionarUnidadeNova} className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold">✓</button><button type="button" onClick={() => { setAdicionandoUnidade(false); setNovaUnidade(""); }} className="bg-gray-300 px-4 py-2 rounded-lg font-bold">✕</button></div>)}
-                                        <div className="flex flex-wrap gap-2">{(unidades || []).map(unidade => (<button key={unidade} type="button" onClick={() => toggleUnidade(unidade)} className={`px-3 py-1 rounded-full font-semibold transition-all ${(planoEditando.unidades || []).includes(unidade) ? 'bg-teal-600 text-white shadow-md transform scale-105' : 'bg-white text-gray-600 border border-teal-200 hover:bg-teal-50'}`}>{unidade}</button>))}</div>
+                                    <div className="bg-teal-50/60 rounded-2xl border border-teal-100 p-4">
+                                        <div className="flex justify-between items-center mb-3"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">📚 Unidades</label>{!adicionandoUnidade && (<button type="button" onClick={() => setAdicionandoUnidade(true)} className="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">➕ Novo</button>)}</div>
+                                        {adicionandoUnidade && (<div className="mb-3 flex gap-2"><input type="text" value={novaUnidade} onChange={(e) => setNovaUnidade(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarUnidadeNova()} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Digite..." autoFocus /><button type="button" onClick={adicionarUnidadeNova} className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-semibold transition-colors">✓</button><button type="button" onClick={() => { setAdicionandoUnidade(false); setNovaUnidade(""); }} className="bg-slate-200 hover:bg-slate-300 px-4 py-2 rounded-xl font-semibold transition-colors">✕</button></div>)}
+                                        <div className="flex flex-wrap gap-2">{(unidades || []).map(unidade => (<button key={unidade} type="button" onClick={() => toggleUnidade(unidade)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.unidades || []).includes(unidade) ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-teal-200 hover:bg-teal-50'}`}>{unidade}</button>))}</div>
                                     </div>
 
-                                    <div className="border border-blue-100 rounded-xl p-4 bg-white">
-                                        <label className="block font-bold mb-2 text-blue-900">🎯 Objetivo Geral *</label>
+                                    <div className="bg-blue-50/40 rounded-2xl border border-blue-100 p-4">
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivo Geral *</label>
                                         <RichTextEditor
                                             value={planoEditando.objetivoGeral}
                                             onChange={val => setPlanoEditando({...planoEditando, objetivoGeral: val})}
@@ -7081,8 +7084,8 @@
                                         />
                                     </div>
                                     
-                                    <div className="border border-blue-100 rounded-xl p-4 bg-white">
-                                        <label className="block font-bold mb-2 text-blue-900">🎯 Objetivos Específicos</label>
+                                    <div className="bg-blue-50/40 rounded-2xl border border-blue-100 p-4">
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivos Específicos</label>
                                         <RichTextEditor
                                             value={Array.isArray(planoEditando.objetivosEspecificos) 
                                                 ? (planoEditando.objetivosEspecificos.length > 0 && typeof planoEditando.objetivosEspecificos[0] === 'string' && !planoEditando.objetivosEspecificos[0].startsWith('<')
@@ -7095,24 +7098,24 @@
                                         />
                                     </div>
 
-                                    <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl">
-                                        <div className="flex justify-between items-center mb-2"><label className="block font-bold text-orange-800">🏛️ Habilidades BNCC</label><button type="button" onClick={sugerirBNCC} className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1 rounded-lg font-bold text-sm shadow">✨ Sugerir BNCC</button></div>
-                                        <textarea value={(planoEditando.habilidadesBNCC || []).join('\n')} onChange={e => setPlanoEditando({...planoEditando, habilidadesBNCC: e.target.value.split('\n')})} className="w-full px-4 py-2 border-2 border-orange-200 rounded-lg focus:border-orange-500 outline-none" rows="5" placeholder="EF15ARXX - Descrição..." />
+                                    <div className="bg-orange-50/60 rounded-2xl border border-orange-100 p-4">
+                                        <div className="flex justify-between items-center mb-2"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🏛️ Habilidades BNCC</label><button type="button" onClick={sugerirBNCC} className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors shadow-sm">✨ Sugerir BNCC</button></div>
+                                        <textarea value={(planoEditando.habilidadesBNCC || []).join('\n')} onChange={e => setPlanoEditando({...planoEditando, habilidadesBNCC: e.target.value.split('\n')})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-orange-400 outline-none" rows="5" placeholder="EF15ARXX - Descrição..." />
                                     </div>
 
                                     {/* Roteiro de Atividades */}
-                                    <div className="bg-indigo-50 p-4 rounded-xl border-2 border-indigo-200">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <label className="block font-bold text-indigo-900">📋 Roteiro de Atividades</label>
+                                    <div className="bg-indigo-50/60 rounded-2xl border border-indigo-100 p-4">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">📋 Roteiro de Atividades</label>
                                             <div className="flex gap-2">
-                                                <button type="button" onClick={() => setModalTemplates(true)} className="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-purple-700">
+                                                <button type="button" onClick={() => setModalTemplates(true)} className="bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
                                                     📐 Templates
                                                 </button>
-                                                <button type="button" onClick={adicionarAtividadeRoteiro} className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-indigo-700">
-                                                    + Adicionar Atividade
+                                                <button type="button" onClick={adicionarAtividadeRoteiro} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                                                    + Atividade
                                                 </button>
-                                                <button type="button" onClick={() => setModalImportarAtividade(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-blue-700">
-                                                    📚 Importar Atividade
+                                                <button type="button" onClick={() => setModalImportarAtividade(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                                                    📚 Importar
                                                 </button>
                                             </div>
                                         </div>
@@ -7152,7 +7155,7 @@
                                                         onDragEnter={() => handleDragEnter(index)}
                                                         onDragEnd={handleDragEnd}
                                                         onDragOver={e => e.preventDefault()}
-                                                        className="bg-white p-4 rounded-lg border-2 border-indigo-200 cursor-grab active:cursor-grabbing active:opacity-50 transition-opacity">
+                                                        className="bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm cursor-grab active:cursor-grabbing active:opacity-50 transition-opacity hover:border-indigo-200">
                                                         <div className="flex justify-between items-center mb-3">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-gray-300 hover:text-indigo-400 transition text-lg select-none" title="Arraste para reordenar">⠿</span>
@@ -7423,8 +7426,8 @@
                                     
 
                                     {/* MATERIAIS - Sistema Inteligente */}
-                                    <div className="border-2 border-purple-200 rounded-xl p-4 bg-purple-50">
-                                        <label className="block font-bold mb-3 text-purple-800">📦 Materiais</label>
+                                    <div className="bg-violet-50/60 rounded-2xl border border-violet-100 p-4">
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">📦 Materiais</label>
                                         
                                         {/* Sugestões Rápidas (Checkboxes) */}
                                         <div className="mb-4">
@@ -7524,7 +7527,7 @@
                                                             e.target.value = '';
                                                         }
                                                     }}
-                                                    className="flex-1 px-3 py-2 border-2 rounded-lg"
+                                                    className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none"
                                                 />
                                             </div>
                                             <p className="text-xs text-gray-500">Pressione Enter para adicionar</p>
@@ -7555,11 +7558,11 @@
                                         )}
                                     </div>
                                     
-                                    <div className="border-2 border-indigo-200 rounded-xl p-4 bg-indigo-50"><label className="block font-bold mb-2 text-indigo-800">🔗 Links e Imagens</label><div className="flex gap-2 mb-3 flex-col md:flex-row"><input type="text" placeholder="URL..." value={novoRecursoUrl} onChange={e => setNovoRecursoUrl(e.target.value)} className="flex-1 px-3 py-2 border rounded-lg" /><select value={novoRecursoTipo} onChange={e => setNovoRecursoTipo(e.target.value)} className="px-3 py-2 border rounded-lg bg-white"><option value="link">Link</option><option value="imagem">Imagem</option></select><button type="button" onClick={adicionarRecurso} className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold">Add</button></div><div className="space-y-2">{(planoEditando.recursos || []).map((rec, idx) => (<div key={idx} className="flex justify-between items-center bg-white p-2 rounded border"><div className="flex items-center gap-2 overflow-hidden"><span>{rec.tipo === 'imagem' ? '🖼️' : '🔗'}</span><span className="text-sm truncate max-w-xs">{rec.url}</span></div><button type="button" onClick={() => removerRecurso(idx)} className="text-red-500 font-bold px-2">✕</button></div>))}</div></div>
+                                    <div className="bg-indigo-50/60 rounded-2xl border border-indigo-100 p-4"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🔗 Links e Imagens</label><div className="flex gap-2 mb-3 flex-col md:flex-row"><input type="text" placeholder="URL..." value={novoRecursoUrl} onChange={e => setNovoRecursoUrl(e.target.value)} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /><select value={novoRecursoTipo} onChange={e => setNovoRecursoTipo(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white"><option value="link">Link</option><option value="imagem">Imagem</option></select><button type="button" onClick={adicionarRecurso} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors">Add</button></div><div className="space-y-2">{(planoEditando.recursos || []).map((rec, idx) => (<div key={idx} className="flex justify-between items-center bg-white p-2 rounded-xl border border-slate-200"><div className="flex items-center gap-2 overflow-hidden"><span>{rec.tipo === 'imagem' ? '🖼️' : '🔗'}</span><span className="text-sm truncate max-w-xs text-slate-700">{rec.url}</span></div><button type="button" onClick={() => removerRecurso(idx)} className="text-red-400 hover:text-red-600 font-bold px-2">✕</button></div>))}</div></div>
                                     
-                                    <div><label className="block font-bold mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-4 py-2 border-2 rounded-lg" rows="3" /></div>
-                                
-                                    <div className="p-6 bg-gray-50 flex gap-3 sticky bottom-0"><button type="button" onClick={fecharModal} className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-xl font-bold">Cancelar</button><button type="button" onClick={salvarPlano} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold">Salvar</button></div>
+                                    <div className="bg-white rounded-2xl border border-slate-200 p-4"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows="3" /></div>
+
+                                    <div className="px-4 py-4 bg-white border-t border-slate-200 flex gap-3 sticky bottom-0"><button type="button" onClick={fecharModal} className="flex-1 py-3 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Cancelar</button><button type="button" onClick={salvarPlano} className="flex-1 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-md">💾 Salvar Plano</button></div>
                                 </div>
                             </div>
                         </div>
