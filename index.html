@@ -6894,8 +6894,8 @@
                                         {planoEditando.destaque ? '★ Favorito' : '☆ Favoritar'}
                                     </button>
                                 </div>
-                                <div className="p-6 space-y-4 flex-1 overflow-y-auto">
-                                    <div className="grid grid-cols-2 gap-4">
+                                <div className="p-6 space-y-0 flex-1 overflow-y-auto">
+                                    <div className="grid grid-cols-2 gap-4 pb-5">
                                         <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Título *</label><input type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /></div>
                                         <div>
                                             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Escola</label>
@@ -6909,14 +6909,14 @@
                                                         {escolas.filter(e=>e!=='Todas').map(e=><option key={'p_'+e} value={e}/>)}
                                                     </datalist>
                                                 </div>
-                                                <button type="button" onClick={()=>{ setNovaEscolaNome(''); setNovaEscolaAnoId(''); setModalNovaEscola('plano'); }} className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-bold text-lg leading-none" title="Cadastrar nova escola">+</button>
+                                                <button type="button" onClick={()=>{ setNovaEscolaNome(''); setNovaEscolaAnoId(''); setModalNovaEscola('plano'); }} className="shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-xl font-bold text-lg leading-none transition-colors" title="Cadastrar nova escola">+</button>
                                             </div>
                                         </div>
                                     </div>
                                     
                                     {/* Status do Planejamento */}
-                                    <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">📊 Status do Planejamento</label>
+                                    <div className="border-t border-slate-100 py-5">
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">📊 Status</label>
                                         <div className="flex gap-2">
                                             {[
                                                 {value: 'A Fazer', color: 'bg-slate-50 border-slate-200 text-slate-500', activeColor: 'bg-slate-600 border-slate-600 text-white'},
@@ -6934,9 +6934,9 @@
                                         </div>
                                     </div>
                                     
-                                    <div className="bg-emerald-50/60 rounded-2xl border border-emerald-100 p-4"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📅 Datas</label><div className="flex gap-2 mb-2"><input type="date" value={dataEdicao} onChange={e=>setDataEdicao(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:border-indigo-400 outline-none"/><button type="button" onClick={adicionarDataEdicao} className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-semibold text-sm transition-colors">Add</button></div><div className="flex flex-wrap gap-2">{planoEditando.historicoDatas?.map(d=><span key={d} className="bg-white border border-emerald-200 px-2.5 py-1 rounded-full text-sm text-emerald-800 font-medium">{new Date(d+'T12:00:00').toLocaleDateString('pt-BR')} <button type="button" onClick={()=>removerDataEdicao(d)} className="text-red-400 hover:text-red-600 font-bold ml-1">×</button></span>)}</div></div>
+                                    <div className="border-t border-slate-100 py-5"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📅 Datas</label><div className="flex gap-2 mb-2"><input type="date" value={dataEdicao} onChange={e=>setDataEdicao(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:border-indigo-400 outline-none"/><button type="button" onClick={adicionarDataEdicao} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl font-semibold text-sm transition-colors">Add</button></div><div className="flex flex-wrap gap-2">{planoEditando.historicoDatas?.map(d=><span key={d} className="bg-white border border-slate-200 px-2.5 py-1 rounded-full text-sm text-slate-700 font-medium">{new Date(d+'T12:00:00').toLocaleDateString('pt-BR')} <button type="button" onClick={()=>removerDataEdicao(d)} className="text-red-400 hover:text-red-600 font-bold ml-1">×</button></span>)}</div></div>
                                     
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="border-t border-slate-100 py-5 grid grid-cols-2 gap-4">
                                         <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nível</label><select value={planoEditando.nivel} onChange={e=>setPlanoEditando({...planoEditando, nivel: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">{niveis.slice(1).map(n=><option key={n}>{n}</option>)}</select></div>
                                         <div>
                                             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Duração</label>
@@ -6946,11 +6946,11 @@
                                         </div>
                                     </div>
 
-                                    <div className="bg-white rounded-2xl border border-slate-200 p-4">
+                                    <div className="border-t border-slate-100 py-5">
                                         <div className="flex items-center justify-between mb-2">
                                             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Faixa Etária</label>
                                             <button type="button" onClick={()=>{ setNovaFaixaNome(''); setModalNovaFaixa(true); }}
-                                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors"
+                                                className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors"
                                                 title="Adicionar nova faixa etária">+ Nova faixa</button>
                                         </div>
                                         <div className="flex flex-wrap gap-2">
@@ -6963,29 +6963,29 @@
                                         </div>
                                     </div>
                                     
-                                    <div className="bg-violet-50/60 rounded-2xl border border-violet-100 p-4">
-                                        <div className="flex justify-between items-center mb-3"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🎵 Conceitos Musicais</label>{!adicionandoConceito && (<button type="button" onClick={() => setAdicionandoConceito(true)} className="bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">➕ Novo</button>)}</div>
-                                        {adicionandoConceito && (<div className="mb-3 flex gap-2"><input type="text" value={novoConceito} onChange={(e) => setNovoConceito(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarConceitoNovo()} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Digite..." autoFocus /><button type="button" onClick={adicionarConceitoNovo} className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-semibold transition-colors">✓</button><button type="button" onClick={() => { setAdicionandoConceito(false); setNovoConceito(""); }} className="bg-slate-200 hover:bg-slate-300 px-4 py-2 rounded-xl font-semibold transition-colors">✕</button></div>)}
-                                        <div className="flex flex-wrap gap-2">{(conceitos || []).map(conceito => (<button key={conceito} type="button" onClick={() => toggleConceito(conceito)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.conceitos || []).includes(conceito) ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-violet-200 hover:bg-violet-50'}`}>{conceito}</button>))}</div>
+                                    <div className="border-t border-slate-100 py-5">
+                                        <div className="flex justify-between items-center mb-3"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🎵 Conceitos Musicais</label>{!adicionandoConceito && (<button type="button" onClick={() => setAdicionandoConceito(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">+ Novo</button>)}</div>
+                                        {adicionandoConceito && (<div className="mb-3 flex gap-2"><input type="text" value={novoConceito} onChange={(e) => setNovoConceito(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarConceitoNovo()} className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Nome do conceito..." autoFocus /><button type="button" onClick={adicionarConceitoNovo} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✓</button><button type="button" onClick={() => { setAdicionandoConceito(false); setNovoConceito(""); }} className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✕</button></div>)}
+                                        <div className="flex flex-wrap gap-2">{(conceitos || []).map(conceito => (<button key={conceito} type="button" onClick={() => toggleConceito(conceito)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.conceitos || []).includes(conceito) ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>{conceito}</button>))}</div>
                                     </div>
 
 {/* TAGS (Formato/Dinâmica) */}
-                                    <div className="bg-amber-50/60 rounded-2xl border border-amber-100 p-4">
-                                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">🏷️ Tags (dinâmica/formato)</label>
-                                        
+                                    <div className="border-t border-slate-100 py-5">
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">🏷️ Tags</label>
+
                                         {/* Tags selecionadas em chips */}
                                         {(planoEditando.tags || []).length > 0 && (
-                                            <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-amber-300">
+                                            <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-slate-100">
                                                 {(planoEditando.tags || []).map((tag, idx) => (
-                                                    <span key={idx} className="bg-amber-600 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow">
-                                                        ✓ #{tag}
-                                                        <button 
+                                                    <span key={idx} className="bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+                                                        #{tag}
+                                                        <button
                                                             type="button"
                                                             onClick={() => setPlanoEditando({
-                                                                ...planoEditando, 
+                                                                ...planoEditando,
                                                                 tags: planoEditando.tags.filter((_,i)=>i!==idx)
                                                             })}
-                                                            className="hover:bg-amber-700 rounded-full w-5 h-5 flex items-center justify-center"
+                                                            className="hover:bg-indigo-200 rounded-full w-4 h-4 flex items-center justify-center text-indigo-500 transition-colors"
                                                         >
                                                             ×
                                                         </button>
@@ -6993,27 +6993,27 @@
                                                 ))}
                                             </div>
                                         )}
-                                        
+
                                         {/* Seleção rápida de tags existentes */}
-                                        <p className="text-xs font-bold text-amber-700 mb-2">✨ Selecione das existentes:</p>
+                                        <p className="text-xs text-slate-400 mb-2">Selecione das existentes:</p>
                                         <div className="flex flex-wrap gap-2 mb-3">
                                             {(tagsGlobais || []).map(tag => (
-                                                <div key={tag} className="flex items-center gap-1 bg-white border border-amber-300 rounded-full">
-                                                    <button 
-                                                        type="button" 
+                                                <div key={tag} className="flex items-center gap-0 bg-white border border-slate-200 rounded-full hover:border-slate-300 transition-colors">
+                                                    <button
+                                                        type="button"
                                                         onClick={() => {
                                                             if (!(planoEditando.tags||[]).includes(tag)) {
                                                                 setPlanoEditando({
-                                                                    ...planoEditando, 
+                                                                    ...planoEditando,
                                                                     tags: [...(planoEditando.tags||[]), tag]
                                                                 });
                                                             }
                                                         }}
                                                         disabled={(planoEditando.tags||[]).includes(tag)}
-                                                        className={`px-3 py-1 rounded-l-full font-semibold transition-all text-sm ${
+                                                        className={`px-3 py-1 rounded-l-full text-sm transition-all ${
                                                             (planoEditando.tags||[]).includes(tag)
-                                                            ? 'text-amber-400 cursor-not-allowed'
-                                                            : 'text-amber-600 hover:bg-amber-50'
+                                                            ? 'text-slate-300 cursor-not-allowed'
+                                                            : 'text-slate-600 hover:bg-slate-50'
                                                         }`}
                                                     >
                                                         #{tag}
@@ -7031,25 +7031,25 @@
                                                                 }
                                                             } });
                                                         }}
-                                                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-r-full transition-all"
+                                                        className="text-slate-300 hover:text-red-400 px-2 py-1 rounded-r-full transition-all"
                                                     >
                                                         ✕
                                                     </button>
                                                 </div>
                                             ))}
                                         </div>
-                                        
+
                                         {/* Input para adicionar nova tag */}
-                                        <p className="text-xs font-bold text-amber-700 mb-2">➕ Ou adicione nova:</p>
-                                        <input 
-                                            type="text" 
+                                        <p className="text-xs text-slate-400 mb-2">Ou adicione nova:</p>
+                                        <input
+                                            type="text"
                                             onKeyDown={e => {
                                                 if ((e.key === 'Enter' || e.key === ' ') && e.target.value.trim()) {
                                                     e.preventDefault();
                                                     const novaTag = e.target.value.trim().replace(/^#/, '');
                                                     if (novaTag && !(planoEditando.tags || []).includes(novaTag)) {
                                                         setPlanoEditando({
-                                                            ...planoEditando, 
+                                                            ...planoEditando,
                                                             tags: [...(planoEditando.tags||[]), novaTag]
                                                         });
                                                         // Adicionar à lista global
@@ -7060,7 +7060,7 @@
                                                     e.target.value = '';
                                                 }
                                             }}
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none"
+                                            className="w-full px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none"
                                             placeholder="Digite e pressione Enter... Ex: roda, jogos"
                                         />
                                     </div>
@@ -7068,13 +7068,13 @@
                                     {/* MATERIAIS
 
                                     {/* Unidades */}
-                                    <div className="bg-teal-50/60 rounded-2xl border border-teal-100 p-4">
-                                        <div className="flex justify-between items-center mb-3"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">📚 Unidades</label>{!adicionandoUnidade && (<button type="button" onClick={() => setAdicionandoUnidade(true)} className="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">➕ Novo</button>)}</div>
-                                        {adicionandoUnidade && (<div className="mb-3 flex gap-2"><input type="text" value={novaUnidade} onChange={(e) => setNovaUnidade(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarUnidadeNova()} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Digite..." autoFocus /><button type="button" onClick={adicionarUnidadeNova} className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-semibold transition-colors">✓</button><button type="button" onClick={() => { setAdicionandoUnidade(false); setNovaUnidade(""); }} className="bg-slate-200 hover:bg-slate-300 px-4 py-2 rounded-xl font-semibold transition-colors">✕</button></div>)}
-                                        <div className="flex flex-wrap gap-2">{(unidades || []).map(unidade => (<button key={unidade} type="button" onClick={() => toggleUnidade(unidade)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.unidades || []).includes(unidade) ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-teal-200 hover:bg-teal-50'}`}>{unidade}</button>))}</div>
+                                    <div className="border-t border-slate-100 py-5">
+                                        <div className="flex justify-between items-center mb-3"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">📚 Unidades</label>{!adicionandoUnidade && (<button type="button" onClick={() => setAdicionandoUnidade(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">+ Novo</button>)}</div>
+                                        {adicionandoUnidade && (<div className="mb-3 flex gap-2"><input type="text" value={novaUnidade} onChange={(e) => setNovaUnidade(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarUnidadeNova()} className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Nome da unidade..." autoFocus /><button type="button" onClick={adicionarUnidadeNova} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✓</button><button type="button" onClick={() => { setAdicionandoUnidade(false); setNovaUnidade(""); }} className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✕</button></div>)}
+                                        <div className="flex flex-wrap gap-2">{(unidades || []).map(unidade => (<button key={unidade} type="button" onClick={() => toggleUnidade(unidade)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.unidades || []).includes(unidade) ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>{unidade}</button>))}</div>
                                     </div>
 
-                                    <div className="bg-blue-50/40 rounded-2xl border border-blue-100 p-4">
+                                    <div className="border-t border-slate-100 py-5">
                                         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivo Geral *</label>
                                         <RichTextEditor
                                             value={planoEditando.objetivoGeral}
@@ -7084,7 +7084,7 @@
                                         />
                                     </div>
                                     
-                                    <div className="bg-blue-50/40 rounded-2xl border border-blue-100 p-4">
+                                    <div className="border-t border-slate-100 py-5">
                                         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivos Específicos</label>
                                         <RichTextEditor
                                             value={Array.isArray(planoEditando.objetivosEspecificos) 
@@ -7098,23 +7098,23 @@
                                         />
                                     </div>
 
-                                    <div className="bg-orange-50/60 rounded-2xl border border-orange-100 p-4">
-                                        <div className="flex justify-between items-center mb-2"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🏛️ Habilidades BNCC</label><button type="button" onClick={sugerirBNCC} className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors shadow-sm">✨ Sugerir BNCC</button></div>
-                                        <textarea value={(planoEditando.habilidadesBNCC || []).join('\n')} onChange={e => setPlanoEditando({...planoEditando, habilidadesBNCC: e.target.value.split('\n')})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-orange-400 outline-none" rows="5" placeholder="EF15ARXX - Descrição..." />
+                                    <div className="border-t border-slate-100 py-5">
+                                        <div className="flex justify-between items-center mb-2"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🏛️ Habilidades BNCC</label><button type="button" onClick={sugerirBNCC} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">✨ Sugerir</button></div>
+                                        <textarea value={(planoEditando.habilidadesBNCC || []).join('\n')} onChange={e => setPlanoEditando({...planoEditando, habilidadesBNCC: e.target.value.split('\n')})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows="5" placeholder="EF15ARXX - Descrição..." />
                                     </div>
 
                                     {/* Roteiro de Atividades */}
-                                    <div className="bg-indigo-50/60 rounded-2xl border border-indigo-100 p-4">
+                                    <div className="border-t border-slate-100 py-5">
                                         <div className="flex justify-between items-center mb-3">
                                             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">📋 Roteiro de Atividades</label>
                                             <div className="flex gap-2">
-                                                <button type="button" onClick={() => setModalTemplates(true)} className="bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                                                <button type="button" onClick={() => setModalTemplates(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
                                                     📐 Templates
                                                 </button>
                                                 <button type="button" onClick={adicionarAtividadeRoteiro} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
                                                     + Atividade
                                                 </button>
-                                                <button type="button" onClick={() => setModalImportarAtividade(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                                                <button type="button" onClick={() => setModalImportarAtividade(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
                                                     📚 Importar
                                                 </button>
                                             </div>
@@ -7426,12 +7426,12 @@
                                     
 
                                     {/* MATERIAIS - Sistema Inteligente */}
-                                    <div className="bg-violet-50/60 rounded-2xl border border-violet-100 p-4">
+                                    <div className="border-t border-slate-100 py-5">
                                         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">📦 Materiais</label>
                                         
                                         {/* Sugestões Rápidas (Checkboxes) */}
                                         <div className="mb-4">
-                                            <p className="text-xs font-bold text-purple-700 mb-2">✨ Sugestões baseadas no seu histórico:</p>
+                                            <p className="text-xs text-slate-400 mb-2">Sugestões do seu histórico:</p>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                                 {(() => {
                                                     // Extrair materiais mais usados de todos os planos
@@ -7468,7 +7468,7 @@
                                                     return sugestoesFinais.map(mat => {
                                                         const jaAdicionado = planoEditando.materiais.includes(mat);
                                                         return (
-                                                            <div key={mat} className="flex items-center gap-1 bg-white p-2 rounded border hover:bg-purple-50">
+                                                            <div key={mat} className="flex items-center gap-1 bg-white p-2 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
                                                                 <label className="flex items-center gap-2 flex-1 cursor-pointer">
                                                                     <input 
                                                                         type="checkbox" 
@@ -7510,7 +7510,7 @@
                                         
                                         {/* Campo Livre para Novos Materiais */}
                                         <div>
-                                            <p className="text-xs font-bold text-purple-700 mb-2">➕ Adicionar outros materiais:</p>
+                                            <p className="text-xs text-slate-400 mb-2">Adicionar outros:</p>
                                             <div className="flex gap-2 mb-2">
                                                 <input 
                                                     type="text" 
@@ -7536,10 +7536,10 @@
                                         {/* Lista de Materiais Selecionados */}
                                         {planoEditando.materiais.length > 0 && (
                                             <div className="mt-3 pt-3 border-t border-purple-300">
-                                                <p className="text-xs font-bold text-purple-700 mb-2">✅ Selecionados ({planoEditando.materiais.length}):</p>
+                                                <p className="text-xs text-slate-400 mb-2">Selecionados ({planoEditando.materiais.length}):</p>
                                                 <div className="flex flex-wrap gap-2">
                                                     {planoEditando.materiais.map((mat, idx) => (
-                                                        <span key={idx} className="bg-purple-200 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                                                        <span key={idx} className="bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full text-sm flex items-center gap-2">
                                                             {mat}
                                                             <button 
                                                                 type="button"
@@ -7547,7 +7547,7 @@
                                                                     ...planoEditando, 
                                                                     materiais: planoEditando.materiais.filter((_, i) => i !== idx)
                                                                 })}
-                                                                className="text-purple-600 hover:text-purple-900 font-bold"
+                                                                className="text-slate-400 hover:text-red-500 font-bold"
                                                             >
                                                                 ✕
                                                             </button>
@@ -7558,9 +7558,9 @@
                                         )}
                                     </div>
                                     
-                                    <div className="bg-indigo-50/60 rounded-2xl border border-indigo-100 p-4"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🔗 Links e Imagens</label><div className="flex gap-2 mb-3 flex-col md:flex-row"><input type="text" placeholder="URL..." value={novoRecursoUrl} onChange={e => setNovoRecursoUrl(e.target.value)} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /><select value={novoRecursoTipo} onChange={e => setNovoRecursoTipo(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white"><option value="link">Link</option><option value="imagem">Imagem</option></select><button type="button" onClick={adicionarRecurso} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors">Add</button></div><div className="space-y-2">{(planoEditando.recursos || []).map((rec, idx) => (<div key={idx} className="flex justify-between items-center bg-white p-2 rounded-xl border border-slate-200"><div className="flex items-center gap-2 overflow-hidden"><span>{rec.tipo === 'imagem' ? '🖼️' : '🔗'}</span><span className="text-sm truncate max-w-xs text-slate-700">{rec.url}</span></div><button type="button" onClick={() => removerRecurso(idx)} className="text-red-400 hover:text-red-600 font-bold px-2">✕</button></div>))}</div></div>
+                                    <div className="border-t border-slate-100 py-5"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🔗 Links e Imagens</label><div className="flex gap-2 mb-3 flex-col md:flex-row"><input type="text" placeholder="URL..." value={novoRecursoUrl} onChange={e => setNovoRecursoUrl(e.target.value)} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /><select value={novoRecursoTipo} onChange={e => setNovoRecursoTipo(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white"><option value="link">Link</option><option value="imagem">Imagem</option></select><button type="button" onClick={adicionarRecurso} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors">Add</button></div><div className="space-y-2">{(planoEditando.recursos || []).map((rec, idx) => (<div key={idx} className="flex justify-between items-center bg-white p-2 rounded-xl border border-slate-200"><div className="flex items-center gap-2 overflow-hidden"><span>{rec.tipo === 'imagem' ? '🖼️' : '🔗'}</span><span className="text-sm truncate max-w-xs text-slate-700">{rec.url}</span></div><button type="button" onClick={() => removerRecurso(idx)} className="text-red-400 hover:text-red-600 font-bold px-2">✕</button></div>))}</div></div>
                                     
-                                    <div className="bg-white rounded-2xl border border-slate-200 p-4"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows="3" /></div>
+                                    <div className="border-t border-slate-100 py-5"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows="3" /></div>
 
                                     <div className="px-4 py-4 bg-white border-t border-slate-200 flex gap-3 sticky bottom-0"><button type="button" onClick={fecharModal} className="flex-1 py-3 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Cancelar</button><button type="button" onClick={salvarPlano} className="flex-1 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-md">💾 Salvar Plano</button></div>
                                 </div>
