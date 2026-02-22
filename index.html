@@ -367,6 +367,7 @@
             const [viewMode, setViewMode] = useState('lista'); 
             const [musicaEditando, setMusicaEditando] = useState(null);
             const [buscaEstilo, setBuscaEstilo] = useState('');
+            const [accordionAberto, setAccordionAberto] = useState('forma'); // forma | tom | expressao | recursos | vinculos
             const [editandoElemento, setEditandoElemento] = useState(null);
             const lerLS = (chave) => { try { return JSON.parse(localStorage.getItem(chave) || '[]'); } catch { return []; } };
             const [compassosCustomizados, setCompassosCustomizados] = useState(() => lerLS('compassosCustomizados'));
@@ -4772,604 +4773,380 @@
                                             </div>
                                         </div>
                                         
-                                        {/* Elementos Musicais */}
-                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-4">Elementos Musicais</p>
-                                            
-                                            {/* Estilo */}
-                                            <div className="mb-4">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <label className="text-sm font-semibold text-slate-600">Estilo</label>
-                                                    <button type="button" onClick={() => {
-                                                        const novo = prompt('Novo estilo:');
-                                                        if(novo && !ESTILOS_OPCOES.includes(novo)) {
-                                                            setMusicaEditando({...musicaEditando, estilos: [...(musicaEditando.estilos||[]), novo]});
-                                                        }
-                                                    }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
-                                                </div>
-                                                
-                                                {/* Estilos selecionados */}
-                                                <div className="flex flex-wrap gap-2 mb-2">
-                                                    {(musicaEditando.estilos||[]).map((est, i) => (
-                                                        <span key={i} className="bg-slate-800 text-white px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-1">
-                                                            {est}
-                                                            <button type="button" onClick={() => setMusicaEditando({...musicaEditando, estilos: musicaEditando.estilos.filter((_, idx) => idx !== i)})} className="hover:text-red-200 font-bold">×</button>
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                                
-                                                {/* Campo de busca + lista */}
-                                                <div className="relative">
-                                                    <input 
-                                                        type="text" 
-                                                        value={buscaEstilo} 
-                                                        onChange={e => setBuscaEstilo(e.target.value)}
-                                                        placeholder="🔍 Digite para buscar estilos..."
-                                                        className="w-full px-3 py-2 border-2 rounded-lg"
-                                                    />
-                                                    {buscaEstilo && (
-                                                        <div className="absolute z-10 w-full mt-1 bg-white border-2 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                                            {ESTILOS_OPCOES
-                                                                .filter(e => e.toLowerCase().includes(buscaEstilo.toLowerCase()))
-                                                                .map(est => (
-                                                                    <button 
-                                                                        key={est} 
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            const lista = musicaEditando.estilos||[];
-                                                                            if(!lista.includes(est)) {
-                                                                                setMusicaEditando({...musicaEditando, estilos: [...lista, est]});
-                                                                            }
-                                                                            setBuscaEstilo('');
-                                                                        }}
-                                                                        className="w-full text-left px-3 py-2 hover:bg-green-50 text-sm"
-                                                                    >
-                                                                        {est}
-                                                                    </button>
-                                                                ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Compasso */}
-                                            <div className="mb-4">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <label className="text-sm font-semibold text-slate-600">Compasso</label>
-                                                    <div className="flex gap-2">
-                                                        <button type="button" onClick={() => {
-                                                            const novo = prompt('Novo compasso:');
-                                                            if(novo && !COMPASSOS_OPCOES.includes(novo) && !compassosCustomizados.includes(novo)) {
-                                                                const novos = [...compassosCustomizados, novo];
-                                                                setCompassosCustomizados(novos);
-                                                                localStorage.setItem('compassosCustomizados', JSON.stringify(novos));
-                                                                setMusicaEditando({...musicaEditando, compassos: [...(musicaEditando.compassos||[]), novo]});
-                                                            }
-                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('compasso')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {[...COMPASSOS_OPCOES, ...compassosCustomizados].map(comp => {
-                                                        const isCustomizado = !COMPASSOS_OPCOES.includes(comp);
-                                                        const isSelecionado = (musicaEditando.compassos||[]).includes(comp);
-                                                        return (
-                                                            <button key={comp} type="button" onClick={() => {
-                                                                const lista = musicaEditando.compassos||[];
-                                                                setMusicaEditando({...musicaEditando, compassos: lista.includes(comp) ? lista.filter(c => c !== comp) : [...lista, comp]});
-                                                            }} className={`px-3 py-1 rounded-full text-sm font-semibold transition ${isSelecionado ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-400'}`}>
-                                                                {comp}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Tonalidade/Modo */}
-                                            <div className="mb-4">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <label className="text-sm font-semibold text-slate-600">Tonalidade / Modo</label>
-                                                    <div className="flex gap-2">
-                                                        <button type="button" onClick={() => {
-                                                            const novo = prompt('Nova tonalidade:');
-                                                            if(novo && !TONALIDADES_OPCOES.includes(novo) && !tonalidadesCustomizadas.includes(novo)) {
-                                                                const novos = [...tonalidadesCustomizadas, novo];
-                                                                setTonalidadesCustomizadas(novos);
-                                                                localStorage.setItem('tonalidadesCustomizadas', JSON.stringify(novos));
-                                                                setMusicaEditando({...musicaEditando, tonalidades: [...(musicaEditando.tonalidades||[]), novo]});
-                                                            }
-                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('tonalidade')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {[...TONALIDADES_OPCOES, ...tonalidadesCustomizadas].map(ton => {
-                                                        const isCustomizado = !TONALIDADES_OPCOES.includes(ton);
-                                                        const isSelecionado = (musicaEditando.tonalidades||[]).includes(ton);
-                                                        return <div key={ton} className={`px-3 py-1 rounded-full text-sm font-semibold transition flex items-center gap-1 ${isSelecionado ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-400'}`}><button type="button" onClick={() => {const lista = musicaEditando.tonalidades||[]; setMusicaEditando({...musicaEditando, tonalidades: lista.includes(ton) ? lista.filter(t => t !== ton) : [...lista, ton]});}} className="hover:opacity-80">{ton}</button>{isCustomizado && <button type="button" onClick={() => {const novos = tonalidadesCustomizadas.filter(t => t !== ton); setTonalidadesCustomizadas(novos); localStorage.setItem('tonalidadesCustomizadas', JSON.stringify(novos)); setMusicaEditando({...musicaEditando, tonalidades: (musicaEditando.tonalidades||[]).filter(t => t !== ton)});}} className="hover:text-red-300 font-bold ml-1">×</button>}</div>;
-                                                    })}
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Andamento */}
-                                            <div className="mb-4">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <label className="text-sm font-semibold text-slate-600">Andamento</label>
-                                                    <div className="flex gap-2">
-                                                        <button type="button" onClick={() => {
-                                                            const novo = prompt('Novo andamento:');
-                                                            if(novo && !ANDAMENTOS_OPCOES.includes(novo) && !andamentosCustomizados.includes(novo)) {
-                                                                const novos = [...andamentosCustomizados, novo];
-                                                                setAndamentosCustomizados(novos);
-                                                                localStorage.setItem('andamentosCustomizados', JSON.stringify(novos));
-                                                                setMusicaEditando({...musicaEditando, andamentos: [...(musicaEditando.andamentos||[]), novo]});
-                                                            }
-                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('andamento')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {[...ANDAMENTOS_OPCOES, ...andamentosCustomizados].map(and => {
-                                                        const isSelecionado = (musicaEditando.andamentos||[]).includes(and);
-                                                        return <button key={and} type="button" onClick={() => {
-                                                            const lista = musicaEditando.andamentos||[];
-                                                            setMusicaEditando({...musicaEditando, andamentos: lista.includes(and) ? lista.filter(a => a !== and) : [...lista, and]});
-                                                        }} className={`px-3 py-1 rounded-full text-sm font-semibold transition ${isSelecionado ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-400'}`}>{and}</button>;
-                                                    })}
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Escala */}
-                                            <div className="mb-4">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <label className="text-sm font-semibold text-slate-600">Escala</label>
-                                                    <div className="flex gap-2">
-                                                        <button type="button" onClick={() => {
-                                                            const novo = prompt('Nova escala:');
-                                                            if(novo && !ESCALAS_OPCOES.includes(novo) && !escalasCustomizadas.includes(novo)) {
-                                                                const novos = [...escalasCustomizadas, novo];
-                                                                setEscalasCustomizadas(novos);
-                                                                localStorage.setItem('escalasCustomizadas', JSON.stringify(novos));
-                                                                setMusicaEditando({...musicaEditando, escalas: [...(musicaEditando.escalas||[]), novo]});
-                                                            }
-                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('escala')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {[...ESCALAS_OPCOES, ...escalasCustomizadas].map(esc => {
-                                                        const isSelecionado = (musicaEditando.escalas||[]).includes(esc);
-                                                        return <button key={esc} type="button" onClick={() => {
-                                                            const lista = musicaEditando.escalas||[];
-                                                            setMusicaEditando({...musicaEditando, escalas: lista.includes(esc) ? lista.filter(e => e !== esc) : [...lista, esc]});
-                                                        }} className={`px-3 py-1 rounded-full text-sm font-semibold transition ${isSelecionado ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-400'}`}>{esc}</button>;
-                                                    })}
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Estrutura */}
-                                            <div className="mb-4">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <label className="text-sm font-semibold text-slate-600">Estrutura</label>
-                                                    <div className="flex gap-2">
-                                                        <button type="button" onClick={() => {
-                                                            const novo = prompt('Nova estrutura:');
-                                                            if(novo && !ESTRUTURAS_OPCOES.includes(novo) && !estruturasCustomizadas.includes(novo)) {
-                                                                const novos = [...estruturasCustomizadas, novo];
-                                                                setEstruturasCustomizadas(novos);
-                                                                localStorage.setItem('estruturasCustomizadas', JSON.stringify(novos));
-                                                                setMusicaEditando({...musicaEditando, estruturas: [...(musicaEditando.estruturas||[]), novo]});
-                                                            }
-                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('estrutura')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {[...ESTRUTURAS_OPCOES, ...estruturasCustomizadas].map(est => {
-                                                        const isSelecionado = (musicaEditando.estruturas||[]).includes(est);
-                                                        return <button key={est} type="button" onClick={() => {
-                                                            const lista = musicaEditando.estruturas||[];
-                                                            setMusicaEditando({...musicaEditando, estruturas: lista.includes(est) ? lista.filter(e => e !== est) : [...lista, est]});
-                                                        }} className={`px-3 py-1 rounded-full text-sm font-semibold transition ${isSelecionado ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-400'}`}>{est}</button>;
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* Dinâmica */}
-                                            <div className="mb-4">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <label className="text-sm font-semibold text-slate-600">Dinâmica</label>
-                                                    <div className="flex gap-2">
-                                                        <button type="button" onClick={() => {
-                                                            const novo = prompt('Nova dinâmica:');
-                                                            if(novo && !DINAMICAS_OPCOES.includes(novo) && !dinamicasCustomizadas.includes(novo)) {
-                                                                const novos = [...dinamicasCustomizadas, novo];
-                                                                setDinamicasCustomizadas(novos);
-                                                                localStorage.setItem('dinamicasCustomizadas', JSON.stringify(novos));
-                                                                setMusicaEditando({...musicaEditando, dinamicas: [...(musicaEditando.dinamicas||[]), novo]});
-                                                            }
-                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('dinamica')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {[
-                                                        {val:'Pianíssimo',  label:'pp  Pianíssimo',  cor:'bg-sky-100 text-sky-800 border-sky-300'},
-                                                        {val:'Piano',       label:'p  Piano',        cor:'bg-blue-100 text-blue-800 border-blue-300'},
-                                                        {val:'Meio-Piano',  label:'mp  Meio-Piano',  cor:'bg-indigo-100 text-indigo-800 border-indigo-300'},
-                                                        {val:'Meio-Forte',  label:'mf  Meio-Forte',  cor:'bg-amber-100 text-amber-800 border-amber-300'},
-                                                        {val:'Forte',       label:'f  Forte',        cor:'bg-orange-100 text-orange-800 border-orange-300'},
-                                                        {val:'Fortíssimo',  label:'ff  Fortíssimo',  cor:'bg-red-100 text-red-800 border-red-300'},
-                                                        {val:'Crescendo',   label:'↗ Crescendo',     cor:'bg-green-100 text-green-800 border-green-300'},
-                                                        {val:'Decrescendo', label:'↘ Decrescendo',   cor:'bg-teal-100 text-teal-800 border-teal-300'},
-                                                        {val:'Legato',      label:'⌢ Legato',        cor:'bg-purple-100 text-purple-800 border-purple-300'},
-                                                        {val:'Staccato',    label:'• Staccato',      cor:'bg-rose-100 text-rose-800 border-rose-300'},
-                                                        ...dinamicasCustomizadas.map(d => ({val:d, label:d, cor:'bg-gray-100 text-gray-800 border-gray-300'}))
-                                                    ].map(({label, val, cor}) => {
-                                                        const sel = (musicaEditando.dinamicas||[]).includes(val);
-                                                        return (
-                                                            <button key={val} type="button"
-                                                                onClick={() => { const l=musicaEditando.dinamicas||[]; setMusicaEditando({...musicaEditando, dinamicas: sel?l.filter(x=>x!==val):[...l,val]}); }}
-                                                                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${sel ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-400'}`}>
-                                                                {label}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* Instrumentação */}
-                                            <div className="mb-4">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <label className="text-sm font-semibold text-slate-600">Instrumentação</label>
-                                                    <div className="flex gap-2">
-                                                        <button type="button" onClick={() => {
-                                                            const novo = prompt('Novo instrumento:');
-                                                            if(novo && !INSTRUMENTACAO_OPCOES.includes(novo) && !instrumentacaoCustomizada.includes(novo)) {
-                                                                const novos = [...instrumentacaoCustomizada, novo];
-                                                                setInstrumentacaoCustomizada(novos);
-                                                                localStorage.setItem('instrumentacaoCustomizada', JSON.stringify(novos));
-                                                                setMusicaEditando({...musicaEditando, instrumentacao:[...(musicaEditando.instrumentacao||[]), novo]});
-                                                            }
-                                                        }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
-                                                        <button type="button" onClick={() => setEditandoElemento('instrumentacao')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2 mb-2">
-                                                    {[...INSTRUMENTACAO_OPCOES, ...instrumentacaoCustomizada].map(inst => {
-                                                        const sel = (musicaEditando.instrumentacao||[]).includes(inst);
-                                                        return (
-                                                            <button key={inst} type="button"
-                                                                onClick={() => { const l=musicaEditando.instrumentacao||[]; setMusicaEditando({...musicaEditando, instrumentacao: sel?l.filter(x=>x!==inst):[...l,inst]}); }}
-                                                                className={`px-3 py-1.5 rounded-full text-sm font-semibold border-2 transition-all ${sel ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-400'}`}>
-                                                                {inst}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                                {/* Instrumento destaque */}
-                                                <div className="mt-2">
-                                                    <label className="block text-xs text-slate-400 mb-1">Instrumento em destaque (solo/protagonista):</label>
-                                                    <input type="text"
-                                                        value={musicaEditando.instrumentoDestaque||''}
-                                                        onChange={e=>setMusicaEditando({...musicaEditando, instrumentoDestaque: e.target.value})}
-                                                        placeholder="Ex: violino solo, flauta doce..."
-                                                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400"/>
-                                                </div>
-                                            </div>
-
-                                        </div>
-                                        
-                                        {/* Energia */}
-                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                                            <div className="flex justify-between items-center mb-4">
-                                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">⚡ Energia</p>
-                                                <div className="flex gap-3">
-                                                    <button type="button" onClick={() => {
-                                                        const novo = prompt('Nova energia:');
-                                                        if(novo && !ENERGIAS_OPCOES.includes(novo) && !energiasCustomizadas.includes(novo)) {
-                                                            const novos = [...energiasCustomizadas, novo];
-                                                            setEnergiasCustomizadas(novos);
-                                                            localStorage.setItem('energiasCustomizadas', JSON.stringify(novos));
-                                                            setMusicaEditando({...musicaEditando, energias:[...(musicaEditando.energias||[]), novo]});
-                                                        }
-                                                    }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">+ Adicionar</button>
-                                                    <button type="button" onClick={() => setEditandoElemento('energia')} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition">🗑️ Excluir</button>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {[...ENERGIAS_OPCOES, ...energiasCustomizadas].map(e => {
-                                                    const sel = (musicaEditando.energias||[]).includes(e);
-                                                    const cores = {'Calma':'bg-blue-100 text-blue-700 border-blue-300','Relaxante':'bg-teal-100 text-teal-700 border-teal-300','Animada':'bg-yellow-100 text-yellow-700 border-yellow-300','Dançante':'bg-orange-100 text-orange-700 border-orange-300','Alegre':'bg-green-100 text-green-700 border-green-300','Triste':'bg-indigo-100 text-indigo-700 border-indigo-300','Meditativa':'bg-purple-100 text-purple-700 border-purple-300','Enérgica':'bg-red-100 text-red-700 border-red-300','Misteriosa':'bg-gray-200 text-gray-700 border-gray-400','Brincalhona':'bg-lime-100 text-lime-700 border-lime-300','Épica':'bg-amber-100 text-amber-700 border-amber-300','Romântica':'bg-rose-100 text-rose-700 border-rose-300'};
-                                                    const cor = cores[e] || 'bg-pink-100 text-pink-700 border-pink-300';
-                                                    return (
-                                                        <button key={e} type="button"
-                                                            onClick={() => { const l=musicaEditando.energias||[]; setMusicaEditando({...musicaEditando, energias: sel?l.filter(x=>x!==e):[...l,e]}); }}
-                                                            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${sel ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-400'}`}>
-                                                            {e}
+                                        {/* ── ACCORDION: Elementos Musicais, Recursos, Vínculos ── */}
+                                        {(() => {
+                                            const Acc = ({ id, titulo, subtitulo, badge }) => {
+                                                const aberto = accordionAberto === id;
+                                                return (
+                                                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                                        <button type="button"
+                                                            onClick={() => setAccordionAberto(aberto ? null : id)}
+                                                            className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition text-left">
+                                                            <div>
+                                                                <span className="text-sm font-semibold text-slate-700">{titulo}</span>
+                                                                {subtitulo && <span className="text-xs text-slate-400 ml-2">{subtitulo}</span>}
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                {badge > 0 && <span className="text-xs bg-indigo-100 text-indigo-600 font-bold px-2 py-0.5 rounded-full">{badge}</span>}
+                                                                <span className={`text-slate-300 text-xs transition-transform duration-200 ${aberto ? 'rotate-180' : ''}`}>▼</span>
+                                                            </div>
                                                         </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
+                                                        {aberto && <div className="border-t border-slate-100 px-5 py-5 space-y-5" id={`acc-${id}`}></div>}
+                                                    </div>
+                                                );
+                                            };
 
-                                        {/* Observações */}
-                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">📝 Observações</p>
-                                            <textarea 
-                                                value={musicaEditando.observacoes || ''} 
-                                                onChange={e => setMusicaEditando({...musicaEditando, observacoes: e.target.value})}
-                                                placeholder="Anotações sobre a música..."
-                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 resize-none"
-                                                rows="4"
-                                            ></textarea>
-                                        </div>
-                                        
-                                        {/* Recursos */}
-                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">📎 Recursos</p>
-                                            <div className="flex gap-2 mb-3">
-                                                <button onClick={() => {
-                                                    const url = prompt('Cole o link:');
-                                                    if(url) setMusicaEditando({...musicaEditando, links: [...(musicaEditando.links||[]), url]});
-                                                }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold transition">🔗 Link</button>
-                                                
-                                                <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold text-center cursor-pointer transition">
-                                                    📄 PDF
-                                                    <input type="file" accept=".pdf" className="hidden" onChange={e => {
-                                                        const file = e.target.files[0];
-                                                        if(file) {
-                                                            const reader = new FileReader();
-                                                            reader.onload = () => {
-                                                                setMusicaEditando({...musicaEditando, pdfs: [...(musicaEditando.pdfs||[]), {nome: file.name, data: reader.result}]});
-                                                            };
-                                                            reader.readAsDataURL(file);
-                                                        }
-                                                        e.target.value = '';
-                                                    }} />
-                                                </label>
-                                                
-                                                <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold text-center cursor-pointer transition">
-                                                    🎧 Áudio/Vídeo
-                                                    <input type="file" accept="audio/*,video/*" className="hidden" onChange={e => {
-                                                        const file = e.target.files[0];
-                                                        if(file) {
-                                                            const reader = new FileReader();
-                                                            reader.onload = () => {
-                                                                setMusicaEditando({...musicaEditando, audios: [...(musicaEditando.audios||[]), {nome: file.name, data: reader.result}]});
-                                                            };
-                                                            reader.readAsDataURL(file);
-                                                        }
-                                                        e.target.value = '';
-                                                    }} />
-                                                </label>
-                                            </div>
-                                            <div className="space-y-1.5 text-sm">
-                                                {(musicaEditando.links||[]).map((l, i) => (
-                                                    <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg">
-                                                        <a href={l} target="_blank" className="flex-1 truncate text-indigo-600 hover:underline text-xs">🔗 {l}</a>
-                                                        <button onClick={() => setMusicaEditando({...musicaEditando, links: musicaEditando.links.filter((_, idx) => idx !== i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button>
+                                            const chips = (lista, selecionados, onToggle) => (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {lista.map(item => {
+                                                        const sel = (selecionados||[]).includes(item);
+                                                        return <button key={item} type="button" onClick={() => onToggle(item)}
+                                                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${sel ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-400'}`}>{item}</button>;
+                                                    })}
+                                                </div>
+                                            );
+
+                                            const labelRow = (texto, onAdd, onDel) => (
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{texto}</label>
+                                                    <div className="flex gap-3">
+                                                        {onAdd && <button type="button" onClick={onAdd} className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold transition">+ personalizar</button>}
+                                                        {onDel && <button type="button" onClick={onDel} className="text-xs text-slate-400 hover:text-red-500 font-semibold transition">🗑️ excluir</button>}
                                                     </div>
-                                                ))}
-                                                {(musicaEditando.pdfs||[]).map((p, i) => (
-                                                    <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg">
-                                                        <a href={typeof p === 'string' ? p : p.data} target="_blank" className="flex-1 truncate text-slate-600 hover:underline text-xs">📄 {typeof p === 'string' ? p : p.nome}</a>
-                                                        <button onClick={() => setMusicaEditando({...musicaEditando, pdfs: musicaEditando.pdfs.filter((_, idx) => idx !== i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button>
+                                                </div>
+                                            );
+
+                                            // Badge counts
+                                            const badgeForma = [(musicaEditando.estilos||[]).length, (musicaEditando.compassos||[]).length, (musicaEditando.estruturas||[]).length].reduce((a,b)=>a+b,0);
+                                            const badgeTom = [(musicaEditando.tonalidades||[]).length, (musicaEditando.andamentos||[]).length, (musicaEditando.escalas||[]).length].reduce((a,b)=>a+b,0);
+                                            const badgeExp = [(musicaEditando.dinamicas||[]).length, (musicaEditando.energias||[]).length, (musicaEditando.instrumentacao||[]).length].reduce((a,b)=>a+b,0);
+                                            const badgeRec = [(musicaEditando.links||[]).length, (musicaEditando.pdfs||[]).length, (musicaEditando.audios||[]).length].reduce((a,b)=>a+b,0);
+                                            const badgeVinc = [(musicaEditando.planosVinculados||[]).length, (musicaEditando.atividadesVinculadas||[]).length].reduce((a,b)=>a+b,0);
+
+                                            return (<>
+
+                                            {/* ACCORDION 1 — Forma e Estrutura */}
+                                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                                <button type="button" onClick={() => setAccordionAberto(accordionAberto === 'forma' ? null : 'forma')}
+                                                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition text-left">
+                                                    <div>
+                                                        <span className="text-sm font-semibold text-slate-700">🎵 Forma e Estrutura</span>
+                                                        <span className="text-xs text-slate-400 ml-2">Estilo · Compasso · Estrutura</span>
                                                     </div>
-                                                ))}
-                                                {(musicaEditando.audios||[]).map((a, i) => (
-                                                    <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg">
-                                                        <a href={typeof a === 'string' ? a : a.data} target="_blank" className="flex-1 truncate text-slate-600 hover:underline text-xs">🎧 {typeof a === 'string' ? a : a.nome}</a>
-                                                        <button onClick={() => setMusicaEditando({...musicaEditando, audios: musicaEditando.audios.filter((_, idx) => idx !== i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button>
+                                                    <div className="flex items-center gap-2">
+                                                        {badgeForma > 0 && <span className="text-xs bg-indigo-100 text-indigo-600 font-bold px-2 py-0.5 rounded-full">{badgeForma}</span>}
+                                                        <span className={`text-slate-300 text-xs transition-transform duration-200 ${accordionAberto === 'forma' ? 'rotate-180' : ''}`}>▼</span>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        
-                                        {/* Modal Excluir Opções */}
-                                        {editandoElemento && (
-                                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setEditandoElemento(null)}>
-                                                <div className="bg-white p-6 rounded-xl max-w-md w-full" onClick={e => e.stopPropagation()}>
-                                                    <h3 className="text-lg font-bold mb-4">Excluir Opções</h3>
-                                                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                                                        {(editandoElemento === 'compasso' ? [...COMPASSOS_OPCOES, ...compassosCustomizados] : 
-                                                          editandoElemento === 'tonalidade' ? [...TONALIDADES_OPCOES, ...tonalidadesCustomizadas] : 
-                                                          editandoElemento === 'andamento' ? [...ANDAMENTOS_OPCOES, ...andamentosCustomizados] : 
-                                                          editandoElemento === 'escala' ? [...ESCALAS_OPCOES, ...escalasCustomizadas] : 
-                                                          editandoElemento === 'dinamica' ? [...DINAMICAS_OPCOES, ...dinamicasCustomizadas] :
-                                                          editandoElemento === 'energia' ? [...ENERGIAS_OPCOES, ...energiasCustomizadas] :
-                                                          editandoElemento === 'instrumentacao' ? [...INSTRUMENTACAO_OPCOES, ...instrumentacaoCustomizada] :
-                                                          [...ESTRUTURAS_OPCOES, ...estruturasCustomizadas]).map(item => {
-                                                            const isPadrao = (editandoElemento === 'compasso' && COMPASSOS_OPCOES.includes(item)) ||
-                                                                           (editandoElemento === 'tonalidade' && TONALIDADES_OPCOES.includes(item)) ||
-                                                                           (editandoElemento === 'andamento' && ANDAMENTOS_OPCOES.includes(item)) ||
-                                                                           (editandoElemento === 'escala' && ESCALAS_OPCOES.includes(item)) ||
-                                                                           (editandoElemento === 'dinamica' && DINAMICAS_OPCOES.includes(item)) ||
-                                                                           (editandoElemento === 'energia' && ENERGIAS_OPCOES.includes(item)) ||
-                                                                           (editandoElemento === 'instrumentacao' && INSTRUMENTACAO_OPCOES.includes(item)) ||
-                                                                           (editandoElemento === 'estrutura' && ESTRUTURAS_OPCOES.includes(item));
-                                                            return (
-                                                            <div key={item} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                                                                <span>{item} {isPadrao && <span className="text-xs text-gray-400">(padrão)</span>}</span>
-                                                                {!isPadrao && (
-                                                                    <button type="button" onClick={() => {
-                                                                    if(editandoElemento === 'compasso') {
-                                                                        const novos = compassosCustomizados.filter(c => c !== item);
-                                                                        setCompassosCustomizados(novos);
-                                                                        localStorage.setItem('compassosCustomizados', JSON.stringify(novos));
-                                                                        setMusicaEditando({...musicaEditando, compassos: (musicaEditando.compassos||[]).filter(c => c !== item)});
-                                                                    } else if(editandoElemento === 'tonalidade') {
-                                                                        const novos = tonalidadesCustomizadas.filter(t => t !== item);
-                                                                        setTonalidadesCustomizadas(novos);
-                                                                        localStorage.setItem('tonalidadesCustomizadas', JSON.stringify(novos));
-                                                                        setMusicaEditando({...musicaEditando, tonalidades: (musicaEditando.tonalidades||[]).filter(t => t !== item)});
-                                                                    } else if(editandoElemento === 'andamento') {
-                                                                        const novos = andamentosCustomizados.filter(a => a !== item);
-                                                                        setAndamentosCustomizados(novos);
-                                                                        localStorage.setItem('andamentosCustomizados', JSON.stringify(novos));
-                                                                        setMusicaEditando({...musicaEditando, andamentos: (musicaEditando.andamentos||[]).filter(a => a !== item)});
-                                                                    } else if(editandoElemento === 'escala') {
-                                                                        const novos = escalasCustomizadas.filter(e => e !== item);
-                                                                        setEscalasCustomizadas(novos);
-                                                                        localStorage.setItem('escalasCustomizadas', JSON.stringify(novos));
-                                                                        setMusicaEditando({...musicaEditando, escalas: (musicaEditando.escalas||[]).filter(e => e !== item)});
-                                                                    } else if(editandoElemento === 'estrutura') {
-                                                                        const novos = estruturasCustomizadas.filter(e => e !== item);
-                                                                        setEstruturasCustomizadas(novos);
-                                                                        localStorage.setItem('estruturasCustomizadas', JSON.stringify(novos));
-                                                                        setMusicaEditando({...musicaEditando, estruturas: (musicaEditando.estruturas||[]).filter(e => e !== item)});
-                                                                    } else if(editandoElemento === 'dinamica') {
-                                                                        const novos = dinamicasCustomizadas.filter(d => d !== item);
-                                                                        setDinamicasCustomizadas(novos);
-                                                                        localStorage.setItem('dinamicasCustomizadas', JSON.stringify(novos));
-                                                                        setMusicaEditando({...musicaEditando, dinamicas: (musicaEditando.dinamicas||[]).filter(d => d !== item)});
-                                                                    } else if(editandoElemento === 'energia') {
-                                                                        const novos = energiasCustomizadas.filter(e => e !== item);
-                                                                        setEnergiasCustomizadas(novos);
-                                                                        localStorage.setItem('energiasCustomizadas', JSON.stringify(novos));
-                                                                        setMusicaEditando({...musicaEditando, energias: (musicaEditando.energias||[]).filter(e => e !== item)});
-                                                                    } else if(editandoElemento === 'instrumentacao') {
-                                                                        const novos = instrumentacaoCustomizada.filter(i => i !== item);
-                                                                        setInstrumentacaoCustomizada(novos);
-                                                                        localStorage.setItem('instrumentacaoCustomizada', JSON.stringify(novos));
-                                                                        setMusicaEditando({...musicaEditando, instrumentacao: (musicaEditando.instrumentacao||[]).filter(i => i !== item)});
-                                                                    }
-                                                                }} className="text-red-600 hover:text-red-800 font-bold">🗑️</button>
+                                                </button>
+                                                {accordionAberto === 'forma' && (
+                                                    <div className="border-t border-slate-100 px-5 py-5 space-y-5">
+                                                        {/* Estilo */}
+                                                        <div>
+                                                            {labelRow('Estilo',
+                                                                () => { const novo = prompt('Novo estilo:'); if(novo && !ESTILOS_OPCOES.includes(novo)) setMusicaEditando({...musicaEditando, estilos: [...(musicaEditando.estilos||[]), novo]}); },
+                                                                null
+                                                            )}
+                                                            {/* Selecionados */}
+                                                            {(musicaEditando.estilos||[]).length > 0 && (
+                                                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                                                    {(musicaEditando.estilos||[]).map((est,i) => (
+                                                                        <span key={i} className="bg-slate-800 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                                                                            {est}
+                                                                            <button type="button" onClick={() => setMusicaEditando({...musicaEditando, estilos: musicaEditando.estilos.filter((_,idx)=>idx!==i)})} className="hover:text-red-300 ml-0.5">×</button>
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            <div className="relative">
+                                                                <input type="text" value={buscaEstilo} onChange={e => setBuscaEstilo(e.target.value)}
+                                                                    placeholder="Buscar estilos..."
+                                                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400" />
+                                                                {buscaEstilo && (
+                                                                    <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                                                        {ESTILOS_OPCOES.filter(e => e.toLowerCase().includes(buscaEstilo.toLowerCase())).map(est => (
+                                                                            <button key={est} type="button" onClick={() => { const l=musicaEditando.estilos||[]; if(!l.includes(est)) setMusicaEditando({...musicaEditando, estilos:[...l,est]}); setBuscaEstilo(''); }}
+                                                                                className="w-full text-left px-3 py-2 hover:bg-slate-50 text-sm text-slate-700">{est}</button>
+                                                                        ))}
+                                                                    </div>
                                                                 )}
                                                             </div>
-                                                        );
-                                                        })}
-                                                    </div>
-                                                    <button onClick={() => setEditandoElemento(null)} className="mt-4 w-full bg-gray-600 text-white py-2 rounded font-bold">Fechar</button>
-                                                </div>
-                                            </div>
-                                        )}
-                                        
-                                        {/* Vincular a Atividade ou Aula */}
-                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">🔗 Vínculos</p>
-                                            <p className="text-xs text-slate-400 mb-4">Associe esta música a uma aula ou atividade do banco</p>
-
-                                            {/* Vincular a Aula (plano) */}
-                                            <div className="mb-4">
-                                                <label className="block text-sm font-semibold text-slate-600 mb-2">📋 Aulas (Planos de Aula)</label>
-                                                <input type="text" placeholder="🔍 Buscar aula pelo título..." 
-                                                    onChange={e => { const el = document.getElementById('listaAulasVincular'); el.style.display = e.target.value ? 'block' : 'none'; }}
-                                                    onFocus={e => { document.getElementById('listaAulasVincular').style.display = 'block'; }}
-                                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 mb-1"
-                                                    id="inputBuscaAulaVincular"
-                                                />
-                                                <div id="listaAulasVincular" style={{display:'none'}} className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg bg-white">
-                                                    {planos.filter(p => {
-                                                        const busca = document.getElementById('inputBuscaAulaVincular')?.value?.toLowerCase()||'';
-                                                        return !busca || (p.titulo||'').toLowerCase().includes(busca);
-                                                    }).map(p => {
-                                                        const jaVinc = (musicaEditando.planosVinculados||[]).includes(p.id);
-                                                        return (
-                                                            <div key={p.id} className={`flex items-center justify-between px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-gray-100 ${jaVinc?'bg-indigo-50':''}`}
-                                                                onClick={() => {
-                                                                    const lista = musicaEditando.planosVinculados||[];
-                                                                    setMusicaEditando({...musicaEditando, planosVinculados: jaVinc ? lista.filter(id=>id!==p.id) : [...lista, p.id]});
-                                                                }}>
-                                                                <span className="text-sm text-gray-800">{p.titulo||'Sem título'}</span>
-                                                                {jaVinc && <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full">✓ vinculada</span>}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                                {(musicaEditando.planosVinculados||[]).length > 0 && (
-                                                    <div className="flex flex-wrap gap-1 mt-2">
-                                                        {(musicaEditando.planosVinculados||[]).map(id => {
-                                                            const p = planos.find(pl=>pl.id===id);
-                                                            return p ? <span key={id} className="bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-full flex items-center gap-1">📋 {p.titulo} <button type="button" onClick={()=>setMusicaEditando({...musicaEditando, planosVinculados:(musicaEditando.planosVinculados||[]).filter(x=>x!==id)})} className="hover:text-red-600 font-bold">×</button></span> : null;
-                                                        })}
+                                                        </div>
+                                                        {/* Compasso */}
+                                                        <div>
+                                                            {labelRow('Compasso',
+                                                                () => { const novo = prompt('Novo compasso:'); if(novo && !COMPASSOS_OPCOES.includes(novo) && !compassosCustomizados.includes(novo)) { const novos=[...compassosCustomizados,novo]; setCompassosCustomizados(novos); localStorage.setItem('compassosCustomizados',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, compassos:[...(musicaEditando.compassos||[]),novo]}); }},
+                                                                () => setEditandoElemento('compasso')
+                                                            )}
+                                                            {chips([...COMPASSOS_OPCOES,...compassosCustomizados], musicaEditando.compassos, comp => { const l=musicaEditando.compassos||[]; setMusicaEditando({...musicaEditando, compassos: l.includes(comp)?l.filter(c=>c!==comp):[...l,comp]}); })}
+                                                        </div>
+                                                        {/* Estrutura */}
+                                                        <div>
+                                                            {labelRow('Estrutura',
+                                                                () => { const novo = prompt('Nova estrutura:'); if(novo && !ESTRUTURAS_OPCOES.includes(novo) && !estruturasCustomizadas.includes(novo)) { const novos=[...estruturasCustomizadas,novo]; setEstruturasCustomizadas(novos); localStorage.setItem('estruturasCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, estruturas:[...(musicaEditando.estruturas||[]),novo]}); }},
+                                                                () => setEditandoElemento('estrutura')
+                                                            )}
+                                                            {chips([...ESTRUTURAS_OPCOES,...estruturasCustomizadas], musicaEditando.estruturas, est => { const l=musicaEditando.estruturas||[]; setMusicaEditando({...musicaEditando, estruturas: l.includes(est)?l.filter(e=>e!==est):[...l,est]}); })}
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
 
-                                            {/* Vincular a Atividade do banco */}
-                                            <div>
-                                                <label className="block text-sm font-semibold text-slate-600 mb-2">🎯 Atividades do Banco</label>
-                                                <input type="text" placeholder="🔍 Buscar atividade pelo nome..."
-                                                    id="inputBuscaAtivVincular"
-                                                    onChange={e => { document.getElementById('listaAtivVincular').style.display = e.target.value ? 'block' : 'none'; }}
-                                                    onFocus={() => { document.getElementById('listaAtivVincular').style.display = 'block'; }}
-                                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 mb-1"
-                                                />
-                                                <div id="listaAtivVincular" style={{display:'none'}} className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg bg-white">
-                                                    {atividades.filter(a => {
-                                                        const busca = document.getElementById('inputBuscaAtivVincular')?.value?.toLowerCase()||'';
-                                                        return !busca || (a.nome||'').toLowerCase().includes(busca);
-                                                    }).map(a => {
-                                                        const jaVinc = (musicaEditando.atividadesVinculadas||[]).find(x=>x.id===a.id);
-                                                        return (
-                                                            <div key={a.id} className={`flex items-center justify-between px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-gray-100 ${jaVinc?'bg-indigo-50':''}`}
-                                                                onClick={() => {
-                                                                    const lista = musicaEditando.atividadesVinculadas||[];
-                                                                    setMusicaEditando({...musicaEditando, atividadesVinculadas: jaVinc ? lista.filter(x=>x.id!==a.id) : [...lista, {id:a.id, nome:a.nome}]});
-                                                                }}>
-                                                                <span className="text-sm text-gray-800">{a.nome||'Sem nome'}</span>
-                                                                {jaVinc && <span className="text-xs bg-slate-700 text-white px-2 py-0.5 rounded-full">✓ vinculada</span>}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                    {atividades.length === 0 && <p className="text-center text-gray-400 py-4 text-sm">Nenhuma atividade no banco</p>}
-                                                </div>
-                                                {(musicaEditando.atividadesVinculadas||[]).length > 0 && (
-                                                    <div className="flex flex-wrap gap-1 mt-2">
-                                                        {(musicaEditando.atividadesVinculadas||[]).map(a => (
-                                                            <span key={a.id} className="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded-full flex items-center gap-1">🎯 {a.nome} <button type="button" onClick={()=>setMusicaEditando({...musicaEditando, atividadesVinculadas:(musicaEditando.atividadesVinculadas||[]).filter(x=>x.id!==a.id)})} className="hover:text-red-600 font-bold">×</button></span>
-                                                        ))}
+                                            {/* ACCORDION 2 — Tom e Ritmo */}
+                                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                                <button type="button" onClick={() => setAccordionAberto(accordionAberto === 'tom' ? null : 'tom')}
+                                                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition text-left">
+                                                    <div>
+                                                        <span className="text-sm font-semibold text-slate-700">🎼 Tom e Ritmo</span>
+                                                        <span className="text-xs text-slate-400 ml-2">Tonalidade · Escala · Andamento</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {badgeTom > 0 && <span className="text-xs bg-indigo-100 text-indigo-600 font-bold px-2 py-0.5 rounded-full">{badgeTom}</span>}
+                                                        <span className={`text-slate-300 text-xs transition-transform duration-200 ${accordionAberto === 'tom' ? 'rotate-180' : ''}`}>▼</span>
+                                                    </div>
+                                                </button>
+                                                {accordionAberto === 'tom' && (
+                                                    <div className="border-t border-slate-100 px-5 py-5 space-y-5">
+                                                        {/* Tonalidade */}
+                                                        <div>
+                                                            {labelRow('Tonalidade / Modo',
+                                                                () => { const novo = prompt('Nova tonalidade:'); if(novo && !TONALIDADES_OPCOES.includes(novo) && !tonalidadesCustomizadas.includes(novo)) { const novos=[...tonalidadesCustomizadas,novo]; setTonalidadesCustomizadas(novos); localStorage.setItem('tonalidadesCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, tonalidades:[...(musicaEditando.tonalidades||[]),novo]}); }},
+                                                                () => setEditandoElemento('tonalidade')
+                                                            )}
+                                                            {chips([...TONALIDADES_OPCOES,...tonalidadesCustomizadas], musicaEditando.tonalidades, ton => { const l=musicaEditando.tonalidades||[]; setMusicaEditando({...musicaEditando, tonalidades: l.includes(ton)?l.filter(t=>t!==ton):[...l,ton]}); })}
+                                                        </div>
+                                                        {/* Escala */}
+                                                        <div>
+                                                            {labelRow('Escala',
+                                                                () => { const novo = prompt('Nova escala:'); if(novo && !ESCALAS_OPCOES.includes(novo) && !escalasCustomizadas.includes(novo)) { const novos=[...escalasCustomizadas,novo]; setEscalasCustomizadas(novos); localStorage.setItem('escalasCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, escalas:[...(musicaEditando.escalas||[]),novo]}); }},
+                                                                () => setEditandoElemento('escala')
+                                                            )}
+                                                            {chips([...ESCALAS_OPCOES,...escalasCustomizadas], musicaEditando.escalas, esc => { const l=musicaEditando.escalas||[]; setMusicaEditando({...musicaEditando, escalas: l.includes(esc)?l.filter(e=>e!==esc):[...l,esc]}); })}
+                                                        </div>
+                                                        {/* Andamento */}
+                                                        <div>
+                                                            {labelRow('Andamento',
+                                                                () => { const novo = prompt('Novo andamento:'); if(novo && !ANDAMENTOS_OPCOES.includes(novo) && !andamentosCustomizados.includes(novo)) { const novos=[...andamentosCustomizados,novo]; setAndamentosCustomizados(novos); localStorage.setItem('andamentosCustomizados',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, andamentos:[...(musicaEditando.andamentos||[]),novo]}); }},
+                                                                () => setEditandoElemento('andamento')
+                                                            )}
+                                                            {chips([...ANDAMENTOS_OPCOES,...andamentosCustomizados], musicaEditando.andamentos, and => { const l=musicaEditando.andamentos||[]; setMusicaEditando({...musicaEditando, andamentos: l.includes(and)?l.filter(a=>a!==and):[...l,and]}); })}
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
-                                        </div>
 
-                                        {/* Botão Salvar */}
-                                        <div className="flex gap-3 pb-4">
-                                            <button 
-                                                onClick={() => {
-                                                    if(!musicaEditando.titulo.trim()) {
-                                                        setModalConfirm({ conteudo: '⚠️ Título é obrigatório!', somenteOk: true, labelConfirm: 'OK' });
-                                                        return;
-                                                    }
-                                                    const _salvarMusica = () => {
-                                                        const novoRepertorio = repertorio.find(r => r.id === musicaEditando.id)
-                                                            ? repertorio.map(r => r.id === musicaEditando.id ? musicaEditando : r)
-                                                            : [...repertorio, musicaEditando];
-                                                        setRepertorio(novoRepertorio);
-                                                        localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
-                                                        if (pendingAtividadeId && planoEditando) {
-                                                            const atualizado = [...(planoEditando.atividadesRoteiro || [])];
-                                                            const idx = atualizado.findIndex(a => a.id === pendingAtividadeId);
-                                                            if (idx !== -1) {
-                                                                const jaVinculada = (atualizado[idx].musicasVinculadas || []).find(m => m.id === musicaEditando.id);
-                                                                if (!jaVinculada) {
-                                                                    atualizado[idx] = {
-                                                                        ...atualizado[idx],
-                                                                        musicasVinculadas: [...(atualizado[idx].musicasVinculadas || []), {
-                                                                            id: musicaEditando.id,
-                                                                            titulo: musicaEditando.titulo,
-                                                                            autor: musicaEditando.autor
-                                                                        }]
-                                                                    };
-                                                                    setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                                }
-                                                            }
-                                                            setPendingAtividadeId(null);
-                                                            setViewMode('planos');
-                                                            setModalConfirm({ conteudo: '✅ Música salva e vinculada à atividade!', somenteOk: true, labelConfirm: 'OK' });
-                                                        } else {
-                                                            setModalConfirm({ conteudo: '✅ Música salva!', somenteOk: true, labelConfirm: 'OK' });
-                                                        }
-                                                        setMusicaEditando(null);
-                                                    };
-                                                    setModalConfirm({ titulo: 'Salvar música?', conteudo: 'Deseja confirmar o salvamento desta música?', labelConfirm: 'Salvar', onConfirm: _salvarMusica });
-                                                }}
-                                                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold text-sm transition shadow-sm"
-                                            >
-                                                💾 Salvar Música
-                                            </button>
+                                            {/* ACCORDION 3 — Expressão */}
+                                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                                <button type="button" onClick={() => setAccordionAberto(accordionAberto === 'expressao' ? null : 'expressao')}
+                                                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition text-left">
+                                                    <div>
+                                                        <span className="text-sm font-semibold text-slate-700">⚡ Expressão</span>
+                                                        <span className="text-xs text-slate-400 ml-2">Dinâmica · Energia · Instrumentação</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {badgeExp > 0 && <span className="text-xs bg-indigo-100 text-indigo-600 font-bold px-2 py-0.5 rounded-full">{badgeExp}</span>}
+                                                        <span className={`text-slate-300 text-xs transition-transform duration-200 ${accordionAberto === 'expressao' ? 'rotate-180' : ''}`}>▼</span>
+                                                    </div>
+                                                </button>
+                                                {accordionAberto === 'expressao' && (
+                                                    <div className="border-t border-slate-100 px-5 py-5 space-y-5">
+                                                        {/* Dinâmica */}
+                                                        <div>
+                                                            {labelRow('Dinâmica',
+                                                                () => { const novo = prompt('Nova dinâmica:'); if(novo && !DINAMICAS_OPCOES.includes(novo) && !dinamicasCustomizadas.includes(novo)) { const novos=[...dinamicasCustomizadas,novo]; setDinamicasCustomizadas(novos); localStorage.setItem('dinamicasCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, dinamicas:[...(musicaEditando.dinamicas||[]),novo]}); }},
+                                                                () => setEditandoElemento('dinamica')
+                                                            )}
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {[
+                                                                    {val:'Pianíssimo', label:'pp Pianíssimo'},
+                                                                    {val:'Piano', label:'p Piano'},
+                                                                    {val:'Meio-Piano', label:'mp Meio-Piano'},
+                                                                    {val:'Meio-Forte', label:'mf Meio-Forte'},
+                                                                    {val:'Forte', label:'f Forte'},
+                                                                    {val:'Fortíssimo', label:'ff Fortíssimo'},
+                                                                    {val:'Crescendo', label:'↗ Crescendo'},
+                                                                    {val:'Decrescendo', label:'↘ Decrescendo'},
+                                                                    {val:'Legato', label:'⌢ Legato'},
+                                                                    {val:'Staccato', label:'• Staccato'},
+                                                                    ...dinamicasCustomizadas.map(d => ({val:d, label:d}))
+                                                                ].map(({val, label}) => {
+                                                                    const sel = (musicaEditando.dinamicas||[]).includes(val);
+                                                                    return <button key={val} type="button"
+                                                                        onClick={() => { const l=musicaEditando.dinamicas||[]; setMusicaEditando({...musicaEditando, dinamicas: sel?l.filter(x=>x!==val):[...l,val]}); }}
+                                                                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${sel ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-400'}`}>
+                                                                        {label}
+                                                                    </button>;
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                        {/* Energia */}
+                                                        <div>
+                                                            {labelRow('Energia',
+                                                                () => { const novo = prompt('Nova energia:'); if(novo && !ENERGIAS_OPCOES.includes(novo) && !energiasCustomizadas.includes(novo)) { const novos=[...energiasCustomizadas,novo]; setEnergiasCustomizadas(novos); localStorage.setItem('energiasCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, energias:[...(musicaEditando.energias||[]),novo]}); }},
+                                                                () => setEditandoElemento('energia')
+                                                            )}
+                                                            {chips([...ENERGIAS_OPCOES,...energiasCustomizadas], musicaEditando.energias, e => { const l=musicaEditando.energias||[]; setMusicaEditando({...musicaEditando, energias: l.includes(e)?l.filter(x=>x!==e):[...l,e]}); })}
+                                                        </div>
+                                                        {/* Instrumentação */}
+                                                        <div>
+                                                            {labelRow('Instrumentação',
+                                                                () => { const novo = prompt('Novo instrumento:'); if(novo && !INSTRUMENTACAO_OPCOES.includes(novo) && !instrumentacaoCustomizada.includes(novo)) { const novos=[...instrumentacaoCustomizada,novo]; setInstrumentacaoCustomizada(novos); localStorage.setItem('instrumentacaoCustomizada',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, instrumentacao:[...(musicaEditando.instrumentacao||[]),novo]}); }},
+                                                                () => setEditandoElemento('instrumentacao')
+                                                            )}
+                                                            {chips([...INSTRUMENTACAO_OPCOES,...instrumentacaoCustomizada], musicaEditando.instrumentacao, inst => { const l=musicaEditando.instrumentacao||[]; setMusicaEditando({...musicaEditando, instrumentacao: l.includes(inst)?l.filter(x=>x!==inst):[...l,inst]}); })}
+                                                            <div className="mt-3">
+                                                                <label className="block text-xs text-slate-400 mb-1">Instrumento em destaque (solo/protagonista):</label>
+                                                                <input type="text" value={musicaEditando.instrumentoDestaque||''} onChange={e=>setMusicaEditando({...musicaEditando, instrumentoDestaque: e.target.value})}
+                                                                    placeholder="Ex: violino solo, flauta doce..."
+                                                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* ACCORDION 4 — Observações e Recursos */}
+                                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                                <button type="button" onClick={() => setAccordionAberto(accordionAberto === 'recursos' ? null : 'recursos')}
+                                                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition text-left">
+                                                    <div>
+                                                        <span className="text-sm font-semibold text-slate-700">📎 Observações e Recursos</span>
+                                                        <span className="text-xs text-slate-400 ml-2">Notas · Links · PDFs · Áudios</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {badgeRec > 0 && <span className="text-xs bg-indigo-100 text-indigo-600 font-bold px-2 py-0.5 rounded-full">{badgeRec}</span>}
+                                                        <span className={`text-slate-300 text-xs transition-transform duration-200 ${accordionAberto === 'recursos' ? 'rotate-180' : ''}`}>▼</span>
+                                                    </div>
+                                                </button>
+                                                {accordionAberto === 'recursos' && (
+                                                    <div className="border-t border-slate-100 px-5 py-5 space-y-4">
+                                                        <textarea value={musicaEditando.observacoes||''} onChange={e => setMusicaEditando({...musicaEditando, observacoes: e.target.value})}
+                                                            placeholder="Anotações sobre a música..."
+                                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 resize-none" rows="3" />
+                                                        <div className="flex gap-2">
+                                                            <button onClick={() => { const url=prompt('Cole o link:'); if(url) setMusicaEditando({...musicaEditando, links:[...(musicaEditando.links||[]),url]}); }}
+                                                                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold transition">🔗 Link</button>
+                                                            <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold text-center cursor-pointer transition">
+                                                                📄 PDF
+                                                                <input type="file" accept=".pdf" className="hidden" onChange={e => { const file=e.target.files[0]; if(file){ const r=new FileReader(); r.onload=()=>setMusicaEditando({...musicaEditando, pdfs:[...(musicaEditando.pdfs||[]),{nome:file.name,data:r.result}]}); r.readAsDataURL(file); } e.target.value=''; }} />
+                                                            </label>
+                                                            <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold text-center cursor-pointer transition">
+                                                                🎧 Áudio
+                                                                <input type="file" accept="audio/*,video/*" className="hidden" onChange={e => { const file=e.target.files[0]; if(file){ const r=new FileReader(); r.onload=()=>setMusicaEditando({...musicaEditando, audios:[...(musicaEditando.audios||[]),{nome:file.name,data:r.result}]}); r.readAsDataURL(file); } e.target.value=''; }} />
+                                                            </label>
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            {(musicaEditando.links||[]).map((l,i) => <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg"><a href={l} target="_blank" className="flex-1 truncate text-indigo-600 hover:underline text-xs">🔗 {l}</a><button onClick={()=>setMusicaEditando({...musicaEditando,links:musicaEditando.links.filter((_,idx)=>idx!==i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button></div>)}
+                                                            {(musicaEditando.pdfs||[]).map((p,i) => <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg"><a href={typeof p==='string'?p:p.data} target="_blank" className="flex-1 truncate text-slate-600 hover:underline text-xs">📄 {typeof p==='string'?p:p.nome}</a><button onClick={()=>setMusicaEditando({...musicaEditando,pdfs:musicaEditando.pdfs.filter((_,idx)=>idx!==i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button></div>)}
+                                                            {(musicaEditando.audios||[]).map((a,i) => <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg"><a href={typeof a==='string'?a:a.data} target="_blank" className="flex-1 truncate text-slate-600 hover:underline text-xs">🎧 {typeof a==='string'?a:a.nome}</a><button onClick={()=>setMusicaEditando({...musicaEditando,audios:musicaEditando.audios.filter((_,idx)=>idx!==i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button></div>)}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* ACCORDION 5 — Vínculos */}
+                                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                                <button type="button" onClick={() => setAccordionAberto(accordionAberto === 'vinculos' ? null : 'vinculos')}
+                                                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition text-left">
+                                                    <div>
+                                                        <span className="text-sm font-semibold text-slate-700">🔗 Vínculos</span>
+                                                        <span className="text-xs text-slate-400 ml-2">Aulas · Atividades</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {badgeVinc > 0 && <span className="text-xs bg-indigo-100 text-indigo-600 font-bold px-2 py-0.5 rounded-full">{badgeVinc}</span>}
+                                                        <span className={`text-slate-300 text-xs transition-transform duration-200 ${accordionAberto === 'vinculos' ? 'rotate-180' : ''}`}>▼</span>
+                                                    </div>
+                                                </button>
+                                                {accordionAberto === 'vinculos' && (
+                                                    <div className="border-t border-slate-100 px-5 py-5 space-y-5">
+                                                        {/* Aulas */}
+                                                        <div>
+                                                            <label className="block text-sm font-semibold text-slate-600 mb-2">📋 Aulas (Planos de Aula)</label>
+                                                            <input type="text" placeholder="Buscar aula pelo título..." id="inputBuscaAulaVincular"
+                                                                onChange={e => { const el=document.getElementById('listaAulasVincular'); el.style.display=e.target.value?'block':'none'; }}
+                                                                onFocus={() => { document.getElementById('listaAulasVincular').style.display='block'; }}
+                                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 mb-1" />
+                                                            <div id="listaAulasVincular" style={{display:'none'}} className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg bg-white">
+                                                                {planos.filter(p => { const b=document.getElementById('inputBuscaAulaVincular')?.value?.toLowerCase()||''; return !b||(p.titulo||'').toLowerCase().includes(b); }).map(p => {
+                                                                    const jaVinc=(musicaEditando.planosVinculados||[]).includes(p.id);
+                                                                    return <div key={p.id} className={`flex items-center justify-between px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 ${jaVinc?'bg-indigo-50':''}`}
+                                                                        onClick={() => { const l=musicaEditando.planosVinculados||[]; setMusicaEditando({...musicaEditando, planosVinculados: jaVinc?l.filter(id=>id!==p.id):[...l,p.id]}); }}>
+                                                                        <span className="text-sm text-slate-700">{p.titulo||'Sem título'}</span>
+                                                                        {jaVinc && <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full">✓</span>}
+                                                                    </div>;
+                                                                })}
+                                                            </div>
+                                                            {(musicaEditando.planosVinculados||[]).length > 0 && (
+                                                                <div className="flex flex-wrap gap-1 mt-2">
+                                                                    {(musicaEditando.planosVinculados||[]).map(id => { const p=planos.find(pl=>pl.id===id); return p?<span key={id} className="bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-full flex items-center gap-1">📋 {p.titulo} <button type="button" onClick={()=>setMusicaEditando({...musicaEditando,planosVinculados:(musicaEditando.planosVinculados||[]).filter(x=>x!==id)})} className="hover:text-red-600 font-bold">×</button></span>:null; })}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {/* Atividades */}
+                                                        <div>
+                                                            <label className="block text-sm font-semibold text-slate-600 mb-2">🎯 Atividades do Banco</label>
+                                                            <input type="text" placeholder="Buscar atividade pelo nome..." id="inputBuscaAtivVincular"
+                                                                onChange={e => { document.getElementById('listaAtivVincular').style.display=e.target.value?'block':'none'; }}
+                                                                onFocus={() => { document.getElementById('listaAtivVincular').style.display='block'; }}
+                                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 mb-1" />
+                                                            <div id="listaAtivVincular" style={{display:'none'}} className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg bg-white">
+                                                                {atividades.filter(a => { const b=document.getElementById('inputBuscaAtivVincular')?.value?.toLowerCase()||''; return !b||(a.nome||'').toLowerCase().includes(b); }).map(a => {
+                                                                    const jaVinc=(musicaEditando.atividadesVinculadas||[]).find(x=>x.id===a.id);
+                                                                    return <div key={a.id} className={`flex items-center justify-between px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 ${jaVinc?'bg-slate-50':''}`}
+                                                                        onClick={() => { const l=musicaEditando.atividadesVinculadas||[]; setMusicaEditando({...musicaEditando, atividadesVinculadas: jaVinc?l.filter(x=>x.id!==a.id):[...l,{id:a.id,nome:a.nome}]}); }}>
+                                                                        <span className="text-sm text-slate-700">{a.nome||'Sem nome'}</span>
+                                                                        {jaVinc && <span className="text-xs bg-slate-700 text-white px-2 py-0.5 rounded-full">✓</span>}
+                                                                    </div>;
+                                                                })}
+                                                                {atividades.length===0 && <p className="text-center text-slate-400 py-4 text-sm">Nenhuma atividade no banco</p>}
+                                                            </div>
+                                                            {(musicaEditando.atividadesVinculadas||[]).length > 0 && (
+                                                                <div className="flex flex-wrap gap-1 mt-2">
+                                                                    {(musicaEditando.atividadesVinculadas||[]).map(a => <span key={a.id} className="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded-full flex items-center gap-1">🎯 {a.nome} <button type="button" onClick={()=>setMusicaEditando({...musicaEditando,atividadesVinculadas:(musicaEditando.atividadesVinculadas||[]).filter(x=>x.id!==a.id)})} className="hover:text-red-600 font-bold">×</button></span>)}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Modal Excluir Opções */}
+                                            {editandoElemento && (
+                                                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setEditandoElemento(null)}>
+                                                    <div className="bg-white p-6 rounded-xl max-w-md w-full shadow-2xl" onClick={e => e.stopPropagation()}>
+                                                        <h3 className="text-sm font-bold text-slate-700 mb-4 uppercase tracking-wide">Excluir Opções Personalizadas</h3>
+                                                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                                                            {(editandoElemento === 'compasso' ? [...COMPASSOS_OPCOES,...compassosCustomizados] :
+                                                              editandoElemento === 'tonalidade' ? [...TONALIDADES_OPCOES,...tonalidadesCustomizadas] :
+                                                              editandoElemento === 'andamento' ? [...ANDAMENTOS_OPCOES,...andamentosCustomizados] :
+                                                              editandoElemento === 'escala' ? [...ESCALAS_OPCOES,...escalasCustomizadas] :
+                                                              editandoElemento === 'dinamica' ? [...DINAMICAS_OPCOES,...dinamicasCustomizadas] :
+                                                              editandoElemento === 'energia' ? [...ENERGIAS_OPCOES,...energiasCustomizadas] :
+                                                              editandoElemento === 'instrumentacao' ? [...INSTRUMENTACAO_OPCOES,...instrumentacaoCustomizada] :
+                                                              [...ESTRUTURAS_OPCOES,...estruturasCustomizadas]).map(item => {
+                                                                const isPadrao = (editandoElemento==='compasso'&&COMPASSOS_OPCOES.includes(item))||(editandoElemento==='tonalidade'&&TONALIDADES_OPCOES.includes(item))||(editandoElemento==='andamento'&&ANDAMENTOS_OPCOES.includes(item))||(editandoElemento==='escala'&&ESCALAS_OPCOES.includes(item))||(editandoElemento==='dinamica'&&DINAMICAS_OPCOES.includes(item))||(editandoElemento==='energia'&&ENERGIAS_OPCOES.includes(item))||(editandoElemento==='instrumentacao'&&INSTRUMENTACAO_OPCOES.includes(item))||(editandoElemento==='estrutura'&&ESTRUTURAS_OPCOES.includes(item));
+                                                                return <div key={item} className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-lg">
+                                                                    <span className="text-sm text-slate-700">{item} {isPadrao && <span className="text-xs text-slate-400">(padrão)</span>}</span>
+                                                                    {!isPadrao && <button type="button" onClick={() => {
+                                                                        if(editandoElemento==='compasso'){const n=compassosCustomizados.filter(c=>c!==item);setCompassosCustomizados(n);localStorage.setItem('compassosCustomizados',JSON.stringify(n));setMusicaEditando({...musicaEditando,compassos:(musicaEditando.compassos||[]).filter(c=>c!==item)});}
+                                                                        else if(editandoElemento==='tonalidade'){const n=tonalidadesCustomizadas.filter(t=>t!==item);setTonalidadesCustomizadas(n);localStorage.setItem('tonalidadesCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,tonalidades:(musicaEditando.tonalidades||[]).filter(t=>t!==item)});}
+                                                                        else if(editandoElemento==='andamento'){const n=andamentosCustomizados.filter(a=>a!==item);setAndamentosCustomizados(n);localStorage.setItem('andamentosCustomizados',JSON.stringify(n));setMusicaEditando({...musicaEditando,andamentos:(musicaEditando.andamentos||[]).filter(a=>a!==item)});}
+                                                                        else if(editandoElemento==='escala'){const n=escalasCustomizadas.filter(e=>e!==item);setEscalasCustomizadas(n);localStorage.setItem('escalasCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,escalas:(musicaEditando.escalas||[]).filter(e=>e!==item)});}
+                                                                        else if(editandoElemento==='estrutura'){const n=estruturasCustomizadas.filter(e=>e!==item);setEstruturasCustomizadas(n);localStorage.setItem('estruturasCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,estruturas:(musicaEditando.estruturas||[]).filter(e=>e!==item)});}
+                                                                        else if(editandoElemento==='dinamica'){const n=dinamicasCustomizadas.filter(d=>d!==item);setDinamicasCustomizadas(n);localStorage.setItem('dinamicasCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,dinamicas:(musicaEditando.dinamicas||[]).filter(d=>d!==item)});}
+                                                                        else if(editandoElemento==='energia'){const n=energiasCustomizadas.filter(e=>e!==item);setEnergiasCustomizadas(n);localStorage.setItem('energiasCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,energias:(musicaEditando.energias||[]).filter(e=>e!==item)});}
+                                                                        else if(editandoElemento==='instrumentacao'){const n=instrumentacaoCustomizada.filter(i=>i!==item);setInstrumentacaoCustomizada(n);localStorage.setItem('instrumentacaoCustomizada',JSON.stringify(n));setMusicaEditando({...musicaEditando,instrumentacao:(musicaEditando.instrumentacao||[]).filter(i=>i!==item)});}
+                                                                    }} className="text-red-500 hover:text-red-700 font-bold text-sm">🗑️</button>}
+                                                                </div>;
+                                                            })}
+                                                        </div>
+                                                        <button onClick={() => setEditandoElemento(null)} className="mt-4 w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg font-semibold text-sm transition">Fechar</button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            </>);
+                                        })()}
+
                                             <button onClick={() => setMusicaEditando(null)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-3 rounded-xl font-bold text-sm transition">Cancelar</button>
                                         </div>
                                     </div>
