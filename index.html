@@ -1520,7 +1520,7 @@
             };
 
             const excluirPlano = (id) => { setModalConfirm({ titulo: 'Excluir plano?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => { setPlanos(planos.filter(p => p.id !== id)); setPlanoSelecionado(null); } }); };
-            const fecharModal = () => { setPlanoSelecionado(null); setModoEdicao(false); setPlanoEditando(null); setNovoRecursoUrl(""); };
+            const fecharModal = () => { setPlanoSelecionado(null); setModoEdicao(false); setPlanoEditando(null); setNovoRecursoUrl(""); setFormExpandido(false); };
 
             const toggleConceito = (c) => { const atual = planoEditando.conceitos || []; setPlanoEditando({...planoEditando, conceitos: atual.includes(c) ? atual.filter(x=>x!==c) : [...atual, c]}); };
             const toggleFaixa = (f) => { const atual = planoEditando.faixaEtaria || []; setPlanoEditando({...planoEditando, faixaEtaria: atual.includes(f) ? atual.filter(x=>x!==f) : [...atual, f]}); };
@@ -4786,7 +4786,7 @@
                                 </>
                             );
                         })()}
-                        {viewMode==='lista' && (() => {
+                        {viewMode==='lista' && !modoEdicao && (() => {
                             // ── DASHBOARD ──
                             const totalPlanos = planos.length;
                             const porStatus = {
