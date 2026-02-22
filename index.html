@@ -368,14 +368,15 @@
             const [musicaEditando, setMusicaEditando] = useState(null);
             const [buscaEstilo, setBuscaEstilo] = useState('');
             const [editandoElemento, setEditandoElemento] = useState(null);
-            const [compassosCustomizados, setCompassosCustomizados] = useState(() => JSON.parse(localStorage.getItem('compassosCustomizados') || '[]'));
-            const [tonalidadesCustomizadas, setTonalidadesCustomizadas] = useState(() => JSON.parse(localStorage.getItem('tonalidadesCustomizadas') || '[]'));
-            const [andamentosCustomizados, setAndamentosCustomizados] = useState(() => JSON.parse(localStorage.getItem('andamentosCustomizados') || '[]'));
-            const [escalasCustomizadas, setEscalasCustomizadas] = useState(() => JSON.parse(localStorage.getItem('escalasCustomizadas') || '[]'));
-            const [estruturasCustomizadas, setEstruturasCustomizadas] = useState(() => JSON.parse(localStorage.getItem('estruturasCustomizadas') || '[]'));
-            const [dinamicasCustomizadas, setDinamicasCustomizadas] = useState(() => JSON.parse(localStorage.getItem('dinamicasCustomizadas') || '[]'));
-            const [energiasCustomizadas, setEnergiasCustomizadas] = useState(() => JSON.parse(localStorage.getItem('energiasCustomizadas') || '[]'));
-            const [instrumentacaoCustomizada, setInstrumentacaoCustomizada] = useState(() => JSON.parse(localStorage.getItem('instrumentacaoCustomizada') || '[]'));
+            const lerLS = (chave) => { try { return JSON.parse(localStorage.getItem(chave) || '[]'); } catch { return []; } };
+            const [compassosCustomizados, setCompassosCustomizados] = useState(() => lerLS('compassosCustomizados'));
+            const [tonalidadesCustomizadas, setTonalidadesCustomizadas] = useState(() => lerLS('tonalidadesCustomizadas'));
+            const [andamentosCustomizados, setAndamentosCustomizados] = useState(() => lerLS('andamentosCustomizados'));
+            const [escalasCustomizadas, setEscalasCustomizadas] = useState(() => lerLS('escalasCustomizadas'));
+            const [estruturasCustomizadas, setEstruturasCustomizadas] = useState(() => lerLS('estruturasCustomizadas'));
+            const [dinamicasCustomizadas, setDinamicasCustomizadas] = useState(() => lerLS('dinamicasCustomizadas'));
+            const [energiasCustomizadas, setEnergiasCustomizadas] = useState(() => lerLS('energiasCustomizadas'));
+            const [instrumentacaoCustomizada, setInstrumentacaoCustomizada] = useState(() => lerLS('instrumentacaoCustomizada'));
             const [repertorio, setRepertorio] = useState(() => {
                 const saved = localStorage.getItem('repertorio');
                 return saved ? JSON.parse(saved) : [];
@@ -387,7 +388,10 @@
             const [filtroEscala, setFiltroEscala] = useState('Todas');
             const [filtroCompasso, setFiltroCompasso] = useState('Todos');
             const [filtroAndamento, setFiltroAndamento] = useState('Todos');
-            const [filtroEstrutura, setFiltroEstrutura] = useState('Todas'); 
+            const [filtroEstrutura, setFiltroEstrutura] = useState('Todas');
+            const [filtroEnergia, setFiltroEnergia] = useState('Todas');
+            const [filtroInstrumentacao, setFiltroInstrumentacao] = useState('Todas');
+            const [filtroDinamica, setFiltroDinamica] = useState('Todas');
             
             // Opções dos elementos musicais
             const ESTILOS_OPCOES = ['Canção Infantil', 'Cantiga de Roda', 'Folclórica Brasileira', 'MPB', 'Samba', 'Bossa Nova', 'Forró', 'Pop', 'Rock', 'Música Erudita', 'Coral', 'Instrumental', 'Percussão Corporal', 'Jogo Musical', 'Música Temática', 'Música Clássica'];
@@ -582,6 +586,7 @@
             const [modoVisualizacao, setModoVisualizacao] = useState('grade');
             const [ordenacaoCards, setOrdenacaoCards] = useState('recente'); // recente | az | status | favoritos
             const [statusDropdownId, setStatusDropdownId] = useState(null); // #7: id do plano com dropdown aberto
+            const [modalConfirm, setModalConfirm] = useState(null); // { titulo, conteudo, onConfirm, labelConfirm, labelCancelar, somenteOk }
 
             // Fechar dropdown de status ao clicar fora
             useEffect(() => {
@@ -591,54 +596,55 @@
                 return () => document.removeEventListener('click', handler);
             }, [statusDropdownId]);
 
-            // ── #12: Atalhos de teclado ──
+            // ── #12: Atalhos de teclado (useRef para evitar stale closure) ──
+            const _kbRef = useRef({});
             useEffect(() => {
                 const handler = (e) => {
+                    const s = _kbRef.current;
                     const tag = document.activeElement?.tagName?.toLowerCase();
                     const emInput = ['input','textarea','select'].includes(tag) || document.activeElement?.isContentEditable;
 
                     // Ctrl+S — salvar plano em edição (qualquer contexto)
                     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                         e.preventDefault();
-                        if (modoEdicao && planoEditando) {
-                            salvarPlano();
-                            triggerSalvo();
+                        if (s.modoEdicao && s.planoEditando) {
+                            s.salvarPlano();
+                            s.triggerSalvo();
                         }
                         return;
                     }
 
                     // Esc — fechar modal aberto (em ordem de prioridade)
                     if (e.key === 'Escape') {
-                        if (modalRegistro)         { setModalRegistro(false); return; }
-                        if (modalRegistroRapido)   { setModalRegistroRapido(false); return; }
-                        if (modalConfiguracoes)    { setModalConfiguracoes(false); return; }
-                        if (modalNovaFaixa)        { setModalNovaFaixa(false); return; }
-                        if (modalNovaEscola)       { setModalNovaEscola(false); return; }
-                        if (modalTemplates)        { setModalTemplates(false); return; }
-                        if (modalGradeSemanal)     { setModalGradeSemanal(false); return; }
-                        if (modalEventos)          { setModalEventos(false); return; }
-                        if (statusDropdownId)      { setStatusDropdownId(null); return; }
-                        if (modoEdicao)            { if(confirm('Sair sem salvar?')) fecharModal(); return; }
-                        if (planoSelecionado)      { fecharModal(); return; }
+                        if (s.modalConfirm)          { s.setModalConfirm(null); return; }
+                        if (s.modalRegistro)         { s.setModalRegistro(false); return; }
+                        if (s.modalRegistroRapido)   { s.setModalRegistroRapido(false); return; }
+                        if (s.modalConfiguracoes)    { s.setModalConfiguracoes(false); return; }
+                        if (s.modalNovaFaixa)        { s.setModalNovaFaixa(false); return; }
+                        if (s.modalNovaEscola)       { s.setModalNovaEscola(false); return; }
+                        if (s.modalTemplates)        { s.setModalTemplates(false); return; }
+                        if (s.modalGradeSemanal)     { s.setModalGradeSemanal(false); return; }
+                        if (s.modalEventos)          { s.setModalEventos(false); return; }
+                        if (s.statusDropdownId)      { s.setStatusDropdownId(null); return; }
+                        if (s.modoEdicao)            { s.setModalConfirm({ titulo: 'Sair sem salvar?', conteudo: 'As alterações não salvas serão perdidas.', labelConfirm: 'Sair', labelCancelar: 'Continuar editando', perigo: true, onConfirm: s.fecharModal }); return; }
+                        if (s.planoSelecionado)      { s.fecharModal(); return; }
                         return;
                     }
 
                     // N — novo plano (apenas fora de inputs e sem modal aberto)
                     if (e.key === 'n' || e.key === 'N') {
                         if (emInput) return;
-                        const algumModalAberto = modalRegistro || modalRegistroRapido || modalConfiguracoes ||
-                            modalNovaFaixa || modalNovaEscola || modalTemplates || modalGradeSemanal ||
-                            modalEventos || modoEdicao || planoSelecionado;
+                        const algumModalAberto = s.modalRegistro || s.modalRegistroRapido || s.modalConfiguracoes ||
+                            s.modalNovaFaixa || s.modalNovaEscola || s.modalTemplates || s.modalGradeSemanal ||
+                            s.modalEventos || s.modoEdicao || s.planoSelecionado;
                         if (algumModalAberto) return;
-                        if (viewMode === 'lista') { e.preventDefault(); novoPlano(); }
+                        if (s.viewMode === 'lista') { e.preventDefault(); s.novoPlano(); }
                         return;
                     }
                 };
                 document.addEventListener('keydown', handler);
                 return () => document.removeEventListener('keydown', handler);
-            }, [modoEdicao, planoEditando, planoSelecionado, modalRegistro, modalRegistroRapido,
-                modalConfiguracoes, modalNovaFaixa, modalNovaEscola, modalTemplates,
-                modalGradeSemanal, modalEventos, statusDropdownId, viewMode]); // 'grade'|'compacto'|'mes'|'turma'
+            }, []); // deps vazios — lê de _kbRef.current, sem stale closure
             const [periodoDias, setPeriodoDias] = useState(30); // 30, 60, 90, 180, 365, 'custom'
             const [dataInicioCustom, setDataInicioCustom] = useState('');
             const [dataFimCustom, setDataFimCustom] = useState('');
@@ -874,11 +880,18 @@
                 'conceitosPersonalizados', 'unidadesPersonalizadas',
                 'faixasEtarias', 'materiaisBloqueados', 'ocultarFeriados'
             ];
-            const fazerLogout = async () => {
-                if (confirm('Sair do MusiLab?')) {
-                    CHAVES_LOCALSTORAGE.forEach(chave => localStorage.removeItem(chave));
-                    await supabase.auth.signOut();
-                }
+            const fazerLogout = () => {
+                setModalConfirm({
+                    titulo: 'Sair do MusiLab?',
+                    conteudo: 'Seus dados estão salvos na nuvem e estarão disponíveis no próximo acesso.',
+                    labelConfirm: 'Sair',
+                    labelCancelar: 'Cancelar',
+                    perigo: false,
+                    onConfirm: async () => {
+                        CHAVES_LOCALSTORAGE.forEach(chave => localStorage.removeItem(chave));
+                        await supabase.auth.signOut();
+                    }
+                });
             };
 
             // ── PROTEÇÃO CONTRA FECHAR ABA COM EDIÇÃO NÃO SALVA ──
@@ -963,14 +976,17 @@
 
                 // Filtrar por segmento se faixa etária for Infantil
                 const faixas = planoEditando.faixaEtaria || [];
-                const ehInfantil = faixas.some(f => f.toLowerCase().includes('infantil') || f.toLowerCase().includes('berçário') || f.toLowerCase().includes('maternal'));
-                const ehEF69 = faixas.some(f => ['6°','7°','8°','9°','6º','7º','8º','9º'].some(s => f.includes(s)));
+                const fl = faixas.map(f => f.toLowerCase());
+                const ehInfantil = fl.some(f => ['infantil','berçário','maternal','bercario','creche','jardim','pré','pre-'].some(s => f.includes(s)));
+                const ehEF69    = fl.some(f => ['6°','7°','8°','9°','6º','7º','8º','9º','6 ano','7 ano','8 ano','9 ano'].some(s => f.includes(s)));
+                const ehEJA     = fl.some(f => f.includes('eja') || f.includes('jovens e adultos') || f.includes('adult') || f.includes('ead'));
 
                 const sugestoes = bancoBNCC.filter(item => {
                     const keyMatch = item.keywords.some(key => textoAnalise.includes(key));
                     if (!keyMatch) return false;
+                    if (ehEJA) return true; // EJA/Adultos: aceita qualquer segmento BNCC
                     if (ehInfantil && item.segmento === 'Infantil') return true;
-                    if (ehEF69 && item.segmento === 'EF6-9') return true;
+                    if (ehEF69    && item.segmento === 'EF6-9')    return true;
                     if (!ehInfantil && !ehEF69 && item.segmento === 'EF1-5') return true;
                     if (!item.segmento) return true; // compatibilidade
                     return false;
@@ -979,18 +995,19 @@
                 if (sugestoes.length === 0) {
                     // fallback sem filtro de segmento
                     const todas = bancoBNCC.filter(item => item.keywords.some(key => textoAnalise.includes(key)));
-                    if (todas.length === 0) { alert("Adicione mais texto (título, objetivos) para receber sugestões."); return; }
+                    if (todas.length === 0) { setModalConfirm({ conteudo: 'Adicione mais texto (título, objetivos) para receber sugestões.', somenteOk: true, labelConfirm: 'OK' }); return; }
                     const formatadas = todas.map(s => `[${s.segmento||'BNCC'}] ${s.codigo} - ${s.desc}`);
                     const atuais = planoEditando.habilidadesBNCC || [];
                     setPlanoEditando({ ...planoEditando, habilidadesBNCC: [...new Set([...atuais, ...formatadas])] });
-                    alert(`✨ ${todas.length} sugestões encontradas!`);
+                    setModalConfirm({ conteudo: `✨ ${todas.length} sugestões encontradas!`, somenteOk: true, labelConfirm: 'OK' });
                     return;
                 }
 
                 const formatadas = sugestoes.map(s => `[${s.segmento}] ${s.codigo} - ${s.desc}`);
                 const atuais = planoEditando.habilidadesBNCC || [];
                 setPlanoEditando({ ...planoEditando, habilidadesBNCC: [...new Set([...atuais, ...formatadas])] });
-                alert(`✨ ${sugestoes.length} sugestão(ões) encontrada(s) para ${ehInfantil ? 'Ed. Infantil' : ehEF69 ? 'EF 6-9' : 'EF 1-5'}!`);
+                const segLabel = ehEJA ? 'EJA/Adultos' : ehInfantil ? 'Ed. Infantil' : ehEF69 ? 'EF 6-9' : 'EF 1-5';
+                setModalConfirm({ conteudo: `✨ ${sugestoes.length} sugestão(ões) encontrada(s) para ${segLabel}!`, somenteOk: true, labelConfirm: 'OK' });
             };
 
             // --- PDF PREMIUM (CORRIGIDO: SEM EMOJIS) ---
@@ -1316,39 +1333,42 @@
                 reader.onload = (e) => {
                     try {
                         const backup = JSON.parse(e.target.result);
-                        if (!backup.planos) { alert('❌ Arquivo inválido.'); return; }
-                        const resumo = `📦 Backup de ${backup.timestamp ? new Date(backup.timestamp).toLocaleString('pt-BR') : 'data desconhecida'}
-
-• ${backup.planos?.length||0} planos
-• ${backup.atividades?.length||0} atividades
-• ${backup.sequencias?.length||0} sequências
-• ${backup.repertorio?.length||0} músicas
-
-⚠️ Os dados atuais serão substituídos. Continuar?`;
-                        if (confirm(resumo)) {
-                            setPlanos(backup.planos);
-                            if(backup.conceitos) setConceitos(backup.conceitos);
-                            if(backup.unidades) setUnidades(backup.unidades);
-                            if(backup.faixas) setFaixas(backup.faixas);
-                            if(backup.anosLetivos) setAnosLetivos(backup.anosLetivos);
-                            if(backup.gradesSemanas) setGradesSemanas(backup.gradesSemanas);
-                            if(backup.atividades) setAtividades(backup.atividades);
-                            if(backup.eventosEscolares) setEventosEscolares(backup.eventosEscolares);
-                            if(backup.sequencias) setSequencias(backup.sequencias);
-                            if(backup.repertorio) setRepertorio(backup.repertorio);
-                            if(backup.tagsGlobais) setTagsGlobais(backup.tagsGlobais);
-                            if(backup.templatesRoteiro) setTemplatesRoteiro(backup.templatesRoteiro);
-                            if(backup.compassosCustomizados) setCompassosCustomizados(backup.compassosCustomizados);
-                            if(backup.tonalidadesCustomizadas) setTonalidadesCustomizadas(backup.tonalidadesCustomizadas);
-                            if(backup.andamentosCustomizados) setAndamentosCustomizados(backup.andamentosCustomizados);
-                            if(backup.escalasCustomizadas) setEscalasCustomizadas(backup.escalasCustomizadas);
-                            if(backup.estruturasCustomizadas) setEstruturasCustomizadas(backup.estruturasCustomizadas);
-                            if(backup.dinamicasCustomizadas) setDinamicasCustomizadas(backup.dinamicasCustomizadas);
-                            if(backup.energiasCustomizadas) setEnergiasCustomizadas(backup.energiasCustomizadas);
-                            if(backup.instrumentacaoCustomizada) setInstrumentacaoCustomizada(backup.instrumentacaoCustomizada);
-                            alert('✅ Backup restaurado! ' + backup.planos.length + ' planos | ' + (backup.repertorio?.length||0) + ' musicas | ' + (backup.atividades?.length||0) + ' atividades');
+                        if (!backup.planos) {
+                            setModalConfirm({ titulo: 'Arquivo inválido', conteudo: 'Este arquivo não é um backup válido do MusiLab.', somenteOk: true, labelConfirm: 'OK' });
+                            return;
                         }
-                    } catch { alert('❌ Arquivo inválido ou corrompido.'); }
+                        const resumo = `📦 Backup de ${backup.timestamp ? new Date(backup.timestamp).toLocaleString('pt-BR') : 'data desconhecida'}\n\n• ${backup.planos?.length||0} planos\n• ${backup.atividades?.length||0} atividades\n• ${backup.sequencias?.length||0} sequências\n• ${backup.repertorio?.length||0} músicas\n\n⚠️ Os dados atuais serão substituídos.`;
+                        setModalConfirm({
+                            titulo: 'Restaurar Backup?',
+                            conteudo: resumo,
+                            labelConfirm: 'Restaurar',
+                            labelCancelar: 'Cancelar',
+                            perigo: true,
+                            onConfirm: () => {
+                                setPlanos(backup.planos);
+                                if(backup.conceitos) setConceitos(backup.conceitos);
+                                if(backup.unidades) setUnidades(backup.unidades);
+                                if(backup.faixas) setFaixas(backup.faixas);
+                                if(backup.anosLetivos) setAnosLetivos(backup.anosLetivos);
+                                if(backup.gradesSemanas) setGradesSemanas(backup.gradesSemanas);
+                                if(backup.atividades) setAtividades(backup.atividades);
+                                if(backup.eventosEscolares) setEventosEscolares(backup.eventosEscolares);
+                                if(backup.sequencias) setSequencias(backup.sequencias);
+                                if(backup.repertorio) setRepertorio(backup.repertorio);
+                                if(backup.tagsGlobais) setTagsGlobais(backup.tagsGlobais);
+                                if(backup.templatesRoteiro) setTemplatesRoteiro(backup.templatesRoteiro);
+                                if(backup.compassosCustomizados) setCompassosCustomizados(backup.compassosCustomizados);
+                                if(backup.tonalidadesCustomizadas) setTonalidadesCustomizadas(backup.tonalidadesCustomizadas);
+                                if(backup.andamentosCustomizados) setAndamentosCustomizados(backup.andamentosCustomizados);
+                                if(backup.escalasCustomizadas) setEscalasCustomizadas(backup.escalasCustomizadas);
+                                if(backup.estruturasCustomizadas) setEstruturasCustomizadas(backup.estruturasCustomizadas);
+                                if(backup.dinamicasCustomizadas) setDinamicasCustomizadas(backup.dinamicasCustomizadas);
+                                if(backup.energiasCustomizadas) setEnergiasCustomizadas(backup.energiasCustomizadas);
+                                if(backup.instrumentacaoCustomizada) setInstrumentacaoCustomizada(backup.instrumentacaoCustomizada);
+                                setModalConfirm({ titulo: 'Backup restaurado!', conteudo: `${backup.planos.length} planos · ${backup.repertorio?.length||0} músicas · ${backup.atividades?.length||0} atividades`, somenteOk: true, labelConfirm: 'OK' });
+                            }
+                        });
+                    } catch { setModalConfirm({ titulo: 'Arquivo inválido', conteudo: 'Não foi possível ler o arquivo. Ele pode estar corrompido.', somenteOk: true, labelConfirm: 'OK' }); }
                 }; reader.readAsText(file); event.target.value = '';
             };
 
@@ -1389,12 +1409,12 @@
             };
 
             const salvarPlano = () => {
-                if (!planoEditando.titulo || !planoEditando.titulo.trim()) { 
-                    alert("⚠️ Preencha o título do plano antes de salvar."); 
-                    return; 
+                if (!planoEditando.titulo || !planoEditando.titulo.trim()) {
+                    setModalConfirm({ conteudo: '⚠️ Preencha o título do plano antes de salvar.', somenteOk: true, labelConfirm: 'OK' });
+                    return;
                 }
-                if (!planoEditando.objetivoGeral || !planoEditando.objetivoGeral.trim()) { 
-                    alert("⚠️ Preencha o objetivo geral antes de salvar."); 
+                if (!planoEditando.objetivoGeral || !planoEditando.objetivoGeral.trim()) {
+                    setModalConfirm({ conteudo: '⚠️ Preencha o objetivo geral antes de salvar.', somenteOk: true, labelConfirm: 'OK' });
                     return; 
                 }
                 const planoParaSalvar = {
@@ -1419,17 +1439,22 @@
 
             // Restaurar versão anterior do plano
             const restaurarVersao = (plano, versao) => {
-                if (!confirm(`Restaurar versão de ${new Date(versao._versaoSalvaEm).toLocaleString('pt-BR')}?
-
-A versão atual será substituída.`)) return;
-                const historicoAtual = plano._historicoVersoes || [];
-                const versaoRestaurada = { ...versao, _historicoVersoes: historicoAtual, _versaoSalvaEm: undefined };
-                delete versaoRestaurada._versaoSalvaEm;
-                setPlanos(planos.map(p => p.id === plano.id ? versaoRestaurada : p));
-                alert('✅ Versão restaurada!');
+                setModalConfirm({
+                    titulo: 'Restaurar versão?',
+                    conteudo: `Restaurar versão de ${new Date(versao._versaoSalvaEm).toLocaleString('pt-BR')}?\n\nA versão atual será substituída.`,
+                    labelConfirm: 'Restaurar',
+                    perigo: true,
+                    onConfirm: () => {
+                        const historicoAtual = plano._historicoVersoes || [];
+                        const versaoRestaurada = { ...versao, _historicoVersoes: historicoAtual, _versaoSalvaEm: undefined };
+                        delete versaoRestaurada._versaoSalvaEm;
+                        setPlanos(planos.map(p => p.id === plano.id ? versaoRestaurada : p));
+                        setModalConfirm({ conteudo: '✅ Versão restaurada!', somenteOk: true, labelConfirm: 'OK' });
+                    }
+                });
             };
 
-            const excluirPlano = (id) => { if (confirm("Excluir?")) { setPlanos(planos.filter(p => p.id !== id)); setPlanoSelecionado(null); } };
+            const excluirPlano = (id) => { setModalConfirm({ titulo: 'Excluir plano?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => { setPlanos(planos.filter(p => p.id !== id)); setPlanoSelecionado(null); } }); };
             const fecharModal = () => { setPlanoSelecionado(null); setModoEdicao(false); setPlanoEditando(null); setNovoRecursoUrl(""); };
 
             const toggleConceito = (c) => { const atual = planoEditando.conceitos || []; setPlanoEditando({...planoEditando, conceitos: atual.includes(c) ? atual.filter(x=>x!==c) : [...atual, c]}); };
@@ -1497,13 +1522,13 @@ A versão atual será substituída.`)) return;
                     recursos: recursosUnicos
                 });
                 
-                alert(`✅ Atividade "${atividade.nome}" vinculada ao plano!\n\nDados exportados:\n• Nome e descrição → Setlist\n• Tags → Tags do plano\n• Materiais → Materiais do plano\n• Links/Imagens → Recursos do plano`);
+                setModalConfirm({ conteudo: `✅ Atividade "${atividade.nome}" vinculada ao plano!\n\nDados exportados:\n• Nome e descrição → Setlist\n• Tags → Tags do plano\n• Materiais → Materiais do plano\n• Links/Imagens → Recursos do plano`, somenteOk: true, labelConfirm: 'OK' });
             };
             
             const adicionarDataEdicao = () => { if(dataEdicao && !(planoEditando.historicoDatas||[]).includes(dataEdicao)) setPlanoEditando({...planoEditando, historicoDatas: [...(planoEditando.historicoDatas||[]), dataEdicao].sort()}); setDataEdicao(""); };
             const removerDataEdicao = (d) => { setPlanoEditando({...planoEditando, historicoDatas: planoEditando.historicoDatas.filter(x=>x!==d)}); };
             const adicionarDataAulaVisualizacao = () => { if(novaDataAula && !(planoSelecionado.historicoDatas||[]).includes(novaDataAula)){ const n = {...planoSelecionado, historicoDatas: [...(planoSelecionado.historicoDatas||[]), novaDataAula].sort()}; setPlanos(planos.map(p=>p.id===n.id?n:p)); setPlanoSelecionado(n); } setNovaDataAula(""); };
-            const removerDataAulaVisualizacao = (d) => { if(confirm("Remover?")){ const n = {...planoSelecionado, historicoDatas: planoSelecionado.historicoDatas.filter(x=>x!==d)}; setPlanos(planos.map(p=>p.id===n.id?n:p)); setPlanoSelecionado(n); } };
+            const removerDataAulaVisualizacao = (d) => { setModalConfirm({ titulo: 'Remover data?', conteudo: 'Remover esta data do histórico?', labelConfirm: 'Remover', perigo: true, onConfirm: () => { const n = {...planoSelecionado, historicoDatas: planoSelecionado.historicoDatas.filter(x=>x!==d)}; setPlanos(planos.map(p=>p.id===n.id?n:p)); setPlanoSelecionado(n); } }); };
             const adicionarConceitoNovo = () => { if(novoConceito.trim()){ const c=novoConceito.trim(); if(!(planoEditando.conceitos||[]).includes(c)) setPlanoEditando({...planoEditando, conceitos:[...(planoEditando.conceitos||[]), c]}); if(!conceitos.includes(c)) setConceitos([...conceitos, c].sort()); setNovoConceito(""); setAdicionandoConceito(false); } };
             
             // Funções para TAGS (simetria com Conceitos)
@@ -1551,7 +1576,7 @@ A versão atual será substituída.`)) return;
                         const musicasVinculadas = atualizado[atividadeIndex].musicasVinculadas || [];
                         
                         if(musicasVinculadas.find(m => m.id === musica.id)) {
-                            alert('⚠️ Música já vinculada a esta atividade!');
+                            setModalConfirm({ conteudo: '⚠️ Música já vinculada a esta atividade!', somenteOk: true, labelConfirm: 'OK' });
                             return;
                         }
                         
@@ -1570,7 +1595,7 @@ A versão atual será substituída.`)) return;
                         localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
                         
                         setAtividadeVinculandoMusica(null);
-                        alert('✅ Música vinculada!');
+                        setModalConfirm({ conteudo: '✅ Música vinculada!', somenteOk: true, labelConfirm: 'OK' });
                         return;
                     }
                 }
@@ -1580,7 +1605,7 @@ A versão atual será substituída.`)) return;
                     const musicasVinculadas = atividadeEditando.musicasVinculadas || [];
                     
                     if(musicasVinculadas.find(m => m.id === musica.id)) {
-                        alert('⚠️ Música já vinculada a esta atividade!');
+                        setModalConfirm({ conteudo: '⚠️ Música já vinculada a esta atividade!', somenteOk: true, labelConfirm: 'OK' });
                         return;
                     }
                     
@@ -1635,7 +1660,7 @@ A versão atual será substituída.`)) return;
                 localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
                 
                 setModalImportarMusica(false);
-                alert('✅ Música importada!');
+                setModalConfirm({ conteudo: '✅ Música importada!', somenteOk: true, labelConfirm: 'OK' });
             };
             
             const importarAtividadeParaPlano = (atividade) => {
@@ -1656,7 +1681,7 @@ A versão atual será substituída.`)) return;
                 });
                 
                 setModalImportarAtividade(false);
-                alert('✅ Atividade importada!');
+                setModalConfirm({ conteudo: '✅ Atividade importada!', somenteOk: true, labelConfirm: 'OK' });
             };
             
             const toggleRecursosAtiv = (idx) => {
@@ -1720,7 +1745,7 @@ A versão atual será substituída.`)) return;
 
             const salvarRegistro = () => {
                 if (!novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.naoFuncionou && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
-                    alert("Preencha ao menos um campo!"); return;
+                    setModalConfirm({ conteudo: 'Preencha ao menos um campo!', somenteOk: true, labelConfirm: 'OK' }); return;
                 }
                 const agora = new Date();
                 const { dataAula, ...camposRegistro } = novoRegistro;
@@ -1767,14 +1792,15 @@ A versão atual será substituída.`)) return;
             };
 
             const excluirRegistro = (registroId) => {
-                if(!confirm("Excluir este registro?")) return;
-                const atualizado = {
-                    ...planoParaRegistro,
-                    registrosPosAula: planoParaRegistro.registrosPosAula.filter(r => r.id !== registroId)
-                };
-                setPlanos(planos.map(p => p.id === atualizado.id ? atualizado : p));
-                if(planoSelecionado && planoSelecionado.id === atualizado.id) setPlanoSelecionado(atualizado);
-                setPlanoParaRegistro(atualizado);
+                setModalConfirm({ titulo: 'Excluir registro?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => {
+                    const atualizado = {
+                        ...planoParaRegistro,
+                        registrosPosAula: planoParaRegistro.registrosPosAula.filter(r => r.id !== registroId)
+                    };
+                    setPlanos(planos.map(p => p.id === atualizado.id ? atualizado : p));
+                    if(planoSelecionado && planoSelecionado.id === atualizado.id) setPlanoSelecionado(atualizado);
+                    setPlanoParaRegistro(atualizado);
+                } });
             };
 
             const editarRegistro = (reg) => {
@@ -1796,18 +1822,51 @@ A versão atual será substituída.`)) return;
 
             // --- FUNÇÕES GESTÃO DE ANO LETIVO E TURMAS (4 NÍVEIS) ---
             // --- FUNÇÕES FERIADOS E EVENTOS ---
+            // Algoritmo de Meeus/Jones/Butcher — calcula a Páscoa para qualquer ano
+            const calcularPascoa = (ano) => {
+                const a = ano % 19;
+                const b = Math.floor(ano / 100);
+                const c = ano % 100;
+                const d = Math.floor(b / 4);
+                const e = b % 4;
+                const f = Math.floor((b + 8) / 25);
+                const g = Math.floor((b - f + 1) / 3);
+                const h = (19 * a + b - d - g + 15) % 30;
+                const i = Math.floor(c / 4);
+                const k = c % 4;
+                const l = (32 + 2 * e + 2 * i - h - k) % 7;
+                const m = Math.floor((a + 11 * h + 22 * l) / 451);
+                const mes = Math.floor((h + l - 7 * m + 114) / 31);
+                const dia = ((h + l - 7 * m + 114) % 31) + 1;
+                return new Date(ano, mes - 1, dia);
+            };
+
+            const feriadosMoveisDinamicos = (ano) => {
+                // Primeiro tenta a tabela estática (mais rápido, garante dados históricos)
+                if (feriadosNacionais.moveis[ano]) return feriadosNacionais.moveis[ano];
+                // Para anos fora da tabela, calcula dinamicamente
+                const pascoa = calcularPascoa(ano);
+                const toISO = (d) => d.toISOString().split('T')[0];
+                const addDias = (d, n) => new Date(d.getTime() + n * 86400000);
+                return [
+                    { data: toISO(addDias(pascoa, -47)), nome: 'Carnaval' },
+                    { data: toISO(addDias(pascoa,  -2)), nome: 'Sexta-feira Santa' },
+                    { data: toISO(pascoa),               nome: 'Páscoa' },
+                    { data: toISO(addDias(pascoa,  60)), nome: 'Corpus Christi' },
+                ];
+            };
+
             const verificarFeriado = (dataStr) => {
                 const [ano, mes, dia] = dataStr.split('-').map(Number);
-                
+
                 // Verificar feriados fixos
                 const feriadoFixo = feriadosNacionais.fixos.find(f => f.mes === mes && f.dia === dia);
                 if (feriadoFixo) return feriadoFixo.nome;
-                
-                // Verificar feriados móveis
-                const feriadosDoAno = feriadosNacionais.moveis[ano] || [];
-                const feriadoMovel = feriadosDoAno.find(f => f.data === dataStr);
+
+                // Verificar feriados móveis (tabela estática ou cálculo dinâmico)
+                const feriadoMovel = feriadosMoveisDinamicos(ano).find(f => f.data === dataStr);
                 if (feriadoMovel) return feriadoMovel.nome;
-                
+
                 return null;
             };
 
@@ -1827,11 +1886,11 @@ A versão atual será substituída.`)) return;
 
             const salvarEvento = () => {
                 if (!eventoEditando.nome.trim()) {
-                    alert('⚠️ Preencha o nome do evento!');
+                    setModalConfirm({ conteudo: '⚠️ Preencha o nome do evento!', somenteOk: true, labelConfirm: 'OK' });
                     return;
                 }
                 if (!eventoEditando.data) {
-                    alert('⚠️ Preencha a data!');
+                    setModalConfirm({ conteudo: '⚠️ Preencha a data!', somenteOk: true, labelConfirm: 'OK' });
                     return;
                 }
                 
@@ -1842,13 +1901,13 @@ A versão atual será substituída.`)) return;
                     setEventosEscolares([...eventosEscolares, eventoEditando]);
                 }
                 setEventoEditando(null);
-                alert('✅ Evento salvo!');
+                setModalConfirm({ conteudo: '✅ Evento salvo!', somenteOk: true, labelConfirm: 'OK' });
             };
 
             const excluirEvento = (id) => {
-                if (confirm('Excluir evento?')) {
+                setModalConfirm({ titulo: 'Excluir evento?', conteudo: '', labelConfirm: 'Excluir', perigo: true, onConfirm: () => {
                     setEventosEscolares(eventosEscolares.filter(e => e.id !== id));
-                }
+                } });
             };
 
             // --- FUNÇÕES SEQUÊNCIAS DIDÁTICAS ---
@@ -1892,15 +1951,15 @@ A versão atual será substituída.`)) return;
 
             const salvarSequencia = () => {
                 if (!sequenciaEditando.titulo.trim()) {
-                    alert('⚠️ Preencha o título da sequência!');
+                    setModalConfirm({ conteudo: '⚠️ Preencha o título da sequência!', somenteOk: true, labelConfirm: 'OK' });
                     return;
                 }
                 if (!sequenciaEditando.escolaId) {
-                    alert('⚠️ Selecione uma escola!');
+                    setModalConfirm({ conteudo: '⚠️ Selecione uma escola!', somenteOk: true, labelConfirm: 'OK' });
                     return;
                 }
                 if (!sequenciaEditando.segmentos || sequenciaEditando.segmentos.length === 0) {
-                    alert('⚠️ Selecione pelo menos um segmento!');
+                    setModalConfirm({ conteudo: '⚠️ Selecione pelo menos um segmento!', somenteOk: true, labelConfirm: 'OK' });
                     return;
                 }
                 
@@ -1919,9 +1978,9 @@ A versão atual será substituída.`)) return;
             };
 
             const excluirSequencia = (id) => {
-                if (confirm('Excluir sequência?')) {
+                setModalConfirm({ titulo: 'Excluir sequência?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => {
                     setSequencias(sequencias.filter(s => s.id !== id));
-                }
+                } });
             };
 
             const vincularPlanoAoSlot = (planoId) => {
@@ -2012,7 +2071,7 @@ A versão atual será substituída.`)) return;
 
             const salvarAtividade = () => {
                 if (!atividadeEditando.nome.trim()) {
-                    alert('⚠️ Preencha o nome da atividade!');
+                    setModalConfirm({ conteudo: '⚠️ Preencha o nome da atividade!', somenteOk: true, labelConfirm: 'OK' });
                     return;
                 }
                 const existe = atividades.find(a => a.id === atividadeEditando.id);
@@ -2022,13 +2081,13 @@ A versão atual será substituída.`)) return;
                     setAtividades([...atividades, atividadeEditando]);
                 }
                 setAtividadeEditando(null);
-                alert('✅ Atividade salva!');
+                setModalConfirm({ conteudo: '✅ Atividade salva!', somenteOk: true, labelConfirm: 'OK' });
             };
 
             const excluirAtividade = (id) => {
-                if (confirm('Excluir atividade?')) {
+                setModalConfirm({ titulo: 'Excluir atividade?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => {
                     setAtividades(atividades.filter(a => a.id !== id));
-                }
+                } });
             };
 
             const adicionarAtividadeAoPlano = (atividadeId, planoId) => {
@@ -2095,7 +2154,7 @@ A versão atual será substituída.`)) return;
                 }));
                 
                 setModalAdicionarAoPlano(null);
-                alert(`✅ Atividade "${atividade.nome}" vinculada ao plano "${plano.titulo}"!\n\n📦 Dados exportados:\n• Nome + Descrição → Setlist\n• Conceitos → Conceitos do plano\n• Tags → Tags do plano\n• Materiais → Materiais do plano\n• Links/Imagens → Recursos do plano\n• Unidade → Unidades do plano`);
+                setModalConfirm({ conteudo: `✅ Atividade "${atividade.nome}" vinculada ao plano "${plano.titulo}"!\n\n📦 Dados exportados:\n• Nome + Descrição → Setlist\n• Conceitos → Conceitos do plano\n• Tags → Tags do plano\n• Materiais → Materiais do plano\n• Links/Imagens → Recursos do plano\n• Unidade → Unidades do plano`, somenteOk: true, labelConfirm: 'OK' });
             };
 
             // Funções auxiliares para tags
@@ -2105,7 +2164,7 @@ A versão atual será substituída.`)) return;
             const gtAddAno = () => {
                 const ano = gtAnoNovo.trim();
                 if (!ano) return;
-                if (anosLetivos.find(a => a.ano === ano)) { alert('Ano letivo já existe!'); return; }
+                if (anosLetivos.find(a => a.ano === ano)) { setModalConfirm({ conteudo: 'Ano letivo já existe!', somenteOk: true, labelConfirm: 'OK' }); return; }
                 setAnosLetivos([...anosLetivos, { id: Date.now(), ano, status: 'ativo', escolas: [] }]);
                 setGtAnoNovo('');
             };
@@ -2113,24 +2172,26 @@ A versão atual será substituída.`)) return;
                 setAnosLetivos(anosLetivos.map(a => a.id === anoId ? { ...a, status: novoStatus } : a));
             };
             const gtRemoveAno = (anoId) => {
-                if (!confirm('Remover ano letivo e todas as suas escolas/turmas?')) return;
-                setAnosLetivos(anosLetivos.filter(a => a.id !== anoId));
-                if (gtAnoSel == anoId) { setGtAnoSel(''); setGtEscolaSel(''); setGtSegmentoSel(''); }
+                setModalConfirm({ titulo: 'Remover ano letivo?', conteudo: 'Todas as escolas e turmas vinculadas serão removidas.', labelConfirm: 'Remover', perigo: true, onConfirm: () => {
+                    setAnosLetivos(anosLetivos.filter(a => a.id !== anoId));
+                    if (gtAnoSel == anoId) { setGtAnoSel(''); setGtEscolaSel(''); setGtSegmentoSel(''); }
+                } });
             };
             const gtAddEscola = () => {
                 const nome = gtEscolaNome.trim();
                 if (!nome || !gtAnoSel) return;
                 setAnosLetivos(anosLetivos.map(a => {
                     if (a.id != gtAnoSel) return a;
-                    if (a.escolas.find(e => e.nome === nome)) { alert('Escola já existe neste ano!'); return a; }
+                    if (a.escolas.find(e => e.nome === nome)) { setModalConfirm({ conteudo: 'Escola já existe neste ano!', somenteOk: true, labelConfirm: 'OK' }); return a; }
                     return { ...a, escolas: [...a.escolas, { id: Date.now(), nome, segmentos: [] }] };
                 }));
                 setGtEscolaNome('');
             };
             const gtRemoveEscola = (anoId, escolaId) => {
-                if (!confirm('Remover escola e todos os seus segmentos/turmas?')) return;
-                setAnosLetivos(anosLetivos.map(a => a.id != anoId ? a : { ...a, escolas: a.escolas.filter(e => e.id !== escolaId) }));
-                if (gtEscolaSel == escolaId) { setGtEscolaSel(''); setGtSegmentoSel(''); }
+                setModalConfirm({ titulo: 'Remover escola?', conteudo: 'Todos os segmentos e turmas vinculados serão removidos.', labelConfirm: 'Remover', perigo: true, onConfirm: () => {
+                    setAnosLetivos(anosLetivos.map(a => a.id != anoId ? a : { ...a, escolas: a.escolas.filter(e => e.id !== escolaId) }));
+                    if (gtEscolaSel == escolaId) { setGtEscolaSel(''); setGtSegmentoSel(''); }
+                } });
             };
             const gtAddSegmento = () => {
                 const nome = gtSegmentoNome.trim();
@@ -2139,7 +2200,7 @@ A versão atual será substituída.`)) return;
                     if (a.id != gtAnoSel) return a;
                     return { ...a, escolas: a.escolas.map(e => {
                         if (e.id != gtEscolaSel) return e;
-                        if (e.segmentos.find(s => s.nome === nome)) { alert('Segmento já existe!'); return e; }
+                        if (e.segmentos.find(s => s.nome === nome)) { setModalConfirm({ conteudo: 'Segmento já existe!', somenteOk: true, labelConfirm: 'OK' }); return e; }
                         return { ...e, segmentos: [...e.segmentos, { id: Date.now(), nome, turmas: [] }] };
                     })};
                 }));
@@ -2164,7 +2225,7 @@ A versão atual será substituída.`)) return;
                         if (e.id != gtEscolaSel) return e;
                         return { ...e, segmentos: e.segmentos.map(s => {
                             if (s.id != gtSegmentoSel) return s;
-                            if (s.turmas.find(t => t.nome === nome)) { alert('Turma já existe!'); return s; }
+                            if (s.turmas.find(t => t.nome === nome)) { setModalConfirm({ conteudo: 'Turma já existe!', somenteOk: true, labelConfirm: 'OK' }); return s; }
                             return { ...s, turmas: [...s.turmas, { id: Date.now(), nome }] };
                         })};
                     })};
@@ -2187,8 +2248,8 @@ A versão atual será substituída.`)) return;
             // --- CADASTRO RÁPIDO DE FAIXA ETÁRIA ---
             const salvarNovaFaixa = () => {
                 const nome = novaFaixaNome.trim();
-                if (!nome) { alert('Digite o nome da faixa etária!'); return; }
-                if (faixas.includes(nome)) { alert('Essa faixa já existe!'); return; }
+                if (!nome) { setModalConfirm({ conteudo: 'Digite o nome da faixa etária!', somenteOk: true, labelConfirm: 'OK' }); return; }
+                if (faixas.includes(nome)) { setModalConfirm({ conteudo: 'Essa faixa já existe!', somenteOk: true, labelConfirm: 'OK' }); return; }
                 setFaixas([...faixas, nome]);
                 setNovaFaixaNome('');
                 setModalNovaFaixa(false);
@@ -2272,7 +2333,7 @@ A versão atual será substituída.`)) return;
             // --- CADASTRO RÁPIDO DE ESCOLA ---
             const salvarNovaEscola = () => {
                 const nome = novaEscolaNome.trim();
-                if (!nome) { alert('Digite o nome da escola!'); return; }
+                if (!nome) { setModalConfirm({ conteudo: 'Digite o nome da escola!', somenteOk: true, labelConfirm: 'OK' }); return; }
                 
                 // Determinar ano letivo alvo
                 const anoId = novaEscolaAnoId || (anosLetivos.find(a => a.status === 'ativo')?.id) || (anosLetivos[0]?.id);
@@ -2299,7 +2360,7 @@ A versão atual será substituída.`)) return;
                 setNovaEscolaNome('');
                 setNovaEscolaAnoId('');
                 setModalNovaEscola(false);
-                alert(`✅ Escola "${nome}" cadastrada com sucesso!`);
+                setModalConfirm({ conteudo: `✅ Escola "${nome}" cadastrada com sucesso!`, somenteOk: true, labelConfirm: 'OK' });
             };
 
             // --- FUNÇÕES GESTÃO DE GRADE SEMANAL ---
@@ -2316,12 +2377,12 @@ A versão atual será substituída.`)) return;
 
             const salvarGradeSemanal = () => {
                 if (!gradeEditando.anoLetivoId || !gradeEditando.escolaId || !gradeEditando.dataInicio || !gradeEditando.dataFim) {
-                    alert('⚠️ Preencha ano letivo, escola e período!');
+                    setModalConfirm({ conteudo: '⚠️ Preencha ano letivo, escola e período!', somenteOk: true, labelConfirm: 'OK' });
                     return;
                 }
-                
+
                 if (gradeEditando.aulas.length === 0) {
-                    alert('⚠️ Adicione pelo menos uma aula!');
+                    setModalConfirm({ conteudo: '⚠️ Adicione pelo menos uma aula!', somenteOk: true, labelConfirm: 'OK' });
                     return;
                 }
                 
@@ -2333,13 +2394,13 @@ A versão atual será substituída.`)) return;
                 }
                 
                 setGradeEditando(null);
-                alert('✅ Grade salva!');
+                setModalConfirm({ conteudo: '✅ Grade salva!', somenteOk: true, labelConfirm: 'OK' });
             };
 
             const excluirGradeSemanal = (id) => {
-                if (confirm('Excluir grade semanal?')) {
+                setModalConfirm({ titulo: 'Excluir grade semanal?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => {
                     setGradesSemanas(gradesSemanas.filter(g => g.id !== id));
-                }
+                } });
             };
 
             const adicionarAulaGrade = () => {
@@ -2444,12 +2505,8 @@ A versão atual será substituída.`)) return;
 
             // --- FUNÇÃO SALVAR REGISTRO RÁPIDO ---
             const salvarRegistroRapido = () => {
-                // Verificar se é feriado
                 const feriado = verificarFeriado(rrData);
-                if (feriado && !confirm(`⚠️ Hoje é feriado: ${feriado}\n\nDeseja registrar aula mesmo assim?`)) {
-                    return;
-                }
-                
+                const _executar = () => {
                 const agora = new Date();
                 let totalNovos = 0;
                 let totalAtualizados = 0;
@@ -2532,10 +2589,16 @@ A versão atual será substituída.`)) return;
                     if (totalAtualizados > 0) msg += `${totalAtualizados} atualizado(s)`;
                     msg += '!';
                     
-                    alert(msg);
+                    setModalConfirm({ conteudo: msg, somenteOk: true, labelConfirm: 'OK' });
                     setModalRegistroRapido(false);
                 } else {
-                    alert('⚠️ Preencha pelo menos uma turma e selecione um plano.');
+                    setModalConfirm({ conteudo: '⚠️ Preencha pelo menos uma turma e selecione um plano.', somenteOk: true, labelConfirm: 'OK' });
+                }
+                }; // fim _executar
+                if (feriado) {
+                    setModalConfirm({ titulo: '⚠️ Feriado', conteudo: `Hoje é feriado: ${feriado}\n\nDeseja registrar aula mesmo assim?`, labelConfirm: 'Registrar mesmo assim', onConfirm: _executar });
+                } else {
+                    _executar();
                 }
             };
 
@@ -3057,6 +3120,18 @@ A versão atual será substituída.`)) return;
                 );
             };
 
+            // ── Atualiza ref do teclado a cada render (sem stale closure) ──
+            _kbRef.current = {
+                modoEdicao, planoEditando, planoSelecionado, modalConfirm,
+                modalRegistro, modalRegistroRapido, modalConfiguracoes, modalNovaFaixa,
+                modalNovaEscola, modalTemplates, modalGradeSemanal, modalEventos,
+                statusDropdownId, viewMode,
+                fecharModal, salvarPlano, triggerSalvo, novoPlano,
+                setModalConfirm, setModalRegistro, setModalRegistroRapido, setModalConfiguracoes,
+                setModalNovaFaixa, setModalNovaEscola, setModalTemplates, setModalGradeSemanal,
+                setModalEventos, setStatusDropdownId,
+            };
+
             if (!dadosCarregados) return (
                 <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center">
                     <div className="text-white text-center">
@@ -3558,10 +3633,10 @@ A versão atual será substituída.`)) return;
                                                 <button onClick={()=>{
                                                     // Salvar alterações
                                                     setSequencias([...sequencias]);
-                                                    alert('✅ Alterações salvas!');
+                                                    setModalConfirm({ conteudo: '✅ Alterações salvas!', somenteOk: true, labelConfirm: 'OK' });
                                                 }} className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold">💾 Salvar</button>
                                                 <button onClick={()=>exportarSequenciaPDF(seq)} className="bg-purple-500 text-white px-4 py-2 rounded-lg font-bold">📄 PDF</button>
-                                                <button onClick={()=>{if(confirm('Excluir sequência?')){excluirSequencia(seq.id);setSequenciaDetalhe(null);}}} className="bg-red-100 text-red-600 px-4 py-2 rounded-lg font-bold">🗑️</button>
+                                                <button onClick={()=>{ setModalConfirm({ titulo: 'Excluir sequência?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: ()=>{ excluirSequencia(seq.id); setSequenciaDetalhe(null); } }); }} className="bg-red-100 text-red-600 px-4 py-2 rounded-lg font-bold">🗑️</button>
                                             </div>
                                         </div>
 
@@ -4214,7 +4289,7 @@ A versão atual será substituída.`)) return;
                                                         className="text-xs text-amber-600 hover:bg-amber-50 px-2 py-1.5 rounded-lg transition" title="Registro Pós-Aula">📝</button>
                                                     <button onClick={(e)=>{e.stopPropagation();editarPlano(plano)}}
                                                         className="text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-100 px-2 py-1.5 rounded-lg transition" title="Editar">✏️</button>
-                                                    <button onClick={(e)=>{e.stopPropagation(); const copia={...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}; setPlanos(prev=>[...prev, copia]); alert('✅ Plano duplicado! Edite a cópia conforme necessário.');}}
+                                                    <button onClick={(e)=>{e.stopPropagation(); const copia={...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}; setPlanos(prev=>[...prev, copia]); setModalConfirm({ conteudo: '✅ Plano duplicado! Edite a cópia conforme necessário.', somenteOk: true, labelConfirm: 'OK' });}}
                                                         className="text-xs text-green-500 hover:text-green-700 hover:bg-green-50 px-2 py-1.5 rounded-lg transition" title="Duplicar como novo plano">⎘</button>
                                                     <button onClick={(e)=>{e.stopPropagation();excluirPlano(plano.id)}}
                                                         className="text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1.5 rounded-lg transition" title="Excluir">🗑</button>
@@ -4378,89 +4453,23 @@ A versão atual será substituída.`)) return;
                                 const compassoMatch = filtroCompasso === 'Todos' || (m.compassos||[]).includes(filtroCompasso);
                                 const andamentoMatch = filtroAndamento === 'Todos' || (m.andamentos||[]).includes(filtroAndamento);
                                 const estruturaMatch = filtroEstrutura === 'Todas' || (m.estruturas||[]).includes(filtroEstrutura);
-                                return buscaMatch && origemMatch && estiloMatch && tonalidadeMatch && escalaMatch && compassoMatch && andamentoMatch && estruturaMatch;
+                                const energiaMatch = filtroEnergia === 'Todas' || (m.energias||[]).includes(filtroEnergia);
+                                const instrumentacaoMatch = filtroInstrumentacao === 'Todas' || (m.instrumentacao||[]).includes(filtroInstrumentacao) || m.instrumentoDestaque === filtroInstrumentacao;
+                                const dinamicaMatch = filtroDinamica === 'Todas' || (m.dinamicas||[]).includes(filtroDinamica);
+                                return buscaMatch && origemMatch && estiloMatch && tonalidadeMatch && escalaMatch && compassoMatch && andamentoMatch && estruturaMatch && energiaMatch && instrumentacaoMatch && dinamicaMatch;
                             });
                             
                             return (
-                            <div className="bg-white rounded-2xl shadow-xl p-8">
+                            <div className="space-y-4">
                                 {!musicaEditando ? (
                                     <>
-                                        <div className="text-center mb-6">
-                                            <h2 className="text-4xl font-bold text-blue-700 mb-2">🎼 Repertório Inteligente</h2>
-                                            <p className="text-gray-600">Gerencie seu catálogo de músicas e obras</p>
-                                        </div>
-                                        
-                                        {/* Filtros */}
-                                        <div className="bg-blue-50 p-4 rounded-xl mb-6 border-2 border-blue-200">
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                                                <input type="text" placeholder="🔍 Buscar por título ou autor..." value={buscaRepertorio} onChange={e=>setBuscaRepertorio(e.target.value)} className="col-span-2 px-3 py-2 border-2 rounded-lg" />
-                                                
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-600 mb-1">Origem</label>
-                                                    <select value={filtroOrigem} onChange={e=>setFiltroOrigem(e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg text-sm">
-                                                        <option>Todas</option>
-                                                        <option>Folclórica</option>
-                                                        <option>Autoral</option>
-                                                        <option>Tradicional</option>
-                                                        <option>Popular</option>
-                                                        <option>Erudita</option>
-                                                    </select>
-                                                </div>
-                                                
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-600 mb-1">Escala</label>
-                                                    <select value={filtroEscala} onChange={e=>setFiltroEscala(e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg text-sm">
-                                                        <option>Todas</option>
-                                                        <option>Maior</option>
-                                                        <option>Menor</option>
-                                                        <option>Pentatônica</option>
-                                                        <option>Cromática</option>
-                                                        <option>Modal</option>
-                                                    </select>
-                                                </div>
+                                        {/* Cabeçalho */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div>
+                                                <h2 className="text-2xl font-bold text-slate-800">🎼 Repertório Inteligente</h2>
+                                                <p className="text-sm text-slate-500 mt-0.5">Gerencie seu catálogo de músicas e obras</p>
                                             </div>
-                                            
-                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-600 mb-1">Estilo</label>
-                                                    <select value={filtroEstilo} onChange={e=>setFiltroEstilo(e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg text-sm">
-                                                        <option>Todos</option>
-                                                        {ESTILOS_OPCOES.map(e => <option key={e}>{e}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-600 mb-1">Tonalidade/Modo</label>
-                                                    <select value={filtroTonalidade} onChange={e=>setFiltroTonalidade(e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg text-sm">
-                                                        <option>Todas</option>
-                                                        {TONALIDADES_OPCOES.map(t => <option key={t}>{t}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-600 mb-1">Compasso</label>
-                                                    <select value={filtroCompasso} onChange={e=>setFiltroCompasso(e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg text-sm">
-                                                        <option>Todos</option>
-                                                        {COMPASSOS_OPCOES.map(c => <option key={c}>{c}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-600 mb-1">Andamento</label>
-                                                    <select value={filtroAndamento} onChange={e=>setFiltroAndamento(e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg text-sm">
-                                                        <option>Todos</option>
-                                                        {ANDAMENTOS_OPCOES.map(a => <option key={a}>{a}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-600 mb-1">Estrutura</label>
-                                                    <select value={filtroEstrutura} onChange={e=>setFiltroEstrutura(e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg text-sm">
-                                                        <option>Todas</option>
-                                                        {ESTRUTURAS_OPCOES.map(e => <option key={e}>{e}</option>)}
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="flex justify-center mb-6">
-                                            <button 
+                                            <button
                                                 onClick={() => setMusicaEditando({
                                                     id: Date.now(),
                                                     titulo: '',
@@ -4483,21 +4492,138 @@ A versão atual será substituída.`)) return;
                                                     planosVinculados: [],
                                                     atividadesVinculadas: []
                                                 })}
-                                                className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg transform hover:scale-105 transition"
+                                                className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition"
                                             >
                                                 ➕ Adicionar Música
                                             </button>
                                         </div>
-                                        
+
+                                        {/* Painel de Filtros */}
+                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Filtros</p>
+                                                <button
+                                                    onClick={() => {
+                                                        setBuscaRepertorio('');
+                                                        setFiltroOrigem('Todas');
+                                                        setFiltroEstilo('Todos');
+                                                        setFiltroTonalidade('Todas');
+                                                        setFiltroEscala('Todas');
+                                                        setFiltroCompasso('Todos');
+                                                        setFiltroAndamento('Todos');
+                                                        setFiltroEstrutura('Todas');
+                                                        setFiltroEnergia('Todas');
+                                                        setFiltroInstrumentacao('Todas');
+                                                        setFiltroDinamica('Todas');
+                                                    }}
+                                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
+                                                >✕ Limpar filtros</button>
+                                            </div>
+
+                                            {/* Linha 1: Busca + Origem + Escala */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mb-2">
+                                                <input type="text" placeholder="🔍 Buscar por título ou autor..." value={buscaRepertorio} onChange={e=>setBuscaRepertorio(e.target.value)}
+                                                    className="sm:col-span-2 px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400" />
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Origem</label>
+                                                    <select value={filtroOrigem} onChange={e=>setFiltroOrigem(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400">
+                                                        <option>Todas</option>
+                                                        <option>Folclórica</option>
+                                                        <option>Autoral</option>
+                                                        <option>Tradicional</option>
+                                                        <option>Popular</option>
+                                                        <option>Erudita</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Escala</label>
+                                                    <select value={filtroEscala} onChange={e=>setFiltroEscala(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400">
+                                                        <option>Todas</option>
+                                                        <option>Maior</option>
+                                                        <option>Menor</option>
+                                                        <option>Pentatônica</option>
+                                                        <option>Cromática</option>
+                                                        <option>Modal</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            {/* Linha 2: Estilo + Tonalidade + Compasso + Andamento + Estrutura */}
+                                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-2">
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Estilo</label>
+                                                    <select value={filtroEstilo} onChange={e=>setFiltroEstilo(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400">
+                                                        <option>Todos</option>
+                                                        {ESTILOS_OPCOES.map(e => <option key={e}>{e}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Tonalidade</label>
+                                                    <select value={filtroTonalidade} onChange={e=>setFiltroTonalidade(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400">
+                                                        <option>Todas</option>
+                                                        {TONALIDADES_OPCOES.map(t => <option key={t}>{t}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Compasso</label>
+                                                    <select value={filtroCompasso} onChange={e=>setFiltroCompasso(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400">
+                                                        <option>Todos</option>
+                                                        {COMPASSOS_OPCOES.map(c => <option key={c}>{c}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Andamento</label>
+                                                    <select value={filtroAndamento} onChange={e=>setFiltroAndamento(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400">
+                                                        <option>Todos</option>
+                                                        {ANDAMENTOS_OPCOES.map(a => <option key={a}>{a}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Estrutura</label>
+                                                    <select value={filtroEstrutura} onChange={e=>setFiltroEstrutura(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400">
+                                                        <option>Todas</option>
+                                                        {ESTRUTURAS_OPCOES.map(e => <option key={e}>{e}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            {/* Linha 3: Energia + Instrumentação + Dinâmica (NOVOS) */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">⚡ Energia</label>
+                                                    <select value={filtroEnergia} onChange={e=>setFiltroEnergia(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400">
+                                                        <option>Todas</option>
+                                                        {ENERGIAS_OPCOES.map(e => <option key={e}>{e}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">🎻 Instrumentação</label>
+                                                    <select value={filtroInstrumentacao} onChange={e=>setFiltroInstrumentacao(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400">
+                                                        <option>Todas</option>
+                                                        {INSTRUMENTACAO_OPCOES.map(i => <option key={i}>{i}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">🔊 Dinâmica</label>
+                                                    <select value={filtroDinamica} onChange={e=>setFiltroDinamica(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400">
+                                                        <option>Todas</option>
+                                                        {DINAMICAS_OPCOES.map(d => <option key={d}>{d}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {/* Lista de músicas */}
                                         <div className="space-y-2">
-                                            <p className="text-sm text-gray-500 mb-2">{musicasFiltradas.length} música(s) encontrada(s)</p>
+                                            <p className="text-xs font-semibold text-slate-400 uppercase">{musicasFiltradas.length} música(s) encontrada(s)</p>
                                             {musicasFiltradas.map(m => (
                                                 <React.Fragment key={m.id}>
-                                                <div className="bg-white p-3 rounded-lg border border-gray-200 hover:bg-blue-50 transition flex items-center justify-between">
-                                                    <div className="flex items-center gap-6 flex-1">
-                                                        <h3 className="font-bold text-gray-800 min-w-[200px]">{m.titulo}</h3>
-                                                        <p className="text-sm text-gray-600 min-w-[150px]">{m.autor || '—'}</p>
+                                                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-indigo-300 hover:shadow-md transition flex items-center justify-between">
+                                                    <div className="flex items-center gap-4 flex-1 flex-wrap min-w-0">
+                                                        <div className="min-w-[180px]">
+                                                            <h3 className="font-bold text-slate-800 text-sm">{m.titulo}</h3>
+                                                            <p className="text-xs text-slate-500 mt-0.5">{m.autor || '—'}</p>
+                                                        </div>
                                                         
                                                         {/* Energias */}
                                                         {(m.energias||[]).length > 0 && (
@@ -4580,14 +4706,14 @@ A versão atual será substituída.`)) return;
                                                         if (!ytId) return null;
                                                         return (
                                                             <button onClick={(e)=>{e.stopPropagation(); setYtPreviewId(ytPreviewId===m.id ? null : m.id);}}
-                                                                className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-bold border transition mr-1 ${ytPreviewId===m.id ? 'bg-red-600 text-white border-red-600' : 'bg-white text-red-600 border-red-300 hover:bg-red-50'}`}
+                                                                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold border transition mr-1 ${ytPreviewId===m.id ? 'bg-red-600 text-white border-red-600' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}
                                                                 title="Prévia YouTube">
                                                                 {ytPreviewId===m.id ? '■ Fechar' : '▶ Play'}
                                                             </button>
                                                         );
                                                     })()}
-                                                    <button onClick={() => setMusicaEditando(m)} className="bg-blue-600 text-white px-4 py-1 rounded text-sm font-bold hover:bg-blue-700 mr-1">✏️ Editar</button>
-                                                    <button onClick={() => { if(confirm(`Excluir "${m.titulo}"?`)) { setRepertorio(repertorio.filter(r => r.id !== m.id)); } }} className="bg-red-500 text-white px-4 py-1 rounded text-sm font-bold hover:bg-red-600">🗑️ Excluir</button>
+                                                    <button onClick={() => setMusicaEditando(m)} className="text-xs bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-200 transition mr-1">✏️ Editar</button>
+                                                    <button onClick={() => { setModalConfirm({ titulo: `Excluir "${m.titulo}"?`, conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => { setRepertorio(repertorio.filter(r => r.id !== m.id)); } }); }} className="text-xs bg-red-100 text-red-600 font-bold px-3 py-1.5 rounded-lg hover:bg-red-200 transition">🗑️</button>
                                                 </div>
                                                 {/* #9: Player embutido */}
                                                 {ytPreviewId===m.id && (() => {
@@ -5200,44 +5326,41 @@ A versão atual será substituída.`)) return;
                                             <button 
                                                 onClick={() => {
                                                     if(!musicaEditando.titulo.trim()) {
-                                                        alert('⚠️ Título é obrigatório!');
+                                                        setModalConfirm({ conteudo: '⚠️ Título é obrigatório!', somenteOk: true, labelConfirm: 'OK' });
                                                         return;
                                                     }
-                                                    if(!confirm('Deseja confirmar o salvamento desta música?')) {
-                                                        return;
-                                                    }
-                                                    const novoRepertorio = repertorio.find(r => r.id === musicaEditando.id) 
-                                                        ? repertorio.map(r => r.id === musicaEditando.id ? musicaEditando : r)
-                                                        : [...repertorio, musicaEditando];
-                                                    setRepertorio(novoRepertorio);
-                                                    localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
-                                                    
-                                                    // Se havia uma atividade aguardando vinculação, vincula automaticamente
-                                                    if (pendingAtividadeId && planoEditando) {
-                                                        const atualizado = [...(planoEditando.atividadesRoteiro || [])];
-                                                        const idx = atualizado.findIndex(a => a.id === pendingAtividadeId);
-                                                        if (idx !== -1) {
-                                                            const jaVinculada = (atualizado[idx].musicasVinculadas || []).find(m => m.id === musicaEditando.id);
-                                                            if (!jaVinculada) {
-                                                                atualizado[idx] = {
-                                                                    ...atualizado[idx],
-                                                                    musicasVinculadas: [...(atualizado[idx].musicasVinculadas || []), {
-                                                                        id: musicaEditando.id,
-                                                                        titulo: musicaEditando.titulo,
-                                                                        autor: musicaEditando.autor
-                                                                    }]
-                                                                };
-                                                                setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
+                                                    const _salvarMusica = () => {
+                                                        const novoRepertorio = repertorio.find(r => r.id === musicaEditando.id)
+                                                            ? repertorio.map(r => r.id === musicaEditando.id ? musicaEditando : r)
+                                                            : [...repertorio, musicaEditando];
+                                                        setRepertorio(novoRepertorio);
+                                                        localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
+                                                        if (pendingAtividadeId && planoEditando) {
+                                                            const atualizado = [...(planoEditando.atividadesRoteiro || [])];
+                                                            const idx = atualizado.findIndex(a => a.id === pendingAtividadeId);
+                                                            if (idx !== -1) {
+                                                                const jaVinculada = (atualizado[idx].musicasVinculadas || []).find(m => m.id === musicaEditando.id);
+                                                                if (!jaVinculada) {
+                                                                    atualizado[idx] = {
+                                                                        ...atualizado[idx],
+                                                                        musicasVinculadas: [...(atualizado[idx].musicasVinculadas || []), {
+                                                                            id: musicaEditando.id,
+                                                                            titulo: musicaEditando.titulo,
+                                                                            autor: musicaEditando.autor
+                                                                        }]
+                                                                    };
+                                                                    setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
+                                                                }
                                                             }
+                                                            setPendingAtividadeId(null);
+                                                            setViewMode('planos');
+                                                            setModalConfirm({ conteudo: '✅ Música salva e vinculada à atividade!', somenteOk: true, labelConfirm: 'OK' });
+                                                        } else {
+                                                            setModalConfirm({ conteudo: '✅ Música salva!', somenteOk: true, labelConfirm: 'OK' });
                                                         }
-                                                        setPendingAtividadeId(null);
-                                                        // Volta para o modal de edição do plano
-                                                        setViewMode('planos');
-                                                        alert('✅ Música salva e vinculada à atividade!');
-                                                    } else {
-                                                        alert('✅ Música salva!');
-                                                    }
-                                                    setMusicaEditando(null);
+                                                        setMusicaEditando(null);
+                                                    };
+                                                    setModalConfirm({ titulo: 'Salvar música?', conteudo: 'Deseja confirmar o salvamento desta música?', labelConfirm: 'Salvar', onConfirm: _salvarMusica });
                                                 }}
                                                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-bold text-lg"
                                             >
@@ -6176,16 +6299,15 @@ A versão atual será substituída.`)) return;
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            if (confirm(`Remover "${tag}" da lista permanentemente?`)) {
+                                                            setModalConfirm({ titulo: 'Remover tag?', conteudo: `Remover "${tag}" da lista permanentemente?`, labelConfirm: 'Remover', perigo: true, onConfirm: () => {
                                                                 setTagsGlobais(tagsGlobais.filter(t => t !== tag));
-                                                                // Remover também do plano atual se estiver selecionada
                                                                 if ((planoEditando.tags||[]).includes(tag)) {
                                                                     setPlanoEditando({
                                                                         ...planoEditando,
                                                                         tags: planoEditando.tags.filter(t => t !== tag)
                                                                     });
                                                                 }
-                                                            }
+                                                            } });
                                                         }}
                                                         className="text-gray-400 hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-r-full transition-all"
                                                     >
@@ -6329,12 +6451,12 @@ A versão atual será substituída.`)) return;
                                                                     type="button"
                                                                     onClick={() => {
                                                                         if(!atividade.nome?.trim()) {
-                                                                            alert('⚠️ Nome obrigatório!');
+                                                                            setModalConfirm({ conteudo: '⚠️ Nome obrigatório!', somenteOk: true, labelConfirm: 'OK' });
                                                                             return;
                                                                         }
                                                                         const existe = atividades.find(a => a.nome.toLowerCase().trim() === atividade.nome.toLowerCase().trim());
                                                                         if(existe) {
-                                                                            if(confirm(`"${atividade.nome}" já existe no Banco de Atividades.\n\nAtualizar?`)) {
+                                                                            setModalConfirm({ titulo: 'Atividade já existe', conteudo: `"${atividade.nome}" já existe no Banco de Atividades.\n\nAtualizar?`, labelConfirm: 'Atualizar', onConfirm: () => {
                                                                                 const atualizada = {
                                                                                     ...existe,
                                                                                     descricao: atividade.descricao || existe.descricao,
@@ -6347,8 +6469,8 @@ A versão atual será substituída.`)) return;
                                                                                     unidade: planoEditando.unidades?.[0] || existe.unidade
                                                                                 };
                                                                                 setAtividades(atividades.map(a => a.id === existe.id ? atualizada : a));
-                                                                                alert('✅ Atividade atualizada no Banco de Atividades!');
-                                                                            }
+                                                                                setModalConfirm({ conteudo: '✅ Atividade atualizada no Banco de Atividades!', somenteOk: true, labelConfirm: 'OK' });
+                                                                            } });
                                                                         } else {
                                                                             const nova = {
                                                                                 id: Date.now(),
@@ -6364,7 +6486,7 @@ A versão atual será substituída.`)) return;
                                                                                 unidade: planoEditando.unidades?.[0] || ''
                                                                             };
                                                                             setAtividades([...atividades, nova]);
-                                                                            alert('✅ Atividade salva no Banco de Atividades!');
+                                                                            setModalConfirm({ conteudo: '✅ Atividade salva no Banco de Atividades!', somenteOk: true, labelConfirm: 'OK' });
                                                                         }
                                                                     }}
                                                                     className="bg-green-500 text-white px-3 py-1 rounded text-sm font-bold hover:bg-green-600"
@@ -6642,16 +6764,15 @@ A versão atual será substituída.`)) return;
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => {
-                                                                        if (confirm(`Remover "${mat}" das sugestões permanentemente?`)) {
+                                                                        setModalConfirm({ titulo: 'Remover sugestão?', conteudo: `Remover "${mat}" das sugestões permanentemente?`, labelConfirm: 'Remover', perigo: true, onConfirm: () => {
                                                                             setMateriaisBloqueados([...materiaisBloqueados, mat]);
-                                                                            // Se estava selecionado, remover também
                                                                             if (jaAdicionado) {
                                                                                 setPlanoEditando({
-                                                                                    ...planoEditando, 
+                                                                                    ...planoEditando,
                                                                                     materiais: planoEditando.materiais.filter(m => m !== mat)
                                                                                 });
                                                                             }
-                                                                        }
+                                                                        } });
                                                                     }}
                                                                     className="text-gray-400 hover:text-red-500 text-xs font-bold px-1"
                                                                     title="Remover das sugestões"
@@ -7175,7 +7296,7 @@ A versão atual será substituída.`)) return;
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            if (confirm(`Remover "${conceito}" da lista permanentemente?`)) {
+                                                            setModalConfirm({ titulo: 'Remover conceito?', conteudo: `Remover "${conceito}" da lista permanentemente?`, labelConfirm: 'Remover', perigo: true, onConfirm: () => {
                                                                 setConceitos(conceitos.filter(c => c !== conceito));
                                                                 if ((atividadeEditando.conceitos||[]).includes(conceito)) {
                                                                     setAtividadeEditando({
@@ -7183,7 +7304,7 @@ A versão atual será substituída.`)) return;
                                                                         conceitos: atividadeEditando.conceitos.filter(c => c !== conceito)
                                                                     });
                                                                 }
-                                                            }
+                                                            } });
                                                         }}
                                                         className="text-gray-400 hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-r-full transition-all"
                                                     >
@@ -7271,16 +7392,15 @@ A versão atual será substituída.`)) return;
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            if (confirm(`Remover "${tag}" da lista permanentemente?`)) {
+                                                            setModalConfirm({ titulo: 'Remover tag?', conteudo: `Remover "${tag}" da lista permanentemente?`, labelConfirm: 'Remover', perigo: true, onConfirm: () => {
                                                                 setTagsGlobais(tagsGlobais.filter(t => t !== tag));
-                                                                // Remover da atividade atual se estiver selecionada
                                                                 if ((atividadeEditando.tags||[]).includes(tag)) {
                                                                     setAtividadeEditando({
                                                                         ...atividadeEditando,
                                                                         tags: atividadeEditando.tags.filter(t => t !== tag)
                                                                     });
                                                                 }
-                                                            }
+                                                            } });
                                                         }}
                                                         className="text-gray-400 hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-r-full transition-all"
                                                     >
@@ -7670,7 +7790,7 @@ A versão atual será substituída.`)) return;
                                     </button>
                                     <button onClick={()=>{
                                         const titulo = novaMusicaInline.titulo.trim();
-                                        if (!titulo) { alert('⚠️ Título é obrigatório!'); return; }
+                                        if (!titulo) { setModalConfirm({ conteudo: '⚠️ Título é obrigatório!', somenteOk: true, labelConfirm: 'OK' }); return; }
                                         // Cria a música
                                         const novaMusica = {
                                             id: Date.now(),
@@ -7701,7 +7821,7 @@ A versão atual será substituída.`)) return;
                                         setPendingAtividadeId(null);
                                         setModalNovaMusicaInline(false);
                                         setAtividadeVinculandoMusica(null);
-                                        alert(`✅ Música "${titulo}" salva e vinculada! Complete os detalhes depois em Repertório Inteligente.`);
+                                        setModalConfirm({ conteudo: `✅ Música "${titulo}" salva e vinculada! Complete os detalhes depois em Repertório Inteligente.`, somenteOk: true, labelConfirm: 'OK' });
                                     }} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold">
                                         🎵 Salvar e Vincular
                                     </button>
@@ -7761,11 +7881,12 @@ A versão atual será substituída.`)) return;
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <button onClick={() => {
-                                                                if (!confirm(`Aplicar template "${tmpl.nome}"?\n\nIsso substituirá o roteiro atual.`)) return;
-                                                                setPlanoEditando({...planoEditando, atividadesRoteiro: tmpl.atividades.map(a=>({...a, id:gerarIdSeguro()}))});
-                                                                setModalTemplates(false);
+                                                                setModalConfirm({ titulo: `Aplicar template "${tmpl.nome}"?`, conteudo: 'Isso substituirá o roteiro atual.', labelConfirm: 'Aplicar', onConfirm: () => {
+                                                                    setPlanoEditando({...planoEditando, atividadesRoteiro: tmpl.atividades.map(a=>({...a, id:gerarIdSeguro()}))});
+                                                                    setModalTemplates(false);
+                                                                } });
                                                             }} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold">▶ Aplicar</button>
-                                                            <button onClick={() => { if(confirm(`Excluir template "${tmpl.nome}"?`)) setTemplatesRoteiro(prev=>prev.filter(t=>t.id!==tmpl.id)); }}
+                                                            <button onClick={() => { setModalConfirm({ titulo: `Excluir template "${tmpl.nome}"?`, conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => setTemplatesRoteiro(prev=>prev.filter(t=>t.id!==tmpl.id)) }); }}
                                                                 className="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-sm font-bold">🗑️</button>
                                                         </div>
                                                     </div>
@@ -7814,7 +7935,7 @@ A versão atual será substituída.`)) return;
                                                     const novo = e.target.value.trim();
                                                     if (!novo) { e.target.value = f; return; }
                                                     if (novo === f) return;
-                                                    if (faixas.includes(novo)) { alert('Já existe uma faixa com esse nome!'); e.target.value = f; return; }
+                                                    if (faixas.includes(novo)) { setModalConfirm({ conteudo: 'Já existe uma faixa com esse nome!', somenteOk: true, labelConfirm: 'OK' }); e.target.value = f; return; }
                                                     setFaixas(faixas.map(x => x === f ? novo : x));
                                                     // Atualizar planos que usavam o nome antigo
                                                     setPlanos(planos.map(p => ({
@@ -7827,12 +7948,13 @@ A versão atual será substituída.`)) return;
                                             />
                                             <button
                                                 onClick={() => {
-                                                    if (!confirm(`Remover a faixa "${f}"? Os planos que a usam perderão esse rótulo.`)) return;
-                                                    setFaixas(faixas.filter(x => x !== f));
-                                                    setPlanos(planos.map(p => ({
-                                                        ...p,
-                                                        faixaEtaria: (p.faixaEtaria||[]).filter(fe => fe !== f)
-                                                    })));
+                                                    setModalConfirm({ titulo: `Remover faixa "${f}"?`, conteudo: 'Os planos que a usam perderão esse rótulo.', labelConfirm: 'Remover', perigo: true, onConfirm: () => {
+                                                        setFaixas(faixas.filter(x => x !== f));
+                                                        setPlanos(planos.map(p => ({
+                                                            ...p,
+                                                            faixaEtaria: (p.faixaEtaria||[]).filter(fe => fe !== f)
+                                                        })));
+                                                    } });
                                                 }}
                                                 className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 font-bold px-2 py-1 rounded-lg hover:bg-red-50 transition text-lg leading-none"
                                                 title="Remover faixa">×</button>
@@ -7950,11 +8072,58 @@ A versão atual será substituída.`)) return;
                             </div>
                         </div>
                     )}
+
+                    {/* ── MODAL DE CONFIRMAÇÃO GLOBAL ── */}
+                    {modalConfirm && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+                                {modalConfirm.titulo && (
+                                    <h3 className="text-lg font-bold text-gray-800 mb-3">{modalConfirm.titulo}</h3>
+                                )}
+                                <div className="text-gray-600 text-sm mb-6 whitespace-pre-line">{modalConfirm.conteudo}</div>
+                                <div className={`flex gap-3 ${modalConfirm.somenteOk ? '' : ''}`}>
+                                    {!modalConfirm.somenteOk && (
+                                        <button onClick={() => { setModalConfirm(null); if (modalConfirm.onCancel) modalConfirm.onCancel(); }}
+                                            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold transition">
+                                            {modalConfirm.labelCancelar || 'Cancelar'}
+                                        </button>
+                                    )}
+                                    <button onClick={() => { setModalConfirm(null); if (modalConfirm.onConfirm) modalConfirm.onConfirm(); }}
+                                        className={`flex-1 py-3 rounded-xl font-semibold transition text-white ${modalConfirm.perigo ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+                                        {modalConfirm.labelConfirm || 'OK'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
 
-        ReactDOM.render(<AppRoot />, document.getElementById('root'));
+        class ErrorBoundary extends React.Component {
+            constructor(props) { super(props); this.state = { erro: null }; }
+            static getDerivedStateFromError(e) { return { erro: e }; }
+            componentDidCatch(e, info) { console.error('[MusiLab] Erro capturado pelo ErrorBoundary:', e, info); }
+            render() {
+                if (this.state.erro) return (
+                    <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-10 text-center">
+                            <div className="text-6xl mb-4">⚠️</div>
+                            <h2 className="text-xl font-bold text-gray-800 mb-2">Algo deu errado</h2>
+                            <p className="text-gray-500 text-sm mb-6">Seus dados estão salvos. Recarregue a página para continuar.</p>
+                            <p className="text-xs text-red-400 bg-red-50 rounded-lg p-3 mb-6 text-left font-mono break-all">{this.state.erro.message}</p>
+                            <button onClick={() => window.location.reload()}
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-2xl transition">
+                                🔄 Recarregar MusiLab
+                            </button>
+                        </div>
+                    </div>
+                );
+                return this.props.children;
+            }
+        }
+
+        ReactDOM.render(<ErrorBoundary><AppRoot /></ErrorBoundary>, document.getElementById('root'));
     </script>
 </body>
 </html>
