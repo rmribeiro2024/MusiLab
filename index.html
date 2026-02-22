@@ -1079,152 +1079,257 @@
             const exportarPlanoPDF = (plano) => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-                
-                // Cores
-                const colors = {
-                    primary: [79, 70, 229],
-                    textDark: [31, 41, 55],
-                    bgGreen: [240, 253, 244], borderGreen: [187, 247, 208],
-                    bgBlue: [239, 246, 255], borderBlue: [191, 219, 254],
-                    bgOrange: [255, 247, 237], borderOrange: [254, 215, 170],
-                    bgPurple: [250, 245, 255], borderPurple: [233, 213, 255],
-                    bgTeal: [240, 253, 250], borderTeal: [204, 251, 241]
+
+                // ── Paleta minimalista ──
+                const W = 210, H = 297;
+                const mL = 22, mR = 22, mB = 18;
+                const cW = W - mL - mR;
+                const ACCENT   = [55, 65, 81];    // gray-700 (quase preto elegante)
+                const DARK     = [17, 24, 39];     // gray-900
+                const MID      = [107, 114, 128];  // gray-500
+                const LIGHT    = [209, 213, 219];  // gray-300
+                const RULE     = [229, 231, 235];  // gray-200
+
+                // ── Conversor HTML → texto limpo ──
+                const htmlToText = (html) => {
+                    if (!html) return '';
+                    return (html)
+                        .replace(/<\/p>\s*<p>/gi, '\n')
+                        .replace(/<p>/gi, '').replace(/<\/p>/gi, '\n')
+                        .replace(/<br\s*\/?>/gi, '\n')
+                        .replace(/<\/li>/gi, '\n')
+                        .replace(/<li>/gi, '\u2022 ')
+                        .replace(/<strong>(.*?)<\/strong>/gi, '$1')
+                        .replace(/<em>(.*?)<\/em>/gi, '$1')
+                        .replace(/<[^>]*>/g, '')
+                        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"')
+                        .replace(/\n{3,}/g, '\n\n').trim();
                 };
 
                 let y = 0;
-                let pageHeight = doc.internal.pageSize.height;
-                const checkPageBreak = (space) => { if (y + space > pageHeight - 20) { doc.addPage(); y = 20; return true; } return false; };
+                let pageNum = 1;
 
-                // Cabeçalho
-                doc.setFillColor(...colors.primary); doc.rect(0, 0, 210, 50, 'F');
-                doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(22);
-                doc.text(plano.titulo || "Plano de Aula", 15, 25);
-                doc.setFont("helvetica", "normal"); doc.setFontSize(12);
-                doc.text(`${plano.escola || ''} ${plano.numeroAula ? '| ' + plano.numeroAula : ''}`, 15, 35);
-                // Usando caractere ASCII simples para a estrela para garantir compatibilidade, ou apenas texto
-                if (plano.destaque) { doc.setTextColor(255, 215, 0); doc.setFontSize(16); doc.text("* Destaque", 170, 35); }
-                y = 65;
-
-                // Dados Técnicos (Caixa Cinza)
-                doc.setDrawColor(200); doc.setFillColor(250); doc.roundedRect(15, 55, 180, 25, 2, 2, 'FD');
-                doc.setTextColor(...colors.textDark); doc.setFontSize(10); doc.setFont("helvetica", "bold");
-                doc.text("DADOS TECNICOS:", 20, 62); // Sem acento para segurança maxima no título
-                doc.setFont("helvetica", "normal");
-                // Removendo caracteres especiais complexos dos valores se houver
-                doc.text(`Nivel: ${plano.nivel || '-'}   |   Duracao: ${plano.duracao || '-'}`, 20, 72);
-                doc.text(`Faixa Etaria: ${(plano.faixaEtaria || []).join(', ')}`, 20, 78);
-                y = 88;
-
-                // Helper para caixas
-                const drawBox = (title, lines, bg, border) => {
-                    checkPageBreak(lines.length * 6 + 20);
-                    doc.setFillColor(...bg); doc.setDrawColor(...border);
-                    const boxH = (lines.length * 5) + 15;
-                    doc.roundedRect(15, y, 180, boxH, 3, 3, 'FD');
-                    doc.setFont("helvetica", "bold"); doc.setTextColor(0); doc.text(title, 20, y + 8);
-                    doc.setFont("helvetica", "normal"); doc.setTextColor(...colors.textDark);
-                    let textY = y + 15;
-                    lines.forEach(l => { doc.text(l, 20, textY); textY += 5; });
-                    y += boxH + 8;
+                // ── Helpers de quebra de página e texto ──
+                const chk = (space) => {
+                    if (y + space > H - mB) { doc.addPage(); pageNum++; y = 22; return true; }
+                    return false;
+                };
+                const writeLine = (text, x, fontSize, style, color) => {
+                    doc.setFontSize(fontSize); doc.setFont("helvetica", style || "normal");
+                    doc.setTextColor(...(color || DARK));
+                    const lines = doc.splitTextToSize(String(text), cW - (x - mL));
+                    lines.forEach(l => { chk(fontSize * 0.4 + 1); doc.text(l, x, y); y += fontSize * 0.4; });
+                    return lines.length;
+                };
+                const rule = (gap1, gap2, color) => {
+                    y += (gap1 || 3);
+                    doc.setDrawColor(...(color || RULE)); doc.setLineWidth(0.25);
+                    doc.line(mL, y, W - mR, y);
+                    y += (gap2 || 3);
+                };
+                const sectionTitle = (label) => {
+                    chk(14);
+                    rule(4, 0, RULE);
+                    y += 5;
+                    doc.setFont("helvetica", "bold"); doc.setFontSize(7.5);
+                    doc.setTextColor(...MID);
+                    doc.text(label.toUpperCase(), mL, y);
+                    y += 5;
+                    doc.setFont("helvetica", "normal"); doc.setTextColor(...DARK);
+                };
+                const bodyText = (text, indent, size) => {
+                    if (!text || !String(text).trim()) return;
+                    doc.setFontSize(size || 10); doc.setFont("helvetica", "normal"); doc.setTextColor(...DARK);
+                    const lines = doc.splitTextToSize(String(text).trim(), cW - (indent || 0));
+                    lines.forEach(l => { chk(5); doc.text(l, mL + (indent || 0), y); y += 5; });
                 };
 
+                // ════════════════════════════════
+                // CABEÇALHO
+                // ════════════════════════════════
+                // Barra de acento (topo)
+                doc.setFillColor(...ACCENT); doc.rect(0, 0, W, 4, 'F');
+
+                // Título — com quebra de linha automática
+                y = 18;
+                doc.setFont("helvetica", "bold"); doc.setFontSize(17); doc.setTextColor(...DARK);
+                const titleLines = doc.splitTextToSize(plano.titulo || "Plano de Aula", cW);
+                titleLines.forEach(l => { doc.text(l, mL, y); y += 8; });
+                if (plano.destaque) {
+                    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...MID);
+                    doc.text("Favorito", W - mR, 19, { align: 'right' });
+                }
+
+                // Metadados compactos (escola · nível · duração · faixa)
+                const meta = [
+                    plano.escola,
+                    plano.numeroAula ? `Aula ${plano.numeroAula}` : null,
+                    plano.nivel,
+                    plano.duracao ? `${plano.duracao}` : null,
+                    (plano.faixaEtaria||[]).join(', ') || null,
+                    plano.statusPlanejamento || null,
+                ].filter(Boolean).join('  ·  ');
+                if (meta) {
+                    y += 1;
+                    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...MID);
+                    const mLines = doc.splitTextToSize(meta, cW);
+                    mLines.forEach(l => { doc.text(l, mL, y); y += 5; });
+                }
+
+                // Linha separadora do cabeçalho
+                rule(4, 2, LIGHT);
+
+                // ════════════════════════════════
                 // BNCC
-                if (plano.habilidadesBNCC && plano.habilidadesBNCC.length > 0) {
-                    const bnccLines = [];
-                    plano.habilidadesBNCC.forEach(h => bnccLines.push(...doc.splitTextToSize(h, 170)));
-                    drawBox("ALINHAMENTO BNCC", bnccLines, colors.bgOrange, colors.borderOrange);
-                }
-
-                // Objetivos — strip HTML tags
-                const stripHtml = (html) => (html||'').replace(/<li>/gi,'- ').replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').replace(/\n\s*\n/g,'\n').trim();
-                const objG = doc.splitTextToSize(`Geral: ${stripHtml(plano.objetivoGeral) || "-"}`, 170);
-                const objE = plano.objetivosEspecificos.filter(o=>o.trim()).map(o => `- ${stripHtml(o)}`);
-                drawBox("OBJETIVOS DE APRENDIZAGEM", [...objG, "", "Especificos:", ...objE], colors.bgGreen, colors.borderGreen);
-
-                // Conceitos
-                if (plano.conceitos.length > 0) {
-                    drawBox("CONCEITOS MUSICAIS", doc.splitTextToSize(plano.conceitos.join(", "), 170), colors.bgPurple, colors.borderPurple);
-                }
-
-                // Unidades
-                if (plano.unidades && plano.unidades.length > 0) {
-                    drawBox("UNIDADES", doc.splitTextToSize(plano.unidades.join(", "), 170), colors.bgTeal, colors.borderTeal);
-                }
-
-                // Roteiro de Atividades (novo formato estruturado)
-                if (plano.atividadesRoteiro && plano.atividadesRoteiro.length > 0) {
-                    checkPageBreak(20);
-                    doc.setFillColor(224, 242, 254);
-                    doc.rect(15, y, 180, 8, 'F');
-                    doc.setDrawColor(147, 197, 253);
-                    doc.rect(15, y, 180, 8);
-                    doc.setFontSize(11);
-                    doc.setFont("helvetica", "bold");
-                    doc.setTextColor(29, 78, 216);
-                    doc.text("ROTEIRO DE ATIVIDADES", 20, y + 5.5);
-                    y += 12;
-                    
-                    plano.atividadesRoteiro.forEach((atividade, index) => {
-                        checkPageBreak(30);
-                        doc.setFontSize(10);
-                        doc.setFont("helvetica", "bold");
-                        doc.setTextColor(0, 0, 0);
-                        
-                        let nomeAtividade = atividade.nome ? `${index + 1}. ${atividade.nome}` : `${index + 1}. Atividade`;
-                        if (atividade.duracao) {
-                            nomeAtividade += ` (${atividade.duracao})`;
-                        }
-                        doc.text(nomeAtividade, 20, y);
-                        y += 6;
-                        
-                        if (atividade.descricao) {
-                            doc.setFont("helvetica", "normal");
-                            doc.setTextColor(60, 60, 60);
-                            const linhasDesc = doc.splitTextToSize(stripHtml(atividade.descricao), 170);
-                            linhasDesc.forEach(linha => {
-                                checkPageBreak(5);
-                                doc.text(linha, 20, y);
-                                y += 5;
-                            });
-                        }
-                        
-                        // Links/recursos da atividade
-                        if (atividade.recursos && atividade.recursos.length > 0) {
-                            atividade.recursos.forEach(rec => {
-                                checkPageBreak(7);
-                                const url = typeof rec === 'string' ? rec : rec.url;
-                                const tipo = typeof rec === 'string' ? 'link' : rec.tipo;
-                                doc.setFont("helvetica", "normal");
-                                doc.setFontSize(8);
-                                doc.setTextColor(0, 0, 200);
-                                const label = `${tipo === 'imagem' ? '[IMG]' : '[LINK]'} ${url}`;
-                                doc.textWithLink(label, 25, y, { url });
-                                y += 5;
-                            });
-                            doc.setFontSize(10);
-                        }
-                        
-                        y += 3;
+                // ════════════════════════════════
+                const bncc = (plano.habilidadesBNCC||[]).filter(h => h && h.trim());
+                if (bncc.length > 0) {
+                    sectionTitle("Habilidades BNCC");
+                    doc.setFontSize(9); doc.setTextColor(...MID);
+                    bncc.forEach(h => {
+                        const ls = doc.splitTextToSize(h.trim(), cW);
+                        ls.forEach(l => { chk(4.5); doc.text(l, mL, y); y += 4.5; });
                     });
                     y += 2;
                 }
-                
-                // Metodologia antiga (compatibilidade reversa)
+
+                // ════════════════════════════════
+                // OBJETIVOS
+                // ════════════════════════════════
+                const objGeral = htmlToText(plano.objetivoGeral);
+                const objEsp = (plano.objetivosEspecificos||[]).map(o => htmlToText(o)).filter(o => o.trim());
+                if (objGeral || objEsp.length > 0) {
+                    sectionTitle("Objetivos de Aprendizagem");
+                    if (objGeral) {
+                        doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(...DARK);
+                        objGeral.split('\n').filter(l => l.trim()).forEach(linha => bodyText(linha.trim(), 0, 10));
+                        y += 2;
+                    }
+                    if (objEsp.length > 0) {
+                        chk(5);
+                        doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...MID);
+                        doc.text("ESPECÍFICOS", mL, y); y += 5;
+                        doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(...DARK);
+                        objEsp.forEach(o => {
+                            o.split('\n').filter(l => l.trim()).forEach(linha => {
+                                const txt = linha.startsWith('\u2022') || linha.startsWith('-') ? linha.trim() : '\u2022 ' + linha.trim();
+                                const ls = doc.splitTextToSize(txt, cW - 4);
+                                ls.forEach((l, i) => { chk(5); doc.text(l, mL + (i > 0 ? 6 : 4), y); y += 5; });
+                            });
+                        });
+                    }
+                    y += 2;
+                }
+
+                // ════════════════════════════════
+                // CONCEITOS E UNIDADES
+                // ════════════════════════════════
+                if (plano.conceitos && plano.conceitos.length > 0) {
+                    sectionTitle("Conceitos Musicais");
+                    doc.setFontSize(10); doc.setTextColor(...DARK);
+                    bodyText(plano.conceitos.join('  ·  '), 0, 10);
+                    y += 2;
+                }
+                if (plano.unidades && plano.unidades.length > 0) {
+                    sectionTitle("Unidades");
+                    doc.setFontSize(10); doc.setTextColor(...DARK);
+                    bodyText(plano.unidades.join('  ·  '), 0, 10);
+                    y += 2;
+                }
+
+                // ════════════════════════════════
+                // ROTEIRO DE ATIVIDADES
+                // ════════════════════════════════
+                if (plano.atividadesRoteiro && plano.atividadesRoteiro.length > 0) {
+                    sectionTitle("Roteiro de Atividades");
+                    plano.atividadesRoteiro.forEach((ativ, idx) => {
+                        chk(18);
+                        // Número e nome
+                        const header = `${idx + 1}.\u2002${ativ.nome || 'Atividade'}`;
+                        const dur = ativ.duracao ? `  ${ativ.duracao}` : '';
+                        doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(...DARK);
+                        const hLines = doc.splitTextToSize(header, cW - 25);
+                        hLines.forEach(l => { chk(6); doc.text(l, mL, y); y += 5.5; });
+                        if (dur) {
+                            doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...MID);
+                            doc.text(dur.trim(), W - mR, y - 5.5, { align: 'right' });
+                        }
+                        // Descrição
+                        if (ativ.descricao) {
+                            const desc = htmlToText(ativ.descricao);
+                            if (desc.trim()) {
+                                doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(...MID);
+                                desc.split('\n').filter(l => l.trim()).forEach(linha => {
+                                    const ls = doc.splitTextToSize(linha.trim(), cW - 6);
+                                    ls.forEach(l => { chk(5); doc.text(l, mL + 6, y); y += 5; });
+                                });
+                            }
+                        }
+                        // Objetivo da atividade
+                        if (ativ.objetivo && ativ.objetivo.trim()) {
+                            chk(5);
+                            doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(...LIGHT);
+                            const ls = doc.splitTextToSize('Objetivo: ' + ativ.objetivo.trim(), cW - 6);
+                            ls.forEach(l => { chk(4.5); doc.text(l, mL + 6, y); y += 4.5; });
+                        }
+                        // Links
+                        if (ativ.recursos && ativ.recursos.length > 0) {
+                            ativ.recursos.forEach(rec => {
+                                const url = typeof rec === 'string' ? rec : rec.url;
+                                chk(5);
+                                doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(59, 130, 246);
+                                const ls = doc.splitTextToSize('\u2192 ' + url, cW - 6);
+                                ls.forEach(l => { chk(4.5); doc.text(l, mL + 6, y); y += 4.5; });
+                            });
+                        }
+                        y += 5;
+                    });
+                }
+
+                // Metodologia legado
                 if (plano.metodologia && (!plano.atividadesRoteiro || plano.atividadesRoteiro.length === 0)) {
-                    drawBox("METODOLOGIA", doc.splitTextToSize(plano.metodologia, 170), [255,255,255], [200,200,200]);
+                    sectionTitle("Metodologia");
+                    bodyText(htmlToText(plano.metodologia), 0, 10);
+                    y += 2;
                 }
 
-
-                // Recursos e Materiais — apenas materiais (links agora ficam dentro de cada atividade)
+                // ════════════════════════════════
+                // MATERIAIS
+                // ════════════════════════════════
                 if (plano.materiais && plano.materiais.length > 0) {
-                     checkPageBreak(40);
-                     doc.setFillColor(...colors.bgBlue); doc.rect(15, y, 180, 8, 'F');
-                     doc.setFont("helvetica", "bold"); doc.setTextColor(30, 64, 175); doc.text("MATERIAIS", 20, y + 5.5);
-                     y += 14; 
-                     doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...colors.textDark);
-                     plano.materiais.forEach(m => { checkPageBreak(5); doc.text(`- ${m}`, 20, y); y+=5; });
-                     y+=5;
+                    sectionTitle("Materiais");
+                    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(...DARK);
+                    plano.materiais.forEach(m => {
+                        const ls = doc.splitTextToSize('\u2022 ' + m, cW - 4);
+                        ls.forEach((l, i) => { chk(5); doc.text(l, mL + (i > 0 ? 6 : 4), y); y += 5; });
+                    });
+                    y += 2;
                 }
+
+                // ════════════════════════════════
+                // AVALIAÇÃO / OBSERVAÇÕES
+                // ════════════════════════════════
+                if (plano.avaliacaoObservacoes && plano.avaliacaoObservacoes.trim()) {
+                    sectionTitle("Avaliação / Observações");
+                    doc.setFont("helvetica", "italic"); doc.setFontSize(10); doc.setTextColor(...MID);
+                    const ls = doc.splitTextToSize(plano.avaliacaoObservacoes.trim(), cW);
+                    ls.forEach(l => { chk(5); doc.text(l, mL, y); y += 5; });
+                    y += 2;
+                }
+
+                // ════════════════════════════════
+                // RODAPÉ em todas as páginas
+                // ════════════════════════════════
+                const totalPages = doc.getNumberOfPages();
+                for (let p = 1; p <= totalPages; p++) {
+                    doc.setPage(p);
+                    doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
+                    doc.line(mL, H - 13, W - mR, H - 13);
+                    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...LIGHT);
+                    doc.text("MusiLab · Plano de Aula", mL, H - 8);
+                    doc.text(`${p} / ${totalPages}`, W - mR, H - 8, { align: 'right' });
+                }
+
                 doc.save(`Plano - ${plano.titulo}.pdf`);
             };
             
