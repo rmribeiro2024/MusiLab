@@ -1594,6 +1594,25 @@
                     });
                     return;
                 }
+                // Aviso: escola sem turmas cadastradas
+                if (!ignorarAvisoEscola && planoEditando.escola && planoEditando.escola.trim()) {
+                    const escolaNorm = planoEditando.escola.trim().toLowerCase();
+                    const semTurmas = anosLetivos.some(a => a.escolas.some(e => {
+                        const totalTurmas = (e.segmentos || []).reduce((acc, s) => acc + (s.turmas || []).length, 0);
+                        return e.nome.trim().toLowerCase() === escolaNorm && totalTurmas === 0;
+                    }));
+                    if (semTurmas) {
+                        setModalConfirm({
+                            titulo: '🏫 Escola sem turmas',
+                            conteudo: 'A escola selecionada ainda não tem turmas cadastradas. O filtro por turma no Histórico Musical será impreciso. Deseja cadastrar as turmas agora?',
+                            labelConfirm: 'Cadastrar turmas',
+                            labelCancelar: 'Salvar assim mesmo',
+                            onConfirm: () => { salvarPlano(true); setModoEdicao(false); setPlanoEditando(null); setModalTurmas(true); },
+                            onCancel: () => salvarPlano(true),
+                        });
+                        return;
+                    }
+                }
                 const planoParaSalvar = {
                     ...planoEditando,
                     objetivosEspecificos: planoEditando.objetivosEspecificos.filter(i => i.trim() !== ""),
@@ -3716,18 +3735,28 @@
                             // Um "uso" = música vinculada em atividade do plano + uma historicaData desse plano
 
                             // ── POPULAR TURMAS DIRETO DA ESTRUTURA anosLetivos ──
+                            // Inclui escolas sem turmas cadastradas (exibidas com aviso)
                             const todasTurmasHistorico = [];
                             anosLetivos.forEach(ano => {
                                 (ano.escolas || []).forEach(esc => {
-                                    (esc.segmentos || []).forEach(seg => {
-                                        (seg.turmas || []).forEach(tur => {
-                                            const id = String(tur.id) + '-' + String(esc.id);
-                                            if (!todasTurmasHistorico.find(t => t.id === id)) {
-                                                const label = [ano.ano, esc.nome, seg.nome, tur.nome].filter(Boolean).join(' › ');
-                                                todasTurmasHistorico.push({ id, label, turmaId: tur.id, escolaId: esc.id, escolaNome: esc.nome, segmentoId: seg.id, segmentoNome: seg.nome, anoLetivoId: ano.id });
-                                            }
+                                    const totalTurmas = (esc.segmentos || []).reduce((acc, s) => acc + (s.turmas || []).length, 0);
+                                    if (totalTurmas === 0) {
+                                        // Escola sem turmas: adicionar entrada própria
+                                        const id = 'escola-' + String(esc.id);
+                                        if (!todasTurmasHistorico.find(t => t.id === id)) {
+                                            todasTurmasHistorico.push({ id, label: ano.ano + ' › ' + esc.nome + ' (sem turmas)', escolaId: esc.id, escolaNome: esc.nome, segmentoNome: '', semTurmas: true, anoLetivoId: ano.id });
+                                        }
+                                    } else {
+                                        (esc.segmentos || []).forEach(seg => {
+                                            (seg.turmas || []).forEach(tur => {
+                                                const id = String(tur.id) + '-' + String(esc.id);
+                                                if (!todasTurmasHistorico.find(t => t.id === id)) {
+                                                    const label = [ano.ano, esc.nome, seg.nome, tur.nome].filter(Boolean).join(' › ');
+                                                    todasTurmasHistorico.push({ id, label, turmaId: tur.id, escolaId: esc.id, escolaNome: esc.nome, segmentoId: seg.id, segmentoNome: seg.nome, anoLetivoId: ano.id });
+                                                }
+                                            });
                                         });
-                                    });
+                                    }
                                 });
                             });
 
@@ -3759,6 +3788,11 @@
                                 const tSeg = normalizar(infoTurmaFiltrada.segmentoNome);
                                 const pEsc = normalizar(p.escola);
                                 const faixas = (p.faixaEtaria || []).map(f => normalizar(f));
+
+                                // Escola sem turmas: filtra só pela escola
+                                if (infoTurmaFiltrada.semTurmas) {
+                                    return pEsc && (pEsc === tEsc || pEsc.includes(tEsc) || tEsc.includes(pEsc));
+                                }
 
                                 // Checar se segmento da turma bate com alguma faixaEtaria do plano
                                 const segmentoOk = !tSeg || faixas.length === 0 ||
@@ -3917,6 +3951,12 @@
                                                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400"/>
                                             </div>
                                         </div>
+                                        {infoTurmaFiltrada?.semTurmas && (
+                                            <div className="mt-3 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-800">
+                                                <span className="shrink-0">💡</span>
+                                                <span>Filtrando só pela escola. Para precisão por turma, <button onClick={()=>setModalConfiguracoes(true)} className="font-bold underline hover:text-blue-900">cadastre as turmas em Configurações</button>.</span>
+                                            </div>
+                                        )}
                                         {(hmFiltroTurma || hmFiltroInicio || hmFiltroFim || hmFiltroBusca) && (
                                             <div className="mt-3 flex justify-end">
                                                 <button onClick={() => { setHmFiltroTurma(''); setHmFiltroInicio(''); setHmFiltroFim(''); setHmFiltroBusca(''); }}
