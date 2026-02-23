@@ -9176,7 +9176,8 @@
                                             estilos: [], compassos: [], tonalidades: [],
                                             andamentos: [], escalas: [], estruturas: [], energias: [],
                                             dinamicas: [], instrumentacao: [], instrumentoDestaque: '',
-                                            links: [], pdfs: [], audios: [], planosVinculados: []
+                                            links: [], pdfs: [], audios: [],
+                                            planosVinculados: (pendingAtividadeId && planoEditando) ? [planoEditando.id] : []
                                         };
                                         // Salva no repertório (useEffect persiste automaticamente)
                                         setRepertorio(prev => [...prev, novaMusica]);
