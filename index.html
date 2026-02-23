@@ -3714,7 +3714,7 @@
                                             const id = String(tur.id) + '-' + String(esc.id);
                                             if (!todasTurmasHistorico.find(t => t.id === id)) {
                                                 const label = [ano.ano, esc.nome, seg.nome, tur.nome].filter(Boolean).join(' › ');
-                                                todasTurmasHistorico.push({ id, label, turmaId: tur.id, escolaId: esc.id, segmentoId: seg.id, anoLetivoId: ano.id });
+                                                todasTurmasHistorico.push({ id, label, turmaId: tur.id, escolaId: esc.id, escolaNome: esc.nome, segmentoId: seg.id, anoLetivoId: ano.id });
                                             }
                                         });
                                     });
@@ -3726,24 +3726,38 @@
                             const hmFim = hmFiltroFim;
                             const hmBusca = hmFiltroBusca;
 
-                            // ── HELPER: resolve turmaId+escolaId → chave de filtro ──
-                            const chaveDoRegistro = (r) => String(r.turma) + '-' + String(r.escola);
+                            // ── HELPER: resolve turmaChave → info da turma ──
+                            const infoTurmaFiltrada = hmTurmaFiltro
+                                ? todasTurmasHistorico.find(t => t.id === hmTurmaFiltro)
+                                : null;
 
                             // ── HELPER: verifica se um plano pertence à turma filtrada ──
-                            // Um plano "pertence" à turma se tem registro pós-aula com aquela turma
-                            // OU se foi usado naquela turma via historicoDatas (neste caso usamos faixaEtaria/escola do plano como proxy)
-                            const planoBelongsTurma = (p, turmaChave) => {
-                                if (!turmaChave) return true;
-                                // Verifica via registros pós-aula (fonte mais confiável)
-                                return (p.registrosPosAula || []).some(r => chaveDoRegistro(r) === turmaChave);
+                            // Estratégia 1 (mais confiável): tem registro pós-aula com turmaId+escolaId
+                            // Estratégia 2 (fallback): campo p.escola bate com o nome da escola da turma selecionada
+                            const chaveDoRegistro = (r) => String(r.turma) + '-' + String(r.escola);
+
+                            const planoBelongsTurma = (p) => {
+                                if (!hmTurmaFiltro || !infoTurmaFiltrada) return true;
+                                // Estratégia 1: via registros pós-aula
+                                if ((p.registrosPosAula || []).some(r => chaveDoRegistro(r) === hmTurmaFiltro)) return true;
+                                // Estratégia 2: via campo escola do plano vs nome da escola da turma selecionada
+                                if (p.escola && infoTurmaFiltrada.escolaNome) {
+                                    const pEsc = p.escola.trim().toLowerCase();
+                                    const tEsc = infoTurmaFiltrada.escolaNome.trim().toLowerCase();
+                                    if (pEsc === tEsc || pEsc.includes(tEsc) || tEsc.includes(pEsc)) return true;
+                                }
+                                return false;
                             };
 
                             // ── COMPUTAR MÉTRICAS ──
-                            const usosMusica = {}; // chaveMusica -> { id, titulo, autor, datas: Set, aulas: [] }
+                            const usosMusica = {};
                             const aulasDaTurma = new Set();
 
                             planos.forEach(p => {
-                                // Filtrar registros desta turma/período
+                                // Verificar se plano pertence à turma filtrada
+                                if (!planoBelongsTurma(p)) return;
+
+                                // Registros pós-aula desta turma/período
                                 const regsDoPlano = (p.registrosPosAula || []).filter(r => {
                                     if (hmTurmaFiltro && chaveDoRegistro(r) !== hmTurmaFiltro) return false;
                                     if (hmInicio && r.data < hmInicio) return false;
@@ -3752,17 +3766,13 @@
                                 });
                                 regsDoPlano.forEach(r => { if (r.data) aulasDaTurma.add(r.data); });
 
-                                // historicoDatas quando não há filtro de turma OU plano pertence à turma
+                                // historicoDatas filtradas por período
                                 const histFiltrado = (p.historicoDatas || []).filter(d => {
                                     if (hmInicio && d < hmInicio) return false;
                                     if (hmFim && d > hmFim) return false;
                                     return true;
                                 });
-                                if (!hmTurmaFiltro) {
-                                    histFiltrado.forEach(d => aulasDaTurma.add(d));
-                                } else if (planoBelongsTurma(p, hmTurmaFiltro)) {
-                                    histFiltrado.forEach(d => aulasDaTurma.add(d));
-                                }
+                                histFiltrado.forEach(d => aulasDaTurma.add(d));
 
                                 // ── Coleta músicas do plano via atividadesRoteiro ──
                                 const musicasDoPlano = [];
@@ -3776,29 +3786,16 @@
 
                                 if (musicasDoPlano.length === 0) return;
 
-                                // ── Determinar datas de uso para este plano ──
-                                // Prioridade 1: registros pós-aula com a turma selecionada
-                                // Prioridade 2: historicoDatas (quando sem filtro de turma, ou plano sem registros)
-                                // Prioridade 3: sem data (plano existe mas nunca foi usado) → mostra sem data
+                                // ── Determinar datas de uso ──
                                 let datasDeUso = [];
-
                                 if (regsDoPlano.length > 0) {
-                                    // Tem registros da turma: usar datas dos registros
                                     datasDeUso = [...new Set(regsDoPlano.map(r => r.data).filter(Boolean))];
-                                } else if (!hmTurmaFiltro && histFiltrado.length > 0) {
-                                    // Sem filtro de turma + tem historicoDatas: usar histórico
+                                } else if (histFiltrado.length > 0) {
                                     datasDeUso = histFiltrado;
-                                } else if (!hmTurmaFiltro && histFiltrado.length === 0) {
-                                    // Sem filtro + sem datas: mostrar música com data vazia (plano vinculado mas não usado)
+                                } else {
+                                    // Plano vinculado mas sem datas: mostrar mesmo assim
                                     datasDeUso = [''];
-                                } else if (hmTurmaFiltro && planoBelongsTurma(p, hmTurmaFiltro)) {
-                                    // Com filtro de turma + plano tem registro da turma → já coberto acima
-                                    // (regsDoPlano.length seria > 0 neste caso, então não chega aqui)
-                                    datasDeUso = histFiltrado.length > 0 ? histFiltrado : [''];
                                 }
-                                // Se hmTurmaFiltro e plano NÃO pertence à turma: datasDeUso = [] → skip
-
-                                if (datasDeUso.length === 0) return;
 
                                 musicasDoPlano.forEach(mv => {
                                     const chaveMusica = String(mv.id);
@@ -5358,17 +5355,21 @@
                             });
 
                             // ── AVISO DE localStorage (#11) ──
+                            // Só exibe o aviso se o usuário NÃO está logado (sem Supabase).
+                            // Com conta ativa, os dados ficam na nuvem e o localStorage é só cache temporário.
                             let avisoStorage = null;
-                            try {
-                                let total = 0;
-                                for (let key in localStorage) {
-                                    if (localStorage.hasOwnProperty(key))
-                                        total += (localStorage.getItem(key)||'').length * 2;
-                                }
-                                const pct = (total / (5 * 1024 * 1024)) * 100;
-                                if (pct >= 80)
-                                    avisoStorage = { pct: pct.toFixed(0), usado: (total/1024).toFixed(0), critico: pct >= 95 };
-                            } catch(e) {}
+                            if (!userId) {
+                                try {
+                                    let total = 0;
+                                    for (let key in localStorage) {
+                                        if (localStorage.hasOwnProperty(key))
+                                            total += (localStorage.getItem(key)||'').length * 2;
+                                    }
+                                    const pct = (total / (5 * 1024 * 1024)) * 100;
+                                    if (pct >= 80)
+                                        avisoStorage = { pct: pct.toFixed(0), usado: (total/1024).toFixed(0), critico: pct >= 95 };
+                                } catch(e) {}
+                            }
 
                             // ── COMPONENTE DE LINHA REUTILIZÁVEL ──
                             const LinhaPlano = ({ plano, showEscola = true }) => {
