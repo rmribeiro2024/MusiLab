@@ -1575,14 +1575,24 @@
                 setModoEdicao(true); 
             };
 
-            const salvarPlano = () => {
+            const salvarPlano = (ignorarAvisoEscola = false) => {
                 if (!planoEditando.titulo || !planoEditando.titulo.trim()) {
                     setModalConfirm({ conteudo: '⚠️ Preencha o título do plano antes de salvar.', somenteOk: true, labelConfirm: 'OK' });
                     return;
                 }
                 if (!planoEditando.objetivoGeral || !planoEditando.objetivoGeral.trim()) {
                     setModalConfirm({ conteudo: '⚠️ Preencha o objetivo geral antes de salvar.', somenteOk: true, labelConfirm: 'OK' });
-                    return; 
+                    return;
+                }
+                if (!ignorarAvisoEscola && (!planoEditando.escola || !planoEditando.escola.trim())) {
+                    setModalConfirm({
+                        titulo: '🏫 Escola não preenchida',
+                        conteudo: 'Sem escola definida, o Histórico Musical por turma não funcionará de forma precisa. Salvar assim mesmo?',
+                        labelConfirm: 'Salvar assim mesmo',
+                        labelCancelar: 'Voltar e preencher',
+                        onConfirm: () => salvarPlano(true),
+                    });
+                    return;
                 }
                 const planoParaSalvar = {
                     ...planoEditando,
@@ -3732,27 +3742,35 @@
                                 : null;
 
                             // ── HELPER: verifica se um plano pertence à turma filtrada ──
-                            // Estratégia 1 (mais confiável): tem registro pós-aula com turmaId+escolaId
-                            // Estratégia 2 (fallback): campo p.escola bate com escola da turma E
-                            //   p.faixaEtaria contém o segmento da turma selecionada
+                            // Estratégia 1: tem registro pós-aula com turmaId+escolaId (mais confiável)
+                            // Estratégia 2: escola do plano bate com escola da turma (quando escola preenchida)
+                            //   + segmento da turma bate com faixaEtaria do plano
+                            // Estratégia 3: escola vazia mas faixaEtaria bate → inclui (plano genérico)
                             const chaveDoRegistro = (r) => String(r.turma) + '-' + String(r.escola);
-
                             const normalizar = (s) => (s || '').trim().toLowerCase();
 
                             const planoBelongsTurma = (p) => {
                                 if (!hmTurmaFiltro || !infoTurmaFiltrada) return true;
+
                                 // Estratégia 1: via registros pós-aula
                                 if ((p.registrosPosAula || []).some(r => chaveDoRegistro(r) === hmTurmaFiltro)) return true;
-                                // Estratégia 2: escola + segmento vs faixaEtaria do plano
-                                const pEsc = normalizar(p.escola);
+
                                 const tEsc = normalizar(infoTurmaFiltrada.escolaNome);
-                                const escolaOk = pEsc && tEsc && (pEsc === tEsc || pEsc.includes(tEsc) || tEsc.includes(pEsc));
-                                if (!escolaOk) return false;
-                                // Se a escola bate, checar se o segmento da turma está na faixaEtaria do plano
                                 const tSeg = normalizar(infoTurmaFiltrada.segmentoNome);
+                                const pEsc = normalizar(p.escola);
                                 const faixas = (p.faixaEtaria || []).map(f => normalizar(f));
-                                const segmentoOk = !tSeg || faixas.length === 0 || faixas.some(f => f === tSeg || f.includes(tSeg) || tSeg.includes(f));
-                                return segmentoOk;
+
+                                // Checar se segmento da turma bate com alguma faixaEtaria do plano
+                                const segmentoOk = !tSeg || faixas.length === 0 ||
+                                    faixas.some(f => f === tSeg || f.includes(tSeg) || tSeg.includes(f));
+
+                                // Estratégia 2: escola preenchida e bate + segmento bate
+                                if (pEsc) {
+                                    const escolaOk = pEsc === tEsc || pEsc.includes(tEsc) || tEsc.includes(pEsc);
+                                    if (escolaOk && segmentoOk) return true;
+                                }
+
+                                return false;
                             };
 
                             // ── COMPUTAR MÉTRICAS ──
@@ -3906,6 +3924,25 @@
                                             </div>
                                         )}
                                     </div>
+
+                                    {/* Aviso: músicas em planos sem escola */}
+                                    {(() => {
+                                        const semEscola = musicasArray.filter(m =>
+                                            m.aulas.some(a => {
+                                                const p = planos.find(pl => pl.id === a.planoId);
+                                                return p && (!p.escola || !p.escola.trim());
+                                            })
+                                        );
+                                        if (semEscola.length === 0) return null;
+                                        return (
+                                            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+                                                <span className="text-lg shrink-0">⚠️</span>
+                                                <span>
+                                                    <strong>{semEscola.length} música(s)</strong> encontrada(s) em planos sem escola atribuída — o dado pode estar incompleto ao filtrar por turma.
+                                                </span>
+                                            </div>
+                                        );
+                                    })()}
 
                                     {/* Cards de métricas */}
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
