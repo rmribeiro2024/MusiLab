@@ -6941,78 +6941,119 @@
 
                     {planoSelecionado && !modoEdicao && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={fecharModal}>
-                            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e)=>e.stopPropagation()}>
-                                <div className={`p-6 sticky top-0 z-10 flex justify-between ${planoSelecionado.destaque ? 'bg-yellow-500 text-white' : 'bg-indigo-600 text-white'}`}>
-                                    <div>
-                                        <h2 className="text-3xl font-bold flex items-center gap-2">
-                                            {planoSelecionado.titulo}
-                                            {planoSelecionado.destaque && <span className="text-yellow-100 text-lg" title="Funcionou Muito Bem">★</span>}
-                                        </h2>
-                                        {planoSelecionado.escola&&<p className="opacity-90 mt-1">🏫 {planoSelecionado.escola}</p>}
+                            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e)=>e.stopPropagation()}>
+
+                                {/* Barra fina colorida no topo */}
+                                <div className={`h-1.5 rounded-t-2xl ${planoSelecionado.destaque ? 'bg-gradient-to-r from-yellow-400 to-amber-400' : 'bg-gradient-to-r from-blue-400 to-indigo-400'}`}/>
+
+                                {/* Header limpo */}
+                                <div className="px-6 pt-5 pb-4 sticky top-1.5 bg-white z-10 border-b border-slate-100">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div>
+                                            {planoSelecionado.destaque && <span className="inline-flex items-center text-xs bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-0.5 rounded-full font-semibold mb-1.5">★ Favorita</span>}
+                                            <h2 className="text-2xl font-bold text-slate-800 leading-tight">{planoSelecionado.titulo}</h2>
+                                            {planoSelecionado.escola && <p className="text-slate-500 text-sm mt-1">🏫 {planoSelecionado.escola}</p>}
+                                        </div>
+                                        <button onClick={fecharModal} className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition shrink-0 text-lg">✕</button>
                                     </div>
-                                    <button onClick={fecharModal} className="text-white text-2xl">✕</button>
                                 </div>
-                                <div className="p-6 space-y-4">
-                                    <div className="bg-green-50 p-4 rounded-xl border border-green-200">
-                                        <h3 className="font-bold mb-2 text-green-800">📅 Histórico de Aulas</h3>
-                                        <div className="flex gap-2 mb-2"><input type="date" value={novaDataAula} onChange={e=>setNovaDataAula(e.target.value)} className="border rounded px-2 py-1 text-sm" /><button onClick={adicionarDataAulaVisualizacao} className="bg-green-600 text-white px-3 py-1 rounded text-sm font-bold">Adicionar</button></div>
-                                        <div className="flex flex-wrap gap-2">{planoSelecionado.historicoDatas?.map(d=><span key={d} className="bg-white border border-green-300 text-green-800 px-3 py-1 rounded-full text-sm">{new Date(d+'T12:00:00').toLocaleDateString('pt-BR')} <button onClick={()=>removerDataAulaVisualizacao(d)} className="text-red-500 font-bold ml-1">×</button></span>)}</div>
+
+                                <div className="p-6 space-y-5">
+
+                                    {/* Histórico de Aulas */}
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">📅 Histórico de Aulas</p>
+                                        <div className="flex gap-2 mb-3">
+                                            <input type="date" value={novaDataAula} onChange={e=>setNovaDataAula(e.target.value)} className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-400"/>
+                                            <button onClick={adicionarDataAulaVisualizacao} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-4 py-2 rounded-xl text-sm font-semibold transition">+ Adicionar</button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">{planoSelecionado.historicoDatas?.map(d=><span key={d} className="bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full text-sm">{new Date(d+'T12:00:00').toLocaleDateString('pt-BR')} <button onClick={()=>removerDataAulaVisualizacao(d)} className="text-slate-400 hover:text-red-500 font-bold ml-1">×</button></span>)}</div>
                                     </div>
 
-                                    <div className="flex gap-3 justify-end">
-                                        <button onClick={()=>abrirModalRegistro(planoSelecionado)} className="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2 rounded-lg font-bold">
+                                    {/* Ações */}
+                                    <div className="flex gap-2 flex-wrap">
+                                        <button onClick={()=>abrirModalRegistro(planoSelecionado)} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-4 py-2 rounded-xl font-semibold text-sm transition">
                                             📝 Registro Pós-Aula {planoSelecionado.registrosPosAula?.length > 0 && `(${planoSelecionado.registrosPosAula.length})`}
                                         </button>
-                                        <button onClick={()=>toggleFavorito(planoSelecionado)} className={`px-4 py-2 rounded-lg font-bold border transition ${planoSelecionado.destaque ? 'bg-yellow-100 text-yellow-700 border-yellow-400' : 'bg-gray-100 text-gray-500'}`}>
-                                            {planoSelecionado.destaque ? '★ Aula Favorita' : '☆ Marcar como Favorita'}
+                                        <button onClick={()=>toggleFavorito(planoSelecionado)} className={`px-4 py-2 rounded-xl font-semibold text-sm border transition ${planoSelecionado.destaque ? 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100' : 'border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
+                                            {planoSelecionado.destaque ? '★ Favorita' : '☆ Marcar como Favorita'}
                                         </button>
                                     </div>
 
-                                    <div className="bg-blue-50 p-4 rounded-xl">
-                                        <h3 className="font-bold mb-2">🎯 Objetivo Geral</h3>
-                                        <div className="rich-editor-area" dangerouslySetInnerHTML={{__html: sanitizar(planoSelecionado.objetivoGeral)}} />
-                                    </div>
+                                    {/* Objetivo Geral */}
+                                    {planoSelecionado.objetivoGeral && (
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivo Geral</p>
+                                            <div className="text-slate-700 text-sm rich-editor-area" dangerouslySetInnerHTML={{__html: sanitizar(planoSelecionado.objetivoGeral)}} />
+                                        </div>
+                                    )}
+
+                                    {/* Objetivos Específicos */}
                                     {planoSelecionado.objetivosEspecificos.length > 0 && (
-                                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                                            <h3 className="font-bold mb-2 text-gray-800">🎯 Objetivos Específicos</h3>
-                                            <div className="rich-editor-area" dangerouslySetInnerHTML={{__html: sanitizar(
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivos Específicos</p>
+                                            <div className="text-slate-700 text-sm rich-editor-area" dangerouslySetInnerHTML={{__html: sanitizar(
                                                 Array.isArray(planoSelecionado.objetivosEspecificos) && planoSelecionado.objetivosEspecificos.length === 1
                                                     ? planoSelecionado.objetivosEspecificos[0]
                                                     : planoSelecionado.objetivosEspecificos.join('<br/>')
                                             )}} />
                                         </div>
                                     )}
-                                    {planoSelecionado.habilidadesBNCC && planoSelecionado.habilidadesBNCC.length > 0 && (
-                                        <div className="bg-orange-50 p-4 rounded-xl border border-orange-200"><h3 className="font-bold mb-2 text-orange-800">🏛️ Habilidades BNCC</h3><ul className="space-y-2">{planoSelecionado.habilidadesBNCC.map((hab, i) => { const [cod, ...resto] = hab.split(' - '); return (<li key={i} className="text-sm text-gray-800 bg-white p-2 rounded border border-orange-100"><strong className="text-orange-600">{cod}</strong> - {resto.join(' - ')}</li>); })}</ul></div>
-                                    )}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-gray-50 p-4 rounded-xl"><h3 className="font-bold mb-2">Detalhes</h3><p><strong>Nível:</strong> {planoSelecionado.nivel}</p><p><strong>Duração:</strong> {planoSelecionado.duracao}</p><p><strong>Tema:</strong> {planoSelecionado.tema}</p></div>
-                                        <div className="bg-gray-50 p-4 rounded-xl"><h3 className="font-bold mb-2">Conceitos</h3><div className="flex flex-wrap gap-1">{(planoSelecionado.conceitos||[]).map(c=><span key={c} className="bg-purple-100 px-2 py-1 rounded text-xs">{c}</span>)}</div></div>
-                                    </div>
-                                    {planoSelecionado.materiais.length>0 && <div><h3 className="font-bold mb-2">📦 Materiais</h3><ul className="list-disc list-inside">{planoSelecionado.materiais.map((m,i)=><li key={i}>{m}</li>)}</ul></div>}
 
-                                    {/* Roteiro de Atividades com links */}
+                                    {/* Habilidades BNCC */}
+                                    {planoSelecionado.habilidadesBNCC && planoSelecionado.habilidadesBNCC.length > 0 && (
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">🏛️ Habilidades BNCC</p>
+                                            <div className="space-y-1.5">{planoSelecionado.habilidadesBNCC.map((hab, i) => { const [cod, ...resto] = hab.split(' - '); return (<div key={i} className="flex gap-2 items-start bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"><span className="text-xs font-bold text-blue-600 shrink-0 mt-0.5">{cod}</span><span className="text-sm text-slate-700">{resto.join(' - ')}</span></div>); })}</div>
+                                        </div>
+                                    )}
+
+                                    {/* Detalhes + Conceitos */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Detalhes</p>
+                                            <div className="space-y-1 text-sm">
+                                                {planoSelecionado.nivel && <p><span className="text-slate-400">Nível:</span> <span className="text-slate-700 font-medium">{planoSelecionado.nivel}</span></p>}
+                                                {planoSelecionado.duracao && <p><span className="text-slate-400">Duração:</span> <span className="text-slate-700 font-medium">{planoSelecionado.duracao}</span></p>}
+                                                {planoSelecionado.tema && <p><span className="text-slate-400">Tema:</span> <span className="text-slate-700 font-medium">{planoSelecionado.tema}</span></p>}
+                                            </div>
+                                        </div>
+                                        {(planoSelecionado.conceitos||[]).length > 0 && (
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Conceitos</p>
+                                                <div className="flex flex-wrap gap-1.5">{(planoSelecionado.conceitos||[]).map(c=><span key={c} className="text-xs bg-violet-50 text-violet-700 border border-violet-100 px-2 py-0.5 rounded-full">{c}</span>)}</div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Materiais */}
+                                    {planoSelecionado.materiais.length > 0 && (
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">📦 Materiais</p>
+                                            <div className="flex flex-wrap gap-1.5">{planoSelecionado.materiais.map((m,i)=><span key={i} className="text-xs bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full">{m}</span>)}</div>
+                                        </div>
+                                    )}
+
+                                    {/* Roteiro de Atividades */}
                                     {planoSelecionado.atividadesRoteiro?.length > 0 && (
-                                        <div className="border-t pt-4">
-                                            <h3 className="font-bold mb-3 text-indigo-700">📋 Roteiro de Atividades</h3>
-                                            <div className="space-y-3">
+                                        <div className="border-t border-slate-100 pt-5">
+                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">📋 Roteiro de Atividades</p>
+                                            <div className="space-y-2">
                                                 {planoSelecionado.atividadesRoteiro.map((ativ, i) => (
-                                                    <div key={i} className="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+                                                    <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-3">
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <span className="bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{i+1}</span>
-                                                            {ativ.nome && <span className="font-bold text-gray-800">{ativ.nome}</span>}
-                                                            {ativ.duracao && <span className="text-xs text-gray-500 bg-white border px-2 py-0.5 rounded-full">{ativ.duracao}</span>}
+                                                            <span className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-full shrink-0">{i+1}</span>
+                                                            {ativ.nome && <span className="font-semibold text-slate-800 text-sm">{ativ.nome}</span>}
+                                                            {ativ.duracao && <span className="text-xs text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded-full ml-auto">{ativ.duracao}</span>}
                                                         </div>
-                                                        {ativ.descricao && <p className="text-sm text-gray-700 mt-1 ml-1">{ativ.descricao}</p>}
-                                                        
-                                                        {/* Músicas vinculadas */}
+                                                        {ativ.descricao && <p className="text-sm text-slate-600 mt-1 ml-1">{ativ.descricao}</p>}
                                                         {ativ.musicasVinculadas?.length > 0 && (
                                                             <div className="mt-2 ml-1 space-y-1">
                                                                 {ativ.musicasVinculadas.map((m, j) => (
-                                                                    <div key={j} className="flex items-center gap-1.5 text-sm text-purple-700 bg-purple-50 border border-purple-100 rounded-lg px-2 py-1">
+                                                                    <div key={j} className="flex items-center gap-1.5 text-sm text-violet-700 bg-violet-50 border border-violet-100 rounded-lg px-2 py-1">
                                                                         <span>🎵</span>
                                                                         <span className="font-medium">{m.titulo}</span>
-                                                                        {m.autor && <span className="text-purple-500 text-xs">— {m.autor}</span>}
+                                                                        {m.autor && <span className="text-violet-400 text-xs">— {m.autor}</span>}
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -7040,17 +7081,17 @@
 
                                     {/* Histórico de Versões */}
                                     {(planoSelecionado._historicoVersoes || []).length > 0 && (
-                                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-2">
-                                            <p className="text-sm font-bold text-amber-700 mb-2">🕐 Versões anteriores</p>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">🕐 Versões Anteriores</p>
                                             <div className="space-y-2">
                                                 {(planoSelecionado._historicoVersoes || []).map((versao, i) => (
-                                                    <div key={i} className="flex items-center justify-between bg-white border border-amber-100 rounded-lg px-3 py-2">
+                                                    <div key={i} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
                                                         <div>
-                                                            <p className="text-xs font-semibold text-gray-700">{versao.titulo}</p>
-                                                            <p className="text-xs text-gray-400">Salva em {new Date(versao._versaoSalvaEm).toLocaleString('pt-BR')}</p>
+                                                            <p className="text-xs font-semibold text-slate-700">{versao.titulo}</p>
+                                                            <p className="text-xs text-slate-400">Salva em {new Date(versao._versaoSalvaEm).toLocaleString('pt-BR')}</p>
                                                         </div>
                                                         <button onClick={()=>restaurarVersao(planoSelecionado, versao)}
-                                                            className="text-xs bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-lg font-bold transition">
+                                                            className="text-xs border border-slate-300 hover:bg-slate-50 text-slate-600 px-3 py-1 rounded-lg font-semibold transition">
                                                             Restaurar
                                                         </button>
                                                     </div>
@@ -7059,10 +7100,10 @@
                                         </div>
                                     )}
 
-                                    {/* Botões de ação — corrigidos (sem duplicata) */}
-                                    <div className="flex gap-2 pt-4 border-t">
-                                        <button onClick={()=>editarPlano(planoSelecionado)} className="flex-1 bg-blue-500 text-white py-3 rounded-xl font-bold">✏️ Editar</button>
-                                        <button onClick={()=>excluirPlano(planoSelecionado.id)} className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold">🗑️ Excluir</button>
+                                    {/* Botões finais */}
+                                    <div className="flex gap-2 pt-4 border-t border-slate-100">
+                                        <button onClick={()=>editarPlano(planoSelecionado)} className="flex-1 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 py-3 rounded-xl font-semibold text-sm transition">✏️ Editar</button>
+                                        <button onClick={()=>excluirPlano(planoSelecionado.id)} className="flex-1 border border-red-200 hover:bg-red-50 text-red-500 hover:text-red-600 py-3 rounded-xl font-semibold text-sm transition">🗑️ Excluir</button>
                                     </div>
                                 </div>
                             </div>
