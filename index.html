@@ -361,6 +361,33 @@
             }
         };
 
+        // ── NORMALIZAÇÃO DE PLANO ──
+        // Garante defaults em todos os campos. Usar sempre que um plano vem de
+        // fonte externa (localStorage, Supabase, importação).
+        // Inclui migração automática de metodologia legada → atividadesRoteiro.
+        function normalizePlano(p) {
+            let atividadesRoteiro = p.atividadesRoteiro || [];
+            if (!p.atividadesRoteiro && p.metodologia && p.metodologia.trim()) {
+                atividadesRoteiro = [{ id: Date.now(), nome: '', duracao: '', descricao: p.metodologia }];
+            }
+            return {
+                ...p,
+                conceitos:            p.conceitos            || [],
+                tags:                 p.tags                 || [],
+                unidades:             p.unidades             || [],
+                faixaEtaria:          p.faixaEtaria          || [],
+                objetivosEspecificos: p.objetivosEspecificos || [],
+                materiais:            p.materiais            || [],
+                habilidadesBNCC:      p.habilidadesBNCC      || [],
+                recursos:             p.recursos             || [],
+                historicoDatas:       p.historicoDatas       || [],
+                registrosPosAula:     p.registrosPosAula     || [],
+                atividadesRoteiro:    atividadesRoteiro,
+                destaque:             p.destaque             || false,
+                statusPlanejamento:   p.statusPlanejamento   || 'A Fazer',
+            };
+        }
+
         function BancoPlanos({ session }) {
             const userId = session?.user?.id;
             const userName = session?.user?.user_metadata?.full_name || session?.user?.email || 'Professor';
@@ -408,34 +435,7 @@
             const [planos, setPlanos] = useState(() => {
                 const saved = localStorage.getItem('planosAula');
                 const parsed = saved ? JSON.parse(saved) : planosIniciais;
-                return parsed.map(p => {
-                    // Migração automática: Se tem metodologia antiga mas não tem atividadesRoteiro
-                    let atividadesRoteiro = p.atividadesRoteiro || [];
-                    if (!p.atividadesRoteiro && p.metodologia && p.metodologia.trim()) {
-                        // Converter metodologia antiga para novo formato
-                        atividadesRoteiro = [{
-                            id: Date.now(),
-                            nome: '',
-                            duracao: '',
-                            descricao: p.metodologia
-                        }];
-                    }
-                    
-                    return {
-                        ...p,
-                        conceitos: p.conceitos || [],
-                        unidades: p.unidades || [],
-                        faixaEtaria: p.faixaEtaria || [],
-                        objetivosEspecificos: p.objetivosEspecificos || [],
-                        materiais: p.materiais || [],
-                        habilidadesBNCC: p.habilidadesBNCC || [],
-                        recursos: p.recursos || [],
-                        historicoDatas: p.historicoDatas || [],
-                        destaque: p.destaque || false,
-                        registrosPosAula: p.registrosPosAula || [],
-                        atividadesRoteiro: atividadesRoteiro
-                    };
-                });
+                return parsed.map(normalizePlano);
             });
 
             // Estados para Atividades
@@ -878,13 +878,7 @@
                         ]);
 
                         // Supabase sempre prevalece sobre localStorage quando retorna dados
-                        if (planosC !== null) setPlanos(planosC.length > 0 ? planosC.map(p => ({
-                            ...p, conceitos:p.conceitos||[], unidades:p.unidades||[], faixaEtaria:p.faixaEtaria||[],
-                            objetivosEspecificos:p.objetivosEspecificos||[], materiais:p.materiais||[],
-                            habilidadesBNCC:p.habilidadesBNCC||[], recursos:p.recursos||[],
-                            historicoDatas:p.historicoDatas||[], destaque:p.destaque||false,
-                            registrosPosAula:p.registrosPosAula||[], atividadesRoteiro:p.atividadesRoteiro||[]
-                        })) : []);
+                        if (planosC !== null) setPlanos(planosC.length > 0 ? planosC.map(normalizePlano) : []);
                         if (atividadesC !== null) setAtividades(atividadesC.length > 0 ? atividadesC : []);
                         if (repertorioC !== null) setRepertorio(repertorioC.length > 0 ? repertorioC : []);
                         if (sequenciasC !== null) setSequencias(sequenciasC.length > 0 ? sequenciasC : []);
@@ -1603,22 +1597,10 @@
                 setPlanoSelecionado(null); setModoEdicao(true);
             };
 
-            const editarPlano = (plano) => { 
-                setPlanoEditando({
-                    ...plano,
-                    conceitos: plano.conceitos || [],
-                    tags: plano.tags || [],
-                    faixaEtaria: plano.faixaEtaria || [],
-                    objetivosEspecificos: plano.objetivosEspecificos || [],
-                    materiais: plano.materiais || [],
-                    habilidadesBNCC: plano.habilidadesBNCC || [],
-                    recursos: plano.recursos || [],
-                    historicoDatas: plano.historicoDatas || [],
-                    destaque: plano.destaque || false,
-                    statusPlanejamento: plano.statusPlanejamento || "A Fazer"
-                }); 
-                setPlanoSelecionado(null); 
-                setModoEdicao(true); 
+            const editarPlano = (plano) => {
+                setPlanoEditando(normalizePlano(plano));
+                setPlanoSelecionado(null);
+                setModoEdicao(true);
             };
 
             const salvarPlano = (ignorarAvisoEscola = false) => {
