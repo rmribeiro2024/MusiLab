@@ -3705,26 +3705,19 @@
                             // Percorre todos os planos e coleta usos de músicas por data + turma
                             // Um "uso" = música vinculada em atividade do plano + uma historicaData desse plano
 
+                            // ── POPULAR TURMAS DIRETO DA ESTRUTURA anosLetivos ──
                             const todasTurmasHistorico = [];
-                            // Coletar todas as combinações turma (anoLetivo+escola+segmento+turma) dos registros
-                            planos.forEach(p => {
-                                (p.registrosPosAula || []).forEach(r => {
-                                    const label = (() => {
-                                        let ano = anosLetivos.find(a => a.id == r.anoLetivo);
-                                        let esc = ano?.escolas.find(e => e.id == r.escola);
-                                        let seg = esc?.segmentos.find(s => s.id == (r.segmento || r.serie));
-                                        let tur = seg?.turmas.find(t => t.id == r.turma);
-                                        if (!ano && r.escola) {
-                                            for (const a of anosLetivos) {
-                                                const e = a.escolas.find(e => e.id == r.escola);
-                                                if (e) { const s = e.segmentos.find(s => s.id == (r.segmento || r.serie)); if (s) { const t = s.turmas.find(t => t.id == r.turma); return [a.ano, e.nome, s.nome, t?.nome].filter(Boolean).join(' › '); } }
+                            anosLetivos.forEach(ano => {
+                                (ano.escolas || []).forEach(esc => {
+                                    (esc.segmentos || []).forEach(seg => {
+                                        (seg.turmas || []).forEach(tur => {
+                                            const id = String(tur.id) + '-' + String(esc.id);
+                                            if (!todasTurmasHistorico.find(t => t.id === id)) {
+                                                const label = [ano.ano, esc.nome, seg.nome, tur.nome].filter(Boolean).join(' › ');
+                                                todasTurmasHistorico.push({ id, label, turmaId: tur.id, escolaId: esc.id, segmentoId: seg.id, anoLetivoId: ano.id });
                                             }
-                                        }
-                                        return [ano?.ano, esc?.nome, seg?.nome, tur?.nome].filter(Boolean).join(' › ');
-                                    })();
-                                    if (label && !todasTurmasHistorico.find(t => t.id === String(r.turma) + '-' + String(r.escola))) {
-                                        todasTurmasHistorico.push({ id: String(r.turma) + '-' + String(r.escola), label, turmaId: r.turma, escolaId: r.escola, segmentoId: r.segmento || r.serie, anoLetivoId: r.anoLetivo });
-                                    }
+                                        });
+                                    });
                                 });
                             });
 
@@ -4048,11 +4041,11 @@
                                     {hmModalMusica && (
                                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setHmModalMusica(null)}>
                                             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                                                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5 rounded-t-2xl flex justify-between items-start">
+                                                <div className="bg-blue-950 text-white p-5 rounded-t-2xl flex justify-between items-start">
                                                     <div>
                                                         <h2 className="text-xl font-bold">{hmModalMusica.titulo}</h2>
-                                                        {hmModalMusica.autor && <p className="text-indigo-200 text-sm mt-0.5">{hmModalMusica.autor}</p>}
-                                                        <p className="text-white/80 text-sm mt-2">Usada <strong>{hmModalMusica.vezesUsada}</strong> vez(es) no período</p>
+                                                        {hmModalMusica.autor && <p className="text-blue-300 text-sm mt-0.5">{hmModalMusica.autor}</p>}
+                                                        <p className="text-blue-200 text-sm mt-2">Usada <strong>{hmModalMusica.vezesUsada}</strong> vez(es) no período</p>
                                                     </div>
                                                     <button onClick={() => setHmModalMusica(null)} className="text-white/70 hover:text-white text-2xl font-bold ml-4">×</button>
                                                 </div>
@@ -4070,12 +4063,18 @@
                                                     <div>
                                                         <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Aulas em que foi usada:</p>
                                                         <div className="space-y-2">
-                                                            {[...hmModalMusica.aulas].sort((a,b) => a.data.localeCompare(b.data)).map((aula, i) => (
-                                                                <div key={i} className="flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
-                                                                    <span className="text-xs font-bold text-indigo-700 shrink-0">📅 {fmtData(aula.data)}</span>
-                                                                    <span className="text-sm text-slate-600 truncate">{aula.planoTitulo}</span>
-                                                                </div>
-                                                            ))}
+                                                            {[...hmModalMusica.aulas].sort((a,b) => a.data.localeCompare(b.data)).map((aula, i) => {
+                                                                const planoRef = planos.find(p => p.id === aula.planoId);
+                                                                return (
+                                                                    <button key={i}
+                                                                        onClick={() => { if (planoRef) { setHmModalMusica(null); setPlanoSelecionado(planoRef); } }}
+                                                                        className={`w-full flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-left transition ${planoRef ? 'hover:bg-blue-50 hover:border-blue-200 cursor-pointer group' : 'cursor-default'}`}>
+                                                                        <span className="text-xs font-bold text-blue-800 shrink-0">📅 {fmtData(aula.data)}</span>
+                                                                        <span className="text-sm text-slate-600 truncate flex-1">{aula.planoTitulo}</span>
+                                                                        {planoRef && <span className="text-xs text-blue-400 group-hover:text-blue-600 shrink-0 font-semibold">→ abrir</span>}
+                                                                    </button>
+                                                                );
+                                                            })}
                                                         </div>
                                                     </div>
                                                 </div>
