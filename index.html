@@ -607,6 +607,13 @@
             
             const [statusSalvamento, setStatusSalvamento] = useState('');
             const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
+
+            // ── HISTÓRICO MUSICAL DA TURMA ──
+            const [hmFiltroTurma, setHmFiltroTurma] = useState('');
+            const [hmFiltroInicio, setHmFiltroInicio] = useState('');
+            const [hmFiltroFim, setHmFiltroFim] = useState('');
+            const [hmFiltroBusca, setHmFiltroBusca] = useState('');
+            const [hmModalMusica, setHmModalMusica] = useState(null);
             const dragItem = useRef(null);
             const dragOverItem = useRef(null);
             const handleDragStart = (index) => { dragItem.current = index; };
@@ -1080,104 +1087,95 @@
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
 
-                // ── Paleta minimalista ──
+                // ── Paleta ──
                 const W = 210, H = 297;
-                const mL = 22, mR = 22, mB = 18;
+                const mL = 22, mR = 22, mB = 20;
                 const cW = W - mL - mR;
-                const ACCENT   = [55, 65, 81];    // gray-700 (quase preto elegante)
-                const DARK     = [17, 24, 39];     // gray-900
-                const MID      = [107, 114, 128];  // gray-500
-                const LIGHT    = [209, 213, 219];  // gray-300
-                const RULE     = [229, 231, 235];  // gray-200
+                const ACCENT = [55, 65, 81];      // cinza escuro elegante
+                const DARK   = [17, 24, 39];       // quase preto — corpo do texto
+                const LABEL  = [100, 110, 125];    // cinza médio — apenas labels de seção
+                const RULE   = [220, 224, 230];    // linha divisória
+                const LS     = 6.2;               // espaçamento entre linhas (mm)
 
-                // ── Conversor HTML → texto limpo ──
+                // ── Conversor HTML → texto limpo (apenas ASCII safe) ──
                 const htmlToText = (html) => {
                     if (!html) return '';
-                    return (html)
+                    return html
                         .replace(/<\/p>\s*<p>/gi, '\n')
-                        .replace(/<p>/gi, '').replace(/<\/p>/gi, '\n')
+                        .replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n')
                         .replace(/<br\s*\/?>/gi, '\n')
                         .replace(/<\/li>/gi, '\n')
-                        .replace(/<li>/gi, '\u2022 ')
-                        .replace(/<strong>(.*?)<\/strong>/gi, '$1')
-                        .replace(/<em>(.*?)<\/em>/gi, '$1')
+                        .replace(/<li[^>]*>/gi, '- ')
+                        .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '')
                         .replace(/<[^>]*>/g, '')
-                        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"')
+                        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
                         .replace(/\n{3,}/g, '\n\n').trim();
                 };
 
                 let y = 0;
-                let pageNum = 1;
 
-                // ── Helpers de quebra de página e texto ──
+                // ── Helpers ──
                 const chk = (space) => {
-                    if (y + space > H - mB) { doc.addPage(); pageNum++; y = 22; return true; }
+                    if (y + space > H - mB) { doc.addPage(); y = 24; return true; }
                     return false;
                 };
-                const writeLine = (text, x, fontSize, style, color) => {
-                    doc.setFontSize(fontSize); doc.setFont("helvetica", style || "normal");
-                    doc.setTextColor(...(color || DARK));
-                    const lines = doc.splitTextToSize(String(text), cW - (x - mL));
-                    lines.forEach(l => { chk(fontSize * 0.4 + 1); doc.text(l, x, y); y += fontSize * 0.4; });
-                    return lines.length;
-                };
-                const rule = (gap1, gap2, color) => {
-                    y += (gap1 || 3);
-                    doc.setDrawColor(...(color || RULE)); doc.setLineWidth(0.25);
+                const rule = (before, after) => {
+                    y += (before || 4);
+                    doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
                     doc.line(mL, y, W - mR, y);
-                    y += (gap2 || 3);
+                    y += (after || 4);
                 };
                 const sectionTitle = (label) => {
-                    chk(14);
-                    rule(4, 0, RULE);
-                    y += 5;
-                    doc.setFont("helvetica", "bold"); doc.setFontSize(7.5);
-                    doc.setTextColor(...MID);
+                    chk(16);
+                    rule(6, 0);
+                    y += 6;
+                    doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+                    doc.setTextColor(...LABEL);
                     doc.text(label.toUpperCase(), mL, y);
-                    y += 5;
+                    y += 6;
                     doc.setFont("helvetica", "normal"); doc.setTextColor(...DARK);
                 };
-                const bodyText = (text, indent, size) => {
+                // Escreve bloco de texto com quebra de linha automática
+                const para = (text, indent, size, bold) => {
                     if (!text || !String(text).trim()) return;
-                    doc.setFontSize(size || 10); doc.setFont("helvetica", "normal"); doc.setTextColor(...DARK);
+                    doc.setFontSize(size || 11);
+                    doc.setFont("helvetica", bold ? "bold" : "normal");
+                    doc.setTextColor(...DARK);
                     const lines = doc.splitTextToSize(String(text).trim(), cW - (indent || 0));
-                    lines.forEach(l => { chk(5); doc.text(l, mL + (indent || 0), y); y += 5; });
+                    lines.forEach(l => { chk(LS); doc.text(l, mL + (indent || 0), y); y += LS; });
                 };
 
                 // ════════════════════════════════
-                // CABEÇALHO
+                // CABECALHO
                 // ════════════════════════════════
-                // Barra de acento (topo)
-                doc.setFillColor(...ACCENT); doc.rect(0, 0, W, 4, 'F');
+                doc.setFillColor(...ACCENT); doc.rect(0, 0, W, 4.5, 'F');
 
-                // Título — com quebra de linha automática
-                y = 18;
-                doc.setFont("helvetica", "bold"); doc.setFontSize(17); doc.setTextColor(...DARK);
+                y = 19;
+                doc.setFont("helvetica", "bold"); doc.setFontSize(19); doc.setTextColor(...DARK);
                 const titleLines = doc.splitTextToSize(plano.titulo || "Plano de Aula", cW);
-                titleLines.forEach(l => { doc.text(l, mL, y); y += 8; });
+                titleLines.forEach(l => { doc.text(l, mL, y); y += 9; });
+
                 if (plano.destaque) {
-                    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...MID);
-                    doc.text("Favorito", W - mR, 19, { align: 'right' });
+                    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...LABEL);
+                    doc.text("Favorito", W - mR, 20, { align: 'right' });
                 }
 
-                // Metadados compactos (escola · nível · duração · faixa)
+                // Metadados — sem status
                 const meta = [
                     plano.escola,
-                    plano.numeroAula ? `Aula ${plano.numeroAula}` : null,
+                    plano.numeroAula ? 'Aula ' + plano.numeroAula : null,
                     plano.nivel,
-                    plano.duracao ? `${plano.duracao}` : null,
+                    plano.duracao || null,
                     (plano.faixaEtaria||[]).join(', ') || null,
-                    plano.statusPlanejamento || null,
-                ].filter(Boolean).join('  ·  ');
+                ].filter(Boolean).join('  |  ');
                 if (meta) {
                     y += 1;
-                    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...MID);
+                    doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(...LABEL);
                     const mLines = doc.splitTextToSize(meta, cW);
-                    mLines.forEach(l => { doc.text(l, mL, y); y += 5; });
+                    mLines.forEach(l => { doc.text(l, mL, y); y += 5.5; });
                 }
 
-                // Linha separadora do cabeçalho
-                rule(4, 2, LIGHT);
+                rule(5, 3);
 
                 // ════════════════════════════════
                 // BNCC
@@ -1185,12 +1183,12 @@
                 const bncc = (plano.habilidadesBNCC||[]).filter(h => h && h.trim());
                 if (bncc.length > 0) {
                     sectionTitle("Habilidades BNCC");
-                    doc.setFontSize(9); doc.setTextColor(...MID);
                     bncc.forEach(h => {
                         const ls = doc.splitTextToSize(h.trim(), cW);
-                        ls.forEach(l => { chk(4.5); doc.text(l, mL, y); y += 4.5; });
+                        doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
+                        ls.forEach(l => { chk(LS); doc.text(l, mL, y); y += LS; });
                     });
-                    y += 2;
+                    y += 3;
                 }
 
                 // ════════════════════════════════
@@ -1201,24 +1199,23 @@
                 if (objGeral || objEsp.length > 0) {
                     sectionTitle("Objetivos de Aprendizagem");
                     if (objGeral) {
-                        doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(...DARK);
-                        objGeral.split('\n').filter(l => l.trim()).forEach(linha => bodyText(linha.trim(), 0, 10));
-                        y += 2;
+                        objGeral.split('\n').filter(l => l.trim()).forEach(linha => para(linha.trim(), 0, 11));
+                        y += 3;
                     }
                     if (objEsp.length > 0) {
-                        chk(5);
-                        doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...MID);
-                        doc.text("ESPECÍFICOS", mL, y); y += 5;
-                        doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(...DARK);
+                        chk(8);
+                        doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...LABEL);
+                        doc.text("ESPECIFICOS", mL, y); y += 6;
                         objEsp.forEach(o => {
                             o.split('\n').filter(l => l.trim()).forEach(linha => {
-                                const txt = linha.startsWith('\u2022') || linha.startsWith('-') ? linha.trim() : '\u2022 ' + linha.trim();
-                                const ls = doc.splitTextToSize(txt, cW - 4);
-                                ls.forEach((l, i) => { chk(5); doc.text(l, mL + (i > 0 ? 6 : 4), y); y += 5; });
+                                const txt = (linha.startsWith('-') ? '' : '- ') + linha.trim();
+                                const ls = doc.splitTextToSize(txt, cW - 5);
+                                doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
+                                ls.forEach((l, i) => { chk(LS); doc.text(l, mL + (i > 0 ? 7 : 4), y); y += LS; });
                             });
                         });
                     }
-                    y += 2;
+                    y += 3;
                 }
 
                 // ════════════════════════════════
@@ -1226,15 +1223,13 @@
                 // ════════════════════════════════
                 if (plano.conceitos && plano.conceitos.length > 0) {
                     sectionTitle("Conceitos Musicais");
-                    doc.setFontSize(10); doc.setTextColor(...DARK);
-                    bodyText(plano.conceitos.join('  ·  '), 0, 10);
-                    y += 2;
+                    para(plano.conceitos.join('  |  '), 0, 11);
+                    y += 3;
                 }
                 if (plano.unidades && plano.unidades.length > 0) {
                     sectionTitle("Unidades");
-                    doc.setFontSize(10); doc.setTextColor(...DARK);
-                    bodyText(plano.unidades.join('  ·  '), 0, 10);
-                    y += 2;
+                    para(plano.unidades.join('  |  '), 0, 11);
+                    y += 3;
                 }
 
                 // ════════════════════════════════
@@ -1243,43 +1238,45 @@
                 if (plano.atividadesRoteiro && plano.atividadesRoteiro.length > 0) {
                     sectionTitle("Roteiro de Atividades");
                     plano.atividadesRoteiro.forEach((ativ, idx) => {
-                        chk(18);
-                        // Número e nome
-                        const header = `${idx + 1}.\u2002${ativ.nome || 'Atividade'}`;
-                        const dur = ativ.duracao ? `  ${ativ.duracao}` : '';
-                        doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(...DARK);
-                        const hLines = doc.splitTextToSize(header, cW - 25);
-                        hLines.forEach(l => { chk(6); doc.text(l, mL, y); y += 5.5; });
-                        if (dur) {
-                            doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...MID);
-                            doc.text(dur.trim(), W - mR, y - 5.5, { align: 'right' });
+                        chk(22);
+                        // Nome da atividade
+                        const header = (idx + 1) + '. ' + (ativ.nome || 'Atividade');
+                        doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...DARK);
+                        const hLines = doc.splitTextToSize(header, cW - 28);
+                        hLines.forEach(l => { chk(7); doc.text(l, mL, y); y += 7; });
+                        // Duração alinhada à direita
+                        if (ativ.duracao) {
+                            doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(...LABEL);
+                            doc.text(ativ.duracao, W - mR, y - 7, { align: 'right' });
                         }
-                        // Descrição
+                        // Descricao
                         if (ativ.descricao) {
                             const desc = htmlToText(ativ.descricao);
                             if (desc.trim()) {
-                                doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(...MID);
                                 desc.split('\n').filter(l => l.trim()).forEach(linha => {
-                                    const ls = doc.splitTextToSize(linha.trim(), cW - 6);
-                                    ls.forEach(l => { chk(5); doc.text(l, mL + 6, y); y += 5; });
+                                    const ls = doc.splitTextToSize(linha.trim(), cW - 5);
+                                    doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
+                                    ls.forEach(l => { chk(LS); doc.text(l, mL + 5, y); y += LS; });
                                 });
                             }
                         }
                         // Objetivo da atividade
                         if (ativ.objetivo && ativ.objetivo.trim()) {
-                            chk(5);
-                            doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(...LIGHT);
-                            const ls = doc.splitTextToSize('Objetivo: ' + ativ.objetivo.trim(), cW - 6);
-                            ls.forEach(l => { chk(4.5); doc.text(l, mL + 6, y); y += 4.5; });
+                            chk(LS);
+                            doc.setFont("helvetica", "italic"); doc.setFontSize(10); doc.setTextColor(...LABEL);
+                            const ls = doc.splitTextToSize('Objetivo: ' + ativ.objetivo.trim(), cW - 5);
+                            ls.forEach(l => { chk(LS); doc.text(l, mL + 5, y); y += LS; });
                         }
-                        // Links
+                        // Links/recursos — sem Unicode, apenas ASCII
                         if (ativ.recursos && ativ.recursos.length > 0) {
                             ativ.recursos.forEach(rec => {
-                                const url = typeof rec === 'string' ? rec : rec.url;
-                                chk(5);
-                                doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(59, 130, 246);
-                                const ls = doc.splitTextToSize('\u2192 ' + url, cW - 6);
-                                ls.forEach(l => { chk(4.5); doc.text(l, mL + 6, y); y += 4.5; });
+                                const url = typeof rec === 'string' ? rec : (rec.url || '');
+                                if (!url) return;
+                                chk(LS);
+                                doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(59, 130, 246);
+                                const label = 'Link: ' + url;
+                                const ls = doc.splitTextToSize(label, cW - 5);
+                                ls.forEach(l => { chk(LS); doc.text(l, mL + 5, y); y += LS; });
                             });
                         }
                         y += 5;
@@ -1289,8 +1286,8 @@
                 // Metodologia legado
                 if (plano.metodologia && (!plano.atividadesRoteiro || plano.atividadesRoteiro.length === 0)) {
                     sectionTitle("Metodologia");
-                    bodyText(htmlToText(plano.metodologia), 0, 10);
-                    y += 2;
+                    para(htmlToText(plano.metodologia), 0, 11);
+                    y += 3;
                 }
 
                 // ════════════════════════════════
@@ -1298,39 +1295,39 @@
                 // ════════════════════════════════
                 if (plano.materiais && plano.materiais.length > 0) {
                     sectionTitle("Materiais");
-                    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(...DARK);
                     plano.materiais.forEach(m => {
-                        const ls = doc.splitTextToSize('\u2022 ' + m, cW - 4);
-                        ls.forEach((l, i) => { chk(5); doc.text(l, mL + (i > 0 ? 6 : 4), y); y += 5; });
+                        const ls = doc.splitTextToSize('- ' + m, cW - 4);
+                        doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
+                        ls.forEach((l, i) => { chk(LS); doc.text(l, mL + (i > 0 ? 6 : 4), y); y += LS; });
                     });
-                    y += 2;
+                    y += 3;
                 }
 
                 // ════════════════════════════════
-                // AVALIAÇÃO / OBSERVAÇÕES
+                // AVALIACAO / OBSERVACOES
                 // ════════════════════════════════
                 if (plano.avaliacaoObservacoes && plano.avaliacaoObservacoes.trim()) {
-                    sectionTitle("Avaliação / Observações");
-                    doc.setFont("helvetica", "italic"); doc.setFontSize(10); doc.setTextColor(...MID);
+                    sectionTitle("Avaliacao / Observacoes");
+                    doc.setFont("helvetica", "italic"); doc.setFontSize(11); doc.setTextColor(...DARK);
                     const ls = doc.splitTextToSize(plano.avaliacaoObservacoes.trim(), cW);
-                    ls.forEach(l => { chk(5); doc.text(l, mL, y); y += 5; });
-                    y += 2;
+                    ls.forEach(l => { chk(LS); doc.text(l, mL, y); y += LS; });
+                    y += 3;
                 }
 
                 // ════════════════════════════════
-                // RODAPÉ em todas as páginas
+                // RODAPE em todas as paginas
                 // ════════════════════════════════
                 const totalPages = doc.getNumberOfPages();
                 for (let p = 1; p <= totalPages; p++) {
                     doc.setPage(p);
                     doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
-                    doc.line(mL, H - 13, W - mR, H - 13);
-                    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...LIGHT);
-                    doc.text("MusiLab · Plano de Aula", mL, H - 8);
-                    doc.text(`${p} / ${totalPages}`, W - mR, H - 8, { align: 'right' });
+                    doc.line(mL, H - 14, W - mR, H - 14);
+                    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...LABEL);
+                    doc.text("MusiLab - Plano de Aula", mL, H - 9);
+                    doc.text(p + ' / ' + totalPages, W - mR, H - 9, { align: 'right' });
                 }
 
-                doc.save(`Plano - ${plano.titulo}.pdf`);
+                doc.save('Plano - ' + plano.titulo + '.pdf');
             };
             
             // --- PDF SEQUÊNCIA DIDÁTICA ---
@@ -3547,6 +3544,7 @@
                                         { label:'Hoje',       icon:'☀️', mode:'resumoDia',  action:()=>setViewMode('resumoDia') },
                                         { label:'Calendário', icon:'📅', mode:'calendario', action:()=>setViewMode('calendario') },
                                         { label:'Meu Ano', icon:'🗓️', mode:'anoLetivo', action:()=>setViewMode('anoLetivo') },
+                                        { label:'Histórico Musical', icon:'📊', mode:'historicoMusical', action:()=>setViewMode('historicoMusical') },
                                     ].map(({label, icon, mode, action, accent}) => {
                                         const isActive = viewMode === mode;
                                         return (
@@ -3696,7 +3694,398 @@
                     <div className="max-w-7xl mx-auto px-4 py-6">
                         {viewMode==='resumoDia' && renderResumoDia()}
                         {viewMode==='calendario' && renderCalendario()}
-                        
+
+                        {/* ══════════════ HISTÓRICO MUSICAL DA TURMA ══════════════ */}
+                        {viewMode === 'historicoMusical' && (() => {
+                            // ── Estados locais via useState (fora do IIFE via refs de closure) ──
+                            // Usamos estados já existentes no componente pai para filtros
+                            // Precisamos de estados próprios: declarados no início do componente (veja abaixo no JSX)
+                            
+                            // ── COLETA DE DADOS ──
+                            // Percorre todos os planos e coleta usos de músicas por data + turma
+                            // Um "uso" = música vinculada em atividade do plano + uma historicaData desse plano
+
+                            const todasTurmasHistorico = [];
+                            // Coletar todas as combinações turma (anoLetivo+escola+segmento+turma) dos registros
+                            planos.forEach(p => {
+                                (p.registrosPosAula || []).forEach(r => {
+                                    const label = (() => {
+                                        let ano = anosLetivos.find(a => a.id == r.anoLetivo);
+                                        let esc = ano?.escolas.find(e => e.id == r.escola);
+                                        let seg = esc?.segmentos.find(s => s.id == (r.segmento || r.serie));
+                                        let tur = seg?.turmas.find(t => t.id == r.turma);
+                                        if (!ano && r.escola) {
+                                            for (const a of anosLetivos) {
+                                                const e = a.escolas.find(e => e.id == r.escola);
+                                                if (e) { const s = e.segmentos.find(s => s.id == (r.segmento || r.serie)); if (s) { const t = s.turmas.find(t => t.id == r.turma); return [a.ano, e.nome, s.nome, t?.nome].filter(Boolean).join(' › '); } }
+                                            }
+                                        }
+                                        return [ano?.ano, esc?.nome, seg?.nome, tur?.nome].filter(Boolean).join(' › ');
+                                    })();
+                                    if (label && !todasTurmasHistorico.find(t => t.id === String(r.turma) + '-' + String(r.escola))) {
+                                        todasTurmasHistorico.push({ id: String(r.turma) + '-' + String(r.escola), label, turmaId: r.turma, escolaId: r.escola, segmentoId: r.segmento || r.serie, anoLetivoId: r.anoLetivo });
+                                    }
+                                });
+                            });
+
+                            const hmTurmaFiltro = hmFiltroTurma;
+                            const hmInicio = hmFiltroInicio;
+                            const hmFim = hmFiltroFim;
+                            const hmBusca = hmFiltroBusca;
+
+                            // ── COMPUTAR MÉTRICAS ──
+                            // Coleta: para cada plano, músicas vinculadas nas atividades + datas de uso (historicoDatas ou registros)
+                            // Associa turma via registros pós-aula
+
+                            const usosMusica = {}; // musicaId -> { titulo, autor, datas: Set<string>, aulas: [{data, planoTitulo, planoId}] }
+
+                            const aulasDaTurma = new Set(); // datas de aulas realizadas na turma/período
+
+                            planos.forEach(p => {
+                                // Determinar quais registros deste plano pertencem à turma selecionada
+                                const regsDoPlano = (p.registrosPosAula || []).filter(r => {
+                                    if (hmTurmaFiltro) {
+                                        const chave = String(r.turma) + '-' + String(r.escola);
+                                        if (chave !== hmTurmaFiltro) return false;
+                                    }
+                                    if (hmInicio && r.data < hmInicio) return false;
+                                    if (hmFim && r.data > hmFim) return false;
+                                    return true;
+                                });
+
+                                // Datas de aulas realizadas (via registros pós-aula)
+                                regsDoPlano.forEach(r => { if (r.data) aulasDaTurma.add(r.data); });
+
+                                // Também considera historicoDatas do plano (sem turma específica, só quando não há filtro de turma)
+                                if (!hmTurmaFiltro) {
+                                    (p.historicoDatas || []).forEach(d => {
+                                        if (hmInicio && d < hmInicio) return;
+                                        if (hmFim && d > hmFim) return;
+                                        aulasDaTurma.add(d);
+                                    });
+                                }
+
+                                // Músicas vinculadas nas atividades do plano
+                                const musicasDoPlano = [];
+                                (p.atividadesRoteiro || []).forEach(atv => {
+                                    (atv.musicasVinculadas || []).forEach(mv => {
+                                        if (!musicasDoPlano.find(m => m.id === mv.id)) musicasDoPlano.push(mv);
+                                    });
+                                });
+
+                                // Também músicas do repertório diretamente vinculadas (planosVinculados)
+                                // já cobertas acima via atividadesRoteiro
+
+                                // Determinar datas de uso das músicas: via registros da turma, ou historicoDatas se sem filtro de turma
+                                let datasDeUso = [];
+                                if (regsDoPlano.length > 0) {
+                                    datasDeUso = regsDoPlano.map(r => r.data).filter(Boolean);
+                                } else if (!hmTurmaFiltro) {
+                                    datasDeUso = (p.historicoDatas || []).filter(d => {
+                                        if (hmInicio && d < hmInicio) return false;
+                                        if (hmFim && d > hmFim) return false;
+                                        return true;
+                                    });
+                                }
+
+                                if (datasDeUso.length === 0) return;
+
+                                musicasDoPlano.forEach(mv => {
+                                    const chaveMusica = String(mv.id);
+                                    if (!usosMusica[chaveMusica]) {
+                                        // Buscar info completa no repertório
+                                        const rep = repertorio.find(r => String(r.id) === chaveMusica);
+                                        usosMusica[chaveMusica] = {
+                                            id: mv.id,
+                                            titulo: mv.titulo || rep?.titulo || '?',
+                                            autor: mv.autor || rep?.autor || '',
+                                            datas: new Set(),
+                                            aulas: []
+                                        };
+                                    }
+                                    datasDeUso.forEach(d => {
+                                        usosMusica[chaveMusica].datas.add(d);
+                                        if (!usosMusica[chaveMusica].aulas.find(a => a.data === d && a.planoId === p.id)) {
+                                            usosMusica[chaveMusica].aulas.push({ data: d, planoTitulo: p.titulo || 'Sem título', planoId: p.id });
+                                        }
+                                    });
+                                });
+                            });
+
+                            // Converter para array e calcular stats
+                            let musicasArray = Object.values(usosMusica).map(m => ({
+                                ...m,
+                                datas: Array.from(m.datas).sort(),
+                                vezesUsada: m.datas.size,
+                                primeiraData: [...m.datas].sort()[0] || '',
+                                ultimaData: [...m.datas].sort().reverse()[0] || ''
+                            }));
+
+                            // Filtro de busca
+                            if (hmBusca.trim()) {
+                                const t = hmBusca.toLowerCase();
+                                musicasArray = musicasArray.filter(m => m.titulo.toLowerCase().includes(t) || (m.autor || '').toLowerCase().includes(t));
+                            }
+
+                            // Ordenar por vezes usada (desc) por padrão
+                            musicasArray.sort((a, b) => b.vezesUsada - a.vezesUsada);
+
+                            // Métricas
+                            const totalAulasRealizadas = aulasDaTurma.size;
+                            const totalMusicasUnicas = musicasArray.length;
+                            const totalUsos = musicasArray.reduce((acc, m) => acc + m.vezesUsada, 0);
+                            const mediaPorAula = totalAulasRealizadas > 0 ? (totalUsos / totalAulasRealizadas).toFixed(1) : '—';
+
+                            const fmtData = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '—';
+
+                            return (
+                                <div className="space-y-5">
+                                    {/* Cabeçalho */}
+                                    <div>
+                                        <h1 className="text-2xl font-bold text-slate-800">📊 Histórico Musical da Turma</h1>
+                                        <p className="text-sm text-slate-400 mt-0.5">Repertório trabalhado e frequência de uso</p>
+                                    </div>
+
+                                    {/* Filtros */}
+                                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                            {/* Turma */}
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Turma</label>
+                                                <select value={hmFiltroTurma} onChange={e => setHmFiltroTurma(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400">
+                                                    <option value="">— Todas as turmas —</option>
+                                                    {todasTurmasHistorico.map(t => (
+                                                        <option key={t.id} value={t.id}>{t.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            {/* Período início */}
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">De</label>
+                                                <input type="date" value={hmFiltroInicio} onChange={e => setHmFiltroInicio(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400"/>
+                                            </div>
+                                            {/* Período fim */}
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Até</label>
+                                                <input type="date" value={hmFiltroFim} onChange={e => setHmFiltroFim(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400"/>
+                                            </div>
+                                            {/* Busca por música */}
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Buscar música</label>
+                                                <input type="text" placeholder="🔍 Título ou autor..." value={hmFiltroBusca} onChange={e => setHmFiltroBusca(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400"/>
+                                            </div>
+                                        </div>
+                                        {(hmFiltroTurma || hmFiltroInicio || hmFiltroFim || hmFiltroBusca) && (
+                                            <div className="mt-3 flex justify-end">
+                                                <button onClick={() => { setHmFiltroTurma(''); setHmFiltroInicio(''); setHmFiltroFim(''); setHmFiltroBusca(''); }}
+                                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">✕ Limpar filtros</button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Cards de métricas */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                                            <p className="text-xs font-semibold text-slate-400 uppercase mb-1">Aulas Realizadas</p>
+                                            <p className="text-3xl font-bold text-indigo-600">{totalAulasRealizadas}</p>
+                                            <p className="text-xs text-slate-400 mt-2">no período selecionado</p>
+                                        </div>
+                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                                            <p className="text-xs font-semibold text-slate-400 uppercase mb-1">Músicas Únicas</p>
+                                            <p className="text-3xl font-bold text-emerald-600">{totalMusicasUnicas}</p>
+                                            <p className="text-xs text-slate-400 mt-2">diferentes trabalhadas</p>
+                                        </div>
+                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                                            <p className="text-xs font-semibold text-slate-400 uppercase mb-1">Total de Usos</p>
+                                            <p className="text-3xl font-bold text-amber-600">{totalUsos}</p>
+                                            <p className="text-xs text-slate-400 mt-2">contando repetições</p>
+                                        </div>
+                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                                            <p className="text-xs font-semibold text-slate-400 uppercase mb-1">Média por Aula</p>
+                                            <p className="text-3xl font-bold text-purple-600">{mediaPorAula}</p>
+                                            <p className="text-xs text-slate-400 mt-2">músicas por aula</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Tabela principal */}
+                                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                                            <div>
+                                                <h2 className="font-bold text-slate-800">🎵 Músicas Trabalhadas</h2>
+                                                <p className="text-xs text-slate-400 mt-0.5">{musicasArray.length} música(s) — ordenado por frequência de uso</p>
+                                            </div>
+                                            {musicasArray.length > 0 && (
+                                                <button onClick={() => {
+                                                    const linhas = [['Música','Autor','Vezes usada','Primeira vez','Última vez'].join(',')];
+                                                    musicasArray.forEach(m => {
+                                                        linhas.push([
+                                                            `"${m.titulo}"`,
+                                                            `"${m.autor || ''}"`,
+                                                            m.vezesUsada,
+                                                            m.primeiraData ? new Date(m.primeiraData+'T12:00:00').toLocaleDateString('pt-BR') : '',
+                                                            m.ultimaData ? new Date(m.ultimaData+'T12:00:00').toLocaleDateString('pt-BR') : ''
+                                                        ].join(','));
+                                                    });
+                                                    const blob = new Blob(['\ufeff' + linhas.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                                                    const url = URL.createObjectURL(blob);
+                                                    const a = document.createElement('a'); a.href = url; a.download = 'historico-musical.csv'; a.click();
+                                                    URL.revokeObjectURL(url);
+                                                }} className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs px-3 py-2 rounded-lg border border-indigo-200 transition">
+                                                    ⬇ Exportar CSV
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {musicasArray.length === 0 ? (
+                                            <div className="text-center py-16 px-6">
+                                                <p className="text-5xl mb-4">🎼</p>
+                                                <p className="font-bold text-slate-600 text-lg mb-2">Nenhuma música encontrada</p>
+                                                <p className="text-sm text-slate-400 max-w-sm mx-auto">
+                                                    {hmFiltroTurma || hmFiltroInicio || hmFiltroFim
+                                                        ? 'Tente ajustar os filtros de turma e período.'
+                                                        : 'Vincule músicas às atividades nos seus planos de aula e registre as aulas para que elas apareçam aqui.'}
+                                                </p>
+                                                {!hmFiltroTurma && !hmFiltroInicio && !hmFiltroFim && (
+                                                    <button onClick={() => setViewMode('lista')} className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition">
+                                                        Ir para Planos de Aula
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-sm">
+                                                    <thead>
+                                                        <tr className="bg-slate-50 border-b border-slate-100">
+                                                            <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Música</th>
+                                                            <th className="text-center px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Usos</th>
+                                                            <th className="text-center px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden sm:table-cell">1ª vez</th>
+                                                            <th className="text-center px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden sm:table-cell">Última vez</th>
+                                                            <th className="text-center px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Aulas</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {musicasArray.map((m, idx) => (
+                                                            <tr key={m.id} className="hover:bg-slate-50 transition-colors">
+                                                                <td className="px-4 py-3">
+                                                                    <div className="flex items-center gap-2">
+                                                                        {idx < 3 && (
+                                                                            <span className="text-base shrink-0">{['🥇','🥈','🥉'][idx]}</span>
+                                                                        )}
+                                                                        <div>
+                                                                            <p className="font-semibold text-slate-800">{m.titulo}</p>
+                                                                            {m.autor && <p className="text-xs text-slate-400">{m.autor}</p>}
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 py-3 text-center">
+                                                                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${m.vezesUsada >= 3 ? 'bg-emerald-100 text-emerald-700' : m.vezesUsada === 2 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                                        {m.vezesUsada}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-3 text-center text-xs text-slate-500 hidden sm:table-cell">{fmtData(m.primeiraData)}</td>
+                                                                <td className="px-4 py-3 text-center text-xs text-slate-500 hidden sm:table-cell">{fmtData(m.ultimaData)}</td>
+                                                                <td className="px-4 py-3 text-center">
+                                                                    <button onClick={() => setHmModalMusica(m)}
+                                                                        className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold hover:underline">
+                                                                        ver detalhes
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Seções secundárias */}
+                                    {musicasArray.length > 0 && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Top 5 mais usadas */}
+                                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                                                <h3 className="font-bold text-slate-700 mb-3">🏆 Top 5 mais usadas</h3>
+                                                <div className="space-y-2">
+                                                    {musicasArray.slice(0, 5).map((m, i) => (
+                                                        <div key={m.id} className="flex items-center gap-3">
+                                                            <span className="text-xs font-bold text-slate-400 w-5 text-right">{i+1}.</span>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-semibold text-slate-700 truncate">{m.titulo}</p>
+                                                            </div>
+                                                            <div className="shrink-0">
+                                                                <div className="flex items-center gap-1">
+                                                                    <div className="h-2 bg-indigo-400 rounded-full" style={{ width: `${Math.max(20, (m.vezesUsada / musicasArray[0].vezesUsada) * 80)}px` }}/>
+                                                                    <span className="text-xs font-bold text-indigo-600 w-6 text-right">{m.vezesUsada}×</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            {/* Usadas apenas 1 vez */}
+                                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                                                <h3 className="font-bold text-slate-700 mb-3">🌱 Introduzidas (usadas 1×)</h3>
+                                                {musicasArray.filter(m => m.vezesUsada === 1).length === 0 ? (
+                                                    <p className="text-sm text-slate-400">Todas as músicas foram usadas mais de uma vez!</p>
+                                                ) : (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {musicasArray.filter(m => m.vezesUsada === 1).map(m => (
+                                                            <span key={m.id} className="bg-amber-50 text-amber-700 border border-amber-200 text-xs px-2.5 py-1 rounded-full font-medium cursor-pointer hover:bg-amber-100 transition"
+                                                                onClick={() => setHmModalMusica(m)}>
+                                                                {m.titulo}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Modal detalhe de música */}
+                                    {hmModalMusica && (
+                                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setHmModalMusica(null)}>
+                                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                                                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5 rounded-t-2xl flex justify-between items-start">
+                                                    <div>
+                                                        <h2 className="text-xl font-bold">{hmModalMusica.titulo}</h2>
+                                                        {hmModalMusica.autor && <p className="text-indigo-200 text-sm mt-0.5">{hmModalMusica.autor}</p>}
+                                                        <p className="text-white/80 text-sm mt-2">Usada <strong>{hmModalMusica.vezesUsada}</strong> vez(es) no período</p>
+                                                    </div>
+                                                    <button onClick={() => setHmModalMusica(null)} className="text-white/70 hover:text-white text-2xl font-bold ml-4">×</button>
+                                                </div>
+                                                <div className="p-5 space-y-3">
+                                                    <div className="flex gap-4 text-sm">
+                                                        <div className="bg-slate-50 rounded-lg px-3 py-2 flex-1 text-center">
+                                                            <p className="text-xs text-slate-400 font-semibold uppercase">1ª vez</p>
+                                                            <p className="font-bold text-slate-700">{hmModalMusica.primeiraData ? fmtData(hmModalMusica.primeiraData) : '—'}</p>
+                                                        </div>
+                                                        <div className="bg-slate-50 rounded-lg px-3 py-2 flex-1 text-center">
+                                                            <p className="text-xs text-slate-400 font-semibold uppercase">Última vez</p>
+                                                            <p className="font-bold text-slate-700">{hmModalMusica.ultimaData ? fmtData(hmModalMusica.ultimaData) : '—'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Aulas em que foi usada:</p>
+                                                        <div className="space-y-2">
+                                                            {[...hmModalMusica.aulas].sort((a,b) => a.data.localeCompare(b.data)).map((aula, i) => (
+                                                                <div key={i} className="flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
+                                                                    <span className="text-xs font-bold text-indigo-700 shrink-0">📅 {fmtData(aula.data)}</span>
+                                                                    <span className="text-sm text-slate-600 truncate">{aula.planoTitulo}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
+
                         {/* ══════════════ MEU ANO LETIVO ══════════════ */}
                         {viewMode === 'anoLetivo' && (() => {
                             const anoAtivo = planejamentoAnual.find(a => a.id === anoPlanoAtivoId) || planejamentoAnual[0] || null;
