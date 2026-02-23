@@ -3726,93 +3726,117 @@
                             const hmFim = hmFiltroFim;
                             const hmBusca = hmFiltroBusca;
 
+                            // ── HELPER: resolve turmaId+escolaId → chave de filtro ──
+                            const chaveDoRegistro = (r) => String(r.turma) + '-' + String(r.escola);
+
+                            // ── HELPER: verifica se um plano pertence à turma filtrada ──
+                            // Um plano "pertence" à turma se tem registro pós-aula com aquela turma
+                            // OU se foi usado naquela turma via historicoDatas (neste caso usamos faixaEtaria/escola do plano como proxy)
+                            const planoBelongsTurma = (p, turmaChave) => {
+                                if (!turmaChave) return true;
+                                // Verifica via registros pós-aula (fonte mais confiável)
+                                return (p.registrosPosAula || []).some(r => chaveDoRegistro(r) === turmaChave);
+                            };
+
                             // ── COMPUTAR MÉTRICAS ──
-                            // Coleta: para cada plano, músicas vinculadas nas atividades + datas de uso (historicoDatas ou registros)
-                            // Associa turma via registros pós-aula
-
-                            const usosMusica = {}; // musicaId -> { titulo, autor, datas: Set<string>, aulas: [{data, planoTitulo, planoId}] }
-
-                            const aulasDaTurma = new Set(); // datas de aulas realizadas na turma/período
+                            const usosMusica = {}; // chaveMusica -> { id, titulo, autor, datas: Set, aulas: [] }
+                            const aulasDaTurma = new Set();
 
                             planos.forEach(p => {
-                                // Determinar quais registros deste plano pertencem à turma selecionada
+                                // Filtrar registros desta turma/período
                                 const regsDoPlano = (p.registrosPosAula || []).filter(r => {
-                                    if (hmTurmaFiltro) {
-                                        const chave = String(r.turma) + '-' + String(r.escola);
-                                        if (chave !== hmTurmaFiltro) return false;
-                                    }
+                                    if (hmTurmaFiltro && chaveDoRegistro(r) !== hmTurmaFiltro) return false;
                                     if (hmInicio && r.data < hmInicio) return false;
                                     if (hmFim && r.data > hmFim) return false;
                                     return true;
                                 });
-
-                                // Datas de aulas realizadas (via registros pós-aula)
                                 regsDoPlano.forEach(r => { if (r.data) aulasDaTurma.add(r.data); });
 
-                                // Também considera historicoDatas do plano (sem turma específica, só quando não há filtro de turma)
+                                // historicoDatas quando não há filtro de turma OU plano pertence à turma
+                                const histFiltrado = (p.historicoDatas || []).filter(d => {
+                                    if (hmInicio && d < hmInicio) return false;
+                                    if (hmFim && d > hmFim) return false;
+                                    return true;
+                                });
                                 if (!hmTurmaFiltro) {
-                                    (p.historicoDatas || []).forEach(d => {
-                                        if (hmInicio && d < hmInicio) return;
-                                        if (hmFim && d > hmFim) return;
-                                        aulasDaTurma.add(d);
-                                    });
+                                    histFiltrado.forEach(d => aulasDaTurma.add(d));
+                                } else if (planoBelongsTurma(p, hmTurmaFiltro)) {
+                                    histFiltrado.forEach(d => aulasDaTurma.add(d));
                                 }
 
-                                // Músicas vinculadas nas atividades do plano
+                                // ── Coleta músicas do plano via atividadesRoteiro ──
                                 const musicasDoPlano = [];
                                 (p.atividadesRoteiro || []).forEach(atv => {
                                     (atv.musicasVinculadas || []).forEach(mv => {
-                                        if (!musicasDoPlano.find(m => m.id === mv.id)) musicasDoPlano.push(mv);
+                                        if (mv && mv.id && !musicasDoPlano.find(m => String(m.id) === String(mv.id))) {
+                                            musicasDoPlano.push(mv);
+                                        }
                                     });
                                 });
 
-                                // Também músicas do repertório diretamente vinculadas (planosVinculados)
-                                // já cobertas acima via atividadesRoteiro
+                                if (musicasDoPlano.length === 0) return;
 
-                                // Determinar datas de uso das músicas: via registros da turma, ou historicoDatas se sem filtro de turma
+                                // ── Determinar datas de uso para este plano ──
+                                // Prioridade 1: registros pós-aula com a turma selecionada
+                                // Prioridade 2: historicoDatas (quando sem filtro de turma, ou plano sem registros)
+                                // Prioridade 3: sem data (plano existe mas nunca foi usado) → mostra sem data
                                 let datasDeUso = [];
+
                                 if (regsDoPlano.length > 0) {
-                                    datasDeUso = regsDoPlano.map(r => r.data).filter(Boolean);
-                                } else if (!hmTurmaFiltro) {
-                                    datasDeUso = (p.historicoDatas || []).filter(d => {
-                                        if (hmInicio && d < hmInicio) return false;
-                                        if (hmFim && d > hmFim) return false;
-                                        return true;
-                                    });
+                                    // Tem registros da turma: usar datas dos registros
+                                    datasDeUso = [...new Set(regsDoPlano.map(r => r.data).filter(Boolean))];
+                                } else if (!hmTurmaFiltro && histFiltrado.length > 0) {
+                                    // Sem filtro de turma + tem historicoDatas: usar histórico
+                                    datasDeUso = histFiltrado;
+                                } else if (!hmTurmaFiltro && histFiltrado.length === 0) {
+                                    // Sem filtro + sem datas: mostrar música com data vazia (plano vinculado mas não usado)
+                                    datasDeUso = [''];
+                                } else if (hmTurmaFiltro && planoBelongsTurma(p, hmTurmaFiltro)) {
+                                    // Com filtro de turma + plano tem registro da turma → já coberto acima
+                                    // (regsDoPlano.length seria > 0 neste caso, então não chega aqui)
+                                    datasDeUso = histFiltrado.length > 0 ? histFiltrado : [''];
                                 }
+                                // Se hmTurmaFiltro e plano NÃO pertence à turma: datasDeUso = [] → skip
 
                                 if (datasDeUso.length === 0) return;
 
                                 musicasDoPlano.forEach(mv => {
                                     const chaveMusica = String(mv.id);
                                     if (!usosMusica[chaveMusica]) {
-                                        // Buscar info completa no repertório
                                         const rep = repertorio.find(r => String(r.id) === chaveMusica);
                                         usosMusica[chaveMusica] = {
                                             id: mv.id,
-                                            titulo: mv.titulo || rep?.titulo || '?',
+                                            titulo: mv.titulo || rep?.titulo || '(sem título)',
                                             autor: mv.autor || rep?.autor || '',
                                             datas: new Set(),
                                             aulas: []
                                         };
                                     }
                                     datasDeUso.forEach(d => {
-                                        usosMusica[chaveMusica].datas.add(d);
-                                        if (!usosMusica[chaveMusica].aulas.find(a => a.data === d && a.planoId === p.id)) {
-                                            usosMusica[chaveMusica].aulas.push({ data: d, planoTitulo: p.titulo || 'Sem título', planoId: p.id });
+                                        if (d) usosMusica[chaveMusica].datas.add(d);
+                                        const jaExiste = usosMusica[chaveMusica].aulas.find(a => a.data === d && a.planoId === p.id);
+                                        if (!jaExiste) {
+                                            usosMusica[chaveMusica].aulas.push({
+                                                data: d,
+                                                planoTitulo: p.titulo || 'Sem título',
+                                                planoId: p.id
+                                            });
                                         }
                                     });
                                 });
                             });
 
                             // Converter para array e calcular stats
-                            let musicasArray = Object.values(usosMusica).map(m => ({
-                                ...m,
-                                datas: Array.from(m.datas).sort(),
-                                vezesUsada: m.datas.size,
-                                primeiraData: [...m.datas].sort()[0] || '',
-                                ultimaData: [...m.datas].sort().reverse()[0] || ''
-                            }));
+                            let musicasArray = Object.values(usosMusica).map(m => {
+                                const datasOrdenadas = Array.from(m.datas).filter(Boolean).sort();
+                                return {
+                                    ...m,
+                                    datas: datasOrdenadas,
+                                    vezesUsada: datasOrdenadas.length || m.aulas.length, // fallback para planos sem data
+                                    primeiraData: datasOrdenadas[0] || '',
+                                    ultimaData: datasOrdenadas[datasOrdenadas.length - 1] || ''
+                                };
+                            });
 
                             // Filtro de busca
                             if (hmBusca.trim()) {
@@ -4063,13 +4087,15 @@
                                                     <div>
                                                         <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Aulas em que foi usada:</p>
                                                         <div className="space-y-2">
-                                                            {[...hmModalMusica.aulas].sort((a,b) => a.data.localeCompare(b.data)).map((aula, i) => {
+                                                            {[...hmModalMusica.aulas].sort((a,b) => (a.data||'').localeCompare(b.data||'')).map((aula, i) => {
                                                                 const planoRef = planos.find(p => p.id === aula.planoId);
                                                                 return (
                                                                     <button key={i}
                                                                         onClick={() => { if (planoRef) { setHmModalMusica(null); setPlanoSelecionado(planoRef); } }}
                                                                         className={`w-full flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-left transition ${planoRef ? 'hover:bg-blue-50 hover:border-blue-200 cursor-pointer group' : 'cursor-default'}`}>
-                                                                        <span className="text-xs font-bold text-blue-800 shrink-0">📅 {fmtData(aula.data)}</span>
+                                                                        <span className="text-xs font-bold text-blue-800 shrink-0">
+                                                                            {aula.data ? `📅 ${fmtData(aula.data)}` : '📋 sem data registrada'}
+                                                                        </span>
                                                                         <span className="text-sm text-slate-600 truncate flex-1">{aula.planoTitulo}</span>
                                                                         {planoRef && <span className="text-xs text-blue-400 group-hover:text-blue-600 shrink-0 font-semibold">→ abrir</span>}
                                                                     </button>
