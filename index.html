@@ -1082,13 +1082,13 @@
                 setModalConfirm({ conteudo: `✨ ${sugestoes.length} sugestão(ões) encontrada(s) para ${segLabel}!`, somenteOk: true, labelConfirm: 'OK' });
             };
 
-            // ── FONTE UTF-8 PARA PDF (Roboto via GitHub, cache localStorage) ──
+            // ── FONTE UTF-8 PARA PDF (Roboto via GitHub, cache Cache Storage API) ──
             async function carregarFontePDF(doc) {
                 const BASE = 'https://raw.githubusercontent.com/googlefonts/roboto/main/fonts/ttf/';
                 const VARIANTES = [
-                    { url: BASE + 'Roboto-Regular.ttf', cache: '_musilab_roboto_r', estilo: 'normal' },
-                    { url: BASE + 'Roboto-Bold.ttf',    cache: '_musilab_roboto_b', estilo: 'bold'   },
-                    { url: BASE + 'Roboto-Italic.ttf',  cache: '_musilab_roboto_i', estilo: 'italic' },
+                    { url: BASE + 'Roboto-Regular.ttf', estilo: 'normal' },
+                    { url: BASE + 'Roboto-Bold.ttf',    estilo: 'bold'   },
+                    { url: BASE + 'Roboto-Italic.ttf',  estilo: 'italic' },
                 ];
                 function uint8ToBase64(arr) {
                     let s = '', chunk = 0x8000;
@@ -1096,17 +1096,23 @@
                         s += String.fromCharCode(...arr.subarray(i, i + chunk));
                     return btoa(s);
                 }
+                async function buscarFonte(url) {
+                    if (typeof caches !== 'undefined') {
+                        const cache = await caches.open('musilab-fonts-v1');
+                        let resp = await cache.match(url);
+                        if (!resp) { await cache.add(url); resp = await cache.match(url); }
+                        return new Uint8Array(await resp.arrayBuffer());
+                    }
+                    // fallback: file:// ou contexto sem Cache API (busca sem cache)
+                    const resp = await fetch(url);
+                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                    return new Uint8Array(await resp.arrayBuffer());
+                }
                 try {
                     for (const v of VARIANTES) {
-                        let b64 = localStorage.getItem(v.cache);
-                        if (!b64) {
-                            const res = await fetch(v.url);
-                            if (!res.ok) throw new Error('HTTP ' + res.status);
-                            b64 = uint8ToBase64(new Uint8Array(await res.arrayBuffer()));
-                            try { localStorage.setItem(v.cache, b64); } catch(e) {}
-                        }
+                        const bytes = await buscarFonte(v.url);
                         const fname = 'Roboto-' + v.estilo + '.ttf';
-                        doc.addFileToVFS(fname, b64);
+                        doc.addFileToVFS(fname, uint8ToBase64(bytes));
                         doc.addFont(fname, 'Roboto', v.estilo);
                     }
                     return 'Roboto';
