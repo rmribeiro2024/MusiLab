@@ -616,14 +616,18 @@
             const [hmModalMusica, setHmModalMusica] = useState(null);
             const dragItem = useRef(null);
             const dragOverItem = useRef(null);
-            const handleDragStart = (index) => { dragItem.current = index; };
-            const handleDragEnter = (index) => { dragOverItem.current = index; };
+            const [dragActiveIndex, setDragActiveIndex] = useState(null);
+            const [dragOverIndex, setDragOverIndex] = useState(null);
+            const handleDragStart = (index) => { dragItem.current = index; setDragActiveIndex(index); };
+            const handleDragEnter = (index) => { dragOverItem.current = index; setDragOverIndex(index); };
             const handleDragEnd = () => {
                 const roteiro = [...(planoEditando.atividadesRoteiro || [])];
                 const draggedItem = roteiro.splice(dragItem.current, 1)[0];
                 roteiro.splice(dragOverItem.current, 0, draggedItem);
                 dragItem.current = null;
                 dragOverItem.current = null;
+                setDragActiveIndex(null);
+                setDragOverIndex(null);
                 setPlanoEditando({ ...planoEditando, atividadesRoteiro: roteiro });
             };
             useEffect(() => {
@@ -7846,7 +7850,7 @@
                                                         onDragEnter={() => handleDragEnter(index)}
                                                         onDragEnd={handleDragEnd}
                                                         onDragOver={e => e.preventDefault()}
-                                                        className="bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm cursor-grab active:cursor-grabbing active:opacity-50 transition-opacity hover:border-indigo-200">
+                                                        className={`bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm cursor-grab active:cursor-grabbing transition-opacity hover:border-indigo-200 ${dragActiveIndex === index ? 'dragging' : ''} ${dragOverIndex === index && dragActiveIndex !== index ? 'drag-over' : ''}`}>
                                                         <div className="flex justify-between items-center mb-3">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-gray-300 hover:text-indigo-400 transition text-lg select-none" title="Arraste para reordenar">⠿</span>
