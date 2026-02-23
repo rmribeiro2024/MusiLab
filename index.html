@@ -3601,12 +3601,12 @@
                                         { label:'Hoje',       icon:'☀️', mode:'resumoDia',  action:()=>setViewMode('resumoDia') },
                                         { label:'Calendário', icon:'📅', mode:'calendario', action:()=>setViewMode('calendario') },
                                         { label:'Meu Ano', icon:'🗓️', mode:'anoLetivo', action:()=>setViewMode('anoLetivo') },
-                                        { label:'Histórico Musical', icon:'📊', mode:'historicoMusical', action:()=>setViewMode('historicoMusical') },
+                                        { label:'Histórico', icon:'📊', mode:'historicoMusical', action:()=>setViewMode('historicoMusical') },
                                     ].map(({label, icon, mode, action, accent}) => {
                                         const isActive = viewMode === mode;
                                         return (
                                             <button key={label} onClick={action}
-                                                className={`relative flex items-center gap-1.5 px-4 py-2.5 rounded-t-xl text-sm font-semibold whitespace-nowrap transition-all
+                                                className={`relative flex items-center gap-1 px-3 py-2 rounded-t-xl text-xs font-semibold whitespace-nowrap transition-all
                                                     ${accent
                                                         ? 'bg-emerald-500 hover:bg-emerald-400 text-white'
                                                         : isActive
@@ -3614,7 +3614,7 @@
                                                             : 'bg-blue-900/70 hover:bg-blue-800/80 text-blue-200 hover:text-white border border-blue-700/50'}`}>
                                                 <span>{icon}</span>
                                                 <span>{label}</span>
-                                                {isActive && !accent && <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-indigo-500 rounded-full"/>}
+                                                {isActive && !accent && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-indigo-500 rounded-full"/>}
                                             </button>
                                         );
                                     })}
@@ -3634,13 +3634,13 @@
                                         const isActive = viewMode === mode;
                                         return (
                                             <button key={label} onClick={()=>setViewMode(mode)}
-                                                className={`relative flex items-center gap-1.5 px-4 py-2.5 rounded-t-xl text-sm font-semibold whitespace-nowrap transition-all
+                                                className={`relative flex items-center gap-1 px-3 py-2 rounded-t-xl text-xs font-semibold whitespace-nowrap transition-all
                                                     ${isActive
                                                         ? 'bg-white text-slate-800 shadow-sm'
                                                         : 'bg-blue-900/70 hover:bg-blue-800/80 text-blue-200 hover:text-white border border-blue-700/50'}`}>
                                                 <span>{icon}</span>
                                                 <span>{label}</span>
-                                                {isActive && <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-violet-500 rounded-full"/>}
+                                                {isActive && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-violet-500 rounded-full"/>}
                                             </button>
                                         );
                                     })}
@@ -3652,8 +3652,8 @@
                                 {/* ⚙️ Configurações */}
                                 <div className="flex items-end">
                                     <button onClick={()=>setModalConfiguracoes(true)}
-                                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-t-xl text-sm font-medium bg-blue-900/40 hover:bg-blue-800/60 text-blue-300/80 hover:text-white transition-all">
-                                        ⚙️ Configurações
+                                        className="flex items-center gap-1 px-3 py-2 rounded-t-xl text-xs font-medium bg-blue-900/40 hover:bg-blue-800/60 text-blue-300/80 hover:text-white transition-all">
+                                        ⚙️ Config
                                     </button>
                                 </div>
                             </div>
@@ -4965,6 +4965,218 @@
                                 </div>
                             );
 
+                            if (atividadeEditando) {
+                                return (
+                                    <div className="max-w-2xl mx-auto">
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <button onClick={()=>setAtividadeEditando(null)}
+                                                className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-semibold text-sm transition flex items-center gap-1.5">
+                                                ← Voltar
+                                            </button>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-slate-800">{atividades.find(a=>a.id===atividadeEditando.id) ? '✏️ Editar Atividade' : '🧩 Nova Atividade'}</h2>
+                                                <p className="text-slate-500 text-xs mt-0.5">Atividade pedagógica reutilizável</p>
+                                            </div>
+                                        </div>
+                                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                            <div className="h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"/>
+                                            <div className="p-6 space-y-5">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Nome *</label>
+                                                    <input type="text" placeholder="Ex: Brincadeira cantada em roda"
+                                                        value={atividadeEditando.nome}
+                                                        onChange={e=>setAtividadeEditando({...atividadeEditando,nome:e.target.value})}
+                                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition"/>
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-1.5">
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Descrição</label>
+                                                        <button type="button" onClick={()=>setAtividadeVinculandoMusica(atividadeEditando.id)}
+                                                            className="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg text-xs font-bold transition">
+                                                            🎵 Vincular música
+                                                        </button>
+                                                    </div>
+                                                    <textarea value={atividadeEditando.descricao}
+                                                        onChange={e=>setAtividadeEditando({...atividadeEditando,descricao:e.target.value})}
+                                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition resize-none"
+                                                        rows="4" placeholder="Como fazer a atividade..."/>
+                                                    {(atividadeEditando.musicasVinculadas||[]).length > 0 && (
+                                                        <div className="mt-2 space-y-1">
+                                                            {atividadeEditando.musicasVinculadas.map((musica,mi) => (
+                                                                <div key={mi} className="flex items-center justify-between bg-indigo-50 px-3 py-2 rounded-xl">
+                                                                    <span className="text-indigo-700 text-sm font-semibold">🎵 {musica.titulo}{musica.autor && ` - ${musica.autor}`}</span>
+                                                                    <button type="button" onClick={()=>setAtividadeEditando({...atividadeEditando,musicasVinculadas:atividadeEditando.musicasVinculadas.filter((_,idx)=>idx!==mi)})} className="text-slate-400 hover:text-red-500 transition">×</button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Faixa Etária</label>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {faixas.slice(1).map(f=>(
+                                                                <button key={f} type="button"
+                                                                    onClick={()=>{const tem=atividadeEditando.faixaEtaria.includes(f);setAtividadeEditando({...atividadeEditando,faixaEtaria:tem?atividadeEditando.faixaEtaria.filter(x=>x!==f):[...atividadeEditando.faixaEtaria,f]});}}
+                                                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${atividadeEditando.faixaEtaria.includes(f)?'bg-amber-100 text-amber-700 border border-amber-300':'bg-slate-100 text-slate-600 border border-transparent hover:bg-slate-200'}`}>
+                                                                    {f}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Duração</label>
+                                                        <input type="text" value={atividadeEditando.duracao}
+                                                            onChange={e=>setAtividadeEditando({...atividadeEditando,duracao:e.target.value})}
+                                                            className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition"
+                                                            placeholder="Ex: 15 min"/>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Materiais</label>
+                                                    <textarea value={(atividadeEditando.materiais||[]).join('\n')}
+                                                        onChange={e=>setAtividadeEditando({...atividadeEditando,materiais:e.target.value.split('\n').filter(Boolean)})}
+                                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition resize-none"
+                                                        rows="3" placeholder="Um por linha"/>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">🎵 Conceitos Musicais</label>
+                                                    {(atividadeEditando.conceitos||[]).length > 0 && (
+                                                        <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-slate-100">
+                                                            {(atividadeEditando.conceitos||[]).map((conceito,idx)=>(
+                                                                <span key={idx} className="bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+                                                                    {conceito}
+                                                                    <button type="button" onClick={()=>setAtividadeEditando({...atividadeEditando,conceitos:atividadeEditando.conceitos.filter((_,i)=>i!==idx)})} className="hover:text-red-500 transition ml-1">×</button>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    <div className="flex flex-wrap gap-2 mb-2">
+                                                        {(conceitos||[]).map(conceito=>(
+                                                            <div key={conceito} className="flex items-center gap-1 bg-white border border-purple-200 rounded-full">
+                                                                <button type="button"
+                                                                    onClick={()=>{if(!(atividadeEditando.conceitos||[]).includes(conceito)){setAtividadeEditando({...atividadeEditando,conceitos:[...(atividadeEditando.conceitos||[]),conceito]});}}}
+                                                                    disabled={(atividadeEditando.conceitos||[]).includes(conceito)}
+                                                                    className={`px-3 py-1 rounded-l-full text-sm transition ${(atividadeEditando.conceitos||[]).includes(conceito)?'text-purple-300 cursor-not-allowed':'text-purple-600 hover:bg-purple-50'}`}>
+                                                                    {conceito}
+                                                                </button>
+                                                                <button type="button"
+                                                                    onClick={()=>setModalConfirm({titulo:'Remover conceito?',conteudo:`Remover "${conceito}" da lista permanentemente?`,labelConfirm:'Remover',perigo:true,onConfirm:()=>{setConceitos(conceitos.filter(c=>c!==conceito));if((atividadeEditando.conceitos||[]).includes(conceito)){setAtividadeEditando({...atividadeEditando,conceitos:atividadeEditando.conceitos.filter(c=>c!==conceito)});}}})}
+                                                                    className="text-slate-300 hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-r-full transition">✕</button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <input type="text"
+                                                        onKeyDown={e=>{if((e.key==='Enter'||e.key===' ')&&e.target.value.trim()){e.preventDefault();const nc=e.target.value.trim();if(nc&&!(atividadeEditando.conceitos||[]).includes(nc)){setAtividadeEditando({...atividadeEditando,conceitos:[...(atividadeEditando.conceitos||[]),nc]});if(!conceitos.includes(nc)){setConceitos([...conceitos,nc].sort());}}e.target.value='';}}}
+                                                        className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:border-purple-400 outline-none transition"
+                                                        placeholder="Digite e pressione Enter... Ex: Ritmo, Melodia"/>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">🏷️ Tags</label>
+                                                    {(atividadeEditando.tags||[]).length > 0 && (
+                                                        <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-slate-100">
+                                                            {(atividadeEditando.tags||[]).map((tag,idx)=>(
+                                                                <span key={idx} className="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+                                                                    #{tag}
+                                                                    <button type="button" onClick={()=>setAtividadeEditando({...atividadeEditando,tags:atividadeEditando.tags.filter((_,i)=>i!==idx)})} className="hover:text-red-500 transition ml-1">×</button>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    <div className="flex flex-wrap gap-2 mb-2">
+                                                        {(tagsGlobais||[]).map(tag=>(
+                                                            <div key={tag} className="flex items-center gap-1 bg-white border border-amber-200 rounded-full">
+                                                                <button type="button"
+                                                                    onClick={()=>{if(!(atividadeEditando.tags||[]).includes(tag)){setAtividadeEditando({...atividadeEditando,tags:[...(atividadeEditando.tags||[]),tag]});}}}
+                                                                    disabled={(atividadeEditando.tags||[]).includes(tag)}
+                                                                    className={`px-3 py-1 rounded-l-full text-sm transition ${(atividadeEditando.tags||[]).includes(tag)?'text-amber-300 cursor-not-allowed':'text-amber-600 hover:bg-amber-50'}`}>
+                                                                    #{tag}
+                                                                </button>
+                                                                <button type="button"
+                                                                    onClick={()=>setModalConfirm({titulo:'Remover tag?',conteudo:`Remover "${tag}" da lista permanentemente?`,labelConfirm:'Remover',perigo:true,onConfirm:()=>{setTagsGlobais(tagsGlobais.filter(t=>t!==tag));if((atividadeEditando.tags||[]).includes(tag)){setAtividadeEditando({...atividadeEditando,tags:atividadeEditando.tags.filter(t=>t!==tag)});}}})}
+                                                                    className="text-slate-300 hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-r-full transition">✕</button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <input type="text"
+                                                        onKeyDown={e=>{if((e.key==='Enter'||e.key===' ')&&e.target.value.trim()){e.preventDefault();const nt=e.target.value.trim().replace(/^#/,'');if(nt&&!(atividadeEditando.tags||[]).includes(nt)){setAtividadeEditando({...atividadeEditando,tags:[...(atividadeEditando.tags||[]),nt]});if(!tagsGlobais.includes(nt)){setTagsGlobais([...tagsGlobais,nt].sort());}}e.target.value='';}}}
+                                                        className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition"
+                                                        placeholder="Digite e pressione Enter... Ex: roda, jogos"/>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Unidade (opcional)</label>
+                                                    <select value={atividadeEditando._adicionandoUnidade ? '__NOVA__' : (atividadeEditando.unidade||'')}
+                                                        onChange={e=>{if(e.target.value==='__NOVA__'){setAtividadeEditando({...atividadeEditando,_adicionandoUnidade:true});}else{setAtividadeEditando({...atividadeEditando,unidade:e.target.value,_adicionandoUnidade:false});}}}
+                                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition bg-white">
+                                                        <option value="">Selecione ou adicione...</option>
+                                                        {unidades.map(u=><option key={u} value={u}>{u}</option>)}
+                                                        <option value="__NOVA__">➕ Adicionar nova unidade...</option>
+                                                    </select>
+                                                    {atividadeEditando._adicionandoUnidade && (
+                                                        <div className="flex gap-2 mt-2">
+                                                            <input type="text" autoFocus placeholder="Nome da unidade..."
+                                                                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none"
+                                                                onKeyDown={e=>{if(e.key==='Enter'&&e.target.value.trim()){const u=e.target.value.trim();if(!unidades.includes(u)){setUnidades([...unidades,u].sort());}setAtividadeEditando({...atividadeEditando,unidade:u,_adicionandoUnidade:false});}if(e.key==='Escape'){setAtividadeEditando({...atividadeEditando,_adicionandoUnidade:false});}}}/>
+                                                            <button type="button" onClick={()=>setAtividadeEditando({...atividadeEditando,_adicionandoUnidade:false})}
+                                                                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm transition">Cancelar</button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Observação (opcional)</label>
+                                                    <textarea value={atividadeEditando.observacao||''}
+                                                        onChange={e=>setAtividadeEditando({...atividadeEditando,observacao:e.target.value})}
+                                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition resize-none"
+                                                        rows="2"/>
+                                                </div>
+                                                <div className="rounded-xl border border-slate-200 overflow-hidden">
+                                                    <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200">
+                                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">🔗 Links e Imagens</span>
+                                                    </div>
+                                                    <div className="p-4 space-y-3">
+                                                        <div className="flex gap-2 flex-col sm:flex-row">
+                                                            <input type="text" placeholder="URL..."
+                                                                value={novoRecursoUrlAtiv}
+                                                                onChange={e=>setNovoRecursoUrlAtiv(e.target.value)}
+                                                                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition"/>
+                                                            <select value={novoRecursoTipoAtiv}
+                                                                onChange={e=>setNovoRecursoTipoAtiv(e.target.value)}
+                                                                className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white outline-none">
+                                                                <option value="link">Link</option>
+                                                                <option value="imagem">Imagem</option>
+                                                            </select>
+                                                            <button type="button" onClick={adicionarRecursoAtiv}
+                                                                className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition">Add</button>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {(atividadeEditando.recursos||[]).map((rec,idx)=>(
+                                                                <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                                                    <div className="flex items-center gap-2 overflow-hidden">
+                                                                        <span>{rec.tipo==='imagem'?'🖼️':'🔗'}</span>
+                                                                        <span className="text-sm truncate max-w-xs text-slate-600">{rec.url}</span>
+                                                                    </div>
+                                                                    <button type="button" onClick={()=>removerRecursoAtiv(idx)} className="text-slate-400 hover:text-red-500 transition px-2">✕</button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-3 pt-2 border-t border-slate-100">
+                                                    <button onClick={()=>setAtividadeEditando(null)}
+                                                        className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-semibold text-sm transition">
+                                                        Cancelar
+                                                    </button>
+                                                    <button onClick={salvarAtividade}
+                                                        className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-sm shadow-sm transition">
+                                                        Salvar Atividade
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
                             return (
                                 <>
                                     {/* ── HEADER DA PÁGINA ── */}
@@ -6262,7 +6474,7 @@
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="space-y-4">
+                                    <div className="max-w-2xl mx-auto space-y-4">
                                         {/* Cabeçalho do formulário */}
                                         <div className="flex justify-between items-center">
                                             <div>
@@ -8607,14 +8819,9 @@
                         </div>
                     )}
 
-                    {/* ═══════════ MODAL EDITAR ATIVIDADE ═══════════ */}
-                    {atividadeEditando && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={()=>setAtividadeEditando(null)}>
-                            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
-                                <div className="bg-amber-500 text-white p-4 flex justify-between items-center sticky top-0">
-                                    <h2 className="text-lg font-bold">🧩 {atividadeEditando.id > Date.now()-1000 ? 'Nova' : 'Editar'} Atividade</h2>
-                                    <button onClick={()=>setAtividadeEditando(null)} className="text-white text-xl">✕</button>
-                                </div>
+                    {/* ═══════════ MODAL EDITAR ATIVIDADE (REMOVIDO — formulário inline na view) ═══════════ */}
+                    {false && (
+                        <div>
                                 <div className="p-6 space-y-4">
                                     <div><label className="block font-bold mb-2">Nome *</label><input type="text" value={atividadeEditando.nome} onChange={e=>setAtividadeEditando({...atividadeEditando, nome:e.target.value})} className="w-full px-4 py-2 border-2 rounded-lg" /></div>
                                     <div>
@@ -8921,7 +9128,6 @@
                                     <button onClick={salvarAtividade} className="flex-1 bg-amber-500 text-white py-3 rounded-xl font-bold">Salvar</button>
                                 </div>
                             </div>
-                        </div>
                     )}
 
                     {/* ═══════════ MODAL ADICIONAR AO PLANO ═══════════ */}
