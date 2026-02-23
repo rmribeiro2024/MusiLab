@@ -1082,10 +1082,45 @@
                 setModalConfirm({ conteudo: `✨ ${sugestoes.length} sugestão(ões) encontrada(s) para ${segLabel}!`, somenteOk: true, labelConfirm: 'OK' });
             };
 
-            // --- PDF PREMIUM (CORRIGIDO: SEM EMOJIS) ---
-            const exportarPlanoPDF = (plano) => {
+            // ── FONTE UTF-8 PARA PDF (Roboto via GitHub, cache localStorage) ──
+            async function carregarFontePDF(doc) {
+                const BASE = 'https://raw.githubusercontent.com/googlefonts/roboto/main/fonts/ttf/';
+                const VARIANTES = [
+                    { url: BASE + 'Roboto-Regular.ttf', cache: '_musilab_roboto_r', estilo: 'normal' },
+                    { url: BASE + 'Roboto-Bold.ttf',    cache: '_musilab_roboto_b', estilo: 'bold'   },
+                    { url: BASE + 'Roboto-Italic.ttf',  cache: '_musilab_roboto_i', estilo: 'italic' },
+                ];
+                function uint8ToBase64(arr) {
+                    let s = '', chunk = 0x8000;
+                    for (let i = 0; i < arr.length; i += chunk)
+                        s += String.fromCharCode(...arr.subarray(i, i + chunk));
+                    return btoa(s);
+                }
+                try {
+                    for (const v of VARIANTES) {
+                        let b64 = localStorage.getItem(v.cache);
+                        if (!b64) {
+                            const res = await fetch(v.url);
+                            if (!res.ok) throw new Error('HTTP ' + res.status);
+                            b64 = uint8ToBase64(new Uint8Array(await res.arrayBuffer()));
+                            try { localStorage.setItem(v.cache, b64); } catch(e) {}
+                        }
+                        const fname = 'Roboto-' + v.estilo + '.ttf';
+                        doc.addFileToVFS(fname, b64);
+                        doc.addFont(fname, 'Roboto', v.estilo);
+                    }
+                    return 'Roboto';
+                } catch(e) {
+                    console.warn('[MusiLab] Fonte Roboto indisponivel, usando Helvetica:', e.message);
+                    return 'helvetica';
+                }
+            }
+
+            // --- PDF PREMIUM ---
+            const exportarPlanoPDF = async (plano) => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
+                const FONTE_PDF = await carregarFontePDF(doc);
 
                 // ── Paleta ──
                 const W = 210, H = 297;
@@ -1129,17 +1164,17 @@
                     chk(16);
                     rule(6, 0);
                     y += 6;
-                    doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+                    doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(8.5);
                     doc.setTextColor(...LABEL);
                     doc.text(label.toUpperCase(), mL, y);
                     y += 6;
-                    doc.setFont("helvetica", "normal"); doc.setTextColor(...DARK);
+                    doc.setFont(FONTE_PDF, "normal"); doc.setTextColor(...DARK);
                 };
                 // Escreve bloco de texto com quebra de linha automática
                 const para = (text, indent, size, bold) => {
                     if (!text || !String(text).trim()) return;
                     doc.setFontSize(size || 11);
-                    doc.setFont("helvetica", bold ? "bold" : "normal");
+                    doc.setFont(FONTE_PDF, bold ? "bold" : "normal");
                     doc.setTextColor(...DARK);
                     const lines = doc.splitTextToSize(String(text).trim(), cW - (indent || 0));
                     lines.forEach(l => { chk(LS); doc.text(l, mL + (indent || 0), y); y += LS; });
@@ -1151,12 +1186,12 @@
                 doc.setFillColor(...ACCENT); doc.rect(0, 0, W, 4.5, 'F');
 
                 y = 19;
-                doc.setFont("helvetica", "bold"); doc.setFontSize(19); doc.setTextColor(...DARK);
+                doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(19); doc.setTextColor(...DARK);
                 const titleLines = doc.splitTextToSize(plano.titulo || "Plano de Aula", cW);
                 titleLines.forEach(l => { doc.text(l, mL, y); y += 9; });
 
                 if (plano.destaque) {
-                    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...LABEL);
+                    doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(9); doc.setTextColor(...LABEL);
                     doc.text("Favorito", W - mR, 20, { align: 'right' });
                 }
 
@@ -1170,7 +1205,7 @@
                 ].filter(Boolean).join('  |  ');
                 if (meta) {
                     y += 1;
-                    doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(...LABEL);
+                    doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(10.5); doc.setTextColor(...LABEL);
                     const mLines = doc.splitTextToSize(meta, cW);
                     mLines.forEach(l => { doc.text(l, mL, y); y += 5.5; });
                 }
@@ -1185,7 +1220,7 @@
                     sectionTitle("Habilidades BNCC");
                     bncc.forEach(h => {
                         const ls = doc.splitTextToSize(h.trim(), cW);
-                        doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
+                        doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
                         ls.forEach(l => { chk(LS); doc.text(l, mL, y); y += LS; });
                     });
                     y += 3;
@@ -1204,13 +1239,13 @@
                     }
                     if (objEsp.length > 0) {
                         chk(8);
-                        doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...LABEL);
+                        doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(9); doc.setTextColor(...LABEL);
                         doc.text("ESPECIFICOS", mL, y); y += 6;
                         objEsp.forEach(o => {
                             o.split('\n').filter(l => l.trim()).forEach(linha => {
                                 const txt = (linha.startsWith('-') ? '' : '- ') + linha.trim();
                                 const ls = doc.splitTextToSize(txt, cW - 5);
-                                doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
+                                doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
                                 ls.forEach((l, i) => { chk(LS); doc.text(l, mL + (i > 0 ? 7 : 4), y); y += LS; });
                             });
                         });
@@ -1241,12 +1276,12 @@
                         chk(22);
                         // Nome da atividade
                         const header = (idx + 1) + '. ' + (ativ.nome || 'Atividade');
-                        doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...DARK);
+                        doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(12); doc.setTextColor(...DARK);
                         const hLines = doc.splitTextToSize(header, cW - 28);
                         hLines.forEach(l => { chk(7); doc.text(l, mL, y); y += 7; });
                         // Duração alinhada à direita
                         if (ativ.duracao) {
-                            doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(...LABEL);
+                            doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(10); doc.setTextColor(...LABEL);
                             doc.text(ativ.duracao, W - mR, y - 7, { align: 'right' });
                         }
                         // Descricao
@@ -1255,7 +1290,7 @@
                             if (desc.trim()) {
                                 desc.split('\n').filter(l => l.trim()).forEach(linha => {
                                     const ls = doc.splitTextToSize(linha.trim(), cW - 5);
-                                    doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
+                                    doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
                                     ls.forEach(l => { chk(LS); doc.text(l, mL + 5, y); y += LS; });
                                 });
                             }
@@ -1263,7 +1298,7 @@
                         // Objetivo da atividade
                         if (ativ.objetivo && ativ.objetivo.trim()) {
                             chk(LS);
-                            doc.setFont("helvetica", "italic"); doc.setFontSize(10); doc.setTextColor(...LABEL);
+                            doc.setFont(FONTE_PDF, "italic"); doc.setFontSize(10); doc.setTextColor(...LABEL);
                             const ls = doc.splitTextToSize('Objetivo: ' + ativ.objetivo.trim(), cW - 5);
                             ls.forEach(l => { chk(LS); doc.text(l, mL + 5, y); y += LS; });
                         }
@@ -1273,7 +1308,7 @@
                                 const url = typeof rec === 'string' ? rec : (rec.url || '');
                                 if (!url) return;
                                 chk(LS);
-                                doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(59, 130, 246);
+                                doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(9.5); doc.setTextColor(59, 130, 246);
                                 const label = 'Link: ' + url;
                                 const ls = doc.splitTextToSize(label, cW - 5);
                                 ls.forEach(l => { chk(LS); doc.text(l, mL + 5, y); y += LS; });
@@ -1297,7 +1332,7 @@
                     sectionTitle("Materiais");
                     plano.materiais.forEach(m => {
                         const ls = doc.splitTextToSize('- ' + m, cW - 4);
-                        doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
+                        doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
                         ls.forEach((l, i) => { chk(LS); doc.text(l, mL + (i > 0 ? 6 : 4), y); y += LS; });
                     });
                     y += 3;
@@ -1308,7 +1343,7 @@
                 // ════════════════════════════════
                 if (plano.avaliacaoObservacoes && plano.avaliacaoObservacoes.trim()) {
                     sectionTitle("Avaliacao / Observacoes");
-                    doc.setFont("helvetica", "italic"); doc.setFontSize(11); doc.setTextColor(...DARK);
+                    doc.setFont(FONTE_PDF, "italic"); doc.setFontSize(11); doc.setTextColor(...DARK);
                     const ls = doc.splitTextToSize(plano.avaliacaoObservacoes.trim(), cW);
                     ls.forEach(l => { chk(LS); doc.text(l, mL, y); y += LS; });
                     y += 3;
@@ -1322,7 +1357,7 @@
                     doc.setPage(p);
                     doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
                     doc.line(mL, H - 14, W - mR, H - 14);
-                    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...LABEL);
+                    doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(8.5); doc.setTextColor(...LABEL);
                     doc.text("MusiLab - Plano de Aula", mL, H - 9);
                     doc.text(p + ' / ' + totalPages, W - mR, H - 9, { align: 'right' });
                 }
@@ -1331,9 +1366,10 @@
             };
             
             // --- PDF SEQUÊNCIA DIDÁTICA ---
-            const exportarSequenciaPDF = (sequencia) => {
+            const exportarSequenciaPDF = async (sequencia) => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
+                const FONTE_PDF = await carregarFontePDF(doc);
                 
                 // Buscar informações da sequência
                 const ano = anosLetivos.find(a => a.id == sequencia.anoLetivoId);
@@ -1358,12 +1394,12 @@
                 doc.setFillColor(236, 72, 153); // Rosa
                 doc.rect(0, 0, 210, 50, 'F');
                 doc.setTextColor(255, 255, 255);
-                doc.setFont("helvetica", "bold");
+                doc.setFont(FONTE_PDF, "bold");
                 doc.setFontSize(20);
                 doc.text("SEQUENCIA DIDATICA", 15, 20);
                 doc.setFontSize(16);
                 doc.text(sequencia.titulo || "Sem título", 15, 30);
-                doc.setFont("helvetica", "normal");
+                doc.setFont(FONTE_PDF, "normal");
                 doc.setFontSize(10);
                 doc.text(`${escola?.nome || ''} - ${nomesSegmentos.join(', ')}`, 15, 40);
                 if (sequencia.turmaEspecifica) {
@@ -1376,10 +1412,10 @@
                 doc.setFillColor(250);
                 doc.roundedRect(15, y, 180, 30, 2, 2, 'FD');
                 doc.setTextColor(0);
-                doc.setFont("helvetica", "bold");
+                doc.setFont(FONTE_PDF, "bold");
                 doc.setFontSize(10);
                 doc.text("INFORMACOES", 20, y + 7);
-                doc.setFont("helvetica", "normal");
+                doc.setFont(FONTE_PDF, "normal");
                 doc.text(`Periodo: ${sequencia.duracao || '-'}`, 20, y + 14);
                 doc.text(`Total de aulas: ${sequencia.slots?.length || 0}`, 20, y + 20);
                 if (sequencia.unidadePredominante) {
@@ -1392,9 +1428,9 @@
                     doc.setFillColor(240, 253, 244);
                     doc.setDrawColor(187, 247, 208);
                     doc.roundedRect(15, y, 180, 12, 2, 2, 'FD');
-                    doc.setFont("helvetica", "bold");
+                    doc.setFont(FONTE_PDF, "bold");
                     doc.text("DATAS", 20, y + 7);
-                    doc.setFont("helvetica", "normal");
+                    doc.setFont(FONTE_PDF, "normal");
                     let dataTexto = '';
                     if (sequencia.dataInicio) dataTexto += new Date(sequencia.dataInicio).toLocaleDateString('pt-BR');
                     if (sequencia.dataFim) dataTexto += ` ate ${new Date(sequencia.dataFim).toLocaleDateString('pt-BR')}`;
@@ -1407,7 +1443,7 @@
                 doc.rect(15, y, 180, 8, 'F');
                 doc.setDrawColor(147, 197, 253);
                 doc.rect(15, y, 180, 8);
-                doc.setFont("helvetica", "bold");
+                doc.setFont(FONTE_PDF, "bold");
                 doc.setTextColor(29, 78, 216);
                 doc.text("PLANO DE AULAS", 20, y + 5.5);
                 y += 12;
@@ -1419,7 +1455,7 @@
                     doc.setFillColor(239, 246, 255);
                     doc.setDrawColor(191, 219, 254);
                     doc.roundedRect(15, y, 180, 8, 1, 1, 'FD');
-                    doc.setFont("helvetica", "bold");
+                    doc.setFont(FONTE_PDF, "bold");
                     doc.setFontSize(10);
                     doc.setTextColor(0);
                     doc.text(`Aula ${index + 1}`, 20, y + 5.5);
@@ -1429,13 +1465,13 @@
                     if (slot.planoVinculado) {
                         const plano = planos.find(p => p.id == slot.planoVinculado);
                         if (plano) {
-                            doc.setFont("helvetica", "bold");
+                            doc.setFont(FONTE_PDF, "bold");
                             doc.text(plano.titulo, 20, y);
                             y += 6;
                             
                             // Objetivo
                             if (plano.objetivoGeral) {
-                                doc.setFont("helvetica", "italic");
+                                doc.setFont(FONTE_PDF, "italic");
                                 doc.setFontSize(9);
                                 const objLines = doc.splitTextToSize(`Objetivo: ${plano.objetivoGeral}`, 170);
                                 objLines.forEach(line => {
@@ -1448,7 +1484,7 @@
                             
                             // Setlist
                             if (plano.atividadesRoteiro && plano.atividadesRoteiro.length > 0) {
-                                doc.setFont("helvetica", "normal");
+                                doc.setFont(FONTE_PDF, "normal");
                                 doc.setFontSize(9);
                                 doc.text("Atividades:", 20, y);
                                 y += 4;
@@ -1461,11 +1497,11 @@
                             }
                         }
                     } else if (slot.rascunho?.titulo) {
-                        doc.setFont("helvetica", "normal");
+                        doc.setFont(FONTE_PDF, "normal");
                         doc.text(slot.rascunho.titulo, 20, y);
                         y += 6;
                     } else {
-                        doc.setFont("helvetica", "italic");
+                        doc.setFont(FONTE_PDF, "italic");
                         doc.setTextColor(150);
                         doc.text("(Aula nao planejada)", 20, y);
                         doc.setTextColor(0);
