@@ -3714,7 +3714,7 @@
                                             const id = String(tur.id) + '-' + String(esc.id);
                                             if (!todasTurmasHistorico.find(t => t.id === id)) {
                                                 const label = [ano.ano, esc.nome, seg.nome, tur.nome].filter(Boolean).join(' › ');
-                                                todasTurmasHistorico.push({ id, label, turmaId: tur.id, escolaId: esc.id, escolaNome: esc.nome, segmentoId: seg.id, anoLetivoId: ano.id });
+                                                todasTurmasHistorico.push({ id, label, turmaId: tur.id, escolaId: esc.id, escolaNome: esc.nome, segmentoId: seg.id, segmentoNome: seg.nome, anoLetivoId: ano.id });
                                             }
                                         });
                                     });
@@ -3733,20 +3733,26 @@
 
                             // ── HELPER: verifica se um plano pertence à turma filtrada ──
                             // Estratégia 1 (mais confiável): tem registro pós-aula com turmaId+escolaId
-                            // Estratégia 2 (fallback): campo p.escola bate com o nome da escola da turma selecionada
+                            // Estratégia 2 (fallback): campo p.escola bate com escola da turma E
+                            //   p.faixaEtaria contém o segmento da turma selecionada
                             const chaveDoRegistro = (r) => String(r.turma) + '-' + String(r.escola);
+
+                            const normalizar = (s) => (s || '').trim().toLowerCase();
 
                             const planoBelongsTurma = (p) => {
                                 if (!hmTurmaFiltro || !infoTurmaFiltrada) return true;
                                 // Estratégia 1: via registros pós-aula
                                 if ((p.registrosPosAula || []).some(r => chaveDoRegistro(r) === hmTurmaFiltro)) return true;
-                                // Estratégia 2: via campo escola do plano vs nome da escola da turma selecionada
-                                if (p.escola && infoTurmaFiltrada.escolaNome) {
-                                    const pEsc = p.escola.trim().toLowerCase();
-                                    const tEsc = infoTurmaFiltrada.escolaNome.trim().toLowerCase();
-                                    if (pEsc === tEsc || pEsc.includes(tEsc) || tEsc.includes(pEsc)) return true;
-                                }
-                                return false;
+                                // Estratégia 2: escola + segmento vs faixaEtaria do plano
+                                const pEsc = normalizar(p.escola);
+                                const tEsc = normalizar(infoTurmaFiltrada.escolaNome);
+                                const escolaOk = pEsc && tEsc && (pEsc === tEsc || pEsc.includes(tEsc) || tEsc.includes(pEsc));
+                                if (!escolaOk) return false;
+                                // Se a escola bate, checar se o segmento da turma está na faixaEtaria do plano
+                                const tSeg = normalizar(infoTurmaFiltrada.segmentoNome);
+                                const faixas = (p.faixaEtaria || []).map(f => normalizar(f));
+                                const segmentoOk = !tSeg || faixas.length === 0 || faixas.some(f => f === tSeg || f.includes(tSeg) || tSeg.includes(f));
+                                return segmentoOk;
                             };
 
                             // ── COMPUTAR MÉTRICAS ──
