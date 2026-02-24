@@ -391,12 +391,18 @@
         function BancoPlanos({ session }) {
             const userId = session?.user?.id;
             const userName = session?.user?.user_metadata?.full_name || session?.user?.email || 'Professor';
-            const [viewMode, setViewMode] = useState('lista'); 
+            // ============================================================
+            // MÓDULO: EDIÇÃO DE MÚSICA
+            // ============================================================
+            const [viewMode, setViewMode] = useState('lista');
             const [musicaEditando, setMusicaEditando] = useState(null);
             const [buscaEstilo, setBuscaEstilo] = useState('');
             const [accordionAberto, setAccordionAberto] = useState('forma'); // forma | tom | expressao | recursos | vinculos
             const [editandoElemento, setEditandoElemento] = useState(null);
             const lerLS = (chave) => { try { return JSON.parse(localStorage.getItem(chave) || '[]'); } catch { return []; } };
+            // ============================================================
+            // MÓDULO: OPÇÕES MUSICAIS CUSTOMIZADAS
+            // ============================================================
             const [compassosCustomizados, setCompassosCustomizados] = useState(() => lerLS('compassosCustomizados'));
             const [tonalidadesCustomizadas, setTonalidadesCustomizadas] = useState(() => lerLS('tonalidadesCustomizadas'));
             const [andamentosCustomizados, setAndamentosCustomizados] = useState(() => lerLS('andamentosCustomizados'));
@@ -405,11 +411,17 @@
             const [dinamicasCustomizadas, setDinamicasCustomizadas] = useState(() => lerLS('dinamicasCustomizadas'));
             const [energiasCustomizadas, setEnergiasCustomizadas] = useState(() => lerLS('energiasCustomizadas'));
             const [instrumentacaoCustomizada, setInstrumentacaoCustomizada] = useState(() => lerLS('instrumentacaoCustomizada'));
+            // ============================================================
+            // MÓDULO: REPERTÓRIO
+            // ============================================================
             const [repertorio, setRepertorio] = useState(() => {
                 const saved = localStorage.getItem('repertorio');
                 return saved ? JSON.parse(saved) : [];
             });
             const [buscaRepertorio, setBuscaRepertorio] = useState('');
+            // ============================================================
+            // MÓDULO: FILTROS DO REPERTÓRIO
+            // ============================================================
             const [filtroOrigem, setFiltroOrigem] = useState('Todas');
             const [filtroEstilo, setFiltroEstilo] = useState('Todos');
             const [filtroTonalidade, setFiltroTonalidade] = useState('Todas');
@@ -432,12 +444,18 @@
             const ENERGIAS_OPCOES = ['Calma', 'Relaxante', 'Animada', 'Dançante', 'Alegre', 'Triste', 'Meditativa', 'Enérgica', 'Misteriosa', 'Brincalhona', 'Épica', 'Romântica'];
             const INSTRUMENTACAO_OPCOES = ['🥁 Percussão','🎹 Piano/Teclado','🎸 Violão/Guitarra','🎻 Violino','🎺 Trompete','🎷 Saxofone','🪗 Acordeão','🪘 Zabumba','🎙️ Voz Solo','🎤 Coro/Coral','🪈 Flauta','🎵 Orff (xilofone/metalofone)','🎚️ A Cappella','🎶 Orquestra','🤸 Percussão Corporal','🔇 Sem acompanhamento'];
             
+            // ============================================================
+            // MÓDULO: PLANOS DE AULA
+            // ============================================================
             const [planos, setPlanos] = useState(() => {
                 const saved = localStorage.getItem('planosAula');
                 const parsed = saved ? JSON.parse(saved) : planosIniciais;
                 return parsed.map(normalizePlano);
             });
 
+            // ============================================================
+            // MÓDULO: ATIVIDADES
+            // ============================================================
             // Estados para Atividades
             const [atividades, setAtividades] = useState(() => {
                 const saved = localStorage.getItem('atividades');
@@ -453,6 +471,9 @@
             const [modalAdicionarAoPlano, setModalAdicionarAoPlano] = useState(null); // Armazena a atividade a ser adicionada
             const [modoVisAtividades, setModoVisAtividades] = useState('grade'); // grade | lista | segmento
 
+            // ============================================================
+            // MÓDULO: EVENTOS ESCOLARES E FERIADOS
+            // ============================================================
             // Estados para Eventos Escolares e Feriados
             const [eventosEscolares, setEventosEscolares] = useState(() => {
                 const saved = localStorage.getItem('eventosEscolares');
@@ -465,6 +486,9 @@
                 return saved === 'true';
             });
 
+            // ============================================================
+            // MÓDULO: SEQUÊNCIAS DIDÁTICAS
+            // ============================================================
             // Estados para Sequências Didáticas
             const [sequencias, setSequencias] = useState(() => {
                 const saved = localStorage.getItem('sequenciasDidaticas');
@@ -479,6 +503,9 @@
             const [modalVincularPlano, setModalVincularPlano] = useState(null); // {sequenciaId, slotIndex}
             const [buscaPlanoVinculo, setBuscaPlanoVinculo] = useState('');
 
+            // ============================================================
+            // MÓDULO: ESTRATÉGIAS PEDAGÓGICAS
+            // ============================================================
             // ── ESTRATÉGIAS PEDAGÓGICAS ──
             const categoriasEstrategiaInicial = ['Escuta','Vocal','Corporal','Rítmica','Instrumental','Improvisação','Criação','Jogo Musical','Análise Musical'];
             const funcoesEstrategiaInicial = ['Foco inicial','Aquecimento corporal','Aquecimento vocal','Desenvolvimento','Consolidação','Transição','Encerramento'];
@@ -510,6 +537,9 @@
             const [novaFuncaoEstr, setNovaFuncaoEstr] = useState('');
             const [novoObjetivoEstr, setNovoObjetivoEstr] = useState('');
 
+            // ============================================================
+            // MÓDULO: PLANEJAMENTO ANUAL
+            // ============================================================
             // ── MEU ANO LETIVO (Planejamento Anual) ──
             const [planejamentoAnual, setPlanejamentoAnual] = useState(() => {
                 const saved = localStorage.getItem('planejamentoAnual');
@@ -525,6 +555,9 @@
             const [adicionandoPeriodoAno, setAdicionandoPeriodoAno] = useState(false);
             const [formNovoPeriodo, setFormNovoPeriodo] = useState({ nome: '', dataInicio: '', dataFim: '', tema: '', foco: '' });
 
+            // ============================================================
+            // MÓDULO: CURRÍCULO
+            // ============================================================
             const [conceitos, setConceitos] = useState(() => {
                 const saved = localStorage.getItem('conceitosPersonalizados');
                 return saved ? JSON.parse(saved) : conceitosIniciais;
@@ -535,6 +568,9 @@
                 return saved ? JSON.parse(saved) : unidadesIniciais;
             });
             
+            // ============================================================
+            // MÓDULO: TAGS GLOBAIS
+            // ============================================================
             // Estado global de Tags (similar aos conceitos)
             const [tagsGlobais, setTagsGlobais] = useState(() => {
                 const saved = localStorage.getItem('tagsGlobais');
@@ -562,6 +598,9 @@
             useEffect(() => { localStorage.setItem('planejamentoAnual', JSON.stringify(planejamentoAnual)); }, [planejamentoAnual]);
             useEffect(() => { if(anoPlanoAtivoId) localStorage.setItem('anoPlanoAtivoId', anoPlanoAtivoId); }, [anoPlanoAtivoId]);
 
+            // ============================================================
+            // MÓDULO: ESTRUTURA HIERÁRQUICA DE TURMAS
+            // ============================================================
             // --- ESTADO GLOBAL DE TURMAS ---
             // estrutura: [ { id, nome, series: [ { id, nome, turmas: [ { id, nome } ] } ] } ]
             // ── ESTRUTURA HIERÁRQUICA: ANO LETIVO → ESCOLA → SEGMENTO → TURMA ──
@@ -605,15 +644,24 @@
                 return Array.from(d).sort();
             }, [planos]);
             
+            // ============================================================
+            // MÓDULO: CONFIGURAÇÕES GLOBAIS
+            // ============================================================
             const [statusSalvamento, setStatusSalvamento] = useState('');
             const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
 
+            // ============================================================
+            // MÓDULO: HISTÓRICO MUSICAL DA TURMA
+            // ============================================================
             // ── HISTÓRICO MUSICAL DA TURMA ──
             const [hmFiltroTurma, setHmFiltroTurma] = useState('');
             const [hmFiltroInicio, setHmFiltroInicio] = useState('');
             const [hmFiltroFim, setHmFiltroFim] = useState('');
             const [hmFiltroBusca, setHmFiltroBusca] = useState('');
             const [hmModalMusica, setHmModalMusica] = useState(null);
+            // ============================================================
+            // MÓDULO: DRAG AND DROP
+            // ============================================================
             const dragItem = useRef(null);
             const dragOverItem = useRef(null);
             const [dragActiveIndex, setDragActiveIndex] = useState(null);
@@ -635,8 +683,11 @@
                 if (darkMode) { document.documentElement.classList.add('dark'); }
                 else { document.documentElement.classList.remove('dark'); }
             }, [darkMode]);
+            // ============================================================
+            // MÓDULO: BUSCA E FILTROS
+            // ============================================================
             const [busca, setBusca] = useState("");
-            
+
             // Filtros
             const [filtroConceito, setFiltroConceito] = useState("Todos");
             const [filtroUnidade, setFiltroUnidade] = useState("Todos");
@@ -712,10 +763,16 @@
                 document.addEventListener('keydown', handler);
                 return () => document.removeEventListener('keydown', handler);
             }, []); // deps vazios — lê de _kbRef.current, sem stale closure
+            // ============================================================
+            // MÓDULO: PERÍODO / INTERVALO DE DATAS
+            // ============================================================
             const [periodoDias, setPeriodoDias] = useState(30); // 30, 60, 90, 180, 365, 'custom'
             const [dataInicioCustom, setDataInicioCustom] = useState('');
             const [dataFimCustom, setDataFimCustom] = useState('');
             
+            // ============================================================
+            // MÓDULO: EDIÇÃO DE PLANO
+            // ============================================================
             // Edição
             const [planoSelecionado, setPlanoSelecionado] = useState(null);
             const [modoEdicao, setModoEdicao] = useState(false);
@@ -726,6 +783,9 @@
                 return saved ? JSON.parse(saved) : [];
             });
             
+            // ============================================================
+            // MÓDULO: INPUTS TEMPORÁRIOS
+            // ============================================================
             // Inputs temporários
             const [novoConceito, setNovoConceito] = useState("");
             const [adicionandoConceito, setAdicionandoConceito] = useState(false);
@@ -736,6 +796,9 @@
             const [novaDataAula, setNovaDataAula] = useState("");
             const [dataEdicao, setDataEdicao] = useState("");
 
+            // ============================================================
+            // MÓDULO: CALENDÁRIO E AGENDA
+            // ============================================================
             const [dataCalendario, setDataCalendario] = useState(new Date());
             const [semanaResumo, setSemanaResumo] = useState(() => {
                 // segunda-feira da semana atual
@@ -752,6 +815,9 @@
                 return { [new Date().toISOString().split('T')[0]]: true };
             });
             
+            // ============================================================
+            // MÓDULO: REGISTRO RÁPIDO
+            // ============================================================
             // Estados para Registro Rápido
             const [modalRegistroRapido, setModalRegistroRapido] = useState(false);
             const [rrData, setRrData] = useState(() => new Date().toISOString().split('T')[0]);
@@ -760,6 +826,9 @@
             const [rrPlanosSegmento, setRrPlanosSegmento] = useState({}); // {segmentoId: planoId}
             const [rrTextos, setRrTextos] = useState({}); // {turmaId: texto}
             
+            // ============================================================
+            // MÓDULO: GRADE SEMANAL
+            // ============================================================
             // Estados para Grade Semanal
             const [gradesSemanas, setGradesSemanas] = useState(() => {
                 const saved = localStorage.getItem('gradesSemanas');
@@ -770,6 +839,9 @@
             
             const timeoutSalvamento = useRef(null);
 
+            // ============================================================
+            // MÓDULO: TEMPLATES DE ROTEIRO
+            // ============================================================
             // Templates de Roteiro
             const [templatesRoteiro, setTemplatesRoteiro] = React.useState(() => {
                 const saved = localStorage.getItem('templatesRoteiro');
@@ -781,17 +853,26 @@
             const [modalTemplates, setModalTemplates] = React.useState(false);
             const [nomeNovoTemplate, setNomeNovoTemplate] = React.useState('');
 
+            // ============================================================
+            // MÓDULO: REGISTRO PÓS-AULA
+            // ============================================================
             // Estados para Registro Pós-Aula (com ano letivo - 4 níveis)
             const [modalRegistro, setModalRegistro] = useState(false);
             const [planoParaRegistro, setPlanoParaRegistro] = useState(null);
             const [novoRegistro, setNovoRegistro] = useState({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '' });
             const [verRegistros, setVerRegistros] = useState(false);
             const [registroEditando, setRegistroEditando] = useState(null);
+            // ============================================================
+            // MÓDULO: SELEÇÃO DE TURMA
+            // ============================================================
             // Seleção de turma (4 níveis)
             const [regAnoSel, setRegAnoSel] = useState('');
             const [regEscolaSel, setRegEscolaSel] = useState('');
             const [regSegmentoSel, setRegSegmentoSel] = useState('');
             const [regTurmaSel, setRegTurmaSel] = useState('');
+            // ============================================================
+            // MÓDULO: FILTROS DE REGISTROS
+            // ============================================================
             // Filtro no histórico (4 níveis)
             const [filtroRegAno, setFiltroRegAno] = useState('');
             const [filtroRegEscola, setFiltroRegEscola] = useState('');
@@ -799,6 +880,9 @@
             const [filtroRegTurma, setFiltroRegTurma] = useState('');
             const [buscaRegistros, setBuscaRegistros] = useState(''); // #3: busca textual nos registros
             const [ytPreviewId, setYtPreviewId] = useState(null); // #9: id do youtube em preview
+            // ============================================================
+            // MÓDULO: GESTÃO DE TURMAS
+            // ============================================================
             // Modal gestão
             const [modalTurmas, setModalTurmas] = useState(false);
             const [anoLetivoSelecionadoModal, setAnoLetivoSelecionadoModal] = useState(() => {
@@ -814,15 +898,24 @@
             const [gtTurmaNome, setGtTurmaNome] = useState('');
             const [mostrarArquivados, setMostrarArquivados] = useState(false);
             
+            // ============================================================
+            // MÓDULO: NOVA ESCOLA
+            // ============================================================
             // Modal rápido: cadastrar nova escola
             const [modalNovaEscola, setModalNovaEscola] = useState(false); // 'plano' | 'filtro' | false
             const [novaEscolaNome, setNovaEscolaNome] = useState('');
             const [novaEscolaAnoId, setNovaEscolaAnoId] = useState('');
 
+            // ============================================================
+            // MÓDULO: FAIXAS ETÁRIAS
+            // ============================================================
             const [faixas, setFaixas] = useState(() => {
                 const saved = localStorage.getItem('faixasEtarias');
                 return saved ? JSON.parse(saved) : ["Todos", "1\u00b0 ano", "2\u00b0 ano", "3\u00b0 ano", "4\u00b0 ano", "5\u00b0 ano"];
             });
+            // ============================================================
+            // MÓDULO: CONFIGURAÇÕES E MODAIS
+            // ============================================================
             const [modalNovaFaixa, setModalNovaFaixa] = useState(false);
             const [novaFaixaNome, setNovaFaixaNome] = useState('');
             const [modalConfiguracoes, setModalConfiguracoes] = useState(false);
@@ -859,6 +952,9 @@
             // ── CARREGAR DADOS DA NUVEM ──
             // IMPORTANTE: os dados do localStorage são usados apenas como fallback inicial.
             // Assim que o Supabase responde, ele sempre prevalece (para refletir edições de outros dispositivos).
+            // ============================================================
+            // MÓDULO: CARREGAMENTO DE DADOS
+            // ============================================================
             const [dadosCarregados, setDadosCarregados] = useState(false);
             useEffect(() => {
                 if (!userId) { setDadosCarregados(true); return; }
