@@ -631,7 +631,7 @@
                                 }))
                             }))
                         }];
-                    } catch(e) { console.error('Erro migração:', e); }
+                    } catch(e) {}
                 }
                 return [];
             });
@@ -9956,7 +9956,7 @@
                             <div className="text-6xl mb-4">⚠️</div>
                             <h2 className="text-xl font-bold text-gray-800 mb-2">Algo deu errado</h2>
                             <p className="text-gray-500 text-sm mb-6">Seus dados estão salvos. Recarregue a página para continuar.</p>
-                            <p className="text-xs text-red-400 bg-red-50 rounded-lg p-3 mb-6 text-left font-mono break-all">{this.state.erro.message}</p>
+                            <p className="text-xs text-red-400 bg-red-50 rounded-lg p-3 mb-6 text-left font-mono break-all">{this.state.erro?.message || String(this.state.erro) || 'Erro desconhecido'}</p>
                             <button onClick={() => window.location.reload()}
                                 className="w-full border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 font-bold py-3 px-6 rounded-2xl transition">
                                 🔄 Recarregar MusiLab
