@@ -194,6 +194,34 @@
     </script>
 
     <script type="text/babel">
+        /*
+         * ════════════════════════════════════════════════════════════
+         * MUSILAB — MAPA DO ARQUIVO
+         * Última reorganização: 25/02/2025
+         *
+         * COMPONENTES INTERNOS (declarados dentro de BancoPlanos,
+         * antes do return principal, com acesso via closure):
+         *
+         *   ModuloAnoLetivo        (~linha 3665)
+         *   ModuloHistoricoMusical (~linha 3989)
+         *   ModuloEstrategias      (~linha 4456)
+         *   ModuloAtividades       (~linha 4816)
+         *   ModuloSequencias       (~linha 5224)
+         *   ModuloRepertorio       (~linha 5539)
+         *
+         * COMPONENTE PRINCIPAL:
+         *   BancoPlanos            (~linha 391)
+         *     Estados : 169 useState agrupados por módulo
+         *     Funções : 26 grupos organizados por módulo
+         *       (utilitários, planos, registros, calendário,
+         *        eventos, sequências, atividades, ano letivo,
+         *        estratégias, repertório, grade semanal, etc.)
+         *
+         * TECNOLOGIAS:
+         *   React 18 (Babel inline) · Tailwind CSS
+         *   Supabase (auth + sync) · jsPDF · DOMPurify
+         * ════════════════════════════════════════════════════════════
+         */
         const { useState, useEffect, useRef, useMemo } = React;
 
         // ── TELA DE LOGIN ──
