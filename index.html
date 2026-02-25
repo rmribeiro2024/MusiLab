@@ -399,6 +399,9 @@
             const [buscaEstilo, setBuscaEstilo] = useState('');
             const [accordionAberto, setAccordionAberto] = useState('forma'); // forma | tom | expressao | recursos | vinculos
             const [editandoElemento, setEditandoElemento] = useState(null);
+            // ============================================================
+            // FUNÇÕES: UTILITÁRIOS GERAIS
+            // ============================================================
             const lerLS = (chave) => { try { return JSON.parse(localStorage.getItem(chave) || '[]'); } catch { return []; } };
             // ============================================================
             // MÓDULO: OPÇÕES MUSICAIS CUSTOMIZADAS
@@ -666,6 +669,9 @@
             const dragOverItem = useRef(null);
             const [dragActiveIndex, setDragActiveIndex] = useState(null);
             const [dragOverIndex, setDragOverIndex] = useState(null);
+            // ============================================================
+            // FUNÇÕES: DRAG & DROP (CARDS)
+            // ============================================================
             const handleDragStart = (index) => { dragItem.current = index; setDragActiveIndex(index); };
             const handleDragEnter = (index) => { dragOverItem.current = index; setDragOverIndex(index); };
             const handleDragEnd = () => {
@@ -926,6 +932,9 @@
             const niveis = ["Todos", "Iniciante", "Intermedi\u00e1rio", "Avan\u00e7ado"];
 
             // Função centralizada para disparar o indicador de salvamento
+            // ============================================================
+            // FUNÇÕES: SINCRONIZAÇÃO / ESTADO
+            // ============================================================
             const triggerSalvo = () => {
                 setStatusSalvamento('salvando');
                 if (timeoutSalvamento.current) clearTimeout(timeoutSalvamento.current);
@@ -1046,6 +1055,9 @@
                 'estrategias', 'categoriasEstrategia', 'funcoesEstrategia', 'objetivosEstrategia',
                 'planejamentoAnual', 'anoPlanoAtivoId'
             ];
+            // ============================================================
+            // FUNÇÕES: AUTENTICAÇÃO / SESSÃO
+            // ============================================================
             const fazerLogout = () => {
                 setModalConfirm({
                     titulo: 'Sair do MusiLab?',
@@ -1093,6 +1105,9 @@
             // CORREÇÃO CRÍTICA: repertorio não tinha useEffect — músicas se perdiam ao fechar
             useEffect(() => { localStorage.setItem('repertorio', JSON.stringify(repertorio)); triggerSalvo(); }, [repertorio]);
 
+            // ============================================================
+            // FUNÇÕES: BUSCA E FILTROS
+            // ============================================================
             const buscaAvancada = (plano, termoBusca) => {
                 if (!termoBusca) return true;
                 const termo = termoBusca.toLowerCase();
@@ -1217,6 +1232,9 @@
             }
 
             // --- PDF PREMIUM ---
+            // ============================================================
+            // FUNÇÕES: EXPORTAÇÃO PDF
+            // ============================================================
             const exportarPlanoPDF = async (plano) => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
@@ -1614,6 +1632,9 @@
                 doc.save(`Sequencia - ${sequencia.titulo}.pdf`);
             };
 
+            // ============================================================
+            // FUNÇÕES: BACKUP / RESTAURAÇÃO DE DADOS
+            // ============================================================
             const baixarBackup = () => {
                 const backup = {
                     versao: '2.0', timestamp: new Date().toISOString(),
@@ -1675,12 +1696,18 @@
                 }; reader.readAsText(file); event.target.value = '';
             };
 
+            // ============================================================
+            // FUNÇÕES: REPERTÓRIO — UTILITÁRIOS
+            // ============================================================
             const ytIdFromUrl = (url) => {
                 if (!url) return null;
                 const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/);
                 return m ? m[1] : null;
             };
 
+            // ============================================================
+            // FUNÇÕES: PLANOS DE AULA
+            // ============================================================
             const novoPlano = () => {
                 setPlanoEditando({
                     id: Date.now(),
@@ -2052,6 +2079,9 @@
             };
 
             // --- FUNÇÕES REGISTRO PÓS-AULA (com turmas) ---
+            // ============================================================
+            // FUNÇÕES: REGISTROS PÓS-AULA
+            // ============================================================
             const abrirModalRegistro = (plano, e) => {
                 if(e) e.stopPropagation();
                 setPlanoParaRegistro(plano);
@@ -2143,6 +2173,9 @@
             // --- FUNÇÕES GESTÃO DE ANO LETIVO E TURMAS (4 NÍVEIS) ---
             // --- FUNÇÕES FERIADOS E EVENTOS ---
             // Algoritmo de Meeus/Jones/Butcher — calcula a Páscoa para qualquer ano
+            // ============================================================
+            // FUNÇÕES: CALENDÁRIO / FERIADOS
+            // ============================================================
             const calcularPascoa = (ano) => {
                 const a = ano % 19;
                 const b = Math.floor(ano / 100);
@@ -2194,6 +2227,9 @@
                 return eventosEscolares.find(e => e.data === dataStr);
             };
 
+            // ============================================================
+            // FUNÇÕES: EVENTOS
+            // ============================================================
             const novoEvento = () => {
                 setEventoEditando({
                     id: Date.now(),
@@ -2231,6 +2267,9 @@
             };
 
             // --- FUNÇÕES SEQUÊNCIAS DIDÁTICAS ---
+            // ============================================================
+            // FUNÇÕES: SEQUÊNCIAS
+            // ============================================================
             const novaSequencia = () => {
                 // Buscar ano letivo ativo
                 const anoAtivo = anosLetivos.find(a => a.status === 'ativo');
@@ -2372,6 +2411,9 @@
             };
 
             // --- FUNÇÕES BANCO DE ATIVIDADES ---
+            // ============================================================
+            // FUNÇÕES: ATIVIDADES
+            // ============================================================
             const novaAtividade = () => {
                 setAtividadeEditando({
                     id: Date.now(),
@@ -2396,6 +2438,9 @@
                 ));
             };
 
+            // ============================================================
+            // FUNÇÕES: ANO LETIVO
+            // ============================================================
             const criarAnoLetivoPainel = () => {
                 if (!formNovoAno.nome.trim()) {
                     setModalConfirm({ conteudo: '⚠️ Defina um nome para o ano letivo!', somenteOk: true, labelConfirm: 'OK' });
@@ -2477,6 +2522,9 @@
             };
 
             // ── ESTRATÉGIAS: CRUD ──
+            // ============================================================
+            // FUNÇÕES: ESTRATÉGIAS PEDAGÓGICAS
+            // ============================================================
             const novaEstrategia = () => {
                 setEstrategiaEditando({
                     id: gerarIdSeguro(),
@@ -2520,6 +2568,9 @@
                 setEstrategias(estrategias.map(e => e.id === id ? { ...e, ativo: true, _ultimaEdicao: new Date().toISOString() } : e));
             };
 
+            // ============================================================
+            // FUNÇÕES: ATIVIDADES — SALVAR / EXCLUIR
+            // ============================================================
             const salvarAtividade = () => {
                 if (!atividadeEditando.nome.trim()) {
                     setModalConfirm({ conteudo: '⚠️ Preencha o nome da atividade!', somenteOk: true, labelConfirm: 'OK' });
@@ -2541,6 +2592,9 @@
                 } });
             };
 
+            // ============================================================
+            // FUNÇÕES: INTEGRAÇÃO: ATIVIDADES ↔ PLANOS
+            // ============================================================
             const adicionarAtividadeAoPlano = (atividadeId, planoId) => {
                 const atividade = atividades.find(a => a.id === atividadeId);
                 const plano = planos.find(p => p.id === planoId);
@@ -2612,6 +2666,9 @@
             const todasAsTags = [...new Set(atividades.flatMap(a => a.tags || []))];
 
             // --- FUNÇÕES GESTÃO DE TURMAS ---
+            // ============================================================
+            // FUNÇÕES: GRADE DE TURMAS / CONFIGURAÇÕES
+            // ============================================================
             const gtAddAno = () => {
                 const ano = gtAnoNovo.trim();
                 if (!ano) return;
@@ -2697,6 +2754,9 @@
             };
 
             // --- CADASTRO RÁPIDO DE FAIXA ETÁRIA ---
+            // ============================================================
+            // FUNÇÕES: CONFIGURAÇÕES: FAIXAS ETÁRIAS E ESCOLAS
+            // ============================================================
             const salvarNovaFaixa = () => {
                 const nome = novaFaixaNome.trim();
                 if (!nome) { setModalConfirm({ conteudo: 'Digite o nome da faixa etária!', somenteOk: true, labelConfirm: 'OK' }); return; }
@@ -2708,6 +2768,9 @@
 
             // --- EDITOR RICH TEXT ---
             // Componente de editor rico usando contentEditable
+            // ============================================================
+            // FUNÇÕES: COMPONENTE: EDITOR DE TEXTO RICO
+            // ============================================================
             function RichTextEditor({ value, onChange, placeholder, rows = 3, className = '' }) {
                 const editorRef = useRef(null);
                 // Guarda quais botões estão ativos — estado LOCAL, não dispara re-render do pai
@@ -2782,6 +2845,9 @@
             }
 
             // --- CADASTRO RÁPIDO DE ESCOLA ---
+            // ============================================================
+            // FUNÇÕES: CONFIGURAÇÕES: ESCOLAS
+            // ============================================================
             const salvarNovaEscola = () => {
                 const nome = novaEscolaNome.trim();
                 if (!nome) { setModalConfirm({ conteudo: 'Digite o nome da escola!', somenteOk: true, labelConfirm: 'OK' }); return; }
@@ -2815,6 +2881,9 @@
             };
 
             // --- FUNÇÕES GESTÃO DE GRADE SEMANAL ---
+            // ============================================================
+            // FUNÇÕES: GRADE SEMANAL
+            // ============================================================
             const novaGradeSemanal = () => {
                 setGradeEditando({
                     id: Date.now(),
@@ -2894,6 +2963,9 @@
             };
 
             // Função helper: obter turmas do dia para uso em outros módulos
+            // ============================================================
+            // FUNÇÕES: HISTÓRICO MUSICAL / REGISTRO RÁPIDO
+            // ============================================================
             const obterTurmasDoDia = (data) => {
                 const diaDaSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'][new Date(data + 'T12:00:00').getDay()];
                 const turmasDoDia = [];
@@ -3053,6 +3125,9 @@
                 }
             };
 
+            // ============================================================
+            // FUNÇÕES: RENDERIZAÇÃO: CALENDÁRIO
+            // ============================================================
             const renderCalendario = () => {
                 const ano = dataCalendario.getFullYear(); const mes = dataCalendario.getMonth();
                 const diasNoMes = new Date(ano, mes+1, 0).getDate(); const inicio = new Date(ano, mes, 1).getDay();
@@ -3583,6 +3658,9 @@
                 setModalEventos, setStatusDropdownId,
             };
 
+            // ============================================================
+            // FUNÇÕES: COMPONENTES INTERNOS POR MÓDULO
+            // ============================================================
             // ══ COMPONENTE INTERNO: Módulo Ano Letivo ══
             const ModuloAnoLetivo = () => {
                             const anoAtivo = planejamentoAnual.find(a => a.id === anoPlanoAtivoId) || planejamentoAnual[0] || null;
