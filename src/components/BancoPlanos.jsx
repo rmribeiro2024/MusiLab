@@ -799,6 +799,7 @@ export default function BancoPlanos({ session }) {
 
             // ── SYNC AUTOMÁTICO PARA A NUVEM ──
             const syncTimeout = useRef({});
+            const _prevSyncData = useRef(null);
             const syncDelay = (key, fn) => {
                 setStatusSalvamento('salvando');
                 if(syncTimeout.current[key]) clearTimeout(syncTimeout.current[key]);
@@ -812,15 +813,28 @@ export default function BancoPlanos({ session }) {
                     if (timeoutSalvamento.current) clearTimeout(timeoutSalvamento.current);
                 };
             }, []);
-            useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('planos', ()=>syncToSupabase('planos',planos,userId,onSyncStatus)); }, [planos]);
-            useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('atividades', ()=>syncToSupabase('atividades',atividades,userId,onSyncStatus)); }, [atividades]);
-            useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('repertorio', ()=>syncToSupabase('repertorio',repertorio,userId,onSyncStatus)); }, [repertorio]);
-            useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('sequencias', ()=>syncToSupabase('sequencias',sequencias,userId,onSyncStatus)); }, [sequencias]);
-            useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('anos_letivos', ()=>syncToSupabase('anos_letivos',anosLetivos,userId,onSyncStatus)); }, [anosLetivos]);
-            useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('grades_semanas', ()=>syncToSupabase('grades_semanas',gradesSemanas,userId,onSyncStatus)); }, [gradesSemanas]);
-            useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('eventos_escolares', ()=>syncToSupabase('eventos_escolares',eventosEscolares,userId,onSyncStatus)); }, [eventosEscolares]);
-            useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('estrategias', ()=>syncToSupabase('estrategias',estrategias,userId,onSyncStatus)); }, [estrategias]);
-            useEffect(() => { if(!userId||!dadosCarregados) return; syncDelay('planejamento_anual', ()=>syncToSupabase('planejamento_anual',planejamentoAnual,userId,onSyncStatus)); }, [planejamentoAnual]);
+            useEffect(() => {
+                if (!userId || !dadosCarregados) return;
+                const atual = {
+                    planos,
+                    atividades,
+                    repertorio,
+                    sequencias,
+                    anos_letivos: anosLetivos,
+                    grades_semanas: gradesSemanas,
+                    eventos_escolares: eventosEscolares,
+                    estrategias,
+                    planejamento_anual: planejamentoAnual,
+                };
+                const prev = _prevSyncData.current;
+                _prevSyncData.current = atual;
+                if (!prev) return; // primeira execução após carga — evita regravar tudo
+                Object.entries(atual).forEach(([tabela, dados]) => {
+                    if (dados !== prev[tabela]) {
+                        syncDelay(tabela, () => syncToSupabase(tabela, dados, userId, onSyncStatus));
+                    }
+                });
+            }, [planos, atividades, repertorio, sequencias, anosLetivos, gradesSemanas, eventosEscolares, estrategias, planejamentoAnual]);
             useEffect(() => {
                 if(!userId||!dadosCarregados) return;
                 syncDelay('cfg', ()=>syncConfiguracoes({ conceitos, unidades, faixas, tagsGlobais, templatesRoteiro, compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados, escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas, energiasCustomizadas, instrumentacaoCustomizada }, userId, onSyncStatus));
