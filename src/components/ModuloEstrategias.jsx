@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
 import { useBancoPlanos } from './BancoPlanosContext'
+import RichTextEditor from './RichTextEditor'
 
 export default function ModuloEstrategias() {
     const ctx = useBancoPlanos()

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react'
 import { sanitizar } from '../lib/utils'
 import { useBancoPlanos } from './BancoPlanosContext'
+import RichTextEditor from './RichTextEditor'
 import { exportarPlanoPDF } from '../utils/pdf'
 
 export default function TelaPrincipal() {
