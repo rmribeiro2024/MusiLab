@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { jsPDF } from 'jspdf'
 import { supabase } from './lib/supabase'
+import BancoPlanos from './components/BancoPlanos'
 import {
   sanitizar,
   gerarIdSeguro,
@@ -48,22 +49,6 @@ import {
             );
         }
 
-        // ── APP ROOT ──
-        function AppRoot() {
-            const [session, setSession] = React.useState(undefined);
-            React.useEffect(() => {
-                supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-                const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
-                return () => subscription.unsubscribe();
-            }, []);
-            if (session === undefined) return (
-                <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center">
-                    <div className="text-white text-center"><div className="text-5xl mb-4">🎵</div><p className="text-indigo-200">Carregando MusiLab...</p></div>
-                </div>
-            );
-            if (!session) return <LoginScreen />;
-            return <BancoPlanos session={session} />;
-        }
 
         // --- BASE DE DADOS BNCC ---
         const bancoBNCC = [
@@ -203,7 +188,7 @@ import {
             };
         }
 
-        function BancoPlanos({ session }) {
+        function BancoPlanosImpl({ session }) {
             const userId = session?.user?.id;
             const userName = session?.user?.user_metadata?.full_name || session?.user?.email || 'Professor';
             // ============================================================
@@ -9787,9 +9772,28 @@ import {
         }
 
 export default function App() {
+  const [session, setSession] = React.useState(undefined);
+
+  React.useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (session === undefined) return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center">
+      <div className="text-white text-center">
+        <div className="text-5xl mb-4">🎵</div>
+        <p className="text-indigo-200">Carregando MusiLab...</p>
+      </div>
+    </div>
+  );
+
+  if (!session) return <LoginScreen />;
+
   return (
     <ErrorBoundary>
-      <AppRoot />
+      <BancoPlanos session={session} />
     </ErrorBoundary>
-  )
+  );
 }
