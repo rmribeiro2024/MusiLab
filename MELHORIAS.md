@@ -3,7 +3,7 @@
 > Gerado em: 2026-03-01
 > Branch de trabalho: `claude/add-usestate-comments-evQWg`
 > Estado do projeto: migração modular concluída
-> Última atualização: 2026-03-01 — melhorias #3 e #5 implementadas
+> Última atualização: 2026-03-01 — melhorias #3, #5 e #10 implementadas
 
 ---
 
@@ -43,7 +43,7 @@
 
 ### Menores
 - Projeto em JavaScript puro — sem tipos nem autocomplete para os 172 estados
-- ~~Todos os módulos carregam juntos — sem code splitting por rota~~ → melhoria #10 pendente
+- ~~Todos os módulos carregam juntos — sem code splitting por rota~~ ✅ Resolvido na melhoria #10
 
 ---
 
@@ -175,7 +175,21 @@ const ModuloRepertorio = lazy(() => import('./ModuloRepertorio'))
 const TelaCalendario   = lazy(() => import('./TelaCalendario'))
 ```
 
-**Ganho estimado:** Bundle inicial pode cair de 1.057 kB para ~400 kB.
+#### 10. Code splitting por módulo ✅ IMPLEMENTADO (2026-03-01)
+**Commit:** `27b225d perf: code splitting por módulo com React.lazy + Suspense (melhoria #10)`
+
+**O que foi feito:**
+- 9 imports estáticos convertidos para `React.lazy()` no `BancoPlanos.jsx`
+- `Suspense` com fallback `<CarregandoModulo />` adicionado dentro de cada `ErrorBoundary`
+- Vite criou 10 chunks independentes — cada módulo carrega só quando o usuário navega
+
+**Resultado real (medido):**
+| | Antes | Após #5 | Após #10 |
+|---|---|---|---|
+| Bundle inicial (gzip) | 298 kB | 180 kB | **140 kB** |
+| Aviso chunk >500 kB | ⚠️ | ⚠️ | ✅ **eliminado** |
+| Chunks separados | 0 | 1 | **10** |
+| **Redução total vs. início** | — | −40% | **−53%** |
 
 ---
 
@@ -194,6 +208,6 @@ const TelaCalendario   = lazy(() => import('./TelaCalendario'))
 | 7 | IndexedDB (substituir localStorage) | Médio | Médio | 🔜 Pendente |
 | 8 | Testes automatizados (Vitest) | Alto | Alto | 🔜 Pendente |
 | 9 | TypeScript | Alto | Médio | 🔜 Pendente |
-| 10 | Code splitting por módulo | **Baixo** | Alto | 🔜 Pendente |
+| 10 | Code splitting por módulo | **Baixo** | Alto | ✅ **Feito** |
 
-> **Próximo recomendado:** #10 (code splitting por módulo) — baixo esforço, alto impacto. Bundle inicial ainda pode cair de 697 kB para ~300-400 kB.
+> **Próximo recomendado:** #2 (extrair modais restantes do BancoPlanos) ou #6 (consolidar useEffects de sync).
