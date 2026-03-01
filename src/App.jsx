@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { jsPDF } from 'jspdf'
 import { supabase } from './lib/supabase'
 import BancoPlanos from './components/BancoPlanos'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -1037,7 +1036,7 @@ import {
             // FUNÇÕES: EXPORTAÇÃO PDF
             // ============================================================
             const exportarPlanoPDF = async (plano) => {
-                // jsPDF importado via npm (ver topo do arquivo)
+                const { jsPDF } = await import('jspdf')
                 const doc = new jsPDF();
                 const FONTE_PDF = await carregarFontePDF(doc);
 
@@ -1286,7 +1285,7 @@ import {
             
             // --- PDF SEQUÊNCIA DIDÁTICA ---
             const exportarSequenciaPDF = async (sequencia) => {
-                // jsPDF importado via npm (ver topo do arquivo)
+                const { jsPDF } = await import('jspdf')
                 const doc = new jsPDF();
                 const FONTE_PDF = await carregarFontePDF(doc);
                 

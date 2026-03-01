@@ -1,6 +1,5 @@
-import { jsPDF } from 'jspdf'
-
 // ── FONTE UTF-8 PARA PDF (Roboto via GitHub, cache Cache Storage API) ──
+// jsPDF é carregado sob demanda (lazy) via import() dinâmico — não entra no bundle inicial
 async function carregarFontePDF(doc) {
     const BASE = 'https://raw.githubusercontent.com/googlefonts/roboto/main/fonts/ttf/';
     const VARIANTES = [
@@ -43,7 +42,7 @@ async function carregarFontePDF(doc) {
 
 // ── PLANO DE AULA ──
 export async function exportarPlanoPDF(plano) {
-    // jsPDF importado via npm (ver topo do arquivo)
+    const { jsPDF } = await import('jspdf')
     const doc = new jsPDF();
     const FONTE_PDF = await carregarFontePDF(doc);
 
@@ -292,7 +291,7 @@ export async function exportarPlanoPDF(plano) {
 
 // ── SEQUÊNCIA DIDÁTICA ──
 export async function exportarSequenciaPDF(sequencia, anosLetivos) {
-    // jsPDF importado via npm (ver topo do arquivo)
+    const { jsPDF } = await import('jspdf')
     const doc = new jsPDF();
     const FONTE_PDF = await carregarFontePDF(doc);
     
