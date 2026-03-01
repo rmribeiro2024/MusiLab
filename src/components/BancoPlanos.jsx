@@ -18,6 +18,7 @@ import TelaPrincipal from './TelaPrincipal'
 import { TelaCalendario } from './TelaCalendario'
 import TelaResumoDia from './TelaCalendario'
 import { BancoPlanosContext } from './BancoPlanosContext'
+import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
 import { exportarPlanoPDF, exportarSequenciaPDF } from '../utils/pdf'
 
@@ -3136,30 +3137,30 @@ export default function BancoPlanos({ session }) {
                     )}
 
                     <div className="max-w-7xl mx-auto px-4 py-6">
-                        {viewMode==='resumoDia' && <TelaResumoDia />}
-                        {viewMode==='calendario' && <TelaCalendario />}
+                        {viewMode==='resumoDia' && <ErrorBoundary modulo="Resumo do Dia"><TelaResumoDia /></ErrorBoundary>}
+                        {viewMode==='calendario' && <ErrorBoundary modulo="Calendário"><TelaCalendario /></ErrorBoundary>}
 
                         {/* ══════════════ HISTÓRICO MUSICAL DA TURMA ══════════════ */}
-                        {viewMode === 'historicoMusical' && <ModuloHistoricoMusical />}
+                        {viewMode === 'historicoMusical' && <ErrorBoundary modulo="Histórico Musical"><ModuloHistoricoMusical /></ErrorBoundary>}
 
                         {/* ══════════════ MEU ANO LETIVO ══════════════ */}
-                        {viewMode === 'anoLetivo' && <ModuloAnoLetivo />}
+                        {viewMode === 'anoLetivo' && <ErrorBoundary modulo="Meu Ano Letivo"><ModuloAnoLetivo /></ErrorBoundary>}
 
                         {/* ══════════════ ESTRATÉGIAS PEDAGÓGICAS ══════════════ */}
-                        {viewMode === 'estrategias' && <ModuloEstrategias />}
+                        {viewMode === 'estrategias' && <ErrorBoundary modulo="Estratégias"><ModuloEstrategias /></ErrorBoundary>}
 
                         {/* ══════════════ BANCO DE ATIVIDADES ══════════════ */}
-                        {viewMode === 'atividades' && <ModuloAtividades />}
-                        
+                        {viewMode === 'atividades' && <ErrorBoundary modulo="Atividades"><ModuloAtividades /></ErrorBoundary>}
+
                         {/* ═══════════ VIEW SEQUÊNCIAS DIDÁTICAS ═══════════ */}
-                        {viewMode === 'sequencias' && <ModuloSequencias />}
-                        {viewMode === 'lista' && <TelaPrincipal />}
+                        {viewMode === 'sequencias' && <ErrorBoundary modulo="Sequências"><ModuloSequencias /></ErrorBoundary>}
+                        {viewMode === 'lista' && <ErrorBoundary modulo="Início"><TelaPrincipal /></ErrorBoundary>}
                     </div>
 
                     {/* MODAL VER COMPLETO */}
 
                         {/* REPERTÓRIO INTELIGENTE */}
-                        {viewMode === 'repertorio' && <ModuloRepertorio />}
+                        {viewMode === 'repertorio' && <ErrorBoundary modulo="Repertório"><ModuloRepertorio /></ErrorBoundary>}
 
                     {planoSelecionado && !modoEdicao && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={fecharModal}>

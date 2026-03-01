@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { jsPDF } from 'jspdf'
 import { supabase } from './lib/supabase'
 import BancoPlanos from './components/BancoPlanos'
+import ErrorBoundary from './components/ErrorBoundary'
 import {
   sanitizar,
   gerarIdSeguro,
@@ -9748,29 +9749,6 @@ import {
             );
         }
 
-        class ErrorBoundary extends React.Component {
-            constructor(props) { super(props); this.state = { erro: null }; }
-            static getDerivedStateFromError(e) { return { erro: e }; }
-            componentDidCatch(e, info) { console.error('[MusiLab] Erro capturado pelo ErrorBoundary:', e, info); }
-            render() {
-                if (this.state.erro) return (
-                    <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-10 text-center">
-                            <div className="text-6xl mb-4">⚠️</div>
-                            <h2 className="text-xl font-bold text-gray-800 mb-2">Algo deu errado</h2>
-                            <p className="text-gray-500 text-sm mb-6">Seus dados estão salvos. Recarregue a página para continuar.</p>
-                            <p className="text-xs text-red-400 bg-red-50 rounded-lg p-3 mb-6 text-left font-mono break-all">{this.state.erro?.message || String(this.state.erro) || 'Erro desconhecido'}</p>
-                            <button onClick={() => window.location.reload()}
-                                className="w-full border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 font-bold py-3 px-6 rounded-2xl transition">
-                                🔄 Recarregar MusiLab
-                            </button>
-                        </div>
-                    </div>
-                );
-                return this.props.children;
-            }
-        }
-
 export default function App() {
   const [session, setSession] = React.useState(undefined);
 
@@ -9792,7 +9770,7 @@ export default function App() {
   if (!session) return <LoginScreen />;
 
   return (
-    <ErrorBoundary>
+    <ErrorBoundary modulo="MusiLab">
       <BancoPlanos session={session} />
     </ErrorBoundary>
   );
