@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
 import { useBancoPlanos } from './BancoPlanosContext'
+import { exportarPlanoPDF } from '../utils/pdf'
 
 export default function ModuloLista() {
     const ctx = useBancoPlanos()
@@ -16,7 +17,6 @@ export default function ModuloLista() {
         editarPlano,
         escolas,
         excluirPlano,
-        exportarPlanoPDF,
         faixas,
         filtroConceito,
         filtroEscola,
