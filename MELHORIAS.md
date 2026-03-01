@@ -3,7 +3,7 @@
 > Gerado em: 2026-03-01
 > Branch de trabalho: `claude/add-usestate-comments-evQWg`
 > Estado do projeto: migração modular concluída
-> Última atualização: 2026-03-01 — melhoria #3 implementada
+> Última atualização: 2026-03-01 — melhorias #3 e #5 implementadas
 
 ---
 
@@ -36,14 +36,14 @@
 - **13 useEffects** de sincronização separados, cada um disparando timer de 2s
 
 ### Moderados
-- `jspdf` (~15 MB descompactado) carregado no bundle inicial mesmo sem uso de PDF
+- ~~`jspdf` (~15 MB descompactado) carregado no bundle inicial mesmo sem uso de PDF~~ ✅ Resolvido na melhoria #5
 - LocalStorage com risco de estouro (limite 5–10 MB) em contas com muitos dados
 - ~~Sem `ErrorBoundary` — um bug derruba toda a tela~~ ✅ Resolvido na melhoria #3
 - Sem loading state para exportação de PDF e operações async
 
 ### Menores
 - Projeto em JavaScript puro — sem tipos nem autocomplete para os 172 estados
-- Todos os módulos carregam juntos — sem code splitting por rota
+- ~~Todos os módulos carregam juntos — sem code splitting por rota~~ → melhoria #10 pendente
 
 ---
 
@@ -113,16 +113,21 @@ Candidatos a `React.memo`: `LinhaPlano`, itens de lista, modais.
 
 ---
 
-#### 5. Lazy loading do jsPDF
-**Problema:** `jspdf` (~15 MB) carregado no bundle inicial mesmo sem exportar PDF.
-**Solução:**
+#### 5. Lazy loading do jsPDF ✅ IMPLEMENTADO (2026-03-01)
+**Commit:** `b9559dd perf: lazy load do jsPDF sob demanda (melhoria #5)`
 
-```js
-// Carrega só quando o usuário clicar em "Exportar PDF"
-const { exportarPlanoPDF } = await import('./utils/pdf')
-```
+**O que foi feito:**
+- Removido `import { jsPDF } from 'jspdf'` estático do topo de `App.jsx` e `utils/pdf.js`
+- Adicionado `const { jsPDF } = await import('jspdf')` dentro de cada função async
+  (`exportarPlanoPDF` e `exportarSequenciaPDF`) em ambos os arquivos
+- Vite cria automaticamente chunk separado: `jspdf.es.min.js`
 
-**Ganho estimado:** −150 kB no bundle inicial (gzip).
+**Resultado real (medido):**
+| | Antes | Depois |
+|---|---|---|
+| Bundle inicial (gzip) | 298 kB | 180 kB |
+| jsPDF | embutido | chunk separado 118 kB gzip |
+| **Redução** | — | **−118 kB (−40%)** |
 
 ---
 
@@ -184,11 +189,11 @@ const TelaCalendario   = lazy(() => import('./TelaCalendario'))
 | 2 | Extrair modais restantes do BancoPlanos | Médio | Alto | 🔜 Pendente |
 | 3 | Error Boundary | **Baixo** | Alto | ✅ **Feito** |
 | 4 | useCallback / React.memo | Médio | Médio | 🔜 Pendente |
-| 5 | Lazy load jsPDF | **Baixo** | Médio | 🔜 Pendente |
+| 5 | Lazy load jsPDF | **Baixo** | Médio | ✅ **Feito** |
 | 6 | Consolidar useEffects de sync | Médio | Médio | 🔜 Pendente |
 | 7 | IndexedDB (substituir localStorage) | Médio | Médio | 🔜 Pendente |
 | 8 | Testes automatizados (Vitest) | Alto | Alto | 🔜 Pendente |
 | 9 | TypeScript | Alto | Médio | 🔜 Pendente |
 | 10 | Code splitting por módulo | **Baixo** | Alto | 🔜 Pendente |
 
-> **Próximo recomendado:** #5 (lazy load jsPDF) ou #10 (code splitting) — baixo esforço, alto impacto.
+> **Próximo recomendado:** #10 (code splitting por módulo) — baixo esforço, alto impacto. Bundle inicial ainda pode cair de 697 kB para ~300-400 kB.
