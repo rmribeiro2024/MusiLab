@@ -1,8 +1,9 @@
 # MusiLab — Análise e Sugestões de Melhoria
 
 > Gerado em: 2026-03-01
-> Branch de referência: `claude/add-usestate-comments-evQWg`
+> Branch de trabalho: `claude/add-usestate-comments-evQWg`
 > Estado do projeto: migração modular concluída
+> Última atualização: 2026-03-01 — melhoria #3 implementada
 
 ---
 
@@ -37,7 +38,7 @@
 ### Moderados
 - `jspdf` (~15 MB descompactado) carregado no bundle inicial mesmo sem uso de PDF
 - LocalStorage com risco de estouro (limite 5–10 MB) em contas com muitos dados
-- Sem `ErrorBoundary` — um bug derruba toda a tela
+- ~~Sem `ErrorBoundary` — um bug derruba toda a tela~~ ✅ Resolvido na melhoria #3
 - Sem loading state para exportação de PDF e operações async
 
 ### Menores
@@ -81,17 +82,17 @@ Ainda embutido no arquivo:
 
 ---
 
-#### 3. Error Boundary
-**Problema:** Zero tratamento de erro na UI. Um bug em qualquer módulo derruba toda a tela.
-**Solução:** Componente simples envolvendo cada módulo:
+#### 3. Error Boundary ✅ IMPLEMENTADO (2026-03-01)
+**Commit:** `e88334d feat: implementa ErrorBoundary por módulo (melhoria #3)`
 
-```jsx
-<ErrorBoundary fallback={<div>Erro no calendário. Recarregue.</div>}>
-  <TelaCalendario />
-</ErrorBoundary>
-```
-
-**Esforço:** Baixo. **Impacto:** Alto.
+**O que foi feito:**
+- Criado `src/components/ErrorBoundary.jsx` — componente reutilizável com prop `modulo`
+- Removida classe `ErrorBoundary` inline duplicada do `App.jsx`
+- Todos os 9 módulos agora têm boundary individual no `BancoPlanos.jsx`:
+  Início, Resumo do Dia, Calendário, Histórico Musical, Meu Ano Letivo,
+  Estratégias, Atividades, Sequências, Repertório
+- Fallback inline (não tela cheia) com botões "Tentar novamente" e "Recarregar MusiLab"
+- Crash em um módulo não derruba mais o app inteiro
 
 ---
 
@@ -177,15 +178,17 @@ const TelaCalendario   = lazy(() => import('./TelaCalendario'))
 
 | # | Melhoria | Esforço | Impacto |
 |---|---|---|---|
-| 1 | Dividir contextos de estado | Alto | Alto |
-| 2 | Extrair modais restantes do BancoPlanos | Médio | Alto |
-| 3 | Error Boundary | **Baixo** | Alto |
-| 4 | useCallback / React.memo | Médio | Médio |
-| 5 | Lazy load jsPDF | **Baixo** | Médio |
-| 6 | Consolidar useEffects de sync | Médio | Médio |
-| 7 | IndexedDB (substituir localStorage) | Médio | Médio |
-| 8 | Testes automatizados (Vitest) | Alto | Alto |
-| 9 | TypeScript | Alto | Médio |
-| 10 | Code splitting por módulo | **Baixo** | Alto |
+| # | Melhoria | Esforço | Impacto | Status |
+|---|---|---|---|---|
+| 1 | Dividir contextos de estado | Alto | Alto | 🟡 Adiado (decisão do usuário) |
+| 2 | Extrair modais restantes do BancoPlanos | Médio | Alto | 🔜 Pendente |
+| 3 | Error Boundary | **Baixo** | Alto | ✅ **Feito** |
+| 4 | useCallback / React.memo | Médio | Médio | 🔜 Pendente |
+| 5 | Lazy load jsPDF | **Baixo** | Médio | 🔜 Pendente |
+| 6 | Consolidar useEffects de sync | Médio | Médio | 🔜 Pendente |
+| 7 | IndexedDB (substituir localStorage) | Médio | Médio | 🔜 Pendente |
+| 8 | Testes automatizados (Vitest) | Alto | Alto | 🔜 Pendente |
+| 9 | TypeScript | Alto | Médio | 🔜 Pendente |
+| 10 | Code splitting por módulo | **Baixo** | Alto | 🔜 Pendente |
 
-> **Começo recomendado:** itens 3, 5 e 10 — baixo esforço, alto impacto imediato.
+> **Próximo recomendado:** #5 (lazy load jsPDF) ou #10 (code splitting) — baixo esforço, alto impacto.
