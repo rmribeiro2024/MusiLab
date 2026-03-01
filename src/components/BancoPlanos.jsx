@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react'
 import { supabase } from '../lib/supabase'
 import {
   sanitizar,
@@ -454,8 +454,8 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // FUNÇÕES: DRAG & DROP (CARDS)
             // ============================================================
-            const handleDragStart = (index) => { dragItem.current = index; setDragActiveIndex(index); };
-            const handleDragEnter = (index) => { dragOverItem.current = index; setDragOverIndex(index); };
+            const handleDragStart = useCallback((index) => { dragItem.current = index; setDragActiveIndex(index); }, []);
+            const handleDragEnter = useCallback((index) => { dragOverItem.current = index; setDragOverIndex(index); }, []);
             const handleDragEnd = () => {
                 const roteiro = [...(planoEditando.atividadesRoteiro || [])];
                 const draggedItem = roteiro.splice(dragItem.current, 1)[0];
@@ -1078,12 +1078,12 @@ export default function BancoPlanos({ session }) {
                 setPlanoSelecionado(null); setModoEdicao(true); setViewMode('lista');
             };
 
-            const editarPlano = (plano) => {
+            const editarPlano = useCallback((plano) => {
                 setPlanoEditando(normalizePlano(plano));
                 setPlanoSelecionado(null);
                 setModoEdicao(true);
                 setViewMode('lista');
-            };
+            }, []);
 
             const salvarPlano = (ignorarAvisoEscola = false) => {
                 if (!planoEditando.titulo || !planoEditando.titulo.trim()) {
@@ -1160,7 +1160,7 @@ export default function BancoPlanos({ session }) {
                 });
             };
 
-            const excluirPlano = (id) => { setModalConfirm({ titulo: 'Excluir plano?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => { setPlanos(planos.filter(p => p.id !== id)); setPlanoSelecionado(null); } }); };
+            const excluirPlano = useCallback((id) => { setModalConfirm({ titulo: 'Excluir plano?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => { setPlanos(prev => prev.filter(p => p.id !== id)); setPlanoSelecionado(null); } }); }, []);
             const fecharModal = () => { setPlanoSelecionado(null); setModoEdicao(false); setPlanoEditando(null); setNovoRecursoUrl(""); setFormExpandido(false); };
 
             const toggleConceito = (c) => { const atual = planoEditando.conceitos || []; setPlanoEditando({...planoEditando, conceitos: atual.includes(c) ? atual.filter(x=>x!==c) : [...atual, c]}); };
@@ -1428,20 +1428,19 @@ export default function BancoPlanos({ session }) {
                 });
             };
             
-            const toggleFavorito = (plano, e) => {
+            const toggleFavorito = useCallback((plano, e) => {
                 if(e) e.stopPropagation();
-                const novoStatus = !plano.destaque;
-                const atualizado = { ...plano, destaque: novoStatus };
-                setPlanos(planos.map(p => p.id === plano.id ? atualizado : p));
-                if(planoSelecionado && planoSelecionado.id === plano.id) setPlanoSelecionado(atualizado);
-                if(planoEditando && planoEditando.id === plano.id) setPlanoEditando(atualizado);
-            };
+                const atualizado = { ...plano, destaque: !plano.destaque };
+                setPlanos(prev => prev.map(p => p.id === plano.id ? atualizado : p));
+                setPlanoSelecionado(prev => prev && prev.id === plano.id ? atualizado : prev);
+                setPlanoEditando(prev => prev && prev.id === plano.id ? atualizado : prev);
+            }, []);
 
             // --- FUNÇÕES REGISTRO PÓS-AULA (com turmas) ---
             // ============================================================
             // FUNÇÕES: REGISTROS PÓS-AULA
             // ============================================================
-            const abrirModalRegistro = (plano, e) => {
+            const abrirModalRegistro = useCallback((plano, e) => {
                 if(e) e.stopPropagation();
                 setPlanoParaRegistro(plano);
                 setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '' });
@@ -1450,7 +1449,7 @@ export default function BancoPlanos({ session }) {
                 setRegistroEditando(null);
                 setVerRegistros(false);
                 setModalRegistro(true);
-            };
+            }, []);
 
             const salvarRegistro = () => {
                 if (!novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.naoFuncionou && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
@@ -1945,11 +1944,11 @@ export default function BancoPlanos({ session }) {
                 setModalConfirm({ conteudo: '✅ Atividade salva!', somenteOk: true, labelConfirm: 'OK' });
             };
 
-            const excluirAtividade = (id) => {
+            const excluirAtividade = useCallback((id) => {
                 setModalConfirm({ titulo: 'Excluir atividade?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => {
-                    setAtividades(atividades.filter(a => a.id !== id));
+                    setAtividades(prev => prev.filter(a => a.id !== id));
                 } });
-            };
+            }, []);
 
             // ============================================================
             // FUNÇÕES: INTEGRAÇÃO: ATIVIDADES ↔ PLANOS

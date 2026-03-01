@@ -4,6 +4,46 @@ import { useBancoPlanos } from './BancoPlanosContext'
 import RichTextEditor from './RichTextEditor'
 import { exportarPlanoPDF } from '../utils/pdf'
 
+// ── LINHA PLANO (memoizado — só re-renderiza quando o próprio plano muda) ──
+const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPlanoSelecionado, abrirModalRegistro, editarPlano }) => {
+    const nRegs = (plano.registrosPosAula || []).length;
+    const conceito1 = (plano.conceitos || [])[0] || '';
+    const faixa = (plano.faixaEtaria || [])[0] || plano.nivel || '';
+    const status = plano.statusPlanejamento || 'A Fazer';
+    const statusCfg = {
+        'Concluído':    { dot: 'bg-emerald-400', badge: 'bg-emerald-50 text-emerald-700' },
+        'Em Andamento': { dot: 'bg-blue-400',    badge: 'bg-blue-50 text-blue-700' },
+        'A Fazer':      { dot: 'bg-slate-300',   badge: 'bg-slate-100 text-slate-500' }
+    };
+    const sc = statusCfg[status] || statusCfg['A Fazer'];
+    return (
+        <div className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors duration-150 group">
+            <div className={`w-2 h-2 rounded-full shrink-0 ${sc.dot}`} />
+            <button onClick={(e)=>{e.stopPropagation();toggleFavorito(plano,e);}} className="text-base shrink-0 opacity-50 hover:opacity-100 transition-opacity">{plano.destaque?'⭐':'☆'}</button>
+            <div className="flex-1 min-w-0 cursor-pointer" onClick={()=>setPlanoSelecionado(plano)}>
+                <div className="flex items-center gap-2 flex-wrap">
+                    {plano.numeroAula && <span className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full shrink-0">#{plano.numeroAula}</span>}
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${sc.badge}`}>{status}</span>
+                    <span className="font-semibold text-slate-800 text-sm truncate">{plano.titulo}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    {showEscola && plano.escola && <span className="text-xs text-indigo-600 font-medium">🏫 {plano.escola}</span>}
+                    {showEscola && plano.escola && faixa && <span className="text-xs text-slate-300">·</span>}
+                    {faixa && <span className="text-xs text-slate-500">{faixa}</span>}
+                    {faixa && conceito1 && <span className="text-xs text-slate-300">·</span>}
+                    {conceito1 && <span className="text-xs text-teal-600 font-medium">{conceito1}</span>}
+                    {nRegs > 0 && <span className="text-xs bg-amber-50 text-amber-600 font-semibold px-2 py-0.5 rounded-full">📝 {nRegs}</span>}
+                </div>
+            </div>
+            <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                <button onClick={(e)=>abrirModalRegistro(plano,e)} title="Registro Pós-Aula" className="p-2 rounded-xl text-amber-500 hover:bg-amber-50 transition-colors text-sm">📝</button>
+                <button onClick={(e)=>{e.stopPropagation();editarPlano(plano);}} title="Editar" className="p-2 rounded-xl text-blue-500 hover:bg-blue-50 transition-colors text-sm">✏️</button>
+                <button onClick={()=>setPlanoSelecionado(plano)} title="Ver completo" className="p-2 rounded-xl text-indigo-500 hover:bg-indigo-50 transition-colors text-sm">👁</button>
+            </div>
+        </div>
+    );
+});
+
 export default function TelaPrincipal() {
     const ctx = useBancoPlanos()
     const {
@@ -921,57 +961,6 @@ export default function TelaPrincipal() {
         } catch(e) {}
     }
 
-    // ── COMPONENTE DE LINHA REUTILIZÁVEL ──
-    const LinhaPlano = ({ plano, showEscola = true }) => {
-        const nRegs = (plano.registrosPosAula || []).length;
-        const conceito1 = (plano.conceitos || [])[0] || '';
-        const faixa = (plano.faixaEtaria || [])[0] || plano.nivel || '';
-        const status = plano.statusPlanejamento || 'A Fazer';
-        const statusCfg = {
-            'Concluído':    { dot: 'bg-emerald-400', badge: 'bg-emerald-50 text-emerald-700' },
-            'Em Andamento': { dot: 'bg-blue-400',    badge: 'bg-blue-50 text-blue-700' },
-            'A Fazer':      { dot: 'bg-slate-300',   badge: 'bg-slate-100 text-slate-500' }
-        };
-        const sc = statusCfg[status] || statusCfg['A Fazer'];
-        return (
-            <div className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors duration-150 group">
-                {/* Ponto de status */}
-                <div className={`w-2 h-2 rounded-full shrink-0 ${sc.dot}`} />
-                {/* Favorito */}
-                <button onClick={(e)=>{e.stopPropagation();toggleFavorito(plano,e);}} className="text-base shrink-0 opacity-50 hover:opacity-100 transition-opacity">{plano.destaque?'⭐':'☆'}</button>
-                {/* Info principal — clicável */}
-                <div className="flex-1 min-w-0 cursor-pointer" onClick={()=>setPlanoSelecionado(plano)}>
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {/* Número da aula */}
-                        {plano.numeroAula && <span className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full shrink-0">#{plano.numeroAula}</span>}
-                        {/* Status badge */}
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${sc.badge}`}>{status}</span>
-                        {/* Título */}
-                        <span className="font-semibold text-slate-800 text-sm truncate">{plano.titulo}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        {/* Escola */}
-                        {showEscola && plano.escola && <span className="text-xs text-indigo-600 font-medium">🏫 {plano.escola}</span>}
-                        {showEscola && plano.escola && faixa && <span className="text-xs text-slate-300">·</span>}
-                        {/* Segmento/Faixa */}
-                        {faixa && <span className="text-xs text-slate-500">{faixa}</span>}
-                        {faixa && conceito1 && <span className="text-xs text-slate-300">·</span>}
-                        {/* Conteúdo musical */}
-                        {conceito1 && <span className="text-xs text-teal-600 font-medium">{conceito1}</span>}
-                        {/* Registros */}
-                        {nRegs > 0 && <span className="text-xs bg-amber-50 text-amber-600 font-semibold px-2 py-0.5 rounded-full">📝 {nRegs}</span>}
-                    </div>
-                </div>
-                {/* Ações rápidas — reveladas no hover */}
-                <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                    <button onClick={(e)=>abrirModalRegistro(plano,e)} title="Registro Pós-Aula" className="p-2 rounded-xl text-amber-500 hover:bg-amber-50 transition-colors text-sm">📝</button>
-                    <button onClick={(e)=>{e.stopPropagation();editarPlano(plano);}} title="Editar" className="p-2 rounded-xl text-blue-500 hover:bg-blue-50 transition-colors text-sm">✏️</button>
-                    <button onClick={()=>setPlanoSelecionado(plano)} title="Ver completo" className="p-2 rounded-xl text-indigo-500 hover:bg-indigo-50 transition-colors text-sm">👁</button>
-                </div>
-            </div>
-        );
-    };
-
     return (
     <>
         {/* ── AVISO DE ARMAZENAMENTO (#11) ── */}
@@ -1271,7 +1260,7 @@ export default function TelaPrincipal() {
         {modoVisualizacao === 'compacto' && (
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                 {planosFiltrados.length === 0 && <p className="text-center text-gray-400 py-10">Nenhum plano encontrado.</p>}
-                {planosFiltrados.map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} />)}
+                {planosFiltrados.map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} toggleFavorito={toggleFavorito} setPlanoSelecionado={setPlanoSelecionado} abrirModalRegistro={abrirModalRegistro} editarPlano={editarPlano} />)}
             </div>
         )}
 
@@ -1349,7 +1338,7 @@ export default function TelaPrincipal() {
                                         <span className="font-bold text-sm">{mesesNomes[g.mes-1]} {g.ano}</span>
                                         <span className="text-indigo-200 text-xs">{g.planos.length} plano{g.planos.length!==1?'s':''}</span>
                                     </div>
-                                    {g.planos.map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} />)}
+                                    {g.planos.map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} toggleFavorito={toggleFavorito} setPlanoSelecionado={setPlanoSelecionado} abrirModalRegistro={abrirModalRegistro} editarPlano={editarPlano} />)}
                                 </div>
                             );
                         })}
@@ -1384,7 +1373,7 @@ export default function TelaPrincipal() {
                                 <span className="font-bold text-sm">👥 {seg}</span>
                                 <span className="text-teal-200 text-xs">{gruposSegmento[seg].length} plano{gruposSegmento[seg].length!==1?'s':''}</span>
                             </div>
-                            {gruposSegmento[seg].map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} />)}
+                            {gruposSegmento[seg].map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} toggleFavorito={toggleFavorito} setPlanoSelecionado={setPlanoSelecionado} abrirModalRegistro={abrirModalRegistro} editarPlano={editarPlano} />)}
                         </div>
                     ))}
                     {semSegmento.length > 0 && (
@@ -1393,7 +1382,7 @@ export default function TelaPrincipal() {
                                 <span className="font-bold text-sm">📄 Sem segmento definido</span>
                                 <span className="text-gray-200 text-xs">{semSegmento.length} plano{semSegmento.length!==1?'s':''}</span>
                             </div>
-                            {semSegmento.map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} />)}
+                            {semSegmento.map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} toggleFavorito={toggleFavorito} setPlanoSelecionado={setPlanoSelecionado} abrirModalRegistro={abrirModalRegistro} editarPlano={editarPlano} />)}
                         </div>
                     )}
                 </div>
