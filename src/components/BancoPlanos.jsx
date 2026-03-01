@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
 import { supabase } from '../lib/supabase'
 import {
   sanitizar,
@@ -8,19 +8,30 @@ import {
   loadFromSupabase,
   loadConfiguracoes,
 } from '../lib/utils'
-import ModuloAnoLetivo from './ModuloAnoLetivo'
-import ModuloHistoricoMusical from './ModuloHistoricoMusical'
-import ModuloEstrategias from './ModuloEstrategias'
-import ModuloAtividades from './ModuloAtividades'
-import ModuloSequencias from './ModuloSequencias'
-import ModuloRepertorio from './ModuloRepertorio'
-import TelaPrincipal from './TelaPrincipal'
-import { TelaCalendario } from './TelaCalendario'
-import TelaResumoDia from './TelaCalendario'
+// Módulos carregados sob demanda — Vite cria um chunk por arquivo
+const ModuloAnoLetivo        = lazy(() => import('./ModuloAnoLetivo'))
+const ModuloHistoricoMusical = lazy(() => import('./ModuloHistoricoMusical'))
+const ModuloEstrategias      = lazy(() => import('./ModuloEstrategias'))
+const ModuloAtividades       = lazy(() => import('./ModuloAtividades'))
+const ModuloSequencias       = lazy(() => import('./ModuloSequencias'))
+const ModuloRepertorio       = lazy(() => import('./ModuloRepertorio'))
+const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
+const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
+const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
 import { BancoPlanosContext } from './BancoPlanosContext'
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
 import { exportarPlanoPDF, exportarSequenciaPDF } from '../utils/pdf'
+
+// Fallback exibido enquanto o chunk do módulo está sendo baixado
+const CarregandoModulo = () => (
+  <div className="flex items-center justify-center py-20 text-slate-400">
+    <div className="text-center">
+      <div className="text-3xl mb-3 animate-pulse">🎵</div>
+      <p className="text-sm">Carregando...</p>
+    </div>
+  </div>
+)
 
         const bancoBNCC = [
             // ── EDUCAÇÃO INFANTIL ── Campos de Experiências (música)
@@ -3137,30 +3148,30 @@ export default function BancoPlanos({ session }) {
                     )}
 
                     <div className="max-w-7xl mx-auto px-4 py-6">
-                        {viewMode==='resumoDia' && <ErrorBoundary modulo="Resumo do Dia"><TelaResumoDia /></ErrorBoundary>}
-                        {viewMode==='calendario' && <ErrorBoundary modulo="Calendário"><TelaCalendario /></ErrorBoundary>}
+                        {viewMode==='resumoDia' && <ErrorBoundary modulo="Resumo do Dia"><Suspense fallback={<CarregandoModulo />}><TelaResumoDia /></Suspense></ErrorBoundary>}
+                        {viewMode==='calendario' && <ErrorBoundary modulo="Calendário"><Suspense fallback={<CarregandoModulo />}><TelaCalendario /></Suspense></ErrorBoundary>}
 
                         {/* ══════════════ HISTÓRICO MUSICAL DA TURMA ══════════════ */}
-                        {viewMode === 'historicoMusical' && <ErrorBoundary modulo="Histórico Musical"><ModuloHistoricoMusical /></ErrorBoundary>}
+                        {viewMode === 'historicoMusical' && <ErrorBoundary modulo="Histórico Musical"><Suspense fallback={<CarregandoModulo />}><ModuloHistoricoMusical /></Suspense></ErrorBoundary>}
 
                         {/* ══════════════ MEU ANO LETIVO ══════════════ */}
-                        {viewMode === 'anoLetivo' && <ErrorBoundary modulo="Meu Ano Letivo"><ModuloAnoLetivo /></ErrorBoundary>}
+                        {viewMode === 'anoLetivo' && <ErrorBoundary modulo="Meu Ano Letivo"><Suspense fallback={<CarregandoModulo />}><ModuloAnoLetivo /></Suspense></ErrorBoundary>}
 
                         {/* ══════════════ ESTRATÉGIAS PEDAGÓGICAS ══════════════ */}
-                        {viewMode === 'estrategias' && <ErrorBoundary modulo="Estratégias"><ModuloEstrategias /></ErrorBoundary>}
+                        {viewMode === 'estrategias' && <ErrorBoundary modulo="Estratégias"><Suspense fallback={<CarregandoModulo />}><ModuloEstrategias /></Suspense></ErrorBoundary>}
 
                         {/* ══════════════ BANCO DE ATIVIDADES ══════════════ */}
-                        {viewMode === 'atividades' && <ErrorBoundary modulo="Atividades"><ModuloAtividades /></ErrorBoundary>}
+                        {viewMode === 'atividades' && <ErrorBoundary modulo="Atividades"><Suspense fallback={<CarregandoModulo />}><ModuloAtividades /></Suspense></ErrorBoundary>}
 
                         {/* ═══════════ VIEW SEQUÊNCIAS DIDÁTICAS ═══════════ */}
-                        {viewMode === 'sequencias' && <ErrorBoundary modulo="Sequências"><ModuloSequencias /></ErrorBoundary>}
-                        {viewMode === 'lista' && <ErrorBoundary modulo="Início"><TelaPrincipal /></ErrorBoundary>}
+                        {viewMode === 'sequencias' && <ErrorBoundary modulo="Sequências"><Suspense fallback={<CarregandoModulo />}><ModuloSequencias /></Suspense></ErrorBoundary>}
+                        {viewMode === 'lista' && <ErrorBoundary modulo="Início"><Suspense fallback={<CarregandoModulo />}><TelaPrincipal /></Suspense></ErrorBoundary>}
                     </div>
 
                     {/* MODAL VER COMPLETO */}
 
                         {/* REPERTÓRIO INTELIGENTE */}
-                        {viewMode === 'repertorio' && <ErrorBoundary modulo="Repertório"><ModuloRepertorio /></ErrorBoundary>}
+                        {viewMode === 'repertorio' && <ErrorBoundary modulo="Repertório"><Suspense fallback={<CarregandoModulo />}><ModuloRepertorio /></Suspense></ErrorBoundary>}
 
                     {planoSelecionado && !modoEdicao && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={fecharModal}>
