@@ -63,7 +63,7 @@ export default function ModalNovaMusicaInline() {
                         <label className="block font-bold text-gray-700 mb-1">Observações</label>
                         <textarea value={novaMusicaInline.observacoes}
                             onChange={e=>setNovaMusicaInline({...novaMusicaInline, observacoes: e.target.value})}
-                            rows="2" placeholder="Opcional"
+                            rows={2} placeholder="Opcional"
                             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none resize-none"/>
                     </div>
                 </div>

@@ -1,5 +1,14 @@
 import React from 'react'
 
+interface ErrorBoundaryProps {
+  modulo?: string
+  children: React.ReactNode
+}
+
+interface ErrorBoundaryState {
+  erro: Error | null
+}
+
 /**
  * ErrorBoundary — captura erros de renderização React em módulos individuais.
  *
@@ -12,26 +21,26 @@ import React from 'react'
  *     <TelaCalendario />
  *   </ErrorBoundary>
  */
-export default class ErrorBoundary extends React.Component {
-  constructor(props) {
+export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props)
     this.state = { erro: null }
     this.resetar = this.resetar.bind(this)
   }
 
-  static getDerivedStateFromError(erro) {
+  static getDerivedStateFromError(erro: Error): ErrorBoundaryState {
     return { erro }
   }
 
-  componentDidCatch(erro, info) {
+  componentDidCatch(erro: Error, info: React.ErrorInfo): void {
     console.error(`[MusiLab] Erro em "${this.props.modulo || 'módulo'}"`, erro, info)
   }
 
-  resetar() {
+  resetar(): void {
     this.setState({ erro: null })
   }
 
-  render() {
+  render(): React.ReactNode {
     if (!this.state.erro) return this.props.children
 
     const modulo = this.props.modulo || 'este módulo'
