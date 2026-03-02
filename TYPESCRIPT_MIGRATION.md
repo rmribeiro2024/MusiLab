@@ -1,6 +1,6 @@
 # MusiLab — Migração TypeScript
 
-## Status atual: **FASE 3 CONCLUÍDA** (commit `3c8456b`)
+## Status atual: **FASE 4 CONCLUÍDA** (commit `39cb5b1`)
 
 ---
 
@@ -126,9 +126,17 @@ Todos os 9 arquivos convertidos. `npx tsc --noEmit` → zero erros. 35 testes pa
 - [x] `src/components/TelaCalendario.jsx` → `.tsx`
 - [x] `src/components/ModuloLista.jsx` → `.tsx`
 
-### Fase 4 — Componentes grandes (maior esforço)
-- [ ] `src/components/TelaPrincipal.jsx` → `.tsx` (~1400 linhas)
-- [ ] `src/components/BancoPlanos.jsx` → `.tsx` (~3300 linhas, 172 useState)
+### Fase 4 — Componentes grandes ✅ CONCLUÍDA (commit `39cb5b1`)
+
+Ambos os arquivos convertidos. `npx tsc --noEmit` → zero erros. 35 testes passando.
+✅ **Testado e confirmado em 2026-03-02.**
+
+- [x] `src/components/TelaPrincipal.jsx` → `.tsx`
+  - Props tipadas em `LinhaPlano` (interface `LinhaPlanoProps`)
+  - Casts `e.target as HTMLInputElement` em 4 handlers
+  - `rows="N"` → `rows={N}`, `Record<string, number>` para contagem
+- [x] `src/components/BancoPlanos.jsx` → `.tsx`
+  - `// @ts-nocheck` (provedor de ctx, 3300 linhas — tipagem completa na Fase 5+)
 
 ### Fase 5 — App.jsx (código morto + refatoração)
 - [ ] `src/App.jsx` → `.tsx`
@@ -147,7 +155,7 @@ Todos os 9 arquivos convertidos. `npx tsc --noEmit` → zero erros. 35 testes pa
    npm run build      # deve passar
    npm test           # 35 testes devem passar
    ```
-3. Continuar pela **Fase 4** — converter componentes grandes para `.tsx`
+3. Continuar pela **Fase 5** — remover código morto e converter `App.jsx` → `.tsx`
 4. Padrão de conversão de componente `.jsx` → `.tsx`:
    - Renomear o arquivo
    - Adicionar tipos nas props (se houver)
