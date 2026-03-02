@@ -109,6 +109,7 @@ npx tsc --noEmit
 ### Fase 2 — Componentes simples ✅ CONCLUÍDA (commit `894a004`)
 
 Todos os 17 arquivos convertidos. `npx tsc --noEmit` → zero erros. 35 testes passando.
+✅ **Testado e confirmado funcionando localmente em 2026-03-02.**
 
 ### Fase 3 — Componentes médios
 - [ ] `src/utils/pdf.js` → `.ts` (jsPDF async, complexo)
