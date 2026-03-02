@@ -22,7 +22,7 @@ const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
 const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
 const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
 import { BancoPlanosContext } from './BancoPlanosContext'
-import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext } from '../contexts'
+import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext, useSequenciasContext, useHistoricoContext } from '../contexts'
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
 import { dbGet, dbSet, dbDel } from '../lib/db'
@@ -261,6 +261,29 @@ export default function BancoPlanos({ session }) {
                 novaAtividade, salvarAtividade, excluirAtividade,
                 adicionarRecursoAtiv, removerRecursoAtiv,
             } = useAtividadesContext();
+            // ── SEQUÊNCIAS — lido do SequenciasContext (extraído na Parte 5) ──
+            const {
+                sequencias, setSequencias,
+                sequenciaEditando, setSequenciaEditando,
+                sequenciaDetalhe, setSequenciaDetalhe,
+                filtroEscolaSequencias, setFiltroEscolaSequencias,
+                filtroUnidadeSequencias, setFiltroUnidadeSequencias,
+                filtroPeriodoSequencias, setFiltroPeriodoSequencias,
+                buscaProfundaSequencias, setBuscaProfundaSequencias,
+                modalVincularPlano, setModalVincularPlano,
+                buscaPlanoVinculo, setBuscaPlanoVinculo,
+                novaSequencia: _novaSequencia, salvarSequencia, excluirSequencia,
+                vincularPlanoAoSlot, atualizarRascunhoSlot, desvincularPlano,
+            } = useSequenciasContext();
+            // novaSequencia precisa de anosLetivos — wrapper definido após anosLetivos
+            // ── HISTÓRICO — lido do HistoricoContext (extraído na Parte 5) ──
+            const {
+                hmFiltroTurma, setHmFiltroTurma,
+                hmFiltroInicio, setHmFiltroInicio,
+                hmFiltroFim, setHmFiltroFim,
+                hmFiltroBusca, setHmFiltroBusca,
+                hmModalMusica, setHmModalMusica,
+            } = useHistoricoContext();
             // ============================================================
             // FUNÇÕES: UTILITÁRIOS GERAIS
             // ============================================================
@@ -316,21 +339,17 @@ export default function BancoPlanos({ session }) {
             });
 
             // ============================================================
-            // MÓDULO: SEQUÊNCIAS DIDÁTICAS
+            // MÓDULO: SEQUÊNCIAS DIDÁTICAS — migrado para SequenciasContext (Parte 5)
             // ============================================================
-            // Estados para Sequências Didáticas
-            const [sequencias, setSequencias] = useState(() => {
-                const saved = dbGet('sequenciasDidaticas');
-                return saved ? JSON.parse(saved) : [];
-            });
-            const [sequenciaEditando, setSequenciaEditando] = useState(null);
-            const [sequenciaDetalhe, setSequenciaDetalhe] = useState(null); // Modo detalhe
-            const [filtroEscolaSequencias, setFiltroEscolaSequencias] = useState('Todas');
-            const [filtroUnidadeSequencias, setFiltroUnidadeSequencias] = useState('Todas');
-            const [filtroPeriodoSequencias, setFiltroPeriodoSequencias] = useState('Todos');
-            const [buscaProfundaSequencias, setBuscaProfundaSequencias] = useState('');
-            const [modalVincularPlano, setModalVincularPlano] = useState(null); // {sequenciaId, slotIndex}
-            const [buscaPlanoVinculo, setBuscaPlanoVinculo] = useState('');
+            // const [sequencias, setSequencias] = useState(...)
+            // const [sequenciaEditando, setSequenciaEditando] = useState(null)
+            // const [sequenciaDetalhe, setSequenciaDetalhe] = useState(null)
+            // const [filtroEscolaSequencias, setFiltroEscolaSequencias] = useState('Todas')
+            // const [filtroUnidadeSequencias, setFiltroUnidadeSequencias] = useState('Todas')
+            // const [filtroPeriodoSequencias, setFiltroPeriodoSequencias] = useState('Todos')
+            // const [buscaProfundaSequencias, setBuscaProfundaSequencias] = useState('')
+            // const [modalVincularPlano, setModalVincularPlano] = useState(null)
+            // const [buscaPlanoVinculo, setBuscaPlanoVinculo] = useState('')
 
             // ============================================================
             // MÓDULO: ESTRATÉGIAS PEDAGÓGICAS — movido para EstrategiasContext (Parte 2)
@@ -447,14 +466,13 @@ export default function BancoPlanos({ session }) {
             const [darkMode, setDarkMode] = useState(() => dbGet('darkMode') === 'true');
 
             // ============================================================
-            // MÓDULO: HISTÓRICO MUSICAL DA TURMA
+            // MÓDULO: HISTÓRICO MUSICAL DA TURMA — migrado para HistoricoContext (Parte 5)
             // ============================================================
-            // ── HISTÓRICO MUSICAL DA TURMA ──
-            const [hmFiltroTurma, setHmFiltroTurma] = useState('');
-            const [hmFiltroInicio, setHmFiltroInicio] = useState('');
-            const [hmFiltroFim, setHmFiltroFim] = useState('');
-            const [hmFiltroBusca, setHmFiltroBusca] = useState('');
-            const [hmModalMusica, setHmModalMusica] = useState(null);
+            // const [hmFiltroTurma, setHmFiltroTurma] = useState('')
+            // const [hmFiltroInicio, setHmFiltroInicio] = useState('')
+            // const [hmFiltroFim, setHmFiltroFim] = useState('')
+            // const [hmFiltroBusca, setHmFiltroBusca] = useState('')
+            // const [hmModalMusica, setHmModalMusica] = useState(null)
             // ============================================================
             // MÓDULO: DRAG AND DROP
             // ============================================================
@@ -765,10 +783,10 @@ export default function BancoPlanos({ session }) {
                     try {
                         // estrategias carregada em EstrategiasContext (Parte 2)
                         // repertorio carregado em RepertorioContext (Parte 3)
-                        const [planosC, sequenciasC, anosC, gradesC, eventosC, planejamentoAnualC, cfg] = await Promise.all([
+                        const [planosC, anosC, gradesC, eventosC, planejamentoAnualC, cfg] = await Promise.all([
                             loadFromSupabase('planos', userId),
                             // atividades removido — carregado em AtividadesContext (Parte 4)
-                            loadFromSupabase('sequencias', userId),
+                            // sequencias removido — carregado em SequenciasContext (Parte 5)
                             loadFromSupabase('anos_letivos', userId),
                             loadFromSupabase('grades_semanas', userId),
                             loadFromSupabase('eventos_escolares', userId),
@@ -780,7 +798,7 @@ export default function BancoPlanos({ session }) {
                         if (planosC !== null) setPlanos(planosC.length > 0 ? planosC.map(normalizePlano) : []);
                         // atividadesC removido — carregado em AtividadesContext (Parte 4)
                         // repertorioC removido — carregado em RepertorioContext (Parte 3)
-                        if (sequenciasC !== null) setSequencias(sequenciasC.length > 0 ? sequenciasC : []);
+                        // sequenciasC removido — carregado em SequenciasContext (Parte 5)
                         if (anosC !== null) setAnosLetivos(anosC.length > 0 ? anosC : []);
                         if (gradesC !== null) setGradesSemanas(gradesC.length > 0 ? gradesC : []);
                         if (eventosC !== null) setEventosEscolares(eventosC.length > 0 ? eventosC : []);
@@ -832,7 +850,7 @@ export default function BancoPlanos({ session }) {
                     planos,
                     // atividades: sync movido para AtividadesContext (Parte 4)
                     // repertorio: sync movido para RepertorioContext (Parte 3)
-                    sequencias,
+                    // sequencias: sync movido para SequenciasContext (Parte 5)
                     anos_letivos: anosLetivos,
                     grades_semanas: gradesSemanas,
                     eventos_escolares: eventosEscolares,
@@ -847,7 +865,7 @@ export default function BancoPlanos({ session }) {
                         syncDelay(tabela, () => syncToSupabase(tabela, dados, userId, onSyncStatus));
                     }
                 });
-            }, [planos, sequencias, anosLetivos, gradesSemanas, eventosEscolares, planejamentoAnual]); // atividades removido — sync em AtividadesContext (Parte 4)
+            }, [planos, anosLetivos, gradesSemanas, eventosEscolares, planejamentoAnual]); // atividades/sequencias removidos — sync em AtividadesContext/SequenciasContext (Partes 4/5)
             useEffect(() => {
                 if(!userId||!dadosCarregados) return;
                 syncDelay('cfg', ()=>syncConfiguracoes({ conceitos, unidades, faixas, tagsGlobais, templatesRoteiro, compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados, escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas, energiasCustomizadas, instrumentacaoCustomizada }, userId, onSyncStatus));
@@ -910,7 +928,8 @@ export default function BancoPlanos({ session }) {
             // atividades dbSet movido para AtividadesContext (Parte 4)
             // useEffect(() => { dbSet('atividades', JSON.stringify(atividades)); triggerSalvo(); }, [atividades]);
             useEffect(() => { dbSet('eventosEscolares', JSON.stringify(eventosEscolares)); triggerSalvo(); }, [eventosEscolares]);
-            useEffect(() => { dbSet('sequenciasDidaticas', JSON.stringify(sequencias)); triggerSalvo(); }, [sequencias]);
+            // sequencias dbSet movido para SequenciasContext (Parte 5)
+            // useEffect(() => { dbSet('sequenciasDidaticas', JSON.stringify(sequencias)); triggerSalvo(); }, [sequencias]);
             useEffect(() => { dbSet('ocultarFeriados', ocultarFeriados); }, [ocultarFeriados]);
             // repertorio dbSet movido para RepertorioContext (Parte 3) — lá é gerenciado com triggerSalvo via ctx bridge
 
@@ -1625,149 +1644,15 @@ export default function BancoPlanos({ session }) {
                 } });
             };
 
-            // --- FUNÇÕES SEQUÊNCIAS DIDÁTICAS ---
+            // --- FUNÇÕES SEQUÊNCIAS DIDÁTICAS — migradas para SequenciasContext (Parte 5) ---
             // ============================================================
             // FUNÇÕES: SEQUÊNCIAS
             // ============================================================
-            const novaSequencia = () => {
-                // Buscar ano letivo ativo
-                const anoAtivo = anosLetivos.find(a => a.status === 'ativo');
-                const anoId = anoAtivo ? anoAtivo.id : (anosLetivos[0]?.id || '');
-                
-                setSequenciaEditando({
-                    id: Date.now(),
-                    titulo: '',
-                    escolaId: '',
-                    anoLetivoId: anoId, // Pré-selecionado com ano ativo
-                    segmentos: [], // Array de IDs de segmentos
-                    turmaEspecifica: '', // Opcional
-                    unidadePredominante: '', // NOVO: Unidade pedagógica
-                    duracao: 'mensal',
-                    numeroSlots: 4,
-                    dataInicio: '', // NOVO: Data início
-                    dataFim: '', // NOVO: Data fim
-                    slots: []
-                });
-            };
-
-            const gerarSlots = (numero) => {
-                const slots = [];
-                for (let i = 0; i < numero; i++) {
-                    slots.push({
-                        id: Date.now() + i,
-                        ordem: i + 1,
-                        planoVinculado: null, // ID do plano ou null
-                        rascunho: {
-                            titulo: '',
-                            setlist: [],
-                            materiais: []
-                        }
-                    });
-                }
-                return slots;
-            };
-
-            const salvarSequencia = () => {
-                if (!sequenciaEditando.titulo.trim()) {
-                    setModalConfirm({ conteudo: '⚠️ Preencha o título da sequência!', somenteOk: true, labelConfirm: 'OK' });
-                    return;
-                }
-                if (!sequenciaEditando.escolaId) {
-                    setModalConfirm({ conteudo: '⚠️ Selecione uma escola!', somenteOk: true, labelConfirm: 'OK' });
-                    return;
-                }
-                if (!sequenciaEditando.segmentos || sequenciaEditando.segmentos.length === 0) {
-                    setModalConfirm({ conteudo: '⚠️ Selecione pelo menos um segmento!', somenteOk: true, labelConfirm: 'OK' });
-                    return;
-                }
-                
-                // Gerar slots se ainda não foram gerados
-                if (!sequenciaEditando.slots || sequenciaEditando.slots.length === 0) {
-                    sequenciaEditando.slots = gerarSlots(sequenciaEditando.numeroSlots);
-                }
-                
-                const existe = sequencias.find(s => s.id === sequenciaEditando.id);
-                if (existe) {
-                    setSequencias(sequencias.map(s => s.id === sequenciaEditando.id ? sequenciaEditando : s));
-                } else {
-                    setSequencias([...sequencias, sequenciaEditando]);
-                }
-                setSequenciaEditando(null);
-            };
-
-            const excluirSequencia = (id) => {
-                setModalConfirm({ titulo: 'Excluir sequência?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => {
-                    setSequencias(sequencias.filter(s => s.id !== id));
-                } });
-            };
-
-            const vincularPlanoAoSlot = (planoId) => {
-                if (!modalVincularPlano) return;
-                
-                const { sequenciaId, slotIndex } = modalVincularPlano;
-                const novasSequencias = sequencias.map(seq => {
-                    if (seq.id === sequenciaId) {
-                        const novosSlots = [...seq.slots];
-                        novosSlots[slotIndex] = {
-                            ...novosSlots[slotIndex],
-                            planoVinculado: planoId,
-                            rascunho: { titulo: '', setlist: [], materiais: [] }
-                        };
-                        return { ...seq, slots: novosSlots };
-                    }
-                    return seq;
-                });
-                setSequencias(novasSequencias);
-                // Atualizar também o detalhe se estiver aberto
-                if (sequenciaDetalhe && sequenciaDetalhe.id === sequenciaId) {
-                    setSequenciaDetalhe(novasSequencias.find(s => s.id === sequenciaId));
-                }
-                setModalVincularPlano(null);
-                setBuscaPlanoVinculo('');
-            };
-
-            const atualizarRascunhoSlot = (sequenciaId, slotIndex, campo, valor) => {
-                const novasSequencias = sequencias.map(seq => {
-                    if (seq.id === sequenciaId) {
-                        const novosSlots = [...seq.slots];
-                        novosSlots[slotIndex] = {
-                            ...novosSlots[slotIndex],
-                            planoVinculado: null,
-                            rascunho: {
-                                ...novosSlots[slotIndex].rascunho,
-                                [campo]: valor
-                            }
-                        };
-                        return { ...seq, slots: novosSlots };
-                    }
-                    return seq;
-                });
-                setSequencias(novasSequencias);
-                // Atualizar também o detalhe se estiver aberto
-                if (sequenciaDetalhe && sequenciaDetalhe.id === sequenciaId) {
-                    setSequenciaDetalhe(novasSequencias.find(s => s.id === sequenciaId));
-                }
-            };
-
-            const desvincularPlano = (sequenciaId, slotIndex) => {
-                const novasSequencias = sequencias.map(seq => {
-                    if (seq.id === sequenciaId) {
-                        const novosSlots = [...seq.slots];
-                        novosSlots[slotIndex] = {
-                            ...novosSlots[slotIndex],
-                            planoVinculado: null,
-                            rascunho: { titulo: '', setlist: [], materiais: [] }
-                        };
-                        return { ...seq, slots: novosSlots };
-                    }
-                    return seq;
-                });
-                setSequencias(novasSequencias);
-                // Atualizar também o detalhe se estiver aberto
-                if (sequenciaDetalhe && sequenciaDetalhe.id === sequenciaId) {
-                    setSequenciaDetalhe(novasSequencias.find(s => s.id === sequenciaId));
-                }
-            };
+            // novaSequencia precisa de anosLetivos — wrapper local que passa o array
+            const novaSequencia = () => _novaSequencia(anosLetivos);
+            // salvarSequencia, excluirSequencia, vincularPlanoAoSlot,
+            // atualizarRascunhoSlot, desvincularPlano — vêm de useSequenciasContext()
+            // gerarSlots — encapsulado em SequenciasContext
 
             // --- FUNÇÕES BANCO DE ATIVIDADES ---
             // ============================================================

@@ -2,9 +2,19 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
 import { useBancoPlanos } from './BancoPlanosContext'
+import { useHistoricoContext } from '../contexts'
 
 export default function ModuloHistoricoMusical() {
     const ctx = useBancoPlanos()
+    // ── Campos de domínio — vêm do HistoricoContext (Parte 5) ──
+    const {
+        hmFiltroBusca, setHmFiltroBusca,
+        hmFiltroFim, setHmFiltroFim,
+        hmFiltroInicio, setHmFiltroInicio,
+        hmFiltroTurma, setHmFiltroTurma,
+        hmModalMusica, setHmModalMusica,
+    } = useHistoricoContext()
+    // ── Campos cross-domain — ainda vêm do BancoPlanosContext (bridge) ──
     const {
         anosLetivos,
         atividades,
@@ -13,19 +23,9 @@ export default function ModuloHistoricoMusical() {
         escolas,
         faixas,
         h,
-        hmFiltroBusca,
-        hmFiltroFim,
-        hmFiltroInicio,
-        hmFiltroTurma,
-        hmModalMusica,
         para,
         planos,
         repertorio,
-        setHmFiltroBusca,
-        setHmFiltroFim,
-        setHmFiltroInicio,
-        setHmFiltroTurma,
-        setHmModalMusica,
         setModalConfiguracoes,
         setPlanoSelecionado,
         setViewMode,

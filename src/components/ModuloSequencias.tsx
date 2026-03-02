@@ -2,27 +2,22 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
 import { useBancoPlanos } from './BancoPlanosContext'
+import { useSequenciasContext } from '../contexts'
 import { exportarSequenciaPDF } from '../utils/pdf'
 
 export default function ModuloSequencias() {
     const ctx = useBancoPlanos()
+    // ── Campos de domínio — vêm do SequenciasContext (Parte 5) ──
     const {
-        anosLetivos,
-        atividades,
         atualizarRascunhoSlot,
-        bold,
         buscaPlanoVinculo,
         buscaProfundaSequencias,
         desvincularPlano,
-        escolas,
         excluirSequencia,
         filtroEscolaSequencias,
         filtroPeriodoSequencias,
         filtroUnidadeSequencias,
-        h,
         modalVincularPlano,
-        novaSequencia,
-        planos,
         salvarSequencia,
         sequenciaDetalhe,
         sequenciaEditando,
@@ -32,13 +27,23 @@ export default function ModuloSequencias() {
         setFiltroEscolaSequencias,
         setFiltroPeriodoSequencias,
         setFiltroUnidadeSequencias,
-        setModalConfirm,
         setModalVincularPlano,
         setSequenciaDetalhe,
         setSequenciaEditando,
         setSequencias,
-        unidades,
         vincularPlanoAoSlot,
+    } = useSequenciasContext()
+    // ── Campos cross-domain — ainda vêm do BancoPlanosContext (bridge) ──
+    const {
+        anosLetivos,
+        atividades,
+        bold,
+        escolas,
+        h,
+        novaSequencia,  // wrapper que passa anosLetivos — permanece no bridge
+        planos,
+        setModalConfirm,
+        unidades,
     } = ctx
 
     const escolasComSequencias = [...new Set(sequencias.map(s => {
