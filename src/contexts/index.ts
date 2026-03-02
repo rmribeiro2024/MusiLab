@@ -2,7 +2,7 @@
 // Barrel export — adicionar um contexto por vez conforme as partes avançam.
 
 export { useModalContext, ModalProvider } from './ModalContext'
-// export { useEstrategiasContext, EstrategiasProvider } from './EstrategiasContext'  // Parte 2
+export { useEstrategiasContext, EstrategiasProvider } from './EstrategiasContext'  // Parte 2
 // export { useRepertorioContext, RepertorioProvider } from './RepertorioContext'     // Parte 3
 // export { useAtividadesContext, AtividadesProvider } from './AtividadesContext'     // Parte 4
 // export { useSequenciasContext, SequenciasProvider } from './SequenciasContext'     // Parte 5

@@ -22,7 +22,7 @@ const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
 const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
 const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
 import { BancoPlanosContext } from './BancoPlanosContext'
-import { useModalContext } from '../contexts'
+import { useModalContext, useEstrategiasContext } from '../contexts'
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
 import { dbGet, dbSet, dbDel } from '../lib/db'
@@ -196,6 +196,24 @@ export default function BancoPlanos({ session }) {
             const userName = session?.user?.user_metadata?.full_name || session?.user?.email || 'Professor';
             // ── MODAL CONFIRM — lido do ModalContext (extraído na Parte 1) ──
             const { modalConfirm, setModalConfirm } = useModalContext();
+            // ── ESTRATÉGIAS — lidas do EstrategiasContext (extraído na Parte 2) ──
+            const {
+                estrategias, setEstrategias,
+                estrategiaEditando, setEstrategiaEditando,
+                buscaEstrategia, setBuscaEstrategia,
+                filtroCategoriaEstrategia, setFiltroCategoriaEstrategia,
+                filtroFuncaoEstrategia, setFiltroFuncaoEstrategia,
+                filtroObjetivoEstrategia, setFiltroObjetivoEstrategia,
+                mostrarArquivadasEstrategia, setMostrarArquivadasEstrategia,
+                categoriasEstrategia, setCategoriasEstrategia,
+                funcoesEstrategia, setFuncoesEstrategia,
+                objetivosEstrategia, setObjetivosEstrategia,
+                novaCategoriaEstr, setNovaCategoriaEstr,
+                novaFuncaoEstr, setNovaFuncaoEstr,
+                novoObjetivoEstr, setNovoObjetivoEstr,
+                novaEstrategia, salvarEstrategia, excluirEstrategia,
+                arquivarEstrategia, restaurarEstrategia,
+            } = useEstrategiasContext();
             // ============================================================
             // MÓDULO: EDIÇÃO DE MÚSICA
             // ============================================================
@@ -311,38 +329,9 @@ export default function BancoPlanos({ session }) {
             const [buscaPlanoVinculo, setBuscaPlanoVinculo] = useState('');
 
             // ============================================================
-            // MÓDULO: ESTRATÉGIAS PEDAGÓGICAS
+            // MÓDULO: ESTRATÉGIAS PEDAGÓGICAS — movido para EstrategiasContext (Parte 2)
             // ============================================================
-            // ── ESTRATÉGIAS PEDAGÓGICAS ──
-            const categoriasEstrategiaInicial = ['Escuta','Vocal','Corporal','Rítmica','Instrumental','Improvisação','Criação','Jogo Musical','Análise Musical'];
-            const funcoesEstrategiaInicial = ['Foco inicial','Aquecimento corporal','Aquecimento vocal','Desenvolvimento','Consolidação','Transição','Encerramento'];
-            const objetivosEstrategiaInicial = ['Desenvolver percepção auditiva','Consolidar consciência rítmica','Desenvolver coordenação motora','Trabalhar afinação','Estimular criatividade musical','Desenvolver improvisação','Ampliar escuta ativa','Desenvolver memória musical','Desenvolver expressão musical','Desenvolver autonomia musical'];
-
-            const [estrategias, setEstrategias] = useState(() => {
-                const saved = dbGet('estrategias');
-                return saved ? JSON.parse(saved) : [];
-            });
-            const [estrategiaEditando, setEstrategiaEditando] = useState(null);
-            const [buscaEstrategia, setBuscaEstrategia] = useState('');
-            const [filtroCategoriaEstrategia, setFiltroCategoriaEstrategia] = useState('Todas');
-            const [filtroFuncaoEstrategia, setFiltroFuncaoEstrategia] = useState('Todas');
-            const [filtroObjetivoEstrategia, setFiltroObjetivoEstrategia] = useState('Todos');
-            const [mostrarArquivadasEstrategia, setMostrarArquivadasEstrategia] = useState(false);
-            const [categoriasEstrategia, setCategoriasEstrategia] = useState(() => {
-                const saved = dbGet('categoriasEstrategia');
-                return saved ? JSON.parse(saved) : categoriasEstrategiaInicial;
-            });
-            const [funcoesEstrategia, setFuncoesEstrategia] = useState(() => {
-                const saved = dbGet('funcoesEstrategia');
-                return saved ? JSON.parse(saved) : funcoesEstrategiaInicial;
-            });
-            const [objetivosEstrategia, setObjetivosEstrategia] = useState(() => {
-                const saved = dbGet('objetivosEstrategia');
-                return saved ? JSON.parse(saved) : objetivosEstrategiaInicial;
-            });
-            const [novaCategoriaEstr, setNovaCategoriaEstr] = useState('');
-            const [novaFuncaoEstr, setNovaFuncaoEstr] = useState('');
-            const [novoObjetivoEstr, setNovoObjetivoEstr] = useState('');
+            // Estado e funções acessíveis via useEstrategiasContext() — ver linha ~196
 
             // ============================================================
             // MÓDULO: PLANEJAMENTO ANUAL
@@ -395,11 +384,7 @@ export default function BancoPlanos({ session }) {
                 dbSet('tagsGlobais', JSON.stringify(tagsGlobais));
             }, [tagsGlobais]);
 
-            // Salvar estratégias e suas listas configuráveis
-            useEffect(() => { dbSet('estrategias', JSON.stringify(estrategias)); }, [estrategias]);
-            useEffect(() => { dbSet('categoriasEstrategia', JSON.stringify(categoriasEstrategia)); }, [categoriasEstrategia]);
-            useEffect(() => { dbSet('funcoesEstrategia', JSON.stringify(funcoesEstrategia)); }, [funcoesEstrategia]);
-            useEffect(() => { dbSet('objetivosEstrategia', JSON.stringify(objetivosEstrategia)); }, [objetivosEstrategia]);
+            // Salvar estratégias — movido para EstrategiasContext (Parte 2)
 
             // Salvar planejamento anual
             useEffect(() => { dbSet('planejamentoAnual', JSON.stringify(planejamentoAnual)); }, [planejamentoAnual]);
@@ -773,7 +758,8 @@ export default function BancoPlanos({ session }) {
                 if (!userId) { setDadosCarregados(true); return; }
                 (async () => {
                     try {
-                        const [planosC, atividadesC, repertorioC, sequenciasC, anosC, gradesC, eventosC, estrategiasC, planejamentoAnualC, cfg] = await Promise.all([
+                        // estrategias carregada em EstrategiasContext (Parte 2)
+                        const [planosC, atividadesC, repertorioC, sequenciasC, anosC, gradesC, eventosC, planejamentoAnualC, cfg] = await Promise.all([
                             loadFromSupabase('planos', userId),
                             loadFromSupabase('atividades', userId),
                             loadFromSupabase('repertorio', userId),
@@ -781,7 +767,6 @@ export default function BancoPlanos({ session }) {
                             loadFromSupabase('anos_letivos', userId),
                             loadFromSupabase('grades_semanas', userId),
                             loadFromSupabase('eventos_escolares', userId),
-                            loadFromSupabase('estrategias', userId),
                             loadFromSupabase('planejamento_anual', userId),
                             loadConfiguracoes(userId)
                         ]);
@@ -794,7 +779,7 @@ export default function BancoPlanos({ session }) {
                         if (anosC !== null) setAnosLetivos(anosC.length > 0 ? anosC : []);
                         if (gradesC !== null) setGradesSemanas(gradesC.length > 0 ? gradesC : []);
                         if (eventosC !== null) setEventosEscolares(eventosC.length > 0 ? eventosC : []);
-                        if (estrategiasC !== null) setEstrategias(estrategiasC.length > 0 ? estrategiasC : []);
+                        // estrategiasC removido — carregado em EstrategiasContext (Parte 2)
                         if (planejamentoAnualC !== null) setPlanejamentoAnual(planejamentoAnualC.length > 0 ? planejamentoAnualC : []);
                         if (cfg) {
                             if(cfg.conceitos) setConceitos(cfg.conceitos);
@@ -845,7 +830,7 @@ export default function BancoPlanos({ session }) {
                     anos_letivos: anosLetivos,
                     grades_semanas: gradesSemanas,
                     eventos_escolares: eventosEscolares,
-                    estrategias,
+                    // estrategias: sync movido para EstrategiasContext (Parte 2)
                     planejamento_anual: planejamentoAnual,
                 };
                 const prev = _prevSyncData.current;
@@ -856,7 +841,7 @@ export default function BancoPlanos({ session }) {
                         syncDelay(tabela, () => syncToSupabase(tabela, dados, userId, onSyncStatus));
                     }
                 });
-            }, [planos, atividades, repertorio, sequencias, anosLetivos, gradesSemanas, eventosEscolares, estrategias, planejamentoAnual]);
+            }, [planos, atividades, repertorio, sequencias, anosLetivos, gradesSemanas, eventosEscolares, planejamentoAnual]);
             useEffect(() => {
                 if(!userId||!dadosCarregados) return;
                 syncDelay('cfg', ()=>syncConfiguracoes({ conceitos, unidades, faixas, tagsGlobais, templatesRoteiro, compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados, escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas, energiasCustomizadas, instrumentacaoCustomizada }, userId, onSyncStatus));
@@ -1901,52 +1886,9 @@ export default function BancoPlanos({ session }) {
                 _atualizarAnoPlano(anoId, { metas: ano.metas.filter(m => m.id !== metaId) });
             };
 
-            // ── ESTRATÉGIAS: CRUD ──
-            // ============================================================
-            // FUNÇÕES: ESTRATÉGIAS PEDAGÓGICAS
-            // ============================================================
-            const novaEstrategia = () => {
-                setEstrategiaEditando({
-                    id: gerarIdSeguro(),
-                    nome: '', descricao: '', categoria: '', funcao: '',
-                    objetivos: [], faixaEtaria: '', ativo: true,
-                    _criadoEm: new Date().toISOString()
-                });
-            };
-
-            const salvarEstrategia = () => {
-                if (!estrategiaEditando?.nome?.trim()) {
-                    setModalConfirm({ conteudo: '⚠️ Preencha o nome da estratégia!', somenteOk: true, labelConfirm: 'OK' });
-                    return;
-                }
-                const agora = new Date().toISOString();
-                const item = { ...estrategiaEditando, _ultimaEdicao: agora };
-                const existe = estrategias.find(e => e.id === item.id);
-                if (existe) {
-                    setEstrategias(estrategias.map(e => e.id === item.id ? item : e));
-                } else {
-                    setEstrategias([...estrategias, item]);
-                }
-                setEstrategiaEditando(null);
-            };
-
-            const excluirEstrategia = (id) => {
-                setModalConfirm({
-                    titulo: 'Excluir estratégia?',
-                    conteudo: 'Esta ação não pode ser desfeita.',
-                    labelConfirm: 'Excluir',
-                    perigo: true,
-                    onConfirm: () => setEstrategias(estrategias.filter(e => e.id !== id))
-                });
-            };
-
-            const arquivarEstrategia = (id) => {
-                setEstrategias(estrategias.map(e => e.id === id ? { ...e, ativo: false, _ultimaEdicao: new Date().toISOString() } : e));
-            };
-
-            const restaurarEstrategia = (id) => {
-                setEstrategias(estrategias.map(e => e.id === id ? { ...e, ativo: true, _ultimaEdicao: new Date().toISOString() } : e));
-            };
+            // ── ESTRATÉGIAS: CRUD — movido para EstrategiasContext (Parte 2) ──
+            // novaEstrategia, salvarEstrategia, excluirEstrategia, arquivarEstrategia, restaurarEstrategia
+            // disponíveis via useEstrategiasContext() — ver linha ~196
 
             // ============================================================
             // FUNÇÕES: ATIVIDADES — SALVAR / EXCLUIR
