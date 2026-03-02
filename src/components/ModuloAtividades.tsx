@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
 import { useBancoPlanos } from './BancoPlanosContext'
+import { useAtividadesContext } from '../contexts'
 import type { Atividade } from '../types'
 
 interface CardAtividadeProps {
@@ -48,20 +49,16 @@ const CardAtividade = React.memo(({ ativ, setAtividadeEditando, excluirAtividade
 
 export default function ModuloAtividades() {
     const ctx = useBancoPlanos()
+    // ── Campos de domínio — vêm do AtividadesContext (Parte 4) ──
     const {
         adicionarRecursoAtiv,
         atividadeEditando,
         atividades,
-        bold,
         buscaAtividade,
-        conceitos,
         excluirAtividade,
-        faixas,
         filtroConceitoAtividade,
         filtroFaixaAtividade,
         filtroTagAtividade,
-        h,
-        l,
         modoVisAtividades,
         novaAtividade,
         novoRecursoTipoAtiv,
@@ -71,15 +68,23 @@ export default function ModuloAtividades() {
         setAtividadeEditando,
         setAtividadeVinculandoMusica,
         setBuscaAtividade,
-        setConceitos,
         setFiltroConceitoAtividade,
         setFiltroFaixaAtividade,
         setFiltroTagAtividade,
         setModalAdicionarAoPlano,
-        setModalConfirm,
         setModoVisAtividades,
         setNovoRecursoTipoAtiv,
         setNovoRecursoUrlAtiv,
+    } = useAtividadesContext()
+    // ── Campos cross-domain — ainda vêm do BancoPlanosContext (bridge) ──
+    const {
+        bold,
+        conceitos,
+        faixas,
+        h,
+        l,
+        setConceitos,
+        setModalConfirm,
         setTagsGlobais,
         setUnidades,
         tagsGlobais,
