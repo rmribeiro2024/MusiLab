@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
 import { useBancoPlanos } from './BancoPlanosContext'
+import { useEstrategiasContext } from '../contexts'
+import { useModalContext } from '../contexts'
 import RichTextEditor from './RichTextEditor'
 
 export default function ModuloEstrategias() {
-    const ctx = useBancoPlanos()
+    // Estratégias: estado e CRUD do EstrategiasContext (Parte 2)
     const {
         arquivarEstrategia,
-        bold,
-        busca,
         buscaEstrategia,
         categoriasEstrategia,
         estrategiaEditando,
@@ -19,14 +19,12 @@ export default function ModuloEstrategias() {
         filtroFuncaoEstrategia,
         filtroObjetivoEstrategia,
         funcoesEstrategia,
-        h,
         mostrarArquivadasEstrategia,
         novaCategoriaEstr,
         novaEstrategia,
         novaFuncaoEstr,
         novoObjetivoEstr,
         objetivosEstrategia,
-        para,
         restaurarEstrategia,
         salvarEstrategia,
         setBuscaEstrategia,
@@ -36,14 +34,15 @@ export default function ModuloEstrategias() {
         setFiltroFuncaoEstrategia,
         setFiltroObjetivoEstrategia,
         setFuncoesEstrategia,
-        setModalConfirm,
         setMostrarArquivadasEstrategia,
         setNovaCategoriaEstr,
         setNovaFuncaoEstr,
         setNovoObjetivoEstr,
         setObjetivosEstrategia,
-        underline,
-    } = ctx
+    } = useEstrategiasContext()
+    // Modal global + helpers de estilo do BancoPlanosContext
+    const { setModalConfirm } = useModalContext()
+    const { bold, busca, h, para, underline } = useBancoPlanos()
 
     // Formulário de edição
     if (estrategiaEditando !== null) {

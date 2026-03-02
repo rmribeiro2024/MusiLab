@@ -448,8 +448,8 @@ Após todas as partes anteriores:
 
 ## Checklist de progresso
 
-- [ ] Parte 1 — Infraestrutura (`src/contexts/`, atualizar `App.tsx`)
-- [ ] Parte 2 — `EstrategiasContext.tsx` + migrar `ModuloEstrategias.tsx`
+- [x] Parte 1 — Infraestrutura (`src/contexts/`, `ModalContext.tsx`, atualizar `App.tsx`) — commit `b576530`
+- [x] Parte 2 — `EstrategiasContext.tsx` + migrar `ModuloEstrategias.tsx` — commit pendente
 - [ ] Parte 3 — `RepertorioContext.tsx` + migrar `ModuloRepertorio.tsx`
 - [ ] Parte 4 — `AtividadesContext.tsx` + migrar `ModuloAtividades.tsx`
 - [ ] Parte 5 — `SequenciasContext.tsx` + `HistoricoContext.tsx`

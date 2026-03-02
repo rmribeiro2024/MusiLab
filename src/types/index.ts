@@ -167,6 +167,8 @@ export interface Estrategia {
   arquivada?: boolean
   tags?: string[]
   createdAt?: string
+  _criadoEm?: string
+  _ultimaEdicao?: string
 }
 
 // ─── ANO LETIVO / ESCOLA ──────────────────────────────────────
