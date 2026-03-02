@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import BancoPlanos from './components/BancoPlanos'
 import ErrorBoundary from './components/ErrorBoundary'
-import { ModalProvider, EstrategiasProvider } from './contexts'
+import { ModalProvider, EstrategiasProvider, RepertorioProvider } from './contexts'
 
 // ── TELA DE LOGIN ──
 function LoginScreen() {
@@ -65,9 +65,11 @@ export default function App() {
   return (
     <ModalProvider>
       <EstrategiasProvider userId={session.user.id}>
-        <ErrorBoundary modulo="MusiLab">
-          <BancoPlanos session={session} />
-        </ErrorBoundary>
+        <RepertorioProvider userId={session.user.id}>
+          <ErrorBoundary modulo="MusiLab">
+            <BancoPlanos session={session} />
+          </ErrorBoundary>
+        </RepertorioProvider>
       </EstrategiasProvider>
     </ModalProvider>
   );

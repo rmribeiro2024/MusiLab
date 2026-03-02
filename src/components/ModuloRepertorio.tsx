@@ -1,6 +1,7 @@
 import { dbSet } from '../lib/db'
 import React from 'react'
 import { useBancoPlanos } from './BancoPlanosContext'
+import { useRepertorioContext } from '../contexts'
 
 // ── OPÇÕES DE ELEMENTOS MUSICAIS ──
 const ESTILOS_OPCOES = ['Canção Infantil', 'Cantiga de Roda', 'Folclórica Brasileira', 'MPB', 'Samba', 'Bossa Nova', 'Forró', 'Pop', 'Rock', 'Música Erudita', 'Coral', 'Instrumental', 'Percussão Corporal', 'Jogo Musical', 'Música Temática', 'Música Clássica']
@@ -37,7 +38,7 @@ const INSTRUMENTACAO_OPCOES = ['🥁 Percussão','🎹 Piano/Teclado','🎸 Viol
 
 // ── SUBCOMPONENTE: painel accordion ──
     function Acc({ id, titulo, subtitulo, badge }) {
-    const { accordionAberto, setAccordionAberto } = useBancoPlanos()
+    const { accordionAberto, setAccordionAberto } = useRepertorioContext()
         const aberto = accordionAberto === id;
         return (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -59,69 +60,46 @@ const INSTRUMENTACAO_OPCOES = ['🥁 Percussão','🎹 Piano/Teclado','🎸 Viol
     }
 
 export default function ModuloRepertorio() {
-    const ctx = useBancoPlanos()
+    // ── Contexto de Repertório (Parte 3) ──────────────────────────────────────
     const {
-        accordionAberto,
-        andamentosCustomizados,
-        atividades,
-        buscaEstilo,
-        buscaRepertorio,
-        compassosCustomizados,
-        dinamicasCustomizadas,
-        editandoElemento,
-        energiasCustomizadas,
-        escalasCustomizadas,
-        estruturasCustomizadas,
-        filtroAndamento,
-        filtroCompasso,
-        filtroDinamica,
-        filtroEnergia,
-        filtroEscala,
-        filtroEstilo,
-        filtroEstrutura,
-        filtroInstrumentacao,
-        filtroOrigem,
-        filtroTonalidade,
-        instrumentacaoCustomizada,
-        musicaEditando,
-        pendingAtividadeId,
-        planoEditando,
-        planos,
-        repertorio,
-        tonalidadesCustomizadas,
-        ytIdFromUrl,
-        ytPreviewId,
-        setAccordionAberto,
-        setAndamentosCustomizados,
-        setBuscaEstilo,
-        setBuscaRepertorio,
-        setCompassosCustomizados,
-        setDinamicasCustomizadas,
-        setEditandoElemento,
-        setEnergiasCustomizadas,
-        setEscalasCustomizadas,
-        setEstruturasCustomizadas,
-        setFiltroAndamento,
-        setFiltroCompasso,
-        setFiltroDinamica,
-        setFiltroEnergia,
-        setFiltroEscala,
-        setFiltroEstilo,
-        setFiltroEstrutura,
-        setFiltroInstrumentacao,
-        setFiltroOrigem,
-        setFiltroTonalidade,
-        setInstrumentacaoCustomizada,
-        setModalConfirm,
-        setMusicaEditando,
-        setPendingAtividadeId,
-        setPlanoEditando,
-        setPlanoSelecionado,
-        setRepertorio,
-        setTonalidadesCustomizadas,
+        accordionAberto, setAccordionAberto,
+        andamentosCustomizados, setAndamentosCustomizados,
+        buscaEstilo, setBuscaEstilo,
+        buscaRepertorio, setBuscaRepertorio,
+        compassosCustomizados, setCompassosCustomizados,
+        dinamicasCustomizadas, setDinamicasCustomizadas,
+        editandoElemento, setEditandoElemento,
+        energiasCustomizadas, setEnergiasCustomizadas,
+        escalasCustomizadas, setEscalasCustomizadas,
+        estruturasCustomizadas, setEstruturasCustomizadas,
+        filtroAndamento, setFiltroAndamento,
+        filtroCompasso, setFiltroCompasso,
+        filtroDinamica, setFiltroDinamica,
+        filtroEnergia, setFiltroEnergia,
+        filtroEscala, setFiltroEscala,
+        filtroEstilo, setFiltroEstilo,
+        filtroEstrutura, setFiltroEstrutura,
+        filtroInstrumentacao, setFiltroInstrumentacao,
+        filtroOrigem, setFiltroOrigem,
+        filtroTonalidade, setFiltroTonalidade,
+        instrumentacaoCustomizada, setInstrumentacaoCustomizada,
+        musicaEditando, setMusicaEditando,
+        repertorio, setRepertorio,
+        tonalidadesCustomizadas, setTonalidadesCustomizadas,
         setViewMode,
-        setYtPreviewId,
-    } = ctx
+    } = useRepertorioContext()
+
+    // ── Contexto global (campos ainda não migrados) ───────────────────────────
+    const {
+        atividades,
+        pendingAtividadeId, setPendingAtividadeId,
+        planoEditando, setPlanoEditando,
+        planos,
+        setModalConfirm,
+        setPlanoSelecionado,
+        ytIdFromUrl,
+        ytPreviewId, setYtPreviewId,
+    } = useBancoPlanos()
 
     // Filtrar músicas
     const musicasFiltradas = repertorio.filter(m => {
