@@ -2,9 +2,17 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
 import { useBancoPlanos } from './BancoPlanosContext'
+import type { Atividade } from '../types'
+
+interface CardAtividadeProps {
+  ativ: Atividade
+  setAtividadeEditando: (a: any) => void
+  excluirAtividade: (id: any) => void
+  setModalAdicionarAoPlano: (v: any) => void
+}
 
 // ── CARD ATIVIDADE (memoizado — só re-renderiza quando a atividade muda) ──
-const CardAtividade = React.memo(({ ativ, setAtividadeEditando, excluirAtividade, setModalAdicionarAoPlano }) => (
+const CardAtividade = React.memo(({ ativ, setAtividadeEditando, excluirAtividade, setModalAdicionarAoPlano }: CardAtividadeProps) => (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-all duration-200 flex flex-col overflow-hidden group">
         <div className="h-1.5 bg-gradient-to-r from-amber-400 to-orange-400 rounded-t-2xl" />
         <div className="p-4 flex flex-col flex-1">
@@ -130,7 +138,7 @@ export default function ModuloAtividades() {
                             <textarea value={atividadeEditando.descricao}
                                 onChange={e=>setAtividadeEditando({...atividadeEditando,descricao:e.target.value})}
                                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition resize-none"
-                                rows="4" placeholder="Como fazer a atividade..."/>
+                                rows={4} placeholder="Como fazer a atividade..."/>
                             {(atividadeEditando.musicasVinculadas||[]).length > 0 && (
                                 <div className="mt-2 space-y-1">
                                     {atividadeEditando.musicasVinculadas.map((musica,mi) => (
@@ -168,7 +176,7 @@ export default function ModuloAtividades() {
                             <textarea value={(atividadeEditando.materiais||[]).join('\n')}
                                 onChange={e=>setAtividadeEditando({...atividadeEditando,materiais:e.target.value.split('\n').filter(Boolean)})}
                                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition resize-none"
-                                rows="3" placeholder="Um por linha"/>
+                                rows={3} placeholder="Um por linha"/>
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">🎵 Conceitos Musicais</label>
@@ -198,7 +206,7 @@ export default function ModuloAtividades() {
                                 ))}
                             </div>
                             <input type="text"
-                                onKeyDown={e=>{if((e.key==='Enter'||e.key===' ')&&e.target.value.trim()){e.preventDefault();const nc=e.target.value.trim();if(nc&&!(atividadeEditando.conceitos||[]).includes(nc)){setAtividadeEditando({...atividadeEditando,conceitos:[...(atividadeEditando.conceitos||[]),nc]});if(!conceitos.includes(nc)){setConceitos([...conceitos,nc].sort());}}e.target.value='';}}}
+                                onKeyDown={e=>{const t=e.target as HTMLInputElement;if((e.key==='Enter'||e.key===' ')&&t.value.trim()){e.preventDefault();const nc=t.value.trim();if(nc&&!(atividadeEditando.conceitos||[]).includes(nc)){setAtividadeEditando({...atividadeEditando,conceitos:[...(atividadeEditando.conceitos||[]),nc]});if(!conceitos.includes(nc)){setConceitos([...conceitos,nc].sort());}}t.value='';}}}
                                 className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:border-purple-400 outline-none transition"
                                 placeholder="Digite e pressione Enter... Ex: Ritmo, Melodia"/>
                         </div>
@@ -230,7 +238,7 @@ export default function ModuloAtividades() {
                                 ))}
                             </div>
                             <input type="text"
-                                onKeyDown={e=>{if((e.key==='Enter'||e.key===' ')&&e.target.value.trim()){e.preventDefault();const nt=e.target.value.trim().replace(/^#/,'');if(nt&&!(atividadeEditando.tags||[]).includes(nt)){setAtividadeEditando({...atividadeEditando,tags:[...(atividadeEditando.tags||[]),nt]});if(!tagsGlobais.includes(nt)){setTagsGlobais([...tagsGlobais,nt].sort());}}e.target.value='';}}}
+                                onKeyDown={e=>{const t=e.target as HTMLInputElement;if((e.key==='Enter'||e.key===' ')&&t.value.trim()){e.preventDefault();const nt=t.value.trim().replace(/^#/,'');if(nt&&!(atividadeEditando.tags||[]).includes(nt)){setAtividadeEditando({...atividadeEditando,tags:[...(atividadeEditando.tags||[]),nt]});if(!tagsGlobais.includes(nt)){setTagsGlobais([...tagsGlobais,nt].sort());}}t.value='';}}}
                                 className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition"
                                 placeholder="Digite e pressione Enter... Ex: roda, jogos"/>
                         </div>
@@ -247,7 +255,7 @@ export default function ModuloAtividades() {
                                 <div className="flex gap-2 mt-2">
                                     <input type="text" autoFocus placeholder="Nome da unidade..."
                                         className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none"
-                                        onKeyDown={e=>{if(e.key==='Enter'&&e.target.value.trim()){const u=e.target.value.trim();if(!unidades.includes(u)){setUnidades([...unidades,u].sort());}setAtividadeEditando({...atividadeEditando,unidade:u,_adicionandoUnidade:false});}if(e.key==='Escape'){setAtividadeEditando({...atividadeEditando,_adicionandoUnidade:false});}}}/>
+                                        onKeyDown={e=>{const t=e.target as HTMLInputElement;if(e.key==='Enter'&&t.value.trim()){const u=t.value.trim();if(!unidades.includes(u)){setUnidades([...unidades,u].sort());}setAtividadeEditando({...atividadeEditando,unidade:u,_adicionandoUnidade:false});}if(e.key==='Escape'){setAtividadeEditando({...atividadeEditando,_adicionandoUnidade:false});}}}/>
                                     <button type="button" onClick={()=>setAtividadeEditando({...atividadeEditando,_adicionandoUnidade:false})}
                                         className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm transition">Cancelar</button>
                                 </div>
@@ -258,7 +266,7 @@ export default function ModuloAtividades() {
                             <textarea value={atividadeEditando.observacao||''}
                                 onChange={e=>setAtividadeEditando({...atividadeEditando,observacao:e.target.value})}
                                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition resize-none"
-                                rows="2"/>
+                                rows={2}/>
                         </div>
                         <div className="rounded-xl border border-slate-200 overflow-hidden">
                             <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200">

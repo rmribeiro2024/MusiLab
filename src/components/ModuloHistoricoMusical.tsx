@@ -115,7 +115,7 @@ export default function ModuloHistoricoMusical() {
     };
 
     // ── COMPUTAR MÉTRICAS ──
-    const usosMusica = {};
+    const usosMusica: Record<string, { id?: any; titulo: string; autor?: string; datas: Set<string>; aulas: any[]; [key: string]: any }> = {};
     const aulasDaTurma = new Set();
 
     planos.forEach(p => {

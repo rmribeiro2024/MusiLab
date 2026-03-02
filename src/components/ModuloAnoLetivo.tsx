@@ -345,7 +345,7 @@ export default function ModuloAnoLetivo() {
                             {/* Input para nova meta (uncontrolled) */}
                             <div className="flex gap-2 mt-auto">
                                 <input type="text" placeholder="+ Adicionar meta..."
-                                    onKeyDown={e=>{ if(e.key==='Enter' && e.target.value.trim()){ adicionarMetaNoAno(anoAtivo.id, e.target.value, tipo); e.target.value=''; }}}
+                                    onKeyDown={e=>{ const t=e.target as HTMLInputElement; if(e.key==='Enter' && t.value.trim()){ adicionarMetaNoAno(anoAtivo.id, t.value, tipo); t.value=''; }}}
                                     className={`flex-1 px-3 py-2 border border-dashed border-slate-200 hover:border-${cor}-300 focus:border-${cor}-400 rounded-xl text-xs outline-none transition bg-slate-50`}/>
                             </div>
                         </div>
