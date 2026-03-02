@@ -3,7 +3,7 @@
 > Gerado em: 2026-03-01
 > Branch de trabalho: `claude/add-usestate-comments-evQWg`
 > Estado do projeto: migração modular concluída
-> Última atualização: 2026-03-02 — melhorias #2 e #7 implementadas
+> Última atualização: 2026-03-02 — melhorias #2, #7 e #8 implementadas
 
 ---
 
@@ -193,16 +193,26 @@ AnoLetivoContext        → anos letivos, escolas, feriados
 
 ### PRIORIDADE BAIXA (crescimento futuro)
 
-#### 8. Testes automatizados (Vitest + React Testing Library)
-**Problema:** Zero testes. Refatorações podem quebrar fluxos críticos.
-**Stack sugerida:**
-- `Vitest` — já compatível com Vite, zero configuração extra
-- `React Testing Library` — testa comportamento, não implementação
+#### 8. Testes automatizados (Vitest + React Testing Library) ✅ IMPLEMENTADO (2026-03-02)
+**Commit:** `feat: adiciona testes automatizados com Vitest + RTL (melhoria #8)`
 
-**Fluxos críticos para começar:**
-1. Criar plano de aula
-2. Exportar PDF
-3. Sincronizar dados com Supabase
+**O que foi feito:**
+- Instalado: `vitest@4.0.18`, `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`, `@vitest/ui`, `jsdom`
+- `vite.config.js` — bloco `test` com ambiente jsdom, globals e setupFiles
+- `package.json` — scripts: `test`, `test:ui`, `test:coverage`
+- `src/tests/setup.js` — import de jest-dom matchers
+- **35 testes** distribuídos em 4 arquivos:
+  - `helpers.test.js` — 10 testes: `lerLS`, `salvarLS`, `formatarData` (mock de db)
+  - `db.test.js` — 10 testes: `dbGet`, `dbSet`, `dbDel`, `dbSize`, `dbInit` (mock de idb)
+  - `utils.test.js` — 10 testes: `gerarIdSeguro`, `sanitizar`, `loadFromSupabase` (mock de supabase)
+  - `ErrorBoundary.test.jsx` — 5 testes: renderização normal, captura de erro, botões de reset
+
+**Resultado:**
+| | Antes | Depois |
+|---|---|---|
+| Testes automatizados | 0 | **35 passando** |
+| Cobertura de funções críticas | 0% | helpers.js, db.js, lib/utils.js, ErrorBoundary |
+| Comando | — | `npm test` |
 
 ---
 
@@ -253,8 +263,8 @@ const TelaCalendario   = lazy(() => import('./TelaCalendario'))
 | 5 | Lazy load jsPDF | **Baixo** | Médio | ✅ **Feito** |
 | 6 | Consolidar useEffects de sync | Médio | Médio | ✅ **Feito** |
 | 7 | IndexedDB (substituir localStorage) | Médio | Médio | ✅ **Feito** |
-| 8 | Testes automatizados (Vitest) | Alto | Alto | 🔜 Pendente |
+| 8 | Testes automatizados (Vitest) | Alto | Alto | ✅ **Feito** |
 | 9 | TypeScript | Alto | Médio | 🔜 Pendente |
 | 10 | Code splitting por módulo | **Baixo** | Alto | ✅ **Feito** |
 
-> **Próximo recomendado:** #8 (Testes Vitest) ou #1 (dividir contextos de estado).
+> **Próximo recomendado:** #9 (TypeScript) ou #1 (dividir contextos de estado).
