@@ -116,6 +116,7 @@ export default function TelaPrincipal() {
         toggleRecursosAtiv,
         toggleUnidade,
         unidades,
+        userId,
         setAdicionandoConceito,
         setAdicionandoUnidade,
         setAtividadeVinculandoMusica,
