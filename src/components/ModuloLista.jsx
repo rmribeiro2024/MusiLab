@@ -60,6 +60,9 @@ export default function ModuloLista() {
         unidades,
     } = ctx
 
+    // Constantes estáticas (não precisam vir do ctx)
+    const niveis = ["Todos", "Iniciante", "Intermediário", "Avançado"]
+
     // ── DASHBOARD ──
     const totalPlanos = planos.length;
     const porStatus = {

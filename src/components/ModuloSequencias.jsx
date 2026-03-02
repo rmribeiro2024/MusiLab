@@ -47,6 +47,27 @@ export default function ModuloSequencias() {
         return escola?.nome || 'Sem escola';
     }))];
 
+    const unidadesComSequencias = [...new Set(sequencias.map(s => s.unidadePredominante).filter(Boolean))]
+
+    const sequenciasFiltradas = sequencias.filter(s => {
+        const ano = anosLetivos.find(a => a.id == s.anoLetivoId)
+        const escola = ano?.escolas?.find(e => e.id == s.escolaId)
+        const nomeEscola = escola?.nome || 'Sem escola'
+        if (filtroEscolaSequencias !== 'Todas' && nomeEscola !== filtroEscolaSequencias) return false
+        if (filtroUnidadeSequencias !== 'Todas' && s.unidadePredominante !== filtroUnidadeSequencias) return false
+        if (filtroPeriodoSequencias !== 'Todos' && s.duracao !== filtroPeriodoSequencias) return false
+        if (buscaProfundaSequencias) {
+            const busca = buscaProfundaSequencias.toLowerCase()
+            const emTitulo = s.titulo?.toLowerCase().includes(busca)
+            const emSlots = (s.slots || []).some(slot => {
+                const plano = planos.find(p => p.id == slot.planoVinculado)
+                return plano?.titulo?.toLowerCase().includes(busca) || slot.rascunho?.titulo?.toLowerCase().includes(busca)
+            })
+            if (!emTitulo && !emSlots) return false
+        }
+        return true
+    })
+
     const obterInfoSequencia = (seq) => {
         const ano = anosLetivos.find(a => a.id == seq.anoLetivoId);
         if (!ano) return null;

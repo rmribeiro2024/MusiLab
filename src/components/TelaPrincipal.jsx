@@ -156,6 +156,9 @@ export default function TelaPrincipal() {
         setTagsGlobais,
     } = ctx
 
+    // Constantes estáticas (não precisam vir do ctx)
+    const niveis = ["Todos", "Iniciante", "Intermediário", "Avançado"]
+
     // ════ MODO EDIÇÃO (formulário de criação/edição de plano) ════
     if (modoEdicao && planoEditando) {
         return (
