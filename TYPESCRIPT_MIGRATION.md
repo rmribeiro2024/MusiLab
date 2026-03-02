@@ -1,6 +1,6 @@
 # MusiLab — Migração TypeScript
 
-## Status atual: **FASE 1 CONCLUÍDA** (commit `594be7d`)
+## Status atual: **FASE 2 CONCLUÍDA** (commits `594be7d` → `894a004`)
 
 ---
 
@@ -21,6 +21,28 @@ arquivos menores são convertidos primeiro. Nenhuma funcionalidade é alterada.
 | `src/lib/supabase` | `.js` | `.ts` | `SupabaseClient` tipado |
 | `src/utils/helpers` | `.js` | `.ts` | `lerLS<T>`, `salvarLS`, `formatarData` |
 | `src/components/BancoPlanosContext` | `.js` | `.ts` | `createContext<BancoPlanosContextValue \| null>` |
+
+## Arquivos JÁ convertidos ✅ (Fase 2)
+
+| Arquivo | Extensão anterior | Extensão atual | Observação |
+|---------|------------------|----------------|------------|
+| `src/components/ErrorBoundary` | `.jsx` | `.tsx` | Classe React tipada (`ErrorBoundaryProps`, `ErrorBoundaryState`) |
+| `src/components/RichTextEditor` | `.jsx` | `.tsx` | Props tipadas: `value`, `onChange`, `placeholder`, `rows`, `className` |
+| `src/components/modals/ModalAdicionarAoPlano` | `.jsx` | `.tsx` | — |
+| `src/components/modals/ModalConfiguracoes` | `.jsx` | `.tsx` | — |
+| `src/components/modals/ModalConfirm` | `.jsx` | `.tsx` | — |
+| `src/components/modals/ModalEventosEscolares` | `.jsx` | `.tsx` | — |
+| `src/components/modals/ModalGestaoTurmas` | `.jsx` | `.tsx` | — |
+| `src/components/modals/ModalGradeSemanal` | `.jsx` | `.tsx` | — |
+| `src/components/modals/ModalImportarAtividade` | `.jsx` | `.tsx` | — |
+| `src/components/modals/ModalImportarMusica` | `.jsx` | `.tsx` | — |
+| `src/components/modals/ModalNovaEscola` | `.jsx` | `.tsx` | — |
+| `src/components/modals/ModalNovaFaixa` | `.jsx` | `.tsx` | Cast `e.target as HTMLInputElement` |
+| `src/components/modals/ModalNovaMusicaInline` | `.jsx` | `.tsx` | `rows={2}` corrigido |
+| `src/components/modals/ModalRegistroPosAula` | `.jsx` | `.tsx` | `rows={2}` corrigido (5 textareas) |
+| `src/components/modals/ModalRegistroRapido` | `.jsx` | `.tsx` | — |
+| `src/components/modals/ModalTemplatesRoteiro` | `.jsx` | `.tsx` | — |
+| `src/components/modals/ModalVincularMusica` | `.jsx` | `.tsx` | — |
 
 ## Arquivos criados ✅ (Fase 1)
 
@@ -84,32 +106,9 @@ npx tsc --noEmit
 
 ## Roteiro das próximas fases
 
-### Fase 2 — Componentes simples (próxima sessão)
-Arquivos a converter (renomear `.jsx` → `.tsx` + adicionar tipos nas props):
+### Fase 2 — Componentes simples ✅ CONCLUÍDA (commit `894a004`)
 
-- [ ] `src/components/ErrorBoundary.jsx` → `.tsx`
-- [ ] `src/components/RichTextEditor.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalConfirm.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalConfiguracoes.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalAdicionarAoPlano.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalRegistroRapido.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalNovaMusicaInline.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalTemplatesRoteiro.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalNovaFaixa.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalNovaEscola.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalRegistroPosAula.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalGestaoTurmas.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalEventosEscolares.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalVincularMusica.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalImportarAtividade.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalImportarMusica.jsx` → `.tsx`
-- [ ] `src/components/modals/ModalGradeSemanal.jsx` → `.tsx`
-
-**Padrão de conversão dos modais:**
-Todos usam `useBancoPlanos()` para acessar o ctx. Basta:
-1. Renomear `.jsx` → `.tsx`
-2. Adicionar `import type { Plano, Atividade, ... } from '../../types'` (se necessário)
-3. Props: `() => JSX.Element` (sem props externas — tudo vem do ctx)
+Todos os 17 arquivos convertidos. `npx tsc --noEmit` → zero erros. 35 testes passando.
 
 ### Fase 3 — Componentes médios
 - [ ] `src/utils/pdf.js` → `.ts` (jsPDF async, complexo)
@@ -143,12 +142,13 @@ Todos usam `useBancoPlanos()` para acessar o ctx. Basta:
    npm run build      # deve passar
    npm test           # 35 testes devem passar
    ```
-3. Continuar pela **Fase 2** — converter ErrorBoundary e os 14 modais para `.tsx`
+3. Continuar pela **Fase 3** — converter componentes médios (Modulos) para `.tsx`
 4. Padrão de conversão de componente `.jsx` → `.tsx`:
    - Renomear o arquivo
    - Adicionar tipos nas props (se houver)
    - Importar tipos de `../../types` quando necessário
    - `useBancoPlanos()` já retorna `BancoPlanosContextValue` — ctx é tipado automaticamente
+   - Atenção: `rows="N"` em `<textarea>` deve ser `rows={N}` no TypeScript
 
 ---
 
