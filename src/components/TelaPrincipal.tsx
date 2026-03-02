@@ -4,9 +4,19 @@ import { dbSize } from '../lib/db'
 import { useBancoPlanos } from './BancoPlanosContext'
 import RichTextEditor from './RichTextEditor'
 import { exportarPlanoPDF } from '../utils/pdf'
+import type { Plano } from '../types'
 
 // ── LINHA PLANO (memoizado — só re-renderiza quando o próprio plano muda) ──
-const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPlanoSelecionado, abrirModalRegistro, editarPlano }) => {
+interface LinhaPlanoProps {
+  plano: Plano
+  showEscola?: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  toggleFavorito: (id: any, e?: any) => void
+  setPlanoSelecionado: (plano: Plano) => void
+  abrirModalRegistro: (plano: Plano, e: React.MouseEvent) => void
+  editarPlano: (plano: Plano) => void
+}
+const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPlanoSelecionado, abrirModalRegistro, editarPlano }: LinhaPlanoProps) => {
     const nRegs = (plano.registrosPosAula || []).length;
     const conceito1 = (plano.conceitos || [])[0] || '';
     const faixa = (plano.faixaEtaria || [])[0] || plano.nivel || '';
@@ -154,6 +164,7 @@ export default function TelaPrincipal() {
         setPlanos,
         setStatusDropdownId,
         setTagsGlobais,
+        setModalTemplates,
     } = ctx
 
     // Constantes estáticas (não precisam vir do ctx)
@@ -368,9 +379,10 @@ export default function TelaPrincipal() {
                     <input
                         type="text"
                         onKeyDown={e => {
-                            if ((e.key === 'Enter' || e.key === ' ') && e.target.value.trim()) {
+                            const t = e.target as HTMLInputElement;
+                            if ((e.key === 'Enter' || e.key === ' ') && t.value.trim()) {
                                 e.preventDefault();
-                                const novaTag = e.target.value.trim().replace(/^#/, '');
+                                const novaTag = t.value.trim().replace(/^#/, '');
                                 if (novaTag && !(planoEditando.tags || []).includes(novaTag)) {
                                     setPlanoEditando({
                                         ...planoEditando,
@@ -381,7 +393,7 @@ export default function TelaPrincipal() {
                                         setTagsGlobais([...tagsGlobais, novaTag].sort());
                                     }
                                 }
-                                e.target.value = '';
+                                t.value = '';
                             }
                         }}
                         className="w-full px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none"
@@ -424,7 +436,7 @@ export default function TelaPrincipal() {
 
                 <div className="border-t border-slate-100 py-5">
                     <div className="flex justify-between items-center mb-2"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🏛️ Habilidades BNCC</label><button type="button" onClick={sugerirBNCC} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">✨ Sugerir</button></div>
-                    <textarea value={(planoEditando.habilidadesBNCC || []).join('\n')} onChange={e => setPlanoEditando({...planoEditando, habilidadesBNCC: e.target.value.split('\n')})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows="5" placeholder="EF15ARXX - Descrição..." />
+                    <textarea value={(planoEditando.habilidadesBNCC || []).join('\n')} onChange={e => setPlanoEditando({...planoEditando, habilidadesBNCC: e.target.value.split('\n')})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={5} placeholder="EF15ARXX - Descrição..." />
                 </div>
 
                 {/* Roteiro de Atividades */}
@@ -554,12 +566,13 @@ export default function TelaPrincipal() {
                                             <div className="flex gap-2 mb-2">
                                                 <input type="text" id={`recurso-${index}`} placeholder="URL" className="flex-1 px-2 py-1 border rounded text-sm" />
                                                 <button type="button" onClick={() => {
-                                                    const url = document.getElementById(`recurso-${index}`).value.trim();
+                                                    const el = document.getElementById(`recurso-${index}`) as HTMLInputElement | null;
+                                                    const url = el?.value.trim();
                                                     if(url) {
                                                         const atualizado = [...planoEditando.atividadesRoteiro];
                                                         atualizado[index].recursos = [...(atualizado[index].recursos||[]), {url, tipo:'link'}];
                                                         setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                        document.getElementById(`recurso-${index}`).value = '';
+                                                        if (el) el.value = '';
                                                     }
                                                 }} className="bg-blue-600 text-white px-3 py-1 rounded text-sm">+</button>
                                             </div>
@@ -670,13 +683,14 @@ export default function TelaPrincipal() {
                                                         type="text" 
                                                         placeholder="Novo conceito + Enter"
                                                         onKeyPress={(e) => {
+                                                            const t = e.target as HTMLInputElement;
                                                             if(e.key === 'Enter') {
-                                                                let val = e.target.value.trim();
+                                                                let val = t.value.trim();
                                                                 if(val && !(atividade.conceitos||[]).includes(val)) {
                                                                     const atualizado = [...planoEditando.atividadesRoteiro];
                                                                     atualizado[index].conceitos = [...(atualizado[index].conceitos||[]), val];
                                                                     setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                                    e.target.value = '';
+                                                                    t.value = '';
                                                                 }
                                                             }
                                                         }}
@@ -714,13 +728,14 @@ export default function TelaPrincipal() {
                                                         type="text" 
                                                         placeholder="Nova tag + Enter"
                                                         onKeyPress={(e) => {
+                                                            const t = e.target as HTMLInputElement;
                                                             if(e.key === 'Enter') {
-                                                                let val = e.target.value.trim().replace(/^#/, '');
+                                                                let val = t.value.trim().replace(/^#/, '');
                                                                 if(val && !(atividade.tags||[]).includes(val)) {
                                                                     const atualizado = [...planoEditando.atividadesRoteiro];
                                                                     atualizado[index].tags = [...(atualizado[index].tags||[]), val];
                                                                     setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                                    e.target.value = '';
+                                                                    t.value = '';
                                                                 }
                                                             }
                                                         }}
@@ -759,7 +774,7 @@ export default function TelaPrincipal() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {(() => {
                                 // Extrair materiais mais usados de todos os planos
-                                const materiaisContagem = {};
+                                const materiaisContagem: Record<string, number> = {};
                                 planos.forEach(p => {
                                     (p.materiais || []).forEach(mat => {
                                         const m = mat.trim();
@@ -840,15 +855,16 @@ export default function TelaPrincipal() {
                                 type="text" 
                                 placeholder="Ex: Pandeiro, Violão, Microfone..."
                                 onKeyPress={(e) => {
-                                    if (e.key === 'Enter' && e.target.value.trim()) {
-                                        const novoMat = e.target.value.trim();
+                                    const t = e.target as HTMLInputElement;
+                                    if (e.key === 'Enter' && t.value.trim()) {
+                                        const novoMat = t.value.trim();
                                         if (!planoEditando.materiais.includes(novoMat)) {
                                             setPlanoEditando({
-                                                ...planoEditando, 
+                                                ...planoEditando,
                                                 materiais: [...planoEditando.materiais, novoMat]
                                             });
                                         }
-                                        e.target.value = '';
+                                        t.value = '';
                                     }
                                 }}
                                 className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none"
@@ -884,7 +900,7 @@ export default function TelaPrincipal() {
 
                 <div className="border-t border-slate-100 py-5"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🔗 Links e Imagens</label><div className="flex gap-2 mb-3 flex-col md:flex-row"><input type="text" placeholder="URL..." value={novoRecursoUrl} onChange={e => setNovoRecursoUrl(e.target.value)} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /><select value={novoRecursoTipo} onChange={e => setNovoRecursoTipo(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white"><option value="link">Link</option><option value="imagem">Imagem</option></select><button type="button" onClick={adicionarRecurso} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-4 py-2 rounded-xl text-sm font-semibold transition-colors">Add</button></div><div className="space-y-2">{(planoEditando.recursos || []).map((rec, idx) => (<div key={idx} className="flex justify-between items-center bg-white p-2 rounded-xl border border-slate-200"><div className="flex items-center gap-2 overflow-hidden"><span>{rec.tipo === 'imagem' ? '🖼️' : '🔗'}</span><span className="text-sm truncate max-w-xs text-slate-700">{rec.url}</span></div><button type="button" onClick={() => removerRecurso(idx)} className="text-red-400 hover:text-red-600 font-bold px-2">✕</button></div>))}</div></div>
 
-                <div className="border-t border-slate-100 py-5"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows="3" /></div>
+                <div className="border-t border-slate-100 py-5"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={3} /></div>
 
                 <div className="px-4 py-4 bg-white border-t border-slate-100 flex gap-3 sticky bottom-0">
                     <button type="button" onClick={fecharModal} className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm">Cancelar</button>
