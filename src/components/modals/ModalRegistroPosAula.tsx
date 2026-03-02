@@ -147,23 +147,23 @@ export default function ModalRegistroPosAula() {
                         {/* Campos de texto */}
                         <div>
                             <label className="block font-bold text-gray-800 mb-1 text-sm">📋 O que foi realizado nesta aula</label>
-                            <textarea value={novoRegistro.resumoAula} onChange={e=>setNovoRegistro({...novoRegistro, resumoAula: e.target.value})} className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-gray-500 outline-none" rows="2" placeholder="Ex: Ritmo corporal + início da música X" />
+                            <textarea value={novoRegistro.resumoAula} onChange={e=>setNovoRegistro({...novoRegistro, resumoAula: e.target.value})} className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-gray-500 outline-none" rows={2} placeholder="Ex: Ritmo corporal + início da música X" />
                         </div>
                         <div>
                             <label className="block font-bold text-green-700 mb-1 text-sm">✅ O que funcionou bem</label>
-                            <textarea value={novoRegistro.funcionouBem} onChange={e=>setNovoRegistro({...novoRegistro, funcionouBem: e.target.value})} className="w-full px-3 py-2 border-2 border-green-200 rounded-lg text-sm focus:border-green-400 outline-none" rows="2" placeholder="Ex: A atividade rítmica em grupo engajou muito..." />
+                            <textarea value={novoRegistro.funcionouBem} onChange={e=>setNovoRegistro({...novoRegistro, funcionouBem: e.target.value})} className="w-full px-3 py-2 border-2 border-green-200 rounded-lg text-sm focus:border-green-400 outline-none" rows={2} placeholder="Ex: A atividade rítmica em grupo engajou muito..." />
                         </div>
                         <div>
                             <label className="block font-bold text-red-600 mb-1 text-sm">❌ O que não funcionou</label>
-                            <textarea value={novoRegistro.naoFuncionou} onChange={e=>setNovoRegistro({...novoRegistro, naoFuncionou: e.target.value})} className="w-full px-3 py-2 border-2 border-red-200 rounded-lg text-sm focus:border-red-400 outline-none" rows="2" placeholder="Ex: Tempo insuficiente para a etapa de criação..." />
+                            <textarea value={novoRegistro.naoFuncionou} onChange={e=>setNovoRegistro({...novoRegistro, naoFuncionou: e.target.value})} className="w-full px-3 py-2 border-2 border-red-200 rounded-lg text-sm focus:border-red-400 outline-none" rows={2} placeholder="Ex: Tempo insuficiente para a etapa de criação..." />
                         </div>
                         <div>
                             <label className="block font-bold text-blue-600 mb-1 text-sm">💡 Ideias para a próxima aula</label>
-                            <textarea value={novoRegistro.proximaAula} onChange={e=>setNovoRegistro({...novoRegistro, proximaAula: e.target.value})} className="w-full px-3 py-2 border-2 border-blue-200 rounded-lg text-sm focus:border-blue-400 outline-none" rows="2" placeholder="Ex: Começar com o ostinato antes da canção..." />
+                            <textarea value={novoRegistro.proximaAula} onChange={e=>setNovoRegistro({...novoRegistro, proximaAula: e.target.value})} className="w-full px-3 py-2 border-2 border-blue-200 rounded-lg text-sm focus:border-blue-400 outline-none" rows={2} placeholder="Ex: Começar com o ostinato antes da canção..." />
                         </div>
                         <div>
                             <label className="block font-bold text-purple-600 mb-1 text-sm">👥 Comportamento da turma</label>
-                            <textarea value={novoRegistro.comportamento} onChange={e=>setNovoRegistro({...novoRegistro, comportamento: e.target.value})} className="w-full px-3 py-2 border-2 border-purple-200 rounded-lg text-sm focus:border-purple-400 outline-none" rows="2" placeholder="Ex: Turma agitada no início, focou após aquecimento..." />
+                            <textarea value={novoRegistro.comportamento} onChange={e=>setNovoRegistro({...novoRegistro, comportamento: e.target.value})} className="w-full px-3 py-2 border-2 border-purple-200 rounded-lg text-sm focus:border-purple-400 outline-none" rows={2} placeholder="Ex: Turma agitada no início, focou após aquecimento..." />
                         </div>
                         <button onClick={salvarRegistro} className={`w-full py-3 rounded-xl font-bold text-base text-white ${registroEditando ? 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700' : 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700'}`}>
                             {registroEditando ? '✓ Salvar alterações' : '💾 Salvar Registro'}

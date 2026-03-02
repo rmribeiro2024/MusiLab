@@ -13,15 +13,24 @@ export interface AtividadeRoteiro {
   duracao: string
   descricao?: string
   musicaVinculada?: string | null
+  musicasVinculadas?: Array<{ id: string | number; titulo: string; autor?: string }>
 }
 
 export interface RegistroPosAula {
   id: string | number
   data: string
-  resumo: string
-  participacao: string
+  resumo?: string
+  participacao?: string
   observacoes?: string
   humor?: string
+  // Campos do formulário de registro pós-aula
+  turma?: string | number
+  dataAula?: string
+  resumoAula?: string
+  funcionouBem?: string
+  naoFuncionou?: string
+  proximaAula?: string
+  comportamento?: string
 }
 
 export interface Plano {
@@ -55,9 +64,10 @@ export interface Plano {
 
 // ─── ATIVIDADE PEDAGÓGICA ─────────────────────────────────────
 export interface Atividade {
-  id: string
+  id: string | number
   nome: string
   descricao?: string
+  duracao?: string
   categoria?: string
   faixaEtaria: string[]
   tags: string[]
@@ -69,10 +79,11 @@ export interface Atividade {
 
 // ─── REPERTÓRIO / MÚSICA ──────────────────────────────────────
 export interface Musica {
-  id: string
+  id: string | number
   titulo: string
   autor?: string
   origem?: string
+  // Campos individuais (legado — mantidos para compatibilidade)
   estilo?: string
   tonalidade?: string
   escala?: string
@@ -80,8 +91,23 @@ export interface Musica {
   andamento?: string
   estrutura?: string
   energia?: string
-  instrumentacao?: string
   dinamica?: string
+  // Campos em array (novo formato)
+  estilos?: string[]
+  tonalidades?: string[]
+  escalas?: string[]
+  compassos?: string[]
+  andamentos?: string[]
+  estruturas?: string[]
+  energias?: string[]
+  dinamicas?: string[]
+  instrumentacao?: string | string[]
+  instrumentoDestaque?: string
+  // Vínculos
+  planosVinculados?: Array<string | number>
+  links?: string[]
+  pdfs?: string[]
+  audios?: string[]
   tags?: string[]
   observacoes?: string
   arquivada?: boolean
@@ -154,16 +180,19 @@ export interface AnoLetivo {
   ano?: string | number
   dataInicio?: string
   dataFim?: string
+  status?: string
   escolas: Escola[]
 }
 
 // ─── EVENTO ESCOLAR ───────────────────────────────────────────
 export interface EventoEscolar {
-  id?: string
+  id?: string | number
   data: string
   nome: string
   descricao?: string
   tipo?: string
+  anoLetivoId?: string | number
+  escolaId?: string | number
 }
 
 // ─── GRADE SEMANAL ───────────────────────────────────────────
@@ -197,7 +226,8 @@ export interface Configuracoes {
   tema?: string
   idioma?: string
   notificacoes?: boolean
-  [key: string]: unknown
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any
 }
 
 // ─── SUPABASE ROW ────────────────────────────────────────────
@@ -325,5 +355,6 @@ export interface BancoPlanosContextValue {
   setBuscaPlanoVinculo: React.Dispatch<React.SetStateAction<string>>
 
   // Outros campos — indexados para compatibilidade com JS existente
-  [key: string]: unknown
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any
 }

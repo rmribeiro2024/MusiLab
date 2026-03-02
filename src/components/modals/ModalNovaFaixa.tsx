@@ -47,7 +47,7 @@ export default function ModalNovaFaixa() {
                                         faixaEtaria: (p.faixaEtaria||[]).map(fe => fe === f ? novo : fe)
                                     })));
                                 }}
-                                onKeyDown={e => { if(e.key==='Enter') e.target.blur(); if(e.key==='Escape') { e.target.value=f; e.target.blur(); }}}
+                                onKeyDown={e => { const t = e.target as HTMLInputElement; if(e.key==='Enter') t.blur(); if(e.key==='Escape') { t.value=f; t.blur(); }}}
                                 className="flex-1 px-3 py-2 border-2 border-transparent hover:border-indigo-200 focus:border-indigo-500 rounded-lg text-sm font-medium outline-none bg-indigo-50 focus:bg-white transition"
                             />
                             <button
