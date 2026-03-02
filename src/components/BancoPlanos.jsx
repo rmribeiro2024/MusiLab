@@ -21,6 +21,7 @@ const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
 import { BancoPlanosContext } from './BancoPlanosContext'
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
+import { dbGet, dbSet, dbDel } from '../lib/db'
 import { exportarPlanoPDF, exportarSequenciaPDF } from '../utils/pdf'
 import ModalConfirm from './modals/ModalConfirm'
 import ModalNovaEscola from './modals/ModalNovaEscola'
@@ -215,7 +216,7 @@ export default function BancoPlanos({ session }) {
             // MÓDULO: REPERTÓRIO
             // ============================================================
             const [repertorio, setRepertorio] = useState(() => {
-                const saved = localStorage.getItem('repertorio');
+                const saved = dbGet('repertorio');
                 return saved ? JSON.parse(saved) : [];
             });
             const [buscaRepertorio, setBuscaRepertorio] = useState('');
@@ -248,7 +249,7 @@ export default function BancoPlanos({ session }) {
             // MÓDULO: PLANOS DE AULA
             // ============================================================
             const [planos, setPlanos] = useState(() => {
-                const saved = localStorage.getItem('planosAula');
+                const saved = dbGet('planosAula');
                 const parsed = saved ? JSON.parse(saved) : planosIniciais;
                 return parsed.map(normalizePlano);
             });
@@ -258,7 +259,7 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // Estados para Atividades
             const [atividades, setAtividades] = useState(() => {
-                const saved = localStorage.getItem('atividades');
+                const saved = dbGet('atividades');
                 return saved ? JSON.parse(saved) : [];
             });
             const [atividadeEditando, setAtividadeEditando] = useState(null);
@@ -276,13 +277,13 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // Estados para Eventos Escolares e Feriados
             const [eventosEscolares, setEventosEscolares] = useState(() => {
-                const saved = localStorage.getItem('eventosEscolares');
+                const saved = dbGet('eventosEscolares');
                 return saved ? JSON.parse(saved) : [];
             });
             const [modalEventos, setModalEventos] = useState(false);
             const [eventoEditando, setEventoEditando] = useState(null);
             const [ocultarFeriados, setOcultarFeriados] = useState(() => {
-                const saved = localStorage.getItem('ocultarFeriados');
+                const saved = dbGet('ocultarFeriados');
                 return saved === 'true';
             });
 
@@ -291,7 +292,7 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // Estados para Sequências Didáticas
             const [sequencias, setSequencias] = useState(() => {
-                const saved = localStorage.getItem('sequenciasDidaticas');
+                const saved = dbGet('sequenciasDidaticas');
                 return saved ? JSON.parse(saved) : [];
             });
             const [sequenciaEditando, setSequenciaEditando] = useState(null);
@@ -312,7 +313,7 @@ export default function BancoPlanos({ session }) {
             const objetivosEstrategiaInicial = ['Desenvolver percepção auditiva','Consolidar consciência rítmica','Desenvolver coordenação motora','Trabalhar afinação','Estimular criatividade musical','Desenvolver improvisação','Ampliar escuta ativa','Desenvolver memória musical','Desenvolver expressão musical','Desenvolver autonomia musical'];
 
             const [estrategias, setEstrategias] = useState(() => {
-                const saved = localStorage.getItem('estrategias');
+                const saved = dbGet('estrategias');
                 return saved ? JSON.parse(saved) : [];
             });
             const [estrategiaEditando, setEstrategiaEditando] = useState(null);
@@ -322,15 +323,15 @@ export default function BancoPlanos({ session }) {
             const [filtroObjetivoEstrategia, setFiltroObjetivoEstrategia] = useState('Todos');
             const [mostrarArquivadasEstrategia, setMostrarArquivadasEstrategia] = useState(false);
             const [categoriasEstrategia, setCategoriasEstrategia] = useState(() => {
-                const saved = localStorage.getItem('categoriasEstrategia');
+                const saved = dbGet('categoriasEstrategia');
                 return saved ? JSON.parse(saved) : categoriasEstrategiaInicial;
             });
             const [funcoesEstrategia, setFuncoesEstrategia] = useState(() => {
-                const saved = localStorage.getItem('funcoesEstrategia');
+                const saved = dbGet('funcoesEstrategia');
                 return saved ? JSON.parse(saved) : funcoesEstrategiaInicial;
             });
             const [objetivosEstrategia, setObjetivosEstrategia] = useState(() => {
-                const saved = localStorage.getItem('objetivosEstrategia');
+                const saved = dbGet('objetivosEstrategia');
                 return saved ? JSON.parse(saved) : objetivosEstrategiaInicial;
             });
             const [novaCategoriaEstr, setNovaCategoriaEstr] = useState('');
@@ -342,11 +343,11 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // ── MEU ANO LETIVO (Planejamento Anual) ──
             const [planejamentoAnual, setPlanejamentoAnual] = useState(() => {
-                const saved = localStorage.getItem('planejamentoAnual');
+                const saved = dbGet('planejamentoAnual');
                 return saved ? JSON.parse(saved) : [];
             });
             const [anoPlanoAtivoId, setAnoPlanoAtivoId] = useState(() => {
-                return localStorage.getItem('anoPlanoAtivoId') || null;
+                return dbGet('anoPlanoAtivoId') || null;
             });
             const [mostrandoFormNovoAno, setMostrandoFormNovoAno] = useState(false);
             const [formNovoAno, setFormNovoAno] = useState({ nome: String(new Date().getFullYear()), dataInicio: '', dataFim: '' });
@@ -359,12 +360,12 @@ export default function BancoPlanos({ session }) {
             // MÓDULO: CURRÍCULO
             // ============================================================
             const [conceitos, setConceitos] = useState(() => {
-                const saved = localStorage.getItem('conceitosPersonalizados');
+                const saved = dbGet('conceitosPersonalizados');
                 return saved ? JSON.parse(saved) : conceitosIniciais;
             });
 
             const [unidades, setUnidades] = useState(() => {
-                const saved = localStorage.getItem('unidadesPersonalizadas');
+                const saved = dbGet('unidadesPersonalizadas');
                 return saved ? JSON.parse(saved) : unidadesIniciais;
             });
             
@@ -373,7 +374,7 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // Estado global de Tags (similar aos conceitos)
             const [tagsGlobais, setTagsGlobais] = useState(() => {
-                const saved = localStorage.getItem('tagsGlobais');
+                const saved = dbGet('tagsGlobais');
                 if (saved) return JSON.parse(saved);
                 
                 // Extrair tags existentes dos planos e atividades
@@ -385,18 +386,18 @@ export default function BancoPlanos({ session }) {
             
             // Salvar tags globais
             useEffect(() => {
-                localStorage.setItem('tagsGlobais', JSON.stringify(tagsGlobais));
+                dbSet('tagsGlobais', JSON.stringify(tagsGlobais));
             }, [tagsGlobais]);
 
             // Salvar estratégias e suas listas configuráveis
-            useEffect(() => { localStorage.setItem('estrategias', JSON.stringify(estrategias)); }, [estrategias]);
-            useEffect(() => { localStorage.setItem('categoriasEstrategia', JSON.stringify(categoriasEstrategia)); }, [categoriasEstrategia]);
-            useEffect(() => { localStorage.setItem('funcoesEstrategia', JSON.stringify(funcoesEstrategia)); }, [funcoesEstrategia]);
-            useEffect(() => { localStorage.setItem('objetivosEstrategia', JSON.stringify(objetivosEstrategia)); }, [objetivosEstrategia]);
+            useEffect(() => { dbSet('estrategias', JSON.stringify(estrategias)); }, [estrategias]);
+            useEffect(() => { dbSet('categoriasEstrategia', JSON.stringify(categoriasEstrategia)); }, [categoriasEstrategia]);
+            useEffect(() => { dbSet('funcoesEstrategia', JSON.stringify(funcoesEstrategia)); }, [funcoesEstrategia]);
+            useEffect(() => { dbSet('objetivosEstrategia', JSON.stringify(objetivosEstrategia)); }, [objetivosEstrategia]);
 
             // Salvar planejamento anual
-            useEffect(() => { localStorage.setItem('planejamentoAnual', JSON.stringify(planejamentoAnual)); }, [planejamentoAnual]);
-            useEffect(() => { if(anoPlanoAtivoId) localStorage.setItem('anoPlanoAtivoId', anoPlanoAtivoId); }, [anoPlanoAtivoId]);
+            useEffect(() => { dbSet('planejamentoAnual', JSON.stringify(planejamentoAnual)); }, [planejamentoAnual]);
+            useEffect(() => { if(anoPlanoAtivoId) dbSet('anoPlanoAtivoId', anoPlanoAtivoId); }, [anoPlanoAtivoId]);
 
             // ============================================================
             // MÓDULO: ESTRUTURA HIERÁRQUICA DE TURMAS
@@ -405,11 +406,11 @@ export default function BancoPlanos({ session }) {
             // estrutura: [ { id, nome, series: [ { id, nome, turmas: [ { id, nome } ] } ] } ]
             // ── ESTRUTURA HIERÁRQUICA: ANO LETIVO → ESCOLA → SEGMENTO → TURMA ──
             const [anosLetivos, setAnosLetivos] = useState(() => {
-                const saved = localStorage.getItem('anosLetivos');
+                const saved = dbGet('anosLetivos');
                 if (saved) return JSON.parse(saved);
                 
                 // Migração automática de dados antigos
-                const old = localStorage.getItem('escolasTurmas');
+                const old = dbGet('escolasTurmas');
                 if (old) {
                     try {
                         const escolasAntigas = JSON.parse(old);
@@ -448,7 +449,7 @@ export default function BancoPlanos({ session }) {
             // MÓDULO: CONFIGURAÇÕES GLOBAIS
             // ============================================================
             const [statusSalvamento, setStatusSalvamento] = useState('');
-            const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
+            const [darkMode, setDarkMode] = useState(() => dbGet('darkMode') === 'true');
 
             // ============================================================
             // MÓDULO: HISTÓRICO MUSICAL DA TURMA
@@ -482,7 +483,7 @@ export default function BancoPlanos({ session }) {
                 setPlanoEditando({ ...planoEditando, atividadesRoteiro: roteiro });
             };
             useEffect(() => {
-                localStorage.setItem('darkMode', darkMode);
+                dbSet('darkMode', darkMode);
                 if (darkMode) { document.documentElement.classList.add('dark'); }
                 else { document.documentElement.classList.remove('dark'); }
             }, [darkMode]);
@@ -582,7 +583,7 @@ export default function BancoPlanos({ session }) {
             const [planoEditando, setPlanoEditando] = useState(null);
             const [formExpandido, setFormExpandido] = useState(false);
             const [materiaisBloqueados, setMateriaisBloqueados] = useState(() => {
-                const saved = localStorage.getItem('materiaisBloqueados');
+                const saved = dbGet('materiaisBloqueados');
                 return saved ? JSON.parse(saved) : [];
             });
             
@@ -634,7 +635,7 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // Estados para Grade Semanal
             const [gradesSemanas, setGradesSemanas] = useState(() => {
-                const saved = localStorage.getItem('gradesSemanas');
+                const saved = dbGet('gradesSemanas');
                 return saved ? JSON.parse(saved) : [];
             });
             const [modalGradeSemanal, setModalGradeSemanal] = useState(false);
@@ -647,11 +648,11 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // Templates de Roteiro
             const [templatesRoteiro, setTemplatesRoteiro] = React.useState(() => {
-                const saved = localStorage.getItem('templatesRoteiro');
+                const saved = dbGet('templatesRoteiro');
                 return saved ? JSON.parse(saved) : [];
             });
             React.useEffect(() => {
-                localStorage.setItem('templatesRoteiro', JSON.stringify(templatesRoteiro));
+                dbSet('templatesRoteiro', JSON.stringify(templatesRoteiro));
             }, [templatesRoteiro]);
             const [modalTemplates, setModalTemplates] = React.useState(false);
             const [nomeNovoTemplate, setNomeNovoTemplate] = React.useState('');
@@ -713,7 +714,7 @@ export default function BancoPlanos({ session }) {
             // MÓDULO: FAIXAS ETÁRIAS
             // ============================================================
             const [faixas, setFaixas] = useState(() => {
-                const saved = localStorage.getItem('faixasEtarias');
+                const saved = dbGet('faixasEtarias');
                 return saved ? JSON.parse(saved) : ["Todos", "1\u00b0 ano", "2\u00b0 ano", "3\u00b0 ano", "4\u00b0 ano", "5\u00b0 ano"];
             });
             // ============================================================
@@ -805,8 +806,8 @@ export default function BancoPlanos({ session }) {
                             if(cfg.instrumentacaoCustomizada) setInstrumentacaoCustomizada(cfg.instrumentacaoCustomizada);
                         }
                         // Atualiza localStorage com dados frescos da nuvem
-                        if (planosC !== null) localStorage.setItem('planosAula', JSON.stringify(planosC));
-                        if (repertorioC !== null) localStorage.setItem('repertorio', JSON.stringify(repertorioC));
+                        if (planosC !== null) dbSet('planosAula', JSON.stringify(planosC));
+                        if (repertorioC !== null) dbSet('repertorio', JSON.stringify(repertorioC));
                     } catch(e) { console.error('[MusiLab] Erro ao carregar da nuvem:', e); }
                     setDadosCarregados(true);
                 })();
@@ -877,7 +878,7 @@ export default function BancoPlanos({ session }) {
                     labelCancelar: 'Cancelar',
                     perigo: false,
                     onConfirm: async () => {
-                        CHAVES_LOCALSTORAGE.forEach(chave => localStorage.removeItem(chave));
+                        CHAVES_LOCALSTORAGE.forEach(chave => dbDel(chave));
                         await supabase.auth.signOut();
                     }
                 });
@@ -896,25 +897,25 @@ export default function BancoPlanos({ session }) {
             }, [modoEdicao, planoEditando]);
 
             useEffect(() => {
-                localStorage.setItem('planosAula', JSON.stringify(planos));
+                dbSet('planosAula', JSON.stringify(planos));
                 triggerSalvo();
             }, [planos]);
             
             useEffect(() => {
-                localStorage.setItem('materiaisBloqueados', JSON.stringify(materiaisBloqueados));
+                dbSet('materiaisBloqueados', JSON.stringify(materiaisBloqueados));
             }, [materiaisBloqueados]);
 
-            useEffect(() => { localStorage.setItem('conceitosPersonalizados', JSON.stringify(conceitos)); triggerSalvo(); }, [conceitos]);
-            useEffect(() => { localStorage.setItem('unidadesPersonalizadas', JSON.stringify(unidades)); triggerSalvo(); }, [unidades]);
-            useEffect(() => { localStorage.setItem('anosLetivos', JSON.stringify(anosLetivos)); triggerSalvo(); }, [anosLetivos]);
-            useEffect(() => { localStorage.setItem('faixasEtarias', JSON.stringify(faixas)); triggerSalvo(); }, [faixas]);
-            useEffect(() => { localStorage.setItem('gradesSemanas', JSON.stringify(gradesSemanas)); triggerSalvo(); }, [gradesSemanas]);
-            useEffect(() => { localStorage.setItem('atividades', JSON.stringify(atividades)); triggerSalvo(); }, [atividades]);
-            useEffect(() => { localStorage.setItem('eventosEscolares', JSON.stringify(eventosEscolares)); triggerSalvo(); }, [eventosEscolares]);
-            useEffect(() => { localStorage.setItem('sequenciasDidaticas', JSON.stringify(sequencias)); triggerSalvo(); }, [sequencias]);
-            useEffect(() => { localStorage.setItem('ocultarFeriados', ocultarFeriados); }, [ocultarFeriados]);
+            useEffect(() => { dbSet('conceitosPersonalizados', JSON.stringify(conceitos)); triggerSalvo(); }, [conceitos]);
+            useEffect(() => { dbSet('unidadesPersonalizadas', JSON.stringify(unidades)); triggerSalvo(); }, [unidades]);
+            useEffect(() => { dbSet('anosLetivos', JSON.stringify(anosLetivos)); triggerSalvo(); }, [anosLetivos]);
+            useEffect(() => { dbSet('faixasEtarias', JSON.stringify(faixas)); triggerSalvo(); }, [faixas]);
+            useEffect(() => { dbSet('gradesSemanas', JSON.stringify(gradesSemanas)); triggerSalvo(); }, [gradesSemanas]);
+            useEffect(() => { dbSet('atividades', JSON.stringify(atividades)); triggerSalvo(); }, [atividades]);
+            useEffect(() => { dbSet('eventosEscolares', JSON.stringify(eventosEscolares)); triggerSalvo(); }, [eventosEscolares]);
+            useEffect(() => { dbSet('sequenciasDidaticas', JSON.stringify(sequencias)); triggerSalvo(); }, [sequencias]);
+            useEffect(() => { dbSet('ocultarFeriados', ocultarFeriados); }, [ocultarFeriados]);
             // CORREÇÃO CRÍTICA: repertorio não tinha useEffect — músicas se perdiam ao fechar
-            useEffect(() => { localStorage.setItem('repertorio', JSON.stringify(repertorio)); triggerSalvo(); }, [repertorio]);
+            useEffect(() => { dbSet('repertorio', JSON.stringify(repertorio)); triggerSalvo(); }, [repertorio]);
 
             // ============================================================
             // FUNÇÕES: BUSCA E FILTROS
@@ -1313,7 +1314,7 @@ export default function BancoPlanos({ session }) {
                         const musicaAtualizada = {...musica, planosVinculados: [...(musica.planosVinculados||[]), planoEditando.id]};
                         const novoRepertorio = repertorio.map(m => m.id === musica.id ? musicaAtualizada : m);
                         setRepertorio(novoRepertorio);
-                        localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
+                        dbSet('repertorio', JSON.stringify(novoRepertorio));
                         
                         setAtividadeVinculandoMusica(null);
                         setModalConfirm({ conteudo: '✅ Música vinculada!', somenteOk: true, labelConfirm: 'OK' });
@@ -1349,7 +1350,7 @@ export default function BancoPlanos({ session }) {
                     };
                     const novoRepertorio = repertorio.map(m => m.id === musica.id ? musicaAtualizada : m);
                     setRepertorio(novoRepertorio);
-                    localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
+                    dbSet('repertorio', JSON.stringify(novoRepertorio));
                     
                     setAtividadeVinculandoMusica(null);
                     alert('✅ Música vinculada!');
@@ -1378,7 +1379,7 @@ export default function BancoPlanos({ session }) {
                 const musicaAtualizada = {...musica, planosVinculados: [...(musica.planosVinculados||[]), planoEditando.id]};
                 const novoRepertorio = repertorio.map(m => m.id === musica.id ? musicaAtualizada : m);
                 setRepertorio(novoRepertorio);
-                localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
+                dbSet('repertorio', JSON.stringify(novoRepertorio));
                 
                 setModalImportarMusica(false);
                 setModalConfirm({ conteudo: '✅ Música importada!', somenteOk: true, labelConfirm: 'OK' });
@@ -1429,7 +1430,7 @@ export default function BancoPlanos({ session }) {
                         };
                         const novoRepertorio = repertorio.map(m => m.id === musicaVinculada.id ? musicaAtualizada : m);
                         setRepertorio(novoRepertorio);
-                        localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
+                        dbSet('repertorio', JSON.stringify(novoRepertorio));
                     }
                 }
             };

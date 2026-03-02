@@ -1,3 +1,4 @@
+import { dbSet } from '../lib/db'
 import React from 'react'
 import { useBancoPlanos } from './BancoPlanosContext'
 
@@ -513,7 +514,7 @@ export default function ModuloRepertorio() {
                                 {/* Compasso */}
                                 <div>
                                     {labelRow('Compasso',
-                                        () => { const novo = prompt('Novo compasso:'); if(novo && !COMPASSOS_OPCOES.includes(novo) && !compassosCustomizados.includes(novo)) { const novos=[...compassosCustomizados,novo]; setCompassosCustomizados(novos); localStorage.setItem('compassosCustomizados',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, compassos:[...(musicaEditando.compassos||[]),novo]}); }},
+                                        () => { const novo = prompt('Novo compasso:'); if(novo && !COMPASSOS_OPCOES.includes(novo) && !compassosCustomizados.includes(novo)) { const novos=[...compassosCustomizados,novo]; setCompassosCustomizados(novos); dbSet('compassosCustomizados',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, compassos:[...(musicaEditando.compassos||[]),novo]}); }},
                                         () => setEditandoElemento('compasso')
                                     )}
                                     {chips([...COMPASSOS_OPCOES,...compassosCustomizados], musicaEditando.compassos, comp => { const l=musicaEditando.compassos||[]; setMusicaEditando({...musicaEditando, compassos: l.includes(comp)?l.filter(c=>c!==comp):[...l,comp]}); })}
@@ -521,7 +522,7 @@ export default function ModuloRepertorio() {
                                 {/* Estrutura */}
                                 <div>
                                     {labelRow('Estrutura',
-                                        () => { const novo = prompt('Nova estrutura:'); if(novo && !ESTRUTURAS_OPCOES.includes(novo) && !estruturasCustomizadas.includes(novo)) { const novos=[...estruturasCustomizadas,novo]; setEstruturasCustomizadas(novos); localStorage.setItem('estruturasCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, estruturas:[...(musicaEditando.estruturas||[]),novo]}); }},
+                                        () => { const novo = prompt('Nova estrutura:'); if(novo && !ESTRUTURAS_OPCOES.includes(novo) && !estruturasCustomizadas.includes(novo)) { const novos=[...estruturasCustomizadas,novo]; setEstruturasCustomizadas(novos); dbSet('estruturasCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, estruturas:[...(musicaEditando.estruturas||[]),novo]}); }},
                                         () => setEditandoElemento('estrutura')
                                     )}
                                     {chips([...ESTRUTURAS_OPCOES,...estruturasCustomizadas], musicaEditando.estruturas, est => { const l=musicaEditando.estruturas||[]; setMusicaEditando({...musicaEditando, estruturas: l.includes(est)?l.filter(e=>e!==est):[...l,est]}); })}
@@ -548,7 +549,7 @@ export default function ModuloRepertorio() {
                                 {/* Tonalidade */}
                                 <div>
                                     {labelRow('Tonalidade / Modo',
-                                        () => { const novo = prompt('Nova tonalidade:'); if(novo && !TONALIDADES_OPCOES.includes(novo) && !tonalidadesCustomizadas.includes(novo)) { const novos=[...tonalidadesCustomizadas,novo]; setTonalidadesCustomizadas(novos); localStorage.setItem('tonalidadesCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, tonalidades:[...(musicaEditando.tonalidades||[]),novo]}); }},
+                                        () => { const novo = prompt('Nova tonalidade:'); if(novo && !TONALIDADES_OPCOES.includes(novo) && !tonalidadesCustomizadas.includes(novo)) { const novos=[...tonalidadesCustomizadas,novo]; setTonalidadesCustomizadas(novos); dbSet('tonalidadesCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, tonalidades:[...(musicaEditando.tonalidades||[]),novo]}); }},
                                         () => setEditandoElemento('tonalidade')
                                     )}
                                     {chips([...TONALIDADES_OPCOES,...tonalidadesCustomizadas], musicaEditando.tonalidades, ton => { const l=musicaEditando.tonalidades||[]; setMusicaEditando({...musicaEditando, tonalidades: l.includes(ton)?l.filter(t=>t!==ton):[...l,ton]}); })}
@@ -556,7 +557,7 @@ export default function ModuloRepertorio() {
                                 {/* Escala */}
                                 <div>
                                     {labelRow('Escala',
-                                        () => { const novo = prompt('Nova escala:'); if(novo && !ESCALAS_OPCOES.includes(novo) && !escalasCustomizadas.includes(novo)) { const novos=[...escalasCustomizadas,novo]; setEscalasCustomizadas(novos); localStorage.setItem('escalasCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, escalas:[...(musicaEditando.escalas||[]),novo]}); }},
+                                        () => { const novo = prompt('Nova escala:'); if(novo && !ESCALAS_OPCOES.includes(novo) && !escalasCustomizadas.includes(novo)) { const novos=[...escalasCustomizadas,novo]; setEscalasCustomizadas(novos); dbSet('escalasCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, escalas:[...(musicaEditando.escalas||[]),novo]}); }},
                                         () => setEditandoElemento('escala')
                                     )}
                                     {chips([...ESCALAS_OPCOES,...escalasCustomizadas], musicaEditando.escalas, esc => { const l=musicaEditando.escalas||[]; setMusicaEditando({...musicaEditando, escalas: l.includes(esc)?l.filter(e=>e!==esc):[...l,esc]}); })}
@@ -564,7 +565,7 @@ export default function ModuloRepertorio() {
                                 {/* Andamento */}
                                 <div>
                                     {labelRow('Andamento',
-                                        () => { const novo = prompt('Novo andamento:'); if(novo && !ANDAMENTOS_OPCOES.includes(novo) && !andamentosCustomizados.includes(novo)) { const novos=[...andamentosCustomizados,novo]; setAndamentosCustomizados(novos); localStorage.setItem('andamentosCustomizados',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, andamentos:[...(musicaEditando.andamentos||[]),novo]}); }},
+                                        () => { const novo = prompt('Novo andamento:'); if(novo && !ANDAMENTOS_OPCOES.includes(novo) && !andamentosCustomizados.includes(novo)) { const novos=[...andamentosCustomizados,novo]; setAndamentosCustomizados(novos); dbSet('andamentosCustomizados',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, andamentos:[...(musicaEditando.andamentos||[]),novo]}); }},
                                         () => setEditandoElemento('andamento')
                                     )}
                                     {chips([...ANDAMENTOS_OPCOES,...andamentosCustomizados], musicaEditando.andamentos, and => { const l=musicaEditando.andamentos||[]; setMusicaEditando({...musicaEditando, andamentos: l.includes(and)?l.filter(a=>a!==and):[...l,and]}); })}
@@ -591,7 +592,7 @@ export default function ModuloRepertorio() {
                                 {/* Dinâmica */}
                                 <div>
                                     {labelRow('Dinâmica',
-                                        () => { const novo = prompt('Nova dinâmica:'); if(novo && !DINAMICAS_OPCOES.includes(novo) && !dinamicasCustomizadas.includes(novo)) { const novos=[...dinamicasCustomizadas,novo]; setDinamicasCustomizadas(novos); localStorage.setItem('dinamicasCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, dinamicas:[...(musicaEditando.dinamicas||[]),novo]}); }},
+                                        () => { const novo = prompt('Nova dinâmica:'); if(novo && !DINAMICAS_OPCOES.includes(novo) && !dinamicasCustomizadas.includes(novo)) { const novos=[...dinamicasCustomizadas,novo]; setDinamicasCustomizadas(novos); dbSet('dinamicasCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, dinamicas:[...(musicaEditando.dinamicas||[]),novo]}); }},
                                         () => setEditandoElemento('dinamica')
                                     )}
                                     <div className="flex flex-wrap gap-2">
@@ -620,7 +621,7 @@ export default function ModuloRepertorio() {
                                 {/* Energia */}
                                 <div>
                                     {labelRow('Energia',
-                                        () => { const novo = prompt('Nova energia:'); if(novo && !ENERGIAS_OPCOES.includes(novo) && !energiasCustomizadas.includes(novo)) { const novos=[...energiasCustomizadas,novo]; setEnergiasCustomizadas(novos); localStorage.setItem('energiasCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, energias:[...(musicaEditando.energias||[]),novo]}); }},
+                                        () => { const novo = prompt('Nova energia:'); if(novo && !ENERGIAS_OPCOES.includes(novo) && !energiasCustomizadas.includes(novo)) { const novos=[...energiasCustomizadas,novo]; setEnergiasCustomizadas(novos); dbSet('energiasCustomizadas',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, energias:[...(musicaEditando.energias||[]),novo]}); }},
                                         () => setEditandoElemento('energia')
                                     )}
                                     {chips([...ENERGIAS_OPCOES,...energiasCustomizadas], musicaEditando.energias, e => { const l=musicaEditando.energias||[]; setMusicaEditando({...musicaEditando, energias: l.includes(e)?l.filter(x=>x!==e):[...l,e]}); })}
@@ -628,7 +629,7 @@ export default function ModuloRepertorio() {
                                 {/* Instrumentação */}
                                 <div>
                                     {labelRow('Instrumentação',
-                                        () => { const novo = prompt('Novo instrumento:'); if(novo && !INSTRUMENTACAO_OPCOES.includes(novo) && !instrumentacaoCustomizada.includes(novo)) { const novos=[...instrumentacaoCustomizada,novo]; setInstrumentacaoCustomizada(novos); localStorage.setItem('instrumentacaoCustomizada',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, instrumentacao:[...(musicaEditando.instrumentacao||[]),novo]}); }},
+                                        () => { const novo = prompt('Novo instrumento:'); if(novo && !INSTRUMENTACAO_OPCOES.includes(novo) && !instrumentacaoCustomizada.includes(novo)) { const novos=[...instrumentacaoCustomizada,novo]; setInstrumentacaoCustomizada(novos); dbSet('instrumentacaoCustomizada',JSON.stringify(novos)); setMusicaEditando({...musicaEditando, instrumentacao:[...(musicaEditando.instrumentacao||[]),novo]}); }},
                                         () => setEditandoElemento('instrumentacao')
                                     )}
                                     {chips([...INSTRUMENTACAO_OPCOES,...instrumentacaoCustomizada], musicaEditando.instrumentacao, inst => { const l=musicaEditando.instrumentacao||[]; setMusicaEditando({...musicaEditando, instrumentacao: l.includes(inst)?l.filter(x=>x!==inst):[...l,inst]}); })}
@@ -766,14 +767,14 @@ export default function ModuloRepertorio() {
                                         return <div key={item} className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-lg">
                                             <span className="text-sm text-slate-700">{item} {isPadrao && <span className="text-xs text-slate-400">(padrão)</span>}</span>
                                             {!isPadrao && <button type="button" onClick={() => {
-                                                if(editandoElemento==='compasso'){const n=compassosCustomizados.filter(c=>c!==item);setCompassosCustomizados(n);localStorage.setItem('compassosCustomizados',JSON.stringify(n));setMusicaEditando({...musicaEditando,compassos:(musicaEditando.compassos||[]).filter(c=>c!==item)});}
-                                                else if(editandoElemento==='tonalidade'){const n=tonalidadesCustomizadas.filter(t=>t!==item);setTonalidadesCustomizadas(n);localStorage.setItem('tonalidadesCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,tonalidades:(musicaEditando.tonalidades||[]).filter(t=>t!==item)});}
-                                                else if(editandoElemento==='andamento'){const n=andamentosCustomizados.filter(a=>a!==item);setAndamentosCustomizados(n);localStorage.setItem('andamentosCustomizados',JSON.stringify(n));setMusicaEditando({...musicaEditando,andamentos:(musicaEditando.andamentos||[]).filter(a=>a!==item)});}
-                                                else if(editandoElemento==='escala'){const n=escalasCustomizadas.filter(e=>e!==item);setEscalasCustomizadas(n);localStorage.setItem('escalasCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,escalas:(musicaEditando.escalas||[]).filter(e=>e!==item)});}
-                                                else if(editandoElemento==='estrutura'){const n=estruturasCustomizadas.filter(e=>e!==item);setEstruturasCustomizadas(n);localStorage.setItem('estruturasCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,estruturas:(musicaEditando.estruturas||[]).filter(e=>e!==item)});}
-                                                else if(editandoElemento==='dinamica'){const n=dinamicasCustomizadas.filter(d=>d!==item);setDinamicasCustomizadas(n);localStorage.setItem('dinamicasCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,dinamicas:(musicaEditando.dinamicas||[]).filter(d=>d!==item)});}
-                                                else if(editandoElemento==='energia'){const n=energiasCustomizadas.filter(e=>e!==item);setEnergiasCustomizadas(n);localStorage.setItem('energiasCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,energias:(musicaEditando.energias||[]).filter(e=>e!==item)});}
-                                                else if(editandoElemento==='instrumentacao'){const n=instrumentacaoCustomizada.filter(i=>i!==item);setInstrumentacaoCustomizada(n);localStorage.setItem('instrumentacaoCustomizada',JSON.stringify(n));setMusicaEditando({...musicaEditando,instrumentacao:(musicaEditando.instrumentacao||[]).filter(i=>i!==item)});}
+                                                if(editandoElemento==='compasso'){const n=compassosCustomizados.filter(c=>c!==item);setCompassosCustomizados(n);dbSet('compassosCustomizados',JSON.stringify(n));setMusicaEditando({...musicaEditando,compassos:(musicaEditando.compassos||[]).filter(c=>c!==item)});}
+                                                else if(editandoElemento==='tonalidade'){const n=tonalidadesCustomizadas.filter(t=>t!==item);setTonalidadesCustomizadas(n);dbSet('tonalidadesCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,tonalidades:(musicaEditando.tonalidades||[]).filter(t=>t!==item)});}
+                                                else if(editandoElemento==='andamento'){const n=andamentosCustomizados.filter(a=>a!==item);setAndamentosCustomizados(n);dbSet('andamentosCustomizados',JSON.stringify(n));setMusicaEditando({...musicaEditando,andamentos:(musicaEditando.andamentos||[]).filter(a=>a!==item)});}
+                                                else if(editandoElemento==='escala'){const n=escalasCustomizadas.filter(e=>e!==item);setEscalasCustomizadas(n);dbSet('escalasCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,escalas:(musicaEditando.escalas||[]).filter(e=>e!==item)});}
+                                                else if(editandoElemento==='estrutura'){const n=estruturasCustomizadas.filter(e=>e!==item);setEstruturasCustomizadas(n);dbSet('estruturasCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,estruturas:(musicaEditando.estruturas||[]).filter(e=>e!==item)});}
+                                                else if(editandoElemento==='dinamica'){const n=dinamicasCustomizadas.filter(d=>d!==item);setDinamicasCustomizadas(n);dbSet('dinamicasCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,dinamicas:(musicaEditando.dinamicas||[]).filter(d=>d!==item)});}
+                                                else if(editandoElemento==='energia'){const n=energiasCustomizadas.filter(e=>e!==item);setEnergiasCustomizadas(n);dbSet('energiasCustomizadas',JSON.stringify(n));setMusicaEditando({...musicaEditando,energias:(musicaEditando.energias||[]).filter(e=>e!==item)});}
+                                                else if(editandoElemento==='instrumentacao'){const n=instrumentacaoCustomizada.filter(i=>i!==item);setInstrumentacaoCustomizada(n);dbSet('instrumentacaoCustomizada',JSON.stringify(n));setMusicaEditando({...musicaEditando,instrumentacao:(musicaEditando.instrumentacao||[]).filter(i=>i!==item)});}
                                             }} className="text-red-500 hover:text-red-700 font-bold text-sm">🗑️</button>}
                                         </div>;
                                     })}
@@ -799,7 +800,7 @@ export default function ModuloRepertorio() {
                                     ? repertorio.map(r => r.id === musicaEditando.id ? musicaEditando : r)
                                     : [...repertorio, musicaEditando];
                                 setRepertorio(novoRepertorio);
-                                localStorage.setItem('repertorio', JSON.stringify(novoRepertorio));
+                                dbSet('repertorio', JSON.stringify(novoRepertorio));
                                 if (pendingAtividadeId && planoEditando) {
                                     const atualizado = [...(planoEditando.atividadesRoteiro || [])];
                                     const idx = atualizado.findIndex(a => a.id === pendingAtividadeId);

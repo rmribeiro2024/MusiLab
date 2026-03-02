@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react'
 import { sanitizar } from '../lib/utils'
+import { dbSize } from '../lib/db'
 import { useBancoPlanos } from './BancoPlanosContext'
 import RichTextEditor from './RichTextEditor'
 import { exportarPlanoPDF } from '../utils/pdf'
@@ -944,17 +945,13 @@ export default function TelaPrincipal() {
         });
     });
 
-    // ── AVISO DE localStorage (#11) ──
+    // ── AVISO DE ARMAZENAMENTO (#11) ──
     // Só exibe o aviso se o usuário NÃO está logado (sem Supabase).
-    // Com conta ativa, os dados ficam na nuvem e o localStorage é só cache temporário.
+    // Com conta ativa, os dados ficam na nuvem e o IndexedDB é só cache temporário.
     let avisoStorage = null;
     if (!userId) {
         try {
-            let total = 0;
-            for (let key in localStorage) {
-                if (localStorage.hasOwnProperty(key))
-                    total += (localStorage.getItem(key)||'').length * 2;
-            }
+            const total = dbSize();
             const pct = (total / (5 * 1024 * 1024)) * 100;
             if (pct >= 80)
                 avisoStorage = { pct: pct.toFixed(0), usado: (total/1024).toFixed(0), critico: pct >= 95 };

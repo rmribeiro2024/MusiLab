@@ -1,10 +1,13 @@
-// ── LOCALSTORAGE ──
+// ── ARMAZENAMENTO (IndexedDB via cache síncrono) ──
+import { dbGet, dbSet } from '../lib/db'
+
 export function lerLS(chave) {
-    try { return JSON.parse(localStorage.getItem(chave) || '[]'); } catch { return []; }
+    const val = dbGet(chave)
+    try { return JSON.parse(val || '[]') } catch { return [] }
 }
 
 export function salvarLS(chave, valor) {
-    try { localStorage.setItem(chave, JSON.stringify(valor)); } catch { /* quota exceeded silenciado */ }
+    dbSet(chave, JSON.stringify(valor))
 }
 
 // ── FORMATAÇÃO DE DATA ──

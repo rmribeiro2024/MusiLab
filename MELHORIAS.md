@@ -3,7 +3,7 @@
 > Gerado em: 2026-03-01
 > Branch de trabalho: `claude/add-usestate-comments-evQWg`
 > Estado do projeto: migração modular concluída
-> Última atualização: 2026-03-01 — melhorias #3, #5 e #10 implementadas
+> Última atualização: 2026-03-02 — melhorias #2 e #7 implementadas
 
 ---
 
@@ -163,10 +163,31 @@ AnoLetivoContext        → anos letivos, escolas, feriados
 
 ---
 
-#### 7. Migrar localStorage para IndexedDB
-**Problema:** Limite de 5–10 MB. Planos com HTML rico podem estourar.
-**Solução:** Biblioteca `idb` (~1 kB) com API idêntica ao localStorage atual.
-**Ganho:** Suporte a 50 MB+, assíncrono, sem bloqueio da UI.
+#### 7. Migrar localStorage para IndexedDB ✅ IMPLEMENTADO (2026-03-02)
+**Commit:** `feat: migra localStorage para IndexedDB via idb (melhoria #7)`
+
+**O que foi feito:**
+- Instalado `idb@8.0.3` (~1 kB gzip)
+- Criado `src/lib/db.js` — wrapper com cache síncrono em memória:
+  - `dbInit()` — carrega todos os dados do IndexedDB no cache antes do React montar; migra automaticamente dados existentes do localStorage para o IndexedDB na primeira execução
+  - `dbGet(key)` — leitura síncrona do cache (substitui `localStorage.getItem`)
+  - `dbSet(key, value)` — escrita síncrona no cache + persist async no IndexedDB (substitui `localStorage.setItem`)
+  - `dbDel(key)` — remoção síncrona do cache + persist async (substitui `localStorage.removeItem`)
+  - `dbSize()` — tamanho estimado em bytes (para o aviso de armazenamento)
+- `src/main.jsx` — `await dbInit()` antes de `ReactDOM.createRoot(...).render()`
+- `src/utils/helpers.js` — `lerLS`/`salvarLS` agora usam `dbGet`/`dbSet`
+- `src/components/BancoPlanos.jsx` — 50 chamadas substituídas (22 `getItem`, 27 `setItem`, 1 `removeItem`)
+- `src/components/ModuloRepertorio.jsx` — 17 chamadas `setItem` substituídas
+- `src/components/TelaPrincipal.jsx` e `ModuloLista.jsx` — cálculo de tamanho usa `dbSize()`
+- Compatibilidade total: dados do localStorage antigo migrados automaticamente no primeiro acesso
+
+**Resultado:**
+| | Antes | Depois |
+|---|---|---|
+| Limite de armazenamento | 5–10 MB | **50+ MB** (IndexedDB) |
+| Bloqueio da UI ao salvar | Sim (sync) | **Não** (async, fire-and-forget) |
+| Migração de dados existentes | — | **Automática** |
+| Bundle gzip | 142 kB | **143.7 kB** (+1.7 kB pelo idb) |
 
 ---
 
@@ -231,9 +252,9 @@ const TelaCalendario   = lazy(() => import('./TelaCalendario'))
 | 4 | useCallback / React.memo | Médio | Médio | ✅ **Feito** |
 | 5 | Lazy load jsPDF | **Baixo** | Médio | ✅ **Feito** |
 | 6 | Consolidar useEffects de sync | Médio | Médio | ✅ **Feito** |
-| 7 | IndexedDB (substituir localStorage) | Médio | Médio | 🔜 Pendente |
+| 7 | IndexedDB (substituir localStorage) | Médio | Médio | ✅ **Feito** |
 | 8 | Testes automatizados (Vitest) | Alto | Alto | 🔜 Pendente |
 | 9 | TypeScript | Alto | Médio | 🔜 Pendente |
 | 10 | Code splitting por módulo | **Baixo** | Alto | ✅ **Feito** |
 
-> **Próximo recomendado:** #7 (IndexedDB) ou #8 (Testes Vitest).
+> **Próximo recomendado:** #8 (Testes Vitest) ou #1 (dividir contextos de estado).
