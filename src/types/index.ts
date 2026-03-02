@@ -139,6 +139,7 @@ export interface SlotSequencia {
     titulo?: string
     setlist?: string[]
     observacoes?: string
+    materiais?: string[]
   } | null
 }
 
