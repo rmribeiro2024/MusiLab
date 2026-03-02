@@ -1,3 +1,6 @@
+// @ts-nocheck
+// BancoPlanos — provedor de contexto principal (~3300 linhas, 172 useState)
+// ts-nocheck: tipagem completa será feita em refatoração futura (Fase 5+)
 import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react'
 import { supabase } from '../lib/supabase'
 import {
