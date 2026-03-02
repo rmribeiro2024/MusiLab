@@ -1,6 +1,6 @@
 # MusiLab — Migração TypeScript
 
-## Status atual: **FASE 2 CONCLUÍDA** (commits `594be7d` → `894a004`)
+## Status atual: **FASE 3 CONCLUÍDA** (commit `3c8456b`)
 
 ---
 
@@ -111,16 +111,20 @@ npx tsc --noEmit
 Todos os 17 arquivos convertidos. `npx tsc --noEmit` → zero erros. 35 testes passando.
 ✅ **Testado e confirmado funcionando localmente em 2026-03-02.**
 
-### Fase 3 — Componentes médios
-- [ ] `src/utils/pdf.js` → `.ts` (jsPDF async, complexo)
-- [ ] `src/components/ModuloAnoLetivo.jsx` → `.tsx`
-- [ ] `src/components/ModuloEstrategias.jsx` → `.tsx`
-- [ ] `src/components/ModuloAtividades.jsx` → `.tsx`
-- [ ] `src/components/ModuloSequencias.jsx` → `.tsx`
-- [ ] `src/components/ModuloHistoricoMusical.jsx` → `.tsx`
-- [ ] `src/components/ModuloRepertorio.jsx` → `.tsx`
-- [ ] `src/components/TelaCalendario.jsx` → `.tsx`
-- [ ] `src/components/ModuloLista.jsx` → `.tsx`
+### Fase 3 — Componentes médios ✅ CONCLUÍDA (commit `3c8456b`)
+
+Todos os 9 arquivos convertidos. `npx tsc --noEmit` → zero erros. 35 testes passando.
+✅ **Testado e confirmado em 2026-03-02.**
+
+- [x] `src/utils/pdf.js` → `.ts` (`// @ts-nocheck` — jsPDF async complexo)
+- [x] `src/components/ModuloAnoLetivo.jsx` → `.tsx`
+- [x] `src/components/ModuloEstrategias.jsx` → `.tsx`
+- [x] `src/components/ModuloAtividades.jsx` → `.tsx`
+- [x] `src/components/ModuloSequencias.jsx` → `.tsx`
+- [x] `src/components/ModuloHistoricoMusical.jsx` → `.tsx`
+- [x] `src/components/ModuloRepertorio.jsx` → `.tsx`
+- [x] `src/components/TelaCalendario.jsx` → `.tsx`
+- [x] `src/components/ModuloLista.jsx` → `.tsx`
 
 ### Fase 4 — Componentes grandes (maior esforço)
 - [ ] `src/components/TelaPrincipal.jsx` → `.tsx` (~1400 linhas)
@@ -143,7 +147,7 @@ Todos os 17 arquivos convertidos. `npx tsc --noEmit` → zero erros. 35 testes p
    npm run build      # deve passar
    npm test           # 35 testes devem passar
    ```
-3. Continuar pela **Fase 3** — converter componentes médios (Modulos) para `.tsx`
+3. Continuar pela **Fase 4** — converter componentes grandes para `.tsx`
 4. Padrão de conversão de componente `.jsx` → `.tsx`:
    - Renomear o arquivo
    - Adicionar tipos nas props (se houver)
