@@ -7,7 +7,7 @@ import { dbInit } from './lib/db'
 dbInit()
   .catch(err => console.error('[MusiLab] IndexedDB init falhou, continuando sem cache:', err))
   .finally(() => {
-    ReactDOM.createRoot(document.getElementById('root')).render(
+    ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
       <React.StrictMode>
         <App />
       </React.StrictMode>

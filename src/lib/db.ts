@@ -1,12 +1,12 @@
-import { openDB } from 'idb'
+import { openDB, IDBPDatabase } from 'idb'
 
 const DB_NAME = 'musilab-db'
 const STORE = 'musilab-store'
 
-let _db = null
-const _cache = {}
+let _db: IDBPDatabase | null = null
+const _cache: Record<string, string | null> = {}
 
-async function getDB() {
+async function getDB(): Promise<IDBPDatabase> {
     if (_db) return _db
     _db = await openDB(DB_NAME, 1, {
         upgrade(db) { db.createObjectStore(STORE) }
@@ -14,14 +14,15 @@ async function getDB() {
     return _db
 }
 
-// Call once before React renders to pre-populate synchronous cache
-export async function dbInit() {
+// Carrega todos os dados do IndexedDB para o cache síncrono.
+// Deve ser chamado uma vez antes do React montar (em main.tsx).
+export async function dbInit(): Promise<void> {
     const db = await getDB()
-    const allKeys = await db.getAllKeys(STORE)
+    const allKeys = await db.getAllKeys(STORE) as string[]
     const allVals = await Promise.all(allKeys.map(k => db.get(STORE, k)))
     allKeys.forEach((k, i) => { _cache[k] = allVals[i] })
 
-    // First-time migration: copy localStorage → IndexedDB
+    // Migração automática na primeira execução: localStorage → IndexedDB
     if (allKeys.length === 0 && localStorage.length > 0) {
         for (let i = 0; i < localStorage.length; i++) {
             const k = localStorage.key(i)
@@ -34,26 +35,26 @@ export async function dbInit() {
     }
 }
 
-// Synchronous read from in-memory cache (mirrors localStorage.getItem)
-export function dbGet(key) {
+/** Leitura síncrona do cache (equivalente ao localStorage.getItem) */
+export function dbGet(key: string): string | null {
     const v = _cache[key]
     return v !== undefined ? v : null
 }
 
-// Write to cache + async persist to IndexedDB (mirrors localStorage.setItem)
-export function dbSet(key, value) {
+/** Escrita no cache + persistência async no IndexedDB */
+export function dbSet(key: string, value: string): void {
     _cache[key] = value
     getDB().then(db => db.put(STORE, value, key))
 }
 
-// Delete from cache + async persist (mirrors localStorage.removeItem)
-export function dbDel(key) {
+/** Exclusão do cache + persistência async no IndexedDB */
+export function dbDel(key: string): void {
     delete _cache[key]
     getDB().then(db => db.delete(STORE, key))
 }
 
-// Estimated size of all cached values in bytes
-export function dbSize() {
+/** Tamanho estimado de todos os valores em bytes */
+export function dbSize(): number {
     let total = 0
     for (const v of Object.values(_cache)) {
         if (v) total += v.length * 2
