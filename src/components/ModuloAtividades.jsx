@@ -75,6 +75,7 @@ export default function ModuloAtividades() {
         setTagsGlobais,
         setUnidades,
         tagsGlobais,
+        todasAsTags,
         unidades,
     } = ctx
 

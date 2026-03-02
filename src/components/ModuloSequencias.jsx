@@ -41,6 +41,12 @@ export default function ModuloSequencias() {
         vincularPlanoAoSlot,
     } = ctx
 
+    const escolasComSequencias = [...new Set(sequencias.map(s => {
+        const ano = anosLetivos.find(a => a.id == s.anoLetivoId);
+        const escola = ano?.escolas?.find(e => e.id == s.escolaId);
+        return escola?.nome || 'Sem escola';
+    }))];
+
     const obterInfoSequencia = (seq) => {
         const ano = anosLetivos.find(a => a.id == seq.anoLetivoId);
         if (!ano) return null;
