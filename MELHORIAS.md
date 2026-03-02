@@ -67,18 +67,32 @@ AnoLetivoContext        → anos letivos, escolas, feriados
 
 ---
 
-#### 2. Extrair os modais/seções restantes do BancoPlanos.jsx
-Ainda embutido no arquivo:
+#### 2. Extrair os modais/seções restantes do BancoPlanos.jsx ✅ IMPLEMENTADO (2026-03-02)
+**Commit:** `feat: extrai 13 modais inline para src/components/modals/ (melhoria #2)`
 
-| Seção | Linhas estimadas |
-|---|---|
-| Modal de detalhes do plano | ~800 |
-| Gerenciamento de turmas/escolas | ~400 |
-| Grade semanal | ~300 |
-| Registro pós-aula | ~200 |
-| Configurações | ~160 |
+**O que foi feito:**
+- 13 blocos de JSX inline removidos de `BancoPlanos.jsx`
+- 7 novos arquivos criados em `src/components/modals/`:
+  - `ModalRegistroPosAula.jsx` (~200 linhas) — registro pós-aula com seleção em 4 níveis e histórico
+  - `ModalGestaoTurmas.jsx` (~140 linhas) — gerenciamento de anos letivos, escolas, segmentos e turmas
+  - `ModalEventosEscolares.jsx` (~100 linhas) — cadastro e edição de eventos escolares
+  - `ModalVincularMusica.jsx` (~40 linhas) — vincular música do repertório a uma atividade
+  - `ModalImportarAtividade.jsx` (~55 linhas) — importar atividade do banco para um plano
+  - `ModalImportarMusica.jsx` (~30 linhas) — importar música como atividade em um plano
+  - `ModalGradeSemanal.jsx` (~160 linhas) — editor completo de grade semanal (dias × horários × turmas)
+- 6 modais que tinham arquivos em `/modals/` mas ainda renderizavam inline agora conectados via `<ModalXxx />`:
+  - `ModalConfiguracoes`, `ModalAdicionarAoPlano`, `ModalRegistroRapido`,
+    `ModalNovaMusicaInline`, `ModalTemplatesRoteiro`, `ModalNovaFaixa`
+- Código morto removido (`{false && (...)}` de modal excluído, ~310 linhas)
+- Todos os modais usam o padrão `useBancoPlanos()` + `if (!state) return null`
 
-**Solução:** `ModalDetalhePlano.jsx`, `GerenciadorTurmas.jsx`, `GradeSemanal.jsx`, etc.
+**Resultado:**
+| | Antes | Depois |
+|---|---|---|
+| `BancoPlanos.jsx` | ~4.999 linhas | **~3.328 linhas** |
+| Modais inline | 13 | **0** |
+| Arquivos em `/modals/` | 7 | **14** |
+| Bundle inicial (gzip) | 140 kB | 142 kB (+2 kB — modais sempre estiveram no bundle principal) |
 
 ---
 
@@ -98,18 +112,22 @@ Ainda embutido no arquivo:
 
 ### PRIORIDADE MÉDIA
 
-#### 4. Memoização de handlers e cálculos pesados
-**Problema:** Nenhum `useCallback` ou `React.memo` no projeto. Handlers recriados a cada render.
+#### 4. Memoização de handlers e cálculos pesados ✅ IMPLEMENTADO (2026-03-01)
+**Commit:** `c3dc009 perf: useCallback em handlers críticos + React.memo em LinhaPlano e CardAtividade (melhoria #4)`
 
-```jsx
-// Hoje — recriado em cada render
-<button onClick={() => deletarPlano(id)}>
+**O que foi feito:**
 
-// Com useCallback — recriado só quando id muda
-const handleDelete = useCallback(() => deletarPlano(id), [id])
-```
+`BancoPlanos.jsx`:
+- `toggleFavorito` → updates funcionais + `useCallback([])`
+- `excluirPlano`, `excluirAtividade` → `setX(prev => ...)` + `useCallback([])`
+- `editarPlano`, `abrirModalRegistro`, `handleDragStart`, `handleDragEnter` → `useCallback([])`
 
-Candidatos a `React.memo`: `LinhaPlano`, itens de lista, modais.
+`TelaPrincipal.jsx`:
+- `LinhaPlano` movido para nível de módulo, aceita handlers como props, envolto em `React.memo`
+
+`ModuloAtividades.jsx`:
+- `CardAtividade` movido para nível de módulo, aceita handlers como props, envolto em `React.memo`
+- `atividadesFiltradas` envolvido em `useMemo`
 
 ---
 
@@ -131,9 +149,17 @@ Candidatos a `React.memo`: `LinhaPlano`, itens de lista, modais.
 
 ---
 
-#### 6. Consolidar os 13 useEffects de sincronização
-**Problema:** 13 `useEffect` separados chamando `syncToSupabase`. Qualquer digitação dispara 13 timers de 2s.
-**Solução:** Um único `useEffect` observando todos os estados, sincronizando em lote.
+#### 6. Consolidar os useEffects de sincronização ✅ IMPLEMENTADO (2026-03-01)
+**Commit:** `da6427b perf: consolida 9 useEffects de sync em 1 com detecção de mudança (melhoria #6)`
+
+**O que foi feito:**
+- Substituídos 9 `useEffect` individuais (1 por tabela) por 1 único efeito
+- Adicionado `_prevSyncData = useRef(null)` para comparar por referência qual tabela realmente mudou
+- Na primeira execução após carga (`prev === null`), o efeito retorna sem sincronizar (evita regravar tudo)
+- Em execuções seguintes, itera `Object.entries(atual)` e chama `syncDelay` só nas tabelas com referência alterada
+- Config `useEffect` (tabela `cfg`) permanece separado — tem dependências diferentes
+
+**Resultado:** Qualquer edição dispara no máximo 1 timer de 2s (a tabela que mudou), em vez de 9 simultâneos.
 
 ---
 
@@ -200,14 +226,14 @@ const TelaCalendario   = lazy(() => import('./TelaCalendario'))
 | # | Melhoria | Esforço | Impacto | Status |
 |---|---|---|---|---|
 | 1 | Dividir contextos de estado | Alto | Alto | 🟡 Adiado (decisão do usuário) |
-| 2 | Extrair modais restantes do BancoPlanos | Médio | Alto | 🔜 Pendente |
+| 2 | Extrair modais restantes do BancoPlanos | Médio | Alto | ✅ **Feito** |
 | 3 | Error Boundary | **Baixo** | Alto | ✅ **Feito** |
-| 4 | useCallback / React.memo | Médio | Médio | 🔜 Pendente |
+| 4 | useCallback / React.memo | Médio | Médio | ✅ **Feito** |
 | 5 | Lazy load jsPDF | **Baixo** | Médio | ✅ **Feito** |
-| 6 | Consolidar useEffects de sync | Médio | Médio | 🔜 Pendente |
+| 6 | Consolidar useEffects de sync | Médio | Médio | ✅ **Feito** |
 | 7 | IndexedDB (substituir localStorage) | Médio | Médio | 🔜 Pendente |
 | 8 | Testes automatizados (Vitest) | Alto | Alto | 🔜 Pendente |
 | 9 | TypeScript | Alto | Médio | 🔜 Pendente |
 | 10 | Code splitting por módulo | **Baixo** | Alto | ✅ **Feito** |
 
-> **Próximo recomendado:** #2 (extrair modais restantes do BancoPlanos) ou #6 (consolidar useEffects de sync).
+> **Próximo recomendado:** #7 (IndexedDB) ou #8 (Testes Vitest).
