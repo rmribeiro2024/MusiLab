@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { jsPDF } from 'jspdf'
 import { supabase } from './lib/supabase'
+import BancoPlanos from './components/BancoPlanos'
+import ErrorBoundary from './components/ErrorBoundary'
 import {
   sanitizar,
   gerarIdSeguro,
@@ -48,22 +49,6 @@ import {
             );
         }
 
-        // ── APP ROOT ──
-        function AppRoot() {
-            const [session, setSession] = React.useState(undefined);
-            React.useEffect(() => {
-                supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-                const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
-                return () => subscription.unsubscribe();
-            }, []);
-            if (session === undefined) return (
-                <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center">
-                    <div className="text-white text-center"><div className="text-5xl mb-4">🎵</div><p className="text-indigo-200">Carregando MusiLab...</p></div>
-                </div>
-            );
-            if (!session) return <LoginScreen />;
-            return <BancoPlanos session={session} />;
-        }
 
         // --- BASE DE DADOS BNCC ---
         const bancoBNCC = [
@@ -203,7 +188,7 @@ import {
             };
         }
 
-        function BancoPlanos({ session }) {
+        function BancoPlanosImpl({ session }) {
             const userId = session?.user?.id;
             const userName = session?.user?.user_metadata?.full_name || session?.user?.email || 'Professor';
             // ============================================================
@@ -1051,7 +1036,7 @@ import {
             // FUNÇÕES: EXPORTAÇÃO PDF
             // ============================================================
             const exportarPlanoPDF = async (plano) => {
-                // jsPDF importado via npm (ver topo do arquivo)
+                const { jsPDF } = await import('jspdf')
                 const doc = new jsPDF();
                 const FONTE_PDF = await carregarFontePDF(doc);
 
@@ -1300,7 +1285,7 @@ import {
             
             // --- PDF SEQUÊNCIA DIDÁTICA ---
             const exportarSequenciaPDF = async (sequencia) => {
-                // jsPDF importado via npm (ver topo do arquivo)
+                const { jsPDF } = await import('jspdf')
                 const doc = new jsPDF();
                 const FONTE_PDF = await carregarFontePDF(doc);
                 
@@ -7811,7 +7796,7 @@ import {
                                             <button onClick={()=>toggleFavorito(planoEditando)} className={`text-sm px-3 py-1.5 rounded-xl flex-shrink-0 transition-colors ${planoEditando.destaque ? 'bg-amber-400 text-amber-900 font-bold' : 'bg-white/20 hover:bg-white/30'}`}>
                                                 {planoEditando.destaque ? '★ Favorito' : '☆ Favoritar'}
                                             </button>
-                                            <button type="button" onClick={()=>setFormExpandido(false)} title="Compactar" className="p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-colors text-lg leading-none" title="Compactar">⤡</button>
+                                            <button type="button" onClick={()=>setFormExpandido(false)} title="Compactar" className="p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-colors text-lg leading-none">⤡</button>
                                             <button type="button" onClick={fecharModal} title="Fechar" className="p-2 rounded-xl bg-white/20 hover:bg-red-500/60 text-white transition-colors text-lg leading-none">✕</button>
                                         </div>
                                     </div>
@@ -9763,33 +9748,29 @@ import {
             );
         }
 
-        class ErrorBoundary extends React.Component {
-            constructor(props) { super(props); this.state = { erro: null }; }
-            static getDerivedStateFromError(e) { return { erro: e }; }
-            componentDidCatch(e, info) { console.error('[MusiLab] Erro capturado pelo ErrorBoundary:', e, info); }
-            render() {
-                if (this.state.erro) return (
-                    <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-10 text-center">
-                            <div className="text-6xl mb-4">⚠️</div>
-                            <h2 className="text-xl font-bold text-gray-800 mb-2">Algo deu errado</h2>
-                            <p className="text-gray-500 text-sm mb-6">Seus dados estão salvos. Recarregue a página para continuar.</p>
-                            <p className="text-xs text-red-400 bg-red-50 rounded-lg p-3 mb-6 text-left font-mono break-all">{this.state.erro?.message || String(this.state.erro) || 'Erro desconhecido'}</p>
-                            <button onClick={() => window.location.reload()}
-                                className="w-full border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 font-bold py-3 px-6 rounded-2xl transition">
-                                🔄 Recarregar MusiLab
-                            </button>
-                        </div>
-                    </div>
-                );
-                return this.props.children;
-            }
-        }
-
 export default function App() {
+  const [session, setSession] = React.useState(undefined);
+
+  React.useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (session === undefined) return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center">
+      <div className="text-white text-center">
+        <div className="text-5xl mb-4">🎵</div>
+        <p className="text-indigo-200">Carregando MusiLab...</p>
+      </div>
+    </div>
+  );
+
+  if (!session) return <LoginScreen />;
+
   return (
-    <ErrorBoundary>
-      <AppRoot />
+    <ErrorBoundary modulo="MusiLab">
+      <BancoPlanos session={session} />
     </ErrorBoundary>
-  )
+  );
 }
