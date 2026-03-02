@@ -22,7 +22,7 @@ const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
 const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
 const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
 import { BancoPlanosContext } from './BancoPlanosContext'
-import { useModalContext, useEstrategiasContext } from '../contexts'
+import { useModalContext, useEstrategiasContext, useRepertorioContext } from '../contexts'
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
 import { dbGet, dbSet, dbDel } from '../lib/db'
@@ -214,49 +214,37 @@ export default function BancoPlanos({ session }) {
                 novaEstrategia, salvarEstrategia, excluirEstrategia,
                 arquivarEstrategia, restaurarEstrategia,
             } = useEstrategiasContext();
-            // ============================================================
-            // MÓDULO: EDIÇÃO DE MÚSICA
-            // ============================================================
-            const [viewMode, setViewMode] = useState('lista');
-            const [musicaEditando, setMusicaEditando] = useState(null);
-            const [buscaEstilo, setBuscaEstilo] = useState('');
-            const [accordionAberto, setAccordionAberto] = useState('forma'); // forma | tom | expressao | recursos | vinculos
-            const [editandoElemento, setEditandoElemento] = useState(null);
+            // ── REPERTÓRIO — lido do RepertorioContext (extraído na Parte 3) ──
+            const {
+                viewMode, setViewMode,
+                musicaEditando, setMusicaEditando,
+                buscaEstilo, setBuscaEstilo,
+                accordionAberto, setAccordionAberto,
+                editandoElemento, setEditandoElemento,
+                compassosCustomizados, setCompassosCustomizados,
+                tonalidadesCustomizadas, setTonalidadesCustomizadas,
+                andamentosCustomizados, setAndamentosCustomizados,
+                escalasCustomizadas, setEscalasCustomizadas,
+                estruturasCustomizadas, setEstruturasCustomizadas,
+                dinamicasCustomizadas, setDinamicasCustomizadas,
+                energiasCustomizadas, setEnergiasCustomizadas,
+                instrumentacaoCustomizada, setInstrumentacaoCustomizada,
+                repertorio, setRepertorio,
+                buscaRepertorio, setBuscaRepertorio,
+                filtroOrigem, setFiltroOrigem,
+                filtroEstilo, setFiltroEstilo,
+                filtroTonalidade, setFiltroTonalidade,
+                filtroEscala, setFiltroEscala,
+                filtroCompasso, setFiltroCompasso,
+                filtroAndamento, setFiltroAndamento,
+                filtroEstrutura, setFiltroEstrutura,
+                filtroEnergia, setFiltroEnergia,
+                filtroInstrumentacao, setFiltroInstrumentacao,
+                filtroDinamica, setFiltroDinamica,
+            } = useRepertorioContext();
             // ============================================================
             // FUNÇÕES: UTILITÁRIOS GERAIS
             // ============================================================
-            // ============================================================
-            // MÓDULO: OPÇÕES MUSICAIS CUSTOMIZADAS
-            // ============================================================
-            const [compassosCustomizados, setCompassosCustomizados] = useState(() => lerLS('compassosCustomizados'));
-            const [tonalidadesCustomizadas, setTonalidadesCustomizadas] = useState(() => lerLS('tonalidadesCustomizadas'));
-            const [andamentosCustomizados, setAndamentosCustomizados] = useState(() => lerLS('andamentosCustomizados'));
-            const [escalasCustomizadas, setEscalasCustomizadas] = useState(() => lerLS('escalasCustomizadas'));
-            const [estruturasCustomizadas, setEstruturasCustomizadas] = useState(() => lerLS('estruturasCustomizadas'));
-            const [dinamicasCustomizadas, setDinamicasCustomizadas] = useState(() => lerLS('dinamicasCustomizadas'));
-            const [energiasCustomizadas, setEnergiasCustomizadas] = useState(() => lerLS('energiasCustomizadas'));
-            const [instrumentacaoCustomizada, setInstrumentacaoCustomizada] = useState(() => lerLS('instrumentacaoCustomizada'));
-            // ============================================================
-            // MÓDULO: REPERTÓRIO
-            // ============================================================
-            const [repertorio, setRepertorio] = useState(() => {
-                const saved = dbGet('repertorio');
-                return saved ? JSON.parse(saved) : [];
-            });
-            const [buscaRepertorio, setBuscaRepertorio] = useState('');
-            // ============================================================
-            // MÓDULO: FILTROS DO REPERTÓRIO
-            // ============================================================
-            const [filtroOrigem, setFiltroOrigem] = useState('Todas');
-            const [filtroEstilo, setFiltroEstilo] = useState('Todos');
-            const [filtroTonalidade, setFiltroTonalidade] = useState('Todas');
-            const [filtroEscala, setFiltroEscala] = useState('Todas');
-            const [filtroCompasso, setFiltroCompasso] = useState('Todos');
-            const [filtroAndamento, setFiltroAndamento] = useState('Todos');
-            const [filtroEstrutura, setFiltroEstrutura] = useState('Todas');
-            const [filtroEnergia, setFiltroEnergia] = useState('Todas');
-            const [filtroInstrumentacao, setFiltroInstrumentacao] = useState('Todas');
-            const [filtroDinamica, setFiltroDinamica] = useState('Todas');
             
             // Opções dos elementos musicais
             const ESTILOS_OPCOES = ['Canção Infantil', 'Cantiga de Roda', 'Folclórica Brasileira', 'MPB', 'Samba', 'Bossa Nova', 'Forró', 'Pop', 'Rock', 'Música Erudita', 'Coral', 'Instrumental', 'Percussão Corporal', 'Jogo Musical', 'Música Temática', 'Música Clássica'];
@@ -759,10 +747,10 @@ export default function BancoPlanos({ session }) {
                 (async () => {
                     try {
                         // estrategias carregada em EstrategiasContext (Parte 2)
-                        const [planosC, atividadesC, repertorioC, sequenciasC, anosC, gradesC, eventosC, planejamentoAnualC, cfg] = await Promise.all([
+                        // repertorio carregado em RepertorioContext (Parte 3)
+                        const [planosC, atividadesC, sequenciasC, anosC, gradesC, eventosC, planejamentoAnualC, cfg] = await Promise.all([
                             loadFromSupabase('planos', userId),
                             loadFromSupabase('atividades', userId),
-                            loadFromSupabase('repertorio', userId),
                             loadFromSupabase('sequencias', userId),
                             loadFromSupabase('anos_letivos', userId),
                             loadFromSupabase('grades_semanas', userId),
@@ -774,7 +762,7 @@ export default function BancoPlanos({ session }) {
                         // Supabase sempre prevalece sobre localStorage quando retorna dados
                         if (planosC !== null) setPlanos(planosC.length > 0 ? planosC.map(normalizePlano) : []);
                         if (atividadesC !== null) setAtividades(atividadesC.length > 0 ? atividadesC : []);
-                        if (repertorioC !== null) setRepertorio(repertorioC.length > 0 ? repertorioC : []);
+                        // repertorioC removido — carregado em RepertorioContext (Parte 3)
                         if (sequenciasC !== null) setSequencias(sequenciasC.length > 0 ? sequenciasC : []);
                         if (anosC !== null) setAnosLetivos(anosC.length > 0 ? anosC : []);
                         if (gradesC !== null) setGradesSemanas(gradesC.length > 0 ? gradesC : []);
@@ -787,6 +775,7 @@ export default function BancoPlanos({ session }) {
                             if(cfg.faixas) setFaixas(cfg.faixas);
                             if(cfg.tagsGlobais) setTagsGlobais(cfg.tagsGlobais);
                             if(cfg.templatesRoteiro) setTemplatesRoteiro(cfg.templatesRoteiro);
+                            // Opções customizadas de repertório — setters agora vêm do RepertorioContext (Parte 3)
                             if(cfg.compassosCustomizados) setCompassosCustomizados(cfg.compassosCustomizados);
                             if(cfg.tonalidadesCustomizadas) setTonalidadesCustomizadas(cfg.tonalidadesCustomizadas);
                             if(cfg.andamentosCustomizados) setAndamentosCustomizados(cfg.andamentosCustomizados);
@@ -798,7 +787,7 @@ export default function BancoPlanos({ session }) {
                         }
                         // Atualiza localStorage com dados frescos da nuvem
                         if (planosC !== null) dbSet('planosAula', JSON.stringify(planosC));
-                        if (repertorioC !== null) dbSet('repertorio', JSON.stringify(repertorioC));
+                        // repertorio dbSet removido — gerenciado em RepertorioContext (Parte 3)
                     } catch(e) { console.error('[MusiLab] Erro ao carregar da nuvem:', e); }
                     setDadosCarregados(true);
                 })();
@@ -825,7 +814,7 @@ export default function BancoPlanos({ session }) {
                 const atual = {
                     planos,
                     atividades,
-                    repertorio,
+                    // repertorio: sync movido para RepertorioContext (Parte 3)
                     sequencias,
                     anos_letivos: anosLetivos,
                     grades_semanas: gradesSemanas,
@@ -841,7 +830,7 @@ export default function BancoPlanos({ session }) {
                         syncDelay(tabela, () => syncToSupabase(tabela, dados, userId, onSyncStatus));
                     }
                 });
-            }, [planos, atividades, repertorio, sequencias, anosLetivos, gradesSemanas, eventosEscolares, planejamentoAnual]);
+            }, [planos, atividades, sequencias, anosLetivos, gradesSemanas, eventosEscolares, planejamentoAnual]);
             useEffect(() => {
                 if(!userId||!dadosCarregados) return;
                 syncDelay('cfg', ()=>syncConfiguracoes({ conceitos, unidades, faixas, tagsGlobais, templatesRoteiro, compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados, escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas, energiasCustomizadas, instrumentacaoCustomizada }, userId, onSyncStatus));
@@ -905,8 +894,7 @@ export default function BancoPlanos({ session }) {
             useEffect(() => { dbSet('eventosEscolares', JSON.stringify(eventosEscolares)); triggerSalvo(); }, [eventosEscolares]);
             useEffect(() => { dbSet('sequenciasDidaticas', JSON.stringify(sequencias)); triggerSalvo(); }, [sequencias]);
             useEffect(() => { dbSet('ocultarFeriados', ocultarFeriados); }, [ocultarFeriados]);
-            // CORREÇÃO CRÍTICA: repertorio não tinha useEffect — músicas se perdiam ao fechar
-            useEffect(() => { dbSet('repertorio', JSON.stringify(repertorio)); triggerSalvo(); }, [repertorio]);
+            // repertorio dbSet movido para RepertorioContext (Parte 3) — lá é gerenciado com triggerSalvo via ctx bridge
 
             // ============================================================
             // FUNÇÕES: BUSCA E FILTROS

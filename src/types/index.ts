@@ -109,15 +109,18 @@ export interface Musica {
   estruturas?: string[]
   energias?: string[]
   dinamicas?: string[]
-  instrumentacao?: string | string[]
+  instrumentacao?: string[]
   instrumentoDestaque?: string
   // Vínculos
   planosVinculados?: Array<string | number>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   atividadesVinculadas?: any[]
   links?: string[]
-  pdfs?: string[]
-  audios?: string[]
+  // pdfs e audios podem ser string (url) ou objeto {nome, data} (arquivo carregado)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  pdfs?: any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  audios?: any[]
   tags?: string[]
   observacoes?: string
   arquivada?: boolean
