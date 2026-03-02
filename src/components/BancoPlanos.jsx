@@ -2449,7 +2449,6 @@ export default function BancoPlanos({ session }) {
             const ctx = {
         abrirModalRegistro,
         accordionAberto,
-        addDias,
         adicionandoConceito,
         adicionandoPeriodoAno,
         adicionandoUnidade,
