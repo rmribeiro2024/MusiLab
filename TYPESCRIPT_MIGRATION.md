@@ -1,6 +1,6 @@
 # MusiLab — Migração TypeScript
 
-## Status atual: **FASE 4 CONCLUÍDA** (commit `39cb5b1`)
+## Status atual: **MIGRAÇÃO COMPLETA ✅** — Todas as 5 fases concluídas (commit `7e5c1a8`)
 
 ---
 
@@ -138,11 +138,14 @@ Ambos os arquivos convertidos. `npx tsc --noEmit` → zero erros. 35 testes pass
 - [x] `src/components/BancoPlanos.jsx` → `.tsx`
   - `// @ts-nocheck` (provedor de ctx, 3300 linhas — tipagem completa na Fase 5+)
 
-### Fase 5 — App.jsx (código morto + refatoração)
-- [ ] `src/App.jsx` → `.tsx`
-  - ⚠️ Contém `BancoPlanosImpl` (~linhas 191–9750) que é **código morto**
-  - Remover o código morto ANTES de tipar
-  - Só o `LoginScreen` e o wrapper de auth precisam existir (~150 linhas)
+### Fase 5 — App.jsx ✅ CONCLUÍDA (commit `7e5c1a8`)
+
+✅ **Testado e confirmado em 2026-03-02.**
+
+- [x] `src/App.jsx` → `App.tsx`
+  - Removidos 9.707 linhas de código morto (`BancoPlanosImpl`, constantes órfãs, imports desnecessários)
+  - `session` tipado como `Session | null | undefined` via `@supabase/supabase-js`
+  - Arquivo final: 69 linhas (redução de 99,3%)
 
 ---
 
@@ -155,13 +158,8 @@ Ambos os arquivos convertidos. `npx tsc --noEmit` → zero erros. 35 testes pass
    npm run build      # deve passar
    npm test           # 35 testes devem passar
    ```
-3. Continuar pela **Fase 5** — remover código morto e converter `App.jsx` → `.tsx`
-4. Padrão de conversão de componente `.jsx` → `.tsx`:
-   - Renomear o arquivo
-   - Adicionar tipos nas props (se houver)
-   - Importar tipos de `../../types` quando necessário
-   - `useBancoPlanos()` já retorna `BancoPlanosContextValue` — ctx é tipado automaticamente
-   - Atenção: `rows="N"` em `<textarea>` deve ser `rows={N}` no TypeScript
+3. **Migração concluída!** Não há próximas fases pendentes.
+   - Para melhorias futuras: remover `// @ts-nocheck` de `BancoPlanos.tsx` e `pdf.ts` e tipar completamente
 
 ---
 
