@@ -73,8 +73,10 @@ export interface Atividade {
   categoria?: string
   faixaEtaria: string[]
   tags: string[]
-  recursos: string[]
-  musicasVinculadas?: string[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  recursos: any[]  // pode ser string (url) ou objeto { url, tipo }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  musicasVinculadas?: any[]  // pode ser string ou objeto { id, titulo, autor }
   materiais?: string[]
   unidade?: string
   observacao?: string

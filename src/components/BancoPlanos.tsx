@@ -22,7 +22,7 @@ const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
 const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
 const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
 import { BancoPlanosContext } from './BancoPlanosContext'
-import { useModalContext, useEstrategiasContext, useRepertorioContext } from '../contexts'
+import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext } from '../contexts'
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
 import { dbGet, dbSet, dbDel } from '../lib/db'
@@ -242,6 +242,25 @@ export default function BancoPlanos({ session }) {
                 filtroInstrumentacao, setFiltroInstrumentacao,
                 filtroDinamica, setFiltroDinamica,
             } = useRepertorioContext();
+            // ── ATIVIDADES — lido do AtividadesContext (extraído na Parte 4) ──
+            const {
+                atividades, setAtividades,
+                atividadeEditando, setAtividadeEditando,
+                novoRecursoUrlAtiv, setNovoRecursoUrlAtiv,
+                novoRecursoTipoAtiv, setNovoRecursoTipoAtiv,
+                filtroTagAtividade, setFiltroTagAtividade,
+                filtroFaixaAtividade, setFiltroFaixaAtividade,
+                filtroConceitoAtividade, setFiltroConceitoAtividade,
+                buscaAtividade, setBuscaAtividade,
+                modalAdicionarAoPlano, setModalAdicionarAoPlano,
+                modoVisAtividades, setModoVisAtividades,
+                atividadeVinculandoMusica, setAtividadeVinculandoMusica,
+                pendingAtividadeId, setPendingAtividadeId,
+                modalNovaMusicaInline, setModalNovaMusicaInline,
+                novaMusicaInline, setNovaMusicaInline,
+                novaAtividade, salvarAtividade, excluirAtividade,
+                adicionarRecursoAtiv, removerRecursoAtiv,
+            } = useAtividadesContext();
             // ============================================================
             // FUNÇÕES: UTILITÁRIOS GERAIS
             // ============================================================
@@ -269,20 +288,17 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // MÓDULO: ATIVIDADES
             // ============================================================
-            // Estados para Atividades
-            const [atividades, setAtividades] = useState(() => {
-                const saved = dbGet('atividades');
-                return saved ? JSON.parse(saved) : [];
-            });
-            const [atividadeEditando, setAtividadeEditando] = useState(null);
-            const [novoRecursoUrlAtiv, setNovoRecursoUrlAtiv] = useState('');
-            const [novoRecursoTipoAtiv, setNovoRecursoTipoAtiv] = useState('link');
-            const [filtroTagAtividade, setFiltroTagAtividade] = useState('Todas');
-            const [filtroFaixaAtividade, setFiltroFaixaAtividade] = useState('Todas');
-            const [filtroConceitoAtividade, setFiltroConceitoAtividade] = useState('Todos');
-            const [buscaAtividade, setBuscaAtividade] = useState('');
-            const [modalAdicionarAoPlano, setModalAdicionarAoPlano] = useState(null); // Armazena a atividade a ser adicionada
-            const [modoVisAtividades, setModoVisAtividades] = useState('grade'); // grade | lista | segmento
+            // Estados para Atividades — migrados para AtividadesContext (Parte 4)
+            // const [atividades, setAtividades] = useState(...)
+            // const [atividadeEditando, setAtividadeEditando] = useState(null)
+            // const [novoRecursoUrlAtiv, setNovoRecursoUrlAtiv] = useState('')
+            // const [novoRecursoTipoAtiv, setNovoRecursoTipoAtiv] = useState('link')
+            // const [filtroTagAtividade, setFiltroTagAtividade] = useState('Todas')
+            // const [filtroFaixaAtividade, setFiltroFaixaAtividade] = useState('Todas')
+            // const [filtroConceitoAtividade, setFiltroConceitoAtividade] = useState('Todos')
+            // const [buscaAtividade, setBuscaAtividade] = useState('')
+            // const [modalAdicionarAoPlano, setModalAdicionarAoPlano] = useState(null)
+            // const [modoVisAtividades, setModoVisAtividades] = useState('grade')
 
             // ============================================================
             // MÓDULO: EVENTOS ESCOLARES E FERIADOS
@@ -481,7 +497,8 @@ export default function BancoPlanos({ session }) {
             const [recursosExpandidos, setRecursosExpandidos] = useState({}); // NOVO
             const [modalImportarMusica, setModalImportarMusica] = useState(false);
             const [modalImportarAtividade, setModalImportarAtividade] = useState(false);
-            const [atividadeVinculandoMusica, setAtividadeVinculandoMusica] = useState(null);
+            // atividadeVinculandoMusica migrado para AtividadesContext (Parte 4)
+            // const [atividadeVinculandoMusica, setAtividadeVinculandoMusica] = useState(null);
             const [filtroFavorito, setFiltroFavorito] = useState(false);
             const [filtroStatus, setFiltroStatus] = useState("Todos"); // A Fazer | Em Andamento | Concluído
             const [modoVisualizacao, setModoVisualizacao] = useState('grade');
@@ -702,10 +719,10 @@ export default function BancoPlanos({ session }) {
             const [modalNovaFaixa, setModalNovaFaixa] = useState(false);
             const [novaFaixaNome, setNovaFaixaNome] = useState('');
             const [modalConfiguracoes, setModalConfiguracoes] = useState(false);
-            // Guarda o ID da atividade que aguarda vinculação após cadastrar nova música
-            const [pendingAtividadeId, setPendingAtividadeId] = useState(null);
-            const [modalNovaMusicaInline, setModalNovaMusicaInline] = useState(false);
-            const [novaMusicaInline, setNovaMusicaInline] = useState({ titulo: '', autor: '', origem: '', observacoes: '' });
+            // pendingAtividadeId, modalNovaMusicaInline, novaMusicaInline — migrados para AtividadesContext (Parte 4)
+            // const [pendingAtividadeId, setPendingAtividadeId] = useState(null);
+            // const [modalNovaMusicaInline, setModalNovaMusicaInline] = useState(false);
+            // const [novaMusicaInline, setNovaMusicaInline] = useState({ titulo: '', autor: '', origem: '', observacoes: '' });
             const niveis = ["Todos", "Iniciante", "Intermedi\u00e1rio", "Avan\u00e7ado"];
 
             // Função centralizada para disparar o indicador de salvamento
@@ -748,9 +765,9 @@ export default function BancoPlanos({ session }) {
                     try {
                         // estrategias carregada em EstrategiasContext (Parte 2)
                         // repertorio carregado em RepertorioContext (Parte 3)
-                        const [planosC, atividadesC, sequenciasC, anosC, gradesC, eventosC, planejamentoAnualC, cfg] = await Promise.all([
+                        const [planosC, sequenciasC, anosC, gradesC, eventosC, planejamentoAnualC, cfg] = await Promise.all([
                             loadFromSupabase('planos', userId),
-                            loadFromSupabase('atividades', userId),
+                            // atividades removido — carregado em AtividadesContext (Parte 4)
                             loadFromSupabase('sequencias', userId),
                             loadFromSupabase('anos_letivos', userId),
                             loadFromSupabase('grades_semanas', userId),
@@ -761,7 +778,7 @@ export default function BancoPlanos({ session }) {
 
                         // Supabase sempre prevalece sobre localStorage quando retorna dados
                         if (planosC !== null) setPlanos(planosC.length > 0 ? planosC.map(normalizePlano) : []);
-                        if (atividadesC !== null) setAtividades(atividadesC.length > 0 ? atividadesC : []);
+                        // atividadesC removido — carregado em AtividadesContext (Parte 4)
                         // repertorioC removido — carregado em RepertorioContext (Parte 3)
                         if (sequenciasC !== null) setSequencias(sequenciasC.length > 0 ? sequenciasC : []);
                         if (anosC !== null) setAnosLetivos(anosC.length > 0 ? anosC : []);
@@ -813,7 +830,7 @@ export default function BancoPlanos({ session }) {
                 if (!userId || !dadosCarregados) return;
                 const atual = {
                     planos,
-                    atividades,
+                    // atividades: sync movido para AtividadesContext (Parte 4)
                     // repertorio: sync movido para RepertorioContext (Parte 3)
                     sequencias,
                     anos_letivos: anosLetivos,
@@ -830,7 +847,7 @@ export default function BancoPlanos({ session }) {
                         syncDelay(tabela, () => syncToSupabase(tabela, dados, userId, onSyncStatus));
                     }
                 });
-            }, [planos, atividades, sequencias, anosLetivos, gradesSemanas, eventosEscolares, planejamentoAnual]);
+            }, [planos, sequencias, anosLetivos, gradesSemanas, eventosEscolares, planejamentoAnual]); // atividades removido — sync em AtividadesContext (Parte 4)
             useEffect(() => {
                 if(!userId||!dadosCarregados) return;
                 syncDelay('cfg', ()=>syncConfiguracoes({ conceitos, unidades, faixas, tagsGlobais, templatesRoteiro, compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados, escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas, energiasCustomizadas, instrumentacaoCustomizada }, userId, onSyncStatus));
@@ -890,7 +907,8 @@ export default function BancoPlanos({ session }) {
             useEffect(() => { dbSet('anosLetivos', JSON.stringify(anosLetivos)); triggerSalvo(); }, [anosLetivos]);
             useEffect(() => { dbSet('faixasEtarias', JSON.stringify(faixas)); triggerSalvo(); }, [faixas]);
             useEffect(() => { dbSet('gradesSemanas', JSON.stringify(gradesSemanas)); triggerSalvo(); }, [gradesSemanas]);
-            useEffect(() => { dbSet('atividades', JSON.stringify(atividades)); triggerSalvo(); }, [atividades]);
+            // atividades dbSet movido para AtividadesContext (Parte 4)
+            // useEffect(() => { dbSet('atividades', JSON.stringify(atividades)); triggerSalvo(); }, [atividades]);
             useEffect(() => { dbSet('eventosEscolares', JSON.stringify(eventosEscolares)); triggerSalvo(); }, [eventosEscolares]);
             useEffect(() => { dbSet('sequenciasDidaticas', JSON.stringify(sequencias)); triggerSalvo(); }, [sequencias]);
             useEffect(() => { dbSet('ocultarFeriados', ocultarFeriados); }, [ocultarFeriados]);
@@ -1163,21 +1181,9 @@ export default function BancoPlanos({ session }) {
             const adicionarRecurso = () => { if(novoRecursoUrl.trim()){ setPlanoEditando({ ...planoEditando, recursos: [...(planoEditando.recursos||[]), {url: novoRecursoUrl.trim(), tipo: novoRecursoTipo}]}); setNovoRecursoUrl(""); } };
             const removerRecurso = (idx) => { const n = [...planoEditando.recursos]; n.splice(idx,1); setPlanoEditando({...planoEditando, recursos: n}); };
             
-            // Funções de recursos para ATIVIDADES
-            const adicionarRecursoAtiv = () => { 
-                if(novoRecursoUrlAtiv.trim()){ 
-                    setAtividadeEditando({ 
-                        ...atividadeEditando, 
-                        recursos: [...(atividadeEditando.recursos||[]), {url: novoRecursoUrlAtiv.trim(), tipo: novoRecursoTipoAtiv}]
-                    }); 
-                    setNovoRecursoUrlAtiv(""); 
-                } 
-            };
-            const removerRecursoAtiv = (idx) => { 
-                const n = [...(atividadeEditando.recursos || [])]; 
-                n.splice(idx,1); 
-                setAtividadeEditando({...atividadeEditando, recursos: n}); 
-            };
+            // adicionarRecursoAtiv / removerRecursoAtiv — migrados para AtividadesContext (Parte 4)
+            // const adicionarRecursoAtiv = () => { ... };
+            // const removerRecursoAtiv = (idx) => { ... };
             
             // VINCULAR ATIVIDADE A PLANO - Exportar dados
             const vincularAtividadeAoPlano = (atividadeId) => {
@@ -1765,24 +1771,10 @@ export default function BancoPlanos({ session }) {
 
             // --- FUNÇÕES BANCO DE ATIVIDADES ---
             // ============================================================
-            // FUNÇÕES: ATIVIDADES
+            // FUNÇÕES: ATIVIDADES — migradas para AtividadesContext (Parte 4)
+            // novaAtividade, salvarAtividade, excluirAtividade, adicionarRecursoAtiv, removerRecursoAtiv
+            // vêm de useAtividadesContext() — ver bloco de destructuring acima
             // ============================================================
-            const novaAtividade = () => {
-                setAtividadeEditando({
-                    id: Date.now(),
-                    nome: '',
-                    descricao: '',
-                    faixaEtaria: [],
-                    duracao: '',
-                    materiais: [],
-                    conceitos: [], // NOVO: conceitos musicais
-                    tags: [],
-                    unidade: '',
-                    observacao: '',
-                    recursos: [], // NOVO: links e imagens
-                    musicasVinculadas: []
-                });
-            };
 
             // ── MEU ANO LETIVO: CRUD ──
             const _atualizarAnoPlano = (anoId, campos) => {
@@ -1881,26 +1873,9 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // FUNÇÕES: ATIVIDADES — SALVAR / EXCLUIR
             // ============================================================
-            const salvarAtividade = () => {
-                if (!atividadeEditando.nome.trim()) {
-                    setModalConfirm({ conteudo: '⚠️ Preencha o nome da atividade!', somenteOk: true, labelConfirm: 'OK' });
-                    return;
-                }
-                const existe = atividades.find(a => a.id === atividadeEditando.id);
-                if (existe) {
-                    setAtividades(atividades.map(a => a.id === atividadeEditando.id ? atividadeEditando : a));
-                } else {
-                    setAtividades([...atividades, atividadeEditando]);
-                }
-                setAtividadeEditando(null);
-                setModalConfirm({ conteudo: '✅ Atividade salva!', somenteOk: true, labelConfirm: 'OK' });
-            };
-
-            const excluirAtividade = useCallback((id) => {
-                setModalConfirm({ titulo: 'Excluir atividade?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => {
-                    setAtividades(prev => prev.filter(a => a.id !== id));
-                } });
-            }, []);
+            // salvarAtividade e excluirAtividade migradas para AtividadesContext (Parte 4)
+            // const salvarAtividade = () => { ... };
+            // const excluirAtividade = useCallback((id) => { ... }, []);
 
             // ============================================================
             // FUNÇÕES: INTEGRAÇÃO: ATIVIDADES ↔ PLANOS
