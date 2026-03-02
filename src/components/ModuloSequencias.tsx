@@ -81,6 +81,8 @@ export default function ModuloSequencias() {
     };
 
     // Modo Detalhe - Visualizar slots de uma sequência específica
+    const seq = sequenciaDetalhe;
+    const infoSeq = sequenciaDetalhe ? obterInfoSequencia(sequenciaDetalhe) : null;
 
     return (
         <>
@@ -169,7 +171,7 @@ export default function ModuloSequencias() {
                                     /* Rascunho Manual */
                                     <div className="space-y-2">
                                         <input type="text" value={slot.rascunho.titulo} onChange={(e) => atualizarRascunhoSlot(seq.id, index, 'titulo', e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg font-bold" placeholder="Título..." />
-                                        <textarea value={slot.rascunho.setlist?.join('\n') || ''} onChange={(e) => atualizarRascunhoSlot(seq.id, index, 'setlist', e.target.value.split('\n'))} className="w-full px-3 py-2 border-2 rounded-lg text-sm" rows="4" placeholder="Setlist (uma por linha)..." />
+                                        <textarea value={slot.rascunho.setlist?.join('\n') || ''} onChange={(e) => atualizarRascunhoSlot(seq.id, index, 'setlist', e.target.value.split('\n'))} className="w-full px-3 py-2 border-2 rounded-lg text-sm" rows={4} placeholder="Setlist (uma por linha)..." />
                                     </div>
                                 ) : (
                                     /* Slot Vazio */

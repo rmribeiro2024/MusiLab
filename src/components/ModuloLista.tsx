@@ -59,6 +59,7 @@ export default function ModuloLista() {
         toggleFavorito,
         unidades,
     } = ctx
+    const userId = ctx.userId
 
     // Constantes estáticas (não precisam vir do ctx)
     const niveis = ["Todos", "Iniciante", "Intermediário", "Avançado"]

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // ── FONTE UTF-8 PARA PDF (Roboto via GitHub, cache Cache Storage API) ──
 // jsPDF é carregado sob demanda (lazy) via import() dinâmico — não entra no bundle inicial
 async function carregarFontePDF(doc) {
@@ -290,7 +291,7 @@ export async function exportarPlanoPDF(plano) {
 }
 
 // ── SEQUÊNCIA DIDÁTICA ──
-export async function exportarSequenciaPDF(sequencia, anosLetivos) {
+export async function exportarSequenciaPDF(sequencia, anosLetivos = []) {
     const { jsPDF } = await import('jspdf')
     const doc = new jsPDF();
     const FONTE_PDF = await carregarFontePDF(doc);

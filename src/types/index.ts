@@ -55,7 +55,9 @@ export interface Plano {
   registrosPosAula: RegistroPosAula[]
   destaque: boolean
   favorito?: boolean
-  statusPlanejamento: 'A Fazer' | 'Em Progresso' | 'Concluído'
+  statusPlanejamento: string
+  turma?: string
+  numeroAula?: number | string
   arquivado?: boolean
   cor?: string
   createdAt?: string
@@ -73,8 +75,14 @@ export interface Atividade {
   tags: string[]
   recursos: string[]
   musicasVinculadas?: string[]
+  materiais?: string[]
+  unidade?: string
+  observacao?: string
+  conceitos?: string[]
   arquivada?: boolean
   createdAt?: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any
 }
 
 // ─── REPERTÓRIO / MÚSICA ──────────────────────────────────────
@@ -105,6 +113,8 @@ export interface Musica {
   instrumentoDestaque?: string
   // Vínculos
   planosVinculados?: Array<string | number>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  atividadesVinculadas?: any[]
   links?: string[]
   pdfs?: string[]
   audios?: string[]
@@ -135,7 +145,7 @@ export interface Sequencia {
   segmentos?: string[]
   turmaEspecifica?: string | null
   unidadePredominante?: string
-  duracao?: 'mensal' | 'bimestral' | 'semestral' | 'manual'
+  duracao?: string
   numeroSlots?: number
   dataInicio?: string
   dataFim?: string
@@ -151,6 +161,9 @@ export interface Estrategia {
   funcao?: string
   objetivo?: string
   descricao?: string
+  ativo?: boolean
+  objetivos?: string[]
+  faixaEtaria?: string | string[]
   arquivada?: boolean
   tags?: string[]
   createdAt?: string
@@ -334,7 +347,8 @@ export interface BancoPlanosContextValue {
   // Funções CRUD de planos
   editarPlano: (plano: Plano) => void
   excluirPlano: (id: string) => void
-  toggleFavorito: (id: string) => void
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  toggleFavorito: (id: any, e?: any) => void
 
   // Funções de sequência
   novaSequencia: () => void
@@ -353,6 +367,9 @@ export interface BancoPlanosContextValue {
   setModalVincularPlano: React.Dispatch<React.SetStateAction<{ sequenciaId: string; slotIndex: number } | null>>
   buscaPlanoVinculo: string
   setBuscaPlanoVinculo: React.Dispatch<React.SetStateAction<string>>
+
+  // Identificação do usuário
+  userId?: string
 
   // Outros campos — indexados para compatibilidade com JS existente
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
