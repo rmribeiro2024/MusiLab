@@ -22,6 +22,7 @@ const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
 const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
 const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
 import { BancoPlanosContext } from './BancoPlanosContext'
+import { useModalContext } from '../contexts'
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
 import { dbGet, dbSet, dbDel } from '../lib/db'
@@ -193,6 +194,8 @@ const CarregandoModulo = () => (
 export default function BancoPlanos({ session }) {
             const userId = session?.user?.id;
             const userName = session?.user?.user_metadata?.full_name || session?.user?.email || 'Professor';
+            // ── MODAL CONFIRM — lido do ModalContext (extraído na Parte 1) ──
+            const { modalConfirm, setModalConfirm } = useModalContext();
             // ============================================================
             // MÓDULO: EDIÇÃO DE MÚSICA
             // ============================================================
@@ -511,7 +514,7 @@ export default function BancoPlanos({ session }) {
             const [modoVisualizacao, setModoVisualizacao] = useState('grade');
             const [ordenacaoCards, setOrdenacaoCards] = useState('recente'); // recente | az | status | favoritos
             const [statusDropdownId, setStatusDropdownId] = useState(null); // #7: id do plano com dropdown aberto
-            const [modalConfirm, setModalConfirm] = useState(null); // { titulo, conteudo, onConfirm, labelConfirm, labelCancelar, somenteOk }
+            // modalConfirm e setModalConfirm vêm de useModalContext() — ver linha ~196
 
             // Fechar dropdown de status ao clicar fora
             useEffect(() => {
