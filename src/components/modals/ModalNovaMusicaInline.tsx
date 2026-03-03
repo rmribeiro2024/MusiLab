@@ -19,8 +19,8 @@ export default function ModalNovaMusicaInline() {
     if (!modalNovaMusicaInline) return null
 
     return (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[110]">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4 z-[110]">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
                 <div className="bg-green-600 text-white p-5 rounded-t-2xl flex items-center justify-between">
                     <div>
                         <h2 className="text-xl font-bold">🎵 Nova Música</h2>

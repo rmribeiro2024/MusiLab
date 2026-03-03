@@ -197,7 +197,7 @@ export default function TelaPrincipal() {
         )}
 
         {/* Card principal */}
-        <div className={`bg-white rounded-2xl overflow-hidden flex flex-col ${formExpandido ? 'w-full h-full max-w-[98vw] max-h-[97vh] shadow-2xl' : 'shadow-sm border border-slate-200'}`}>
+        <div className={`bg-white rounded-2xl overflow-hidden flex flex-col ${formExpandido ? 'w-full h-full max-w-[98vw] max-h-[85dvh] sm:max-h-[97vh] shadow-2xl' : 'shadow-sm border border-slate-200'}`}>
 
             {/* ── HEADER EXPANDIDO ── */}
             {formExpandido ? (
@@ -235,8 +235,8 @@ export default function TelaPrincipal() {
             )}
 
             {/* ── CONTEÚDO DO FORM (igual nos dois modos) ── */}
-            <div className={`p-6 space-y-0 overflow-y-auto ${formExpandido ? 'flex-1' : ''}`} style={!formExpandido ? {maxHeight:'calc(100vh - 260px)'} : {}}>
-                <div className="grid grid-cols-2 gap-4 pb-5">
+            <div className={`p-3 sm:p-6 space-y-0 overflow-y-auto ${formExpandido ? 'flex-1' : ''}`} style={!formExpandido ? {maxHeight:'calc(100dvh - 260px)'} : {}}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pb-5">
                     <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Título *</label><input type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /></div>
                     <div>
                         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Escola</label>
@@ -908,9 +908,9 @@ export default function TelaPrincipal() {
 
                 <div className="border-t border-slate-100 py-5"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={3} /></div>
 
-                <div className="px-4 py-4 bg-white border-t border-slate-100 flex gap-3 sticky bottom-0">
-                    <button type="button" onClick={fecharModal} className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm">Cancelar</button>
-                    <button type="button" onClick={() => salvarPlano()} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-sm text-sm">💾 Salvar Plano</button>
+                <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white border-t border-slate-100 flex gap-3 sticky bottom-0">
+                    <button type="button" onClick={fecharModal} className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm active:scale-95">Cancelar</button>
+                    <button type="button" onClick={() => salvarPlano()} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-sm text-sm active:scale-95">💾 Salvar Plano</button>
                 </div>
             </div>{/* fim conteúdo */}
         </div>{/* fim card principal */}
