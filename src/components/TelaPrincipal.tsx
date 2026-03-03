@@ -500,7 +500,18 @@ export default function TelaPrincipal() {
                                     className={`bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm cursor-grab active:cursor-grabbing transition-opacity hover:border-indigo-200 ${dragActiveIndex === index ? 'dragging' : ''} ${dragOverIndex === index && dragActiveIndex !== index ? 'drag-over' : ''}`}>
                                     <div className="flex justify-between items-center mb-3">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-gray-300 hover:text-indigo-400 transition text-lg select-none" title="Arraste para reordenar">⠿</span>
+                                            <span className="hidden sm:inline text-gray-300 hover:text-indigo-400 transition text-lg select-none" title="Arraste para reordenar">⠿</span>
+                                            {/* Botões ↑↓ de reordenação — fallback mobile para drag */}
+                                            <div className="flex sm:hidden gap-0.5">
+                                                <button type="button"
+                                                    onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===0) return; [arr[index-1],arr[index]]=[arr[index],arr[index-1]]; setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
+                                                    disabled={index===0}
+                                                    className="p-1.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded transition">↑</button>
+                                                <button type="button"
+                                                    onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===arr.length-1) return; [arr[index],arr[index+1]]=[arr[index+1],arr[index]]; setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
+                                                    disabled={index===(planoEditando.atividadesRoteiro||[]).length-1}
+                                                    className="p-1.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded transition">↓</button>
+                                            </div>
                                             <span className="font-bold text-indigo-700">Atividade {index + 1}</span>
                                         </div>
                                         <div className="flex gap-2">

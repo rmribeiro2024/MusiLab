@@ -2050,7 +2050,7 @@ export default function BancoPlanos({ session }) {
                 <div className="min-h-screen bg-slate-50">
 
                     {/* ══════════ HEADER ══════════ */}
-                    <div className="bg-blue-950 text-white shadow-lg">
+                    <div className="bg-blue-950 text-white shadow-lg safe-pt">
                         <div className="max-w-7xl mx-auto px-4 pt-4 pb-0">
 
                             {/* Linha superior: logo + widget hoje */}
