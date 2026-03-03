@@ -24,6 +24,7 @@ export default function ModalConfirm() {
                         </button>
                     )}
                     <button onClick={() => { setModalConfirm(null); if (modalConfirm.onConfirm) modalConfirm.onConfirm(); }}
+                        autoFocus
                         className={`flex-1 py-3 rounded-xl font-semibold transition ${modalConfirm.perigo ? 'bg-red-500 hover:bg-red-600 text-white' : 'border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800'}`}>
                         {modalConfirm.labelConfirm || 'OK'}
                     </button>

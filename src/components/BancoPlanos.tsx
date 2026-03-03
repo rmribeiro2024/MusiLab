@@ -459,6 +459,16 @@ export default function BancoPlanos({ session }) {
                         return;
                     }
 
+                    // Ctrl+Z — restaurar última versão do plano (apenas fora de inputs)
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                        if (emInput) return;
+                        if (s.modoEdicao && s.planoEditando && s.planoEditando._historicoVersoes?.length > 0) {
+                            e.preventDefault();
+                            s.restaurarVersao(s.planoEditando, s.planoEditando._historicoVersoes[0]);
+                        }
+                        return;
+                    }
+
                     // Esc — fechar modal aberto (em ordem de prioridade)
                     if (e.key === 'Escape') {
                         if (s.modalConfirm)          { s.setModalConfirm(null); return; }
@@ -1606,7 +1616,7 @@ export default function BancoPlanos({ session }) {
                 modalRegistro, modalRegistroRapido, modalConfiguracoes, modalNovaFaixa,
                 modalNovaEscola, modalTemplates, modalGradeSemanal, modalEventos,
                 statusDropdownId, viewMode,
-                fecharModal, salvarPlano, triggerSalvo, novoPlano,
+                fecharModal, salvarPlano, triggerSalvo, novoPlano, restaurarVersao,
                 setModalConfirm, setModalRegistro, setModalRegistroRapido, setModalConfiguracoes,
                 setModalNovaFaixa, setModalNovaEscola, setModalTemplates, setModalGradeSemanal,
                 setModalEventos, setStatusDropdownId,
@@ -2077,6 +2087,7 @@ export default function BancoPlanos({ session }) {
                                         <div className="flex items-center gap-2">
                                             <h1 className="text-2xl font-bold tracking-tight text-white leading-tight">MusiLab</h1>
                                             {/* Indicador de salvamento */}
+                                            <div role="status" aria-live="polite" aria-atomic="true">
                                             {statusSalvamento === 'salvando' && (
                                                 <span className="flex items-center gap-1 text-xs text-amber-300 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-full animate-pulse">
                                                     <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -2096,6 +2107,7 @@ export default function BancoPlanos({ session }) {
                                                     ⚠ Sem conexão — salvo localmente
                                                 </span>
                                             )}
+                                            </div>
                                         </div>
                                         <p className="text-slate-300 text-sm mt-0.5 flex items-center gap-2 flex-wrap">
                                             Planejamento Musical · {userName}
