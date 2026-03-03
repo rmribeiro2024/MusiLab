@@ -199,6 +199,7 @@ export interface AnoLetivo {
   id: string
   nome: string
   ano?: string | number
+  anoAtual?: boolean
   dataInicio?: string
   dataFim?: string
   status?: string

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 // BancoPlanos — orquestrador principal + bridge de contexto
 // Estados migrados para domínios: EstrategiasContext, RepertorioContext, AtividadesContext,
 // SequenciasContext, HistoricoContext, AnoLetivoContext, CalendarioContext, PlanosContext.
@@ -428,7 +428,7 @@ export default function BancoPlanos({ session }) {
             // dragOverIndex, setDragOverIndex — via usePlanosContext()
             // handleDragStart, handleDragEnter, handleDragEnd — via usePlanosContext()
             useEffect(() => {
-                dbSet('darkMode', darkMode);
+                dbSet('darkMode', String(darkMode));
                 if (darkMode) { document.documentElement.classList.add('dark'); }
                 else { document.documentElement.classList.remove('dark'); }
             }, [darkMode]);
@@ -441,12 +441,13 @@ export default function BancoPlanos({ session }) {
             // Fechar dropdown de status ao clicar fora — gerenciado em PlanosContext
 
             // ── #12: Atalhos de teclado (useRef para evitar stale closure) ──
-            const _kbRef = useRef({});
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const _kbRef = useRef<any>({});
             useEffect(() => {
                 const handler = (e) => {
                     const s = _kbRef.current;
                     const tag = document.activeElement?.tagName?.toLowerCase();
-                    const emInput = ['input','textarea','select'].includes(tag) || document.activeElement?.isContentEditable;
+                    const emInput = ['input','textarea','select'].includes(tag) || (document.activeElement as HTMLElement)?.isContentEditable;
 
                     // Ctrl+S — salvar plano em edição (qualquer contexto)
                     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -645,14 +646,22 @@ export default function BancoPlanos({ session }) {
                             // conceitos/unidades/faixas/tagsGlobais removidos — carregados em AnoLetivoContext (Parte 6)
                             if(cfg.templatesRoteiro) setTemplatesRoteiro(cfg.templatesRoteiro);
                             // Opções customizadas de repertório — setters agora vêm do RepertorioContext (Parte 3)
-                            if(cfg.compassosCustomizados) setCompassosCustomizados(cfg.compassosCustomizados);
-                            if(cfg.tonalidadesCustomizadas) setTonalidadesCustomizadas(cfg.tonalidadesCustomizadas);
-                            if(cfg.andamentosCustomizados) setAndamentosCustomizados(cfg.andamentosCustomizados);
-                            if(cfg.escalasCustomizadas) setEscalasCustomizadas(cfg.escalasCustomizadas);
-                            if(cfg.estruturasCustomizadas) setEstruturasCustomizadas(cfg.estruturasCustomizadas);
-                            if(cfg.dinamicasCustomizadas) setDinamicasCustomizadas(cfg.dinamicasCustomizadas);
-                            if(cfg.energiasCustomizadas) setEnergiasCustomizadas(cfg.energiasCustomizadas);
-                            if(cfg.instrumentacaoCustomizada) setInstrumentacaoCustomizada(cfg.instrumentacaoCustomizada);
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            if(cfg.compassosCustomizados) setCompassosCustomizados(cfg.compassosCustomizados as any);
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            if(cfg.tonalidadesCustomizadas) setTonalidadesCustomizadas(cfg.tonalidadesCustomizadas as any);
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            if(cfg.andamentosCustomizados) setAndamentosCustomizados(cfg.andamentosCustomizados as any);
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            if(cfg.escalasCustomizadas) setEscalasCustomizadas(cfg.escalasCustomizadas as any);
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            if(cfg.estruturasCustomizadas) setEstruturasCustomizadas(cfg.estruturasCustomizadas as any);
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            if(cfg.dinamicasCustomizadas) setDinamicasCustomizadas(cfg.dinamicasCustomizadas as any);
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            if(cfg.energiasCustomizadas) setEnergiasCustomizadas(cfg.energiasCustomizadas as any);
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            if(cfg.instrumentacaoCustomizada) setInstrumentacaoCustomizada(cfg.instrumentacaoCustomizada as any);
                         }
                         // Atualiza localStorage com dados frescos da nuvem
                         if (planosC !== null) dbSet('planosAula', JSON.stringify(planosC));
@@ -663,7 +672,7 @@ export default function BancoPlanos({ session }) {
             }, [userId]);
 
             // ── SYNC AUTOMÁTICO PARA A NUVEM ──
-            const syncTimeout = useRef({});
+            const syncTimeout = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
             const _prevSyncData = useRef(null);
             const syncDelay = (key, fn) => {
                 setStatusSalvamento('salvando');
@@ -743,7 +752,7 @@ export default function BancoPlanos({ session }) {
             // atividades — gerenciado em AtividadesContext (Parte 4)
             // sequencias — gerenciado em SequenciasContext (Parte 5)
             // repertorio — gerenciado em RepertorioContext (Parte 3)
-            useEffect(() => { dbSet('ocultarFeriados', ocultarFeriados); }, [ocultarFeriados]);
+            useEffect(() => { dbSet('ocultarFeriados', String(ocultarFeriados)); }, [ocultarFeriados]);
 
             // ============================================================
 
@@ -772,7 +781,7 @@ export default function BancoPlanos({ session }) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
-                        const backup = JSON.parse(e.target.result);
+                        const backup = JSON.parse(e.target!.result as string);
                         const validacao = validarBackup(backup);
                         if (!validacao.valido) {
                             setModalConfirm({ titulo: 'Arquivo inválido', conteudo: validacao.erro || 'Este arquivo não é um backup válido do MusiLab.', somenteOk: true, labelConfirm: 'OK' });
@@ -1006,7 +1015,7 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // FUNÇÕES: REGISTROS PÓS-AULA
             // ============================================================
-            const abrirModalRegistro = useCallback((plano, e) => {
+            const abrirModalRegistro = useCallback((plano, e?) => {
                 if(e) e.stopPropagation();
                 setPlanoParaRegistro(plano);
                 setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '' });
@@ -1304,7 +1313,7 @@ export default function BancoPlanos({ session }) {
                 const ano = gtAnoNovo.trim();
                 if (!ano) return;
                 if (anosLetivos.find(a => a.ano === ano)) { setModalConfirm({ conteudo: 'Ano letivo já existe!', somenteOk: true, labelConfirm: 'OK' }); return; }
-                setAnosLetivos([...anosLetivos, { id: Date.now(), ano, status: 'ativo', escolas: [] }]);
+                setAnosLetivos([...anosLetivos, { id: String(Date.now()), nome: ano, ano, status: 'ativo', escolas: [] }]);
                 setGtAnoNovo('');
             };
             const gtMudarStatusAno = (anoId, novoStatus) => {
@@ -1322,7 +1331,7 @@ export default function BancoPlanos({ session }) {
                 setAnosLetivos(anosLetivos.map(a => {
                     if (a.id != gtAnoSel) return a;
                     if (a.escolas.find(e => e.nome === nome)) { setModalConfirm({ conteudo: 'Escola já existe neste ano!', somenteOk: true, labelConfirm: 'OK' }); return a; }
-                    return { ...a, escolas: [...a.escolas, { id: Date.now(), nome, segmentos: [] }] };
+                    return { ...a, escolas: [...a.escolas, { id: String(Date.now()), nome, segmentos: [] }] };
                 }));
                 setGtEscolaNome('');
             };
@@ -1340,7 +1349,7 @@ export default function BancoPlanos({ session }) {
                     return { ...a, escolas: a.escolas.map(e => {
                         if (e.id != gtEscolaSel) return e;
                         if (e.segmentos.find(s => s.nome === nome)) { setModalConfirm({ conteudo: 'Segmento já existe!', somenteOk: true, labelConfirm: 'OK' }); return e; }
-                        return { ...e, segmentos: [...e.segmentos, { id: Date.now(), nome, turmas: [] }] };
+                        return { ...e, segmentos: [...e.segmentos, { id: String(Date.now()), nome, turmas: [] }] };
                     })};
                 }));
                 setGtSegmentoNome('');
@@ -1365,7 +1374,7 @@ export default function BancoPlanos({ session }) {
                         return { ...e, segmentos: e.segmentos.map(s => {
                             if (s.id != gtSegmentoSel) return s;
                             if (s.turmas.find(t => t.nome === nome)) { setModalConfirm({ conteudo: 'Turma já existe!', somenteOk: true, labelConfirm: 'OK' }); return s; }
-                            return { ...s, turmas: [...s.turmas, { id: Date.now(), nome }] };
+                            return { ...s, turmas: [...s.turmas, { id: String(Date.now()), nome }] };
                         })};
                     })};
                 }));
@@ -1423,7 +1432,7 @@ export default function BancoPlanos({ session }) {
                         // Adicionar escola ao ano letivo
                         setAnosLetivos(anosLetivos.map(a => {
                             if (a.id != anoId) return a;
-                            return { ...a, escolas: [...a.escolas, { id: Date.now(), nome, segmentos: [] }] };
+                            return { ...a, escolas: [...a.escolas, { id: String(Date.now()), nome, segmentos: [] }] };
                         }));
                     }
                 }
@@ -2053,7 +2062,7 @@ export default function BancoPlanos({ session }) {
         ytPreviewId,
             };
             return (
-                <BancoPlanosContext.Provider value={ctx}>
+                <BancoPlanosContext.Provider value={ctx as any}>
                 <div className="min-h-screen bg-slate-50">
 
                     {/* ══════════ HEADER ══════════ */}
@@ -2118,7 +2127,7 @@ export default function BancoPlanos({ session }) {
                                             return new Date(hoje.getFullYear(), f.mes-1, f.dia).toDateString() === hoje.toDateString();
                                         });
                                         if(feriadoHoje) return <div className="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded">🎉 {feriadoHoje.nome}</div>;
-                                        const proximoEvento = eventosEscolares.filter(e => new Date(e.data+'T23:59:59') >= new Date()).sort((a,b)=>new Date(a.data)-new Date(b.data))[0];
+                                        const proximoEvento = eventosEscolares.filter(e => new Date(e.data+'T23:59:59') >= new Date()).sort((a,b)=>new Date(a.data).getTime()-new Date(b.data).getTime())[0];
                                         return (
                                             <>
                                                 {aulasHoje.length > 0 && (
@@ -2129,8 +2138,8 @@ export default function BancoPlanos({ session }) {
                                                 )}
                                                 {proximoEvento ? (
                                                     <div className="text-xs text-slate-400">
-                                                        📌 <span className="text-slate-200 font-medium">{proximoEvento.nome||proximoEvento.titulo}</span>
-                                                        <span className="ml-1">em {Math.ceil((new Date(proximoEvento.data+'T00:00:00')-new Date())/(1000*60*60*24))} dias</span>
+                                                        📌 <span className="text-slate-200 font-medium">{proximoEvento.nome}</span>
+                                                        <span className="ml-1">em {Math.ceil((new Date(proximoEvento.data+'T00:00:00').getTime()-new Date().getTime())/(1000*60*60*24))} dias</span>
                                                     </div>
                                                 ) : (
                                                     <div className="text-xs text-slate-500 italic">Nenhum evento próximo</div>
