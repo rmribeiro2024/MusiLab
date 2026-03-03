@@ -734,8 +734,14 @@ Commit: `feat: mobile fase 4 — PWA, safe area e touch drag`
 
 - [x] **Pré-requisito**: Testar app funcionalmente — OK (confirmado pelo usuário em 2026-03-03)
 - [x] Fase 0 — iOS fixes: `100dvh` + `font-size 16px` em inputs — commit `a04395b`
-- [ ] Fase 1 — Críticos: calendário + tabela histórico + min-w
-- [ ] Fase 2 — Altos: navegação/tabs + forms + modais
+- [x] Fase 1 — Críticos: calendário + tabela histórico + min-w — commit `b7d3c09`
+  - 1A: TelaCalendario — padding reduzido mobile, header empilhado, day names 1 letra, célula min-h-[52px], botão hover oculto em touch
+  - 1B: ModuloHistoricoMusical — card view mobile (sm:hidden) + tabela (hidden sm:block)
+  - 1C: BancoPlanos widget "hoje" oculto em mobile (hidden sm:block) — evita overflow horizontal no header
+- [x] Fase 2 — Altos: navegação/tabs + forms + modais — commit `3e8589f`
+  - 2A: BancoPlanos tabs — labels abreviados mobile (`short`), gap/px reduzidos, `scrollbar-hide`
+  - 2B: TelaPrincipal form — `max-h-[85dvh]` mobile, grid 1col mobile, padding reduzido, `active:scale-95`
+  - 2C: 11 modais — bottom sheet (`items-end sm:items-center`, `rounded-t-2xl sm:rounded-2xl`, `p-0 sm:p-4`)
 - [ ] Fase 2B (opcional) — Bottom navigation bar em mobile
 - [ ] Fase 3 — Médios: polimento, touch areas, tipografia
 - [ ] Fase 4 — Bônus: PWA e touch drag (opcional)

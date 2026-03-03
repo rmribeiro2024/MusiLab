@@ -147,7 +147,7 @@ export default function ModuloLista() {
                 {/* Favorito */}
                 <button onClick={(e)=>{e.stopPropagation();toggleFavorito(plano,e);}} className="text-base shrink-0 opacity-50 hover:opacity-100 transition-opacity">{plano.destaque?'⭐':'☆'}</button>
                 {/* Info principal — clicável */}
-                <div className="flex-1 min-w-0 cursor-pointer" onClick={()=>setPlanoSelecionado(plano)}>
+                <div className="flex-1 min-w-0 cursor-pointer transition-transform active:scale-[0.98]" onClick={()=>setPlanoSelecionado(plano)}>
                     <div className="flex items-center gap-2 flex-wrap">
                         {/* Número da aula */}
                         {plano.numeroAula && <span className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full shrink-0">#{plano.numeroAula}</span>}
