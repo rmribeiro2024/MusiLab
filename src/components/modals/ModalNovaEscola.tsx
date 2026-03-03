@@ -18,8 +18,8 @@ export default function ModalNovaEscola() {
     if (!modalNovaEscola) return null
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4 z-[100]">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="bg-indigo-600 text-white p-5 rounded-t-2xl flex items-center justify-between">
                     <div>

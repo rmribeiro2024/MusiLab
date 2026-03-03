@@ -15,8 +15,8 @@ export default function ModalConfiguracoes() {
     if (!modalConfiguracoes) return null
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={()=>setModalConfiguracoes(false)}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e=>e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50" onClick={()=>setModalConfiguracoes(false)}>
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
                 <div className="bg-gradient-to-r from-slate-700 to-slate-600 text-white p-5 rounded-t-2xl flex justify-between items-center">
                     <div>
                         <h2 className="text-xl font-bold">⚙️ Configurações</h2>

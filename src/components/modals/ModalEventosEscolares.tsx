@@ -13,8 +13,8 @@ export default function ModalEventosEscolares() {
     if (!modalEventos) return null
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={()=>{setModalEventos(false);setEventoEditando(null);}}>
-            <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50" onClick={()=>{setModalEventos(false);setEventoEditando(null);}}>
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
                 <div className="bg-pink-500 text-white p-4 flex justify-between items-center sticky top-0">
                     <h2 className="text-lg font-bold">🎉 Eventos Escolares</h2>
                     <button onClick={()=>{setModalEventos(false);setEventoEditando(null);}} className="text-white text-xl">✕</button>

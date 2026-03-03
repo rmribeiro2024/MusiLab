@@ -2134,29 +2134,30 @@ export default function BancoPlanos({ session }) {
                             </div>
 
                             {/* ══ NAVBAR em dois grupos ══ */}
-                            <div className="flex items-end gap-1 overflow-x-auto pb-0">
+                            <div className="flex items-end gap-0.5 sm:gap-1 overflow-x-auto pb-0 scrollbar-hide">
 
                                 {/* GRUPO 1: Trabalho diário */}
-                                <div className="flex items-end gap-1 mr-3">
+                                <div className="flex items-end gap-0.5 sm:gap-1 mr-2 sm:mr-3">
                                     {[
-                                        { label:'Início',     icon:'🏠', mode:'lista',      action:()=>{setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null);} },
-                                        { label:'Nova Aula',  icon:'➕', mode:'nova',       action: novoPlano, accent: true },
-                                        { label:'Hoje',       icon:'☀️', mode:'resumoDia',  action:()=>setViewMode('resumoDia') },
-                                        { label:'Calendário', icon:'📅', mode:'calendario', action:()=>setViewMode('calendario') },
-                                        { label:'Meu Ano', icon:'🗓️', mode:'anoLetivo', action:()=>setViewMode('anoLetivo') },
-                                        { label:'Histórico', icon:'📊', mode:'historicoMusical', action:()=>setViewMode('historicoMusical') },
-                                    ].map(({label, icon, mode, action, accent}) => {
+                                        { label:'Início',     short:'Início',  icon:'🏠', mode:'lista',           action:()=>{setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null);} },
+                                        { label:'Nova Aula',  short:'Nova',    icon:'➕', mode:'nova',            action: novoPlano, accent: true },
+                                        { label:'Hoje',       short:'Hoje',    icon:'☀️', mode:'resumoDia',       action:()=>setViewMode('resumoDia') },
+                                        { label:'Calendário', short:'Cal.',    icon:'📅', mode:'calendario',      action:()=>setViewMode('calendario') },
+                                        { label:'Meu Ano',    short:'Ano',     icon:'🗓️', mode:'anoLetivo',       action:()=>setViewMode('anoLetivo') },
+                                        { label:'Histórico',  short:'Hist.',   icon:'📊', mode:'historicoMusical', action:()=>setViewMode('historicoMusical') },
+                                    ].map(({label, short, icon, mode, action, accent}) => {
                                         const isActive = viewMode === mode;
                                         return (
                                             <button key={label} onClick={action}
-                                                className={`relative flex items-center gap-1 px-3 py-2 rounded-t-xl text-xs font-semibold whitespace-nowrap transition-all
+                                                className={`relative flex items-center gap-1 px-2 sm:px-3 py-2 rounded-t-xl text-xs font-semibold whitespace-nowrap transition-all
                                                     ${accent
                                                         ? 'bg-emerald-500 hover:bg-emerald-400 text-white'
                                                         : isActive
                                                             ? 'bg-white text-slate-800 shadow-sm'
                                                             : 'bg-blue-900/70 hover:bg-blue-800/80 text-blue-200 hover:text-white border border-blue-700/50'}`}>
                                                 <span>{icon}</span>
-                                                <span>{label}</span>
+                                                <span className="hidden sm:inline">{label}</span>
+                                                <span className="sm:hidden">{short}</span>
                                                 {isActive && !accent && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-indigo-500 rounded-full"/>}
                                             </button>
                                         );
@@ -2167,22 +2168,23 @@ export default function BancoPlanos({ session }) {
                                 <div className="self-center h-5 w-px bg-blue-700/60 mx-1 mb-1"/>
 
                                 {/* GRUPO 2: Biblioteca */}
-                                <div className="flex items-end gap-1">
+                                <div className="flex items-end gap-0.5 sm:gap-1">
                                     {[
-                                        { label:'Repertório', icon:'🎼', mode:'repertorio' },
-                                        { label:'Estratégias', icon:'🧩', mode:'estrategias' },
-                                        { label:'Atividades', icon:'🎁', mode:'atividades' },
-                                        { label:'Sequências', icon:'📚', mode:'sequencias' },
-                                    ].map(({label, icon, mode}) => {
+                                        { label:'Repertório',  short:'Rep.',  icon:'🎼', mode:'repertorio' },
+                                        { label:'Estratégias', short:'Estr.', icon:'🧩', mode:'estrategias' },
+                                        { label:'Atividades',  short:'Atv.',  icon:'🎁', mode:'atividades' },
+                                        { label:'Sequências',  short:'Seq.',  icon:'📚', mode:'sequencias' },
+                                    ].map(({label, short, icon, mode}) => {
                                         const isActive = viewMode === mode;
                                         return (
                                             <button key={label} onClick={()=>setViewMode(mode)}
-                                                className={`relative flex items-center gap-1 px-3 py-2 rounded-t-xl text-xs font-semibold whitespace-nowrap transition-all
+                                                className={`relative flex items-center gap-1 px-2 sm:px-3 py-2 rounded-t-xl text-xs font-semibold whitespace-nowrap transition-all
                                                     ${isActive
                                                         ? 'bg-white text-slate-800 shadow-sm'
                                                         : 'bg-blue-900/70 hover:bg-blue-800/80 text-blue-200 hover:text-white border border-blue-700/50'}`}>
                                                 <span>{icon}</span>
-                                                <span>{label}</span>
+                                                <span className="hidden sm:inline">{label}</span>
+                                                <span className="sm:hidden">{short}</span>
                                                 {isActive && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-violet-500 rounded-full"/>}
                                             </button>
                                         );
