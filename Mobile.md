@@ -732,8 +732,8 @@ Commit: `feat: mobile fase 4 — PWA, safe area e touch drag`
 
 ## Checklist de progresso
 
-- [ ] **Pré-requisito**: Testar app funcionalmente (cada módulo) — verificar novos erros de runtime
-- [ ] Fase 0 — iOS fixes: `100dvh` + `font-size 16px` em inputs (15 min, zero risco)
+- [x] **Pré-requisito**: Testar app funcionalmente — OK (confirmado pelo usuário em 2026-03-03)
+- [x] Fase 0 — iOS fixes: `100dvh` + `font-size 16px` em inputs — commit `a04395b`
 - [ ] Fase 1 — Críticos: calendário + tabela histórico + min-w
 - [ ] Fase 2 — Altos: navegação/tabs + forms + modais
 - [ ] Fase 2B (opcional) — Bottom navigation bar em mobile
