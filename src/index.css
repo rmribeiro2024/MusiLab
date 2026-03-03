@@ -39,3 +39,26 @@
 .drag-handle:active { cursor: grabbing; }
 .dragging { opacity: 0.4; }
 .drag-over { border-top: 2px solid #6366f1 !important; }
+
+/* ── MOBILE: FIX iOS SAFARI ── */
+
+/* 0A: 100dvh — descontа a barra de endereço do browser no iPhone */
+@supports (height: 100dvh) {
+  .min-h-screen { min-height: 100dvh; }
+  .h-screen     { height: 100dvh; }
+}
+
+/* 0B: font-size 16px — previne auto-zoom em inputs no iOS Safari */
+/* O Safari faz zoom quando font-size < 16px. Aplica só em mobile. */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="url"],
+  input[type="date"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
