@@ -22,7 +22,7 @@ const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
 const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
 const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
 import { BancoPlanosContext } from './BancoPlanosContext'
-import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext, useSequenciasContext, useHistoricoContext } from '../contexts'
+import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext, useSequenciasContext, useHistoricoContext, useAnoLetivoContext } from '../contexts'
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
 import { dbGet, dbSet, dbDel } from '../lib/db'
@@ -284,6 +284,41 @@ export default function BancoPlanos({ session }) {
                 hmFiltroBusca, setHmFiltroBusca,
                 hmModalMusica, setHmModalMusica,
             } = useHistoricoContext();
+            // ── ANO LETIVO — lido do AnoLetivoContext (extraído na Parte 6) ──
+            const {
+                anosLetivos, setAnosLetivos,
+                eventosEscolares, setEventosEscolares,
+                planejamentoAnual, setPlanejamentoAnual,
+                anoPlanoAtivoId, setAnoPlanoAtivoId,
+                mostrandoFormNovoAno, setMostrandoFormNovoAno,
+                formNovoAno, setFormNovoAno,
+                periodoExpId, setPeriodoExpId,
+                periodoEditForm, setPeriodoEditForm,
+                adicionandoPeriodoAno, setAdicionandoPeriodoAno,
+                formNovoPeriodo, setFormNovoPeriodo,
+                conceitos, setConceitos,
+                unidades, setUnidades,
+                faixas, setFaixas,
+                tagsGlobais, setTagsGlobais,
+                modalTurmas, setModalTurmas,
+                anoLetivoSelecionadoModal, setAnoLetivoSelecionadoModal,
+                gtAnoNovo, setGtAnoNovo,
+                gtAnoSel, setGtAnoSel,
+                gtEscolaNome, setGtEscolaNome,
+                gtEscolaSel, setGtEscolaSel,
+                gtSegmentoNome, setGtSegmentoNome,
+                gtSegmentoSel, setGtSegmentoSel,
+                gtTurmaNome, setGtTurmaNome,
+                mostrarArquivados, setMostrarArquivados,
+                modalNovaEscola, setModalNovaEscola,
+                novaEscolaNome, setNovaEscolaNome,
+                novaEscolaAnoId, setNovaEscolaAnoId,
+                modalNovaFaixa, setModalNovaFaixa,
+                novaFaixaNome, setNovaFaixaNome,
+                criarAnoLetivoPainel, excluirAnoPlano,
+                adicionarPeriodoNoAno, salvarEdicaoPeriodo, excluirPeriodoDoAno,
+                adicionarMetaNoAno, excluirMetaDoAno,
+            } = useAnoLetivoContext();
             // ============================================================
             // FUNÇÕES: UTILITÁRIOS GERAIS
             // ============================================================
@@ -326,11 +361,7 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // MÓDULO: EVENTOS ESCOLARES E FERIADOS
             // ============================================================
-            // Estados para Eventos Escolares e Feriados
-            const [eventosEscolares, setEventosEscolares] = useState(() => {
-                const saved = dbGet('eventosEscolares');
-                return saved ? JSON.parse(saved) : [];
-            });
+            // eventosEscolares, setEventosEscolares — migrados para AnoLetivoContext (Parte 6)
             const [modalEventos, setModalEventos] = useState(false);
             const [eventoEditando, setEventoEditando] = useState(null);
             const [ocultarFeriados, setOcultarFeriados] = useState(() => {
@@ -359,94 +390,37 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // MÓDULO: PLANEJAMENTO ANUAL
             // ============================================================
-            // ── MEU ANO LETIVO (Planejamento Anual) ──
-            const [planejamentoAnual, setPlanejamentoAnual] = useState(() => {
-                const saved = dbGet('planejamentoAnual');
-                return saved ? JSON.parse(saved) : [];
-            });
-            const [anoPlanoAtivoId, setAnoPlanoAtivoId] = useState(() => {
-                return dbGet('anoPlanoAtivoId') || null;
-            });
-            const [mostrandoFormNovoAno, setMostrandoFormNovoAno] = useState(false);
-            const [formNovoAno, setFormNovoAno] = useState({ nome: String(new Date().getFullYear()), dataInicio: '', dataFim: '' });
-            const [periodoExpId, setPeriodoExpId] = useState(null);
-            const [periodoEditForm, setPeriodoEditForm] = useState(null);
-            const [adicionandoPeriodoAno, setAdicionandoPeriodoAno] = useState(false);
-            const [formNovoPeriodo, setFormNovoPeriodo] = useState({ nome: '', dataInicio: '', dataFim: '', tema: '', foco: '' });
+            // MÓDULO: PLANEJAMENTO ANUAL — migrado para AnoLetivoContext (Parte 6)
+            // ============================================================
+            // planejamentoAnual, setPlanejamentoAnual — via useAnoLetivoContext()
+            // anoPlanoAtivoId, setAnoPlanoAtivoId — via useAnoLetivoContext()
+            // mostrandoFormNovoAno, setMostrandoFormNovoAno — via useAnoLetivoContext()
+            // formNovoAno, setFormNovoAno — via useAnoLetivoContext()
+            // periodoExpId, setPeriodoExpId — via useAnoLetivoContext()
+            // periodoEditForm, setPeriodoEditForm — via useAnoLetivoContext()
+            // adicionandoPeriodoAno, setAdicionandoPeriodoAno — via useAnoLetivoContext()
+            // formNovoPeriodo, setFormNovoPeriodo — via useAnoLetivoContext()
 
             // ============================================================
-            // MÓDULO: CURRÍCULO
+            // MÓDULO: CURRÍCULO — migrado para AnoLetivoContext (Parte 6)
             // ============================================================
-            const [conceitos, setConceitos] = useState(() => {
-                const saved = dbGet('conceitosPersonalizados');
-                return saved ? JSON.parse(saved) : conceitosIniciais;
-            });
-
-            const [unidades, setUnidades] = useState(() => {
-                const saved = dbGet('unidadesPersonalizadas');
-                return saved ? JSON.parse(saved) : unidadesIniciais;
-            });
+            // conceitos, setConceitos — via useAnoLetivoContext()
+            // unidades, setUnidades — via useAnoLetivoContext()
             
             // ============================================================
-            // MÓDULO: TAGS GLOBAIS
+            // MÓDULO: TAGS GLOBAIS — migrado para AnoLetivoContext (Parte 6)
             // ============================================================
-            // Estado global de Tags (similar aos conceitos)
-            const [tagsGlobais, setTagsGlobais] = useState(() => {
-                const saved = dbGet('tagsGlobais');
-                if (saved) return JSON.parse(saved);
-                
-                // Extrair tags existentes dos planos e atividades
-                const tagsSet = new Set();
-                planos.forEach(p => (p.tags || []).forEach(t => tagsSet.add(t)));
-                atividades.forEach(a => (a.tags || []).forEach(t => tagsSet.add(t)));
-                return Array.from(tagsSet).sort();
-            });
-            
-            // Salvar tags globais
-            useEffect(() => {
-                dbSet('tagsGlobais', JSON.stringify(tagsGlobais));
-            }, [tagsGlobais]);
+            // tagsGlobais, setTagsGlobais — via useAnoLetivoContext()
+            // dbSet('tagsGlobais') — gerenciado em AnoLetivoContext
 
             // Salvar estratégias — movido para EstrategiasContext (Parte 2)
 
-            // Salvar planejamento anual
-            useEffect(() => { dbSet('planejamentoAnual', JSON.stringify(planejamentoAnual)); }, [planejamentoAnual]);
-            useEffect(() => { if(anoPlanoAtivoId) dbSet('anoPlanoAtivoId', anoPlanoAtivoId); }, [anoPlanoAtivoId]);
+            // dbSet('planejamentoAnual') e dbSet('anoPlanoAtivoId') — gerenciados em AnoLetivoContext (Parte 6)
 
             // ============================================================
-            // MÓDULO: ESTRUTURA HIERÁRQUICA DE TURMAS
+            // MÓDULO: ESTRUTURA HIERÁRQUICA DE TURMAS — migrado para AnoLetivoContext (Parte 6)
             // ============================================================
-            // --- ESTADO GLOBAL DE TURMAS ---
-            // estrutura: [ { id, nome, series: [ { id, nome, turmas: [ { id, nome } ] } ] } ]
-            // ── ESTRUTURA HIERÁRQUICA: ANO LETIVO → ESCOLA → SEGMENTO → TURMA ──
-            const [anosLetivos, setAnosLetivos] = useState(() => {
-                const saved = dbGet('anosLetivos');
-                if (saved) return JSON.parse(saved);
-                
-                // Migração automática de dados antigos
-                const old = dbGet('escolasTurmas');
-                if (old) {
-                    try {
-                        const escolasAntigas = JSON.parse(old);
-                        const anoAtual = new Date().getFullYear().toString();
-                        return [{
-                            id: Date.now(),
-                            ano: anoAtual,
-                            status: 'ativo',
-                            escolas: escolasAntigas.map(esc => ({
-                                id: esc.id,
-                                nome: esc.nome,
-                                segmentos: (esc.series || []).map(s => ({
-                                    id: s.id,
-                                    nome: s.nome,
-                                    turmas: s.turmas || []
-                                }))
-                            }))
-                        }];
-                    } catch(e) {}
-                }
-                return [];
-            });
+            // anosLetivos, setAnosLetivos — via useAnoLetivoContext()
 
             // Listas para Autocomplete
             const escolas = useMemo(() => {
@@ -699,43 +673,25 @@ export default function BancoPlanos({ session }) {
             const [buscaRegistros, setBuscaRegistros] = useState(''); // #3: busca textual nos registros
             const [ytPreviewId, setYtPreviewId] = useState(null); // #9: id do youtube em preview
             // ============================================================
-            // MÓDULO: GESTÃO DE TURMAS
+            // MÓDULO: GESTÃO DE TURMAS — migrado para AnoLetivoContext (Parte 6)
             // ============================================================
-            // Modal gestão
-            const [modalTurmas, setModalTurmas] = useState(false);
-            const [anoLetivoSelecionadoModal, setAnoLetivoSelecionadoModal] = useState(() => {
-                const anoAtivo = anosLetivos.find(a => a.status === 'ativo');
-                return anoAtivo ? anoAtivo.id : (anosLetivos[0]?.id || '');
-            });
-            const [gtAnoNovo, setGtAnoNovo] = useState('');
-            const [gtAnoSel, setGtAnoSel] = useState('');
-            const [gtEscolaNome, setGtEscolaNome] = useState('');
-            const [gtEscolaSel, setGtEscolaSel] = useState('');
-            const [gtSegmentoNome, setGtSegmentoNome] = useState('');
-            const [gtSegmentoSel, setGtSegmentoSel] = useState('');
-            const [gtTurmaNome, setGtTurmaNome] = useState('');
-            const [mostrarArquivados, setMostrarArquivados] = useState(false);
+            // modalTurmas, anoLetivoSelecionadoModal, gtAnoNovo, gtAnoSel,
+            // gtEscolaNome, gtEscolaSel, gtSegmentoNome, gtSegmentoSel,
+            // gtTurmaNome, mostrarArquivados — via useAnoLetivoContext()
             
             // ============================================================
-            // MÓDULO: NOVA ESCOLA
+            // MÓDULO: NOVA ESCOLA — migrado para AnoLetivoContext (Parte 6)
             // ============================================================
-            // Modal rápido: cadastrar nova escola
-            const [modalNovaEscola, setModalNovaEscola] = useState(false); // 'plano' | 'filtro' | false
-            const [novaEscolaNome, setNovaEscolaNome] = useState('');
-            const [novaEscolaAnoId, setNovaEscolaAnoId] = useState('');
+            // modalNovaEscola, novaEscolaNome, novaEscolaAnoId — via useAnoLetivoContext()
 
             // ============================================================
-            // MÓDULO: FAIXAS ETÁRIAS
+            // MÓDULO: FAIXAS ETÁRIAS — migrado para AnoLetivoContext (Parte 6)
             // ============================================================
-            const [faixas, setFaixas] = useState(() => {
-                const saved = dbGet('faixasEtarias');
-                return saved ? JSON.parse(saved) : ["Todos", "1\u00b0 ano", "2\u00b0 ano", "3\u00b0 ano", "4\u00b0 ano", "5\u00b0 ano"];
-            });
+            // faixas, setFaixas — via useAnoLetivoContext()
             // ============================================================
             // MÓDULO: CONFIGURAÇÕES E MODAIS
             // ============================================================
-            const [modalNovaFaixa, setModalNovaFaixa] = useState(false);
-            const [novaFaixaNome, setNovaFaixaNome] = useState('');
+            // modalNovaFaixa, novaFaixaNome — migrados para AnoLetivoContext (Parte 6)
             const [modalConfiguracoes, setModalConfiguracoes] = useState(false);
             // pendingAtividadeId, modalNovaMusicaInline, novaMusicaInline — migrados para AtividadesContext (Parte 4)
             // const [pendingAtividadeId, setPendingAtividadeId] = useState(null);
@@ -783,14 +739,14 @@ export default function BancoPlanos({ session }) {
                     try {
                         // estrategias carregada em EstrategiasContext (Parte 2)
                         // repertorio carregado em RepertorioContext (Parte 3)
-                        const [planosC, anosC, gradesC, eventosC, planejamentoAnualC, cfg] = await Promise.all([
+                        const [planosC, gradesC, cfg] = await Promise.all([
                             loadFromSupabase('planos', userId),
                             // atividades removido — carregado em AtividadesContext (Parte 4)
                             // sequencias removido — carregado em SequenciasContext (Parte 5)
-                            loadFromSupabase('anos_letivos', userId),
+                            // anos_letivos removido — carregado em AnoLetivoContext (Parte 6)
+                            // eventos_escolares removido — carregado em AnoLetivoContext (Parte 6)
+                            // planejamento_anual removido — carregado em AnoLetivoContext (Parte 6)
                             loadFromSupabase('grades_semanas', userId),
-                            loadFromSupabase('eventos_escolares', userId),
-                            loadFromSupabase('planejamento_anual', userId),
                             loadConfiguracoes(userId)
                         ]);
 
@@ -799,16 +755,13 @@ export default function BancoPlanos({ session }) {
                         // atividadesC removido — carregado em AtividadesContext (Parte 4)
                         // repertorioC removido — carregado em RepertorioContext (Parte 3)
                         // sequenciasC removido — carregado em SequenciasContext (Parte 5)
-                        if (anosC !== null) setAnosLetivos(anosC.length > 0 ? anosC : []);
+                        // anosC removido — carregado em AnoLetivoContext (Parte 6)
                         if (gradesC !== null) setGradesSemanas(gradesC.length > 0 ? gradesC : []);
-                        if (eventosC !== null) setEventosEscolares(eventosC.length > 0 ? eventosC : []);
-                        // estrategiasC removido — carregado em EstrategiasContext (Parte 2)
-                        if (planejamentoAnualC !== null) setPlanejamentoAnual(planejamentoAnualC.length > 0 ? planejamentoAnualC : []);
+                        // eventosC removido — carregado em AnoLetivoContext (Parte 6)
+                        // estratégiasC removido — carregado em EstrategiasContext (Parte 2)
+                        // planejamentoAnualC removido — carregado em AnoLetivoContext (Parte 6)
                         if (cfg) {
-                            if(cfg.conceitos) setConceitos(cfg.conceitos);
-                            if(cfg.unidades) setUnidades(cfg.unidades);
-                            if(cfg.faixas) setFaixas(cfg.faixas);
-                            if(cfg.tagsGlobais) setTagsGlobais(cfg.tagsGlobais);
+                            // conceitos/unidades/faixas/tagsGlobais removidos — carregados em AnoLetivoContext (Parte 6)
                             if(cfg.templatesRoteiro) setTemplatesRoteiro(cfg.templatesRoteiro);
                             // Opções customizadas de repertório — setters agora vêm do RepertorioContext (Parte 3)
                             if(cfg.compassosCustomizados) setCompassosCustomizados(cfg.compassosCustomizados);
@@ -851,11 +804,11 @@ export default function BancoPlanos({ session }) {
                     // atividades: sync movido para AtividadesContext (Parte 4)
                     // repertorio: sync movido para RepertorioContext (Parte 3)
                     // sequencias: sync movido para SequenciasContext (Parte 5)
-                    anos_letivos: anosLetivos,
+                    // anos_letivos: sync movido para AnoLetivoContext (Parte 6)
                     grades_semanas: gradesSemanas,
-                    eventos_escolares: eventosEscolares,
+                    // eventos_escolares: sync movido para AnoLetivoContext (Parte 6)
                     // estrategias: sync movido para EstrategiasContext (Parte 2)
-                    planejamento_anual: planejamentoAnual,
+                    // planejamento_anual: sync movido para AnoLetivoContext (Parte 6)
                 };
                 const prev = _prevSyncData.current;
                 _prevSyncData.current = atual;
@@ -865,11 +818,12 @@ export default function BancoPlanos({ session }) {
                         syncDelay(tabela, () => syncToSupabase(tabela, dados, userId, onSyncStatus));
                     }
                 });
-            }, [planos, anosLetivos, gradesSemanas, eventosEscolares, planejamentoAnual]); // atividades/sequencias removidos — sync em AtividadesContext/SequenciasContext (Partes 4/5)
+            }, [planos, gradesSemanas]); // anos_letivos/eventos_escolares/planejamento_anual removidos — sync em AnoLetivoContext (Parte 6) — sync em AtividadesContext/SequenciasContext (Partes 4/5)
             useEffect(() => {
                 if(!userId||!dadosCarregados) return;
-                syncDelay('cfg', ()=>syncConfiguracoes({ conceitos, unidades, faixas, tagsGlobais, templatesRoteiro, compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados, escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas, energiasCustomizadas, instrumentacaoCustomizada }, userId, onSyncStatus));
-            }, [conceitos, unidades, faixas, tagsGlobais, templatesRoteiro, compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados, escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas, energiasCustomizadas, instrumentacaoCustomizada]);
+                // conceitos, unidades, faixas, tagsGlobais removidos — sincronizados em AnoLetivoContext (Parte 6)
+                syncDelay('cfg', ()=>syncConfiguracoes({ templatesRoteiro, compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados, escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas, energiasCustomizadas, instrumentacaoCustomizada }, userId, onSyncStatus));
+            }, [templatesRoteiro, compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados, escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas, energiasCustomizadas, instrumentacaoCustomizada]);
 
             // ── LOGOUT ──
             // CORREÇÃO: limpa o localStorage ao sair para evitar que dados do usuário
@@ -1661,95 +1615,10 @@ export default function BancoPlanos({ session }) {
             // vêm de useAtividadesContext() — ver bloco de destructuring acima
             // ============================================================
 
-            // ── MEU ANO LETIVO: CRUD ──
-            const _atualizarAnoPlano = (anoId, campos) => {
-                setPlanejamentoAnual(prev => prev.map(a =>
-                    a.id === anoId ? { ...a, ...campos, _ultimaEdicao: new Date().toISOString() } : a
-                ));
-            };
-
-            // ============================================================
-            // FUNÇÕES: ANO LETIVO
-            // ============================================================
-            const criarAnoLetivoPainel = () => {
-                if (!formNovoAno.nome.trim()) {
-                    setModalConfirm({ conteudo: '⚠️ Defina um nome para o ano letivo!', somenteOk: true, labelConfirm: 'OK' });
-                    return;
-                }
-                const novo = {
-                    id: gerarIdSeguro(),
-                    nome: formNovoAno.nome.trim(),
-                    dataInicio: formNovoAno.dataInicio,
-                    dataFim: formNovoAno.dataFim,
-                    periodos: [], metas: [],
-                    _criadoEm: new Date().toISOString()
-                };
-                setPlanejamentoAnual(prev => [...prev, novo]);
-                setAnoPlanoAtivoId(novo.id);
-                setMostrandoFormNovoAno(false);
-                setFormNovoAno({ nome: String(new Date().getFullYear()), dataInicio: '', dataFim: '' });
-            };
-
-            const excluirAnoPlano = (anoId) => {
-                setModalConfirm({
-                    titulo: 'Excluir este ano letivo?',
-                    conteudo: 'Todos os períodos e metas serão excluídos permanentemente.',
-                    labelConfirm: 'Excluir', perigo: true,
-                    onConfirm: () => {
-                        setPlanejamentoAnual(prev => {
-                            const novos = prev.filter(a => a.id !== anoId);
-                            if (anoPlanoAtivoId === anoId) setAnoPlanoAtivoId(novos[0]?.id || null);
-                            return novos;
-                        });
-                    }
-                });
-            };
-
-            const adicionarPeriodoNoAno = (anoId) => {
-                if (!formNovoPeriodo.nome.trim()) {
-                    setModalConfirm({ conteudo: '⚠️ Defina um nome para o período!', somenteOk: true, labelConfirm: 'OK' });
-                    return;
-                }
-                const periodo = { id: gerarIdSeguro(), ...formNovoPeriodo, reflexao: '', _criadoEm: new Date().toISOString() };
-                const ano = planejamentoAnual.find(a => a.id === anoId);
-                _atualizarAnoPlano(anoId, { periodos: [...(ano?.periodos||[]), periodo] });
-                setFormNovoPeriodo({ nome: '', dataInicio: '', dataFim: '', tema: '', foco: '' });
-                setAdicionandoPeriodoAno(false);
-            };
-
-            const salvarEdicaoPeriodo = (anoId, periodoId) => {
-                if (!periodoEditForm?.nome?.trim()) return;
-                const ano = planejamentoAnual.find(a => a.id === anoId);
-                if (!ano) return;
-                _atualizarAnoPlano(anoId, { periodos: ano.periodos.map(p => p.id === periodoId ? { ...p, ...periodoEditForm } : p) });
-                setPeriodoExpId(null); setPeriodoEditForm(null);
-            };
-
-            const excluirPeriodoDoAno = (anoId, periodoId) => {
-                setModalConfirm({
-                    titulo: 'Excluir período?', conteudo: 'Esta ação não pode ser desfeita.',
-                    labelConfirm: 'Excluir', perigo: true,
-                    onConfirm: () => {
-                        const ano = planejamentoAnual.find(a => a.id === anoId);
-                        if (!ano) return;
-                        _atualizarAnoPlano(anoId, { periodos: ano.periodos.filter(p => p.id !== periodoId) });
-                        if (periodoExpId === periodoId) { setPeriodoExpId(null); setPeriodoEditForm(null); }
-                    }
-                });
-            };
-
-            const adicionarMetaNoAno = (anoId, descricao, tipo) => {
-                if (!descricao?.trim()) return;
-                const meta = { id: gerarIdSeguro(), descricao: descricao.trim(), tipo, _criadoEm: new Date().toISOString() };
-                const ano = planejamentoAnual.find(a => a.id === anoId);
-                _atualizarAnoPlano(anoId, { metas: [...(ano?.metas||[]), meta] });
-            };
-
-            const excluirMetaDoAno = (anoId, metaId) => {
-                const ano = planejamentoAnual.find(a => a.id === anoId);
-                if (!ano) return;
-                _atualizarAnoPlano(anoId, { metas: ano.metas.filter(m => m.id !== metaId) });
-            };
+                        // ── MEU ANO LETIVO: CRUD — migrado para AnoLetivoContext (Parte 6) ──
+            // _atualizarAnoPlano, criarAnoLetivoPainel, excluirAnoPlano,
+            // adicionarPeriodoNoAno, salvarEdicaoPeriodo, excluirPeriodoDoAno,
+            // adicionarMetaNoAno, excluirMetaDoAno — disponíveis via useAnoLetivoContext()
 
             // ── ESTRATÉGIAS: CRUD — movido para EstrategiasContext (Parte 2) ──
             // novaEstrategia, salvarEstrategia, excluirEstrategia, arquivarEstrategia, restaurarEstrategia

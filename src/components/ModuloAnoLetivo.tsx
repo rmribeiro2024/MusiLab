@@ -1,26 +1,19 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { supabase } from '../lib/supabase'
-import { sanitizar, gerarIdSeguro } from '../lib/utils'
-import { useBancoPlanos } from './BancoPlanosContext'
+import React from 'react'
+import { useAnoLetivoContext } from '../contexts'
 
 export default function ModuloAnoLetivo() {
-    const ctx = useBancoPlanos()
     const {
         adicionandoPeriodoAno,
         adicionarMetaNoAno,
         adicionarPeriodoNoAno,
         anoPlanoAtivoId,
-        bold,
         criarAnoLetivoPainel,
         excluirAnoPlano,
         excluirMetaDoAno,
         excluirPeriodoDoAno,
         formNovoAno,
         formNovoPeriodo,
-        h,
-        italic,
         mostrandoFormNovoAno,
-        para,
         periodoEditForm,
         periodoExpId,
         planejamentoAnual,
@@ -32,7 +25,7 @@ export default function ModuloAnoLetivo() {
         setMostrandoFormNovoAno,
         setPeriodoEditForm,
         setPeriodoExpId,
-    } = ctx
+    } = useAnoLetivoContext()
 
     const anoAtivo = planejamentoAnual.find(a => a.id === anoPlanoAtivoId) || planejamentoAnual[0] || null;
 
