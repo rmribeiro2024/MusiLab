@@ -22,7 +22,7 @@ const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
 const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
 const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
 import { BancoPlanosContext } from './BancoPlanosContext'
-import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext, useSequenciasContext, useHistoricoContext, useAnoLetivoContext, useCalendarioContext } from '../contexts'
+import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext, useSequenciasContext, useHistoricoContext, useAnoLetivoContext, useCalendarioContext, usePlanosContext, normalizePlano } from '../contexts'
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
 import { dbGet, dbSet, dbDel } from '../lib/db'
@@ -53,7 +53,8 @@ const CarregandoModulo = () => (
   </div>
 )
 
-        const bancoBNCC = [
+        // bancoBNCC — migrado para PlanosContext (Parte 8), importado via usePlanosContext()
+        /* const bancoBNCC = [
             // ── EDUCAÇÃO INFANTIL ── Campos de Experiências (música)
             { codigo: "EI02EO01", segmento: "Infantil", desc: "Demonstrar atitudes de cuidado e solidariedade na interação com crianças e adultos.", keywords: ["convivência", "interação", "cuidado", "música coletiva"] },
             { codigo: "EI03EO01", segmento: "Infantil", desc: "Demonstrar empatia pelos outros, percebendo que as pessoas têm diferentes sentimentos, necessidades e maneiras de pensar e agir.", keywords: ["empatia", "sentimentos", "expressão musical"] },
@@ -96,7 +97,7 @@ const CarregandoModulo = () => (
             { codigo: "EF69AR33", segmento: "EF6-9", desc: "Analisar aspectos históricos, sociais e políticos da produção artística, problematizando as narrativas eurocêntricas e as outras representações hegemônicas.", keywords: ["história", "africana", "indígena", "diversidade", "cultura popular", "patrimônio"] },
             { codigo: "EF69AR34", segmento: "EF6-9", desc: "Analisar e valorizar o patrimônio cultural, material e imaterial, de culturas diversas.", keywords: ["patrimônio", "cultura", "popular", "folclore", "diversidade"] },
             { codigo: "EF69AR35", segmento: "EF6-9", desc: "Identificar e manipular diferentes tecnologias e recursos digitais para acessar, apreciar, produzir, registrar e compartilhar práticas e repertórios musicais.", keywords: ["tecnologia", "digital", "compartilhar", "produção", "registro"] }
-        ];
+        ]; */
 
         const planosIniciais = []; 
         const conceitosIniciais = ["Pulsação", "Ritmo", "Melodia", "Movimento", "Canto", "Instrumentos", "Percussão Corporal", "Criação", "Improvisação"];
@@ -163,32 +164,8 @@ const CarregandoModulo = () => (
             }
         };
 
-        // ── NORMALIZAÇÃO DE PLANO ──
-        // Garante defaults em todos os campos. Usar sempre que um plano vem de
-        // fonte externa (localStorage, Supabase, importação).
-        // Inclui migração automática de metodologia legada → atividadesRoteiro.
-        function normalizePlano(p) {
-            let atividadesRoteiro = p.atividadesRoteiro || [];
-            if (!p.atividadesRoteiro && p.metodologia && p.metodologia.trim()) {
-                atividadesRoteiro = [{ id: Date.now(), nome: '', duracao: '', descricao: p.metodologia }];
-            }
-            return {
-                ...p,
-                conceitos:            p.conceitos            || [],
-                tags:                 p.tags                 || [],
-                unidades:             p.unidades             || [],
-                faixaEtaria:          p.faixaEtaria          || [],
-                objetivosEspecificos: p.objetivosEspecificos || [],
-                materiais:            p.materiais            || [],
-                habilidadesBNCC:      p.habilidadesBNCC      || [],
-                recursos:             p.recursos             || [],
-                historicoDatas:       p.historicoDatas       || [],
-                registrosPosAula:     p.registrosPosAula     || [],
-                atividadesRoteiro:    atividadesRoteiro,
-                destaque:             p.destaque             || false,
-                statusPlanejamento:   p.statusPlanejamento   || 'A Fazer',
-            };
-        }
+        // normalizePlano — migrado para PlanosContext (Parte 8), importado de '../contexts'
+        // function normalizePlano(p) { ... }
 
 
 export default function BancoPlanos({ session }) {
@@ -358,6 +335,50 @@ export default function BancoPlanos({ session }) {
                 adicionarAulaGrade, removerAulaGrade, duplicarAulaGrade, atualizarAulaGrade,
                 obterTurmasDoDia,
             } = useCalendarioContext();
+            // ── PlanosContext (Parte 8) ───────────────────────────────────
+            const {
+                planos, setPlanos,
+                planoSelecionado, setPlanoSelecionado,
+                modoEdicao, setModoEdicao,
+                planoEditando, setPlanoEditando,
+                formExpandido, setFormExpandido,
+                materiaisBloqueados, setMateriaisBloqueados,
+                novoConceito, setNovoConceito,
+                adicionandoConceito, setAdicionandoConceito,
+                novaUnidade, setNovaUnidade,
+                adicionandoUnidade, setAdicionandoUnidade,
+                novoRecursoUrl, setNovoRecursoUrl,
+                novoRecursoTipo, setNovoRecursoTipo,
+                novaDataAula, setNovaDataAula,
+                dataEdicao, setDataEdicao,
+                busca, setBusca,
+                filtroConceito, setFiltroConceito,
+                filtroUnidade, setFiltroUnidade,
+                filtroFaixa, setFiltroFaixa,
+                filtroNivel, setFiltroNivel,
+                filtroEscola, setFiltroEscola,
+                filtroTag, setFiltroTag,
+                filtroFavorito, setFiltroFavorito,
+                filtroStatus, setFiltroStatus,
+                modoVisualizacao, setModoVisualizacao,
+                ordenacaoCards, setOrdenacaoCards,
+                statusDropdownId, setStatusDropdownId,
+                recursosExpandidos, setRecursosExpandidos,
+                modalImportarMusica, setModalImportarMusica,
+                modalImportarAtividade, setModalImportarAtividade,
+                dragActiveIndex, setDragActiveIndex,
+                dragOverIndex, setDragOverIndex,
+                escolas, duracoesSugestao, planosFiltrados,
+                buscaAvancada,
+                sugerirBNCC,
+                novoPlano, editarPlano, salvarPlano, excluirPlano, fecharModal, restaurarVersao,
+                toggleConceito, toggleFaixa, toggleUnidade,
+                adicionarRecurso, removerRecurso,
+                adicionarDataEdicao, removerDataEdicao, adicionarDataAulaVisualizacao, removerDataAulaVisualizacao,
+                adicionarConceitoNovo, adicionarTagNova, removerTag, adicionarUnidadeNova,
+                adicionarAtividadeRoteiro, removerAtividadeRoteiro, atualizarAtividadeRoteiro,
+                toggleFavorito, handleDragStart, handleDragEnter, handleDragEnd, toggleRecursosAtiv,
+            } = usePlanosContext();
             // ============================================================
             // FUNÇÕES: UTILITÁRIOS GERAIS
             // ============================================================
@@ -374,13 +395,9 @@ export default function BancoPlanos({ session }) {
             const INSTRUMENTACAO_OPCOES = ['🥁 Percussão','🎹 Piano/Teclado','🎸 Violão/Guitarra','🎻 Violino','🎺 Trompete','🎷 Saxofone','🪗 Acordeão','🪘 Zabumba','🎙️ Voz Solo','🎤 Coro/Coral','🪈 Flauta','🎵 Orff (xilofone/metalofone)','🎚️ A Cappella','🎶 Orquestra','🤸 Percussão Corporal','🔇 Sem acompanhamento'];
             
             // ============================================================
-            // MÓDULO: PLANOS DE AULA
+            // MÓDULO: PLANOS DE AULA — migrado para PlanosContext (Parte 8)
             // ============================================================
-            const [planos, setPlanos] = useState(() => {
-                const saved = dbGet('planosAula');
-                const parsed = saved ? JSON.parse(saved) : planosIniciais;
-                return parsed.map(normalizePlano);
-            });
+            // planos, setPlanos — via usePlanosContext() acima
 
             // ============================================================
             // MÓDULO: ATIVIDADES
@@ -461,16 +478,9 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // anosLetivos, setAnosLetivos — via useAnoLetivoContext()
 
-            // Listas para Autocomplete
-            const escolas = useMemo(() => {
-                const s = new Set(); planos.forEach(p => { if (p.escola && p.escola.trim()) s.add(p.escola.trim()); });
-                return ["Todas", ...Array.from(s).sort()];
-            }, [planos]);
-
-            const duracoesSugestao = useMemo(() => {
-                const d = new Set(); planos.forEach(p => { if(p.duracao) d.add(p.duracao); });
-                return Array.from(d).sort();
-            }, [planos]);
+            // escolas — via usePlanosContext()
+            // duracoesSugestao — via usePlanosContext()
+            // Listas para Autocomplete — migradas para PlanosContext (Parte 8)
             
             // ============================================================
             // MÓDULO: CONFIGURAÇÕES GLOBAIS
@@ -487,63 +497,23 @@ export default function BancoPlanos({ session }) {
             // const [hmFiltroBusca, setHmFiltroBusca] = useState('')
             // const [hmModalMusica, setHmModalMusica] = useState(null)
             // ============================================================
-            // MÓDULO: DRAG AND DROP
+            // MÓDULO: DRAG AND DROP — migrado para PlanosContext (Parte 8)
             // ============================================================
-            const dragItem = useRef(null);
-            const dragOverItem = useRef(null);
-            const [dragActiveIndex, setDragActiveIndex] = useState(null);
-            const [dragOverIndex, setDragOverIndex] = useState(null);
-            // ============================================================
-            // FUNÇÕES: DRAG & DROP (CARDS)
-            // ============================================================
-            const handleDragStart = useCallback((index) => { dragItem.current = index; setDragActiveIndex(index); }, []);
-            const handleDragEnter = useCallback((index) => { dragOverItem.current = index; setDragOverIndex(index); }, []);
-            const handleDragEnd = () => {
-                const roteiro = [...(planoEditando.atividadesRoteiro || [])];
-                const draggedItem = roteiro.splice(dragItem.current, 1)[0];
-                roteiro.splice(dragOverItem.current, 0, draggedItem);
-                dragItem.current = null;
-                dragOverItem.current = null;
-                setDragActiveIndex(null);
-                setDragOverIndex(null);
-                setPlanoEditando({ ...planoEditando, atividadesRoteiro: roteiro });
-            };
+            // dragItem, dragOverItem, dragActiveIndex, setDragActiveIndex — via usePlanosContext()
+            // dragOverIndex, setDragOverIndex — via usePlanosContext()
+            // handleDragStart, handleDragEnter, handleDragEnd — via usePlanosContext()
             useEffect(() => {
                 dbSet('darkMode', darkMode);
                 if (darkMode) { document.documentElement.classList.add('dark'); }
                 else { document.documentElement.classList.remove('dark'); }
             }, [darkMode]);
             // ============================================================
-            // MÓDULO: BUSCA E FILTROS
+            // MÓDULO: BUSCA E FILTROS — migrado para PlanosContext (Parte 8)
             // ============================================================
-            const [busca, setBusca] = useState("");
-
-            // Filtros
-            const [filtroConceito, setFiltroConceito] = useState("Todos");
-            const [filtroUnidade, setFiltroUnidade] = useState("Todos");
-            const [filtroFaixa, setFiltroFaixa] = useState("Todos");
-            const [filtroNivel, setFiltroNivel] = useState("Todos");
-            const [filtroEscola, setFiltroEscola] = useState("Todas");
-            const [filtroTag, setFiltroTag] = useState("Todas");
-            const [recursosExpandidos, setRecursosExpandidos] = useState({}); // NOVO
-            const [modalImportarMusica, setModalImportarMusica] = useState(false);
-            const [modalImportarAtividade, setModalImportarAtividade] = useState(false);
-            // atividadeVinculandoMusica migrado para AtividadesContext (Parte 4)
-            // const [atividadeVinculandoMusica, setAtividadeVinculandoMusica] = useState(null);
-            const [filtroFavorito, setFiltroFavorito] = useState(false);
-            const [filtroStatus, setFiltroStatus] = useState("Todos"); // A Fazer | Em Andamento | Concluído
-            const [modoVisualizacao, setModoVisualizacao] = useState('grade');
-            const [ordenacaoCards, setOrdenacaoCards] = useState('recente'); // recente | az | status | favoritos
-            const [statusDropdownId, setStatusDropdownId] = useState(null); // #7: id do plano com dropdown aberto
-            // modalConfirm e setModalConfirm vêm de useModalContext() — ver linha ~196
-
-            // Fechar dropdown de status ao clicar fora
-            useEffect(() => {
-                if (!statusDropdownId) return;
-                const handler = () => setStatusDropdownId(null);
-                document.addEventListener('click', handler);
-                return () => document.removeEventListener('click', handler);
-            }, [statusDropdownId]);
+            // busca, setBusca, filtroConceito ... filtroStatus, modoVisualizacao,
+            // ordenacaoCards, statusDropdownId, recursosExpandidos,
+            // modalImportarMusica, modalImportarAtividade — via usePlanosContext()
+            // Fechar dropdown de status ao clicar fora — gerenciado em PlanosContext
 
             // ── #12: Atalhos de teclado (useRef para evitar stale closure) ──
             const _kbRef = useRef({});
@@ -600,30 +570,19 @@ export default function BancoPlanos({ session }) {
             // periodoDias, dataInicioCustom, dataFimCustom — migrados para CalendarioContext (Parte 7)
             
             // ============================================================
-            // MÓDULO: EDIÇÃO DE PLANO
+            // MÓDULO: EDIÇÃO DE PLANO — migrado para PlanosContext (Parte 8)
             // ============================================================
-            // Edição
-            const [planoSelecionado, setPlanoSelecionado] = useState(null);
-            const [modoEdicao, setModoEdicao] = useState(false);
-            const [planoEditando, setPlanoEditando] = useState(null);
-            const [formExpandido, setFormExpandido] = useState(false);
-            const [materiaisBloqueados, setMateriaisBloqueados] = useState(() => {
-                const saved = dbGet('materiaisBloqueados');
-                return saved ? JSON.parse(saved) : [];
-            });
-            
+            // planoSelecionado, setPlanoSelecionado — via usePlanosContext()
+            // modoEdicao, setModoEdicao — via usePlanosContext()
+            // planoEditando, setPlanoEditando — via usePlanosContext()
+            // formExpandido, setFormExpandido — via usePlanosContext()
+            // materiaisBloqueados, setMateriaisBloqueados — via usePlanosContext()
+
             // ============================================================
-            // MÓDULO: INPUTS TEMPORÁRIOS
+            // MÓDULO: INPUTS TEMPORÁRIOS — migrado para PlanosContext (Parte 8)
             // ============================================================
-            // Inputs temporários
-            const [novoConceito, setNovoConceito] = useState("");
-            const [adicionandoConceito, setAdicionandoConceito] = useState(false);
-            const [novaUnidade, setNovaUnidade] = useState("");
-            const [adicionandoUnidade, setAdicionandoUnidade] = useState(false);
-            const [novoRecursoUrl, setNovoRecursoUrl] = useState("");
-            const [novoRecursoTipo, setNovoRecursoTipo] = useState("link");
-            const [novaDataAula, setNovaDataAula] = useState("");
-            const [dataEdicao, setDataEdicao] = useState("");
+            // novoConceito, adicionandoConceito, novaUnidade, adicionandoUnidade
+            // novoRecursoUrl, novoRecursoTipo, novaDataAula, dataEdicao — via usePlanosContext()
 
             // ============================================================
             // MÓDULO: CALENDÁRIO E AGENDA
@@ -849,26 +808,14 @@ export default function BancoPlanos({ session }) {
                 });
             };
 
-            // ── PROTEÇÃO CONTRA FECHAR ABA COM EDIÇÃO NÃO SALVA ──
-            useEffect(() => {
-                const handler = (e) => {
-                    if (modoEdicao && planoEditando) {
-                        e.preventDefault();
-                        e.returnValue = ''; // necessário para Chrome/Firefox exibir o diálogo
-                    }
-                };
-                window.addEventListener('beforeunload', handler);
-                return () => window.removeEventListener('beforeunload', handler);
-            }, [modoEdicao, planoEditando]);
+            // ── PROTEÇÃO CONTRA FECHAR ABA COM EDIÇÃO NÃO SALVA — migrado para PlanosContext (Parte 8) ──
+            // useEffect beforeunload — gerenciado em PlanosContext
 
-            useEffect(() => {
-                dbSet('planosAula', JSON.stringify(planos));
-                triggerSalvo();
-            }, [planos]);
-            
-            useEffect(() => {
-                dbSet('materiaisBloqueados', JSON.stringify(materiaisBloqueados));
-            }, [materiaisBloqueados]);
+            // planosAula dbSet — migrado para PlanosContext (Parte 8)
+            // useEffect(() => { dbSet('planosAula', JSON.stringify(planos)); triggerSalvo(); }, [planos]);
+
+            // materiaisBloqueados dbSet — migrado para PlanosContext (Parte 8)
+            // useEffect(() => { dbSet('materiaisBloqueados', JSON.stringify(materiaisBloqueados)); }, [materiaisBloqueados]);
 
             useEffect(() => { dbSet('conceitosPersonalizados', JSON.stringify(conceitos)); triggerSalvo(); }, [conceitos]);
             useEffect(() => { dbSet('unidadesPersonalizadas', JSON.stringify(unidades)); triggerSalvo(); }, [unidades]);
@@ -884,90 +831,9 @@ export default function BancoPlanos({ session }) {
             // repertorio dbSet movido para RepertorioContext (Parte 3) — lá é gerenciado com triggerSalvo via ctx bridge
 
             // ============================================================
-            // FUNÇÕES: BUSCA E FILTROS
+            // FUNÇÕES: BUSCA E FILTROS — migradas para PlanosContext (Parte 8)
             // ============================================================
-            const buscaAvancada = (plano, termoBusca) => {
-                if (!termoBusca) return true;
-                const termo = termoBusca.toLowerCase();
-                const check = (val) => val && val.toLowerCase().includes(termo);
-                const objMatch = (plano.objetivosEspecificos || []).some(obj => check(obj));
-                return check(plano.titulo) || 
-                       check(plano.tema) || 
-                       check(plano.metodologia) || 
-                       check(plano.objetivoGeral) ||
-                       check(plano.escola) ||
-                       objMatch || 
-                       (plano.habilidadesBNCC || []).some(h => check(h));
-            };
-
-            const planosFiltrados = useMemo(() => {
-                return planos.filter(plano => {
-                    const matchBusca = buscaAvancada(plano, busca);
-                    const matchConceito = filtroConceito === "Todos" || (plano.conceitos && plano.conceitos.includes(filtroConceito));
-                    const matchUnidade = filtroUnidade === "Todos" || (plano.unidades && plano.unidades.includes(filtroUnidade));
-                    const matchFaixa = filtroFaixa === "Todos" || (plano.faixaEtaria && plano.faixaEtaria.includes(filtroFaixa));
-                    const matchNivel = filtroNivel === "Todos" || plano.nivel === filtroNivel;
-                    const matchEscola = filtroEscola === "Todas" || plano.escola === filtroEscola;
-                    const matchTag = filtroTag === "Todas" || (plano.tags && plano.tags.includes(filtroTag));
-                    const matchFavorito = !filtroFavorito || plano.destaque;
-                    const matchStatus = filtroStatus === "Todos" || (plano.statusPlanejamento || "A Fazer") === filtroStatus;
-
-                    return matchBusca && matchConceito && matchUnidade && matchFaixa && matchNivel && matchEscola && matchTag && matchFavorito && matchStatus;
-                }).sort((a, b) => {
-                    if (ordenacaoCards === 'az') return (a.titulo||'').localeCompare(b.titulo||'', 'pt-BR');
-                    if (ordenacaoCards === 'status') {
-                        const ord = {'Em Andamento':0,'A Fazer':1,'Concluído':2};
-                        return (ord[a.statusPlanejamento||'A Fazer']||1) - (ord[b.statusPlanejamento||'A Fazer']||1);
-                    }
-                    if (ordenacaoCards === 'favoritos') return (b.destaque?1:0) - (a.destaque?1:0);
-                    return b.id - a.id; // recente
-                });
-            }, [planos, busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroFavorito, filtroStatus, ordenacaoCards]);
-
-            const sugerirBNCC = () => {
-                const textoAnalise = (
-                    (planoEditando.titulo || "") + " " + 
-                    (planoEditando.tema || "") + " " + 
-                    (planoEditando.objetivoGeral || "") + " " +
-                    (planoEditando.objetivosEspecificos || []).join(" ") + " " +
-                    (planoEditando.conceitos || []).join(" ")
-                ).toLowerCase();
-
-                // Filtrar por segmento se faixa etária for Infantil
-                const faixas = planoEditando.faixaEtaria || [];
-                const fl = faixas.map(f => f.toLowerCase());
-                const ehInfantil = fl.some(f => ['infantil','berçário','maternal','bercario','creche','jardim','pré','pre-'].some(s => f.includes(s)));
-                const ehEF69    = fl.some(f => ['6°','7°','8°','9°','6º','7º','8º','9º','6 ano','7 ano','8 ano','9 ano'].some(s => f.includes(s)));
-                const ehEJA     = fl.some(f => f.includes('eja') || f.includes('jovens e adultos') || f.includes('adult') || f.includes('ead'));
-
-                const sugestoes = bancoBNCC.filter(item => {
-                    const keyMatch = item.keywords.some(key => textoAnalise.includes(key));
-                    if (!keyMatch) return false;
-                    if (ehEJA) return true; // EJA/Adultos: aceita qualquer segmento BNCC
-                    if (ehInfantil && item.segmento === 'Infantil') return true;
-                    if (ehEF69    && item.segmento === 'EF6-9')    return true;
-                    if (!ehInfantil && !ehEF69 && item.segmento === 'EF1-5') return true;
-                    if (!item.segmento) return true; // compatibilidade
-                    return false;
-                });
-
-                if (sugestoes.length === 0) {
-                    // fallback sem filtro de segmento
-                    const todas = bancoBNCC.filter(item => item.keywords.some(key => textoAnalise.includes(key)));
-                    if (todas.length === 0) { setModalConfirm({ conteudo: 'Adicione mais texto (título, objetivos) para receber sugestões.', somenteOk: true, labelConfirm: 'OK' }); return; }
-                    const formatadas = todas.map(s => `[${s.segmento||'BNCC'}] ${s.codigo} - ${s.desc}`);
-                    const atuais = planoEditando.habilidadesBNCC || [];
-                    setPlanoEditando({ ...planoEditando, habilidadesBNCC: [...new Set([...atuais, ...formatadas])] });
-                    setModalConfirm({ conteudo: `✨ ${todas.length} sugestões encontradas!`, somenteOk: true, labelConfirm: 'OK' });
-                    return;
-                }
-
-                const formatadas = sugestoes.map(s => `[${s.segmento}] ${s.codigo} - ${s.desc}`);
-                const atuais = planoEditando.habilidadesBNCC || [];
-                setPlanoEditando({ ...planoEditando, habilidadesBNCC: [...new Set([...atuais, ...formatadas])] });
-                const segLabel = ehEJA ? 'EJA/Adultos' : ehInfantil ? 'Ed. Infantil' : ehEF69 ? 'EF 6-9' : 'EF 1-5';
-                setModalConfirm({ conteudo: `✨ ${sugestoes.length} sugestão(ões) encontrada(s) para ${segLabel}!`, somenteOk: true, labelConfirm: 'OK' });
-            };
+            // buscaAvancada, planosFiltrados, sugerirBNCC — via usePlanosContext()
 
 
             
@@ -1046,109 +912,16 @@ export default function BancoPlanos({ session }) {
             };
 
             // ============================================================
-            // FUNÇÕES: PLANOS DE AULA
+            // FUNÇÕES: PLANOS DE AULA — migradas para PlanosContext (Parte 8)
             // ============================================================
-            const novoPlano = () => {
-                setPlanoEditando({
-                    id: Date.now(),
-                    titulo: "", tema: "", conceitos: [], tags: [], faixaEtaria: ["1° ano"], nivel: "Iniciante",
-                    duracao: "", objetivoGeral: "", objetivosEspecificos: [], habilidadesBNCC: [],
-                    metodologia: "", materiais: [], recursos: [], historicoDatas: [],
-                    avaliacaoObservacoes: "", numeroAula: "", escola: "", destaque: false,
-                    statusPlanejamento: "A Fazer"
-                });
-                setPlanoSelecionado(null); setModoEdicao(true); setViewMode('lista');
-            };
-
-            const editarPlano = useCallback((plano) => {
-                setPlanoEditando(normalizePlano(plano));
-                setPlanoSelecionado(null);
-                setModoEdicao(true);
-                setViewMode('lista');
-            }, []);
-
-            const salvarPlano = (ignorarAvisoEscola = false) => {
-                if (!planoEditando.titulo || !planoEditando.titulo.trim()) {
-                    setModalConfirm({ conteudo: '⚠️ Preencha o título do plano antes de salvar.', somenteOk: true, labelConfirm: 'OK' });
-                    return;
-                }
-                if (!planoEditando.objetivoGeral || !planoEditando.objetivoGeral.trim()) {
-                    setModalConfirm({ conteudo: '⚠️ Preencha o objetivo geral antes de salvar.', somenteOk: true, labelConfirm: 'OK' });
-                    return;
-                }
-                if (!ignorarAvisoEscola && (!planoEditando.escola || !planoEditando.escola.trim())) {
-                    setModalConfirm({
-                        titulo: '🏫 Escola não preenchida',
-                        conteudo: 'Sem escola definida, o Histórico Musical por turma não funcionará de forma precisa. Salvar assim mesmo?',
-                        labelConfirm: 'Salvar assim mesmo',
-                        labelCancelar: 'Voltar e preencher',
-                        onConfirm: () => salvarPlano(true),
-                    });
-                    return;
-                }
-                // Aviso: escola sem turmas cadastradas
-                if (!ignorarAvisoEscola && planoEditando.escola && planoEditando.escola.trim()) {
-                    const escolaNorm = planoEditando.escola.trim().toLowerCase();
-                    const semTurmas = anosLetivos.some(a => a.escolas.some(e => {
-                        const totalTurmas = (e.segmentos || []).reduce((acc, s) => acc + (s.turmas || []).length, 0);
-                        return e.nome.trim().toLowerCase() === escolaNorm && totalTurmas === 0;
-                    }));
-                    if (semTurmas) {
-                        setModalConfirm({
-                            titulo: '🏫 Escola sem turmas',
-                            conteudo: 'A escola selecionada ainda não tem turmas cadastradas. O filtro por turma no Histórico Musical será impreciso. Deseja cadastrar as turmas agora?',
-                            labelConfirm: 'Cadastrar turmas',
-                            labelCancelar: 'Salvar assim mesmo',
-                            onConfirm: () => { salvarPlano(true); setModoEdicao(false); setPlanoEditando(null); setModalTurmas(true); },
-                            onCancel: () => salvarPlano(true),
-                        });
-                        return;
-                    }
-                }
-                const planoParaSalvar = {
-                    ...planoEditando,
-                    objetivosEspecificos: planoEditando.objetivosEspecificos.filter(i => i.trim() !== ""),
-                    habilidadesBNCC: (planoEditando.habilidadesBNCC || []).filter(i => i.trim() !== ""),
-                    materiais: planoEditando.materiais.filter(i => i.trim() !== ""),
-                    _ultimaEdicao: new Date().toISOString()
-                };
-                const existe = planos.find(p => p.id === planoParaSalvar.id);
-                if (existe) {
-                    // Salvar histórico de versões (últimas 3)
-                    const versaoAnterior = { ...existe, _versaoSalvaEm: new Date().toISOString() };
-                    const historicoAtual = existe._historicoVersoes || [];
-                    const novoHistorico = [versaoAnterior, ...historicoAtual].slice(0, 3);
-                    setPlanos(planos.map(p => p.id === planoParaSalvar.id ? { ...planoParaSalvar, _historicoVersoes: novoHistorico } : p));
-                } else { 
-                    setPlanos([...planos, planoParaSalvar]); 
-                }
-                setModoEdicao(false); setPlanoEditando(null);
-            };
-
-            // Restaurar versão anterior do plano
-            const restaurarVersao = (plano, versao) => {
-                setModalConfirm({
-                    titulo: 'Restaurar versão?',
-                    conteudo: `Restaurar versão de ${new Date(versao._versaoSalvaEm).toLocaleString('pt-BR')}?\n\nA versão atual será substituída.`,
-                    labelConfirm: 'Restaurar',
-                    perigo: true,
-                    onConfirm: () => {
-                        const historicoAtual = plano._historicoVersoes || [];
-                        const versaoRestaurada = { ...versao, _historicoVersoes: historicoAtual, _versaoSalvaEm: undefined };
-                        delete versaoRestaurada._versaoSalvaEm;
-                        setPlanos(planos.map(p => p.id === plano.id ? versaoRestaurada : p));
-                        setModalConfirm({ conteudo: '✅ Versão restaurada!', somenteOk: true, labelConfirm: 'OK' });
-                    }
-                });
-            };
-
-            const excluirPlano = useCallback((id) => { setModalConfirm({ titulo: 'Excluir plano?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => { setPlanos(prev => prev.filter(p => p.id !== id)); setPlanoSelecionado(null); } }); }, []);
-            const fecharModal = () => { setPlanoSelecionado(null); setModoEdicao(false); setPlanoEditando(null); setNovoRecursoUrl(""); setFormExpandido(false); };
-
-            const toggleConceito = (c) => { const atual = planoEditando.conceitos || []; setPlanoEditando({...planoEditando, conceitos: atual.includes(c) ? atual.filter(x=>x!==c) : [...atual, c]}); };
-            const toggleFaixa = (f) => { const atual = planoEditando.faixaEtaria || []; setPlanoEditando({...planoEditando, faixaEtaria: atual.includes(f) ? atual.filter(x=>x!==f) : [...atual, f]}); };
-            const adicionarRecurso = () => { if(novoRecursoUrl.trim()){ setPlanoEditando({ ...planoEditando, recursos: [...(planoEditando.recursos||[]), {url: novoRecursoUrl.trim(), tipo: novoRecursoTipo}]}); setNovoRecursoUrl(""); } };
-            const removerRecurso = (idx) => { const n = [...planoEditando.recursos]; n.splice(idx,1); setPlanoEditando({...planoEditando, recursos: n}); };
+            // novoPlano — via usePlanosContext()
+            // editarPlano — via usePlanosContext()
+            // salvarPlano — via usePlanosContext()
+            // restaurarVersao — via usePlanosContext()
+            // excluirPlano — via usePlanosContext()
+            // fecharModal — via usePlanosContext()
+            // toggleConceito, toggleFaixa — via usePlanosContext()
+            // adicionarRecurso, removerRecurso — via usePlanosContext()
             
             // adicionarRecursoAtiv / removerRecursoAtiv — migrados para AtividadesContext (Parte 4)
             // const adicionarRecursoAtiv = () => { ... };
@@ -1201,47 +974,13 @@ export default function BancoPlanos({ session }) {
                 setModalConfirm({ conteudo: `✅ Atividade "${atividade.nome}" vinculada ao plano!\n\nDados exportados:\n• Nome e descrição → Setlist\n• Tags → Tags do plano\n• Materiais → Materiais do plano\n• Links/Imagens → Recursos do plano`, somenteOk: true, labelConfirm: 'OK' });
             };
             
-            const adicionarDataEdicao = () => { if(dataEdicao && !(planoEditando.historicoDatas||[]).includes(dataEdicao)) setPlanoEditando({...planoEditando, historicoDatas: [...(planoEditando.historicoDatas||[]), dataEdicao].sort()}); setDataEdicao(""); };
-            const removerDataEdicao = (d) => { setPlanoEditando({...planoEditando, historicoDatas: planoEditando.historicoDatas.filter(x=>x!==d)}); };
-            const adicionarDataAulaVisualizacao = () => { if(novaDataAula && !(planoSelecionado.historicoDatas||[]).includes(novaDataAula)){ const n = {...planoSelecionado, historicoDatas: [...(planoSelecionado.historicoDatas||[]), novaDataAula].sort()}; setPlanos(planos.map(p=>p.id===n.id?n:p)); setPlanoSelecionado(n); } setNovaDataAula(""); };
-            const removerDataAulaVisualizacao = (d) => { setModalConfirm({ titulo: 'Remover data?', conteudo: 'Remover esta data do histórico?', labelConfirm: 'Remover', perigo: true, onConfirm: () => { const n = {...planoSelecionado, historicoDatas: planoSelecionado.historicoDatas.filter(x=>x!==d)}; setPlanos(planos.map(p=>p.id===n.id?n:p)); setPlanoSelecionado(n); } }); };
-            const adicionarConceitoNovo = () => { if(novoConceito.trim()){ const c=novoConceito.trim(); if(!(planoEditando.conceitos||[]).includes(c)) setPlanoEditando({...planoEditando, conceitos:[...(planoEditando.conceitos||[]), c]}); if(!conceitos.includes(c)) setConceitos([...conceitos, c].sort()); setNovoConceito(""); setAdicionandoConceito(false); } };
+            // adicionarDataEdicao, removerDataEdicao — via usePlanosContext()
+            // adicionarDataAulaVisualizacao, removerDataAulaVisualizacao — via usePlanosContext()
+            // adicionarConceitoNovo — via usePlanosContext()
+            // adicionarTagNova, removerTag — via usePlanosContext()
+            // toggleUnidade, adicionarUnidadeNova — via usePlanosContext()
             
-            // Funções para TAGS (simetria com Conceitos)
-            const adicionarTagNova = (novaTag) => {
-                if (!novaTag || !novaTag.trim()) return;
-                const tag = novaTag.trim().replace(/^#/, ''); // Remove # inicial se houver
-                if (!(planoEditando.tags||[]).includes(tag)) {
-                    setPlanoEditando({...planoEditando, tags:[...(planoEditando.tags||[]), tag]});
-                }
-            };
-            const removerTag = (tagParaRemover) => {
-                setPlanoEditando({
-                    ...planoEditando, 
-                    tags: (planoEditando.tags||[]).filter(t => t !== tagParaRemover)
-                });
-            };
-            
-            const toggleUnidade = (u) => { const atual = planoEditando.unidades || []; setPlanoEditando({...planoEditando, unidades: atual.includes(u) ? atual.filter(x=>x!==u) : [...atual, u]}); };
-            const adicionarUnidadeNova = () => { if(novaUnidade.trim()){ const u=novaUnidade.trim(); if(!(planoEditando.unidades||[]).includes(u)) setPlanoEditando({...planoEditando, unidades:[...(planoEditando.unidades||[]), u]}); if(!unidades.includes(u)) setUnidades([...unidades, u].sort()); setNovaUnidade(""); setAdicionandoUnidade(false); } };
-            
-            // Funções para gerenciar Roteiro de Atividades
-            const adicionarAtividadeRoteiro = () => {
-                const novaAtividade = {
-                    id: Date.now(),
-                    nome: '',
-                    duracao: '',
-                    descricao: '',
-                    conceitos: [...(planoEditando.conceitos || [])],
-                    tags: [...(planoEditando.tags || [])],
-                    recursos: [],
-                    musicasVinculadas: []
-                };
-                setPlanoEditando({
-                    ...planoEditando,
-                    atividadesRoteiro: [...(planoEditando.atividadesRoteiro || []), novaAtividade]
-                });
-            };
+            // adicionarAtividadeRoteiro — via usePlanosContext()
             
             const vincularMusicaAtividade = (musica) => {
                 // Vincular a atividade no roteiro do plano
@@ -1360,51 +1099,10 @@ export default function BancoPlanos({ session }) {
                 setModalConfirm({ conteudo: '✅ Atividade importada!', somenteOk: true, labelConfirm: 'OK' });
             };
             
-            const toggleRecursosAtiv = (idx) => {
-                setRecursosExpandidos({...recursosExpandidos, [idx]: !recursosExpandidos[idx]});
-            };
-            
-            const removerAtividadeRoteiro = (id) => {
-                // Buscar atividade para verificar se tem música vinculada
-                const atividadeRemovida = (planoEditando.atividadesRoteiro || []).find(a => a.id === id);
-                
-                // Remover atividade do plano
-                setPlanoEditando({
-                    ...planoEditando,
-                    atividadesRoteiro: (planoEditando.atividadesRoteiro || []).filter(a => a.id !== id)
-                });
-                
-                // Se tinha música vinculada, remover o vínculo
-                if(atividadeRemovida?.musicaId) {
-                    const musicaVinculada = repertorio.find(m => m.id === atividadeRemovida.musicaId);
-                    if(musicaVinculada) {
-                        const musicaAtualizada = {
-                            ...musicaVinculada,
-                            planosVinculados: (musicaVinculada.planosVinculados || []).filter(pId => pId !== planoEditando.id)
-                        };
-                        const novoRepertorio = repertorio.map(m => m.id === musicaVinculada.id ? musicaAtualizada : m);
-                        setRepertorio(novoRepertorio);
-                        dbSet('repertorio', JSON.stringify(novoRepertorio));
-                    }
-                }
-            };
-            
-            const atualizarAtividadeRoteiro = (id, campo, valor) => {
-                setPlanoEditando({
-                    ...planoEditando,
-                    atividadesRoteiro: (planoEditando.atividadesRoteiro || []).map(a => 
-                        a.id === id ? { ...a, [campo]: valor } : a
-                    )
-                });
-            };
-            
-            const toggleFavorito = useCallback((plano, e) => {
-                if(e) e.stopPropagation();
-                const atualizado = { ...plano, destaque: !plano.destaque };
-                setPlanos(prev => prev.map(p => p.id === plano.id ? atualizado : p));
-                setPlanoSelecionado(prev => prev && prev.id === plano.id ? atualizado : prev);
-                setPlanoEditando(prev => prev && prev.id === plano.id ? atualizado : prev);
-            }, []);
+            // toggleRecursosAtiv — via usePlanosContext()
+            // removerAtividadeRoteiro — via usePlanosContext()
+            // atualizarAtividadeRoteiro — via usePlanosContext()
+            // toggleFavorito — via usePlanosContext()
 
             // --- FUNÇÕES REGISTRO PÓS-AULA (com turmas) ---
             // ============================================================
