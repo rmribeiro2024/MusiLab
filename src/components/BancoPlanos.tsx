@@ -1,6 +1,8 @@
 // @ts-nocheck
-// BancoPlanos — provedor de contexto principal (~3300 linhas, 172 useState)
-// ts-nocheck: tipagem completa será feita em refatoração futura (Fase 5+)
+// BancoPlanos — orquestrador principal + bridge de contexto
+// Estados migrados para domínios: EstrategiasContext, RepertorioContext, AtividadesContext,
+// SequenciasContext, HistoricoContext, AnoLetivoContext, CalendarioContext, PlanosContext.
+// BancoPlanosContext ainda atua como bridge para os 24+ consumers que ainda usam useBancoPlanos().
 import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react'
 import { supabase } from '../lib/supabase'
 import {
@@ -54,50 +56,6 @@ const CarregandoModulo = () => (
 )
 
         // bancoBNCC — migrado para PlanosContext (Parte 8), importado via usePlanosContext()
-        /* const bancoBNCC = [
-            // ── EDUCAÇÃO INFANTIL ── Campos de Experiências (música)
-            { codigo: "EI02EO01", segmento: "Infantil", desc: "Demonstrar atitudes de cuidado e solidariedade na interação com crianças e adultos.", keywords: ["convivência", "interação", "cuidado", "música coletiva"] },
-            { codigo: "EI03EO01", segmento: "Infantil", desc: "Demonstrar empatia pelos outros, percebendo que as pessoas têm diferentes sentimentos, necessidades e maneiras de pensar e agir.", keywords: ["empatia", "sentimentos", "expressão musical"] },
-            { codigo: "EI02CG01", segmento: "Infantil", desc: "Apropriar-se de gestos e movimentos de sua cultura no cuidado de si e nos jogos e brincadeiras.", keywords: ["movimento", "gesto", "dança", "corpo", "brincadeira"] },
-            { codigo: "EI03CG01", segmento: "Infantil", desc: "Criar com o corpo formas diversificadas de expressão de sentimentos, sensações e emoções, tanto nas situações do cotidiano quanto em brincadeiras, dança, teatro, música.", keywords: ["expressão corporal", "dança", "movimento", "emoção", "sentimento"] },
-            { codigo: "EI02CG03", segmento: "Infantil", desc: "Explorar formas de deslocamento no espaço (pular, saltar, dançar), combinando movimentos e seguindo orientações.", keywords: ["dança", "movimento", "deslocamento", "ritmo corporal"] },
-            { codigo: "EI01TS01", segmento: "Infantil", desc: "Explorar sons produzidos com o próprio corpo e com objetos do ambiente.", keywords: ["sons", "corpo", "percussão corporal", "objetos sonoros", "exploração"] },
-            { codigo: "EI02TS01", segmento: "Infantil", desc: "Criar sons com materiais, objetos e instrumentos musicais, para acompanhar diversos ritmos de música.", keywords: ["ritmo", "instrumentos", "criação", "sons", "acompanhamento"] },
-            { codigo: "EI03TS01", segmento: "Infantil", desc: "Utilizar sons produzidos por materiais, objetos e instrumentos musicais durante brincadeiras de faz de conta, encenações, criações musicais, festas.", keywords: ["criação musical", "instrumentos", "brincadeira", "encenação", "festa"] },
-            { codigo: "EI02TS02", segmento: "Infantil", desc: "Utilizar materiais variados com possibilidades de manipulação (argila, massa de modelar), explorando cores, formas, texturas, e sons.", keywords: ["exploração", "sons", "texturas", "sensorial"] },
-            { codigo: "EI01EF06", segmento: "Infantil", desc: "Comunicar-se com outras pessoas usando movimentos, gestos, balbucios, fala e outras formas de expressão.", keywords: ["comunicação", "expressão", "voz", "canto"] },
-            { codigo: "EI02EF06", segmento: "Infantil", desc: "Criar e contar histórias oralmente, com base em imagens ou temas sugeridos.", keywords: ["história", "sonorização", "narrativa", "voz"] },
-            { codigo: "EI03EF06", segmento: "Infantil", desc: "Produzir suas próprias histórias orais e escritas (escrita espontânea), em situações com função social significativa.", keywords: ["criação", "narrativa", "sonorização de história"] },
-            { codigo: "EI03EF09", segmento: "Infantil", desc: "Levantar hipóteses em relação à linguagem escrita, realizando registros de palavras e textos, por meio de representações gráficas.", keywords: ["registro", "grafia musical", "notação"] },
-
-            // ── EF 1º AO 5º ANO ──
-            { codigo: "EF15AR13", segmento: "EF1-5", desc: "Identificar e apreciar criticamente diversas formas e gêneros de expressão musical.", keywords: ["apreciar", "gêneros", "contextos", "escuta", "identificar"] },
-            { codigo: "EF15AR14", segmento: "EF1-5", desc: "Perceber e explorar os elementos constitutivos da música (altura, intensidade, timbre, melodia, ritmo e duração).", keywords: ["altura", "intensidade", "timbre", "melodia", "ritmo", "duração", "elementos", "jogo"] },
-            { codigo: "EF15AR15", segmento: "EF1-5", desc: "Explorar fontes sonoras diversas (corpo, natureza, objetos e instrumentos).", keywords: ["fontes sonoras", "corpo", "percussão corporal", "voz", "cotidiano", "instrumentos"] },
-            { codigo: "EF15AR16", segmento: "EF1-5", desc: "Explorar diferentes formas de registro musical não convencional e convencional.", keywords: ["registro", "grafia", "partitura", "desenho", "gravação"] },
-            { codigo: "EF15AR17", segmento: "EF1-5", desc: "Experimentar improvisações, composições e sonorização de histórias.", keywords: ["improvisação", "criação", "composição", "história", "sonorização", "criar"] },
-            { codigo: "EF15AR18", segmento: "EF1-5", desc: "Reconhecer e apreciar o papel de músicos e grupos brasileiros e estrangeiros.", keywords: ["cultura", "brasileira", "artista", "compositor", "grupo"] },
-            { codigo: "EF15AR19", segmento: "EF1-5", desc: "Descobrir e experimentar sonoridades e ritmos de diferentes matrizes estéticas e culturais.", keywords: ["cultura", "indígena", "africana", "matrizes", "folclore"] },
-            { codigo: "EF15AR23", segmento: "EF1-5", desc: "Reconhecer e experimentar, em projetos temáticos, as relações entre linguagens artísticas.", keywords: ["integrada", "dança", "teatro", "artes visuais"] },
-            { codigo: "EF15AR24", segmento: "EF1-5", desc: "Caracterizar e experimentar brinquedos, brincadeiras, jogos, danças e canções.", keywords: ["brincadeira", "roda", "dança", "jogo"] },
-            { codigo: "EF15AR25", segmento: "EF1-5", desc: "Conhecer e valorizar o patrimônio cultural, material e imaterial.", keywords: ["patrimônio", "cultura", "popular"] },
-
-            // ── EF 6º AO 9º ANO ──
-            { codigo: "EF69AR16", segmento: "EF6-9", desc: "Analisar criticamente, por meio da apreciação musical, usos e funções da música em seus contextos de produção e circulação.", keywords: ["apreciação", "análise", "contexto", "função", "crítica"] },
-            { codigo: "EF69AR17", segmento: "EF6-9", desc: "Explorar e analisar, criticamente, diferentes meios e equipamentos culturais de acesso à produção e à apreciação artística.", keywords: ["mídia", "tecnologia", "acesso", "digital", "streaming"] },
-            { codigo: "EF69AR18", segmento: "EF6-9", desc: "Reconhecer e apreciar o papel de músicos e grupos de música brasileira e mundial, em diferentes épocas, contextos e estilos musicais.", keywords: ["história da música", "artistas", "estilos", "época", "mundo"] },
-            { codigo: "EF69AR19", segmento: "EF6-9", desc: "Identificar e analisar diferentes estilos musicais, contextualizando-os no tempo e no espaço, de modo a aprimorar a capacidade de apreciação da estética musical.", keywords: ["estilos musicais", "contextualização", "história", "estética"] },
-            { codigo: "EF69AR20", segmento: "EF6-9", desc: "Explorar e analisar elementos constitutivos da música (altura, intensidade, timbre, melodia, ritmo, harmonia, textura, forma, entre outros), por meio de recursos tecnológicos.", keywords: ["harmonia", "textura", "forma", "altura", "timbre", "ritmo", "melodia", "elementos"] },
-            { codigo: "EF69AR21", segmento: "EF6-9", desc: "Explorar e criar improvisações, composições, arranjos, jingles, trilhas sonoras, entre outros, utilizando vozes, sons corporais e/ou instrumentos acústicos ou eletrônicos.", keywords: ["composição", "arranjo", "improvisação", "trilha sonora", "jingle", "criação", "eletrônico"] },
-            { codigo: "EF69AR22", segmento: "EF6-9", desc: "Explorar e identificar diferentes formas de registro musical (notação musical tradicional, formas alternativas de notação musical e registro em áudio e vídeo).", keywords: ["notação", "partitura", "registro", "gravação", "áudio", "vídeo"] },
-            { codigo: "EF69AR23", segmento: "EF6-9", desc: "Explorar e criar experimentações sonoras e músicas com tecnologias digitais.", keywords: ["tecnologia", "digital", "experimentação", "eletrônico", "computador"] },
-            { codigo: "EF69AR24", segmento: "EF6-9", desc: "Explorar e analisar formas distintas de manifestações do movimento (de pessoas e grupos) presentes em diferentes contextos.", keywords: ["movimento", "dança", "corpo", "performance"] },
-            { codigo: "EF69AR31", segmento: "EF6-9", desc: "Relacionar as práticas artísticas às diferentes dimensões da vida social, cultural, política, histórica, econômica, estética e ética.", keywords: ["sociedade", "política", "cultura", "história", "interdisciplinar"] },
-            { codigo: "EF69AR32", segmento: "EF6-9", desc: "Analisar e explorar, em projetos temáticos, as relações processuais entre diversas linguagens artísticas.", keywords: ["projeto", "interdisciplinar", "linguagens", "integrado"] },
-            { codigo: "EF69AR33", segmento: "EF6-9", desc: "Analisar aspectos históricos, sociais e políticos da produção artística, problematizando as narrativas eurocêntricas e as outras representações hegemônicas.", keywords: ["história", "africana", "indígena", "diversidade", "cultura popular", "patrimônio"] },
-            { codigo: "EF69AR34", segmento: "EF6-9", desc: "Analisar e valorizar o patrimônio cultural, material e imaterial, de culturas diversas.", keywords: ["patrimônio", "cultura", "popular", "folclore", "diversidade"] },
-            { codigo: "EF69AR35", segmento: "EF6-9", desc: "Identificar e manipular diferentes tecnologias e recursos digitais para acessar, apreciar, produzir, registrar e compartilhar práticas e repertórios musicais.", keywords: ["tecnologia", "digital", "compartilhar", "produção", "registro"] }
-        ]; */
 
         const planosIniciais = []; 
         const conceitosIniciais = ["Pulsação", "Ritmo", "Melodia", "Movimento", "Canto", "Instrumentos", "Percussão Corporal", "Criação", "Improvisação"];
@@ -400,21 +358,6 @@ export default function BancoPlanos({ session }) {
             // planos, setPlanos — via usePlanosContext() acima
 
             // ============================================================
-            // MÓDULO: ATIVIDADES
-            // ============================================================
-            // Estados para Atividades — migrados para AtividadesContext (Parte 4)
-            // const [atividades, setAtividades] = useState(...)
-            // const [atividadeEditando, setAtividadeEditando] = useState(null)
-            // const [novoRecursoUrlAtiv, setNovoRecursoUrlAtiv] = useState('')
-            // const [novoRecursoTipoAtiv, setNovoRecursoTipoAtiv] = useState('link')
-            // const [filtroTagAtividade, setFiltroTagAtividade] = useState('Todas')
-            // const [filtroFaixaAtividade, setFiltroFaixaAtividade] = useState('Todas')
-            // const [filtroConceitoAtividade, setFiltroConceitoAtividade] = useState('Todos')
-            // const [buscaAtividade, setBuscaAtividade] = useState('')
-            // const [modalAdicionarAoPlano, setModalAdicionarAoPlano] = useState(null)
-            // const [modoVisAtividades, setModoVisAtividades] = useState('grade')
-
-            // ============================================================
             // MÓDULO: EVENTOS ESCOLARES E FERIADOS
             // ============================================================
             // eventosEscolares, setEventosEscolares — migrados para AnoLetivoContext (Parte 6)
@@ -424,19 +367,6 @@ export default function BancoPlanos({ session }) {
                 const saved = dbGet('ocultarFeriados');
                 return saved === 'true';
             });
-
-            // ============================================================
-            // MÓDULO: SEQUÊNCIAS DIDÁTICAS — migrado para SequenciasContext (Parte 5)
-            // ============================================================
-            // const [sequencias, setSequencias] = useState(...)
-            // const [sequenciaEditando, setSequenciaEditando] = useState(null)
-            // const [sequenciaDetalhe, setSequenciaDetalhe] = useState(null)
-            // const [filtroEscolaSequencias, setFiltroEscolaSequencias] = useState('Todas')
-            // const [filtroUnidadeSequencias, setFiltroUnidadeSequencias] = useState('Todas')
-            // const [filtroPeriodoSequencias, setFiltroPeriodoSequencias] = useState('Todos')
-            // const [buscaProfundaSequencias, setBuscaProfundaSequencias] = useState('')
-            // const [modalVincularPlano, setModalVincularPlano] = useState(null)
-            // const [buscaPlanoVinculo, setBuscaPlanoVinculo] = useState('')
 
             // ============================================================
             // MÓDULO: ESTRATÉGIAS PEDAGÓGICAS — movido para EstrategiasContext (Parte 2)
@@ -488,14 +418,6 @@ export default function BancoPlanos({ session }) {
             const [statusSalvamento, setStatusSalvamento] = useState('');
             const [darkMode, setDarkMode] = useState(() => dbGet('darkMode') === 'true');
 
-            // ============================================================
-            // MÓDULO: HISTÓRICO MUSICAL DA TURMA — migrado para HistoricoContext (Parte 5)
-            // ============================================================
-            // const [hmFiltroTurma, setHmFiltroTurma] = useState('')
-            // const [hmFiltroInicio, setHmFiltroInicio] = useState('')
-            // const [hmFiltroFim, setHmFiltroFim] = useState('')
-            // const [hmFiltroBusca, setHmFiltroBusca] = useState('')
-            // const [hmModalMusica, setHmModalMusica] = useState(null)
             // ============================================================
             // MÓDULO: DRAG AND DROP — migrado para PlanosContext (Parte 8)
             // ============================================================
@@ -649,9 +571,6 @@ export default function BancoPlanos({ session }) {
             // modalNovaFaixa, novaFaixaNome — migrados para AnoLetivoContext (Parte 6)
             const [modalConfiguracoes, setModalConfiguracoes] = useState(false);
             // pendingAtividadeId, modalNovaMusicaInline, novaMusicaInline — migrados para AtividadesContext (Parte 4)
-            // const [pendingAtividadeId, setPendingAtividadeId] = useState(null);
-            // const [modalNovaMusicaInline, setModalNovaMusicaInline] = useState(false);
-            // const [novaMusicaInline, setNovaMusicaInline] = useState({ titulo: '', autor: '', origem: '', observacoes: '' });
             const niveis = ["Todos", "Iniciante", "Intermedi\u00e1rio", "Avan\u00e7ado"];
 
             // Função centralizada para disparar o indicador de salvamento
@@ -811,32 +730,16 @@ export default function BancoPlanos({ session }) {
             // ── PROTEÇÃO CONTRA FECHAR ABA COM EDIÇÃO NÃO SALVA — migrado para PlanosContext (Parte 8) ──
             // useEffect beforeunload — gerenciado em PlanosContext
 
-            // planosAula dbSet — migrado para PlanosContext (Parte 8)
-            // useEffect(() => { dbSet('planosAula', JSON.stringify(planos)); triggerSalvo(); }, [planos]);
-
-            // materiaisBloqueados dbSet — migrado para PlanosContext (Parte 8)
-            // useEffect(() => { dbSet('materiaisBloqueados', JSON.stringify(materiaisBloqueados)); }, [materiaisBloqueados]);
-
-            useEffect(() => { dbSet('conceitosPersonalizados', JSON.stringify(conceitos)); triggerSalvo(); }, [conceitos]);
-            useEffect(() => { dbSet('unidadesPersonalizadas', JSON.stringify(unidades)); triggerSalvo(); }, [unidades]);
-            useEffect(() => { dbSet('anosLetivos', JSON.stringify(anosLetivos)); triggerSalvo(); }, [anosLetivos]);
-            useEffect(() => { dbSet('faixasEtarias', JSON.stringify(faixas)); triggerSalvo(); }, [faixas]);
-            // gradesSemanas dbSet movido para CalendarioContext (Parte 7)
-            // atividades dbSet movido para AtividadesContext (Parte 4)
-            // useEffect(() => { dbSet('atividades', JSON.stringify(atividades)); triggerSalvo(); }, [atividades]);
-            useEffect(() => { dbSet('eventosEscolares', JSON.stringify(eventosEscolares)); triggerSalvo(); }, [eventosEscolares]);
-            // sequencias dbSet movido para SequenciasContext (Parte 5)
-            // useEffect(() => { dbSet('sequenciasDidaticas', JSON.stringify(sequencias)); triggerSalvo(); }, [sequencias]);
+            // planosAula/materiaisBloqueados — gerenciados em PlanosContext (Parte 8)
+            // conceitos/unidades/anosLetivos/faixas/eventosEscolares — gerenciados em AnoLetivoContext (Parte 6)
+            // gradesSemanas — gerenciado em CalendarioContext (Parte 7)
+            // atividades — gerenciado em AtividadesContext (Parte 4)
+            // sequencias — gerenciado em SequenciasContext (Parte 5)
+            // repertorio — gerenciado em RepertorioContext (Parte 3)
             useEffect(() => { dbSet('ocultarFeriados', ocultarFeriados); }, [ocultarFeriados]);
-            // repertorio dbSet movido para RepertorioContext (Parte 3) — lá é gerenciado com triggerSalvo via ctx bridge
 
             // ============================================================
-            // FUNÇÕES: BUSCA E FILTROS — migradas para PlanosContext (Parte 8)
-            // ============================================================
-            // buscaAvancada, planosFiltrados, sugerirBNCC — via usePlanosContext()
 
-
-            
 
             // ============================================================
             // FUNÇÕES: BACKUP / RESTAURAÇÃO DE DADOS
@@ -911,22 +814,9 @@ export default function BancoPlanos({ session }) {
                 return m ? m[1] : null;
             };
 
-            // ============================================================
-            // FUNÇÕES: PLANOS DE AULA — migradas para PlanosContext (Parte 8)
-            // ============================================================
-            // novoPlano — via usePlanosContext()
-            // editarPlano — via usePlanosContext()
-            // salvarPlano — via usePlanosContext()
-            // restaurarVersao — via usePlanosContext()
-            // excluirPlano — via usePlanosContext()
-            // fecharModal — via usePlanosContext()
-            // toggleConceito, toggleFaixa — via usePlanosContext()
-            // adicionarRecurso, removerRecurso — via usePlanosContext()
-            
-            // adicionarRecursoAtiv / removerRecursoAtiv — migrados para AtividadesContext (Parte 4)
-            // const adicionarRecursoAtiv = () => { ... };
-            // const removerRecursoAtiv = (idx) => { ... };
-            
+            // novoPlano, editarPlano, salvarPlano, excluirPlano, fecharModal — via usePlanosContext()
+            // adicionarRecursoAtiv, removerRecursoAtiv — via useAtividadesContext()
+
             // VINCULAR ATIVIDADE A PLANO - Exportar dados
             const vincularAtividadeAoPlano = (atividadeId) => {
                 if (!planoEditando) return;
