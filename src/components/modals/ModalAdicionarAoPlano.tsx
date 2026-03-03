@@ -13,7 +13,7 @@ export default function ModalAdicionarAoPlano() {
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50" onClick={()=>setModalAdicionarAoPlano(null)}>
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto overscroll-y-contain" onClick={e=>e.stopPropagation()}>
                 <div className="bg-green-600 text-white p-4 flex justify-between items-center sticky top-0">
                     <h2 className="text-lg font-bold">Adicionar ao Plano</h2>
                     <button onClick={()=>setModalAdicionarAoPlano(null)} className="text-white text-xl">✕</button>

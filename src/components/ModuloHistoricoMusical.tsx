@@ -254,7 +254,7 @@ export default function ModuloHistoricoMusical() {
                     {/* Busca por música */}
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Buscar música</label>
-                        <input type="text" placeholder="🔍 Título ou autor..." value={hmFiltroBusca} onChange={e => setHmFiltroBusca(e.target.value)}
+                        <input type="text" inputMode="search" placeholder="🔍 Título ou autor..." value={hmFiltroBusca} onChange={e => setHmFiltroBusca(e.target.value)}
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400"/>
                     </div>
                 </div>

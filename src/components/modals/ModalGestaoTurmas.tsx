@@ -42,7 +42,7 @@ export default function ModalGestaoTurmas() {
                         <p className="text-xs font-bold text-indigo-800 mb-2">Novo Ano Letivo</p>
                         <div className="flex gap-2">
                             <input value={gtAnoNovo} onChange={e=>setGtAnoNovo(e.target.value)} onKeyPress={e=>e.key==='Enter'&&gtAddAno()}
-                                className="flex-1 border-2 rounded-lg px-3 py-2 text-sm" placeholder="Ex: 2025" type="number" min="2020" max="2099" />
+                                className="flex-1 border-2 rounded-lg px-3 py-2 text-sm" placeholder="Ex: 2025" type="number" inputMode="numeric" min="2020" max="2099" />
                             <button onClick={gtAddAno} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-4 py-2 rounded-lg font-bold text-sm transition">+ Adicionar</button>
                         </div>
                     </div>

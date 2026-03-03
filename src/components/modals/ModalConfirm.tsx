@@ -11,7 +11,7 @@ export default function ModalConfirm() {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm max-h-[90vh] overflow-y-auto p-6">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm max-h-[90vh] overflow-y-auto overscroll-y-contain p-6">
                 {modalConfirm.titulo && (
                     <h3 className="text-lg font-bold text-gray-800 mb-3">{modalConfirm.titulo}</h3>
                 )}

@@ -208,11 +208,11 @@ export default function ModuloAnoLetivo() {
                                         <div className="p-4 flex flex-col flex-1">
                                             <div className="flex items-start justify-between gap-1 mb-1">
                                                 <h4 className="font-bold text-slate-800 text-sm leading-tight">{p.nome}</h4>
-                                                <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex gap-0.5 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                                     <button onClick={()=>{ setPeriodoExpId(p.id); setPeriodoEditForm({nome:p.nome, dataInicio:p.dataInicio||'', dataFim:p.dataFim||'', tema:p.tema||'', foco:p.foco||'', reflexao:p.reflexao||''}); }}
-                                                        className="text-slate-400 hover:text-indigo-600 p-1 rounded transition" title="Editar">✏️</button>
+                                                        className="text-slate-400 hover:text-indigo-600 p-2 sm:p-1 rounded transition" title="Editar">✏️</button>
                                                     <button onClick={()=>excluirPeriodoDoAno(anoAtivo.id, p.id)}
-                                                        className="text-slate-400 hover:text-red-500 p-1 rounded transition" title="Excluir">🗑️</button>
+                                                        className="text-slate-400 hover:text-red-500 p-2 sm:p-1 rounded transition" title="Excluir">🗑️</button>
                                                 </div>
                                             </div>
                                             {(p.dataInicio || p.dataFim) && (

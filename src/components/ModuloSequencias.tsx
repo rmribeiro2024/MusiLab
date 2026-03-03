@@ -266,7 +266,7 @@ export default function ModuloSequencias() {
                         const progresso = totalSlots > 0 ? (slotsPreenchidos / totalSlots) * 100 : 0;
 
                         return (
-                            <div key={seq.id} onClick={() => setSequenciaDetalhe(seq)} className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-rose-500 hover:shadow-2xl transition cursor-pointer">
+                            <div key={seq.id} onClick={() => setSequenciaDetalhe(seq)} className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-rose-500 hover:shadow-2xl transition cursor-pointer active:scale-[0.98]">
                                 <div className="flex justify-between items-start mb-2">
                                     <h3 className="text-xl font-bold text-gray-800">{seq.titulo}</h3>
                                     {seq.unidadePredominante && (
@@ -474,6 +474,7 @@ export default function ModuloSequencias() {
                         <label className="block font-bold mb-2">Número de Aulas</label>
                         <input 
                             type="number"
+                            inputMode="numeric"
                             min="1"
                             max="50"
                             value={sequenciaEditando.numeroSlots}
@@ -537,7 +538,7 @@ export default function ModuloSequencias() {
                         <div 
                             key={p.id}
                             onClick={() => vincularPlanoAoSlot(p.id)}
-                            className="border-2 border-rose-200 rounded-lg p-3 hover:border-rose-400 hover:bg-rose-50 cursor-pointer transition"
+                            className="border-2 border-rose-200 rounded-lg p-3 hover:border-rose-400 hover:bg-rose-50 cursor-pointer transition active:scale-[0.98]"
                         >
                             <h4 className="font-bold text-gray-800">{p.titulo}</h4>
                             <p className="text-sm text-gray-600">{p.escola} • {p.faixaEtaria?.join(', ')}</p>
