@@ -7,6 +7,57 @@ Ele contém o diagnóstico real do app, a estratégia completa e os passos detal
 
 ---
 
+## ⚠️ ANTES DE COMEÇAR — Leia isto
+
+### 1. Testar o app funcionalmente primeiro
+
+O app passou por refatoração grande (9 partes de contextos) e pode ter bugs de runtime
+além do `dragItem is not defined` (já corrigido no commit `47cde92`). Antes de qualquer
+trabalho de mobile, verificar que cada módulo abre e funciona:
+
+| Módulo | O que testar |
+|--------|-------------|
+| Planos de Aula | Criar novo plano, editar, salvar, excluir |
+| Repertório | Adicionar música, filtrar, buscar |
+| Atividades | Criar atividade, vincular música |
+| Sequências | Criar sequência, vincular plano a slot |
+| Calendário | Navegar meses, visualizar semana |
+| Registro pós-aula | Abrir modal, preencher, salvar |
+| Ano Letivo | Abrir módulo, verificar turmas |
+| Histórico | Verificar filtros e lista |
+
+Se encontrar erro de runtime → corrigir antes de começar o mobile.
+
+### 2. Contexto de uso real (impacta as prioridades)
+
+Professores de música usam o app em **dois contextos distintos**:
+
+| Contexto | Dispositivo provável | Módulos mais críticos |
+|----------|---------------------|-----------------------|
+| Planejamento (casa/escola) | Desktop/Laptop | Planos, Repertório, Sequências |
+| Em sala de aula | **Celular/Tablet** | **Calendário, Ver plano, Registro pós-aula** |
+
+Isso confirma que Fase 1 (Calendário) e Fase 2 (Registro pós-aula/modais) são as
+mais impactantes para o uso real.
+
+### 3. Testar em dispositivo real
+
+O Chrome DevTools emula mobile, mas falha em:
+- Comportamento do teclado virtual (empurra o layout)
+- Performance real em dispositivos antigos
+- Bugs específicos do iOS Safari
+
+**Como testar no celular real:**
+```bash
+npm run dev
+# Vite mostra o IP local: ex. http://192.168.1.10:5173
+# Acessar pelo celular na mesma rede Wi-Fi
+```
+
+---
+
+---
+
 ## Estado atual do projeto
 
 - **Stack**: React 18 + Vite + TypeScript + Tailwind CSS 3.4.14 + Supabase
@@ -113,6 +164,59 @@ Tabelas devem virar cards em mobile:
 ---
 
 ## Fases de implementação
+
+### Fase 0 — Pré-requisitos iOS (fazer ANTES de tudo, 15 min)
+
+Duas correções de CSS globais que resolvem os bugs mais recorrentes do iOS Safari.
+Zero risco, impacto imediato.
+
+#### 0A — `100dvh` em vez de `100vh`
+
+No iPhone, `100vh` não desconta a barra de endereço do browser, causando overflow
+e scroll indesejado. `dvh` = "dynamic viewport height" = considera a UI do browser.
+
+**Em `src/index.css`, adicionar:**
+```css
+/* Fix iOS Safari: vh não desconta a barra de endereço */
+@supports (height: 100dvh) {
+  .min-h-screen { min-height: 100dvh; }
+  .h-screen     { height: 100dvh; }
+}
+```
+
+Ou substituir diretamente nas classes Tailwind mais críticas:
+- `min-h-screen` → `min-h-[100dvh]`
+- `max-h-[97vh]` em modais → `max-h-[97dvh]`
+
+#### 0B — `font-size: 16px` em inputs (previne auto-zoom no iOS)
+
+O Safari no iPhone dá zoom automático em qualquer `<input>` com `font-size < 16px`.
+O app usa `text-sm` (14px) em muitos campos — isso causa zoom involuntário.
+
+**Em `src/index.css`, adicionar:**
+```css
+/* Previne auto-zoom em inputs no iOS Safari */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="url"],
+  input[type="date"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+```
+
+**Verificação pós-Fase 0:**
+```bash
+npx tsc --noEmit && npm run build && npm test -- --run
+```
+Commit: `fix: mobile fase 0 — 100dvh e font-size iOS`
+
+---
 
 ### Fase 1 — Críticos: Calendário + Tabela + min-w
 
@@ -336,7 +440,51 @@ Revisar todos os modais em `src/components/modals/` e garantir o padrão:
 4. `ModalGestaoTurmas.tsx` (150 linhas — formulário longo)
 5. Demais modais menores (< 120 linhas)
 
-#### 2D — ModuloLista.tsx: Filtros laterais em mobile
+#### 2B (opcional) — Bottom navigation bar em mobile
+
+O app tem ~7 abas no topo. Em mobile, mesmo com scroll horizontal, é difícil de usar.
+A solução moderna (Instagram, YouTube, apps nativos) é uma **barra de navegação inferior**
+em mobile + abas horizontais mantidas no desktop.
+
+**Estrutura visual:**
+```
+┌─────────────────────────────────┐
+│         conteúdo do módulo      │
+│                                 │
+│                                 │
+├─────────────────────────────────┤
+│  🗓️ Agenda  📋 Planos  🎵 Rep.  ⋯ Mais  │
+└─────────────────────────────────┘
+```
+
+**Implementação sugerida em `BancoPlanos.tsx`:**
+```tsx
+{/* Bottom nav — apenas em mobile */}
+<nav className="fixed bottom-0 left-0 right-0 sm:hidden bg-white border-t border-slate-200
+                flex justify-around items-center py-2 z-40"
+     style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+  {[
+    { id: 'lista', icon: '📋', label: 'Planos' },
+    { id: 'calendario', icon: '🗓️', label: 'Agenda' },
+    { id: 'repertorio', icon: '🎵', label: 'Músicas' },
+    { id: 'mais', icon: '⋯', label: 'Mais' },
+  ].map(tab => (
+    <button key={tab.id} onClick={() => setViewMode(tab.id)}
+      className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg
+        ${viewMode === tab.id ? 'text-indigo-600' : 'text-slate-400'}`}>
+      <span className="text-xl">{tab.icon}</span>
+      <span className="text-[10px] font-medium">{tab.label}</span>
+    </button>
+  ))}
+</nav>
+
+{/* Espaçador para compensar o bottom nav em mobile */}
+<div className="h-16 sm:hidden" />
+```
+
+Esta é a mudança de maior impacto em UX, mas também a mais trabalhosa. Fazer por último.
+
+#### 2C — ModuloLista.tsx: Filtros laterais em mobile
 
 Os filtros de planos podem estar em `flex-row` que quebra em mobile.
 
@@ -584,8 +732,11 @@ Commit: `feat: mobile fase 4 — PWA, safe area e touch drag`
 
 ## Checklist de progresso
 
+- [ ] **Pré-requisito**: Testar app funcionalmente (cada módulo) — verificar novos erros de runtime
+- [ ] Fase 0 — iOS fixes: `100dvh` + `font-size 16px` em inputs (15 min, zero risco)
 - [ ] Fase 1 — Críticos: calendário + tabela histórico + min-w
-- [ ] Fase 2 — Altos: navegação + forms + modais
+- [ ] Fase 2 — Altos: navegação/tabs + forms + modais
+- [ ] Fase 2B (opcional) — Bottom navigation bar em mobile
 - [ ] Fase 3 — Médios: polimento, touch areas, tipografia
 - [ ] Fase 4 — Bônus: PWA e touch drag (opcional)
 
