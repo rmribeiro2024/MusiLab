@@ -2091,8 +2091,8 @@ export default function BancoPlanos({ session }) {
                                     </div>
                                 </div>
 
-                                {/* Widget "hoje" compacto */}
-                                <div className="bg-blue-900 border border-blue-800 rounded-xl px-4 py-2.5 text-sm min-w-[260px]">
+                                {/* Widget "hoje" compacto — oculto em mobile (visível sm+) */}
+                                <div className="hidden sm:block bg-blue-900 border border-blue-800 rounded-xl px-4 py-2.5 text-sm min-w-[260px]">
                                     <div className="font-medium text-slate-300 text-xs mb-1.5">
                                         📅 {new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})}
                                     </div>

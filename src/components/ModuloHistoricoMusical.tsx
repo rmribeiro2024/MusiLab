@@ -360,49 +360,69 @@ export default function ModuloHistoricoMusical() {
                         )}
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="bg-slate-50 border-b border-slate-100">
-                                    <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Música</th>
-                                    <th className="text-center px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Usos</th>
-                                    <th className="text-center px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden sm:table-cell">1ª vez</th>
-                                    <th className="text-center px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden sm:table-cell">Última vez</th>
-                                    <th className="text-center px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Aulas</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {musicasArray.map((m, idx) => (
-                                    <tr key={m.id} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2">
-                                                {idx < 3 && (
-                                                    <span className="text-base shrink-0">{['🥇','🥈','🥉'][idx]}</span>
-                                                )}
-                                                <div>
-                                                    <p className="font-semibold text-slate-800">{m.titulo}</p>
-                                                    {m.autor && <p className="text-xs text-slate-400">{m.autor}</p>}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${m.vezesUsada >= 3 ? 'bg-emerald-100 text-emerald-700' : m.vezesUsada === 2 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
-                                                {m.vezesUsada}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-center text-xs text-slate-500 hidden sm:table-cell">{fmtData(m.primeiraData)}</td>
-                                        <td className="px-4 py-3 text-center text-xs text-slate-500 hidden sm:table-cell">{fmtData(m.ultimaData)}</td>
-                                        <td className="px-4 py-3 text-center">
-                                            <button onClick={() => setHmModalMusica(m)}
-                                                className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold hover:underline">
-                                                ver detalhes
-                                            </button>
-                                        </td>
+                    <>
+                        {/* Vista mobile: cards */}
+                        <div className="sm:hidden divide-y divide-slate-100">
+                            {musicasArray.map((m, idx) => (
+                                <div key={m.id} className="px-4 py-3 flex items-center gap-3">
+                                    {idx < 3 && <span className="text-lg shrink-0">{['🥇','🥈','🥉'][idx]}</span>}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-slate-800 truncate">{m.titulo}</p>
+                                        {m.autor && <p className="text-xs text-slate-400 truncate">{m.autor}</p>}
+                                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${m.vezesUsada >= 3 ? 'bg-emerald-100 text-emerald-700' : m.vezesUsada === 2 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>{m.vezesUsada}×</span>
+                                            {m.primeiraData && <span className="text-xs text-slate-400">{fmtData(m.primeiraData)} – {fmtData(m.ultimaData)}</span>}
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setHmModalMusica(m)} className="shrink-0 text-xs text-indigo-600 hover:text-indigo-800 font-semibold">ver</button>
+                                </div>
+                            ))}
+                        </div>
+                        {/* Vista desktop: tabela */}
+                        <div className="hidden sm:block overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="bg-slate-50 border-b border-slate-100">
+                                        <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Música</th>
+                                        <th className="text-center px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Usos</th>
+                                        <th className="text-center px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">1ª vez</th>
+                                        <th className="text-center px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Última vez</th>
+                                        <th className="text-center px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Aulas</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {musicasArray.map((m, idx) => (
+                                        <tr key={m.id} className="hover:bg-slate-50 transition-colors">
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    {idx < 3 && (
+                                                        <span className="text-base shrink-0">{['🥇','🥈','🥉'][idx]}</span>
+                                                    )}
+                                                    <div>
+                                                        <p className="font-semibold text-slate-800">{m.titulo}</p>
+                                                        {m.autor && <p className="text-xs text-slate-400">{m.autor}</p>}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${m.vezesUsada >= 3 ? 'bg-emerald-100 text-emerald-700' : m.vezesUsada === 2 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                    {m.vezesUsada}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-center text-xs text-slate-500">{fmtData(m.primeiraData)}</td>
+                                            <td className="px-4 py-3 text-center text-xs text-slate-500">{fmtData(m.ultimaData)}</td>
+                                            <td className="px-4 py-3 text-center">
+                                                <button onClick={() => setHmModalMusica(m)}
+                                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold hover:underline">
+                                                    ver detalhes
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </div>
 
