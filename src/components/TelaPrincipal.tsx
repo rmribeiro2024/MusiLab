@@ -910,7 +910,7 @@ export default function TelaPrincipal() {
 
                 <div className="px-4 py-4 bg-white border-t border-slate-100 flex gap-3 sticky bottom-0">
                     <button type="button" onClick={fecharModal} className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm">Cancelar</button>
-                    <button type="button" onClick={salvarPlano} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-sm text-sm">💾 Salvar Plano</button>
+                    <button type="button" onClick={() => salvarPlano()} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-sm text-sm">💾 Salvar Plano</button>
                 </div>
             </div>{/* fim conteúdo */}
         </div>{/* fim card principal */}
