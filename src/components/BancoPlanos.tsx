@@ -607,6 +607,7 @@ export default function BancoPlanos({ session }) {
             // MÓDULO: CARREGAMENTO DE DADOS
             // ============================================================
             const [dadosCarregados, setDadosCarregados] = useState(false);
+            const [maisAberto, setMaisAberto] = useState(false);
             useEffect(() => {
                 if (!userId) { setDadosCarregados(true); return; }
                 (async () => {
@@ -2235,6 +2236,9 @@ export default function BancoPlanos({ session }) {
                         {/* REPERTÓRIO INTELIGENTE */}
                         {viewMode === 'repertorio' && <ErrorBoundary modulo="Repertório"><Suspense fallback={<CarregandoModulo />}><ModuloRepertorio /></Suspense></ErrorBoundary>}
 
+                    {/* Espaçador para o bottom nav mobile */}
+                    <div className="h-16 sm:hidden" />
+
                     {planoSelecionado && !modoEdicao && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={fecharModal}>
                             <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e)=>e.stopPropagation()}>
@@ -2421,6 +2425,52 @@ export default function BancoPlanos({ session }) {
 
 
 
+
+                    {/* ── BOTTOM NAVIGATION — apenas mobile ── */}
+                    {maisAberto && (
+                        <div className="fixed inset-0 z-[39]" onClick={() => setMaisAberto(false)} />
+                    )}
+                    {maisAberto && (
+                        <div className="fixed bottom-16 left-0 right-0 sm:hidden bg-white border border-slate-200 rounded-t-2xl shadow-xl z-40 p-4 grid grid-cols-3 gap-2">
+                            {[
+                                { mode: 'resumoDia',       icon: '☀️',  label: 'Hoje' },
+                                { mode: 'anoLetivo',        icon: '🗓️',  label: 'Meu Ano' },
+                                { mode: 'historicoMusical', icon: '📊',  label: 'Histórico' },
+                                { mode: 'estrategias',      icon: '🧩',  label: 'Estratégias' },
+                                { mode: 'atividades',       icon: '🎁',  label: 'Atividades' },
+                                { mode: 'sequencias',       icon: '📚',  label: 'Sequências' },
+                            ].map(t => (
+                                <button key={t.mode}
+                                    onClick={() => { setViewMode(t.mode); setMaisAberto(false); }}
+                                    className={`flex flex-col items-center gap-1 py-3 rounded-xl text-xs font-semibold transition active:scale-95
+                                        ${viewMode === t.mode ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}>
+                                    <span className="text-xl">{t.icon}</span>
+                                    <span>{t.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    <nav className="fixed bottom-0 left-0 right-0 sm:hidden bg-white border-t border-slate-200 flex justify-around items-center z-40"
+                         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                        {[
+                            { mode: 'lista',      icon: '🏠', label: 'Início',  action: () => { setViewMode('lista'); setMaisAberto(false); setModoEdicao(false); setPlanoEditando(null); } },
+                            { mode: 'calendario', icon: '📅', label: 'Agenda',  action: () => { setViewMode('calendario'); setMaisAberto(false); } },
+                            { mode: 'nova',       icon: '➕', label: 'Nova',    action: novoPlano },
+                            { mode: 'repertorio', icon: '🎼', label: 'Músicas', action: () => { setViewMode('repertorio'); setMaisAberto(false); } },
+                            { mode: 'mais',       icon: '⋯',  label: 'Mais',    action: () => setMaisAberto(a => !a) },
+                        ].map(t => {
+                            const maisActive = t.mode === 'mais' && maisAberto;
+                            const isActive = maisActive || (t.mode !== 'mais' && viewMode === t.mode);
+                            return (
+                                <button key={t.mode} onClick={t.action}
+                                    className={`flex flex-col items-center gap-0.5 px-4 py-2 transition active:scale-95
+                                        ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}>
+                                    <span className="text-xl leading-none">{t.icon}</span>
+                                    <span className="text-[10px] font-medium">{t.label}</span>
+                                </button>
+                            );
+                        })}
+                    </nav>
 
                     <ModalConfiguracoes />
                     <ModalRegistroPosAula />

@@ -743,7 +743,11 @@ Commit: `feat: mobile fase 4 — PWA, safe area e touch drag`
   - 2B: TelaPrincipal form — `max-h-[85dvh]` mobile, grid 1col mobile, padding reduzido, `active:scale-95`
   - 2C: 11 modais — bottom sheet (`items-end sm:items-center`, `rounded-t-2xl sm:rounded-2xl`, `p-0 sm:p-4`)
 - [ ] Fase 2B (opcional) — Bottom navigation bar em mobile
-- [ ] Fase 3 — Médios: polimento, touch areas, tipografia
+- [x] Fase 3 — Médios: polimento, touch areas, tipografia — commit `bdec360`
+  - 3A: Botões ✏️🗑️ visíveis no mobile (`sm:opacity-0`) + `p-2 sm:p-1` (44px touch target) — ModuloAtividades, ModuloAnoLetivo
+  - 3C: `inputMode="numeric"` em campos numéricos (ModuloSequencias, ModalGestaoTurmas); `inputMode="search"` em barras de busca (TelaPrincipal, ModuloHistoricoMusical)
+  - 3D: `active:scale-[0.98]` em cards clicáveis — ModuloSequencias (2 cards), ModuloLista
+  - 3E: `overscroll-y-contain` em todos os 10 modais com `overflow-y-auto`
 - [ ] Fase 4 — Bônus: PWA e touch drag (opcional)
 
 ---
