@@ -48,6 +48,11 @@
   .h-screen     { height: 100dvh; }
 }
 
+/* 4C: Safe Area Insets — iPhone X/11/12/13/14 (notch e Dynamic Island) */
+/* Aplicar ao header e ao bottom nav via padding-top/bottom */
+.safe-pt { padding-top: env(safe-area-inset-top); }
+.safe-pb { padding-bottom: env(safe-area-inset-bottom); }
+
 /* 0B: font-size 16px — previne auto-zoom em inputs no iOS Safari */
 /* O Safari faz zoom quando font-size < 16px. Aplica só em mobile. */
 @media screen and (max-width: 768px) {
