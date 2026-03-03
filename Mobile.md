@@ -742,13 +742,20 @@ Commit: `feat: mobile fase 4 — PWA, safe area e touch drag`
   - 2A: BancoPlanos tabs — labels abreviados mobile (`short`), gap/px reduzidos, `scrollbar-hide`
   - 2B: TelaPrincipal form — `max-h-[85dvh]` mobile, grid 1col mobile, padding reduzido, `active:scale-95`
   - 2C: 11 modais — bottom sheet (`items-end sm:items-center`, `rounded-t-2xl sm:rounded-2xl`, `p-0 sm:p-4`)
-- [ ] Fase 2B (opcional) — Bottom navigation bar em mobile
+- [x] Fase 2B (opcional) — Bottom navigation bar em mobile — commit `5d47f7a`
+  - Nav fixa no bottom: 🏠 Início, 📅 Agenda, ➕ Nova, 🎼 Músicas, ⋯ Mais (sm:hidden)
+  - Painel "Mais" com 6 módulos secundários (Hoje, Meu Ano, Histórico, Estratégias, Atividades, Sequências)
+  - `safe-area-inset-bottom` para iPhone X+ e espaçador `h-16` para conteúdo não ficar sob o nav
 - [x] Fase 3 — Médios: polimento, touch areas, tipografia — commit `bdec360`
   - 3A: Botões ✏️🗑️ visíveis no mobile (`sm:opacity-0`) + `p-2 sm:p-1` (44px touch target) — ModuloAtividades, ModuloAnoLetivo
   - 3C: `inputMode="numeric"` em campos numéricos (ModuloSequencias, ModalGestaoTurmas); `inputMode="search"` em barras de busca (TelaPrincipal, ModuloHistoricoMusical)
   - 3D: `active:scale-[0.98]` em cards clicáveis — ModuloSequencias (2 cards), ModuloLista
   - 3E: `overscroll-y-contain` em todos os 10 modais com `overflow-y-auto`
-- [ ] Fase 4 — Bônus: PWA e touch drag (opcional)
+- [x] Fase 4 — Bônus: PWA e touch drag — commit `9c80457`
+  - 4A: `vite-plugin-pwa` com service worker (workbox), manifest gerado automaticamente
+  - 4B: `public/icon.svg` (512x512 SVG com gradiente indigo e nota musical)
+  - 4C: `viewport-fit=cover` + meta apple-mobile-web-app + classes `.safe-pt/.safe-pb` no CSS; header com `.safe-pt` (notch/Dynamic Island)
+  - 4D: botões ↑↓ `sm:hidden` nas atividades do roteiro (fallback mobile para drag-and-drop)
 
 ---
 
