@@ -7,6 +7,7 @@ import { useModalContext } from './ModalContext'
 import { useAnoLetivoContext } from './AnoLetivoContext'
 import { useRepertorioContext } from './RepertorioContext'
 import { dbGet, dbSet } from '../lib/db'
+import { sanitizeUrl } from '../lib/utils'
 
 // ── bancoBNCC ── base de habilidades BNCC (copiada de BancoPlanos.tsx)
 export const bancoBNCC = [
@@ -394,7 +395,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     }
     const adicionarRecurso = () => {
         if (novoRecursoUrl.trim()) {
-            setPlanoEditando({ ...planoEditando, recursos: [...(planoEditando.recursos || []), { url: novoRecursoUrl.trim(), tipo: novoRecursoTipo }] })
+            setPlanoEditando({ ...planoEditando, recursos: [...(planoEditando.recursos || []), { url: sanitizeUrl(novoRecursoUrl.trim()), tipo: novoRecursoTipo }] })
             setNovoRecursoUrl('')
         }
     }

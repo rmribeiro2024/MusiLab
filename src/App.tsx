@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import BancoPlanos from './components/BancoPlanos'
 import ErrorBoundary from './components/ErrorBoundary'
+import Toast from './components/Toast'
 import { ModalProvider, EstrategiasProvider, RepertorioProvider, AtividadesProvider, SequenciasProvider, HistoricoProvider, AnoLetivoProvider, CalendarioProvider, PlanosProvider } from './contexts'
 
 // ── TELA DE LOGIN ──
@@ -75,6 +76,7 @@ export default function App() {
                       <ErrorBoundary modulo="MusiLab">
                         <BancoPlanos session={session} />
                       </ErrorBoundary>
+                      <Toast />
                     </PlanosProvider>
                   </CalendarioProvider>
                 </AnoLetivoProvider>

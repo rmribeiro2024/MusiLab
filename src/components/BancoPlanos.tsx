@@ -7,12 +7,15 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspens
 import { supabase } from '../lib/supabase'
 import {
   sanitizar,
+  sanitizeUrl,
+  validarBackup,
   gerarIdSeguro,
   syncToSupabase,
   syncConfiguracoes,
   loadFromSupabase,
   loadConfiguracoes,
 } from '../lib/utils'
+import { showToast } from '../lib/toast'
 // Módulos carregados sob demanda — Vite cria um chunk por arquivo
 const ModuloAnoLetivo        = lazy(() => import('./ModuloAnoLetivo'))
 const ModuloHistoricoMusical = lazy(() => import('./ModuloHistoricoMusical'))
@@ -593,6 +596,9 @@ export default function BancoPlanos({ session }) {
             // Callback para receber o resultado real do sync da nuvem
             const onSyncStatus = (status) => {
                 setStatusSalvamento(status);
+                if (status === 'erro') {
+                    showToast('Falha ao sincronizar com a nuvem. Dados salvos localmente.', 'error')
+                }
                 if (status === 'salvo') {
                     if (timeoutSalvamento.current) clearTimeout(timeoutSalvamento.current);
                     timeoutSalvamento.current = setTimeout(() => setStatusSalvamento(''), 2500);
@@ -767,8 +773,9 @@ export default function BancoPlanos({ session }) {
                 reader.onload = (e) => {
                     try {
                         const backup = JSON.parse(e.target.result);
-                        if (!backup.planos) {
-                            setModalConfirm({ titulo: 'Arquivo inválido', conteudo: 'Este arquivo não é um backup válido do MusiLab.', somenteOk: true, labelConfirm: 'OK' });
+                        const validacao = validarBackup(backup);
+                        if (!validacao.valido) {
+                            setModalConfirm({ titulo: 'Arquivo inválido', conteudo: validacao.erro || 'Este arquivo não é um backup válido do MusiLab.', somenteOk: true, labelConfirm: 'OK' });
                             return;
                         }
                         const resumo = `📦 Backup de ${backup.timestamp ? new Date(backup.timestamp).toLocaleString('pt-BR') : 'data desconhecida'}\n\n• ${backup.planos?.length||0} planos\n• ${backup.atividades?.length||0} atividades\n• ${backup.sequencias?.length||0} sequências\n• ${backup.repertorio?.length||0} músicas\n\n⚠️ Os dados atuais serão substituídos.`;
@@ -2364,7 +2371,7 @@ export default function BancoPlanos({ session }) {
                                                                     const url = typeof rec === 'string' ? rec : rec.url;
                                                                     const tipo = typeof rec === 'string' ? 'link' : rec.tipo;
                                                                     return (
-                                                                        <a key={j} href={url} target="_blank" rel="noreferrer"
+                                                                        <a key={j} href={sanitizeUrl(url)} target="_blank" rel="noreferrer"
                                                                             className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline">
                                                                             <span>{tipo === 'imagem' ? '🖼️' : '🔗'}</span>
                                                                             <span className="truncate">{url}</span>
