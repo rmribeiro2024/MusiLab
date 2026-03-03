@@ -455,7 +455,7 @@ Após todas as partes anteriores:
 - [x] Parte 5 — `SequenciasContext.tsx` + `HistoricoContext.tsx` — commit `05fda84`
 - [x] Parte 6 — `AnoLetivoContext.tsx` + migrar `ModuloAnoLetivo.tsx` — commit `9abef0c`
 - [x] Parte 7 — `CalendarioContext.tsx` + migrar `TelaCalendario.tsx` — commit `6553251`
-- [ ] Parte 8 — `PlanosContext.tsx` + migrar `TelaPrincipal.tsx`
+- [x] Parte 8 — `PlanosContext.tsx` + migrar `TelaPrincipal.tsx` — commit `def4e2e`
 - [ ] Parte 9 — Limpeza final
 
 ---
