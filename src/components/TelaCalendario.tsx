@@ -42,7 +42,7 @@ export function TelaCalendario() {
     const diasNoMes = new Date(ano, mes+1, 0).getDate(); const inicio = new Date(ano, mes, 1).getDay();
     const nomes = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
     const dias = [];
-    for(let i=0;i<inicio;i++) dias.push(<div key={`e-${i}`} className="bg-gray-100 min-h-[80px]"></div>);
+    for(let i=0;i<inicio;i++) dias.push(<div key={`e-${i}`} className="bg-gray-100 min-h-[52px] sm:min-h-[80px]"></div>);
     for(let d=1;d<=diasNoMes;d++){
         const dataStr = `${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const aulas = planos.filter(p=>p.historicoDatas?.includes(dataStr));
@@ -68,7 +68,7 @@ export function TelaCalendario() {
         const temRegistro = registrosNoDia.length > 0;
 
         dias.push(
-            <div key={d} className={`${bgColor} border ${borderColor} p-1 min-h-[80px] transition group relative`}>
+            <div key={d} className={`${bgColor} border ${borderColor} p-1 min-h-[52px] sm:min-h-[80px] transition group relative`}>
                 <div className="flex justify-between items-start">
                     <span className="text-xs font-bold text-gray-500">{d}</span>
                     {/* Botão registro rápido — aparece no hover */}
@@ -88,7 +88,7 @@ export function TelaCalendario() {
                             setRrTextos({}); setRrPlanosSegmento({});
                             setModalRegistroRapido(true);
                         }}
-                        className="opacity-0 group-hover:opacity-100 bg-amber-400 hover:bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded transition"
+                        className="hidden sm:block opacity-0 group-hover:opacity-100 bg-amber-400 hover:bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded transition"
                         title="Registro rápido">📝+</button>
                 </div>
                 {feriado && <div className="text-[10px] bg-red-200 text-red-800 p-1 mb-1 rounded font-bold">🎊 {feriado}</div>}
@@ -100,22 +100,26 @@ export function TelaCalendario() {
         );
     }
     return (
-        <div className="bg-white rounded-2xl shadow-xl p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">📅 {nomes[mes]} {ano}</h2>
-                <div className="flex gap-2">
-                    <button onClick={()=>setDataCalendario(new Date(ano,mes-1,1))} className="px-3 py-1 bg-gray-200 rounded">◀</button>
-                    <button onClick={()=>setDataCalendario(new Date())} className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded">Hoje</button>
-                    <button onClick={()=>setDataCalendario(new Date(ano,mes+1,1))} className="px-3 py-1 bg-gray-200 rounded">▶</button>
-                    <button onClick={()=>setModalEventos(true)} className="px-4 py-1 bg-pink-500 hover:bg-pink-600 text-white rounded font-bold text-sm">🎉 Eventos</button>
-                    <label className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded cursor-pointer flex items-center gap-2 text-sm">
+        <div className="bg-white rounded-2xl shadow-xl p-3 sm:p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-6 gap-2">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">📅 {nomes[mes]} {ano}</h2>
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                    <button onClick={()=>setDataCalendario(new Date(ano,mes-1,1))} className="px-3 py-1 bg-gray-200 rounded text-sm">◀</button>
+                    <button onClick={()=>setDataCalendario(new Date())} className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-sm">Hoje</button>
+                    <button onClick={()=>setDataCalendario(new Date(ano,mes+1,1))} className="px-3 py-1 bg-gray-200 rounded text-sm">▶</button>
+                    <button onClick={()=>setModalEventos(true)} className="px-3 py-1 bg-pink-500 hover:bg-pink-600 text-white rounded font-bold text-sm">🎉<span className="hidden sm:inline"> Eventos</span></button>
+                    <label className="px-2 sm:px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded cursor-pointer flex items-center gap-1.5 text-xs sm:text-sm">
                         <input type="checkbox" checked={ocultarFeriados} onChange={e=>setOcultarFeriados(e.target.checked)} className="w-4 h-4" />
-                        <span>Ocultar Feriados</span>
+                        <span className="hidden sm:inline">Ocultar </span><span>Feriados</span>
                     </label>
                 </div>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center font-bold text-gray-500 text-xs mb-2"><div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div></div>
-            <div className="grid grid-cols-7 gap-1 bg-gray-200 border border-gray-200 rounded overflow-hidden">{dias}</div>
+            <div className="grid grid-cols-7 gap-0 sm:gap-1 text-center font-bold text-gray-500 text-[10px] sm:text-xs mb-2">
+                {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((nome,i)=>(
+                    <div key={i}><span className="hidden sm:inline">{nome}</span><span className="sm:hidden">{nome[0]}</span></div>
+                ))}
+            </div>
+            <div className="grid grid-cols-7 gap-px sm:gap-1 bg-gray-200 border border-gray-200 rounded overflow-hidden">{dias}</div>
         </div>
     );
 }
