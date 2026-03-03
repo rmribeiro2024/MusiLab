@@ -14,6 +14,51 @@ export function sanitizar(html: string): string {
     })
 }
 
+// ── SANITIZAÇÃO DE URL ──
+// Bloqueia protocolos perigosos (javascript:, vbscript:, data:text/html).
+// Permite data URIs de arquivos uploadados (imagens, áudio, PDF).
+export function sanitizeUrl(url: string): string {
+    if (!url) return '#'
+    const trimmed = url.trim()
+    // data: URIs de arquivos binários são permitidos (upload local)
+    if (
+        trimmed.startsWith('data:image/') ||
+        trimmed.startsWith('data:audio/') ||
+        trimmed.startsWith('data:video/') ||
+        trimmed.startsWith('data:application/pdf')
+    ) return trimmed
+    // Bloqueia qualquer outro protocolo perigoso
+    const lower = trimmed.toLowerCase().replace(/[\s\t\n\r]/g, '')
+    if (
+        lower.startsWith('javascript:') ||
+        lower.startsWith('vbscript:') ||
+        lower.startsWith('data:')
+    ) return '#'
+    return trimmed
+}
+
+// ── VALIDAÇÃO DE SCHEMA DE BACKUP ──
+// Verifica se o arquivo JSON importado tem a estrutura esperada do MusiLab.
+export function validarBackup(data: unknown): { valido: boolean; erro?: string } {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        return { valido: false, erro: 'O arquivo não é reconhecido como backup do MusiLab.' }
+    }
+    const b = data as Record<string, unknown>
+    if (!Array.isArray(b.planos)) {
+        return { valido: false, erro: 'Backup inválido: seção "planos" ausente ou corrompida.' }
+    }
+    const LIMITE = 5000
+    const campos = ['planos', 'atividades', 'repertorio', 'sequencias', 'anosLetivos', 'eventosEscolares', 'gradesSemanas'] as const
+    for (const campo of campos) {
+        const v = b[campo]
+        if (v !== undefined) {
+            if (!Array.isArray(v)) return { valido: false, erro: `Campo "${campo}" inválido no backup.` }
+            if ((v as unknown[]).length > LIMITE) return { valido: false, erro: `O backup contém muitos itens em "${campo}" (limite: ${LIMITE}). Arquivo suspeito.` }
+        }
+    }
+    return { valido: true }
+}
+
 // ── GERAÇÃO DE ID ÚNICO ──
 // Usa crypto.randomUUID() (nativo, seguro) com fallback para browsers antigos.
 export function gerarIdSeguro(): string {

@@ -1,4 +1,5 @@
 import { dbSet } from '../lib/db'
+import { sanitizeUrl } from '../lib/utils'
 import React from 'react'
 import { useBancoPlanos } from './BancoPlanosContext'
 import { useRepertorioContext } from '../contexts'
@@ -653,7 +654,7 @@ export default function ModuloRepertorio() {
                                     </label>
                                 </div>
                                 <div className="space-y-1.5">
-                                    {(musicaEditando.links||[]).map((l,i) => <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg"><a href={l} target="_blank" className="flex-1 truncate text-indigo-600 hover:underline text-xs">🔗 {l}</a><button onClick={()=>setMusicaEditando({...musicaEditando,links:musicaEditando.links.filter((_,idx)=>idx!==i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button></div>)}
+                                    {(musicaEditando.links||[]).map((l,i) => <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg"><a href={sanitizeUrl(l)} target="_blank" rel="noreferrer" className="flex-1 truncate text-indigo-600 hover:underline text-xs">🔗 {l}</a><button onClick={()=>setMusicaEditando({...musicaEditando,links:musicaEditando.links.filter((_,idx)=>idx!==i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button></div>)}
                                     {(musicaEditando.pdfs||[]).map((p,i) => <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg"><a href={typeof p==='string'?p:p.data} target="_blank" className="flex-1 truncate text-slate-600 hover:underline text-xs">📄 {typeof p==='string'?p:p.nome}</a><button onClick={()=>setMusicaEditando({...musicaEditando,pdfs:musicaEditando.pdfs.filter((_,idx)=>idx!==i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button></div>)}
                                     {(musicaEditando.audios||[]).map((a,i) => <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg"><a href={typeof a==='string'?a:a.data} target="_blank" className="flex-1 truncate text-slate-600 hover:underline text-xs">🎧 {typeof a==='string'?a:a.nome}</a><button onClick={()=>setMusicaEditando({...musicaEditando,audios:musicaEditando.audios.filter((_,idx)=>idx!==i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button></div>)}
                                 </div>
