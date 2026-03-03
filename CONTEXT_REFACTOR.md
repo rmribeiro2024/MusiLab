@@ -452,7 +452,7 @@ Após todas as partes anteriores:
 - [x] Parte 2 — `EstrategiasContext.tsx` + migrar `ModuloEstrategias.tsx` — commit `7800dca`
 - [x] Parte 3 — `RepertorioContext.tsx` + migrar `ModuloRepertorio.tsx` — commit `00dc0ca`
 - [x] Parte 4 — `AtividadesContext.tsx` + migrar `ModuloAtividades.tsx` — commit `70278bf`
-- [ ] Parte 5 — `SequenciasContext.tsx` + `HistoricoContext.tsx`
+- [x] Parte 5 — `SequenciasContext.tsx` + `HistoricoContext.tsx` — commit `05fda84`
 - [ ] Parte 6 — `AnoLetivoContext.tsx` + migrar `ModuloAnoLetivo.tsx`
 - [ ] Parte 7 — `CalendarioContext.tsx` + migrar `TelaCalendario.tsx`
 - [ ] Parte 8 — `PlanosContext.tsx` + migrar `TelaPrincipal.tsx`
