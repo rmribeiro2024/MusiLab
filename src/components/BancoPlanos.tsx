@@ -22,7 +22,7 @@ const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
 const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
 const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
 import { BancoPlanosContext } from './BancoPlanosContext'
-import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext, useSequenciasContext, useHistoricoContext, useAnoLetivoContext } from '../contexts'
+import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext, useSequenciasContext, useHistoricoContext, useAnoLetivoContext, useCalendarioContext } from '../contexts'
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
 import { dbGet, dbSet, dbDel } from '../lib/db'
@@ -320,6 +320,44 @@ export default function BancoPlanos({ session }) {
                 adicionarPeriodoNoAno, salvarEdicaoPeriodo, excluirPeriodoDoAno,
                 adicionarMetaNoAno, excluirMetaDoAno,
             } = useAnoLetivoContext();
+            // ── CalendarioContext (Parte 7) ────────────────────────────────
+            const {
+                dataCalendario, setDataCalendario,
+                semanaResumo, setSemanaResumo,
+                modoResumo, setModoResumo,
+                dataDia, setDataDia,
+                diasExpandidos, setDiasExpandidos,
+                gradesSemanas, setGradesSemanas,
+                modalGradeSemanal, setModalGradeSemanal,
+                gradeEditando, setGradeEditando,
+                periodoDias, setPeriodoDias,
+                dataInicioCustom, setDataInicioCustom,
+                dataFimCustom, setDataFimCustom,
+                modalRegistroRapido, setModalRegistroRapido,
+                rrData, setRrData,
+                rrAnoSel, setRrAnoSel,
+                rrEscolaSel, setRrEscolaSel,
+                rrPlanosSegmento, setRrPlanosSegmento,
+                rrTextos, setRrTextos,
+                modalRegistro, setModalRegistro,
+                planoParaRegistro, setPlanoParaRegistro,
+                novoRegistro, setNovoRegistro,
+                verRegistros, setVerRegistros,
+                registroEditando, setRegistroEditando,
+                regAnoSel, setRegAnoSel,
+                regEscolaSel, setRegEscolaSel,
+                regSegmentoSel, setRegSegmentoSel,
+                regTurmaSel, setRegTurmaSel,
+                filtroRegAno, setFiltroRegAno,
+                filtroRegEscola, setFiltroRegEscola,
+                filtroRegSegmento, setFiltroRegSegmento,
+                filtroRegTurma, setFiltroRegTurma,
+                buscaRegistros, setBuscaRegistros,
+                ytPreviewId, setYtPreviewId,
+                novaGradeSemanal, salvarGradeSemanal, excluirGradeSemanal,
+                adicionarAulaGrade, removerAulaGrade, duplicarAulaGrade, atualizarAulaGrade,
+                obterTurmasDoDia,
+            } = useCalendarioContext();
             // ============================================================
             // FUNÇÕES: UTILITÁRIOS GERAIS
             // ============================================================
@@ -559,9 +597,7 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // MÓDULO: PERÍODO / INTERVALO DE DATAS
             // ============================================================
-            const [periodoDias, setPeriodoDias] = useState(30); // 30, 60, 90, 180, 365, 'custom'
-            const [dataInicioCustom, setDataInicioCustom] = useState('');
-            const [dataFimCustom, setDataFimCustom] = useState('');
+            // periodoDias, dataInicioCustom, dataFimCustom — migrados para CalendarioContext (Parte 7)
             
             // ============================================================
             // MÓDULO: EDIÇÃO DE PLANO
@@ -592,43 +628,17 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // MÓDULO: CALENDÁRIO E AGENDA
             // ============================================================
-            const [dataCalendario, setDataCalendario] = useState(new Date());
-            const [semanaResumo, setSemanaResumo] = useState(() => {
-                // segunda-feira da semana atual
-                const hoje = new Date();
-                const dia = hoje.getDay();
-                const diff = dia === 0 ? -6 : 1 - dia;
-                const seg = new Date(hoje); seg.setDate(hoje.getDate() + diff); seg.setHours(0,0,0,0);
-                return seg;
-            });
-            const [modoResumo, setModoResumo] = useState('semana'); // 'semana' | 'dia'
-            const [dataDia, setDataDia] = useState(() => new Date().toISOString().split('T')[0]);
-            const [diasExpandidos, setDiasExpandidos] = useState(() => {
-                // hoje começa expandido
-                return { [new Date().toISOString().split('T')[0]]: true };
-            });
-            
+            // dataCalendario, semanaResumo, modoResumo, dataDia, diasExpandidos — migrados para CalendarioContext (Parte 7)
+
             // ============================================================
             // MÓDULO: REGISTRO RÁPIDO
             // ============================================================
-            // Estados para Registro Rápido
-            const [modalRegistroRapido, setModalRegistroRapido] = useState(false);
-            const [rrData, setRrData] = useState(() => new Date().toISOString().split('T')[0]);
-            const [rrAnoSel, setRrAnoSel] = useState('');
-            const [rrEscolaSel, setRrEscolaSel] = useState('');
-            const [rrPlanosSegmento, setRrPlanosSegmento] = useState({}); // {segmentoId: planoId}
-            const [rrTextos, setRrTextos] = useState({}); // {turmaId: texto}
-            
+            // modalRegistroRapido, rrData, rrAnoSel, rrEscolaSel, rrPlanosSegmento, rrTextos — migrados para CalendarioContext (Parte 7)
+
             // ============================================================
             // MÓDULO: GRADE SEMANAL
             // ============================================================
-            // Estados para Grade Semanal
-            const [gradesSemanas, setGradesSemanas] = useState(() => {
-                const saved = dbGet('gradesSemanas');
-                return saved ? JSON.parse(saved) : [];
-            });
-            const [modalGradeSemanal, setModalGradeSemanal] = useState(false);
-            const [gradeEditando, setGradeEditando] = useState(null);
+            // gradesSemanas, modalGradeSemanal, gradeEditando — migrados para CalendarioContext (Parte 7)
             
             const timeoutSalvamento = useRef(null);
 
@@ -649,30 +659,15 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // MÓDULO: REGISTRO PÓS-AULA
             // ============================================================
-            // Estados para Registro Pós-Aula (com ano letivo - 4 níveis)
-            const [modalRegistro, setModalRegistro] = useState(false);
-            const [planoParaRegistro, setPlanoParaRegistro] = useState(null);
-            const [novoRegistro, setNovoRegistro] = useState({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '' });
-            const [verRegistros, setVerRegistros] = useState(false);
-            const [registroEditando, setRegistroEditando] = useState(null);
+            // modalRegistro, planoParaRegistro, novoRegistro, verRegistros, registroEditando — migrados para CalendarioContext (Parte 7)
             // ============================================================
             // MÓDULO: SELEÇÃO DE TURMA
             // ============================================================
-            // Seleção de turma (4 níveis)
-            const [regAnoSel, setRegAnoSel] = useState('');
-            const [regEscolaSel, setRegEscolaSel] = useState('');
-            const [regSegmentoSel, setRegSegmentoSel] = useState('');
-            const [regTurmaSel, setRegTurmaSel] = useState('');
+            // regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel — migrados para CalendarioContext (Parte 7)
             // ============================================================
             // MÓDULO: FILTROS DE REGISTROS
             // ============================================================
-            // Filtro no histórico (4 níveis)
-            const [filtroRegAno, setFiltroRegAno] = useState('');
-            const [filtroRegEscola, setFiltroRegEscola] = useState('');
-            const [filtroRegSegmento, setFiltroRegSegmento] = useState('');
-            const [filtroRegTurma, setFiltroRegTurma] = useState('');
-            const [buscaRegistros, setBuscaRegistros] = useState(''); // #3: busca textual nos registros
-            const [ytPreviewId, setYtPreviewId] = useState(null); // #9: id do youtube em preview
+            // filtroRegAno, filtroRegEscola, filtroRegSegmento, filtroRegTurma, buscaRegistros, ytPreviewId — migrados para CalendarioContext (Parte 7)
             // ============================================================
             // MÓDULO: GESTÃO DE TURMAS — migrado para AnoLetivoContext (Parte 6)
             // ============================================================
@@ -879,7 +874,7 @@ export default function BancoPlanos({ session }) {
             useEffect(() => { dbSet('unidadesPersonalizadas', JSON.stringify(unidades)); triggerSalvo(); }, [unidades]);
             useEffect(() => { dbSet('anosLetivos', JSON.stringify(anosLetivos)); triggerSalvo(); }, [anosLetivos]);
             useEffect(() => { dbSet('faixasEtarias', JSON.stringify(faixas)); triggerSalvo(); }, [faixas]);
-            useEffect(() => { dbSet('gradesSemanas', JSON.stringify(gradesSemanas)); triggerSalvo(); }, [gradesSemanas]);
+            // gradesSemanas dbSet movido para CalendarioContext (Parte 7)
             // atividades dbSet movido para AtividadesContext (Parte 4)
             // useEffect(() => { dbSet('atividades', JSON.stringify(atividades)); triggerSalvo(); }, [atividades]);
             useEffect(() => { dbSet('eventosEscolares', JSON.stringify(eventosEscolares)); triggerSalvo(); }, [eventosEscolares]);
@@ -1850,111 +1845,17 @@ export default function BancoPlanos({ session }) {
 
             // --- FUNÇÕES GESTÃO DE GRADE SEMANAL ---
             // ============================================================
-            // FUNÇÕES: GRADE SEMANAL
+            // FUNÇÕES: GRADE SEMANAL — migradas para CalendarioContext (Parte 7)
             // ============================================================
-            const novaGradeSemanal = () => {
-                setGradeEditando({
-                    id: Date.now(),
-                    anoLetivoId: '',
-                    escolaId: '',
-                    dataInicio: '',
-                    dataFim: '',
-                    aulas: [] // [{id, diaSemana, horario, segmentoId, turmaId, observacao}]
-                });
-            };
+            // novaGradeSemanal, salvarGradeSemanal, excluirGradeSemanal,
+            // adicionarAulaGrade, removerAulaGrade, duplicarAulaGrade, atualizarAulaGrade
+            // → via useCalendarioContext()
 
-            const salvarGradeSemanal = () => {
-                if (!gradeEditando.anoLetivoId || !gradeEditando.escolaId || !gradeEditando.dataInicio || !gradeEditando.dataFim) {
-                    setModalConfirm({ conteudo: '⚠️ Preencha ano letivo, escola e período!', somenteOk: true, labelConfirm: 'OK' });
-                    return;
-                }
-
-                if (gradeEditando.aulas.length === 0) {
-                    setModalConfirm({ conteudo: '⚠️ Adicione pelo menos uma aula!', somenteOk: true, labelConfirm: 'OK' });
-                    return;
-                }
-                
-                const existe = gradesSemanas.find(g => g.id === gradeEditando.id);
-                if (existe) {
-                    setGradesSemanas(gradesSemanas.map(g => g.id === gradeEditando.id ? gradeEditando : g));
-                } else {
-                    setGradesSemanas([...gradesSemanas, gradeEditando]);
-                }
-                
-                setGradeEditando(null);
-                setModalConfirm({ conteudo: '✅ Grade salva!', somenteOk: true, labelConfirm: 'OK' });
-            };
-
-            const excluirGradeSemanal = (id) => {
-                setModalConfirm({ titulo: 'Excluir grade semanal?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => {
-                    setGradesSemanas(gradesSemanas.filter(g => g.id !== id));
-                } });
-            };
-
-            const adicionarAulaGrade = () => {
-                const novaAula = {
-                    id: Date.now(),
-                    diaSemana: 'Segunda',
-                    horario: '08:00',
-                    segmentoId: '',
-                    turmaId: '',
-                    observacao: ''
-                };
-                setGradeEditando({
-                    ...gradeEditando,
-                    aulas: [...gradeEditando.aulas, novaAula]
-                });
-            };
-
-            const removerAulaGrade = (aulaId) => {
-                setGradeEditando({
-                    ...gradeEditando,
-                    aulas: gradeEditando.aulas.filter(a => a.id !== aulaId)
-                });
-            };
-
-            const duplicarAulaGrade = (aula) => {
-                const duplicada = { ...aula, id: Date.now() };
-                setGradeEditando({
-                    ...gradeEditando,
-                    aulas: [...gradeEditando.aulas, duplicada]
-                });
-            };
-
-            const atualizarAulaGrade = (aulaId, campo, valor) => {
-                setGradeEditando(prev => ({
-                    ...prev,
-                    aulas: prev.aulas.map(a => 
-                        a.id === aulaId ? { ...a, [campo]: valor } : a
-                    )
-                }));
-            };
-
-            // Função helper: obter turmas do dia para uso em outros módulos
+            // Função helper: obter turmas do dia — migrada para CalendarioContext (Parte 7)
             // ============================================================
             // FUNÇÕES: HISTÓRICO MUSICAL / REGISTRO RÁPIDO
             // ============================================================
-            const obterTurmasDoDia = (data) => {
-                const diaDaSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'][new Date(data + 'T12:00:00').getDay()];
-                const turmasDoDia = [];
-                
-                gradesSemanas.forEach(grade => {
-                    // Verificar se data está dentro do período da grade
-                    if (data < grade.dataInicio || data > grade.dataFim) return;
-                    
-                    grade.aulas.forEach(aula => {
-                        if (aula.diaSemana === diaDaSemana && aula.turmaId) {
-                            turmasDoDia.push({
-                                ...aula,
-                                anoLetivoId: grade.anoLetivoId,
-                                escolaId: grade.escolaId
-                            });
-                        }
-                    });
-                });
-                
-                return turmasDoDia;
-            };
+            // obterTurmasDoDia → via useCalendarioContext()
 
             // --- FUNÇÃO SUGESTÃO INTELIGENTE DE PLANO ---
             const sugerirPlanoParaTurma = (anoId, escolaId, segmentoId, turmaId) => {

@@ -1,31 +1,42 @@
 import React from 'react'
 import { useBancoPlanos } from './BancoPlanosContext'
+import { useCalendarioContext } from '../contexts/CalendarioContext'
 
 export function TelaCalendario() {
     const ctx = useBancoPlanos()
     const {
-        anosLetivos,
         bold,
-        dataCalendario,
         dia,
         h,
-        obterTurmasDoDia,
         ocultarFeriados,
         planos,
         verificarEvento,
         verificarFeriado,
-        setDataCalendario,
         setEventoEditando,
         setModalEventos,
-        setModalRegistroRapido,
         setOcultarFeriados,
         setPlanoSelecionado,
-        setRrAnoSel,
+    } = ctx
+
+    const {
+        anosLetivos,
+    } = ctx as any // eslint-disable-line @typescript-eslint/no-explicit-any
+
+    const cal = useCalendarioContext()
+    const {
+        dataCalendario,
+        setDataCalendario,
+        setModalRegistroRapido,
         setRrData,
+        setRrAnoSel,
         setRrEscolaSel,
         setRrPlanosSegmento,
         setRrTextos,
-    } = ctx
+        obterTurmasDoDia,
+    } = cal
+
+    // Suppress unused-variable warnings for formatting helpers used in JSX indirectly
+    void bold; void dia; void h
 
     const ano = dataCalendario.getFullYear(); const mes = dataCalendario.getMonth();
     const diasNoMes = new Date(ano, mes+1, 0).getDate(); const inicio = new Date(ano, mes, 1).getDay();
@@ -112,25 +123,33 @@ export function TelaCalendario() {
 export default function TelaResumoDia() {
     const ctx = useBancoPlanos()
     const {
-        anosLetivos,
-        bold,
-        dataDia,
-        dia,
-        diasExpandidos,
         escolas,
-        h,
         italic,
         l,
-        modoResumo,
-        obterTurmasDoDia,
         para,
         planos,
-        semanaResumo,
         sugerirPlanoParaTurma,
         underline,
+        setModalGradeSemanal,
+        setViewMode,
+    } = ctx
+
+    const {
+        anosLetivos,
+        bold,
+        dia,
+        h,
+    } = ctx as any // eslint-disable-line @typescript-eslint/no-explicit-any
+
+    const cal = useCalendarioContext()
+    const {
+        dataDia,
+        diasExpandidos,
+        modoResumo,
+        semanaResumo,
+        obterTurmasDoDia,
         setDataDia,
         setDiasExpandidos,
-        setModalGradeSemanal,
         setModalRegistroRapido,
         setModoResumo,
         setRrAnoSel,
@@ -139,8 +158,10 @@ export default function TelaResumoDia() {
         setRrPlanosSegmento,
         setRrTextos,
         setSemanaResumo,
-        setViewMode,
-    } = ctx
+    } = cal
+
+    // Suppress unused-variable warnings for formatting helpers used in JSX indirectly
+    void bold; void dia; void h; void italic; void l; void para; void underline; void escolas
 
     const diasSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -379,7 +400,7 @@ export default function TelaResumoDia() {
                                 return (
                                     <div className="px-4 py-3 bg-purple-50 border-t border-purple-100">
                                         <p className="text-xs text-purple-600 text-center">
-                                            📅 Nenhuma turma cadastrada na Grade Semanal para este dia. 
+                                            📅 Nenhuma turma cadastrada na Grade Semanal para este dia.
                                             <button onClick={()=>setModalGradeSemanal(true)} className="underline ml-1 font-bold hover:text-purple-800">
                                                 Cadastrar grade
                                             </button>
