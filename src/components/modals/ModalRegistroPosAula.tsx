@@ -138,6 +138,7 @@ export default function ModalRegistroPosAula() {
                             <span className="text-xs font-bold text-amber-700 shrink-0">📅 Data da aula</span>
                             <input
                                 type="date"
+                                autoFocus
                                 value={novoRegistro.dataAula}
                                 onChange={e=>setNovoRegistro({...novoRegistro, dataAula: e.target.value})}
                                 className="flex-1 bg-transparent text-sm font-bold text-amber-900 outline-none border-none text-right"
@@ -170,20 +171,20 @@ export default function ModalRegistroPosAula() {
 
                         {/* Campos de texto */}
                         <div>
-                            <label className="block font-bold text-gray-800 mb-1 text-sm">📋 O que foi realizado nesta aula</label>
-                            <textarea value={novoRegistro.resumoAula} onChange={e=>setNovoRegistro({...novoRegistro, resumoAula: e.target.value})} className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-gray-500 outline-none" rows={2} placeholder="Ex: Ritmo corporal + início da música X" />
+                            <label htmlFor="reg-resumo" className="block font-bold text-gray-800 mb-1 text-sm">📋 O que foi realizado nesta aula</label>
+                            <textarea id="reg-resumo" value={novoRegistro.resumoAula} onChange={e=>setNovoRegistro({...novoRegistro, resumoAula: e.target.value})} className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-gray-500 outline-none" rows={2} placeholder="Ex: Ritmo corporal + início da música X" />
                         </div>
                         <div>
-                            <label className="block font-bold text-green-700 mb-1 text-sm">✅ O que funcionou bem</label>
-                            <textarea value={novoRegistro.funcionouBem} onChange={e=>setNovoRegistro({...novoRegistro, funcionouBem: e.target.value})} className="w-full px-3 py-2 border-2 border-green-200 rounded-lg text-sm focus:border-green-400 outline-none" rows={2} placeholder="Ex: A atividade rítmica em grupo engajou muito..." />
+                            <label htmlFor="reg-funcionou" className="block font-bold text-green-700 mb-1 text-sm">✅ O que funcionou bem</label>
+                            <textarea id="reg-funcionou" value={novoRegistro.funcionouBem} onChange={e=>setNovoRegistro({...novoRegistro, funcionouBem: e.target.value})} className="w-full px-3 py-2 border-2 border-green-200 rounded-lg text-sm focus:border-green-400 outline-none" rows={2} placeholder="Ex: A atividade rítmica em grupo engajou muito..." />
                         </div>
                         <div>
-                            <label className="block font-bold text-red-600 mb-1 text-sm">❌ O que não funcionou</label>
-                            <textarea value={novoRegistro.naoFuncionou} onChange={e=>setNovoRegistro({...novoRegistro, naoFuncionou: e.target.value})} className="w-full px-3 py-2 border-2 border-red-200 rounded-lg text-sm focus:border-red-400 outline-none" rows={2} placeholder="Ex: Tempo insuficiente para a etapa de criação..." />
+                            <label htmlFor="reg-nao-funcionou" className="block font-bold text-red-600 mb-1 text-sm">❌ O que não funcionou</label>
+                            <textarea id="reg-nao-funcionou" value={novoRegistro.naoFuncionou} onChange={e=>setNovoRegistro({...novoRegistro, naoFuncionou: e.target.value})} className="w-full px-3 py-2 border-2 border-red-200 rounded-lg text-sm focus:border-red-400 outline-none" rows={2} placeholder="Ex: Tempo insuficiente para a etapa de criação..." />
                         </div>
                         <div>
-                            <label className="block font-bold text-blue-600 mb-1 text-sm">💡 Ideias para a próxima aula</label>
-                            <textarea value={novoRegistro.proximaAula} onChange={e=>setNovoRegistro({...novoRegistro, proximaAula: e.target.value})} className="w-full px-3 py-2 border-2 border-blue-200 rounded-lg text-sm focus:border-blue-400 outline-none" rows={2} placeholder="Ex: Começar com o ostinato antes da canção..." />
+                            <label htmlFor="reg-proxima" className="block font-bold text-blue-600 mb-1 text-sm">💡 Ideias para a próxima aula</label>
+                            <textarea id="reg-proxima" value={novoRegistro.proximaAula} onChange={e=>setNovoRegistro({...novoRegistro, proximaAula: e.target.value})} className="w-full px-3 py-2 border-2 border-blue-200 rounded-lg text-sm focus:border-blue-400 outline-none" rows={2} placeholder="Ex: Começar com o ostinato antes da canção..." />
                         </div>
                         <div>
                             <label className="block font-bold text-purple-600 mb-1 text-sm">👥 Comportamento da turma</label>

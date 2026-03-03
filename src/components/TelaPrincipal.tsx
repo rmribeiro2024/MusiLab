@@ -31,7 +31,7 @@ const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPl
     return (
         <div className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors duration-150 group">
             <div className={`w-2 h-2 rounded-full shrink-0 ${sc.dot}`} />
-            <button onClick={(e)=>{e.stopPropagation();toggleFavorito(plano,e);}} className="text-base shrink-0 opacity-50 hover:opacity-100 transition-opacity">{plano.destaque?'⭐':'☆'}</button>
+            <button onClick={(e)=>{e.stopPropagation();toggleFavorito(plano,e);}} aria-label={plano.destaque ? 'Remover dos favoritos' : 'Marcar como favorito'} className="text-base shrink-0 opacity-50 hover:opacity-100 transition-opacity">{plano.destaque?'⭐':'☆'}</button>
             <div className="flex-1 min-w-0 cursor-pointer" onClick={()=>setPlanoSelecionado(plano)}>
                 <div className="flex items-center gap-2 flex-wrap">
                     {plano.numeroAula && <span className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full shrink-0">#{plano.numeroAula}</span>}
@@ -48,8 +48,8 @@ const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPl
                 </div>
             </div>
             <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                <button onClick={(e)=>abrirModalRegistro(plano,e)} title="Registro Pós-Aula" className="p-2 rounded-xl text-amber-500 hover:bg-amber-50 transition-colors text-sm">📝</button>
-                <button onClick={(e)=>{e.stopPropagation();editarPlano(plano);}} title="Editar" className="p-2 rounded-xl text-blue-500 hover:bg-blue-50 transition-colors text-sm">✏️</button>
+                <button onClick={(e)=>abrirModalRegistro(plano,e)} title="Registro Pós-Aula" aria-label="Registro pós-aula" className="p-2 rounded-xl text-amber-500 hover:bg-amber-50 transition-colors text-sm">📝</button>
+                <button onClick={(e)=>{e.stopPropagation();editarPlano(plano);}} title="Editar" aria-label="Editar plano" className="p-2 rounded-xl text-blue-500 hover:bg-blue-50 transition-colors text-sm">✏️</button>
                 <button onClick={()=>setPlanoSelecionado(plano)} title="Ver completo" className="p-2 rounded-xl text-indigo-500 hover:bg-indigo-50 transition-colors text-sm">👁</button>
             </div>
         </div>
@@ -111,6 +111,7 @@ export default function TelaPrincipal() {
         escolas,
         excluirPlano,
         fecharModal,
+        restaurarVersao,
         filtroConceito,
         filtroEscola,
         filtroFaixa,
@@ -237,7 +238,7 @@ export default function TelaPrincipal() {
             {/* ── CONTEÚDO DO FORM (igual nos dois modos) ── */}
             <div className={`p-3 sm:p-6 space-y-0 overflow-y-auto ${formExpandido ? 'flex-1' : ''}`} style={!formExpandido ? {maxHeight:'calc(100dvh - 260px)'} : {}}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pb-5">
-                    <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Título *</label><input type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /></div>
+                    <div><label htmlFor="plano-titulo" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Título *</label><input id="plano-titulo" type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /></div>
                     <div>
                         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Escola</label>
                         <div className="flex gap-2">
@@ -568,9 +569,11 @@ export default function TelaPrincipal() {
                                             >
                                                 💾 → Atividades
                                             </button>
-                                            <button 
+                                            <button
                                                 type="button"
                                                 onClick={() => removerAtividadeRoteiro(atividade.id)}
+                                                aria-label="Remover atividade"
+                                                title="Remover atividade"
                                                 className="text-red-500 hover:text-red-700 font-bold px-2"
                                             >
                                                 🗑️
@@ -919,9 +922,22 @@ export default function TelaPrincipal() {
 
                 <div className="border-t border-slate-100 py-5"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={3} /></div>
 
-                <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white border-t border-slate-100 flex gap-3 sticky bottom-0">
-                    <button type="button" onClick={fecharModal} className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm active:scale-95">Cancelar</button>
-                    <button type="button" onClick={() => salvarPlano()} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-sm text-sm active:scale-95">💾 Salvar Plano</button>
+                <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white border-t border-slate-100 sticky bottom-0">
+                    {(planoEditando._historicoVersoes as any[] | undefined)?.length ? (
+                        <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
+                            <span className="text-xs text-slate-400">↩ Restaurar:</span>
+                            {(planoEditando._historicoVersoes as any[]).map((v, i) => (
+                                <button key={i} type="button" onClick={() => restaurarVersao(planoEditando, v)}
+                                    className="text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-lg transition font-medium">
+                                    {new Date(v._versaoSalvaEm).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}
+                                </button>
+                            ))}
+                        </div>
+                    ) : null}
+                    <div className="flex gap-3">
+                        <button type="button" onClick={fecharModal} className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm active:scale-95">Cancelar</button>
+                        <button type="button" onClick={() => salvarPlano()} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-sm text-sm active:scale-95">💾 Salvar Plano</button>
+                    </div>
                 </div>
             </div>{/* fim conteúdo */}
         </div>{/* fim card principal */}
@@ -1273,15 +1289,15 @@ export default function TelaPrincipal() {
                             </button>
                             <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                                 <button onClick={(e)=>abrirModalRegistro(plano,e)}
-                                    className="text-amber-500 hover:text-amber-700 hover:bg-amber-50 p-2 rounded-xl transition" title="Registro Pós-Aula">📝</button>
+                                    className="text-amber-500 hover:text-amber-700 hover:bg-amber-50 p-2 rounded-xl transition" title="Registro Pós-Aula" aria-label="Registro pós-aula">📝</button>
                                 <button onClick={(e)=>{e.stopPropagation();editarPlano(plano)}}
-                                    className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition" title="Editar">✏️</button>
+                                    className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition" title="Editar" aria-label="Editar plano">✏️</button>
                                 <button onClick={(e)=>{e.stopPropagation();exportarPlanoPDF(plano)}}
                                     className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition text-xs font-bold" title="PDF">PDF</button>
                                 <button onClick={(e)=>{e.stopPropagation(); const copia={...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}; setPlanos(prev=>[...prev, copia]); setModalConfirm({ conteudo: '✅ Plano duplicado!', somenteOk: true, labelConfirm: 'OK' });}}
                                     className="text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 p-2 rounded-xl transition" title="Duplicar">⎘</button>
                                 <button onClick={(e)=>{e.stopPropagation();excluirPlano(plano.id)}}
-                                    className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition" title="Excluir">🗑</button>
+                                    className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition" title="Excluir" aria-label="Excluir plano">🗑</button>
                             </div>
                         </div>
                     </div>
