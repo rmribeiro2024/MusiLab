@@ -144,6 +144,30 @@ export default function ModalRegistroPosAula() {
                             />
                         </div>
 
+                        {/* Templates rápidos */}
+                        {!registroEditando && (
+                            <div>
+                                <p className="text-xs font-bold text-gray-500 mb-2">⚡ Preencher rapidamente:</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        { label: '🌟 Ótimo engajamento', resumoAula: 'Aula com excelente participação da turma.', funcionouBem: 'Alto engajamento e entusiasmo. Participação ativa em todas as atividades.', naoFuncionou: '', proximaAula: 'Avançar para o próximo conteúdo planejado.', comportamento: 'Turma muito receptiva e colaborativa.' },
+                                        { label: '🔄 Precisamos revisitar', resumoAula: 'Revisão do conteúdo anterior.', funcionouBem: 'Os alunos que compreenderam ajudaram os colegas.', naoFuncionou: 'Conteúdo não foi suficientemente assimilado.', proximaAula: 'Retomar com abordagem diferente e mais exemplos.', comportamento: 'Turma dispersa em momentos. Necessário reforço.' },
+                                        { label: '🆕 Introdução', resumoAula: 'Introdução de novo conteúdo/repertório.', funcionouBem: 'Boa receptividade ao material novo. Curiosidade demonstrada.', naoFuncionou: '', proximaAula: 'Aprofundar o novo conteúdo introduzido hoje.', comportamento: 'Turma atenta e curiosa.' },
+                                        { label: '✅ Aula tranquila', resumoAula: 'Aula conforme planejado.', funcionouBem: 'Execução do plano sem intercorrências.', naoFuncionou: '', proximaAula: 'Continuar com o sequenciamento previsto.', comportamento: 'Turma colaborativa e dentro do esperado.' },
+                                    ].map(t => (
+                                        <button
+                                            key={t.label}
+                                            type="button"
+                                            onClick={() => setNovoRegistro({ ...novoRegistro, resumoAula: t.resumoAula, funcionouBem: t.funcionouBem, naoFuncionou: t.naoFuncionou, proximaAula: t.proximaAula, comportamento: t.comportamento })}
+                                            className="px-3 py-1.5 bg-amber-50 border border-amber-300 text-amber-800 text-xs font-semibold rounded-lg hover:bg-amber-100 active:scale-95 transition"
+                                        >
+                                            {t.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Campos de texto */}
                         <div>
                             <label className="block font-bold text-gray-800 mb-1 text-sm">📋 O que foi realizado nesta aula</label>

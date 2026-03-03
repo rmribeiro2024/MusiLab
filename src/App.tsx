@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import BancoPlanos from './components/BancoPlanos'
 import ErrorBoundary from './components/ErrorBoundary'
 import Toast from './components/Toast'
+import OfflineBanner from './components/OfflineBanner'
 import { ModalProvider, EstrategiasProvider, RepertorioProvider, AtividadesProvider, SequenciasProvider, HistoricoProvider, AnoLetivoProvider, CalendarioProvider, PlanosProvider } from './contexts'
 
 // ── TELA DE LOGIN ──
@@ -77,6 +78,7 @@ export default function App() {
                         <BancoPlanos session={session} />
                       </ErrorBoundary>
                       <Toast />
+                      <OfflineBanner />
                     </PlanosProvider>
                   </CalendarioProvider>
                 </AnoLetivoProvider>

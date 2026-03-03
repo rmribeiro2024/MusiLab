@@ -46,6 +46,20 @@ export default function ModuloSequencias() {
         unidades,
     } = ctx
 
+    // ── Drag & drop para reordenar slots ──
+    const dragSlotIdx = useRef<number | null>(null)
+    const reordenarSlots = (seqId: string, fromIdx: number, toIdx: number) => {
+        const novas = sequencias.map(s => {
+            if (s.id !== seqId) return s
+            const slots = [...s.slots]
+            const [removed] = slots.splice(fromIdx, 1)
+            slots.splice(toIdx, 0, removed)
+            return { ...s, slots: slots.map((sl, i) => ({ ...sl, ordem: i + 1 })) }
+        })
+        setSequencias(novas)
+        setSequenciaDetalhe(novas.find(s => s.id === seqId) || null)
+    }
+
     const escolasComSequencias = [...new Set(sequencias.map(s => {
         const ano = anosLetivos.find(a => a.id == s.anoLetivoId);
         const escola = ano?.escolas?.find(e => e.id == s.escolaId);
@@ -130,9 +144,24 @@ export default function ModuloSequencias() {
                         const temConteudo = planoVinc || slot.rascunho?.titulo;
 
                         return (
-                            <div key={slot.id} className={`border-2 rounded-xl p-5 ${temConteudo ? 'border-rose-300 bg-white' : 'border-gray-200 bg-gray-50'}`}>
+                            <div
+                                key={slot.id}
+                                draggable
+                                onDragStart={() => { dragSlotIdx.current = index }}
+                                onDragOver={e => e.preventDefault()}
+                                onDrop={() => {
+                                    if (dragSlotIdx.current !== null && dragSlotIdx.current !== index) {
+                                        reordenarSlots(seq.id, dragSlotIdx.current, index)
+                                        dragSlotIdx.current = null
+                                    }
+                                }}
+                                className={`border-2 rounded-xl p-5 cursor-grab active:cursor-grabbing ${temConteudo ? 'border-rose-300 bg-white' : 'border-gray-200 bg-gray-50'}`}
+                            >
                                 <div className="flex justify-between items-start mb-3">
-                                    <h3 className="text-lg font-bold text-rose-700">Aula {slot.ordem}</h3>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-gray-300 text-lg select-none" title="Arraste para reordenar">⠿</span>
+                                        <h3 className="text-lg font-bold text-rose-700">Aula {slot.ordem}</h3>
+                                    </div>
                                     <div className="flex gap-2">
                                         {planoVinc && (
                                             <button onClick={() => desvincularPlano(seq.id, index)} className="text-red-500 text-sm hover:text-red-700" title="Desvincular">✕ Desvincular</button>
@@ -218,34 +247,50 @@ export default function ModuloSequencias() {
 
                 {/* Filtros Avançados (3 Dropdowns) */}
                 {sequencias.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-100 p-4 rounded-xl">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">🏫 Escola</label>
-                            <select value={filtroEscolaSequencias} onChange={e=>setFiltroEscolaSequencias(e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg bg-white">
-                                <option value="Todas">Todas as escolas</option>
-                                {escolasComSequencias.map(escola => (
-                                    <option key={escola} value={escola}>{escola}</option>
-                                ))}
-                            </select>
+                    <div className="bg-gray-100 p-4 rounded-xl">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">🏫 Escola</label>
+                                <select value={filtroEscolaSequencias} onChange={e=>setFiltroEscolaSequencias(e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg bg-white">
+                                    <option value="Todas">Todas as escolas</option>
+                                    {escolasComSequencias.map(escola => (
+                                        <option key={escola} value={escola}>{escola}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">🎵 Unidade</label>
+                                <select value={filtroUnidadeSequencias} onChange={e=>setFiltroUnidadeSequencias(e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg bg-white">
+                                    <option value="Todas">Todas as unidades</option>
+                                    {unidadesComSequencias.map(unid => (
+                                        <option key={unid} value={unid}>{unid}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">📅 Período Letivo</label>
+                                <select value={filtroPeriodoSequencias} onChange={e=>setFiltroPeriodoSequencias(e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg bg-white">
+                                    <option value="Todos">Todos os períodos</option>
+                                    <option value="1trim">1° Trimestre</option>
+                                    <option value="2trim">2° Trimestre</option>
+                                    <option value="3trim">3° Trimestre</option>
+                                    <option value="4trim">4° Trimestre</option>
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">🎵 Unidade</label>
-                            <select value={filtroUnidadeSequencias} onChange={e=>setFiltroUnidadeSequencias(e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg bg-white">
-                                <option value="Todas">Todas as unidades</option>
-                                {unidadesComSequencias.map(unid => (
-                                    <option key={unid} value={unid}>{unid}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">📅 Período Letivo</label>
-                            <select value={filtroPeriodoSequencias} onChange={e=>setFiltroPeriodoSequencias(e.target.value)} className="w-full px-3 py-2 border-2 rounded-lg bg-white">
-                                <option value="Todos">Todos os períodos</option>
-                                <option value="1trim">1° Trimestre</option>
-                                <option value="2trim">2° Trimestre</option>
-                                <option value="3trim">3° Trimestre</option>
-                                <option value="4trim">4° Trimestre</option>
-                            </select>
+                        {/* Contagem + Limpar filtros */}
+                        <div className="flex items-center justify-between mt-3">
+                            <p className="text-sm text-gray-500">
+                                {sequenciasFiltradas.length} sequência{sequenciasFiltradas.length !== 1 ? 's' : ''} encontrada{sequenciasFiltradas.length !== 1 ? 's' : ''}
+                            </p>
+                            {(filtroEscolaSequencias !== 'Todas' || filtroUnidadeSequencias !== 'Todas' || filtroPeriodoSequencias !== 'Todos' || buscaProfundaSequencias) && (
+                                <button
+                                    onClick={() => { setFiltroEscolaSequencias('Todas'); setFiltroUnidadeSequencias('Todas'); setFiltroPeriodoSequencias('Todos'); setBuscaProfundaSequencias(''); }}
+                                    className="text-xs text-rose-600 hover:text-rose-800 font-semibold"
+                                >
+                                    ✕ Limpar filtros
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}
