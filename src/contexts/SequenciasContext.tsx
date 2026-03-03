@@ -39,6 +39,7 @@ export interface SequenciasContextValue {
   vincularPlanoAoSlot: (planoId: string) => void
   atualizarRascunhoSlot: (sequenciaId: string | number, slotIndex: number, campo: string, valor: unknown) => void
   desvincularPlano: (sequenciaId: string | number, slotIndex: number) => void
+  gerarSlots: (numero: number) => unknown[]
 }
 
 // ─── CONTEXTO ─────────────────────────────────────────────────────────────────
@@ -265,6 +266,7 @@ export function SequenciasProvider({ children, userId }: SequenciasProviderProps
     buscaPlanoVinculo, setBuscaPlanoVinculo,
     novaSequencia, salvarSequencia, excluirSequencia,
     vincularPlanoAoSlot, atualizarRascunhoSlot, desvincularPlano,
+    gerarSlots,
   }
 
   return (

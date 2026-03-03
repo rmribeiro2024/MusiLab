@@ -274,6 +274,7 @@ export default function BancoPlanos({ session }) {
                 buscaPlanoVinculo, setBuscaPlanoVinculo,
                 novaSequencia: _novaSequencia, salvarSequencia, excluirSequencia,
                 vincularPlanoAoSlot, atualizarRascunhoSlot, desvincularPlano,
+                gerarSlots,
             } = useSequenciasContext();
             // novaSequencia precisa de anosLetivos — wrapper definido após anosLetivos
             // ── HISTÓRICO — lido do HistoricoContext (extraído na Parte 5) ──
