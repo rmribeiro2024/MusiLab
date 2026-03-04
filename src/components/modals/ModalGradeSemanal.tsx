@@ -1,15 +1,15 @@
 import React from 'react'
-import { useBancoPlanos } from '../BancoPlanosContext'
+import { useCalendarioContext, useAnoLetivoContext } from '../../contexts'
 
 export default function ModalGradeSemanal() {
     const {
         modalGradeSemanal, setModalGradeSemanal,
         gradeEditando, setGradeEditando,
         gradesSemanas,
-        anosLetivos,
         novaGradeSemanal, salvarGradeSemanal, excluirGradeSemanal,
         adicionarAulaGrade, atualizarAulaGrade, duplicarAulaGrade, removerAulaGrade,
-    } = useBancoPlanos()
+    } = useCalendarioContext()
+    const { anosLetivos } = useAnoLetivoContext()
 
     if (!modalGradeSemanal) return null
 

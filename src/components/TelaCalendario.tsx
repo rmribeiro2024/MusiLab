@@ -1,42 +1,19 @@
 import React from 'react'
-import { useBancoPlanos } from './BancoPlanosContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
+import { usePlanosContext, useAnoLetivoContext, useRepertorioContext } from '../contexts'
+import { verificarFeriado } from '../lib/feriados'
 
 export function TelaCalendario() {
-    const ctx = useBancoPlanos()
+    const { planos, setPlanoSelecionado } = usePlanosContext()
+    const { anosLetivos, setEventoEditando, setModalEventos } = useAnoLetivoContext()
     const {
-        bold,
-        dia,
-        h,
-        ocultarFeriados,
-        planos,
+        dataCalendario, setDataCalendario,
+        ocultarFeriados, setOcultarFeriados,
         verificarEvento,
-        verificarFeriado,
-        setEventoEditando,
-        setModalEventos,
-        setOcultarFeriados,
-        setPlanoSelecionado,
-    } = ctx
-
-    const {
-        anosLetivos,
-    } = ctx as any // eslint-disable-line @typescript-eslint/no-explicit-any
-
-    const cal = useCalendarioContext()
-    const {
-        dataCalendario,
-        setDataCalendario,
         setModalRegistroRapido,
-        setRrData,
-        setRrAnoSel,
-        setRrEscolaSel,
-        setRrPlanosSegmento,
-        setRrTextos,
+        setRrData, setRrAnoSel, setRrEscolaSel, setRrPlanosSegmento, setRrTextos,
         obterTurmasDoDia,
-    } = cal
-
-    // Suppress unused-variable warnings for formatting helpers used in JSX indirectly
-    void bold; void dia; void h
+    } = useCalendarioContext()
 
     const ano = dataCalendario.getFullYear(); const mes = dataCalendario.getMonth();
     const diasNoMes = new Date(ano, mes+1, 0).getDate(); const inicio = new Date(ano, mes, 1).getDay();
@@ -125,47 +102,10 @@ export function TelaCalendario() {
 }
 
 export default function TelaResumoDia() {
-    const ctx = useBancoPlanos()
-    const {
-        escolas,
-        italic,
-        l,
-        para,
-        planos,
-        sugerirPlanoParaTurma,
-        underline,
-        setModalGradeSemanal,
-        setViewMode,
-    } = ctx
-
-    const {
-        anosLetivos,
-        bold,
-        dia,
-        h,
-    } = ctx as any // eslint-disable-line @typescript-eslint/no-explicit-any
-
-    const cal = useCalendarioContext()
-    const {
-        dataDia,
-        diasExpandidos,
-        modoResumo,
-        semanaResumo,
-        obterTurmasDoDia,
-        setDataDia,
-        setDiasExpandidos,
-        setModalRegistroRapido,
-        setModoResumo,
-        setRrAnoSel,
-        setRrData,
-        setRrEscolaSel,
-        setRrPlanosSegmento,
-        setRrTextos,
-        setSemanaResumo,
-    } = cal
-
-    // Suppress unused-variable warnings for formatting helpers used in JSX indirectly
-    void bold; void dia; void h; void italic; void l; void para; void underline; void escolas
+    const { planos, sugerirPlanoParaTurma } = usePlanosContext()
+    const { anosLetivos } = useAnoLetivoContext()
+    const { setViewMode } = useRepertorioContext()
+    const { setModalGradeSemanal, dataDia, diasExpandidos, modoResumo, semanaResumo, obterTurmasDoDia, setDataDia, setDiasExpandidos, setModalRegistroRapido, setModoResumo, setRrAnoSel, setRrData, setRrEscolaSel, setRrPlanosSegmento, setRrTextos, setSemanaResumo } = useCalendarioContext()
 
     const diasSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];

@@ -120,7 +120,7 @@ describe('TelaPrincipal', () => {
             recursos: [], historicoDatas: [], atividadesRoteiro: [],
             registrosPosAula: [], destaque: false, duracao: '50min',
         }
-        vi.mocked(vi.importActual).mockImplementation?.(() => {})
+        vi.mocked(vi.importActual).mockImplementation?.((_path: string) => Promise.resolve({}))
         // Re-mock com plano na lista
         vi.doMock('../contexts', () => ({
             usePlanosContext: () => makePC({ planosFiltrados: [plano], planos: [plano] }),

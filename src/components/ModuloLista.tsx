@@ -2,64 +2,33 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
 import { dbSize } from '../lib/db'
-import { useBancoPlanos } from './BancoPlanosContext'
+import { usePlanosContext, useAnoLetivoContext, useRepertorioContext, useModalContext, useCalendarioContext } from '../contexts'
 import { exportarPlanoPDF } from '../utils/pdf'
 
 export default function ModuloLista() {
-    const ctx = useBancoPlanos()
     const {
-        abrirModalRegistro,
-        baixarBackup,
-        bold,
-        busca,
-        conceitos,
-        dataFimCustom,
-        dataInicioCustom,
-        editarPlano,
-        escolas,
-        excluirPlano,
-        faixas,
-        filtroConceito,
-        filtroEscola,
-        filtroFaixa,
-        filtroFavorito,
-        filtroNivel,
-        filtroStatus,
-        filtroTag,
-        filtroUnidade,
-        h,
-        l,
-        modoVisualizacao,
-        ordenacaoCards,
-        para,
-        periodoDias,
-        planos,
-        planosFiltrados,
-        repertorio,
-        setBusca,
-        setDataFimCustom,
-        setDataInicioCustom,
-        setFiltroConceito,
-        setFiltroEscola,
-        setFiltroFaixa,
-        setFiltroFavorito,
-        setFiltroNivel,
-        setFiltroStatus,
-        setFiltroTag,
-        setFiltroUnidade,
-        setModalConfirm,
-        setModoVisualizacao,
-        setOrdenacaoCards,
-        setPeriodoDias,
-        setPlanoSelecionado,
-        setPlanos,
-        setStatusDropdownId,
-        statusDropdownId,
-        tagsGlobais,
-        toggleFavorito,
-        unidades,
-    } = ctx
-    const userId = ctx.userId
+        abrirModalRegistro, baixarBackup,
+        busca, setBusca,
+        editarPlano, escolas, excluirPlano,
+        filtroConceito, setFiltroConceito,
+        filtroEscola, setFiltroEscola,
+        filtroFaixa, setFiltroFaixa,
+        filtroFavorito, setFiltroFavorito,
+        filtroNivel, setFiltroNivel,
+        filtroStatus, setFiltroStatus,
+        filtroTag, setFiltroTag,
+        filtroUnidade, setFiltroUnidade,
+        modoVisualizacao, setModoVisualizacao,
+        ordenacaoCards, setOrdenacaoCards,
+        planos, planosFiltrados,
+        setPlanoSelecionado, setPlanos,
+        setStatusDropdownId, statusDropdownId,
+        toggleFavorito, userId,
+    } = usePlanosContext()
+    const { conceitos, faixas, tagsGlobais, unidades } = useAnoLetivoContext()
+    const { repertorio } = useRepertorioContext()
+    const { setModalConfirm } = useModalContext()
+    const { periodoDias, setPeriodoDias, dataInicioCustom, setDataInicioCustom, dataFimCustom, setDataFimCustom } = useCalendarioContext()
 
     // Constantes estáticas (não precisam vir do ctx)
     const niveis = ["Todos", "Iniciante", "Intermediário", "Avançado"]

@@ -191,3 +191,10 @@ export async function loadConfiguracoes(userId: string): Promise<Record<string, 
         return (data as { data: Record<string, unknown> } | null)?.data || null
     } catch { return null }
 }
+
+// ── YOUTUBE URL → ID ──
+export function ytIdFromUrl(url: string | null | undefined): string | null {
+    if (!url) return null
+    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/)
+    return m ? m[1] : null
+}

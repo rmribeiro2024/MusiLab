@@ -1,8 +1,7 @@
 import { dbSet } from '../lib/db'
-import { sanitizeUrl } from '../lib/utils'
+import { sanitizeUrl, ytIdFromUrl } from '../lib/utils'
 import React from 'react'
-import { useBancoPlanos } from './BancoPlanosContext'
-import { useRepertorioContext } from '../contexts'
+import { useRepertorioContext, useAtividadesContext, usePlanosContext, useModalContext, useCalendarioContext } from '../contexts'
 
 // ── OPÇÕES DE ELEMENTOS MUSICAIS ──
 const ESTILOS_OPCOES = ['Canção Infantil', 'Cantiga de Roda', 'Folclórica Brasileira', 'MPB', 'Samba', 'Bossa Nova', 'Forró', 'Pop', 'Rock', 'Música Erudita', 'Coral', 'Instrumental', 'Percussão Corporal', 'Jogo Musical', 'Música Temática', 'Música Clássica']
@@ -90,17 +89,10 @@ export default function ModuloRepertorio() {
         setViewMode,
     } = useRepertorioContext()
 
-    // ── Contexto global (campos ainda não migrados) ───────────────────────────
-    const {
-        atividades,
-        pendingAtividadeId, setPendingAtividadeId,
-        planoEditando, setPlanoEditando,
-        planos,
-        setModalConfirm,
-        setPlanoSelecionado,
-        ytIdFromUrl,
-        ytPreviewId, setYtPreviewId,
-    } = useBancoPlanos()
+    const { atividades, pendingAtividadeId, setPendingAtividadeId } = useAtividadesContext()
+    const { planoEditando, setPlanoEditando, planos, setPlanoSelecionado } = usePlanosContext()
+    const { setModalConfirm } = useModalContext()
+    const { ytPreviewId, setYtPreviewId } = useCalendarioContext()
 
     // Filtrar músicas
     const musicasFiltradas = repertorio.filter(m => {
@@ -366,10 +358,10 @@ export default function ModuloRepertorio() {
                                 const ytId = ytLink ? ytIdFromUrl(ytLink) : null;
                                 if (!ytId) return null;
                                 return (
-                                    <button onClick={(e)=>{e.stopPropagation(); setYtPreviewId(ytPreviewId===m.id ? null : m.id);}}
-                                        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold border transition mr-1 ${ytPreviewId===m.id ? 'bg-red-600 text-white border-red-600' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}
+                                    <button onClick={(e)=>{e.stopPropagation(); setYtPreviewId(ytPreviewId===String(m.id) ? null : String(m.id));}}
+                                        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold border transition mr-1 ${ytPreviewId===String(m.id) ? 'bg-red-600 text-white border-red-600' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}
                                         title="Prévia YouTube">
-                                        {ytPreviewId===m.id ? '■ Fechar' : '▶ Play'}
+                                        {ytPreviewId===String(m.id) ? '■ Fechar' : '▶ Play'}
                                     </button>
                                 );
                             })()}
@@ -377,7 +369,7 @@ export default function ModuloRepertorio() {
                             <button onClick={() => { setModalConfirm({ titulo: `Excluir "${m.titulo}"?`, conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => { setRepertorio(repertorio.filter(r => r.id !== m.id)); } }); }} className="text-xs bg-red-100 text-red-600 font-bold px-3 py-1.5 rounded-lg hover:bg-red-200 transition">🗑️</button>
                         </div>
                         {/* #9: Player embutido */}
-                        {ytPreviewId===m.id && (() => {
+                        {ytPreviewId===String(m.id) && (() => {
                             const ytId = (m.links||[]).map(l=>ytIdFromUrl(l)).find(Boolean);
                             if (!ytId) return null;
                             return (

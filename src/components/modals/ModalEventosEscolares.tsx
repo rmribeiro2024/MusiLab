@@ -1,5 +1,5 @@
 import React from 'react'
-import { useBancoPlanos } from '../BancoPlanosContext'
+import { useAnoLetivoContext } from '../../contexts'
 
 export default function ModalEventosEscolares() {
     const {
@@ -8,7 +8,7 @@ export default function ModalEventosEscolares() {
         eventosEscolares,
         anosLetivos,
         novoEvento, salvarEvento, excluirEvento,
-    } = useBancoPlanos()
+    } = useAnoLetivoContext()
 
     if (!modalEventos) return null
 

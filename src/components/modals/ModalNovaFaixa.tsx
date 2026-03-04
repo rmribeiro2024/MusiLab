@@ -1,5 +1,7 @@
 import React from 'react'
-import { useBancoPlanos } from '../BancoPlanosContext'
+import { useAnoLetivoContext } from '../../contexts'
+import { usePlanosContext } from '../../contexts'
+import { useModalContext } from '../../contexts'
 
 export default function ModalNovaFaixa() {
     const {
@@ -7,13 +9,12 @@ export default function ModalNovaFaixa() {
         setModalNovaFaixa,
         faixas,
         setFaixas,
-        planos,
-        setPlanos,
-        setModalConfirm,
         novaFaixaNome,
         setNovaFaixaNome,
         salvarNovaFaixa,
-    } = useBancoPlanos()
+    } = useAnoLetivoContext()
+    const { planos, setPlanos } = usePlanosContext()
+    const { setModalConfirm } = useModalContext()
 
     if (!modalNovaFaixa) return null
 
@@ -30,7 +31,7 @@ export default function ModalNovaFaixa() {
 
                 {/* Lista editável */}
                 <div className="flex-1 overflow-y-auto p-5 space-y-2">
-                    {faixas.slice(1).map((f, idx) => (
+                    {faixas.slice(1).map((f) => (
                         <div key={f} className="flex items-center gap-2 group">
                             <input
                                 type="text"
@@ -41,7 +42,6 @@ export default function ModalNovaFaixa() {
                                     if (novo === f) return;
                                     if (faixas.includes(novo)) { setModalConfirm({ conteudo: 'Já existe uma faixa com esse nome!', somenteOk: true, labelConfirm: 'OK' }); e.target.value = f; return; }
                                     setFaixas(faixas.map(x => x === f ? novo : x));
-                                    // Atualizar planos que usavam o nome antigo
                                     setPlanos(planos.map(p => ({
                                         ...p,
                                         faixaEtaria: (p.faixaEtaria||[]).map(fe => fe === f ? novo : fe)

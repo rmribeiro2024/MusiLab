@@ -1,15 +1,12 @@
 import React from 'react'
-import { useBancoPlanos } from '../BancoPlanosContext'
+import { useAtividadesContext } from '../../contexts'
+import { useRepertorioContext } from '../../contexts'
+import { usePlanosContext } from '../../contexts'
 
 export default function ModalVincularMusica() {
-    const {
-        atividadeVinculandoMusica, setAtividadeVinculandoMusica,
-        repertorio,
-        vincularMusicaAtividade,
-        setPendingAtividadeId,
-        setNovaMusicaInline,
-        setModalNovaMusicaInline,
-    } = useBancoPlanos()
+    const { atividadeVinculandoMusica, setAtividadeVinculandoMusica, setPendingAtividadeId, setNovaMusicaInline, setModalNovaMusicaInline } = useAtividadesContext()
+    const { repertorio } = useRepertorioContext()
+    const { vincularMusicaAtividade } = usePlanosContext()
 
     if (!atividadeVinculandoMusica) return null
 

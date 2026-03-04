@@ -1,11 +1,8 @@
 import React from 'react'
-import { useBancoPlanos } from '../BancoPlanosContext'
+import { useModalContext } from '../../contexts'
 
 export default function ModalConfirm() {
-    const {
-        modalConfirm,
-        setModalConfirm,
-    } = useBancoPlanos()
+    const { modalConfirm, setModalConfirm } = useModalContext()
 
     if (!modalConfirm) return null
 

@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
-import { useBancoPlanos } from './BancoPlanosContext'
-import { useAtividadesContext } from '../contexts'
+import { useAtividadesContext, useAnoLetivoContext, useModalContext } from '../contexts'
 import type { Atividade } from '../types'
 
 interface CardAtividadeProps {
@@ -48,8 +47,6 @@ const CardAtividade = React.memo(({ ativ, setAtividadeEditando, excluirAtividade
 ));
 
 export default function ModuloAtividades() {
-    const ctx = useBancoPlanos()
-    // ── Campos de domínio — vêm do AtividadesContext (Parte 4) ──
     const {
         adicionarRecursoAtiv,
         atividadeEditando,
@@ -76,21 +73,9 @@ export default function ModuloAtividades() {
         setNovoRecursoTipoAtiv,
         setNovoRecursoUrlAtiv,
     } = useAtividadesContext()
-    // ── Campos cross-domain — ainda vêm do BancoPlanosContext (bridge) ──
-    const {
-        bold,
-        conceitos,
-        faixas,
-        h,
-        l,
-        setConceitos,
-        setModalConfirm,
-        setTagsGlobais,
-        setUnidades,
-        tagsGlobais,
-        todasAsTags,
-        unidades,
-    } = ctx
+    const { conceitos, faixas, setConceitos, tagsGlobais, setTagsGlobais, unidades, setUnidades } = useAnoLetivoContext()
+    const { setModalConfirm } = useModalContext()
+    const todasAsTags = useMemo(() => [...new Set(atividades.flatMap(a => a.tags || []))], [atividades])
 
     const atividadesFiltradas = useMemo(() => atividades.filter(a => {
         const termoBusca = buscaAtividade.toLowerCase();

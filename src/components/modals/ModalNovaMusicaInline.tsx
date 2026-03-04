@@ -1,20 +1,14 @@
 import React from 'react'
-import { useBancoPlanos } from '../BancoPlanosContext'
+import { useAtividadesContext } from '../../contexts'
+import { useRepertorioContext } from '../../contexts'
+import { usePlanosContext } from '../../contexts'
+import { useModalContext } from '../../contexts'
 
 export default function ModalNovaMusicaInline() {
-    const {
-        modalNovaMusicaInline,
-        setModalNovaMusicaInline,
-        novaMusicaInline,
-        setNovaMusicaInline,
-        pendingAtividadeId,
-        setPendingAtividadeId,
-        planoEditando,
-        setPlanoEditando,
-        setRepertorio,
-        setAtividadeVinculandoMusica,
-        setModalConfirm,
-    } = useBancoPlanos()
+    const { modalNovaMusicaInline, setModalNovaMusicaInline, novaMusicaInline, setNovaMusicaInline, pendingAtividadeId, setPendingAtividadeId, setAtividadeVinculandoMusica } = useAtividadesContext()
+    const { setRepertorio } = useRepertorioContext()
+    const { planoEditando, setPlanoEditando } = usePlanosContext()
+    const { setModalConfirm } = useModalContext()
 
     if (!modalNovaMusicaInline) return null
 
