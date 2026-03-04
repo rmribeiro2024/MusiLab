@@ -6,7 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, loadFromSupabase, gerarIdSeguro } from '../lib/utils'
 import { useModalContext } from './ModalContext'
-import type { Sequencia } from '../types'
+import type { Sequencia, AnoLetivo } from '../types'
 
 // ─── INTERFACE DO CONTEXTO ────────────────────────────────────────────────────
 
@@ -36,7 +36,7 @@ export interface SequenciasContextValue {
   novaSequencia: (anosLetivos?: unknown[]) => void
   salvarSequencia: () => void
   excluirSequencia: (id: string | number) => void
-  vincularPlanoAoSlot: (planoId: string) => void
+  vincularPlanoAoSlot: (planoId: string | number) => void
   atualizarRascunhoSlot: (sequenciaId: string | number, slotIndex: number, campo: string, valor: unknown) => void
   desvincularPlano: (sequenciaId: string | number, slotIndex: number) => void
   gerarSlots: (numero: number) => unknown[]
@@ -137,7 +137,7 @@ export function SequenciasProvider({ children, userId }: SequenciasProviderProps
 
   function novaSequencia(anosLetivos: unknown[] = []) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const anos = anosLetivos as any[]
+    const anos = anosLetivos as AnoLetivo[]
     const anoAtivo = anos.find((a) => a.status === 'ativo')
     const anoId = anoAtivo ? anoAtivo.id : (anos[0]?.id || '')
     setSequenciaEditando({
@@ -192,7 +192,7 @@ export function SequenciasProvider({ children, userId }: SequenciasProviderProps
     })
   }
 
-  function vincularPlanoAoSlot(planoId: string) {
+  function vincularPlanoAoSlot(planoId: string | number) {
     if (!modalVincularPlano) return
     const { sequenciaId, slotIndex } = modalVincularPlano
     const novasSequencias = sequencias.map(seq => {
@@ -200,7 +200,7 @@ export function SequenciasProvider({ children, userId }: SequenciasProviderProps
         const novosSlots = [...seq.slots]
         novosSlots[slotIndex] = {
           ...novosSlots[slotIndex],
-          planoVinculado: planoId,
+          planoVinculado: String(planoId),
           rascunho: { titulo: '', setlist: [], materiais: [] }
         }
         return { ...seq, slots: novosSlots }

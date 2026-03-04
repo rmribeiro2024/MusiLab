@@ -5,6 +5,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { dbGet, dbSet } from '../lib/db'
 import { useModalContext } from './ModalContext'
+import type { Plano, RegistroPosAula, GradeEditando, AulaGrade } from '../types'
 
 // ─── INTERFACE DO CONTEXTO ────────────────────────────────────────────────────
 
@@ -19,21 +20,15 @@ export interface CalendarioContextValue {
   setModoResumo: React.Dispatch<React.SetStateAction<string>>
   dataDia: string
   setDataDia: React.Dispatch<React.SetStateAction<string>>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  diasExpandidos: Record<string, any>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setDiasExpandidos: React.Dispatch<React.SetStateAction<Record<string, any>>>
+  diasExpandidos: Record<string, boolean>
+  setDiasExpandidos: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
   // Grade semanal
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  gradesSemanas: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setGradesSemanas: React.Dispatch<React.SetStateAction<any[]>>
+  gradesSemanas: GradeEditando[]
+  setGradesSemanas: React.Dispatch<React.SetStateAction<GradeEditando[]>>
   modalGradeSemanal: boolean
   setModalGradeSemanal: React.Dispatch<React.SetStateAction<boolean>>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  gradeEditando: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setGradeEditando: React.Dispatch<React.SetStateAction<any>>
+  gradeEditando: GradeEditando | null
+  setGradeEditando: React.Dispatch<React.SetStateAction<GradeEditando | null>>
   // Período de visualização
   periodoDias: number
   setPeriodoDias: React.Dispatch<React.SetStateAction<number>>
@@ -50,28 +45,21 @@ export interface CalendarioContextValue {
   setRrAnoSel: React.Dispatch<React.SetStateAction<string>>
   rrEscolaSel: string
   setRrEscolaSel: React.Dispatch<React.SetStateAction<string>>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  rrPlanosSegmento: Record<string, any>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setRrPlanosSegmento: React.Dispatch<React.SetStateAction<Record<string, any>>>
+  rrPlanosSegmento: Record<string, unknown>
+  setRrPlanosSegmento: React.Dispatch<React.SetStateAction<Record<string, unknown>>>
   rrTextos: Record<string, string>
   setRrTextos: React.Dispatch<React.SetStateAction<Record<string, string>>>
   // Registro pós-aula
   modalRegistro: boolean
   setModalRegistro: React.Dispatch<React.SetStateAction<boolean>>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  planoParaRegistro: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setPlanoParaRegistro: React.Dispatch<React.SetStateAction<any>>
+  planoParaRegistro: Plano | null
+  setPlanoParaRegistro: React.Dispatch<React.SetStateAction<Plano | null>>
   novoRegistro: { dataAula: string; resumoAula: string; funcionouBem: string; naoFuncionou: string; proximaAula: string; comportamento: string }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setNovoRegistro: React.Dispatch<React.SetStateAction<any>>
+  setNovoRegistro: React.Dispatch<React.SetStateAction<{ dataAula: string; resumoAula: string; funcionouBem: string; naoFuncionou: string; proximaAula: string; comportamento: string }>>
   verRegistros: boolean
   setVerRegistros: React.Dispatch<React.SetStateAction<boolean>>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  registroEditando: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setRegistroEditando: React.Dispatch<React.SetStateAction<any>>
+  registroEditando: RegistroPosAula | null
+  setRegistroEditando: React.Dispatch<React.SetStateAction<RegistroPosAula | null>>
   // Seleção de turma (4 níveis)
   regAnoSel: string
   setRegAnoSel: React.Dispatch<React.SetStateAction<string>>
@@ -97,17 +85,13 @@ export interface CalendarioContextValue {
   // Funções de grade semanal
   novaGradeSemanal: () => void
   salvarGradeSemanal: () => void
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  excluirGradeSemanal: (id: any) => void
+  excluirGradeSemanal: (id: number | string) => void
   adicionarAulaGrade: () => void
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  removerAulaGrade: (aulaId: any) => void
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  duplicarAulaGrade: (aula: any) => void
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  atualizarAulaGrade: (aulaId: any, campo: string, valor: any) => void
+  removerAulaGrade: (aulaId: number | string) => void
+  duplicarAulaGrade: (aula: AulaGrade) => void
+  atualizarAulaGrade: (aulaId: number | string, campo: string, valor: unknown) => void
   // Helper
-  obterTurmasDoDia: (data: string) => any[] // eslint-disable-line @typescript-eslint/no-explicit-any
+  obterTurmasDoDia: (data: string) => AulaGrade[]
 }
 
 // ─── CONTEXTO ─────────────────────────────────────────────────────────────────
@@ -147,16 +131,14 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
   }))
 
   // ── Grade semanal ──────────────────────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [gradesSemanas, setGradesSemanas] = useState<any[]>(() => {
+  const [gradesSemanas, setGradesSemanas] = useState<GradeEditando[]>(() => {
     try {
       const saved = dbGet('gradesSemanas')
       return saved ? JSON.parse(saved) : []
     } catch { return [] }
   })
   const [modalGradeSemanal, setModalGradeSemanal] = useState(false)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [gradeEditando, setGradeEditando] = useState<any>(null)
+  const [gradeEditando, setGradeEditando] = useState<GradeEditando | null>(null)
 
   // ── Período de visualização ────────────────────────────────────────────────
   const [periodoDias, setPeriodoDias] = useState(30)
@@ -168,14 +150,12 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
   const [rrData, setRrData] = useState(() => new Date().toISOString().split('T')[0])
   const [rrAnoSel, setRrAnoSel] = useState('')
   const [rrEscolaSel, setRrEscolaSel] = useState('')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [rrPlanosSegmento, setRrPlanosSegmento] = useState<Record<string, any>>({})
+  const [rrPlanosSegmento, setRrPlanosSegmento] = useState<Record<string, unknown>>({})
   const [rrTextos, setRrTextos] = useState<Record<string, string>>({})
 
   // ── Registro pós-aula ──────────────────────────────────────────────────────
   const [modalRegistro, setModalRegistro] = useState(false)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [planoParaRegistro, setPlanoParaRegistro] = useState<any>(null)
+  const [planoParaRegistro, setPlanoParaRegistro] = useState<Plano | null>(null)
   const [novoRegistro, setNovoRegistro] = useState({
     dataAula: new Date().toISOString().split('T')[0],
     resumoAula: '',
@@ -185,8 +165,7 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
     comportamento: ''
   })
   const [verRegistros, setVerRegistros] = useState(false)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [registroEditando, setRegistroEditando] = useState<any>(null)
+  const [registroEditando, setRegistroEditando] = useState<RegistroPosAula | null>(null)
 
   // ── Seleção de turma (4 níveis) ────────────────────────────────────────────
   const [regAnoSel, setRegAnoSel] = useState('')
@@ -221,7 +200,7 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
   }
 
   function salvarGradeSemanal() {
-    if (!gradeEditando.anoLetivoId || !gradeEditando.escolaId || !gradeEditando.dataInicio || !gradeEditando.dataFim) {
+    if (!gradeEditando || !gradeEditando.anoLetivoId || !gradeEditando.escolaId || !gradeEditando.dataInicio || !gradeEditando.dataFim) {
       setModalConfirm({ conteudo: '⚠️ Preencha ano letivo, escola e período!', somenteOk: true, labelConfirm: 'OK' })
       return
     }
@@ -229,9 +208,9 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
       setModalConfirm({ conteudo: '⚠️ Adicione pelo menos uma aula!', somenteOk: true, labelConfirm: 'OK' })
       return
     }
-    const existe = gradesSemanas.find((g: { id: number }) => g.id === gradeEditando.id)
+    const existe = gradesSemanas.find(g => g.id === gradeEditando.id)
     if (existe) {
-      setGradesSemanas(gradesSemanas.map((g: { id: number }) => g.id === gradeEditando.id ? gradeEditando : g))
+      setGradesSemanas(gradesSemanas.map(g => g.id === gradeEditando.id ? gradeEditando : g))
     } else {
       setGradesSemanas([...gradesSemanas, gradeEditando])
     }
@@ -239,20 +218,18 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
     setModalConfirm({ conteudo: '✅ Grade salva!', somenteOk: true, labelConfirm: 'OK' })
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function excluirGradeSemanal(id: any) {
+  function excluirGradeSemanal(id: number | string) {
     setModalConfirm({
       titulo: 'Excluir grade semanal?',
       conteudo: 'Esta ação não pode ser desfeita.',
       labelConfirm: 'Excluir',
       perigo: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onConfirm: () => setGradesSemanas(gradesSemanas.filter((g: any) => g.id !== id))
+      onConfirm: () => setGradesSemanas(prev => prev.filter(g => g.id !== id))
     })
   }
 
   function adicionarAulaGrade() {
-    const novaAula = {
+    const novaAula: AulaGrade = {
       id: Date.now(),
       diaSemana: 'Segunda',
       horario: '08:00',
@@ -260,51 +237,43 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
       turmaId: '',
       observacao: ''
     }
-    setGradeEditando({
-      ...gradeEditando,
-      aulas: [...gradeEditando.aulas, novaAula]
-    })
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function removerAulaGrade(aulaId: any) {
-    setGradeEditando({
-      ...gradeEditando,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      aulas: gradeEditando.aulas.filter((a: any) => a.id !== aulaId)
-    })
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function duplicarAulaGrade(aula: any) {
-    const duplicada = { ...aula, id: Date.now() }
-    setGradeEditando({
-      ...gradeEditando,
-      aulas: [...gradeEditando.aulas, duplicada]
-    })
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function atualizarAulaGrade(aulaId: any, campo: string, valor: any) {
-    setGradeEditando((prev: any) => ({
+    setGradeEditando(prev => prev && ({
       ...prev,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      aulas: prev.aulas.map((a: any) =>
+      aulas: [...prev.aulas, novaAula]
+    }))
+  }
+
+  function removerAulaGrade(aulaId: number | string) {
+    setGradeEditando(prev => prev && ({
+      ...prev,
+      aulas: prev.aulas.filter(a => a.id !== aulaId)
+    }))
+  }
+
+  function duplicarAulaGrade(aula: AulaGrade) {
+    const duplicada = { ...aula, id: Date.now() }
+    setGradeEditando(prev => prev && ({
+      ...prev,
+      aulas: [...prev.aulas, duplicada]
+    }))
+  }
+
+  function atualizarAulaGrade(aulaId: number | string, campo: string, valor: unknown) {
+    setGradeEditando(prev => prev && ({
+      ...prev,
+      aulas: prev.aulas.map(a =>
         a.id === aulaId ? { ...a, [campo]: valor } : a
       )
     }))
   }
 
   // ── Helper: obter turmas do dia ────────────────────────────────────────────
-  function obterTurmasDoDia(data: string) {
+  function obterTurmasDoDia(data: string): AulaGrade[] {
     const diaDaSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'][new Date(data + 'T12:00:00').getDay()]
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const turmasDoDia: any[] = []
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    gradesSemanas.forEach((grade: any) => {
+    const turmasDoDia: AulaGrade[] = []
+    gradesSemanas.forEach(grade => {
       if (data < grade.dataInicio || data > grade.dataFim) return
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      grade.aulas.forEach((aula: any) => {
+      grade.aulas.forEach(aula => {
         if (aula.diaSemana === diaDaSemana && aula.turmaId) {
           turmasDoDia.push({
             ...aula,

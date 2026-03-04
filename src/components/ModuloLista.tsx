@@ -497,7 +497,7 @@ export default function ModuloLista() {
                     dataFim = new Date(dataFimCustom + 'T23:59:59');
                 }
             } else {
-                dataInicio = new Date(); dataInicio.setDate(dataInicio.getDate() - periodoDias);
+                dataInicio = new Date(); dataInicio.setDate(dataInicio.getDate() - Number(periodoDias));
             }
             dataInicio.setHours(0,0,0,0);
 

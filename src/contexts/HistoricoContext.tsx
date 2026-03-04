@@ -3,6 +3,7 @@
 // Gerencia: 5 estados de filtro/modal do ModuloHistoricoMusical.
 
 import React, { createContext, useContext, useState } from 'react'
+import type { Musica } from '../types'
 
 // ─── INTERFACE DO CONTEXTO ────────────────────────────────────────────────────
 
@@ -15,10 +16,8 @@ export interface HistoricoContextValue {
   setHmFiltroFim: React.Dispatch<React.SetStateAction<string>>
   hmFiltroBusca: string
   setHmFiltroBusca: React.Dispatch<React.SetStateAction<string>>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  hmModalMusica: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setHmModalMusica: React.Dispatch<React.SetStateAction<any>>
+  hmModalMusica: Musica | null
+  setHmModalMusica: React.Dispatch<React.SetStateAction<Musica | null>>
 }
 
 // ─── CONTEXTO ─────────────────────────────────────────────────────────────────
@@ -42,8 +41,7 @@ export function HistoricoProvider({ children }: HistoricoProviderProps) {
   const [hmFiltroInicio, setHmFiltroInicio] = useState('')
   const [hmFiltroFim, setHmFiltroFim] = useState('')
   const [hmFiltroBusca, setHmFiltroBusca] = useState('')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [hmModalMusica, setHmModalMusica] = useState<any>(null)
+  const [hmModalMusica, setHmModalMusica] = useState<Musica | null>(null)
 
   const value: HistoricoContextValue = {
     hmFiltroTurma, setHmFiltroTurma,
