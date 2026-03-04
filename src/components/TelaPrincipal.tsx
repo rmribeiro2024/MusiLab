@@ -11,8 +11,7 @@ import type { Plano } from '../types'
 interface LinhaPlanoProps {
   plano: Plano
   showEscola?: boolean
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  toggleFavorito: (id: any, e?: any) => void
+  toggleFavorito: (plano: Plano, e?: React.MouseEvent) => void
   setPlanoSelecionado: (plano: Plano) => void
   abrirModalRegistro: (plano: Plano, e: React.MouseEvent) => void
   editarPlano: (plano: Plano) => void
@@ -923,10 +922,10 @@ export default function TelaPrincipal() {
                 <div className="border-t border-slate-100 py-5"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={3} /></div>
 
                 <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white border-t border-slate-100 sticky bottom-0">
-                    {(planoEditando._historicoVersoes as any[] | undefined)?.length ? (
+                    {planoEditando._historicoVersoes?.length ? (
                         <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
                             <span className="text-xs text-slate-400">↩ Restaurar:</span>
-                            {(planoEditando._historicoVersoes as any[]).map((v, i) => (
+                            {planoEditando._historicoVersoes.map((v, i) => (
                                 <button key={i} type="button" onClick={() => restaurarVersao(planoEditando, v)}
                                     className="text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-lg transition font-medium">
                                     {new Date(v._versaoSalvaEm).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}
@@ -1329,7 +1328,7 @@ export default function TelaPrincipal() {
                     dataFim = new Date(dataFimCustom + 'T23:59:59');
                 }
             } else {
-                dataInicio = new Date(); dataInicio.setDate(dataInicio.getDate() - periodoDias);
+                dataInicio = new Date(); dataInicio.setDate(dataInicio.getDate() - Number(periodoDias));
             }
             dataInicio.setHours(0,0,0,0);
 

@@ -31,18 +31,14 @@ export interface AtividadesContextValue {
   buscaAtividade: string
   setBuscaAtividade: React.Dispatch<React.SetStateAction<string>>
   // Modais
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  modalAdicionarAoPlano: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setModalAdicionarAoPlano: React.Dispatch<React.SetStateAction<any>>
+  modalAdicionarAoPlano: Atividade | null
+  setModalAdicionarAoPlano: React.Dispatch<React.SetStateAction<Atividade | null>>
   // Visualização
   modoVisAtividades: string
   setModoVisAtividades: React.Dispatch<React.SetStateAction<string>>
   // Vínculos
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  atividadeVinculandoMusica: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setAtividadeVinculandoMusica: React.Dispatch<React.SetStateAction<any>>
+  atividadeVinculandoMusica: string | number | null
+  setAtividadeVinculandoMusica: React.Dispatch<React.SetStateAction<string | number | null>>
   pendingAtividadeId: string | number | null
   setPendingAtividadeId: React.Dispatch<React.SetStateAction<string | number | null>>
   // Nova música inline
@@ -98,13 +94,11 @@ export function AtividadesProvider({ children, userId }: AtividadesProviderProps
   const [buscaAtividade, setBuscaAtividade] = useState('')
 
   // ── Modais ────────────────────────────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [modalAdicionarAoPlano, setModalAdicionarAoPlano] = useState<any>(null)
+  const [modalAdicionarAoPlano, setModalAdicionarAoPlano] = useState<Atividade | null>(null)
   const [modoVisAtividades, setModoVisAtividades] = useState('grade')
 
   // ── Vínculos ──────────────────────────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [atividadeVinculandoMusica, setAtividadeVinculandoMusica] = useState<any>(null)
+  const [atividadeVinculandoMusica, setAtividadeVinculandoMusica] = useState<string | number | null>(null)
   const [pendingAtividadeId, setPendingAtividadeId] = useState<string | number | null>(null)
 
   // ── Nova música inline ────────────────────────────────────────────────────

@@ -6,6 +6,55 @@
 // ─── STATUS DE SINCRONIZAÇÃO ─────────────────────────────────
 export type SyncStatus = 'idle' | 'salvando' | 'salvo' | 'erro'
 
+// ─── TIPOS AUXILIARES ────────────────────────────────────────
+export interface RecursoItem { url: string; tipo?: string }
+export interface MusicaVinculo { id?: string | number; titulo?: string; autor?: string }
+export type ArquivoMidia = string | { nome: string; data?: string; url?: string }
+
+// ─── GRADE SEMANAL (calendário) ──────────────────────────────
+export interface AulaGrade {
+  id: number
+  diaSemana: string
+  horario: string
+  segmentoId: string
+  turmaId: string
+  observacao?: string
+  anoLetivoId?: string
+  escolaId?: string
+}
+
+export interface GradeEditando {
+  id: number
+  anoLetivoId: string
+  escolaId: string
+  dataInicio: string
+  dataFim: string
+  aulas: AulaGrade[]
+}
+
+// ─── PLANEJAMENTO ANUAL ───────────────────────────────────────
+export interface PeriodoAnual {
+  id?: string | number
+  nome: string
+  dataInicio?: string
+  dataFim?: string
+  tema?: string
+  foco?: string
+  reflexao?: string
+  _criadoEm?: string
+}
+
+export interface PlanejamentoAnualItem {
+  id: string | number
+  nome?: string
+  dataInicio?: string
+  dataFim?: string
+  periodos?: PeriodoAnual[]
+  metas?: Array<{ id: string | number; descricao: string; tipo: string; _criadoEm?: string }>
+  _criadoEm?: string
+  _ultimaEdicao?: string
+}
+
 // ─── PLANO DE AULA ───────────────────────────────────────────
 export interface AtividadeRoteiro {
   id: string | number
@@ -13,7 +62,11 @@ export interface AtividadeRoteiro {
   duracao: string
   descricao?: string
   musicaVinculada?: string | null
-  musicasVinculadas?: Array<{ id: string | number; titulo: string; autor?: string }>
+  musicasVinculadas?: MusicaVinculo[]
+  conceitos?: string[]
+  tags?: string[]
+  recursos?: RecursoItem[]
+  musicaId?: string | number
 }
 
 export interface RegistroPosAula {
@@ -31,10 +84,15 @@ export interface RegistroPosAula {
   naoFuncionou?: string
   proximaAula?: string
   comportamento?: string
+  anoLetivo?: string
+  escola?: string
+  segmento?: string
+  serie?: string
+  dataEdicao?: string
 }
 
 export interface Plano {
-  id: string
+  id: string | number
   titulo: string
   tema?: string
   nivel: string
@@ -49,7 +107,7 @@ export interface Plano {
   faixaEtaria: string[]
   materiais: string[]
   habilidadesBNCC: string[]
-  recursos: string[]
+  recursos: RecursoItem[]
   historicoDatas: string[]
   atividadesRoteiro: AtividadeRoteiro[]
   registrosPosAula: RegistroPosAula[]
@@ -60,8 +118,14 @@ export interface Plano {
   numeroAula?: number | string
   arquivado?: boolean
   cor?: string
+  metodologia?: string
+  avaliacaoObservacoes?: string
+  unidade?: string
+  segmento?: string
   createdAt?: string
   updatedAt?: string
+  _ultimaEdicao?: string
+  _historicoVersoes?: Array<Plano & { _versaoSalvaEm: string }>
 }
 
 // ─── ATIVIDADE PEDAGÓGICA ─────────────────────────────────────
@@ -73,10 +137,8 @@ export interface Atividade {
   categoria?: string
   faixaEtaria: string[]
   tags: string[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  recursos: any[]  // pode ser string (url) ou objeto { url, tipo }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  musicasVinculadas?: any[]  // pode ser string ou objeto { id, titulo, autor }
+  recursos: RecursoItem[]  // string (url) ou { url, tipo }
+  musicasVinculadas?: MusicaVinculo[]  // string ou { id, titulo, autor }
   materiais?: string[]
   unidade?: string
   observacao?: string
@@ -89,7 +151,7 @@ export interface Atividade {
 
 // ─── REPERTÓRIO / MÚSICA ──────────────────────────────────────
 export interface Musica {
-  id: string | number
+  id?: string | number
   titulo: string
   autor?: string
   origem?: string
@@ -119,15 +181,20 @@ export interface Musica {
   atividadesVinculadas?: any[]
   links?: string[]
   // pdfs e audios podem ser string (url) ou objeto {nome, data} (arquivo carregado)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  pdfs?: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  audios?: any[]
+  pdfs?: ArquivoMidia[]
+  audios?: ArquivoMidia[]
   tags?: string[]
   observacoes?: string
   arquivada?: boolean
   faixaEtaria?: string[]
   createdAt?: string
+  // Campos computados pelo módulo de histórico musical
+  vezesUsada?: number
+  primeiraData?: string
+  ultimaData?: string
+  datas?: string[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  aulas?: any[]
 }
 
 // ─── SEQUÊNCIA DIDÁTICA ───────────────────────────────────────
@@ -356,8 +423,7 @@ export interface BancoPlanosContextValue {
   // Funções CRUD de planos
   editarPlano: (plano: Plano) => void
   excluirPlano: (id: string) => void
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  toggleFavorito: (id: any, e?: any) => void
+  toggleFavorito: (plano: Plano, e?: React.MouseEvent) => void
 
   // Funções de sequência
   novaSequencia: () => void
@@ -365,7 +431,7 @@ export interface BancoPlanosContextValue {
   salvarSequencia: () => void
   atualizarRascunhoSlot: (sequenciaId: string, slotIndex: number, campo: string, valor: unknown) => void
   desvincularPlano: (sequenciaId: string, slotIndex: number) => void
-  vincularPlanoAoSlot: (planoId: string) => void
+  vincularPlanoAoSlot: (planoId: string | number) => void
 
   // Modais de sequência
   sequenciaEditando: Sequencia | null
@@ -380,7 +446,70 @@ export interface BancoPlanosContextValue {
   // Identificação do usuário
   userId?: string
 
-  // Outros campos — indexados para compatibilidade com JS existente
+  // Funções de modal de registro
+  abrirModalRegistro: (plano: Plano, e: React.MouseEvent) => void
+
+  // Backup
+  baixarBackup: () => void
+  restaurarBackup: (e: React.ChangeEvent<HTMLInputElement>) => void
+
+  // Calendário / período
+  dataFimCustom: string
+  setDataFimCustom: React.Dispatch<React.SetStateAction<string>>
+  dataInicioCustom: string
+  setDataInicioCustom: React.Dispatch<React.SetStateAction<string>>
+  periodoDias: number | string
+  setPeriodoDias: React.Dispatch<React.SetStateAction<number | string>>
+
+  // Modal adicionar atividade ao plano
+  modalAdicionarAoPlano: Atividade | null
+  setModalAdicionarAoPlano: React.Dispatch<React.SetStateAction<Atividade | null>>
+  adicionarAtividadeAoPlano: (atividadeId: string | number, planoId: string | number) => void
+
+  // Modal configurações
+  modalConfiguracoes: boolean
+  setModalConfiguracoes: React.Dispatch<React.SetStateAction<boolean>>
+  setModalTurmas: React.Dispatch<React.SetStateAction<boolean>>
+  setModalGradeSemanal: React.Dispatch<React.SetStateAction<boolean>>
+
+  // Modal eventos
+  modalEventos: boolean
+  setModalEventos: React.Dispatch<React.SetStateAction<boolean>>
+  eventoEditando: EventoEscolar | null
+  setEventoEditando: React.Dispatch<React.SetStateAction<EventoEscolar | null>>
+  novoEvento: () => void
+  salvarEvento: () => void
+  excluirEvento: (id: string | number | undefined) => void
+
+  // Modal gestão de turmas
+  modalTurmas: boolean
+  mostrarArquivados: boolean
+  setMostrarArquivados: React.Dispatch<React.SetStateAction<boolean>>
+  gtAnoNovo: string
+  setGtAnoNovo: React.Dispatch<React.SetStateAction<string>>
+  gtAnoSel: string
+  setGtAnoSel: React.Dispatch<React.SetStateAction<string>>
+  gtEscolaNome: string
+  setGtEscolaNome: React.Dispatch<React.SetStateAction<string>>
+  gtEscolaSel: string
+  setGtEscolaSel: React.Dispatch<React.SetStateAction<string>>
+  gtSegmentoNome: string
+  setGtSegmentoNome: React.Dispatch<React.SetStateAction<string>>
+  gtSegmentoSel: string
+  setGtSegmentoSel: React.Dispatch<React.SetStateAction<string>>
+  gtTurmaNome: string
+  setGtTurmaNome: React.Dispatch<React.SetStateAction<string>>
+  gtAddAno: () => void
+  gtRemoveAno: (anoId: string) => void
+  gtAddEscola: () => void
+  gtRemoveEscola: (anoId: string, escolaId: string) => void
+  gtAddSegmento: () => void
+  gtRemoveSegmento: (anoId: string, escolaId: string, segmentoId: string) => void
+  gtAddTurma: () => void
+  gtRemoveTurma: (anoId: string, escolaId: string, segmentoId: string, turmaId: string) => void
+  gtMudarStatusAno: (anoId: string, novoStatus: string) => void
+
+  // Outros campos — indexados para compatibilidade com bridge dinâmico
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }

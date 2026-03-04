@@ -8,6 +8,7 @@ import { useAnoLetivoContext } from './AnoLetivoContext'
 import { useRepertorioContext } from './RepertorioContext'
 import { dbGet, dbSet } from '../lib/db'
 import { sanitizeUrl } from '../lib/utils'
+import type { Plano } from '../types'
 
 // ── bancoBNCC ── base de habilidades BNCC (copiada de BancoPlanos.tsx)
 export const bancoBNCC = [
@@ -54,7 +55,7 @@ export const bancoBNCC = [
 ]
 
 // ── normalizePlano ── garante defaults em todos os campos
-export function normalizePlano(p: any): any {
+export function normalizePlano(p: any): Plano {
     let atividadesRoteiro = p.atividadesRoteiro || []
     if (!p.atividadesRoteiro && p.metodologia && p.metodologia.trim()) {
         atividadesRoteiro = [{ id: Date.now(), nome: '', duracao: '', descricao: p.metodologia }]
@@ -80,12 +81,12 @@ export function normalizePlano(p: any): any {
 // ── Interface ────────────────────────────────────────────────────────────
 export interface PlanosContextValue {
     // estados
-    planos: any[]; setPlanos: React.Dispatch<React.SetStateAction<any[]>>
-    planoSelecionado: any; setPlanoSelecionado: React.Dispatch<React.SetStateAction<any>>
+    planos: Plano[]; setPlanos: React.Dispatch<React.SetStateAction<Plano[]>>
+    planoSelecionado: Plano | null; setPlanoSelecionado: React.Dispatch<React.SetStateAction<Plano | null>>
     modoEdicao: boolean; setModoEdicao: React.Dispatch<React.SetStateAction<boolean>>
-    planoEditando: any; setPlanoEditando: React.Dispatch<React.SetStateAction<any>>
+    planoEditando: Plano | null; setPlanoEditando: React.Dispatch<React.SetStateAction<Plano | null>>
     formExpandido: boolean; setFormExpandido: React.Dispatch<React.SetStateAction<boolean>>
-    materiaisBloqueados: any[]; setMateriaisBloqueados: React.Dispatch<React.SetStateAction<any[]>>
+    materiaisBloqueados: string[]; setMateriaisBloqueados: React.Dispatch<React.SetStateAction<string[]>>
     novoConceito: string; setNovoConceito: React.Dispatch<React.SetStateAction<string>>
     adicionandoConceito: boolean; setAdicionandoConceito: React.Dispatch<React.SetStateAction<boolean>>
     novaUnidade: string; setNovaUnidade: React.Dispatch<React.SetStateAction<string>>
@@ -101,30 +102,30 @@ export interface PlanosContextValue {
     filtroNivel: string; setFiltroNivel: React.Dispatch<React.SetStateAction<string>>
     filtroEscola: string; setFiltroEscola: React.Dispatch<React.SetStateAction<string>>
     filtroTag: string; setFiltroTag: React.Dispatch<React.SetStateAction<string>>
-    recursosExpandidos: Record<string, any>; setRecursosExpandidos: React.Dispatch<React.SetStateAction<Record<string, any>>>
+    recursosExpandidos: Record<string, boolean>; setRecursosExpandidos: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
     modalImportarMusica: boolean; setModalImportarMusica: React.Dispatch<React.SetStateAction<boolean>>
     modalImportarAtividade: boolean; setModalImportarAtividade: React.Dispatch<React.SetStateAction<boolean>>
     filtroFavorito: boolean; setFiltroFavorito: React.Dispatch<React.SetStateAction<boolean>>
     filtroStatus: string; setFiltroStatus: React.Dispatch<React.SetStateAction<string>>
     modoVisualizacao: string; setModoVisualizacao: React.Dispatch<React.SetStateAction<string>>
     ordenacaoCards: string; setOrdenacaoCards: React.Dispatch<React.SetStateAction<string>>
-    statusDropdownId: any; setStatusDropdownId: React.Dispatch<React.SetStateAction<any>>
-    dragActiveIndex: any; setDragActiveIndex: React.Dispatch<React.SetStateAction<any>>
-    dragOverIndex: any; setDragOverIndex: React.Dispatch<React.SetStateAction<any>>
+    statusDropdownId: string | number | null; setStatusDropdownId: React.Dispatch<React.SetStateAction<string | number | null>>
+    dragActiveIndex: number | null; setDragActiveIndex: React.Dispatch<React.SetStateAction<number | null>>
+    dragOverIndex: number | null; setDragOverIndex: React.Dispatch<React.SetStateAction<number | null>>
     // computed
     escolas: string[]
     duracoesSugestao: string[]
-    planosFiltrados: any[]
+    planosFiltrados: Plano[]
     // funções
-    normalizePlano: (p: any) => any
-    buscaAvancada: (plano: any, termoBusca: string) => boolean
+    normalizePlano: (p: Record<string, unknown>) => Plano
+    buscaAvancada: (plano: Plano, termoBusca: string) => boolean
     sugerirBNCC: () => void
     novoPlano: () => void
-    editarPlano: (plano: any) => void
+    editarPlano: (plano: Plano) => void
     salvarPlano: (ignorarAvisoEscola?: boolean) => void
-    excluirPlano: (id: any) => void
+    excluirPlano: (id: string | number) => void
     fecharModal: () => void
-    restaurarVersao: (plano: any, versao: any) => void
+    restaurarVersao: (plano: Plano, versao: Plano & { _versaoSalvaEm: string }) => void
     toggleConceito: (c: string) => void
     toggleFaixa: (f: string) => void
     toggleUnidade: (u: string) => void
@@ -139,13 +140,13 @@ export interface PlanosContextValue {
     removerTag: (tag: string) => void
     adicionarUnidadeNova: () => void
     adicionarAtividadeRoteiro: () => void
-    removerAtividadeRoteiro: (id: any) => void
-    atualizarAtividadeRoteiro: (id: any, campo: string, valor: any) => void
-    toggleFavorito: (plano: any, e?: any) => void
-    handleDragStart: (index: any) => void
-    handleDragEnter: (index: any) => void
+    removerAtividadeRoteiro: (id: string | number) => void
+    atualizarAtividadeRoteiro: (id: string | number, campo: string, valor: unknown) => void
+    toggleFavorito: (plano: Plano, e?: React.MouseEvent) => void
+    handleDragStart: (index: number) => void
+    handleDragEnter: (index: number) => void
     handleDragEnd: () => void
-    toggleRecursosAtiv: (idx: any) => void
+    toggleRecursosAtiv: (idx: number | string) => void
 }
 
 const PlanosContext = React.createContext<PlanosContextValue | null>(null)
@@ -168,16 +169,16 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const { anosLetivos, setModalTurmas, conceitos, setConceitos, unidades, setUnidades } = useAnoLetivoContext()
 
     // ── ESTADOS ──────────────────────────────────────────────────────────
-    const [planos, setPlanos] = useState<any[]>(() => {
+    const [planos, setPlanos] = useState<Plano[]>(() => {
         const saved = dbGet('planosAula')
         const parsed = saved ? JSON.parse(saved) : []
         return parsed.map(normalizePlano)
     })
-    const [planoSelecionado, setPlanoSelecionado] = useState<any>(null)
+    const [planoSelecionado, setPlanoSelecionado] = useState<Plano | null>(null)
     const [modoEdicao, setModoEdicao] = useState(false)
-    const [planoEditando, setPlanoEditando] = useState<any>(null)
+    const [planoEditando, setPlanoEditando] = useState<Plano | null>(null)
     const [formExpandido, setFormExpandido] = useState(false)
-    const [materiaisBloqueados, setMateriaisBloqueados] = useState<any[]>(() => {
+    const [materiaisBloqueados, setMateriaisBloqueados] = useState<string[]>(() => {
         const saved = dbGet('materiaisBloqueados')
         return saved ? JSON.parse(saved) : []
     })
@@ -202,15 +203,15 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const [filtroStatus, setFiltroStatus] = useState('Todos')
     const [modoVisualizacao, setModoVisualizacao] = useState('grade')
     const [ordenacaoCards, setOrdenacaoCards] = useState('recente')
-    const [statusDropdownId, setStatusDropdownId] = useState<any>(null)
-    const [recursosExpandidos, setRecursosExpandidos] = useState<Record<string, any>>({})
+    const [statusDropdownId, setStatusDropdownId] = useState<string | number | null>(null)
+    const [recursosExpandidos, setRecursosExpandidos] = useState<Record<string, boolean>>({})
     const [modalImportarMusica, setModalImportarMusica] = useState(false)
     const [modalImportarAtividade, setModalImportarAtividade] = useState(false)
     // drag and drop
-    const dragItem = useRef<any>(null)
-    const dragOverItem = useRef<any>(null)
-    const [dragActiveIndex, setDragActiveIndex] = useState<any>(null)
-    const [dragOverIndex, setDragOverIndex] = useState<any>(null)
+    const dragItem = useRef<number | null>(null)
+    const dragOverItem = useRef<number | null>(null)
+    const [dragActiveIndex, setDragActiveIndex] = useState<number | null>(null)
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 
     // ── EFEITOS ───────────────────────────────────────────────────────────
     useEffect(() => { dbSet('planosAula', JSON.stringify(planos)) }, [planos])
@@ -285,12 +286,13 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     // ── FUNÇÕES: PLANOS ───────────────────────────────────────────────────
     const novoPlano = () => {
         setPlanoEditando({
-            id: Date.now(), titulo: '', tema: '', conceitos: [], tags: [],
+            id: String(Date.now()), titulo: '', tema: '', conceitos: [], tags: [],
             faixaEtaria: ['1° ano'], nivel: 'Iniciante', duracao: '',
             objetivoGeral: '', objetivosEspecificos: [], habilidadesBNCC: [],
             metodologia: '', materiais: [], recursos: [], historicoDatas: [],
             avaliacaoObservacoes: '', numeroAula: '', escola: '', destaque: false,
             statusPlanejamento: 'A Fazer',
+            unidades: [], atividadesRoteiro: [], registrosPosAula: [],
         })
         setPlanoSelecionado(null); setModoEdicao(true); setViewMode('lista')
     }

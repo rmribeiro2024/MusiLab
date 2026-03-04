@@ -646,11 +646,11 @@ export default function ModuloRepertorio() {
                                         className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold transition">🔗 Link</button>
                                     <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold text-center cursor-pointer transition">
                                         📄 PDF
-                                        <input type="file" accept=".pdf" className="hidden" onChange={e => { const file=e.target.files[0]; if(file){ const r=new FileReader(); r.onload=()=>setMusicaEditando({...musicaEditando, pdfs:[...(musicaEditando.pdfs||[]),{nome:file.name,data:r.result}]}); r.readAsDataURL(file); } e.target.value=''; }} />
+                                        <input type="file" accept=".pdf" className="hidden" onChange={e => { const file=e.target.files[0]; if(file){ const r=new FileReader(); r.onload=()=>setMusicaEditando({...musicaEditando, pdfs:[...(musicaEditando.pdfs||[]),{nome:file.name,data:r.result as string}]}); r.readAsDataURL(file); } e.target.value=''; }} />
                                     </label>
                                     <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold text-center cursor-pointer transition">
                                         🎧 Áudio
-                                        <input type="file" accept="audio/*,video/*" className="hidden" onChange={e => { const file=e.target.files[0]; if(file){ const r=new FileReader(); r.onload=()=>setMusicaEditando({...musicaEditando, audios:[...(musicaEditando.audios||[]),{nome:file.name,data:r.result}]}); r.readAsDataURL(file); } e.target.value=''; }} />
+                                        <input type="file" accept="audio/*,video/*" className="hidden" onChange={e => { const file=e.target.files[0]; if(file){ const r=new FileReader(); r.onload=()=>setMusicaEditando({...musicaEditando, audios:[...(musicaEditando.audios||[]),{nome:file.name,data:r.result as string}]}); r.readAsDataURL(file); } e.target.value=''; }} />
                                     </label>
                                 </div>
                                 <div className="space-y-1.5">

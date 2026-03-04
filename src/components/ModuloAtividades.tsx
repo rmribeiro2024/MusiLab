@@ -7,9 +7,9 @@ import type { Atividade } from '../types'
 
 interface CardAtividadeProps {
   ativ: Atividade
-  setAtividadeEditando: (a: any) => void
-  excluirAtividade: (id: any) => void
-  setModalAdicionarAoPlano: (v: any) => void
+  setAtividadeEditando: (a: Atividade) => void
+  excluirAtividade: (id: string | number) => void
+  setModalAdicionarAoPlano: (v: Atividade | null) => void
 }
 
 // ── CARD ATIVIDADE (memoizado — só re-renderiza quando a atividade muda) ──

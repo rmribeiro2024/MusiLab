@@ -16,6 +16,7 @@ import {
   loadConfiguracoes,
 } from '../lib/utils'
 import { showToast } from '../lib/toast'
+import type { GradeEditando } from '../types'
 // Módulos carregados sob demanda — Vite cria um chunk por arquivo
 const ModuloAnoLetivo        = lazy(() => import('./ModuloAnoLetivo'))
 const ModuloHistoricoMusical = lazy(() => import('./ModuloHistoricoMusical'))
@@ -648,7 +649,7 @@ export default function BancoPlanos({ session }) {
                         // repertorioC removido — carregado em RepertorioContext (Parte 3)
                         // sequenciasC removido — carregado em SequenciasContext (Parte 5)
                         // anosC removido — carregado em AnoLetivoContext (Parte 6)
-                        if (gradesC !== null) setGradesSemanas(gradesC.length > 0 ? gradesC : []);
+                        if (gradesC !== null) setGradesSemanas(gradesC.length > 0 ? gradesC as GradeEditando[] : []);
                         // eventosC removido — carregado em AnoLetivoContext (Parte 6)
                         // estratégiasC removido — carregado em EstrategiasContext (Parte 2)
                         // planejamentoAnualC removido — carregado em AnoLetivoContext (Parte 6)
@@ -715,7 +716,7 @@ export default function BancoPlanos({ session }) {
                 if (!prev) return; // primeira execução após carga — evita regravar tudo
                 Object.entries(atual).forEach(([tabela, dados]) => {
                     if (dados !== prev[tabela]) {
-                        syncDelay(tabela, () => syncToSupabase(tabela, dados, userId, onSyncStatus));
+                        syncDelay(tabela, () => syncToSupabase(tabela, dados as unknown as Record<string, unknown>[], userId, onSyncStatus));
                     }
                 });
             }, [planos, gradesSemanas]); // anos_letivos/eventos_escolares/planejamento_anual removidos — sync em AnoLetivoContext (Parte 6) — sync em AtividadesContext/SequenciasContext (Partes 4/5)
@@ -874,11 +875,12 @@ export default function BancoPlanos({ session }) {
                 const novosRecursos = atividade.recursos || [];
                 const recursosUnicos = [...recursosAtuais];
                 novosRecursos.forEach(rec => {
-                    if (!recursosUnicos.find(r => r.url === rec.url)) {
+                    const recUrl = typeof rec === 'string' ? rec : rec.url;
+                    if (!recursosUnicos.find(r => (typeof r === 'string' ? r : r.url) === recUrl)) {
                         recursosUnicos.push(rec);
                     }
                 });
-                
+
                 // Atualizar plano com todos os dados da atividade
                 setPlanoEditando({
                     ...planoEditando,
@@ -907,11 +909,11 @@ export default function BancoPlanos({ session }) {
                         const atualizado = [...planoEditando.atividadesRoteiro];
                         const musicasVinculadas = atualizado[atividadeIndex].musicasVinculadas || [];
                         
-                        if(musicasVinculadas.find(m => m.id === musica.id)) {
+                        if(musicasVinculadas.find(m => (typeof m === 'string' ? m : m.id) === musica.id)) {
                             setModalConfirm({ conteudo: '⚠️ Música já vinculada a esta atividade!', somenteOk: true, labelConfirm: 'OK' });
                             return;
                         }
-                        
+
                         atualizado[atividadeIndex].musicasVinculadas = [...musicasVinculadas, {
                             id: musica.id,
                             titulo: musica.titulo,
@@ -936,11 +938,11 @@ export default function BancoPlanos({ session }) {
                 if(atividadeEditando && atividadeEditando.id === atividadeVinculandoMusica) {
                     const musicasVinculadas = atividadeEditando.musicasVinculadas || [];
                     
-                    if(musicasVinculadas.find(m => m.id === musica.id)) {
+                    if(musicasVinculadas.find(m => (typeof m === 'string' ? m : m.id) === musica.id)) {
                         setModalConfirm({ conteudo: '⚠️ Música já vinculada a esta atividade!', somenteOk: true, labelConfirm: 'OK' });
                         return;
                     }
-                    
+
                     setAtividadeEditando({
                         ...atividadeEditando,
                         musicasVinculadas: [...musicasVinculadas, {
@@ -1278,11 +1280,12 @@ export default function BancoPlanos({ session }) {
                 const novosRecursos = atividade.recursos || [];
                 const recursosUnicos = [...recursosAtuais];
                 novosRecursos.forEach(rec => {
-                    if (!recursosUnicos.find(r => r.url === rec.url)) {
+                    const recUrl = typeof rec === 'string' ? rec : rec.url;
+                    if (!recursosUnicos.find(r => (typeof r === 'string' ? r : r.url) === recUrl)) {
                         recursosUnicos.push(rec);
                     }
                 });
-                
+
                 // Mesclar unidades (sem duplicar)
                 const unidadesAtuais = plano.unidades || [];
                 let unidadesMescladas = [...unidadesAtuais];
@@ -1481,8 +1484,8 @@ export default function BancoPlanos({ session }) {
                         (r.segmento || r.serie) == segmentoId && r.turma == turmaId
                     );
                 }).sort((a, b) => {
-                    const lastA = Math.max(...(a.registrosPosAula || []).map(r => r.id || 0));
-                    const lastB = Math.max(...(b.registrosPosAula || []).map(r => r.id || 0));
+                    const lastA = Math.max(...(a.registrosPosAula || []).map(r => Number(r.id) || 0));
+                    const lastB = Math.max(...(b.registrosPosAula || []).map(r => Number(r.id) || 0));
                     return lastB - lastA;
                 });
                 if (planosComRegistros.length > 0) return planosComRegistros[0].id;
@@ -1503,7 +1506,7 @@ export default function BancoPlanos({ session }) {
                 const ano = anosLetivos.find(a => a.id == anoId);
                 const esc = ano?.escolas.find(e => e.id == escolaId);
                 if (esc) {
-                    const recentes = planos.filter(p => p.escola === esc.nome).sort((a, b) => b.id - a.id);
+                    const recentes = planos.filter(p => p.escola === esc.nome).sort((a, b) => Number(b.id) - Number(a.id));
                     if (recentes.length > 0) return recentes[0].id;
                 }
 
@@ -2377,13 +2380,17 @@ export default function BancoPlanos({ session }) {
                                                         {ativ.descricao && <p className="text-sm text-slate-600 mt-1 ml-1">{ativ.descricao}</p>}
                                                         {ativ.musicasVinculadas?.length > 0 && (
                                                             <div className="mt-2 ml-1 space-y-1">
-                                                                {ativ.musicasVinculadas.map((m, j) => (
+                                                                {ativ.musicasVinculadas.map((m, j) => {
+                                                                    const mTitulo = typeof m === 'string' ? m : m.titulo;
+                                                                    const mAutor = typeof m === 'string' ? undefined : m.autor;
+                                                                    return (
                                                                     <div key={j} className="flex items-center gap-1.5 text-sm text-violet-700 bg-violet-50 border border-violet-100 rounded-lg px-2 py-1">
                                                                         <span>🎵</span>
-                                                                        <span className="font-medium">{m.titulo}</span>
-                                                                        {m.autor && <span className="text-violet-400 text-xs">— {m.autor}</span>}
+                                                                        <span className="font-medium">{mTitulo}</span>
+                                                                        {mAutor && <span className="text-violet-400 text-xs">— {mAutor}</span>}
                                                                     </div>
-                                                                ))}
+                                                                    );
+                                                                })}
                                                             </div>
                                                         )}
                                                         {ativ.recursos?.length > 0 && (

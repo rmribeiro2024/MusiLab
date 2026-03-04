@@ -6,7 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, syncConfiguracoes, loadFromSupabase, loadConfiguracoes, gerarIdSeguro } from '../lib/utils'
 import { useModalContext } from './ModalContext'
-import type { AnoLetivo, EventoEscolar } from '../types'
+import type { AnoLetivo, EventoEscolar, PlanejamentoAnualItem, PeriodoAnual } from '../types'
 
 // ─── VALORES INICIAIS (mantidos localmente para evitar importações circulares) ─
 
@@ -23,10 +23,8 @@ export interface AnoLetivoContextValue {
   eventosEscolares: EventoEscolar[]
   setEventosEscolares: React.Dispatch<React.SetStateAction<EventoEscolar[]>>
   // Planejamento anual
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  planejamentoAnual: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setPlanejamentoAnual: React.Dispatch<React.SetStateAction<any[]>>
+  planejamentoAnual: PlanejamentoAnualItem[]
+  setPlanejamentoAnual: React.Dispatch<React.SetStateAction<PlanejamentoAnualItem[]>>
   anoPlanoAtivoId: string | null
   setAnoPlanoAtivoId: React.Dispatch<React.SetStateAction<string | null>>
   // Formulário novo ano
@@ -35,12 +33,10 @@ export interface AnoLetivoContextValue {
   formNovoAno: { nome: string; dataInicio: string; dataFim: string }
   setFormNovoAno: React.Dispatch<React.SetStateAction<{ nome: string; dataInicio: string; dataFim: string }>>
   // Períodos
-  periodoExpId: string | null
-  setPeriodoExpId: React.Dispatch<React.SetStateAction<string | null>>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  periodoEditForm: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setPeriodoEditForm: React.Dispatch<React.SetStateAction<any>>
+  periodoExpId: string | number | null
+  setPeriodoExpId: React.Dispatch<React.SetStateAction<string | number | null>>
+  periodoEditForm: PeriodoAnual | null
+  setPeriodoEditForm: React.Dispatch<React.SetStateAction<PeriodoAnual | null>>
   adicionandoPeriodoAno: boolean
   setAdicionandoPeriodoAno: React.Dispatch<React.SetStateAction<boolean>>
   formNovoPeriodo: { nome: string; dataInicio: string; dataFim: string; tema: string; foco: string }
@@ -156,8 +152,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
   })
 
   // ── Planejamento anual ────────────────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [planejamentoAnual, setPlanejamentoAnual] = useState<any[]>(() => {
+  const [planejamentoAnual, setPlanejamentoAnual] = useState<PlanejamentoAnualItem[]>(() => {
     try {
       const saved = dbGet('planejamentoAnual')
       return saved ? JSON.parse(saved) : []
@@ -168,9 +163,8 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
   // ── Formulário novo ano ───────────────────────────────────────────────────
   const [mostrandoFormNovoAno, setMostrandoFormNovoAno] = useState(false)
   const [formNovoAno, setFormNovoAno] = useState({ nome: String(new Date().getFullYear()), dataInicio: '', dataFim: '' })
-  const [periodoExpId, setPeriodoExpId] = useState<string | null>(null)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [periodoEditForm, setPeriodoEditForm] = useState<any>(null)
+  const [periodoExpId, setPeriodoExpId] = useState<string | number | null>(null)
+  const [periodoEditForm, setPeriodoEditForm] = useState<PeriodoAnual | null>(null)
   const [adicionandoPeriodoAno, setAdicionandoPeriodoAno] = useState(false)
   const [formNovoPeriodo, setFormNovoPeriodo] = useState({ nome: '', dataInicio: '', dataFim: '', tema: '', foco: '' })
 
@@ -237,7 +231,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
       .then(([anosC, eventosC, planejamentoC, cfg]) => {
         if (anosC !== null) setAnosLetivos(anosC.length > 0 ? anosC as AnoLetivo[] : [])
         if (eventosC !== null) setEventosEscolares(eventosC.length > 0 ? eventosC as EventoEscolar[] : [])
-        if (planejamentoC !== null) setPlanejamentoAnual(planejamentoC.length > 0 ? planejamentoC : [])
+        if (planejamentoC !== null) setPlanejamentoAnual(planejamentoC.length > 0 ? planejamentoC as PlanejamentoAnualItem[] : [])
         if (cfg) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const c = cfg as any
@@ -354,7 +348,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
       onConfirm: () => {
         setPlanejamentoAnual(prev => {
           const novos = prev.filter(a => a.id !== anoId)
-          if (String(anoPlanoAtivoId) === String(anoId)) setAnoPlanoAtivoId(novos[0]?.id || null)
+          if (String(anoPlanoAtivoId) === String(anoId)) setAnoPlanoAtivoId(novos[0] ? String(novos[0].id) : null)
           return novos
         })
       }
@@ -377,7 +371,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     if (!periodoEditForm?.nome?.trim()) return
     const ano = planejamentoAnual.find(a => a.id === anoId)
     if (!ano) return
-    _atualizarAnoPlano(anoId, { periodos: ano.periodos.map((p: { id: string | number }) => p.id === periodoId ? { ...p, ...periodoEditForm } : p) })
+    _atualizarAnoPlano(anoId, { periodos: ano.periodos.map((p) => p.id === periodoId ? { ...p, ...periodoEditForm } : p) })
     setPeriodoExpId(null)
     setPeriodoEditForm(null)
   }
@@ -389,7 +383,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
       onConfirm: () => {
         const ano = planejamentoAnual.find(a => a.id === anoId)
         if (!ano) return
-        _atualizarAnoPlano(anoId, { periodos: ano.periodos.filter((p: { id: string | number }) => p.id !== periodoId) })
+        _atualizarAnoPlano(anoId, { periodos: ano.periodos.filter((p) => p.id !== periodoId) })
         if (periodoExpId === String(periodoId)) { setPeriodoExpId(null); setPeriodoEditForm(null) }
       }
     })
