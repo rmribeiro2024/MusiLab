@@ -2,7 +2,7 @@
 // Parte 8 da refatoração: estados e funções de Planos de Aula
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback, useReducer } from 'react'
 import { useModalContext } from './ModalContext'
 import { useAnoLetivoContext } from './AnoLetivoContext'
 import { useRepertorioContext } from './RepertorioContext'
@@ -82,6 +82,55 @@ export function normalizePlano(p: any): Plano {
     }
 }
 
+// ── Reducer: Filtros ──────────────────────────────────────────────────────
+interface FiltrosState {
+    busca: string
+    filtroConceito: string
+    filtroUnidade: string
+    filtroFaixa: string
+    filtroNivel: string
+    filtroEscola: string
+    filtroTag: string
+    filtroFavorito: boolean
+    filtroStatus: string
+    modoVisualizacao: string
+    ordenacaoCards: string
+}
+const FILTROS_INITIAL: FiltrosState = {
+    busca: '', filtroConceito: 'Todos', filtroUnidade: 'Todos', filtroFaixa: 'Todos',
+    filtroNivel: 'Todos', filtroEscola: 'Todas', filtroTag: 'Todas',
+    filtroFavorito: false, filtroStatus: 'Todos', modoVisualizacao: 'grade', ordenacaoCards: 'recente',
+}
+type FiltrosAction = { type: 'SET'; payload: Partial<FiltrosState> } | { type: 'RESET' }
+function filtrosReducer(state: FiltrosState, action: FiltrosAction): FiltrosState {
+    switch (action.type) {
+        case 'SET': return { ...state, ...action.payload }
+        case 'RESET': return FILTROS_INITIAL
+    }
+}
+
+// ── Reducer: Edição ───────────────────────────────────────────────────────
+interface EdicaoState {
+    planoSelecionado: Plano | null
+    modoEdicao: boolean
+    planoEditando: Plano | null
+    formExpandido: boolean
+}
+const EDICAO_INITIAL: EdicaoState = { planoSelecionado: null, modoEdicao: false, planoEditando: null, formExpandido: false }
+type EdicaoAction =
+    | { type: 'NOVO_PLANO'; plano: Plano }
+    | { type: 'EDITAR_PLANO'; plano: Plano }
+    | { type: 'FECHAR' }
+    | { type: 'SET'; payload: Partial<EdicaoState> }
+function edicaoReducer(state: EdicaoState, action: EdicaoAction): EdicaoState {
+    switch (action.type) {
+        case 'NOVO_PLANO':   return { planoSelecionado: null, modoEdicao: true, planoEditando: action.plano, formExpandido: false }
+        case 'EDITAR_PLANO': return { ...state, planoSelecionado: null, modoEdicao: true, planoEditando: action.plano }
+        case 'FECHAR':       return EDICAO_INITIAL
+        case 'SET':          return { ...state, ...action.payload }
+    }
+}
+
 // ── Interface ────────────────────────────────────────────────────────────
 export interface PlanosContextValue {
     // estados
@@ -113,6 +162,7 @@ export interface PlanosContextValue {
     filtroStatus: string; setFiltroStatus: React.Dispatch<React.SetStateAction<string>>
     modoVisualizacao: string; setModoVisualizacao: React.Dispatch<React.SetStateAction<string>>
     ordenacaoCards: string; setOrdenacaoCards: React.Dispatch<React.SetStateAction<string>>
+    limparFiltros: () => void
     statusDropdownId: string | number | null; setStatusDropdownId: React.Dispatch<React.SetStateAction<string | number | null>>
     dragActiveIndex: number | null; setDragActiveIndex: React.Dispatch<React.SetStateAction<number | null>>
     dragOverIndex: number | null; setDragOverIndex: React.Dispatch<React.SetStateAction<number | null>>
@@ -238,10 +288,18 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         const parsed = saved ? JSON.parse(saved) : []
         return parsed.map(normalizePlano)
     })
-    const [planoSelecionado, setPlanoSelecionado] = useState<Plano | null>(null)
-    const [modoEdicao, setModoEdicao] = useState(false)
-    const [planoEditando, setPlanoEditando] = useState<Plano | null>(null)
-    const [formExpandido, setFormExpandido] = useState(false)
+    // useReducer: edição do plano (planoSelecionado + modoEdicao + planoEditando + formExpandido)
+    const [edicao, edicaoDispatch] = useReducer(edicaoReducer, EDICAO_INITIAL)
+    const { planoSelecionado, modoEdicao, planoEditando, formExpandido } = edicao
+    const edicaoRef = useRef(edicao); edicaoRef.current = edicao
+    const setPlanoSelecionado: React.Dispatch<React.SetStateAction<Plano | null>> = (v) =>
+        edicaoDispatch({ type: 'SET', payload: { planoSelecionado: typeof v === 'function' ? v(edicaoRef.current.planoSelecionado) : v } })
+    const setModoEdicao: React.Dispatch<React.SetStateAction<boolean>> = (v) =>
+        edicaoDispatch({ type: 'SET', payload: { modoEdicao: typeof v === 'function' ? v(edicaoRef.current.modoEdicao) : v } })
+    const setPlanoEditando: React.Dispatch<React.SetStateAction<Plano | null>> = (v) =>
+        edicaoDispatch({ type: 'SET', payload: { planoEditando: typeof v === 'function' ? v(edicaoRef.current.planoEditando) : v } })
+    const setFormExpandido: React.Dispatch<React.SetStateAction<boolean>> = (v) =>
+        edicaoDispatch({ type: 'SET', payload: { formExpandido: typeof v === 'function' ? v(edicaoRef.current.formExpandido) : v } })
     const [materiaisBloqueados, setMateriaisBloqueados] = useState<string[]>(() => {
         const saved = dbGet('materiaisBloqueados')
         return saved ? JSON.parse(saved) : []
@@ -255,18 +313,33 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const [novoRecursoTipo, setNovoRecursoTipo] = useState('link')
     const [novaDataAula, setNovaDataAula] = useState('')
     const [dataEdicao, setDataEdicao] = useState('')
-    // busca e filtros
-    const [busca, setBusca] = useState('')
-    const [filtroConceito, setFiltroConceito] = useState('Todos')
-    const [filtroUnidade, setFiltroUnidade] = useState('Todos')
-    const [filtroFaixa, setFiltroFaixa] = useState('Todos')
-    const [filtroNivel, setFiltroNivel] = useState('Todos')
-    const [filtroEscola, setFiltroEscola] = useState('Todas')
-    const [filtroTag, setFiltroTag] = useState('Todas')
-    const [filtroFavorito, setFiltroFavorito] = useState(false)
-    const [filtroStatus, setFiltroStatus] = useState('Todos')
-    const [modoVisualizacao, setModoVisualizacao] = useState('grade')
-    const [ordenacaoCards, setOrdenacaoCards] = useState('recente')
+    // useReducer: filtros e visualização (busca + 8 filtros + modoVisualizacao + ordenacaoCards)
+    const [filtros, filtrosDispatch] = useReducer(filtrosReducer, FILTROS_INITIAL)
+    const { busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroFavorito, filtroStatus, modoVisualizacao, ordenacaoCards } = filtros
+    const filtrosRef = useRef(filtros); filtrosRef.current = filtros
+    const setBusca: React.Dispatch<React.SetStateAction<string>> = (v) =>
+        filtrosDispatch({ type: 'SET', payload: { busca: typeof v === 'function' ? v(filtrosRef.current.busca) : v } })
+    const setFiltroConceito: React.Dispatch<React.SetStateAction<string>> = (v) =>
+        filtrosDispatch({ type: 'SET', payload: { filtroConceito: typeof v === 'function' ? v(filtrosRef.current.filtroConceito) : v } })
+    const setFiltroUnidade: React.Dispatch<React.SetStateAction<string>> = (v) =>
+        filtrosDispatch({ type: 'SET', payload: { filtroUnidade: typeof v === 'function' ? v(filtrosRef.current.filtroUnidade) : v } })
+    const setFiltroFaixa: React.Dispatch<React.SetStateAction<string>> = (v) =>
+        filtrosDispatch({ type: 'SET', payload: { filtroFaixa: typeof v === 'function' ? v(filtrosRef.current.filtroFaixa) : v } })
+    const setFiltroNivel: React.Dispatch<React.SetStateAction<string>> = (v) =>
+        filtrosDispatch({ type: 'SET', payload: { filtroNivel: typeof v === 'function' ? v(filtrosRef.current.filtroNivel) : v } })
+    const setFiltroEscola: React.Dispatch<React.SetStateAction<string>> = (v) =>
+        filtrosDispatch({ type: 'SET', payload: { filtroEscola: typeof v === 'function' ? v(filtrosRef.current.filtroEscola) : v } })
+    const setFiltroTag: React.Dispatch<React.SetStateAction<string>> = (v) =>
+        filtrosDispatch({ type: 'SET', payload: { filtroTag: typeof v === 'function' ? v(filtrosRef.current.filtroTag) : v } })
+    const setFiltroFavorito: React.Dispatch<React.SetStateAction<boolean>> = (v) =>
+        filtrosDispatch({ type: 'SET', payload: { filtroFavorito: typeof v === 'function' ? v(filtrosRef.current.filtroFavorito) : v } })
+    const setFiltroStatus: React.Dispatch<React.SetStateAction<string>> = (v) =>
+        filtrosDispatch({ type: 'SET', payload: { filtroStatus: typeof v === 'function' ? v(filtrosRef.current.filtroStatus) : v } })
+    const setModoVisualizacao: React.Dispatch<React.SetStateAction<string>> = (v) =>
+        filtrosDispatch({ type: 'SET', payload: { modoVisualizacao: typeof v === 'function' ? v(filtrosRef.current.modoVisualizacao) : v } })
+    const setOrdenacaoCards: React.Dispatch<React.SetStateAction<string>> = (v) =>
+        filtrosDispatch({ type: 'SET', payload: { ordenacaoCards: typeof v === 'function' ? v(filtrosRef.current.ordenacaoCards) : v } })
+    const limparFiltros = () => filtrosDispatch({ type: 'RESET' })
     const [statusDropdownId, setStatusDropdownId] = useState<string | number | null>(null)
     const [recursosExpandidos, setRecursosExpandidos] = useState<Record<string, boolean>>({})
     const [modalImportarMusica, setModalImportarMusica] = useState(false)
@@ -358,7 +431,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
 
     // ── FUNÇÕES: PLANOS ───────────────────────────────────────────────────
     const novoPlano = () => {
-        setPlanoEditando({
+        edicaoDispatch({ type: 'NOVO_PLANO', plano: {
             id: String(Date.now()), titulo: '', tema: '', conceitos: [], tags: [],
             faixaEtaria: ['1° ano'], nivel: 'Iniciante', duracao: '',
             objetivoGeral: '', objetivosEspecificos: [], habilidadesBNCC: [],
@@ -366,14 +439,12 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             avaliacaoObservacoes: '', numeroAula: '', escola: '', destaque: false,
             statusPlanejamento: 'A Fazer',
             unidades: [], atividadesRoteiro: [], registrosPosAula: [],
-        })
-        setPlanoSelecionado(null); setModoEdicao(true); setViewMode('lista')
+        } as Plano })
+        setViewMode('lista')
     }
 
     const editarPlano = useCallback((plano: any) => {
-        setPlanoEditando(normalizePlano(plano))
-        setPlanoSelecionado(null)
-        setModoEdicao(true)
+        edicaoDispatch({ type: 'EDITAR_PLANO', plano: normalizePlano(plano) })
         setViewMode('lista')
     }, [setViewMode])
 
@@ -403,7 +474,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                     titulo: '🏫 Escola sem turmas',
                     conteudo: 'A escola selecionada ainda não tem turmas cadastradas. O filtro por turma no Histórico Musical será impreciso. Deseja cadastrar as turmas agora?',
                     labelConfirm: 'Cadastrar turmas', labelCancelar: 'Salvar assim mesmo',
-                    onConfirm: () => { salvarPlano(true); setModoEdicao(false); setPlanoEditando(null); setModalTurmas(true) },
+                    onConfirm: () => { salvarPlano(true); edicaoDispatch({ type: 'FECHAR' }); setModalTurmas(true) },
                     onCancel: () => salvarPlano(true),
                 }); return
             }
@@ -424,7 +495,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         } else {
             setPlanos([...planos, planoParaSalvar])
         }
-        setModoEdicao(false); setPlanoEditando(null)
+        edicaoDispatch({ type: 'SET', payload: { modoEdicao: false, planoEditando: null } })
     }
 
     const excluirPlano = useCallback((id: any) => {
@@ -436,8 +507,8 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     }, [setModalConfirm])
 
     const fecharModal = () => {
-        setPlanoSelecionado(null); setModoEdicao(false); setPlanoEditando(null)
-        setNovoRecursoUrl(''); setFormExpandido(false)
+        edicaoDispatch({ type: 'FECHAR' })
+        setNovoRecursoUrl('')
     }
 
     const restaurarVersao = (plano: any, versao: any) => {
@@ -567,8 +638,10 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         if (e) e.stopPropagation()
         const atualizado = { ...plano, destaque: !plano.destaque }
         setPlanos(prev => prev.map((p: any) => p.id === plano.id ? atualizado : p))
-        setPlanoSelecionado((prev: any) => prev && prev.id === plano.id ? atualizado : prev)
-        setPlanoEditando((prev: any) => prev && prev.id === plano.id ? atualizado : prev)
+        if (edicaoRef.current.planoSelecionado?.id === plano.id)
+            edicaoDispatch({ type: 'SET', payload: { planoSelecionado: atualizado } })
+        if (edicaoRef.current.planoEditando?.id === plano.id)
+            edicaoDispatch({ type: 'SET', payload: { planoEditando: atualizado } })
     }, [])
 
     const handleDragStart = useCallback((index: any) => { dragItem.current = index; setDragActiveIndex(index) }, [])
@@ -938,6 +1011,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         filtroStatus, setFiltroStatus,
         modoVisualizacao, setModoVisualizacao,
         ordenacaoCards, setOrdenacaoCards,
+        limparFiltros,
         statusDropdownId, setStatusDropdownId,
         recursosExpandidos, setRecursosExpandidos,
         modalImportarMusica, setModalImportarMusica,
