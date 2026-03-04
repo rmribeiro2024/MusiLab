@@ -1,6 +1,7 @@
 import { dbSet } from '../lib/db'
 import { sanitizeUrl, ytIdFromUrl } from '../lib/utils'
-import React from 'react'
+import React, { useMemo } from 'react'
+import { useDebounce } from '../lib/hooks'
 import { useRepertorioContext, useAtividadesContext, usePlanosContext, useModalContext, useCalendarioContext } from '../contexts'
 
 // ── OPÇÕES DE ELEMENTOS MUSICAIS ──
@@ -94,11 +95,12 @@ export default function ModuloRepertorio() {
     const { setModalConfirm } = useModalContext()
     const { ytPreviewId, setYtPreviewId } = useCalendarioContext()
 
-    // Filtrar músicas
-    const musicasFiltradas = repertorio.filter(m => {
-        const buscaMatch = !buscaRepertorio || 
-            m.titulo.toLowerCase().includes(buscaRepertorio.toLowerCase()) ||
-            (m.autor||'').toLowerCase().includes(buscaRepertorio.toLowerCase());
+    // Filtrar músicas (useMemo + debounce na busca)
+    const buscaRepertorioDebounced = useDebounce(buscaRepertorio, 300)
+    const musicasFiltradas = useMemo(() => repertorio.filter(m => {
+        const buscaMatch = !buscaRepertorioDebounced ||
+            m.titulo.toLowerCase().includes(buscaRepertorioDebounced.toLowerCase()) ||
+            (m.autor||'').toLowerCase().includes(buscaRepertorioDebounced.toLowerCase());
         const origemMatch = filtroOrigem === 'Todas' || m.origem === filtroOrigem;
         const estiloMatch = filtroEstilo === 'Todos' || (m.estilos||[]).includes(filtroEstilo);
         const tonalidadeMatch = filtroTonalidade === 'Todas' || (m.tonalidades||[]).includes(filtroTonalidade);
@@ -110,7 +112,7 @@ export default function ModuloRepertorio() {
         const instrumentacaoMatch = filtroInstrumentacao === 'Todas' || (m.instrumentacao||[]).includes(filtroInstrumentacao) || m.instrumentoDestaque === filtroInstrumentacao;
         const dinamicaMatch = filtroDinamica === 'Todas' || (m.dinamicas||[]).includes(filtroDinamica);
         return buscaMatch && origemMatch && estiloMatch && tonalidadeMatch && escalaMatch && compassoMatch && andamentoMatch && estruturaMatch && energiaMatch && instrumentacaoMatch && dinamicaMatch;
-    });
+    }), [repertorio, buscaRepertorioDebounced, filtroOrigem, filtroEstilo, filtroTonalidade, filtroEscala, filtroCompasso, filtroAndamento, filtroEstrutura, filtroEnergia, filtroInstrumentacao, filtroDinamica]);
 
     return (
     <div className="max-w-5xl mx-auto space-y-4">

@@ -11,6 +11,7 @@ import { useAtividadesContext } from './AtividadesContext'
 import { useSequenciasContext } from './SequenciasContext'
 import { dbGet, dbSet } from '../lib/db'
 import { sanitizeUrl, gerarIdSeguro, validarBackup } from '../lib/utils'
+import { useDebounce } from '../lib/hooks'
 import { verificarFeriado } from '../lib/feriados'
 import type { Plano, Musica, Atividade, RegistroPosAula } from '../types'
 
@@ -317,6 +318,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const [filtros, filtrosDispatch] = useReducer(filtrosReducer, FILTROS_INITIAL)
     const { busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroFavorito, filtroStatus, modoVisualizacao, ordenacaoCards } = filtros
     const filtrosRef = useRef(filtros); filtrosRef.current = filtros
+    const buscaDebounced = useDebounce(busca, 300)
     const setBusca: React.Dispatch<React.SetStateAction<string>> = (v) =>
         filtrosDispatch({ type: 'SET', payload: { busca: typeof v === 'function' ? v(filtrosRef.current.busca) : v } })
     const setFiltroConceito: React.Dispatch<React.SetStateAction<string>> = (v) =>
@@ -408,7 +410,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
 
     const planosFiltrados = useMemo(() => {
         return planos.filter(plano => {
-            const matchBusca    = buscaAvancada(plano, busca)
+            const matchBusca    = buscaAvancada(plano, buscaDebounced)
             const matchConceito = filtroConceito === 'Todos'  || (plano.conceitos && plano.conceitos.includes(filtroConceito))
             const matchUnidade  = filtroUnidade  === 'Todos'  || (plano.unidades  && plano.unidades.includes(filtroUnidade))
             const matchFaixa    = filtroFaixa    === 'Todos'  || (plano.faixaEtaria && plano.faixaEtaria.includes(filtroFaixa))
@@ -427,7 +429,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             if (ordenacaoCards === 'favoritos') return (b.destaque ? 1 : 0) - (a.destaque ? 1 : 0)
             return b.id - a.id
         })
-    }, [planos, busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroFavorito, filtroStatus, ordenacaoCards])
+    }, [planos, buscaDebounced, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroFavorito, filtroStatus, ordenacaoCards])
 
     // ── FUNÇÕES: PLANOS ───────────────────────────────────────────────────
     const novoPlano = () => {
