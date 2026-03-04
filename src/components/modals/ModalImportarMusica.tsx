@@ -1,12 +1,10 @@
 import React from 'react'
-import { useBancoPlanos } from '../BancoPlanosContext'
+import { useRepertorioContext } from '../../contexts'
+import { usePlanosContext } from '../../contexts'
 
 export default function ModalImportarMusica() {
-    const {
-        modalImportarMusica, setModalImportarMusica,
-        repertorio,
-        importarMusicaParaPlano,
-    } = useBancoPlanos()
+    const { repertorio } = useRepertorioContext()
+    const { modalImportarMusica, setModalImportarMusica, importarMusicaParaPlano } = usePlanosContext()
 
     if (!modalImportarMusica) return null
 

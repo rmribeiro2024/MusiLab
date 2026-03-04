@@ -1,8 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react'
 import { sanitizar } from '../lib/utils'
 import { dbSize } from '../lib/db'
-import { useBancoPlanos } from './BancoPlanosContext'
-import { usePlanosContext } from '../contexts'
+import { usePlanosContext, useAnoLetivoContext, useAtividadesContext, useRepertorioContext, useModalContext, useCalendarioContext } from '../contexts'
 import RichTextEditor from './RichTextEditor'
 import { exportarPlanoPDF } from '../utils/pdf'
 import type { Plano } from '../types'
@@ -56,43 +55,18 @@ const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPl
 });
 
 export default function TelaPrincipal() {
-    const ctx = useBancoPlanos()
-    // Itens não-plano: permanecem no ctx (BancoPlanosContext bridge)
+    const { anosLetivos, conceitos, faixas, tagsGlobais, setTagsGlobais, unidades, setModalNovaEscola, setNovaEscolaAnoId, setNovaEscolaNome, setModalNovaFaixa, setNovaFaixaNome } = useAnoLetivoContext()
+    const { atividades, setAtividades, setAtividadeVinculandoMusica } = useAtividadesContext()
+    const { repertorio } = useRepertorioContext()
+    const { setModalConfirm } = useModalContext()
+    const { periodoDias, setPeriodoDias, dataInicioCustom, setDataInicioCustom, dataFimCustom, setDataFimCustom } = useCalendarioContext()
+
+    // Itens de planos: via PlanosContext
     const {
         abrirModalRegistro,
-        anosLetivos,
-        atividades,
         baixarBackup,
-        bold,
-        conceitos,
-        dataFimCustom,
-        dataInicioCustom,
-        faixas,
-        h,
-        l,
-        para,
-        periodoDias,
-        repertorio,
-        tagsGlobais,
-        unidades,
         userId,
-        setAtividadeVinculandoMusica,
-        setAtividades,
-        setDataFimCustom,
-        setDataInicioCustom,
-        setModalConfirm,
-        setModalNovaEscola,
-        setModalNovaFaixa,
         setModalTemplates,
-        setNovaEscolaAnoId,
-        setNovaEscolaNome,
-        setNovaFaixaNome,
-        setPeriodoDias,
-        setTagsGlobais,
-    } = ctx
-
-    // Itens de planos: via PlanosContext (Parte 8)
-    const {
         adicionandoConceito,
         adicionandoUnidade,
         adicionarAtividadeRoteiro,

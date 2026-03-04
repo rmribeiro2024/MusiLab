@@ -89,6 +89,8 @@ export interface RegistroPosAula {
   segmento?: string
   serie?: string
   dataEdicao?: string
+  dataRegistro?: string
+  hora?: string
 }
 
 export interface Plano {

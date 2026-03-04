@@ -1,19 +1,11 @@
 import React from 'react'
-import { useBancoPlanos } from '../BancoPlanosContext'
+import { usePlanosContext } from '../../contexts'
+import { useModalContext } from '../../contexts'
 import { gerarIdSeguro } from '../../lib/utils'
 
 export default function ModalTemplatesRoteiro() {
-    const {
-        modalTemplates,
-        setModalTemplates,
-        templatesRoteiro,
-        setTemplatesRoteiro,
-        nomeNovoTemplate,
-        setNomeNovoTemplate,
-        planoEditando,
-        setPlanoEditando,
-        setModalConfirm,
-    } = useBancoPlanos()
+    const { modalTemplates, setModalTemplates, templatesRoteiro, setTemplatesRoteiro, nomeNovoTemplate, setNomeNovoTemplate, planoEditando, setPlanoEditando } = usePlanosContext()
+    const { setModalConfirm } = useModalContext()
 
     if (!modalTemplates) return null
 

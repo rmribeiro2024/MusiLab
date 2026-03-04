@@ -1,37 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
-import { useBancoPlanos } from './BancoPlanosContext'
-import { useHistoricoContext } from '../contexts'
+import { useHistoricoContext, useAnoLetivoContext, useAtividadesContext, usePlanosContext, useRepertorioContext } from '../contexts'
 
 export default function ModuloHistoricoMusical() {
-    const ctx = useBancoPlanos()
-    // ── Campos de domínio — vêm do HistoricoContext (Parte 5) ──
-    const {
-        hmFiltroBusca, setHmFiltroBusca,
-        hmFiltroFim, setHmFiltroFim,
-        hmFiltroInicio, setHmFiltroInicio,
-        hmFiltroTurma, setHmFiltroTurma,
-        hmModalMusica, setHmModalMusica,
-    } = useHistoricoContext()
-    // ── Campos cross-domain — ainda vêm do BancoPlanosContext (bridge) ──
-    const {
-        anosLetivos,
-        atividades,
-        bold,
-        busca,
-        escolas,
-        faixas,
-        h,
-        para,
-        planos,
-        repertorio,
-        setModalConfiguracoes,
-        setPlanoSelecionado,
-        setViewMode,
-        totalTurmas,
-        underline,
-    } = ctx
+    const { hmFiltroBusca, setHmFiltroBusca, hmFiltroFim, setHmFiltroFim, hmFiltroInicio, setHmFiltroInicio, hmFiltroTurma, setHmFiltroTurma, hmModalMusica, setHmModalMusica } = useHistoricoContext()
+    const { anosLetivos, faixas } = useAnoLetivoContext()
+    const { atividades } = useAtividadesContext()
+    const { planos, escolas, setModalConfiguracoes, setPlanoSelecionado } = usePlanosContext()
+    const { repertorio, setViewMode } = useRepertorioContext()
 
     // ── Estados locais via useState (fora do IIFE via refs de closure) ──
     // Usamos estados já existentes no componente pai para filtros

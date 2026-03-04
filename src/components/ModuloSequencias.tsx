@@ -1,50 +1,22 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
-import { useBancoPlanos } from './BancoPlanosContext'
-import { useSequenciasContext } from '../contexts'
+import { useSequenciasContext, useAnoLetivoContext, useAtividadesContext, usePlanosContext, useModalContext } from '../contexts'
 import { exportarSequenciaPDF } from '../utils/pdf'
 
 export default function ModuloSequencias() {
-    const ctx = useBancoPlanos()
-    // ── Campos de domínio — vêm do SequenciasContext (Parte 5) ──
     const {
-        atualizarRascunhoSlot,
-        buscaPlanoVinculo,
-        buscaProfundaSequencias,
-        desvincularPlano,
-        excluirSequencia,
-        filtroEscolaSequencias,
-        filtroPeriodoSequencias,
-        filtroUnidadeSequencias,
-        modalVincularPlano,
-        salvarSequencia,
-        sequenciaDetalhe,
-        sequenciaEditando,
-        sequencias,
-        setBuscaPlanoVinculo,
-        setBuscaProfundaSequencias,
-        setFiltroEscolaSequencias,
-        setFiltroPeriodoSequencias,
-        setFiltroUnidadeSequencias,
-        setModalVincularPlano,
-        setSequenciaDetalhe,
-        setSequenciaEditando,
-        setSequencias,
-        vincularPlanoAoSlot,
+        atualizarRascunhoSlot, buscaPlanoVinculo, buscaProfundaSequencias, desvincularPlano,
+        excluirSequencia, filtroEscolaSequencias, filtroPeriodoSequencias, filtroUnidadeSequencias,
+        modalVincularPlano, novaSequencia, salvarSequencia, sequenciaDetalhe, sequenciaEditando,
+        sequencias, setBuscaPlanoVinculo, setBuscaProfundaSequencias, setFiltroEscolaSequencias,
+        setFiltroPeriodoSequencias, setFiltroUnidadeSequencias, setModalVincularPlano,
+        setSequenciaDetalhe, setSequenciaEditando, setSequencias, vincularPlanoAoSlot,
     } = useSequenciasContext()
-    // ── Campos cross-domain — ainda vêm do BancoPlanosContext (bridge) ──
-    const {
-        anosLetivos,
-        atividades,
-        bold,
-        escolas,
-        h,
-        novaSequencia,  // wrapper que passa anosLetivos — permanece no bridge
-        planos,
-        setModalConfirm,
-        unidades,
-    } = ctx
+    const { anosLetivos, unidades } = useAnoLetivoContext()
+    const { atividades } = useAtividadesContext()
+    const { planos, escolas } = usePlanosContext()
+    const { setModalConfirm } = useModalContext()
 
     // ── Drag & drop para reordenar slots ──
     const dragSlotIdx = useRef<number | null>(null)
@@ -229,7 +201,7 @@ export default function ModuloSequencias() {
             <div className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold text-gray-800">📚 Minhas Sequências</h2>
-                    <button onClick={novaSequencia} className="bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">➕ Nova Sequência</button>
+                    <button onClick={() => novaSequencia()} className="bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">➕ Nova Sequência</button>
                 </div>
 
                 {/* Busca Profunda */}
@@ -300,7 +272,7 @@ export default function ModuloSequencias() {
             {sequenciasFiltradas.length === 0 ? (
                 <div className="text-center py-20">
                     <p className="text-gray-400 text-lg mb-4">Nenhuma sequência encontrada com os filtros selecionados</p>
-                    <button onClick={novaSequencia} className="bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-xl font-bold">➕ Criar Primeira Sequência</button>
+                    <button onClick={() => novaSequencia()} className="bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-xl font-bold">➕ Criar Primeira Sequência</button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

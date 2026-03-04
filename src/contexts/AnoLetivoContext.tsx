@@ -6,7 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, syncConfiguracoes, loadFromSupabase, loadConfiguracoes, gerarIdSeguro } from '../lib/utils'
 import { useModalContext } from './ModalContext'
-import type { AnoLetivo, EventoEscolar, PlanejamentoAnualItem, PeriodoAnual } from '../types'
+import type { AnoLetivo, EventoEscolar, PlanejamentoAnualItem, PeriodoAnual, Plano } from '../types'
 
 // ─── VALORES INICIAIS (mantidos localmente para evitar importações circulares) ─
 
@@ -91,6 +91,27 @@ export interface AnoLetivoContextValue {
   excluirPeriodoDoAno: (anoId: string | number, periodoId: string | number) => void
   adicionarMetaNoAno: (anoId: string | number, descricao: string, tipo: string) => void
   excluirMetaDoAno: (anoId: string | number, metaId: string | number) => void
+  // Eventos escolares
+  eventoEditando: EventoEscolar | null
+  setEventoEditando: React.Dispatch<React.SetStateAction<EventoEscolar | null>>
+  modalEventos: boolean
+  setModalEventos: React.Dispatch<React.SetStateAction<boolean>>
+  novoEvento: () => void
+  salvarEvento: () => void
+  excluirEvento: (id: string | number) => void
+  // Gestão de turmas — funções
+  gtAddAno: () => void
+  gtRemoveAno: (anoId: string) => void
+  gtAddEscola: () => void
+  gtRemoveEscola: (anoId: string, escolaId: string) => void
+  gtAddSegmento: () => void
+  gtRemoveSegmento: (anoId: string, escolaId: string, segmentoId: string) => void
+  gtAddTurma: () => void
+  gtRemoveTurma: (anoId: string, escolaId: string, segmentoId: string, turmaId: string) => void
+  gtMudarStatusAno: (anoId: string, novoStatus: string) => void
+  // Faixas e escolas — funções
+  salvarNovaFaixa: () => void
+  salvarNovaEscola: (planoEditando?: Plano | null, setPlanoEditando?: React.Dispatch<React.SetStateAction<Plano | null>>) => void
 }
 
 // ─── CONTEXTO ─────────────────────────────────────────────────────────────────
@@ -217,6 +238,10 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
   // ── Nova faixa ────────────────────────────────────────────────────────────
   const [modalNovaFaixa, setModalNovaFaixa] = useState(false)
   const [novaFaixaNome, setNovaFaixaNome] = useState('')
+
+  // ── Eventos escolares - modal state ───────────────────────────────────────
+  const [eventoEditando, setEventoEditando] = useState<EventoEscolar | null>(null)
+  const [modalEventos, setModalEventos] = useState(false)
 
   // ── Carregar dados do Supabase ────────────────────────────────────────────
   const [carregado, setCarregado] = useState(false)
@@ -402,6 +427,172 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     _atualizarAnoPlano(anoId, { metas: ano.metas.filter((m: { id: string | number }) => m.id !== metaId) })
   }
 
+  // ── Funções de eventos escolares ──────────────────────────────────────────
+
+  function novoEvento() {
+    setEventoEditando({
+      id: Date.now(),
+      nome: '',
+      data: new Date().toISOString().split('T')[0],
+      escolaId: '',
+      anoLetivoId: anosLetivos.find(a => (a as AnoLetivo & { anoAtual?: boolean }).anoAtual)?.id || anosLetivos[0]?.id || ''
+    })
+  }
+
+  function salvarEvento() {
+    if (!eventoEditando?.nome.trim()) {
+      setModalConfirm({ conteudo: '⚠️ Preencha o nome do evento!', somenteOk: true, labelConfirm: 'OK' }); return
+    }
+    if (!eventoEditando.data) {
+      setModalConfirm({ conteudo: '⚠️ Preencha a data!', somenteOk: true, labelConfirm: 'OK' }); return
+    }
+    const existe = eventosEscolares.find(e => e.id === eventoEditando.id)
+    if (existe) {
+      setEventosEscolares(eventosEscolares.map(e => e.id === eventoEditando.id ? eventoEditando : e))
+    } else {
+      setEventosEscolares([...eventosEscolares, eventoEditando])
+    }
+    setEventoEditando(null)
+    setModalConfirm({ conteudo: '✅ Evento salvo!', somenteOk: true, labelConfirm: 'OK' })
+  }
+
+  function excluirEvento(id: string | number) {
+    setModalConfirm({ titulo: 'Excluir evento?', conteudo: '', labelConfirm: 'Excluir', perigo: true, onConfirm: () => {
+      setEventosEscolares(eventosEscolares.filter(e => e.id !== id))
+    }})
+  }
+
+  // ── Funções de gestão de turmas ───────────────────────────────────────────
+
+  function gtAddAno() {
+    const ano = gtAnoNovo.trim()
+    if (!ano) return
+    if (anosLetivos.find(a => a.ano === ano)) { setModalConfirm({ conteudo: 'Ano letivo já existe!', somenteOk: true, labelConfirm: 'OK' }); return }
+    setAnosLetivos([...anosLetivos, { id: String(Date.now()), nome: ano, ano, status: 'ativo', escolas: [] }])
+    setGtAnoNovo('')
+  }
+
+  function gtMudarStatusAno(anoId: string, novoStatus: string) {
+    setAnosLetivos(anosLetivos.map(a => a.id === anoId ? { ...a, status: novoStatus } : a))
+  }
+
+  function gtRemoveAno(anoId: string) {
+    setModalConfirm({ titulo: 'Remover ano letivo?', conteudo: 'Todas as escolas e turmas vinculadas serão removidas.', labelConfirm: 'Remover', perigo: true, onConfirm: () => {
+      setAnosLetivos(anosLetivos.filter(a => a.id !== anoId))
+      if (gtAnoSel === anoId) { setGtAnoSel(''); setGtEscolaSel(''); setGtSegmentoSel('') }
+    }})
+  }
+
+  function gtAddEscola() {
+    const nome = gtEscolaNome.trim()
+    if (!nome || !gtAnoSel) return
+    setAnosLetivos(anosLetivos.map(a => {
+      if (a.id !== gtAnoSel) return a
+      if (a.escolas.find(e => e.nome === nome)) { setModalConfirm({ conteudo: 'Escola já existe neste ano!', somenteOk: true, labelConfirm: 'OK' }); return a }
+      return { ...a, escolas: [...a.escolas, { id: String(Date.now()), nome, segmentos: [] }] }
+    }))
+    setGtEscolaNome('')
+  }
+
+  function gtRemoveEscola(anoId: string, escolaId: string) {
+    setModalConfirm({ titulo: 'Remover escola?', conteudo: 'Todos os segmentos e turmas vinculados serão removidos.', labelConfirm: 'Remover', perigo: true, onConfirm: () => {
+      setAnosLetivos(anosLetivos.map(a => a.id !== anoId ? a : { ...a, escolas: a.escolas.filter(e => e.id !== escolaId) }))
+      if (gtEscolaSel === escolaId) { setGtEscolaSel(''); setGtSegmentoSel('') }
+    }})
+  }
+
+  function gtAddSegmento() {
+    const nome = gtSegmentoNome.trim()
+    if (!nome || !gtAnoSel || !gtEscolaSel) return
+    setAnosLetivos(anosLetivos.map(a => {
+      if (a.id !== gtAnoSel) return a
+      return { ...a, escolas: a.escolas.map(e => {
+        if (e.id !== gtEscolaSel) return e
+        if (e.segmentos.find(s => s.nome === nome)) { setModalConfirm({ conteudo: 'Segmento já existe!', somenteOk: true, labelConfirm: 'OK' }); return e }
+        return { ...e, segmentos: [...e.segmentos, { id: String(Date.now()), nome, turmas: [] }] }
+      })}
+    }))
+    setGtSegmentoNome('')
+  }
+
+  function gtRemoveSegmento(anoId: string, escolaId: string, segmentoId: string) {
+    setAnosLetivos(anosLetivos.map(a => {
+      if (a.id !== anoId) return a
+      return { ...a, escolas: a.escolas.map(e => {
+        if (e.id !== escolaId) return e
+        return { ...e, segmentos: e.segmentos.filter(s => s.id !== segmentoId) }
+      })}
+    }))
+    if (gtSegmentoSel === segmentoId) setGtSegmentoSel('')
+  }
+
+  function gtAddTurma() {
+    const nome = gtTurmaNome.trim()
+    if (!nome || !gtAnoSel || !gtEscolaSel || !gtSegmentoSel) return
+    setAnosLetivos(anosLetivos.map(a => {
+      if (a.id !== gtAnoSel) return a
+      return { ...a, escolas: a.escolas.map(e => {
+        if (e.id !== gtEscolaSel) return e
+        return { ...e, segmentos: e.segmentos.map(s => {
+          if (s.id !== gtSegmentoSel) return s
+          if (s.turmas.find(t => t.nome === nome)) { setModalConfirm({ conteudo: 'Turma já existe!', somenteOk: true, labelConfirm: 'OK' }); return s }
+          return { ...s, turmas: [...s.turmas, { id: String(Date.now()), nome }] }
+        })}
+      })}
+    }))
+    setGtTurmaNome('')
+  }
+
+  function gtRemoveTurma(anoId: string, escolaId: string, segmentoId: string, turmaId: string) {
+    setAnosLetivos(anosLetivos.map(a => {
+      if (a.id !== anoId) return a
+      return { ...a, escolas: a.escolas.map(e => {
+        if (e.id !== escolaId) return e
+        return { ...e, segmentos: e.segmentos.map(s => {
+          if (s.id !== segmentoId) return s
+          return { ...s, turmas: s.turmas.filter(t => t.id !== turmaId) }
+        })}
+      })}
+    }))
+  }
+
+  // ── salvarNovaFaixa ───────────────────────────────────────────────────────
+
+  function salvarNovaFaixa() {
+    const nome = novaFaixaNome.trim()
+    if (!nome) { setModalConfirm({ conteudo: 'Digite o nome da faixa etária!', somenteOk: true, labelConfirm: 'OK' }); return }
+    if (faixas.includes(nome)) { setModalConfirm({ conteudo: 'Essa faixa já existe!', somenteOk: true, labelConfirm: 'OK' }); return }
+    setFaixas([...faixas, nome])
+    setNovaFaixaNome('')
+    setModalNovaFaixa(false)
+  }
+
+  // ── salvarNovaEscola ──────────────────────────────────────────────────────
+
+  function salvarNovaEscola(
+    planoEditando?: Plano | null,
+    setPlanoEditando?: React.Dispatch<React.SetStateAction<Plano | null>>
+  ) {
+    const nome = novaEscolaNome.trim()
+    if (!nome) { setModalConfirm({ conteudo: 'Digite o nome da escola!', somenteOk: true, labelConfirm: 'OK' }); return }
+    const anoId = novaEscolaAnoId || anosLetivos.find(a => a.status === 'ativo')?.id || anosLetivos[0]?.id
+    if (anoId) {
+      const ano = anosLetivos.find(a => a.id === anoId)
+      if (!(ano && ano.escolas.find(e => e.nome.toLowerCase() === nome.toLowerCase()))) {
+        setAnosLetivos(anosLetivos.map(a => {
+          if (a.id !== anoId) return a
+          return { ...a, escolas: [...a.escolas, { id: String(Date.now()), nome, segmentos: [] }] }
+        }))
+      }
+    }
+    if (modalNovaEscola === 'plano' && planoEditando && setPlanoEditando) {
+      setPlanoEditando({ ...planoEditando, escola: nome })
+    }
+    setNovaEscolaNome('')
+    setNovaEscolaAnoId('')
+    setModalNovaEscola(false)
+  }
+
   // ── VALUE ──────────────────────────────────────────────────────────────────
   const value: AnoLetivoContextValue = {
     anosLetivos, setAnosLetivos,
@@ -436,6 +627,15 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     criarAnoLetivoPainel, excluirAnoPlano, adicionarPeriodoNoAno,
     salvarEdicaoPeriodo, excluirPeriodoDoAno,
     adicionarMetaNoAno, excluirMetaDoAno,
+    eventoEditando, setEventoEditando,
+    modalEventos, setModalEventos,
+    novoEvento, salvarEvento, excluirEvento,
+    gtAddAno, gtRemoveAno, gtMudarStatusAno,
+    gtAddEscola, gtRemoveEscola,
+    gtAddSegmento, gtRemoveSegmento,
+    gtAddTurma, gtRemoveTurma,
+    salvarNovaFaixa,
+    salvarNovaEscola,
   }
 
   return (

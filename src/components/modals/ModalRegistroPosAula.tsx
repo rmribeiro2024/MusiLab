@@ -1,5 +1,7 @@
 import React from 'react'
-import { useBancoPlanos } from '../BancoPlanosContext'
+import { useCalendarioContext } from '../../contexts'
+import { useAnoLetivoContext } from '../../contexts'
+import { usePlanosContext } from '../../contexts'
 
 export default function ModalRegistroPosAula() {
     const {
@@ -11,17 +13,17 @@ export default function ModalRegistroPosAula() {
         regAnoSel, setRegAnoSel,
         regEscolaSel, setRegEscolaSel,
         regSegmentoSel, setRegSegmentoSel,
-        setRegSerieSel,
         regTurmaSel, setRegTurmaSel,
         filtroRegAno, setFiltroRegAno,
         filtroRegEscola, setFiltroRegEscola,
         filtroRegSegmento, setFiltroRegSegmento,
         filtroRegTurma, setFiltroRegTurma,
         buscaRegistros, setBuscaRegistros,
-        anosLetivos,
-        planos,
-        salvarRegistro, editarRegistro, excluirRegistro,
-    } = useBancoPlanos()
+    } = useCalendarioContext()
+    const { anosLetivos } = useAnoLetivoContext()
+    const { planos, salvarRegistro, editarRegistro, excluirRegistro } = usePlanosContext()
+    // setRegSerieSel era backward-compat — componente inline ainda pode referenciar sem erro
+    const setRegSerieSel: ((v: string) => void) | undefined = undefined
 
     if (!modalRegistro || !planoParaRegistro) return null
 

@@ -1,26 +1,20 @@
 import React from 'react'
-import { useBancoPlanos } from '../BancoPlanosContext'
+import { useCalendarioContext } from '../../contexts'
+import { useAnoLetivoContext } from '../../contexts'
+import { usePlanosContext } from '../../contexts'
 
 export default function ModalRegistroRapido() {
     const {
-        modalRegistroRapido,
-        setModalRegistroRapido,
-        rrData,
-        setRrData,
-        rrAnoSel,
-        setRrAnoSel,
-        rrEscolaSel,
-        setRrEscolaSel,
-        rrPlanosSegmento,
-        setRrPlanosSegmento,
-        rrTextos,
-        setRrTextos,
-        anosLetivos,
-        planos,
+        modalRegistroRapido, setModalRegistroRapido,
+        rrData, setRrData,
+        rrAnoSel, setRrAnoSel,
+        rrEscolaSel, setRrEscolaSel,
+        rrPlanosSegmento, setRrPlanosSegmento,
+        rrTextos, setRrTextos,
         obterTurmasDoDia,
-        sugerirPlanoParaTurma,
-        salvarRegistroRapido,
-    } = useBancoPlanos()
+    } = useCalendarioContext()
+    const { anosLetivos } = useAnoLetivoContext()
+    const { planos, sugerirPlanoParaTurma, salvarRegistroRapido } = usePlanosContext()
 
     if (!modalRegistroRapido) return null
 
@@ -100,7 +94,7 @@ export default function ModalRegistroRapido() {
                                                 <label className="block text-xs font-bold text-blue-800 mb-2">📚 Plano de Aula</label>
                                                 <div className="flex gap-2">
                                                     <select
-                                                        value={rrPlanosSegmento[seg.id] || ''}
+                                                        value={String(rrPlanosSegmento[seg.id] || '')}
                                                         onChange={e=>setRrPlanosSegmento({...rrPlanosSegmento, [seg.id]: e.target.value})}
                                                         className="flex-1 px-3 py-2 border rounded-lg text-sm bg-white">
                                                         <option value="">Sem plano vinculado</option>

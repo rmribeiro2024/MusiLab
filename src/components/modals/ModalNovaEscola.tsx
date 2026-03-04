@@ -1,5 +1,6 @@
 import React from 'react'
-import { useBancoPlanos } from '../BancoPlanosContext'
+import { useAnoLetivoContext } from '../../contexts'
+import { usePlanosContext } from '../../contexts'
 
 export default function ModalNovaEscola() {
     const {
@@ -10,10 +11,9 @@ export default function ModalNovaEscola() {
         anosLetivos,
         novaEscolaAnoId,
         setNovaEscolaAnoId,
-        planoEditando,
-        setPlanoEditando,
         salvarNovaEscola,
-    } = useBancoPlanos()
+    } = useAnoLetivoContext()
+    const { planoEditando, setPlanoEditando } = usePlanosContext()
 
     if (!modalNovaEscola) return null
 
@@ -37,7 +37,7 @@ export default function ModalNovaEscola() {
                             type="text"
                             value={novaEscolaNome}
                             onChange={e=>setNovaEscolaNome(e.target.value)}
-                            onKeyDown={e=>{ if(e.key==='Enter') salvarNovaEscola(); }}
+                            onKeyDown={e=>{ if(e.key==='Enter') salvarNovaEscola(planoEditando, setPlanoEditando); }}
                             placeholder="Ex: EMEF João da Silva"
                             autoFocus
                             className="w-full px-4 py-3 border-2 border-indigo-200 focus:border-indigo-500 rounded-xl text-base outline-none"
@@ -73,7 +73,7 @@ export default function ModalNovaEscola() {
                             <label className="block text-sm font-semibold text-gray-500 mb-2">Escolas já cadastradas:</label>
                             <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
                                 {anosLetivos.flatMap(a=>a.escolas.map(e=>({nome:e.nome,ano:a.ano}))).map((item,i)=>(
-                                    <span key={i} onClick={()=>{ if(modalNovaEscola==='plano') setPlanoEditando({...planoEditando, escola: item.nome}); setModalNovaEscola(false); }}
+                                    <span key={i} onClick={()=>{ if(modalNovaEscola==='plano' && planoEditando) setPlanoEditando({...planoEditando, escola: item.nome}); setModalNovaEscola(false); }}
                                         className="cursor-pointer bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium transition"
                                         title={`Clique para usar: ${item.nome} (${item.ano})`}>
                                         {item.nome}
@@ -91,7 +91,7 @@ export default function ModalNovaEscola() {
                         className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold transition">
                         Cancelar
                     </button>
-                    <button onClick={salvarNovaEscola}
+                    <button onClick={() => salvarNovaEscola(planoEditando, setPlanoEditando)}
                         className="flex-1 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 py-3 rounded-xl font-bold transition">
                         🏫 Cadastrar Escola
                     </button>

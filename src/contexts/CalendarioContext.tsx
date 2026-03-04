@@ -5,7 +5,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { dbGet, dbSet } from '../lib/db'
 import { useModalContext } from './ModalContext'
-import type { Plano, RegistroPosAula, GradeEditando, AulaGrade } from '../types'
+import { useAnoLetivoContext } from './AnoLetivoContext'
+import type { Plano, RegistroPosAula, GradeEditando, AulaGrade, EventoEscolar } from '../types'
 
 // ─── INTERFACE DO CONTEXTO ────────────────────────────────────────────────────
 
@@ -30,8 +31,8 @@ export interface CalendarioContextValue {
   gradeEditando: GradeEditando | null
   setGradeEditando: React.Dispatch<React.SetStateAction<GradeEditando | null>>
   // Período de visualização
-  periodoDias: number
-  setPeriodoDias: React.Dispatch<React.SetStateAction<number>>
+  periodoDias: number | string
+  setPeriodoDias: React.Dispatch<React.SetStateAction<number | string>>
   dataInicioCustom: string
   setDataInicioCustom: React.Dispatch<React.SetStateAction<string>>
   dataFimCustom: string
@@ -90,8 +91,12 @@ export interface CalendarioContextValue {
   removerAulaGrade: (aulaId: number | string) => void
   duplicarAulaGrade: (aula: AulaGrade) => void
   atualizarAulaGrade: (aulaId: number | string, campo: string, valor: unknown) => void
+  // Preferências de visualização do calendário
+  ocultarFeriados: boolean
+  setOcultarFeriados: React.Dispatch<React.SetStateAction<boolean>>
   // Helper
   obterTurmasDoDia: (data: string) => AulaGrade[]
+  verificarEvento: (dataStr: string) => EventoEscolar | undefined
 }
 
 // ─── CONTEXTO ─────────────────────────────────────────────────────────────────
@@ -112,6 +117,7 @@ interface CalendarioProviderProps {
 
 export function CalendarioProvider({ children }: CalendarioProviderProps) {
   const { setModalConfirm } = useModalContext()
+  const { eventosEscolares } = useAnoLetivoContext()
 
   // ── Navegação do calendário mensal ─────────────────────────────────────────
   const [dataCalendario, setDataCalendario] = useState<Date>(new Date())
@@ -141,7 +147,7 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
   const [gradeEditando, setGradeEditando] = useState<GradeEditando | null>(null)
 
   // ── Período de visualização ────────────────────────────────────────────────
-  const [periodoDias, setPeriodoDias] = useState(30)
+  const [periodoDias, setPeriodoDias] = useState<number | string>(30)
   const [dataInicioCustom, setDataInicioCustom] = useState('')
   const [dataFimCustom, setDataFimCustom] = useState('')
 
@@ -286,6 +292,17 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
     return turmasDoDia
   }
 
+  // ── Preferências de visualização do calendário ─────────────────────────────
+  const [ocultarFeriados, setOcultarFeriados] = useState(() => {
+    const saved = dbGet('ocultarFeriados')
+    return saved === 'true'
+  })
+  useEffect(() => { dbSet('ocultarFeriados', String(ocultarFeriados)) }, [ocultarFeriados])
+
+  const verificarEvento = (dataStr: string): EventoEscolar | undefined => {
+    return eventosEscolares.find(e => e.data === dataStr)
+  }
+
   // ── Value ──────────────────────────────────────────────────────────────────
   const value: CalendarioContextValue = {
     dataCalendario, setDataCalendario,
@@ -327,7 +344,9 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
     removerAulaGrade,
     duplicarAulaGrade,
     atualizarAulaGrade,
+    ocultarFeriados, setOcultarFeriados,
     obterTurmasDoDia,
+    verificarEvento,
   }
 
   return <CalendarioContext.Provider value={value}>{children}</CalendarioContext.Provider>

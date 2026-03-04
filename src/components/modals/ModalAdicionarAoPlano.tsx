@@ -1,13 +1,10 @@
 import React from 'react'
-import { useBancoPlanos } from '../BancoPlanosContext'
+import { useAtividadesContext } from '../../contexts'
+import { usePlanosContext } from '../../contexts'
 
 export default function ModalAdicionarAoPlano() {
-    const {
-        modalAdicionarAoPlano,
-        setModalAdicionarAoPlano,
-        planos,
-        adicionarAtividadeAoPlano,
-    } = useBancoPlanos()
+    const { modalAdicionarAoPlano, setModalAdicionarAoPlano } = useAtividadesContext()
+    const { planos, adicionarAtividadeAoPlano } = usePlanosContext()
 
     if (!modalAdicionarAoPlano) return null
 

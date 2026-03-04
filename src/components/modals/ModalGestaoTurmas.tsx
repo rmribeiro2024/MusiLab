@@ -1,5 +1,5 @@
 import React from 'react'
-import { useBancoPlanos } from '../BancoPlanosContext'
+import { useAnoLetivoContext } from '../../contexts'
 
 export default function ModalGestaoTurmas() {
     const {
@@ -18,7 +18,7 @@ export default function ModalGestaoTurmas() {
         gtAddSegmento, gtRemoveSegmento,
         gtAddTurma, gtRemoveTurma,
         gtMudarStatusAno,
-    } = useBancoPlanos()
+    } = useAnoLetivoContext()
 
     if (!modalTurmas) return null
 
