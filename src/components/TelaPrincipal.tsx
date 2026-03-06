@@ -1,6 +1,8 @@
 import React, { useState, useRef, useMemo } from 'react'
+import { FixedSizeList } from 'react-window'
 import { sanitizar } from '../lib/utils'
 import { dbSize } from '../lib/db'
+import { useInfiniteScroll } from '../lib/hooks'
 import { usePlanosContext, useAnoLetivoContext, useAtividadesContext, useRepertorioContext, useModalContext, useCalendarioContext } from '../contexts'
 import RichTextEditor from './RichTextEditor'
 import { exportarPlanoPDF } from '../utils/pdf'
@@ -55,7 +57,7 @@ const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPl
 });
 
 export default function TelaPrincipal() {
-    const { anosLetivos, conceitos, faixas, tagsGlobais, setTagsGlobais, unidades, setModalNovaEscola, setNovaEscolaAnoId, setNovaEscolaNome, setModalNovaFaixa, setNovaFaixaNome } = useAnoLetivoContext()
+    const { anosLetivos, conceitos, setConceitos, faixas, tagsGlobais, setTagsGlobais, unidades, setModalNovaEscola, setNovaEscolaAnoId, setNovaEscolaNome, setModalNovaFaixa, setNovaFaixaNome } = useAnoLetivoContext()
     const { atividades, setAtividades, setAtividadeVinculandoMusica } = useAtividadesContext()
     const { repertorio } = useRepertorioContext()
     const { setModalConfirm } = useModalContext()
@@ -279,9 +281,52 @@ export default function TelaPrincipal() {
                 </div>
 
                 <div className="border-t border-slate-100 py-5">
-                    <div className="flex justify-between items-center mb-3"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🎵 Conceitos Musicais</label>{!adicionandoConceito && (<button type="button" onClick={() => setAdicionandoConceito(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">+ Novo</button>)}</div>
-                    {adicionandoConceito && (<div className="mb-3 flex gap-2"><input type="text" value={novoConceito} onChange={(e) => setNovoConceito(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarConceitoNovo()} className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Nome do conceito..." autoFocus /><button type="button" onClick={adicionarConceitoNovo} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✓</button><button type="button" onClick={() => { setAdicionandoConceito(false); setNovoConceito(""); }} className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✕</button></div>)}
-                    <div className="flex flex-wrap gap-2">{(conceitos || []).map(conceito => (<button key={conceito} type="button" onClick={() => toggleConceito(conceito)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.conceitos || []).includes(conceito) ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>{conceito}</button>))}</div>
+                    <div className="flex justify-between items-center mb-3">
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🎵 Conceitos Musicais</label>
+                        <div className="flex gap-1.5">
+                            {!adicionandoConceito && (
+                                <>
+                                    <button type="button" onClick={() => setAdicionandoConceito('editar')}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${adicionandoConceito === 'editar' ? 'bg-slate-200 text-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>
+                                        Editar
+                                    </button>
+                                    <button type="button" onClick={() => setAdicionandoConceito(true)}
+                                        className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                                        + Novo
+                                    </button>
+                                </>
+                            )}
+                            {adicionandoConceito === 'editar' && (
+                                <button type="button" onClick={() => setAdicionandoConceito(false)}
+                                    className="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                                    ✓ Concluir
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    {adicionandoConceito === true && (
+                        <div className="mb-3 flex gap-2">
+                            <input type="text" value={novoConceito} onChange={(e) => setNovoConceito(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarConceitoNovo()} className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Nome do conceito..." autoFocus />
+                            <button type="button" onClick={adicionarConceitoNovo} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✓</button>
+                            <button type="button" onClick={() => { setAdicionandoConceito(false); setNovoConceito(""); }} className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✕</button>
+                        </div>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                        {(conceitos || []).map(conceito => (
+                            adicionandoConceito === 'editar' ? (
+                                <span key={conceito} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold border ${(planoEditando.conceitos || []).includes(conceito) ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-600 border-slate-200'}`}>
+                                    {conceito}
+                                    <button type="button"
+                                        onClick={() => setConceitos(prev => prev.filter(c => c !== conceito))}
+                                        className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full hover:bg-black/20 text-xs leading-none transition-colors">
+                                        ×
+                                    </button>
+                                </span>
+                            ) : (
+                                <button key={conceito} type="button" onClick={() => toggleConceito(conceito)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.conceitos || []).includes(conceito) ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>{conceito}</button>
+                            )
+                        ))}
+                    </div>
                 </div>
 
 {/* TAGS (Formato/Dinâmica) */}
