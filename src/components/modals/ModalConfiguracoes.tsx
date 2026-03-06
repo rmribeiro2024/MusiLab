@@ -1,8 +1,9 @@
 import React from 'react'
-import { usePlanosContext, useAnoLetivoContext, useCalendarioContext } from '../../contexts'
+import { useAnoLetivoContext, useCalendarioContext } from '../../contexts'
+import { useBancoPlanos } from '../BancoPlanosContext'
 
 export default function ModalConfiguracoes() {
-    const { modalConfiguracoes, setModalConfiguracoes, baixarBackup, restaurarBackup } = usePlanosContext()
+    const { modalConfiguracoes, setModalConfiguracoes, baixarBackup, restaurarBackup } = useBancoPlanos()
     const { anosLetivos, setModalTurmas } = useAnoLetivoContext()
     const { setModalGradeSemanal } = useCalendarioContext()
 

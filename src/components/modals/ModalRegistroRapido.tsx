@@ -2,6 +2,7 @@ import React from 'react'
 import { useCalendarioContext } from '../../contexts'
 import { useAnoLetivoContext } from '../../contexts'
 import { usePlanosContext } from '../../contexts'
+import { useBancoPlanos } from '../BancoPlanosContext'
 
 export default function ModalRegistroRapido() {
     const {
@@ -14,7 +15,8 @@ export default function ModalRegistroRapido() {
         obterTurmasDoDia,
     } = useCalendarioContext()
     const { anosLetivos } = useAnoLetivoContext()
-    const { planos, sugerirPlanoParaTurma, salvarRegistroRapido } = usePlanosContext()
+    const { planos } = usePlanosContext()
+    const { sugerirPlanoParaTurma, salvarRegistroRapido } = useBancoPlanos()
 
     if (!modalRegistroRapido) return null
 
