@@ -198,6 +198,10 @@ export default function ModalRegistroPosAula() {
                             <textarea id="reg-nao-funcionou" value={novoRegistro.naoFuncionou} onChange={e=>setNovoRegistro({...novoRegistro, naoFuncionou: e.target.value})} className="w-full px-3 py-2 border-2 border-red-200 rounded-lg text-sm focus:border-red-400 outline-none" rows={2} placeholder="Ex: Tempo insuficiente para a etapa de criação..." />
                         </div>
                         <div>
+                            <label htmlFor="reg-melhorar" className="block font-bold text-orange-600 mb-1 text-sm">🔧 O que poderia ter sido melhor</label>
+                            <textarea id="reg-melhorar" value={novoRegistro.poderiaMelhorar||'' } onChange={e=>setNovoRegistro({...novoRegistro, poderiaMelhorar: e.target.value})} className="w-full px-3 py-2 border-2 border-orange-200 rounded-lg text-sm focus:border-orange-400 outline-none" rows={2} placeholder="Ex: Poderia ter dado mais tempo para a atividade de criação..." />
+                        </div>
+                        <div>
                             <label htmlFor="reg-proxima" className="block font-bold text-blue-600 mb-1 text-sm">💡 Ideias para a próxima aula</label>
                             <textarea id="reg-proxima" value={novoRegistro.proximaAula} onChange={e=>setNovoRegistro({...novoRegistro, proximaAula: e.target.value})} className="w-full px-3 py-2 border-2 border-blue-200 rounded-lg text-sm focus:border-blue-400 outline-none" rows={2} placeholder="Ex: Começar com o ostinato antes da canção..." />
                         </div>
