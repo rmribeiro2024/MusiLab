@@ -25,17 +25,75 @@ export default function ModalRegistroPosAula() {
     // setRegSerieSel era backward-compat — componente inline ainda pode referenciar sem erro
     const setRegSerieSel: ((v: string) => void) | undefined = undefined
 
-    // Auto-selecionar o ano letivo ativo (ou mais próximo do atual) ao abrir o modal
+    // Ao abrir o modal, pré-selecionar ano/escola/segmento/turma com base no plano
     React.useEffect(() => {
-        if (modalRegistro && !regAnoSel && anosLetivos.length > 0) {
-            const anoAtual = new Date().getFullYear()
-            const ativo = anosLetivos.find(a => a.status === 'ativo')
-            const maisProximo = anosLetivos
-                .filter(a => a.status !== 'arquivado')
-                .sort((a, b) => Math.abs((a.ano as number) - anoAtual) - Math.abs((b.ano as number) - anoAtual))[0]
-            const selecionado = ativo || maisProximo
-            if (selecionado) setRegAnoSel(String(selecionado.id))
+        if (!modalRegistro || !planoParaRegistro || anosLetivos.length === 0) return
+
+        // 1. Tentar encontrar a escola pelo nome salvo no plano
+        const escolaNomePlano = planoParaRegistro.escola || ''
+        // Faixa etária do plano é usada como segmento (ex: "1º ano", "Infantil")
+        const faixasPlano: string[] = planoParaRegistro.faixaEtaria || []
+        const segmentoNomePlano = planoParaRegistro.segmento || faixasPlano[0] || ''
+        const turmaNomePlano = planoParaRegistro.turma || ''
+
+        let anoEncontrado: any = null
+        let escolaEncontrada: any = null
+        let segmentoEncontrado: any = null
+        let turmaEncontrada: any = null
+
+        if (escolaNomePlano) {
+            // Procurar a escola em todos os anos letivos (priorizando o ativo)
+            const anosOrdenados = [...anosLetivos].sort((a: any, b: any) => {
+                if (a.status === 'ativo') return -1
+                if (b.status === 'ativo') return 1
+                return 0
+            })
+            for (const ano of anosOrdenados) {
+                const esc = ano.escolas.find((e: any) =>
+                    e.nome.toLowerCase().trim() === escolaNomePlano.toLowerCase().trim()
+                )
+                if (esc) {
+                    anoEncontrado = ano
+                    escolaEncontrada = esc
+                    // Tentar encontrar segmento — testa segmento do plano e cada faixa etária
+                    const candidatos = [segmentoNomePlano, ...faixasPlano].filter(Boolean)
+                    if (candidatos.length > 0) {
+                        const seg = esc.segmentos.find((s: any) =>
+                            candidatos.some(c => s.nome.toLowerCase().trim() === c.toLowerCase().trim())
+                        )
+                        if (seg) {
+                            segmentoEncontrado = seg
+                            // Tentar encontrar turma
+                            if (turmaNomePlano) {
+                                const tur = seg.turmas.find((t: any) =>
+                                    t.nome.toLowerCase().trim() === turmaNomePlano.toLowerCase().trim()
+                                )
+                                if (tur) turmaEncontrada = tur
+                            }
+                        }
+                    }
+                    break
+                }
+            }
         }
+
+        // 2. Se encontrou escola, pré-selecionar tudo
+        if (anoEncontrado) {
+            setRegAnoSel(String(anoEncontrado.id))
+            if (escolaEncontrada) setRegEscolaSel(String(escolaEncontrada.id))
+            if (segmentoEncontrado) setRegSegmentoSel(String(segmentoEncontrado.id))
+            if (turmaEncontrada) setRegTurmaSel(String(turmaEncontrada.id))
+            return
+        }
+
+        // 3. Fallback: selecionar apenas o ano letivo ativo (ou mais próximo)
+        const anoAtual = new Date().getFullYear()
+        const ativo = anosLetivos.find((a: any) => a.status === 'ativo')
+        const maisProximo = anosLetivos
+            .filter((a: any) => a.status !== 'arquivado')
+            .sort((a: any, b: any) => Math.abs((a.ano as number) - anoAtual) - Math.abs((b.ano as number) - anoAtual))[0]
+        const selecionado = ativo || maisProximo
+        if (selecionado) setRegAnoSel(String(selecionado.id))
     }, [modalRegistro]) // eslint-disable-line
 
     if (!modalRegistro || !planoParaRegistro) return null
@@ -196,10 +254,6 @@ export default function ModalRegistroPosAula() {
                         <div>
                             <label htmlFor="reg-nao-funcionou" className="block font-bold text-red-600 mb-1 text-sm">❌ O que não funcionou</label>
                             <textarea id="reg-nao-funcionou" value={novoRegistro.naoFuncionou} onChange={e=>setNovoRegistro({...novoRegistro, naoFuncionou: e.target.value})} className="w-full px-3 py-2 border-2 border-red-200 rounded-lg text-sm focus:border-red-400 outline-none" rows={2} placeholder="Ex: Tempo insuficiente para a etapa de criação..." />
-                        </div>
-                        <div>
-                            <label htmlFor="reg-melhorar" className="block font-bold text-orange-600 mb-1 text-sm">🔧 O que poderia ter sido melhor</label>
-                            <textarea id="reg-melhorar" value={novoRegistro.poderiaMelhorar||'' } onChange={e=>setNovoRegistro({...novoRegistro, poderiaMelhorar: e.target.value})} className="w-full px-3 py-2 border-2 border-orange-200 rounded-lg text-sm focus:border-orange-400 outline-none" rows={2} placeholder="Ex: Poderia ter dado mais tempo para a atividade de criação..." />
                         </div>
                         <div>
                             <label htmlFor="reg-proxima" className="block font-bold text-blue-600 mb-1 text-sm">💡 Ideias para a próxima aula</label>
