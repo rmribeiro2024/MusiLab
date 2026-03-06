@@ -595,14 +595,14 @@ export default function BancoPlanos({ session }) {
             const triggerSalvo = () => {
                 setStatusSalvamento('salvando');
                 if (timeoutSalvamento.current) clearTimeout(timeoutSalvamento.current);
-                // Se não há usuário logado, resolvemos localmente.
-                if (!userId) {
-                    timeoutSalvamento.current = setTimeout(() => {
-                        setStatusSalvamento('salvo');
-                        setTimeout(() => setStatusSalvamento(''), 2000);
-                    }, 400);
-                }
-                // Com userId, o status é atualizado pelo onSyncStatus do syncToSupabase.
+                // Timeout de fallback: garante que o indicador sempre resolve,
+                // seja por onSyncStatus (nuvem) ou por este fallback (local/offline).
+                timeoutSalvamento.current = setTimeout(() => {
+                    setStatusSalvamento(prev => prev === 'salvando' ? 'salvo' : prev);
+                    setTimeout(() => setStatusSalvamento(prev => prev === 'salvo' ? '' : prev), 2000);
+                }, userId ? 16000 : 400); // fallback > syncDelay (15s)
+                // Com userId, onSyncStatus pode resolver antes do fallback (2s de syncDelay + tempo de rede).
+                // Sem userId, o fallback de 400ms continua sendo o caminho normal.
             };
 
             // Callback para receber o resultado real do sync da nuvem
@@ -688,7 +688,7 @@ export default function BancoPlanos({ session }) {
             const syncDelay = (key, fn) => {
                 setStatusSalvamento('salvando');
                 if(syncTimeout.current[key]) clearTimeout(syncTimeout.current[key]);
-                syncTimeout.current[key] = setTimeout(fn, 2000);
+                syncTimeout.current[key] = setTimeout(fn, 15000); // delay aumentado de 2s para 15s — reduz Disk IO no Supabase
             };
 
             // ── CLEANUP DE TIMEOUTS NO UNMOUNT (evita memory leaks e erros pós-logout) ──
