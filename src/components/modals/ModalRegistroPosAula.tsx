@@ -25,6 +25,19 @@ export default function ModalRegistroPosAula() {
     // setRegSerieSel era backward-compat — componente inline ainda pode referenciar sem erro
     const setRegSerieSel: ((v: string) => void) | undefined = undefined
 
+    // Auto-selecionar o ano letivo ativo (ou mais próximo do atual) ao abrir o modal
+    React.useEffect(() => {
+        if (modalRegistro && !regAnoSel && anosLetivos.length > 0) {
+            const anoAtual = new Date().getFullYear()
+            const ativo = anosLetivos.find(a => a.status === 'ativo')
+            const maisProximo = anosLetivos
+                .filter(a => a.status !== 'arquivado')
+                .sort((a, b) => Math.abs((a.ano as number) - anoAtual) - Math.abs((b.ano as number) - anoAtual))[0]
+            const selecionado = ativo || maisProximo
+            if (selecionado) setRegAnoSel(String(selecionado.id))
+        }
+    }, [modalRegistro]) // eslint-disable-line
+
     if (!modalRegistro || !planoParaRegistro) return null
 
     return (
@@ -263,7 +276,7 @@ export default function ModalRegistroPosAula() {
                                 if (filtroRegTurma && r.turma != filtroRegTurma) return false;
                                 if (buscaRegistros.trim()) {
                                     const t = buscaRegistros.toLowerCase();
-                                    const campos = [r.resumoAula, r.funcionouBem, r.naoFuncionou, r.proximaAula, r.comportamento];
+                                    const campos = [r.resumoAula, r.funcionouBem, r.naoFuncionou, r.poderiaMelhorar, r.proximaAula, r.comportamento];
                                     if (!campos.some(c => (c||'').toLowerCase().includes(t))) return false;
                                 }
                                 return true;
@@ -315,6 +328,7 @@ export default function ModalRegistroPosAula() {
                                         {reg.resumoAula && <div className="mb-2 bg-white border border-gray-200 rounded-lg px-3 py-2"><span className="text-xs font-bold text-gray-500 uppercase tracking-wide">📋 Realizado</span><p className="text-sm font-medium text-gray-800 mt-0.5">{reg.resumoAula}</p></div>}
                                         {reg.funcionouBem && <div className="mb-1.5"><span className="text-xs font-bold text-green-700">✅ </span><span className="text-sm text-gray-700">{reg.funcionouBem}</span></div>}
                                         {reg.naoFuncionou && <div className="mb-1.5"><span className="text-xs font-bold text-red-600">❌ </span><span className="text-sm text-gray-700">{reg.naoFuncionou}</span></div>}
+                                        {reg.poderiaMelhorar && <div className="mb-1.5"><span className="text-xs font-bold text-orange-600">🔧 </span><span className="text-sm text-gray-700">{reg.poderiaMelhorar}</span></div>}
                                         {reg.proximaAula && <div className="mb-1.5"><span className="text-xs font-bold text-blue-600">💡 </span><span className="text-sm text-gray-700">{reg.proximaAula}</span></div>}
                                         {reg.comportamento && <div><span className="text-xs font-bold text-purple-600">👥 </span><span className="text-sm text-gray-700">{reg.comportamento}</span></div>}
                                     </div>
