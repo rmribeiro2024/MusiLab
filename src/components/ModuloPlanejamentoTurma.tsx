@@ -1,6 +1,6 @@
 // src/components/ModuloPlanejamentoTurma.tsx
 // Módulo "Planejamento por Turma" — visão pedagógica por turma.
-// Mostra: histórico da turma + último registro pós-aula + formulário inline da próxima aula.
+// Bloco 1: Último Registro | Bloco 2: Próximo Passo Sugerido | Bloco 3: Planejamento (3 modos)
 
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { usePlanejamentoTurmaContext, type TurmaSelecionada } from '../contexts/PlanejamentoTurmaContext'
@@ -11,7 +11,7 @@ import { useCalendarioContext } from '../contexts/CalendarioContext'
 import RichTextEditor from './RichTextEditor'
 import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula } from '../types'
 
-// ─── HELPER: Próxima data de aula ─────────────────────────────────────────────
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 function calcProximaAula(turma: TurmaSelecionada, grades: GradeEditando[]): string {
   const hoje = new Date()
@@ -24,8 +24,7 @@ function calcProximaAula(turma: TurmaSelecionada, grades: GradeEditando[]): stri
     for (const grade of grades) {
       if (dataStr < grade.dataInicio || dataStr > grade.dataFim) continue
       const match = grade.aulas.find(a =>
-        a.diaSemana === diaSemana &&
-        String(a.turmaId) === turma.turmaId
+        a.diaSemana === diaSemana && String(a.turmaId) === turma.turmaId
       )
       if (match) return dataStr
     }
@@ -39,7 +38,6 @@ function formatarData(dataStr: string): string {
   return `${d}/${m}/${y}`
 }
 
-// Mapeia o código do seletor "Resultado da aula" para texto legível
 function labelResultado(valor: string): string {
   const mapa: Record<string, string> = {
     bem:     '✅ Funcionou bem',
@@ -49,7 +47,6 @@ function labelResultado(valor: string): string {
   return mapa[valor] ?? valor
 }
 
-// Mapeia o código do seletor "Próxima aula" (proximaAulaOpcao) para texto legível
 function labelProximaOpcao(valor: string): string {
   const mapa: Record<string, string> = {
     nova:           'Iniciar nova aula',
@@ -71,7 +68,6 @@ function SeletorTurma() {
   const [escolaSel, setEscolaSel] = useState(turmaSelecionada?.escolaId ?? '')
   const [segmentoSel, setSegmentoSel] = useState(turmaSelecionada?.segmentoId ?? '')
 
-  // Usar String() para comparação robusta: IDs podem ser number (Supabase) ou string (local)
   const anoAtual: AnoLetivo | undefined = anosLetivos.find(a => String(a.id) === anoSel)
   const escolas: Escola[] = anoAtual?.escolas ?? []
   const escolaAtual: Escola | undefined = escolas.find(e => String(e.id) === escolaSel)
@@ -82,7 +78,6 @@ function SeletorTurma() {
   function handleAno(id: string) { setAnoSel(id); setEscolaSel(''); setSegmentoSel('') }
   function handleEscola(id: string) { setEscolaSel(id); setSegmentoSel('') }
   function handleSegmento(id: string) { setSegmentoSel(id) }
-
   function handleTurma(t: Turma) {
     selecionarTurma({ anoLetivoId: anoSel, escolaId: escolaSel, segmentoId: segmentoSel, turmaId: String(t.id) })
   }
@@ -97,17 +92,14 @@ function SeletorTurma() {
           <option value="">Ano letivo…</option>
           {anosLetivos.map(a => <option key={a.id} value={String(a.id)}>{a.nome ?? a.ano}</option>)}
         </select>
-
         <select value={escolaSel} onChange={e => handleEscola(e.target.value)} disabled={!anoSel} className={selectClass}>
           <option value="">Escola…</option>
           {escolas.map(e => <option key={e.id} value={String(e.id)}>{e.nome}</option>)}
         </select>
-
         <select value={segmentoSel} onChange={e => handleSegmento(e.target.value)} disabled={!escolaSel} className={selectClass}>
           <option value="">Segmento…</option>
           {segmentos.map(s => <option key={s.id} value={String(s.id)}>{s.nome}</option>)}
         </select>
-
         <div className="flex flex-wrap gap-1 items-center">
           {segmentoSel && turmas.length === 0 && <span className="text-xs text-slate-400">Sem turmas</span>}
           {turmas.map(t => {
@@ -158,7 +150,7 @@ function EstadoVazio() {
   )
 }
 
-// ─── COMPONENTE DE LINHA DE INFO ──────────────────────────────────────────────
+// ─── INFO ROW ─────────────────────────────────────────────────────────────────
 
 function InfoRow({ icon, label, valor, destacado }: { icon: string; label: string; valor: string; destacado?: boolean }) {
   return (
@@ -170,16 +162,38 @@ function InfoRow({ icon, label, valor, destacado }: { icon: string; label: strin
   )
 }
 
-// ─── PAINEL DE IMPORTAR DO BANCO ──────────────────────────────────────────────
+// ─── BLOCO 2: PRÓXIMO PASSO SUGERIDO ──────────────────────────────────────────
+
+function CardProximoPasso({ valor, onAdaptar }: { valor: string; onAdaptar: () => void }) {
+  return (
+    <div className="bg-indigo-50 border border-indigo-100 rounded-2xl shadow-sm p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Próximo passo sugerido</h3>
+        <button
+          type="button"
+          onClick={onAdaptar}
+          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 rounded-lg px-2.5 py-1 hover:bg-indigo-100 transition-colors"
+        >
+          🔄 Adaptar ↓
+        </button>
+      </div>
+      <p className="text-sm text-indigo-700 font-medium">🗓 {labelProximaOpcao(valor)}</p>
+    </div>
+  )
+}
+
+// ─── PAINEL DO BANCO DE AULAS ──────────────────────────────────────────────────
 
 function PainelImportarBanco({
   planosRelacionadosIds,
   onToggle,
   onFechar,
+  onImportar,
 }: {
   planosRelacionadosIds: string[]
   onToggle: (id: string) => void
   onFechar: () => void
+  onImportar?: (plano: import('../types').Plano) => void
 }) {
   const { planos } = usePlanosContext()
   const [busca, setBusca] = useState('')
@@ -200,14 +214,11 @@ function PainelImportarBanco({
   }, [planos, busca])
 
   return (
-    <div className="mt-2 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-      {/* Header do painel */}
+    <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
       <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100">
         <span className="text-xs font-semibold text-slate-600">Banco de aulas</span>
         <button type="button" onClick={onFechar} className="text-slate-400 hover:text-slate-600 text-xs">✕ Fechar</button>
       </div>
-
-      {/* Busca */}
       <div className="px-3 pt-3 pb-2">
         <input
           ref={inputRef}
@@ -218,8 +229,6 @@ function PainelImportarBanco({
           className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
         />
       </div>
-
-      {/* Lista */}
       <div className="max-h-56 overflow-y-auto divide-y divide-slate-50">
         {planosFiltrados.length === 0 ? (
           <p className="text-xs text-slate-400 text-center py-4 px-3">Nenhuma aula encontrada</p>
@@ -230,34 +239,37 @@ function PainelImportarBanco({
               <button
                 key={p.id}
                 type="button"
-                onClick={() => onToggle(String(p.id))}
+                onClick={() => onImportar ? onImportar(p) : onToggle(String(p.id))}
                 className={`w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 transition-colors ${sel ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-slate-50 text-slate-700'}`}
               >
                 <div className="min-w-0">
                   <p className="text-xs font-medium truncate">{p.titulo}</p>
                   {p.tema && <p className="text-xs text-slate-400 truncate">{p.tema}</p>}
                 </div>
-                <span className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center text-xs ${sel ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300'}`}>
-                  {sel ? '✓' : ''}
-                </span>
+                {!onImportar && (
+                  <span className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center text-xs ${sel ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300'}`}>
+                    {sel ? '✓' : ''}
+                  </span>
+                )}
               </button>
             )
           })
         )}
       </div>
-
-      {planosRelacionadosIds.length > 0 && (
-        <div className="px-3 py-2 bg-slate-50 border-t border-slate-100">
-          <p className="text-xs text-slate-500">{planosRelacionadosIds.length} aula(s) selecionada(s)</p>
-        </div>
-      )}
     </div>
   )
 }
 
-// ─── FORMULÁRIO INLINE DE PLANEJAMENTO ────────────────────────────────────────
+// ─── BLOCO 3: FORMULÁRIO DE PLANEJAMENTO (3 MODOS) ────────────────────────────
 
+type Modo = 'adaptar' | 'importar' | 'criar' | null
 type DadosForm = Omit<import('../types').PlanejamentoTurma, 'id' | 'criadoEm' | 'atualizadoEm' | 'anoLetivoId' | 'escolaId' | 'segmentoId' | 'turmaId'>
+
+function origemParaModo(origem?: string): Exclude<Modo, null> {
+  if (origem === 'adaptacao') return 'adaptar'
+  if (origem === 'banco') return 'importar'
+  return 'criar'
+}
 
 function FormPlanejamentoInline({
   turmaSelecionada,
@@ -265,14 +277,17 @@ function FormPlanejamentoInline({
   onSalvar,
   onCancelarEdicao,
   ultimoRegistro,
+  acionarAdaptar,
 }: {
   turmaSelecionada: TurmaSelecionada
   planejamentoEditando: import('../types').PlanejamentoTurma | null
   onSalvar: (dados: DadosForm) => void
   onCancelarEdicao: () => void
   ultimoRegistro?: RegistroPosAula | null
+  acionarAdaptar?: number
 }) {
   const { planos } = usePlanosContext()
+  const { setViewMode } = useRepertorioContext()
   const { gradesSemanas } = useCalendarioContext()
 
   const proximaData = useMemo(
@@ -280,36 +295,37 @@ function FormPlanejamentoInline({
     [turmaSelecionada, gradesSemanas]
   )
 
-  const [dataPrevista, setDataPrevista] = useState(
-    planejamentoEditando?.dataPrevista ?? proximaData
+  // Modo inicial: respeita origemAula ao editar; null (seletor) para novos
+  const [modo, setModo] = useState<Modo>(
+    planejamentoEditando ? origemParaModo(planejamentoEditando.origemAula) : null
   )
-  const [oQuePretendoFazer, setOQuePretendoFazer] = useState(
-    planejamentoEditando?.oQuePretendoFazer ?? ''
-  )
+  const [dataPrevista, setDataPrevista] = useState(planejamentoEditando?.dataPrevista ?? proximaData)
+  const [oQuePretendoFazer, setOQuePretendoFazer] = useState(planejamentoEditando?.oQuePretendoFazer ?? '')
   const [planosRelacionadosIds, setPlanosRelacionadosIds] = useState<string[]>(
     planejamentoEditando?.planosRelacionadosIds?.map(String) ?? []
   )
   const [novoMaterial, setNovoMaterial] = useState('')
-  const [materiais, setMateriais] = useState<string[]>(
-    planejamentoEditando?.materiais ?? []
-  )
-  const [importarAberto, setImportarAberto] = useState(false)
+  const [materiais, setMateriais] = useState<string[]>(planejamentoEditando?.materiais ?? [])
   const [editorKey, setEditorKey] = useState(0)
   const [materiaisAbertos, setMateriaisAbertos] = useState(materiais.length > 0)
+  const [painelImportarAberto, setPainelImportarAberto] = useState(false)
+  const [basePlano, setBasePlano] = useState<import('../types').Plano | null>(() => {
+    const id = planejamentoEditando?.planosRelacionadosIds?.[0]
+    return id ? planos.find(p => String(p.id) === id) ?? null : null
+  })
+  const [badgeAdaptar, setBadgeAdaptar] = useState('')
 
-  function importarTextoNoEditor(texto: string) {
-    setOQuePretendoFazer(texto)
-    setEditorKey(k => k + 1) // Força remount do editor com o novo conteúdo
-  }
+  // Referência para evitar disparo duplo do acionarAdaptar
+  const acionarAdaptarPrevRef = useRef(acionarAdaptar ?? 0)
 
-  // Sincroniza data quando proximaData é calculado (no início)
+  // Sincroniza data quando proximaData é calculado
   useEffect(() => {
     if (!planejamentoEditando && proximaData && !dataPrevista) {
       setDataPrevista(proximaData)
     }
   }, [proximaData]) // eslint-disable-line
 
-  // Sugestões de materiais (top 6 do histórico)
+  // Sugestões de materiais (top 8 do histórico)
   const sugestoesMateriais = useMemo(() => {
     const contagem: Record<string, number> = {}
     planos.forEach(p => {
@@ -318,16 +334,101 @@ function FormPlanejamentoInline({
         if (s) contagem[s] = (contagem[s] || 0) + 1
       })
     })
-    return Object.entries(contagem)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([m]) => m)
+    return Object.entries(contagem).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([m]) => m)
   }, [planos])
 
   const planosRelacionados = useMemo(
     () => planosRelacionadosIds.map(id => planos.find(p => String(p.id) === id)).filter(Boolean) as import('../types').Plano[],
     [planosRelacionadosIds, planos]
   )
+
+  const podeAdaptar = !!(
+    ultimoRegistro?.proximaAula?.trim() ||
+    ultimoRegistro?.poderiaMelhorar?.trim() ||
+    ultimoRegistro?.resumoAula?.trim()
+  )
+
+  // ── Selecionar modo ──────────────────────────────────────────────────────────
+  function handleSelecionarModo(novoModo: Modo) {
+    const temConteudo = oQuePretendoFazer.replace(/<[^>]+>/g, '').trim()
+    if (temConteudo && !window.confirm('Há texto no editor. Deseja trocar de modo e perder o conteúdo?')) return
+
+    let novoConteudo = ''
+    let novaBadge = ''
+
+    if (novoModo === 'adaptar') {
+      const partes: string[] = []
+      // 1. Ideias/estratégias — prioridade máxima, sem prefixo
+      if (ultimoRegistro?.proximaAula?.trim()) {
+        partes.push(`<p>${ultimoRegistro.proximaAula}</p>`)
+      }
+      // 2. O que poderia melhorar — atenção pedagógica
+      if (ultimoRegistro?.poderiaMelhorar?.trim()) {
+        partes.push(`<p>⚠️ Ponto de atenção: ${ultimoRegistro.poderiaMelhorar}</p>`)
+      }
+      // 3. Resumo da última aula — apenas como apoio, truncado
+      if (ultimoRegistro?.resumoAula?.trim()) {
+        const r = ultimoRegistro.resumoAula
+        const curto = r.length > 100 ? r.slice(0, 100) + '…' : r
+        partes.push(`<p>📋 Última aula: ${curto}</p>`)
+      }
+      novoConteudo = partes.join('')
+      novaBadge = ultimoRegistro?.dataAula ?? ultimoRegistro?.data ?? ''
+    }
+
+    setModo(novoModo)
+    setOQuePretendoFazer(novoConteudo)
+    setEditorKey(k => k + 1)
+    setBasePlano(null)
+    setMateriais([])
+    setPlanosRelacionadosIds([])
+    setBadgeAdaptar(novaBadge)
+    setPainelImportarAberto(novoModo === 'importar')
+  }
+
+  // ── Acionamento externo (botão "Adaptar ↓" do Bloco 2) ──────────────────────
+  useEffect(() => {
+    if (acionarAdaptar && acionarAdaptar !== acionarAdaptarPrevRef.current && !planejamentoEditando) {
+      acionarAdaptarPrevRef.current = acionarAdaptar
+      handleSelecionarModo('adaptar')
+    }
+  }, [acionarAdaptar]) // eslint-disable-line
+
+  // ── Voltar ao seletor com confirmação ────────────────────────────────────────
+  function tentarVoltarSeletor() {
+    const temConteudo = oQuePretendoFazer.replace(/<[^>]+>/g, '').trim()
+    if (temConteudo && !window.confirm('Há texto no editor. Deseja trocar de modo e perder o conteúdo?')) return
+    setModo(null)
+    setOQuePretendoFazer('')
+    setEditorKey(k => k + 1)
+    setBasePlano(null)
+    setMateriais([])
+    setPlanosRelacionadosIds([])
+    setPainelImportarAberto(false)
+  }
+
+  // ── Importar plano do banco (click único → auto-preenche e fecha painel) ─────
+  function importarDoBanco(plano: import('../types').Plano) {
+    const partes: string[] = []
+    if (plano.objetivoGeral?.trim()) partes.push(`<p>${plano.objetivoGeral}</p>`)
+    if (plano.atividadesRoteiro?.length) {
+      plano.atividadesRoteiro.forEach(a => {
+        if (a.nome?.trim()) partes.push(`<p>• ${a.nome}</p>`)
+      })
+    }
+    const html = partes.join('')
+    if (html) {
+      setOQuePretendoFazer(html)
+      setEditorKey(k => k + 1)
+    }
+    if (plano.materiais?.length) {
+      setMateriais(plano.materiais)
+      setMateriaisAbertos(true)
+    }
+    setPlanosRelacionadosIds([String(plano.id)])
+    setBasePlano(plano)
+    setPainelImportarAberto(false)
+  }
 
   function togglePlano(id: string) {
     setPlanosRelacionadosIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
@@ -346,182 +447,297 @@ function FormPlanejamentoInline({
   function handleSalvar(e: React.FormEvent) {
     e.preventDefault()
     if (!oQuePretendoFazer.replace(/<[^>]+>/g, '').trim()) return
+    const origemAula: 'banco' | 'adaptacao' | 'livre' =
+      modo === 'adaptar' ? 'adaptacao' :
+      modo === 'importar' ? 'banco' : 'livre'
     onSalvar({
       dataPrevista: dataPrevista || undefined,
       oQuePretendoFazer,
       planosRelacionadosIds: planosRelacionadosIds.length > 0 ? planosRelacionadosIds : undefined,
       materiais: materiais.length > 0 ? materiais : undefined,
+      origemAula,
     })
   }
 
   const inputClass = 'w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400'
 
+  const tituloModo =
+    planejamentoEditando ? '✏️ Editando planejamento' :
+    modo === 'adaptar'  ? '🔄 Adaptar da última aula' :
+    modo === 'importar' ? '🏦 Importar do banco' :
+    modo === 'criar'    ? '✏️ Criar nova aula' :
+    '📝 Planejamento da próxima aula'
+
   return (
     <form onSubmit={handleSalvar} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+
       {/* Cabeçalho */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-50">
-        <h3 className="text-sm font-semibold text-slate-700">
-          {planejamentoEditando ? '✏️ Editando planejamento' : '📝 Planejamento da próxima aula'}
-        </h3>
+        <h3 className="text-sm font-semibold text-slate-700">{tituloModo}</h3>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setImportarAberto(v => !v)}
-            className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors ${importarAberto ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'}`}
-          >
-            🏦 Importar do banco
-          </button>
+          {!planejamentoEditando && modo !== null && (
+            <button type="button" onClick={tentarVoltarSeletor}
+              className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+              ← Mudar modo
+            </button>
+          )}
           {planejamentoEditando && (
-            <button type="button" onClick={onCancelarEdicao} className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+            <button type="button" onClick={onCancelarEdicao}
+              className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
               Cancelar
             </button>
           )}
         </div>
       </div>
 
-      <div className="px-5 py-4 space-y-4">
-        {/* Data prevista */}
-        <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Data prevista</label>
-          <input type="date" value={dataPrevista} onChange={e => setDataPrevista(e.target.value)} className={inputClass} />
+      {/* ── SELETOR DE MODO (quando modo === null) ───────────────────────────── */}
+      {modo === null ? (
+        <div className="px-5 py-6">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-4">
+            Como deseja planejar esta aula?
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+
+            {/* Adaptar */}
+            <button
+              type="button"
+              onClick={() => handleSelecionarModo('adaptar')}
+              disabled={!podeAdaptar}
+              className={`flex flex-col items-center text-center p-4 rounded-2xl border-2 transition-all ${
+                podeAdaptar
+                  ? 'border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700 cursor-pointer'
+                  : 'border-slate-100 text-slate-300 cursor-not-allowed bg-slate-50'
+              }`}
+            >
+              <span className="text-3xl mb-2">🔄</span>
+              <span className="text-sm font-semibold">Adaptar</span>
+              <span className="text-xs text-slate-400 mt-1 leading-tight">da última aula</span>
+            </button>
+
+            {/* Importar */}
+            <button
+              type="button"
+              onClick={() => handleSelecionarModo('importar')}
+              className="flex flex-col items-center text-center p-4 rounded-2xl border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700 transition-all cursor-pointer"
+            >
+              <span className="text-3xl mb-2">🏦</span>
+              <span className="text-sm font-semibold">Importar</span>
+              <span className="text-xs text-slate-400 mt-1 leading-tight">do banco de aulas</span>
+            </button>
+
+            {/* Criar nova */}
+            <button
+              type="button"
+              onClick={() => handleSelecionarModo('criar')}
+              className="flex flex-col items-center text-center p-4 rounded-2xl border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700 transition-all cursor-pointer"
+            >
+              <span className="text-3xl mb-2">✏️</span>
+              <span className="text-sm font-semibold">Criar nova</span>
+              <span className="text-xs text-slate-400 mt-1 leading-tight">aula livre</span>
+            </button>
+          </div>
+
+          {!podeAdaptar && (
+            <p className="text-xs text-slate-400 text-center mt-3">
+              🔄 Adaptar estará disponível após registrar a primeira aula desta turma
+            </p>
+          )}
         </div>
 
-        {/* O que pretendo fazer */}
-        <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">
-            O que pretendo fazer <span className="text-red-400">*</span>
-          </label>
+      ) : (
 
-          {/* Chips das aulas importadas */}
-          {planosRelacionados.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {planosRelacionados.map(p => (
-                <span key={p.id} className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-1 rounded-lg">
-                  🏦 {p.titulo}
-                  <button type="button" onClick={() => togglePlano(String(p.id))} className="text-indigo-400 hover:text-indigo-700 ml-0.5">✕</button>
-                </span>
-              ))}
+        // ── FORMULÁRIO (modo selecionado) ────────────────────────────────────
+        <div className="px-5 py-4 space-y-4">
+
+          {/* Data prevista */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Data prevista</label>
+            <input type="date" value={dataPrevista} onChange={e => setDataPrevista(e.target.value)} className={inputClass} />
+          </div>
+
+          {/* MODO IMPORTAR — painel ou chip da aula-base */}
+          {modo === 'importar' && (
+            <div>
+              {basePlano ? (
+                <div className="flex items-center gap-2 text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-3 py-2.5 rounded-xl">
+                  <span>🏦</span>
+                  <span className="font-medium flex-1 truncate">Aula-base: {basePlano.titulo}</span>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('lista')}
+                    className="text-indigo-500 hover:text-indigo-700 underline whitespace-nowrap"
+                  >
+                    Ver roteiro
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBasePlano(null)
+                      setOQuePretendoFazer('')
+                      setEditorKey(k => k + 1)
+                      setMateriais([])
+                      setPlanosRelacionadosIds([])
+                      setPainelImportarAberto(true)
+                    }}
+                    className="text-indigo-400 hover:text-indigo-700 ml-0.5"
+                  >✕</button>
+                </div>
+              ) : painelImportarAberto ? (
+                <PainelImportarBanco
+                  planosRelacionadosIds={planosRelacionadosIds}
+                  onToggle={togglePlano}
+                  onFechar={() => setPainelImportarAberto(false)}
+                  onImportar={importarDoBanco}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setPainelImportarAberto(true)}
+                  className="w-full text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2.5 font-medium transition-colors text-center"
+                >
+                  🏦 Escolher aula do banco…
+                </button>
+              )}
             </div>
           )}
 
-          {/* Painel de importar */}
-          {importarAberto && (
-            <PainelImportarBanco
-              planosRelacionadosIds={planosRelacionadosIds}
-              onToggle={id => togglePlano(id)}
-              onFechar={() => setImportarAberto(false)}
-            />
-          )}
+          {/* O que pretendo fazer */}
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">
+              O que pretendo fazer <span className="text-red-400">*</span>
+            </label>
 
-          {/* Editor rico */}
-          <div className={importarAberto ? 'mt-2' : ''}>
+            {/* Badge: modo Adaptar */}
+            {modo === 'adaptar' && badgeAdaptar && (
+              <div className="flex items-center gap-1.5 text-xs text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-1.5 mb-2">
+                <span>📌</span>
+                <span>Baseado na última aula de {formatarData(badgeAdaptar)}</span>
+              </div>
+            )}
+
+            {/* Chips de planos relacionados (modo não-importar) */}
+            {modo !== 'importar' && planosRelacionados.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {planosRelacionados.map(p => (
+                  <span key={p.id} className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-1 rounded-lg">
+                    🏦 {p.titulo}
+                    <button type="button" onClick={() => togglePlano(String(p.id))} className="text-indigo-400 hover:text-indigo-700 ml-0.5">✕</button>
+                  </span>
+                ))}
+              </div>
+            )}
+
             <RichTextEditor
               key={`rte-${planejamentoEditando?.id ?? 'new'}-${turmaSelecionada.turmaId}-${editorKey}`}
               value={oQuePretendoFazer}
               onChange={setOQuePretendoFazer}
-              placeholder="Descreva o que planeja fazer nesta aula..."
+              placeholder={
+                modo === 'criar' ? 'Descreva o que planeja fazer nesta aula...' :
+                modo === 'adaptar' ? 'Edite o conteúdo pré-preenchido conforme necessário...' :
+                'O conteúdo da aula importada aparecerá aqui para edição...'
+              }
               rows={5}
             />
           </div>
-        </div>
 
-        {/* Materiais — colapsável */}
-        <div className="border border-slate-100 rounded-xl overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setMateriaisAbertos(v => !v)}
-            className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
-          >
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              📦 Materiais
-              {materiais.length > 0 && (
-                <span className="ml-2 normal-case font-normal text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-full">
-                  {materiais.length}
-                </span>
-              )}
-            </span>
-            <span className="text-slate-300 text-xs">{materiaisAbertos ? '▲' : '▼'}</span>
-          </button>
+          {/* Materiais — colapsável */}
+          <div className="border border-slate-100 rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setMateriaisAbertos(v => !v)}
+              className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
+            >
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                📦 Materiais
+                {materiais.length > 0 && (
+                  <span className="ml-2 normal-case font-normal text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-full">
+                    {materiais.length}
+                  </span>
+                )}
+              </span>
+              <span className="text-slate-300 text-xs">{materiaisAbertos ? '▲' : '▼'}</span>
+            </button>
 
-          {materiaisAbertos && (
-            <div className="px-3 py-3 space-y-2">
-              {/* Chips já adicionados */}
-              {materiais.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {materiais.map(m => (
-                    <span key={m} className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 rounded-full">
-                      {m}
-                      <button type="button" onClick={() => removerMaterial(m)} className="text-indigo-400 hover:text-indigo-700 ml-0.5">✕</button>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Sugestões do histórico */}
-              {sugestoesMateriais.length > 0 && (
-                <div>
-                  <p className="text-xs text-slate-400 mb-1.5">Sugestões:</p>
+            {materiaisAbertos && (
+              <div className="px-3 py-3 space-y-2">
+                {materiais.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
-                    {sugestoesMateriais.map(m => {
-                      const jaTem = materiais.includes(m)
-                      return (
-                        <button
-                          key={m}
-                          type="button"
-                          onClick={() => jaTem ? removerMaterial(m) : adicionarMaterial(m)}
-                          className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${jaTem ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'}`}
-                        >
-                          {jaTem ? '✓ ' : '+ '}{m}
-                        </button>
-                      )
-                    })}
+                    {materiais.map(m => (
+                      <span key={m} className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 rounded-full">
+                        {m}
+                        <button type="button" onClick={() => removerMaterial(m)} className="text-indigo-400 hover:text-indigo-700 ml-0.5">✕</button>
+                      </span>
+                    ))}
                   </div>
+                )}
+                {sugestoesMateriais.length > 0 && (
+                  <div>
+                    <p className="text-xs text-slate-400 mb-1.5">Sugestões:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {sugestoesMateriais.map(m => {
+                        const jaTem = materiais.includes(m)
+                        return (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => jaTem ? removerMaterial(m) : adicionarMaterial(m)}
+                            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${jaTem ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'}`}
+                          >
+                            {jaTem ? '✓ ' : '+ '}{m}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={novoMaterial}
+                    onChange={e => setNovoMaterial(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarMaterial() } }}
+                    placeholder="Adicionar material..."
+                    className={`${inputClass} flex-1`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => adicionarMaterial()}
+                    className="text-xs px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-medium transition-colors"
+                  >
+                    +
+                  </button>
                 </div>
-              )}
-
-              {/* Input para material personalizado */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={novoMaterial}
-                  onChange={e => setNovoMaterial(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarMaterial() } }}
-                  placeholder="Adicionar material..."
-                  className={`${inputClass} flex-1`}
-                />
-                <button
-                  type="button"
-                  onClick={() => adicionarMaterial()}
-                  className="text-xs px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-medium transition-colors"
-                >
-                  +
-                </button>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Botão salvar — estilo clean (igual ModalRegistroPosAula) */}
-        <button
-          type="submit"
-          className="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
-        >
-          <span className="text-emerald-500 text-base font-black">✓</span>
-          {planejamentoEditando ? 'Salvar alterações' : 'Salvar planejamento'}
-        </button>
-      </div>
+          {/* Botão salvar */}
+          <button
+            type="submit"
+            className="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+          >
+            <span className="text-emerald-500 text-base font-black">✓</span>
+            {planejamentoEditando ? 'Salvar alterações' : 'Salvar planejamento'}
+          </button>
+        </div>
+      )}
     </form>
   )
 }
 
-// ─── CARD DE PLANEJAMENTO (histórico) ─────────────────────────────────────────
+// ─── CARD DE PLANEJAMENTO (histórico salvo) ────────────────────────────────────
 
 function CardPlanejamento({ planejamento }: { planejamento: import('../types').PlanejamentoTurma }) {
   const { editarPlanejamento, excluirPlanejamento, buildDadosParaBanco } = usePlanejamentoTurmaContext()
-  const { novoPlano, setPlanoEditando } = usePlanosContext()
+  const { novoPlano, setPlanoEditando, planos } = usePlanosContext()
   const { setViewMode } = useRepertorioContext()
-  const { planos } = usePlanosContext()
   const [expandido, setExpandido] = useState(false)
+
+  const origemLabel: Record<string, string> = {
+    adaptacao: '🔄 Adaptada',
+    banco:     '🏦 Importada',
+    livre:     '✏️ Criada',
+  }
 
   const planosRelacionados = useMemo(
     () => (planejamento.planosRelacionadosIds ?? []).map(id => planos.find(p => String(p.id) === id)).filter(Boolean) as import('../types').Plano[],
@@ -552,9 +768,14 @@ function CardPlanejamento({ planejamento }: { planejamento: import('../types').P
         onClick={() => setExpandido(v => !v)}
         className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-slate-50 transition-colors"
       >
-        <div className="min-w-0">
-          <span className="text-sm font-medium text-slate-700">{planejamento.dataPrevista ? formatarData(planejamento.dataPrevista) : 'Sem data'}</span>
-          <p className="text-xs text-slate-500 mt-0.5 truncate" dangerouslySetInnerHTML={{ __html: planejamento.oQuePretendoFazer?.replace(/<[^>]+>/g, ' ').slice(0, 80) ?? '' }} />
+        <div className="min-w-0 flex items-center gap-2">
+          <span className="text-sm font-medium text-slate-700 flex-shrink-0">
+            {planejamento.dataPrevista ? formatarData(planejamento.dataPrevista) : 'Sem data'}
+          </span>
+          {planejamento.origemAula && (
+            <span className="text-xs text-slate-400 flex-shrink-0">{origemLabel[planejamento.origemAula] ?? ''}</span>
+          )}
+          <p className="text-xs text-slate-500 truncate" dangerouslySetInnerHTML={{ __html: planejamento.oQuePretendoFazer?.replace(/<[^>]+>/g, ' ').slice(0, 60) ?? '' }} />
         </div>
         <span className="text-slate-300 text-xs ml-2 flex-shrink-0">{expandido ? '▲' : '▼'}</span>
       </button>
@@ -611,19 +832,31 @@ function ConteudoTurma() {
 
   const [historicoExpandido, setHistoricoExpandido] = useState(false)
   const [planejamentosExpandidos, setPlanejamentosExpandidos] = useState(false)
+  const [contadorAdaptar, setContadorAdaptar] = useState(0)
+  const formBlockRef = useRef<HTMLDivElement>(null)
 
   if (!turmaSelecionada) return null
 
   const registrosAnteriores = historicoDaTurma.slice(1)
 
+  function handleAdaptarFromBloco2() {
+    setContadorAdaptar(c => c + 1)
+    setTimeout(() => {
+      formBlockRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 80)
+  }
+
   return (
     <div className="space-y-4">
-      {/* Último registro pós-aula */}
+
+      {/* ── BLOCO 1: Último registro pós-aula ─────────────────────────────────── */}
       {ultimoRegistroDaTurma ? (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-slate-700">Último registro</h3>
-            <span className="text-xs text-slate-400">{ultimoRegistroDaTurma.dataAula ?? ultimoRegistroDaTurma.data ?? '—'}</span>
+            <span className="text-xs text-slate-400">
+              {formatarData(ultimoRegistroDaTurma.dataAula ?? ultimoRegistroDaTurma.data ?? '')}
+            </span>
           </div>
           <div className="space-y-2">
             {ultimoRegistroDaTurma.resultadoAula && (
@@ -650,15 +883,20 @@ function ConteudoTurma() {
             {ultimoRegistroDaTurma.proximaAula && (
               <InfoRow icon="💡" label="Ideias / estratégias" valor={ultimoRegistroDaTurma.proximaAula} destacado />
             )}
-            {ultimoRegistroDaTurma.proximaAulaOpcao && (
-              <InfoRow icon="🗓" label="Sugestão para próxima aula" valor={labelProximaOpcao(ultimoRegistroDaTurma.proximaAulaOpcao)} destacado />
-            )}
           </div>
         </div>
       ) : (
         <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-4 text-center">
           <p className="text-sm text-slate-400">Nenhum registro pós-aula encontrado para esta turma.</p>
         </div>
+      )}
+
+      {/* ── BLOCO 2: Próximo Passo Sugerido ───────────────────────────────────── */}
+      {ultimoRegistroDaTurma?.proximaAulaOpcao && (
+        <CardProximoPasso
+          valor={ultimoRegistroDaTurma.proximaAulaOpcao}
+          onAdaptar={handleAdaptarFromBloco2}
+        />
       )}
 
       {/* Histórico anterior (colapsável) */}
@@ -675,10 +913,8 @@ function ConteudoTurma() {
             <div className="divide-y divide-slate-100">
               {registrosAnteriores.map((r, i) => (
                 <div key={r.id ?? i} className="px-4 py-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-slate-500">{r.dataAula ?? r.data ?? '—'}</span>
-                  </div>
-                  {r.resumoAula && <p className="text-xs text-slate-600 line-clamp-2">{r.resumoAula}</p>}
+                  <span className="text-xs font-medium text-slate-500">{formatarData(r.dataAula ?? r.data ?? '')}</span>
+                  {r.resumoAula && <p className="text-xs text-slate-600 line-clamp-2 mt-0.5">{r.resumoAula}</p>}
                 </div>
               ))}
             </div>
@@ -686,15 +922,18 @@ function ConteudoTurma() {
         </div>
       )}
 
-      {/* ── FORMULÁRIO INLINE SEMPRE ABERTO ─────────── */}
-      <FormPlanejamentoInline
-        key={`form-${turmaSelecionada.turmaId}-${planejamentoEditando?.id ?? 'new'}`}
-        turmaSelecionada={turmaSelecionada}
-        planejamentoEditando={planejamentoEditando}
-        onSalvar={dados => { salvarPlanejamento(dados); fecharForm() }}
-        onCancelarEdicao={fecharForm}
-        ultimoRegistro={ultimoRegistroDaTurma}
-      />
+      {/* ── BLOCO 3: Formulário de planejamento ───────────────────────────────── */}
+      <div ref={formBlockRef}>
+        <FormPlanejamentoInline
+          key={`form-${turmaSelecionada.turmaId}-${planejamentoEditando?.id ?? 'new'}`}
+          turmaSelecionada={turmaSelecionada}
+          planejamentoEditando={planejamentoEditando}
+          onSalvar={dados => { salvarPlanejamento(dados); fecharForm() }}
+          onCancelarEdicao={fecharForm}
+          ultimoRegistro={ultimoRegistroDaTurma}
+          acionarAdaptar={contadorAdaptar}
+        />
+      </div>
 
       {/* Planejamentos salvos (colapsável) */}
       {planejamentosDaTurma.length > 0 && (
