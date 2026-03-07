@@ -161,60 +161,49 @@ const RESIZE_HANDLES = [
 ] as const
 
 
-// ── PRÓXIMA AULA SELECTOR ──────────────────────────────────────────────────
-const OPCOES_PROXIMA = [
-    { value: 'nova',         label: 'Iniciar nova aula' },
-    { value: 'revisar',      label: 'Revisar / retomar conteúdo' },
-    { value: 'revisar-nova', label: 'Revisar + iniciar nova aula' },
-    { value: 'decidir',      label: 'Decidir depois' },
+// ── RESULTADO DA AULA SELECTOR ────────────────────────────────────────────────
+const OPCOES_RESULTADO = [
+    { value: 'bem',     label: 'Funcionou bem' },
+    { value: 'parcial', label: 'Parcial' },
+    { value: 'nao',     label: 'Não funcionou' },
 ] as const;
 
-type OpcaoProxima = typeof OPCOES_PROXIMA[number]['value'] | '';
+type OpcaoResultado = typeof OPCOES_RESULTADO[number]['value'] | '';
 
-interface ProximaAulaSelectorProps {
-    value: OpcaoProxima;
-    onChange: (v: OpcaoProxima) => void;
-    onDone: () => void;
+interface ResultadoAulaSelectorProps {
+    value: OpcaoResultado;
+    onChange: (v: OpcaoResultado) => void;
     firstRef?: React.RefObject<HTMLButtonElement>;
 }
 
-function ProximaAulaSelector({ value, onChange, onDone, firstRef }: ProximaAulaSelectorProps) {
+function ResultadoAulaSelector({ value, onChange, firstRef }: ResultadoAulaSelectorProps) {
     const refs = React.useRef<(HTMLButtonElement | null)[]>([]);
     return (
         <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
-            {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: 13 }}>🗓</span>
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase' as const, color: '#94a3b8' }}>Próxima aula</span>
+                <span style={{ fontSize: 13 }}>📊</span>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase' as const, color: '#94a3b8' }}>Resultado da aula</span>
                 {value && (
-                    <button
-                        tabIndex={-1}
-                        onClick={() => onChange('')}
-                        style={{ marginLeft: 'auto', fontSize: 10, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
-                    >limpar</button>
+                    <button tabIndex={-1} onClick={() => onChange('')}
+                        style={{ marginLeft: 'auto', fontSize: 10, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}>
+                        limpar
+                    </button>
                 )}
             </div>
-            {/* Opções */}
-            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 0 }}>
-                {OPCOES_PROXIMA.map((op, idx) => {
+            <div style={{ display: 'flex', flexDirection: 'column' as const }}>
+                {OPCOES_RESULTADO.map((op, idx) => {
                     const sel = value === op.value;
                     return (
                         <button
                             key={op.value}
                             ref={el => { refs.current[idx] = el; if (idx === 0 && firstRef) (firstRef as React.MutableRefObject<HTMLButtonElement | null>).current = el; }}
                             tabIndex={0}
-                            onClick={() => { onChange(op.value); onDone(); }}
+                            onClick={() => onChange(sel ? '' : op.value)}
                             onKeyDown={e => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    onChange(op.value);
-                                    onDone();
-                                } else if (e.key === 'Tab' && idx < OPCOES_PROXIMA.length - 1 && !e.shiftKey) {
-                                    // Tab dentro do componente avança para próxima opção
-                                    e.preventDefault();
-                                    refs.current[idx + 1]?.focus();
+                                if (e.key === 'Enter') { e.preventDefault(); onChange(sel ? '' : op.value); }
+                                else if (e.key === 'Tab' && idx < OPCOES_RESULTADO.length - 1 && !e.shiftKey) {
+                                    e.preventDefault(); refs.current[idx + 1]?.focus();
                                 }
-                                // Tab na última opção ou Shift+Tab deixa comportamento natural
                             }}
                             style={{
                                 display: 'flex', alignItems: 'center', gap: 10,
@@ -222,27 +211,18 @@ function ProximaAulaSelector({ value, onChange, onDone, firstRef }: ProximaAulaS
                                 background: sel ? '#eff6ff' : '#fff',
                                 color: sel ? '#1d4ed8' : '#64748b',
                                 fontWeight: sel ? 600 : 400,
-                                fontSize: 13,
-                                border: 'none',
+                                fontSize: 13, border: 'none',
                                 borderTop: idx > 0 ? '1px solid #f1f5f9' : 'none',
                                 borderLeft: sel ? '3px solid #93c5fd' : '3px solid transparent',
-                                cursor: 'pointer',
-                                textAlign: 'left' as const,
-                                width: '100%',
-                                transition: 'all .1s',
-                                outline: 'none',
+                                cursor: 'pointer', textAlign: 'left' as const,
+                                width: '100%', transition: 'all .1s', outline: 'none',
                             }}
                             onFocus={e => { if (!sel) e.currentTarget.style.background = '#f8fafc'; }}
                             onBlur={e  => { if (!sel) e.currentTarget.style.background = '#fff'; }}
                             onMouseOver={e => { if (!sel) e.currentTarget.style.background = '#f0f9ff'; }}
                             onMouseOut={e  => { if (!sel) e.currentTarget.style.background = '#fff'; }}
                         >
-                            {/* Traço lateral (indicador visual extra quando selecionado) */}
-                            <div style={{
-                                width: 3, height: 16, borderRadius: 4, flexShrink: 0,
-                                background: sel ? '#93c5fd' : '#e2e8f0',
-                                transition: 'background .1s',
-                            }} />
+                            <div style={{ width: 3, height: 16, borderRadius: 4, flexShrink: 0, background: sel ? '#93c5fd' : '#e2e8f0', transition: 'background .1s' }} />
                             {op.label}
                         </button>
                     );
@@ -252,6 +232,7 @@ function ProximaAulaSelector({ value, onChange, onDone, firstRef }: ProximaAulaS
     );
 }
 // ──────────────────────────────────────────────────────────────────────────────
+
 export default function ModalRegistroPosAula() {
     const {
         modalRegistro, setModalRegistro,
@@ -340,7 +321,7 @@ export default function ModalRegistroPosAula() {
     const dragRef = React.useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null)
     const chipOpenRefs = React.useRef<Array<(() => void) | null>>([])
     const salvarBtnRef = React.useRef<HTMLButtonElement>(null)
-    const proximaAulaFirstRef = React.useRef<HTMLButtonElement>(null)
+    const resultadoAulaFirstRef = React.useRef<HTMLButtonElement>(null)
 
     const onHeaderMouseDown = (e: React.MouseEvent) => {
         if (maximizado || minimizado) return
@@ -462,7 +443,7 @@ export default function ModalRegistroPosAula() {
                                     {registroEditando && (
                                         <div className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                                             <span className="text-xs font-medium text-slate-600">Editando registro</span>
-                                            <button onClick={() => { setRegistroEditando(null); setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', poderiaMelhorar: '', proximaAula: '', proximaAulaOpcao: '', comportamento: '', anotacoesGerais: '' }); setRegEscolaSel(''); setRegTurmaSel('') }}
+                                            <button onClick={() => { setRegistroEditando(null); setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', poderiaMelhorar: '', proximaAula: '', proximaAulaOpcao: '', resultadoAula: '', comportamento: '', anotacoesGerais: '' }); setRegEscolaSel(''); setRegTurmaSel('') }}
                                                 className="text-xs font-bold text-slate-500 hover:text-red-500 transition-colors">✕ Cancelar</button>
                                         </div>
                                     )}
@@ -541,6 +522,13 @@ export default function ModalRegistroPosAula() {
                                             className="flex-1 bg-transparent outline-none border-none text-right" style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }} />
                                     </div>
 
+                                        {/* Resultado da aula */}
+                                        <ResultadoAulaSelector
+                                            value={(novoRegistro as any).resultadoAula || ''}
+                                            onChange={v => setNovoRegistro({ ...novoRegistro, resultadoAula: v })}
+                                            firstRef={resultadoAulaFirstRef}
+                                        />
+
                                     {/* Chips de anotação */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                         {camposConfig.map(({ id, icon, label, field, placeholder }, idx) => {
@@ -583,16 +571,8 @@ export default function ModalRegistroPosAula() {
                                             value={(novoRegistro as any).proximaAula || ''}
                                             filled={!!((novoRegistro as any).proximaAula?.trim())}
                                             onChange={v => setNovoRegistro({ ...novoRegistro, proximaAula: v })}
-                                            onTabNext={() => proximaAulaFirstRef.current?.focus()}
+                                            onTabNext={() => salvarBtnRef.current?.focus()}
                                             ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length + 2] = fn }}
-                                        />
-
-                                        {/* Próxima aula — seleção de encaminhamento */}
-                                        <ProximaAulaSelector
-                                            value={(novoRegistro as any).proximaAulaOpcao || ''}
-                                            onChange={v => setNovoRegistro({ ...novoRegistro, proximaAulaOpcao: v })}
-                                            onDone={() => salvarBtnRef.current?.focus()}
-                                            firstRef={proximaAulaFirstRef}
                                         />
                                     </div>
 
