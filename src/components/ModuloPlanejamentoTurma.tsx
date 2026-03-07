@@ -9,7 +9,7 @@ import { usePlanosContext } from '../contexts/PlanosContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import RichTextEditor from './RichTextEditor'
-import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando } from '../types'
+import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula } from '../types'
 
 // ─── HELPER: Próxima data de aula ─────────────────────────────────────────────
 
@@ -243,11 +243,13 @@ function FormPlanejamentoInline({
   planejamentoEditando,
   onSalvar,
   onCancelarEdicao,
+  ultimoRegistro,
 }: {
   turmaSelecionada: TurmaSelecionada
   planejamentoEditando: import('../types').PlanejamentoTurma | null
   onSalvar: (dados: DadosForm) => void
   onCancelarEdicao: () => void
+  ultimoRegistro?: RegistroPosAula | null
 }) {
   const { planos } = usePlanosContext()
   const { gradesSemanas } = useCalendarioContext()
@@ -271,6 +273,12 @@ function FormPlanejamentoInline({
     planejamentoEditando?.materiais ?? []
   )
   const [importarAberto, setImportarAberto] = useState(false)
+  const [editorKey, setEditorKey] = useState(0)
+
+  function importarTextoNoEditor(texto: string) {
+    setOQuePretendoFazer(texto)
+    setEditorKey(k => k + 1) // Força remount do editor com o novo conteúdo
+  }
 
   // Sincroniza data quando proximaData é calculado (no início)
   useEffect(() => {
@@ -352,6 +360,37 @@ function FormPlanejamentoInline({
           <input type="date" value={dataPrevista} onChange={e => setDataPrevista(e.target.value)} className={inputClass} />
         </div>
 
+        {/* Contexto da última aula — resultadoAula + proximaAula */}
+        {!planejamentoEditando && (ultimoRegistro?.resultadoAula || ultimoRegistro?.proximaAula) && (
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Da última aula</p>
+            {ultimoRegistro.resultadoAula && (
+              <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 flex items-start gap-2 text-xs text-slate-600">
+                <span className="mt-0.5 flex-shrink-0">🏆</span>
+                <div>
+                  <span className="font-medium text-slate-500">Resultado: </span>
+                  {ultimoRegistro.resultadoAula}
+                </div>
+              </div>
+            )}
+            {ultimoRegistro.proximaAula && (
+              <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2.5 flex items-start justify-between gap-2 text-xs text-indigo-700">
+                <div className="min-w-0">
+                  <span className="font-medium">➡️ Próxima aula planejada: </span>
+                  {ultimoRegistro.proximaAula}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => importarTextoNoEditor(ultimoRegistro.proximaAula!)}
+                  className="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 rounded-lg px-2.5 py-1 hover:bg-indigo-100 transition-colors whitespace-nowrap"
+                >
+                  Usar como base
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* O que pretendo fazer + Importar do banco */}
         <div>
           <div className="flex items-center justify-between mb-1">
@@ -391,7 +430,7 @@ function FormPlanejamentoInline({
           {/* Editor rico */}
           <div className={importarAberto ? 'mt-2' : ''}>
             <RichTextEditor
-              key={`rte-${planejamentoEditando?.id ?? 'new'}-${turmaSelecionada.turmaId}`}
+              key={`rte-${planejamentoEditando?.id ?? 'new'}-${turmaSelecionada.turmaId}-${editorKey}`}
               value={oQuePretendoFazer}
               onChange={setOQuePretendoFazer}
               placeholder="Descreva o que planeja fazer nesta aula..."
@@ -586,8 +625,11 @@ function ConteudoTurma() {
             {ultimoRegistroDaTurma.resumoAula && <InfoRow icon="📋" label="O que foi feito" valor={ultimoRegistroDaTurma.resumoAula} />}
             {ultimoRegistroDaTurma.funcionouBem && <InfoRow icon="✅" label="Funcionou bem" valor={ultimoRegistroDaTurma.funcionouBem} />}
             {ultimoRegistroDaTurma.naoFuncionou && <InfoRow icon="❌" label="Não funcionou" valor={ultimoRegistroDaTurma.naoFuncionou} />}
-            {(ultimoRegistroDaTurma as { poderiaMelhorar?: string }).poderiaMelhorar && (
-              <InfoRow icon="💡" label="Poderia melhorar" valor={(ultimoRegistroDaTurma as { poderiaMelhorar?: string }).poderiaMelhorar!} />
+            {ultimoRegistroDaTurma.resultadoAula && (
+              <InfoRow icon="🏆" label="Resultado da aula" valor={ultimoRegistroDaTurma.resultadoAula} />
+            )}
+            {ultimoRegistroDaTurma.poderiaMelhorar && (
+              <InfoRow icon="💡" label="Poderia melhorar" valor={ultimoRegistroDaTurma.poderiaMelhorar} />
             )}
             {ultimoRegistroDaTurma.proximaAula && (
               <InfoRow icon="➡️" label="Próxima aula sugerida" valor={ultimoRegistroDaTurma.proximaAula} destacado />
@@ -633,6 +675,7 @@ function ConteudoTurma() {
         planejamentoEditando={planejamentoEditando}
         onSalvar={dados => { salvarPlanejamento(dados); fecharForm() }}
         onCancelarEdicao={fecharForm}
+        ultimoRegistro={ultimoRegistroDaTurma}
       />
 
       {/* Planejamentos salvos (colapsável) */}
