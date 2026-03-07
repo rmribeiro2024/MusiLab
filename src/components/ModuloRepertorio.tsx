@@ -115,7 +115,7 @@ export default function ModuloRepertorio() {
     }), [repertorio, buscaRepertorioDebounced, filtroOrigem, filtroEstilo, filtroTonalidade, filtroEscala, filtroCompasso, filtroAndamento, filtroEstrutura, filtroEnergia, filtroInstrumentacao, filtroDinamica]);
 
     return (
-    <div className="max-w-5xl mx-auto space-y-4">
+    <div className="space-y-4">
         {!musicaEditando ? (
             <>
                 {/* Cabeçalho */}

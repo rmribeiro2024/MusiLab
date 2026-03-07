@@ -76,7 +76,7 @@ export default function ModuloSequencias() {
     const infoSeq = sequenciaDetalhe ? obterInfoSequencia(sequenciaDetalhe) : null;
 
     return (
-        <>
+        <div>
             {/* ════ VISTA PRINCIPAL ════ */}
             {sequenciaDetalhe ? (
             <>
@@ -103,8 +103,8 @@ export default function ModuloSequencias() {
                             // Salvar alterações
                             setSequencias([...sequencias]);
                             setModalConfirm({ conteudo: '✅ Alterações salvas!', somenteOk: true, labelConfirm: 'OK' });
-                        }} className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold">💾 Salvar</button>
-                        <button onClick={()=>exportarSequenciaPDF(seq)} className="bg-purple-500 text-white px-4 py-2 rounded-lg font-bold">📄 PDF</button>
+                        }} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm transition">💾 Salvar</button>
+                        <button onClick={()=>exportarSequenciaPDF(seq)} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm transition">📄 PDF</button>
                         <button onClick={()=>{ setModalConfirm({ titulo: 'Excluir sequência?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: ()=>{ excluirSequencia(seq.id); setSequenciaDetalhe(null); } }); }} className="bg-red-100 text-red-600 px-4 py-2 rounded-lg font-bold">🗑️</button>
                     </div>
                 </div>
@@ -184,7 +184,7 @@ export default function ModuloSequencias() {
                                     <div className="text-center py-6">
                                         <p className="text-gray-400 mb-4">Slot vazio</p>
                                         <div className="flex gap-2 justify-center">
-                                            <button onClick={() => setModalVincularPlano({sequenciaId: seq.id, slotIndex: index})} className="bg-rose-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-rose-600">🔗 Vincular Plano</button>
+                                            <button onClick={() => setModalVincularPlano({sequenciaId: seq.id, slotIndex: index})} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm transition">🔗 Vincular Plano</button>
                                             <button onClick={() => atualizarRascunhoSlot(seq.id, index, 'titulo', 'Nova Aula')} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-300">✏️ Rascunho</button>
                                         </div>
                                     </div>
@@ -201,7 +201,7 @@ export default function ModuloSequencias() {
             <div className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold text-gray-800">📚 Minhas Sequências</h2>
-                    <button onClick={() => novaSequencia()} className="bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">➕ Nova Sequência</button>
+                    <button onClick={() => novaSequencia()} className="shrink-0 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition">➕ Nova Sequência</button>
                 </div>
 
                 {/* Busca Profunda */}
@@ -272,7 +272,7 @@ export default function ModuloSequencias() {
             {sequenciasFiltradas.length === 0 ? (
                 <div className="text-center py-20">
                     <p className="text-gray-400 text-lg mb-4">Nenhuma sequência encontrada com os filtros selecionados</p>
-                    <button onClick={() => novaSequencia()} className="bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-xl font-bold">➕ Criar Primeira Sequência</button>
+                    <button onClick={() => novaSequencia()} className="border border-rose-200 hover:border-rose-300 hover:bg-rose-50 text-rose-500 hover:text-rose-600 px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition">➕ Criar Primeira Sequência</button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -331,8 +331,8 @@ export default function ModuloSequencias() {
 {/* ═══════════ MODAL EDITAR SEQUÊNCIA ═══════════ */}
 {sequenciaEditando && (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={()=>setSequenciaEditando(null)}>
-        <div className="bg-white rounded-2xl w-full max-w-2xl p-6" onClick={e=>e.stopPropagation()}>
-            <h2 className="text-2xl font-bold text-rose-700 mb-6">✏️ {sequenciaEditando.id && sequencias.find(s=>s.id===sequenciaEditando.id) ? 'Editar' : 'Nova'} Sequência</h2>
+        <div className="bg-white rounded-2xl w-full max-w-2xl p-6 overflow-y-auto max-h-[90vh]" onClick={e=>e.stopPropagation()}>
+            <h2 className="text-xl font-bold text-slate-800 mb-6">✏️ {sequenciaEditando.id && sequencias.find(s=>s.id===sequenciaEditando.id) ? 'Editar' : 'Nova'} Sequência</h2>
 
             <div className="space-y-4">
                 <div>
@@ -525,7 +525,7 @@ export default function ModuloSequencias() {
 
                 <div className="flex gap-3 pt-4">
                     <button onClick={()=>setSequenciaEditando(null)} className="flex-1 bg-gray-300 py-3 rounded-xl font-bold">Cancelar</button>
-                    <button onClick={salvarSequencia} className="flex-1 bg-rose-500 text-white py-3 rounded-xl font-bold">Salvar</button>
+                    <button onClick={salvarSequencia} className="flex-1 bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-xl font-bold transition">Salvar</button>
                 </div>
             </div>
         </div>
@@ -575,6 +575,6 @@ export default function ModuloSequencias() {
     </div>
 )}
 
-        </>
+        </div>
     )
 }
