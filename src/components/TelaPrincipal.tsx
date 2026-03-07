@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react'
+import React, { useState, useRef, useMemo, useEffect } from 'react'
 import { sanitizar } from '../lib/utils'
 import { dbSize } from '../lib/db'
 import { useInfiniteScroll } from '../lib/hooks'
@@ -160,6 +160,34 @@ export default function TelaPrincipal() {
         setSecoesForm(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
     }
 
+    // ── Detecção de alterações não salvas ──
+    const planoOriginalRef = useRef<any>(null)
+    useEffect(() => {
+        if (modoEdicao && planoEditando) {
+            planoOriginalRef.current = JSON.parse(JSON.stringify(planoEditando))
+        } else {
+            planoOriginalRef.current = null
+        }
+    }, [modoEdicao]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    function handleFechar() {
+        if (planoOriginalRef.current && planoEditando) {
+            const changed = JSON.stringify(planoEditando) !== JSON.stringify(planoOriginalRef.current)
+            if (changed) {
+                setModalConfirm({
+                    titulo: 'Alterações não salvas',
+                    conteudo: 'Você fez alterações neste plano que ainda não foram salvas.',
+                    labelCancelar: 'Descartar alterações',
+                    labelConfirm: '💾 Salvar',
+                    onCancel: fecharModal,
+                    onConfirm: salvarPlano,
+                })
+                return
+            }
+        }
+        fecharModal()
+    }
+
     // ════ MODO EDIÇÃO (formulário de criação/edição de plano) ════
     if (modoEdicao && planoEditando) {
         return (
@@ -173,7 +201,7 @@ export default function TelaPrincipal() {
         {/* Linha "Voltar" — só no modo compacto */}
         {!formExpandido && (
             <div className="flex items-center gap-3 mb-4">
-                <button type="button" onClick={fecharModal} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-semibold text-sm transition-colors flex items-center gap-1.5">← Voltar</button>
+                <button type="button" onClick={handleFechar} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-semibold text-sm transition-colors flex items-center gap-1.5">← Voltar</button>
                 <div>
                     <h2 className="text-lg font-bold text-slate-800">{planoEditando.id ? 'Editar plano' : 'Novo plano de aula'}</h2>
                 </div>
@@ -195,7 +223,7 @@ export default function TelaPrincipal() {
                             {planoEditando.destaque ? '★ Favorito' : '☆ Favoritar'}
                         </button>
                         <button type="button" onClick={()=>setFormExpandido(false)} title="Compactar" className="p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-colors text-lg leading-none">⤡</button>
-                        <button type="button" onClick={fecharModal} title="Fechar" className="p-2 rounded-xl bg-white/20 hover:bg-red-500/60 text-white transition-colors text-lg leading-none">✕</button>
+                        <button type="button" onClick={handleFechar} title="Fechar" className="p-2 rounded-xl bg-white/20 hover:bg-red-500/60 text-white transition-colors text-lg leading-none">✕</button>
                     </div>
                 </div>
             ) : (
@@ -212,7 +240,7 @@ export default function TelaPrincipal() {
                                 {planoEditando.destaque ? '★' : '☆'}
                             </button>
                             <button type="button" onClick={()=>setFormExpandido(true)} title="Expandir para tela cheia" className="p-2 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-500 text-slate-400 transition-colors text-base leading-none">⤢</button>
-                            <button type="button" onClick={fecharModal} title="Fechar" className="p-2 rounded-xl bg-slate-100 hover:bg-red-50 hover:text-red-400 text-slate-400 transition-colors text-base leading-none">✕</button>
+                            <button type="button" onClick={handleFechar} title="Fechar" className="p-2 rounded-xl bg-slate-100 hover:bg-red-50 hover:text-red-400 text-slate-400 transition-colors text-base leading-none">✕</button>
                         </div>
                     </div>
                 </>
@@ -1034,7 +1062,7 @@ export default function TelaPrincipal() {
                         </div>
                     ) : null}
                     <div className="flex gap-3">
-                        <button type="button" onClick={fecharModal} className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm active:scale-95">Cancelar</button>
+                        <button type="button" onClick={handleFechar} className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm active:scale-95">Cancelar</button>
                         <button type="button" onClick={() => salvarPlano()} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-sm text-sm active:scale-95">💾 Salvar Plano</button>
                     </div>
                 </div>
