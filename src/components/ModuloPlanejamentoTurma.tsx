@@ -20,11 +20,12 @@ function SeletorTurma() {
   const [escolaSel, setEscolaSel] = useState(turmaSelecionada?.escolaId ?? '')
   const [segmentoSel, setSegmentoSel] = useState(turmaSelecionada?.segmentoId ?? '')
 
-  const anoAtual: AnoLetivo | undefined = anosLetivos.find(a => a.id === anoSel)
+  // Usar String() para comparação robusta: IDs podem ser number (Supabase) ou string (local)
+  const anoAtual: AnoLetivo | undefined = anosLetivos.find(a => String(a.id) === anoSel)
   const escolas: Escola[] = anoAtual?.escolas ?? []
-  const escolaAtual: Escola | undefined = escolas.find(e => e.id === escolaSel)
+  const escolaAtual: Escola | undefined = escolas.find(e => String(e.id) === escolaSel)
   const segmentos: Segmento[] = escolaAtual?.segmentos ?? []
-  const segmentoAtual: Segmento | undefined = segmentos.find(s => s.id === segmentoSel)
+  const segmentoAtual: Segmento | undefined = segmentos.find(s => String(s.id) === segmentoSel)
   const turmas: Turma[] = segmentoAtual?.turmas ?? []
 
   function handleAno(id: string) {
@@ -47,7 +48,7 @@ function SeletorTurma() {
       anoLetivoId: anoSel,
       escolaId: escolaSel,
       segmentoId: segmentoSel,
-      turmaId: t.id,
+      turmaId: String(t.id),
     }
     selecionarTurma(sel)
   }
@@ -62,7 +63,7 @@ function SeletorTurma() {
         <select value={anoSel} onChange={e => handleAno(e.target.value)} className={selectClass}>
           <option value="">Ano letivo…</option>
           {anosLetivos.map(a => (
-            <option key={a.id} value={a.id}>{a.nome ?? a.ano}</option>
+            <option key={a.id} value={String(a.id)}>{a.nome ?? a.ano}</option>
           ))}
         </select>
 
@@ -70,7 +71,7 @@ function SeletorTurma() {
         <select value={escolaSel} onChange={e => handleEscola(e.target.value)} disabled={!anoSel} className={selectClass}>
           <option value="">Escola…</option>
           {escolas.map(e => (
-            <option key={e.id} value={e.id}>{e.nome}</option>
+            <option key={e.id} value={String(e.id)}>{e.nome}</option>
           ))}
         </select>
 
@@ -78,7 +79,7 @@ function SeletorTurma() {
         <select value={segmentoSel} onChange={e => handleSegmento(e.target.value)} disabled={!escolaSel} className={selectClass}>
           <option value="">Segmento…</option>
           {segmentos.map(s => (
-            <option key={s.id} value={s.id}>{s.nome}</option>
+            <option key={s.id} value={String(s.id)}>{s.nome}</option>
           ))}
         </select>
 
