@@ -32,6 +32,25 @@ function calcProximaAula(turma: TurmaSelecionada, grades: GradeEditando[]): stri
   return ''
 }
 
+function calcUltimaAula(turma: TurmaSelecionada, grades: GradeEditando[]): string {
+  const hoje = new Date()
+  const nomes = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+  for (let i = 0; i <= 365; i++) {
+    const d = new Date(hoje)
+    d.setDate(hoje.getDate() - i)
+    const dataStr = d.toISOString().split('T')[0]
+    const diaSemana = nomes[d.getDay()]
+    for (const grade of grades) {
+      if (dataStr < grade.dataInicio || dataStr > grade.dataFim) continue
+      const match = grade.aulas.find(a =>
+        a.diaSemana === diaSemana && String(a.turmaId) === turma.turmaId
+      )
+      if (match) return dataStr
+    }
+  }
+  return ''
+}
+
 function formatarData(dataStr: string): string {
   if (!dataStr) return '—'
   const [y, m, d] = dataStr.split('-')
@@ -363,6 +382,12 @@ function FormPlanejamentoInline({
     [turmaSelecionada, gradesSemanas]
   )
 
+  // Data da última aula real da turma segundo o horário cadastrado (grades)
+  const ultimaAulaData = useMemo(
+    () => calcUltimaAula(turmaSelecionada, gradesSemanas) || (ultimoRegistro?.data ?? ''),
+    [turmaSelecionada, gradesSemanas, ultimoRegistro]
+  )
+
   // Computa conteúdo de pré-preenchimento do modo Adaptar
   function buildAdaptarHtml() {
     const partes: string[] = []
@@ -407,10 +432,6 @@ function FormPlanejamentoInline({
     const id = planejamentoEditando?.planosRelacionadosIds?.[0]
     return id ? planos.find(p => String(p.id) === id) ?? null : null
   })
-  const [badgeAdaptar, setBadgeAdaptar] = useState(
-    modoInicial === 'adaptar' ? (ultimoRegistro?.dataAula ?? ultimoRegistro?.data ?? '') : ''
-  )
-
   const [painelAdaptarAberto, setPainelAdaptarAberto] = useState(false)
   const [planoPreview, setPlanoPreview] = useState<import('../types').Plano | null>(null)
 
@@ -455,7 +476,6 @@ function FormPlanejamentoInline({
     if (temConteudo && hasEditedRef.current && !window.confirm('Há texto no editor. Deseja trocar de modo e perder o conteúdo?')) return
 
     let novoConteudo = ''
-    let novaBadge = ''
 
     if (novoModo === 'adaptar') {
       const partes: string[] = []
@@ -474,7 +494,6 @@ function FormPlanejamentoInline({
         partes.push(`<p>📋 Última aula: ${curto}</p>`)
       }
       novoConteudo = partes.join('')
-      novaBadge = ultimoRegistro?.dataAula ?? ultimoRegistro?.data ?? ''
     }
 
     hasEditedRef.current = false
@@ -489,7 +508,6 @@ function FormPlanejamentoInline({
         ? (ultimoPlanejamento?.planosRelacionadosIds?.map(String) ?? [])
         : []
     )
-    setBadgeAdaptar(novaBadge)
     setPainelImportarAberto(novoModo === 'importar')
     setPainelAdaptarAberto(false)
   }
@@ -719,11 +737,11 @@ function FormPlanejamentoInline({
           {/* MODO ADAPTAR — badge data + seção Planos de referência */}
           {modo === 'adaptar' && (
             <div className="space-y-2">
-              {/* Badge data */}
-              {badgeAdaptar && (
+              {/* Badge data — usa horário da grade, não a data do registro */}
+              {ultimaAulaData && (
                 <div className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5">
                   <span>📌</span>
-                  <span>Baseado na última aula de <strong>{formatarData(badgeAdaptar)}</strong></span>
+                  <span>Baseado na última aula de <strong>{formatarData(ultimaAulaData)}</strong></span>
                 </div>
               )}
 
