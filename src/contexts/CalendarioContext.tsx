@@ -55,8 +55,8 @@ export interface CalendarioContextValue {
   setModalRegistro: React.Dispatch<React.SetStateAction<boolean>>
   planoParaRegistro: Plano | null
   setPlanoParaRegistro: React.Dispatch<React.SetStateAction<Plano | null>>
-  novoRegistro: { dataAula: string; resumoAula: string; funcionouBem: string; naoFuncionou: string; proximaAula: string; comportamento: string }
-  setNovoRegistro: React.Dispatch<React.SetStateAction<{ dataAula: string; resumoAula: string; funcionouBem: string; naoFuncionou: string; proximaAula: string; comportamento: string }>>
+  novoRegistro: { dataAula: string; resumoAula: string; funcionouBem: string; naoFuncionou: string; proximaAula: string; comportamento: string; poderiaMelhorar: string; resultadoAula: string; anotacoesGerais: string; proximaAulaOpcao: string }
+  setNovoRegistro: React.Dispatch<React.SetStateAction<{ dataAula: string; resumoAula: string; funcionouBem: string; naoFuncionou: string; proximaAula: string; comportamento: string; poderiaMelhorar: string; resultadoAula: string; anotacoesGerais: string; proximaAulaOpcao: string }>>
   verRegistros: boolean
   setVerRegistros: React.Dispatch<React.SetStateAction<boolean>>
   registroEditando: RegistroPosAula | null
@@ -168,7 +168,11 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
     funcionouBem: '',
     naoFuncionou: '',
     proximaAula: '',
-    comportamento: ''
+    comportamento: '',
+    poderiaMelhorar: '',
+    resultadoAula: '',
+    anotacoesGerais: '',
+    proximaAulaOpcao: ''
   })
   const [verRegistros, setVerRegistros] = useState(false)
   const [registroEditando, setRegistroEditando] = useState<RegistroPosAula | null>(null)

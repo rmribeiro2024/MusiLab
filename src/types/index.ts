@@ -91,6 +91,10 @@ export interface RegistroPosAula {
   dataEdicao?: string
   dataRegistro?: string
   hora?: string
+  poderiaMelhorar?: string
+  resultadoAula?: string
+  anotacoesGerais?: string
+  proximaAulaOpcao?: string
 }
 
 export interface Plano {

@@ -143,7 +143,7 @@ export interface PlanosContextValue {
     formExpandido: boolean; setFormExpandido: React.Dispatch<React.SetStateAction<boolean>>
     materiaisBloqueados: string[]; setMateriaisBloqueados: React.Dispatch<React.SetStateAction<string[]>>
     novoConceito: string; setNovoConceito: React.Dispatch<React.SetStateAction<string>>
-    adicionandoConceito: boolean; setAdicionandoConceito: React.Dispatch<React.SetStateAction<boolean>>
+    adicionandoConceito: boolean | 'editar'; setAdicionandoConceito: React.Dispatch<React.SetStateAction<boolean | 'editar'>>
     novaUnidade: string; setNovaUnidade: React.Dispatch<React.SetStateAction<string>>
     adicionandoUnidade: boolean; setAdicionandoUnidade: React.Dispatch<React.SetStateAction<boolean>>
     novoRecursoUrl: string; setNovoRecursoUrl: React.Dispatch<React.SetStateAction<string>>
@@ -308,7 +308,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     })
     // inputs temporários
     const [novoConceito, setNovoConceito] = useState('')
-    const [adicionandoConceito, setAdicionandoConceito] = useState(false)
+    const [adicionandoConceito, setAdicionandoConceito] = useState<boolean | 'editar'>(false)
     const [novaUnidade, setNovaUnidade] = useState('')
     const [adicionandoUnidade, setAdicionandoUnidade] = useState(false)
     const [novoRecursoUrl, setNovoRecursoUrl] = useState('')
@@ -750,7 +750,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const abrirModalRegistro = useCallback((plano: Plano, e?: React.MouseEvent) => {
         if (e) e.stopPropagation()
         setPlanoParaRegistro(plano)
-        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '' })
+        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '' })
         setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('')
         setFiltroRegAno('')
         setRegistroEditando(null)
@@ -789,7 +789,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             setPlanoParaRegistro(atualizado)
         }
         setRegistroEditando(null); setVerRegistros(true)
-        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '' })
+        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '' })
         setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('')
     }, [novoRegistro, _regEdit, planoParaRegistro, regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel, planos, planoSelecionado, setModalConfirm, setPlanoParaRegistro, setRegistroEditando, setVerRegistros, setNovoRegistro, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel])
 
@@ -808,7 +808,9 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             dataAula: reg.data || new Date().toISOString().split('T')[0],
             resumoAula: reg.resumoAula || '', funcionouBem: reg.funcionouBem || '',
             naoFuncionou: reg.naoFuncionou || '', proximaAula: reg.proximaAula || '',
-            comportamento: reg.comportamento || ''
+            comportamento: reg.comportamento || '', poderiaMelhorar: reg.poderiaMelhorar || '',
+            resultadoAula: reg.resultadoAula || '', anotacoesGerais: reg.anotacoesGerais || '',
+            proximaAulaOpcao: reg.proximaAulaOpcao || ''
         })
         setRegAnoSel(String(reg.anoLetivo || '')); setRegEscolaSel(String(reg.escola || ''))
         setRegSegmentoSel(String(reg.segmento || reg.serie || '')); setRegTurmaSel(String(reg.turma || ''))

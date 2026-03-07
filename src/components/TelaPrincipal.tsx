@@ -1,5 +1,4 @@
 import React, { useState, useRef, useMemo } from 'react'
-import { FixedSizeList } from 'react-window'
 import { sanitizar } from '../lib/utils'
 import { dbSize } from '../lib/db'
 import { useInfiniteScroll } from '../lib/hooks'
