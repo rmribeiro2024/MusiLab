@@ -82,7 +82,7 @@ function SeletorTurma() {
     selecionarTurma({ anoLetivoId: anoSel, escolaId: escolaSel, segmentoId: segmentoSel, turmaId: String(t.id) })
   }
 
-  const selectClass = 'text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 w-full'
+  const selectClass = 'text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 w-full'
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 mb-4">
@@ -106,7 +106,7 @@ function SeletorTurma() {
             const isActive = turmaSelecionada?.turmaId === String(t.id)
             return (
               <button key={t.id} onClick={() => handleTurma(t)}
-                className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700'}`}>
+                className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${isActive ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700'}`}>
                 {t.nome}
               </button>
             )
@@ -125,7 +125,7 @@ function SeletorTurma() {
       )}
 
       {turmaSelecionada && (
-        <div className="mt-2 text-xs text-indigo-600 font-medium">
+        <div className="mt-2 text-xs text-blue-600 font-medium">
           {[
             anosLetivos.find(a => String(a.id) === turmaSelecionada.anoLetivoId)?.nome,
             escolas.find(e => String(e.id) === turmaSelecionada.escolaId)?.nome,
@@ -154,7 +154,7 @@ function EstadoVazio() {
 
 function InfoRow({ icon, label, valor, destacado }: { icon: string; label: string; valor: string; destacado?: boolean }) {
   return (
-    <div className={`text-xs rounded-lg px-3 py-2 ${destacado ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-50 text-slate-600'}`}>
+    <div className={`text-xs rounded-lg px-3 py-2 ${destacado ? 'bg-blue-50 text-blue-700' : 'bg-slate-50 text-slate-600'}`}>
       <span className="mr-1">{icon}</span>
       <span className="font-medium">{label}:</span>{' '}
       <span dangerouslySetInnerHTML={{ __html: valor }} />
@@ -166,18 +166,18 @@ function InfoRow({ icon, label, valor, destacado }: { icon: string; label: strin
 
 function CardProximoPasso({ valor, onAdaptar }: { valor: string; onAdaptar: () => void }) {
   return (
-    <div className="bg-indigo-50 border border-indigo-100 rounded-2xl shadow-sm p-4">
+    <div className="bg-blue-50 border border-blue-100 rounded-2xl shadow-sm p-4">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Próximo passo sugerido</h3>
+        <h3 className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Próximo passo sugerido</h3>
         <button
           type="button"
           onClick={onAdaptar}
-          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 rounded-lg px-2.5 py-1 hover:bg-indigo-100 transition-colors"
+          className="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-white border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-100 transition-colors"
         >
           🔄 Adaptar ↓
         </button>
       </div>
-      <p className="text-sm text-indigo-700 font-medium">🗓 {labelProximaOpcao(valor)}</p>
+      <p className="text-sm text-blue-700 font-medium">🗓 {labelProximaOpcao(valor)}</p>
     </div>
   )
 }
@@ -226,7 +226,7 @@ function PainelImportarBanco({
           value={busca}
           onChange={e => setBusca(e.target.value)}
           placeholder="Buscar por título, tema ou conceito..."
-          className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+          className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
         />
       </div>
       <div className="max-h-56 overflow-y-auto divide-y divide-slate-50">
@@ -240,14 +240,14 @@ function PainelImportarBanco({
                 key={p.id}
                 type="button"
                 onClick={() => onImportar ? onImportar(p) : onToggle(String(p.id))}
-                className={`w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 transition-colors ${sel ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-slate-50 text-slate-700'}`}
+                className={`w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 transition-colors ${sel ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'}`}
               >
                 <div className="min-w-0">
                   <p className="text-xs font-medium truncate">{p.titulo}</p>
                   {p.tema && <p className="text-xs text-slate-400 truncate">{p.tema}</p>}
                 </div>
                 {!onImportar && (
-                  <span className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center text-xs ${sel ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300'}`}>
+                  <span className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center text-xs ${sel ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300'}`}>
                     {sel ? '✓' : ''}
                   </span>
                 )}
@@ -459,7 +459,7 @@ function FormPlanejamentoInline({
     })
   }
 
-  const inputClass = 'w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400'
+  const inputClass = 'w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400'
 
   const tituloModo =
     planejamentoEditando ? '✏️ Editando planejamento' :
@@ -492,54 +492,60 @@ function FormPlanejamentoInline({
 
       {/* ── SELETOR DE MODO (quando modo === null) ───────────────────────────── */}
       {modo === null ? (
-        <div className="px-5 py-6">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-4">
-            Como deseja planejar esta aula?
+        <div className="px-5 py-5">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+            Como deseja planejar?
           </p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col gap-2">
 
             {/* Adaptar */}
             <button
               type="button"
               onClick={() => handleSelecionarModo('adaptar')}
               disabled={!podeAdaptar}
-              className={`flex flex-col items-center text-center p-4 rounded-2xl border-2 transition-all ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${
                 podeAdaptar
-                  ? 'border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700 cursor-pointer'
-                  : 'border-slate-100 text-slate-300 cursor-not-allowed bg-slate-50'
+                  ? 'border-blue-400 bg-blue-50 hover:bg-blue-100 cursor-pointer'
+                  : 'border-slate-100 bg-slate-50 cursor-not-allowed'
               }`}
             >
-              <span className="text-3xl mb-2">🔄</span>
-              <span className="text-sm font-semibold">Adaptar</span>
-              <span className="text-xs text-slate-400 mt-1 leading-tight">da última aula</span>
+              <span className="text-base flex-shrink-0">🔄</span>
+              <div>
+                <div className={`text-sm font-semibold ${podeAdaptar ? 'text-blue-700' : 'text-slate-300'}`}>Adaptar da última aula</div>
+                <div className={`text-xs mt-0.5 ${podeAdaptar ? 'text-blue-500' : 'text-slate-300'}`}>Usa os registros do último encontro como base</div>
+              </div>
             </button>
 
             {/* Importar */}
             <button
               type="button"
               onClick={() => handleSelecionarModo('importar')}
-              className="flex flex-col items-center text-center p-4 rounded-2xl border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700 transition-all cursor-pointer"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white text-left hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
             >
-              <span className="text-3xl mb-2">🏦</span>
-              <span className="text-sm font-semibold">Importar</span>
-              <span className="text-xs text-slate-400 mt-1 leading-tight">do banco de aulas</span>
+              <span className="text-base flex-shrink-0">🏛</span>
+              <div>
+                <div className="text-sm font-semibold text-slate-700">Importar do banco de aulas</div>
+                <div className="text-xs text-slate-400 mt-0.5">Aproveite um plano já criado anteriormente</div>
+              </div>
             </button>
 
             {/* Criar nova */}
             <button
               type="button"
               onClick={() => handleSelecionarModo('criar')}
-              className="flex flex-col items-center text-center p-4 rounded-2xl border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700 transition-all cursor-pointer"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white text-left hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
             >
-              <span className="text-3xl mb-2">✏️</span>
-              <span className="text-sm font-semibold">Criar nova</span>
-              <span className="text-xs text-slate-400 mt-1 leading-tight">aula livre</span>
+              <span className="text-base flex-shrink-0">✏️</span>
+              <div>
+                <div className="text-sm font-semibold text-slate-700">Criar nova aula livre</div>
+                <div className="text-xs text-slate-400 mt-0.5">Começa do zero, sem base anterior</div>
+              </div>
             </button>
           </div>
 
           {!podeAdaptar && (
             <p className="text-xs text-slate-400 text-center mt-3">
-              🔄 Adaptar estará disponível após registrar a primeira aula desta turma
+              🔄 Adaptar disponível após registrar a primeira aula desta turma
             </p>
           )}
         </div>
@@ -559,13 +565,13 @@ function FormPlanejamentoInline({
           {modo === 'importar' && (
             <div>
               {basePlano ? (
-                <div className="flex items-center gap-2 text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-3 py-2.5 rounded-xl">
+                <div className="flex items-center gap-2 text-xs bg-blue-50 text-blue-700 border border-blue-100 px-3 py-2.5 rounded-xl">
                   <span>🏦</span>
                   <span className="font-medium flex-1 truncate">Aula-base: {basePlano.titulo}</span>
                   <button
                     type="button"
                     onClick={() => setViewMode('lista')}
-                    className="text-indigo-500 hover:text-indigo-700 underline whitespace-nowrap"
+                    className="text-blue-500 hover:text-blue-700 underline whitespace-nowrap"
                   >
                     Ver roteiro
                   </button>
@@ -579,7 +585,7 @@ function FormPlanejamentoInline({
                       setPlanosRelacionadosIds([])
                       setPainelImportarAberto(true)
                     }}
-                    className="text-indigo-400 hover:text-indigo-700 ml-0.5"
+                    className="text-blue-400 hover:text-blue-700 ml-0.5"
                   >✕</button>
                 </div>
               ) : painelImportarAberto ? (
@@ -593,7 +599,7 @@ function FormPlanejamentoInline({
                 <button
                   type="button"
                   onClick={() => setPainelImportarAberto(true)}
-                  className="w-full text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2.5 font-medium transition-colors text-center"
+                  className="w-full text-xs text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 font-medium transition-colors text-center"
                 >
                   🏦 Escolher aula do banco…
                 </button>
@@ -609,7 +615,7 @@ function FormPlanejamentoInline({
 
             {/* Badge: modo Adaptar */}
             {modo === 'adaptar' && badgeAdaptar && (
-              <div className="flex items-center gap-1.5 text-xs text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-1.5 mb-2">
+              <div className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5 mb-2">
                 <span>📌</span>
                 <span>Baseado na última aula de {formatarData(badgeAdaptar)}</span>
               </div>
@@ -619,9 +625,9 @@ function FormPlanejamentoInline({
             {modo !== 'importar' && planosRelacionados.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-2">
                 {planosRelacionados.map(p => (
-                  <span key={p.id} className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-1 rounded-lg">
+                  <span key={p.id} className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded-lg">
                     🏦 {p.titulo}
-                    <button type="button" onClick={() => togglePlano(String(p.id))} className="text-indigo-400 hover:text-indigo-700 ml-0.5">✕</button>
+                    <button type="button" onClick={() => togglePlano(String(p.id))} className="text-blue-400 hover:text-blue-700 ml-0.5">✕</button>
                   </span>
                 ))}
               </div>
@@ -650,7 +656,7 @@ function FormPlanejamentoInline({
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                 📦 Materiais
                 {materiais.length > 0 && (
-                  <span className="ml-2 normal-case font-normal text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 normal-case font-normal text-blue-600 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded-full">
                     {materiais.length}
                   </span>
                 )}
@@ -663,9 +669,9 @@ function FormPlanejamentoInline({
                 {materiais.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {materiais.map(m => (
-                      <span key={m} className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 rounded-full">
+                      <span key={m} className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1 rounded-full">
                         {m}
-                        <button type="button" onClick={() => removerMaterial(m)} className="text-indigo-400 hover:text-indigo-700 ml-0.5">✕</button>
+                        <button type="button" onClick={() => removerMaterial(m)} className="text-blue-400 hover:text-blue-700 ml-0.5">✕</button>
                       </span>
                     ))}
                   </div>
@@ -681,7 +687,7 @@ function FormPlanejamentoInline({
                             key={m}
                             type="button"
                             onClick={() => jaTem ? removerMaterial(m) : adicionarMaterial(m)}
-                            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${jaTem ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'}`}
+                            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${jaTem ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50'}`}
                           >
                             {jaTem ? '✓ ' : '+ '}{m}
                           </button>
@@ -790,7 +796,7 @@ function CardPlanejamento({ planejamento }: { planejamento: import('../types').P
               <div className="flex flex-wrap gap-1">
                 {planosRelacionados.map(p => (
                   <button key={p.id} type="button" onClick={() => setViewMode('lista')}
-                    className="text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 rounded-lg hover:bg-indigo-100 transition-colors">
+                    className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-lg hover:bg-blue-100 transition-colors">
                     🏦 {p.titulo}
                   </button>
                 ))}
@@ -807,7 +813,7 @@ function CardPlanejamento({ planejamento }: { planejamento: import('../types').P
           )}
 
           <div className="flex gap-3 pt-1 flex-wrap">
-            <button onClick={() => editarPlanejamento(planejamento)} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Editar</button>
+            <button onClick={() => editarPlanejamento(planejamento)} className="text-xs text-blue-600 hover:text-blue-800 font-medium">Editar</button>
             <button onClick={handlePromover} className="text-xs text-emerald-600 hover:text-emerald-800 font-medium border border-emerald-200 px-2 py-0.5 rounded-lg hover:bg-emerald-50 transition-colors">Promover para banco →</button>
             <button onClick={() => excluirPlanejamento(planejamento.id)} className="text-xs text-red-500 hover:text-red-700 font-medium">Excluir</button>
           </div>
