@@ -183,18 +183,41 @@ function InfoRow({ icon, label, valor }: { icon: string; label: string; valor: s
 
 // ─── BLOCO 2: PRÓXIMO PASSO SUGERIDO ──────────────────────────────────────────
 
-function CardProximoPasso({ valor, onAdaptar }: { valor: string; onAdaptar: () => void }) {
+function CardProximoPasso({ valor, onAdaptar, onImportar, onNovo, podeAdaptar }: {
+  valor: string
+  onAdaptar: () => void
+  onImportar: () => void
+  onNovo: () => void
+  podeAdaptar: boolean
+}) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Próximo passo sugerido</h3>
-        <button
-          type="button"
-          onClick={onAdaptar}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-100 transition-colors"
-        >
-          🔄 Adaptar ↓
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onAdaptar}
+            disabled={!podeAdaptar}
+            className={`text-xs font-semibold rounded-lg px-2.5 py-1 border transition-colors ${podeAdaptar ? 'text-blue-600 hover:text-blue-800 bg-blue-50 border-blue-200 hover:bg-blue-100' : 'text-slate-300 bg-slate-50 border-slate-100 cursor-not-allowed'}`}
+          >
+            🔄 Adaptar
+          </button>
+          <button
+            type="button"
+            onClick={onImportar}
+            className="text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 hover:bg-slate-100 transition-colors"
+          >
+            🏛 Importar
+          </button>
+          <button
+            type="button"
+            onClick={onNovo}
+            className="text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 hover:bg-slate-100 transition-colors"
+          >
+            ✏️ Novo
+          </button>
+        </div>
       </div>
       <p className="text-sm text-slate-700 font-medium">🗓 {labelProximaOpcao(valor)}</p>
     </div>
@@ -362,7 +385,7 @@ function FormPlanejamentoInline({
   onSalvar,
   onCancelarEdicao,
   ultimoRegistro,
-  acionarAdaptar,
+  acionarBloco2,
   ultimoPlanejamento,
 }: {
   turmaSelecionada: TurmaSelecionada
@@ -370,7 +393,7 @@ function FormPlanejamentoInline({
   onSalvar: (dados: DadosForm) => void
   onCancelarEdicao: () => void
   ultimoRegistro?: RegistroPosAula | null
-  acionarAdaptar?: number
+  acionarBloco2?: { n: number; modo: Exclude<Modo, null> } | null
   ultimoPlanejamento?: import('../types').PlanejamentoTurma | null
 }) {
   const { planos } = usePlanosContext()
@@ -449,8 +472,8 @@ function FormPlanejamentoInline({
   const [painelAdaptarAberto, setPainelAdaptarAberto] = useState(false)
   const [planoPreview, setPlanoPreview] = useState<import('../types').Plano | null>(null)
 
-  // Referência para evitar disparo duplo do acionarAdaptar
-  const acionarAdaptarPrevRef = useRef(acionarAdaptar ?? 0)
+  // Referência para evitar disparo duplo do acionarBloco2
+  const acionarBloco2PrevRef = useRef(acionarBloco2?.n ?? 0)
   // Rastreia se o usuário editou manualmente o editor (auto-preenchimento não conta)
   const hasEditedRef = useRef(false)
 
@@ -530,13 +553,13 @@ function FormPlanejamentoInline({
     setPainelAdaptarAberto(false)
   }
 
-  // ── Acionamento externo (botão "Adaptar ↓" do Bloco 2) ──────────────────────
+  // ── Acionamento externo (botões do Bloco 2: Adaptar / Importar / Novo) ───────
   useEffect(() => {
-    if (acionarAdaptar && acionarAdaptar !== acionarAdaptarPrevRef.current && !planejamentoEditando) {
-      acionarAdaptarPrevRef.current = acionarAdaptar
-      handleSelecionarModo('adaptar')
+    if (acionarBloco2 && acionarBloco2.n !== acionarBloco2PrevRef.current && !planejamentoEditando) {
+      acionarBloco2PrevRef.current = acionarBloco2.n
+      handleSelecionarModo(acionarBloco2.modo)
     }
-  }, [acionarAdaptar]) // eslint-disable-line
+  }, [acionarBloco2]) // eslint-disable-line
 
   // ── Voltar ao seletor ────────────────────────────────────────────────────────
   function tentarVoltarSeletor() {
@@ -1036,15 +1059,21 @@ function ConteudoTurma() {
 
   const [historicoExpandido, setHistoricoExpandido] = useState(false)
   const [planejamentosExpandidos, setPlanejamentosExpandidos] = useState(false)
-  const [contadorAdaptar, setContadorAdaptar] = useState(0)
+  const [acionarBloco2, setAcionarBloco2] = useState<{ n: number; modo: Exclude<Modo, null> } | null>(null)
   const formBlockRef = useRef<HTMLDivElement>(null)
 
   if (!turmaSelecionada) return null
 
   const registrosAnteriores = historicoDaTurma.slice(1)
 
-  function handleAdaptarFromBloco2() {
-    setContadorAdaptar(c => c + 1)
+  const podeAdaptarBloco2 = !!(
+    ultimoRegistroDaTurma?.proximaAula?.trim() ||
+    ultimoRegistroDaTurma?.poderiaMelhorar?.trim() ||
+    ultimoRegistroDaTurma?.resumoAula?.trim()
+  )
+
+  function acionarModoFromBloco2(modo: Exclude<Modo, null>) {
+    setAcionarBloco2(prev => ({ n: (prev?.n ?? 0) + 1, modo }))
     setTimeout(() => {
       formBlockRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 80)
@@ -1099,7 +1128,10 @@ function ConteudoTurma() {
       {ultimoRegistroDaTurma?.proximaAulaOpcao && (
         <CardProximoPasso
           valor={ultimoRegistroDaTurma.proximaAulaOpcao}
-          onAdaptar={handleAdaptarFromBloco2}
+          podeAdaptar={podeAdaptarBloco2}
+          onAdaptar={() => acionarModoFromBloco2('adaptar')}
+          onImportar={() => acionarModoFromBloco2('importar')}
+          onNovo={() => acionarModoFromBloco2('criar')}
         />
       )}
 
@@ -1135,7 +1167,7 @@ function ConteudoTurma() {
           onSalvar={dados => { salvarPlanejamento(dados); fecharForm() }}
           onCancelarEdicao={fecharForm}
           ultimoRegistro={ultimoRegistroDaTurma}
-          acionarAdaptar={contadorAdaptar}
+          acionarBloco2={acionarBloco2}
           ultimoPlanejamento={planejamentosDaTurma[0] ?? null}
         />
       </div>
