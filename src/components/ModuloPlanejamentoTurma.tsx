@@ -39,6 +39,16 @@ function formatarData(dataStr: string): string {
   return `${d}/${m}/${y}`
 }
 
+// Mapeia o código do seletor "Resultado da aula" para texto legível
+function labelResultado(valor: string): string {
+  const mapa: Record<string, string> = {
+    bem:     '✅ Funcionou bem',
+    parcial: '⚠️ Parcial',
+    nao:     '❌ Não funcionou',
+  }
+  return mapa[valor] ?? valor
+}
+
 // ─── SELETOR DE TURMA ─────────────────────────────────────────────────────────
 
 function SeletorTurma() {
@@ -366,10 +376,10 @@ function FormPlanejamentoInline({
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Da última aula</p>
             {ultimoRegistro.resultadoAula && (
               <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 flex items-start gap-2 text-xs text-slate-600">
-                <span className="mt-0.5 flex-shrink-0">🏆</span>
+                <span className="mt-0.5 flex-shrink-0">📊</span>
                 <div>
                   <span className="font-medium text-slate-500">Resultado: </span>
-                  {ultimoRegistro.resultadoAula}
+                  {labelResultado(ultimoRegistro.resultadoAula)}
                 </div>
               </div>
             )}
@@ -626,13 +636,10 @@ function ConteudoTurma() {
             {ultimoRegistroDaTurma.funcionouBem && <InfoRow icon="✅" label="Funcionou bem" valor={ultimoRegistroDaTurma.funcionouBem} />}
             {ultimoRegistroDaTurma.naoFuncionou && <InfoRow icon="❌" label="Não funcionou" valor={ultimoRegistroDaTurma.naoFuncionou} />}
             {ultimoRegistroDaTurma.resultadoAula && (
-              <InfoRow icon="🏆" label="Resultado da aula" valor={ultimoRegistroDaTurma.resultadoAula} />
+              <InfoRow icon="📊" label="Resultado da aula" valor={labelResultado(ultimoRegistroDaTurma.resultadoAula)} />
             )}
             {ultimoRegistroDaTurma.poderiaMelhorar && (
               <InfoRow icon="💡" label="Poderia melhorar" valor={ultimoRegistroDaTurma.poderiaMelhorar} />
-            )}
-            {ultimoRegistroDaTurma.proximaAula && (
-              <InfoRow icon="➡️" label="Próxima aula sugerida" valor={ultimoRegistroDaTurma.proximaAula} destacado />
             )}
             {ultimoRegistroDaTurma.comportamento && <InfoRow icon="👥" label="Comportamento" valor={ultimoRegistroDaTurma.comportamento} />}
           </div>
