@@ -18,6 +18,7 @@ import {
 import { showToast } from '../lib/toast'
 import type { GradeEditando } from '../types'
 // Módulos carregados sob demanda — Vite cria um chunk por arquivo
+const ModuloPlanejamentoTurma = lazy(() => import('./ModuloPlanejamentoTurma'))
 const ModuloAnoLetivo        = lazy(() => import('./ModuloAnoLetivo'))
 const ModuloHistoricoMusical = lazy(() => import('./ModuloHistoricoMusical'))
 const ModuloEstrategias      = lazy(() => import('./ModuloEstrategias'))
@@ -32,6 +33,7 @@ import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtivid
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
 import { dbGet, dbSet, dbDel } from '../lib/db'
+import { mergeOffline, marcarPendente, carimbарTimestamp, useVoltouOnline, totalPendentes } from '../lib/offlineSync' // [offlineSync]
 import { exportarPlanoPDF, exportarSequenciaPDF } from '../utils/pdf'
 import ModalConfirm from './modals/ModalConfirm'
 import ModalNovaEscola from './modals/ModalNovaEscola'
@@ -626,8 +628,21 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             const [dadosCarregados, setDadosCarregados] = useState(false);
             const [maisAberto, setMaisAberto] = useState(false);
+            const voltouOnline = useVoltouOnline(); // [offlineSync]
             useEffect(() => {
-                if (!userId) { setDadosCarregados(true); return; }
+                // Sem userId (modo local): carrega dados do IndexedDB diretamente
+                if (!userId) {
+                    try {
+                        const planosLocal = dbGet('planosAula');
+                        if (planosLocal) setPlanos(JSON.parse(planosLocal).map(normalizePlano));
+                        const gradesLocal = dbGet('gradesSemanas');
+                        if (gradesLocal) setGradesSemanas(JSON.parse(gradesLocal));
+                        const templatesLocal = dbGet('templatesRoteiro');
+                        if (templatesLocal) setTemplatesRoteiro(JSON.parse(templatesLocal));
+                    } catch(e) { console.warn('[MusiLab] Erro ao carregar dados locais:', e); }
+                    setDadosCarregados(true);
+                    return;
+                }
                 (async () => {
                     try {
                         // estrategias carregada em EstrategiasContext (Parte 2)
@@ -643,13 +658,26 @@ export default function BancoPlanos({ session }) {
                             loadConfiguracoes(userId)
                         ]);
 
-                        // Supabase sempre prevalece sobre localStorage quando retorna dados
-                        if (planosC !== null) setPlanos(planosC.length > 0 ? planosC.map(normalizePlano) : []);
+                        // [offlineSync] — merge: nuvem + itens criados/editados offline
+                        const planosLocais = (() => { try { const r = dbGet('planosAula'); return r ? JSON.parse(r).map(normalizePlano) : [] } catch { return [] } })()
+                        const gradesLocais = (() => { try { const r = dbGet('gradesSemanas'); return r ? JSON.parse(r) : [] } catch { return [] } })()
+
+                        const planosMergeados = mergeOffline('planos', planosC, planosLocais)
+                        const gradesMergeadas = mergeOffline('grades_semanas', gradesC, gradesLocais)
+
+                        setPlanos(planosMergeados)
+                        setGradesSemanas(gradesMergeadas as GradeEditando[])
+
+                        // Se houve itens offline pendentes, sobe imediatamente para a nuvem
+                        if (totalPendentes() > 0) {
+                            syncToSupabase('planos', planosMergeados as unknown as Record<string, unknown>[], userId, onSyncStatus)           // [offlineSync]
+                            syncToSupabase('grades_semanas', gradesMergeadas as unknown as Record<string, unknown>[], userId, onSyncStatus)   // [offlineSync]
+                            showToast('Dados criados offline foram sincronizados com a nuvem ✓', 'success') // [offlineSync]
+                        }
                         // atividadesC removido — carregado em AtividadesContext (Parte 4)
                         // repertorioC removido — carregado em RepertorioContext (Parte 3)
                         // sequenciasC removido — carregado em SequenciasContext (Parte 5)
                         // anosC removido — carregado em AnoLetivoContext (Parte 6)
-                        if (gradesC !== null) setGradesSemanas(gradesC.length > 0 ? gradesC as GradeEditando[] : []);
                         // eventosC removido — carregado em AnoLetivoContext (Parte 6)
                         // estratégiasC removido — carregado em EstrategiasContext (Parte 2)
                         // planejamentoAnualC removido — carregado em AnoLetivoContext (Parte 6)
@@ -674,8 +702,9 @@ export default function BancoPlanos({ session }) {
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             if(cfg.instrumentacaoCustomizada) setInstrumentacaoCustomizada(cfg.instrumentacaoCustomizada as any);
                         }
-                        // Atualiza localStorage com dados frescos da nuvem
-                        if (planosC !== null) dbSet('planosAula', JSON.stringify(planosC));
+                        // Atualiza IndexedDB com dados mergeados
+                        dbSet('planosAula', JSON.stringify(planosMergeados));        // [offlineSync]
+                        dbSet('gradesSemanas', JSON.stringify(gradesMergeadas));     // [offlineSync]
                         // repertorio dbSet removido — gerenciado em RepertorioContext (Parte 3)
                     } catch(e) { console.error('[MusiLab] Erro ao carregar da nuvem:', e); }
                     setDadosCarregados(true);
@@ -726,7 +755,16 @@ export default function BancoPlanos({ session }) {
                 syncDelay('cfg', ()=>syncConfiguracoes({ templatesRoteiro, compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados, escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas, energiasCustomizadas, instrumentacaoCustomizada }, userId, onSyncStatus));
             }, [templatesRoteiro, compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados, escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas, energiasCustomizadas, instrumentacaoCustomizada]);
 
-            // ── LOGOUT ──
+            // [offlineSync] — ao voltar online, sobe imediatamente o que ficou pendente
+            useEffect(() => {
+                if (!voltouOnline || !userId || !dadosCarregados) return;
+                const pendentes = totalPendentes();
+                if (pendentes === 0) return;
+                console.info(`[offlineSync] Reconectado — sincronizando ${pendentes} item(s) pendente(s)`);
+                syncToSupabase('planos', planos as unknown as Record<string, unknown>[], userId, onSyncStatus);
+                syncToSupabase('grades_semanas', gradesSemanas as unknown as Record<string, unknown>[], userId, onSyncStatus);
+                showToast(`Reconectado — ${pendentes} item(s) offline sincronizado(s) ✓`, 'success');
+            }, [voltouOnline]); // [offlineSync]
             // CORREÇÃO: limpa o localStorage ao sair para evitar que dados do usuário
             // atual fiquem visíveis caso outra pessoa abra o app no mesmo dispositivo.
             const CHAVES_LOCALSTORAGE = [
@@ -1047,15 +1085,16 @@ export default function BancoPlanos({ session }) {
 
                 if (registroEditando) {
                     // MODO EDIÇÃO — substitui o registro existente, preserva id e dataRegistro original
-                    const atualizado = {
+                    const atualizado = carimbарTimestamp({ // [offlineSync]
                         ...planoParaRegistro,
                         registrosPosAula: planoParaRegistro.registrosPosAula.map(r =>
                             r.id === registroEditando.id
                                 ? { ...r, data: dataAula || r.data, anoLetivo: regAnoSel, escola: regEscolaSel, segmento: regSegmentoSel, turma: regTurmaSel, ...camposRegistro, dataEdicao: agora.toISOString().split('T')[0] }
                                 : r
                         )
-                    };
+                    }); // [offlineSync]
                     setPlanos(planos.map(p => p.id === atualizado.id ? atualizado : p));
+                    if (!userId) marcarPendente('planos', String(atualizado.id)); // [offlineSync]
                     if(planoSelecionado && planoSelecionado.id === atualizado.id) setPlanoSelecionado(atualizado);
                     setPlanoParaRegistro(atualizado);
                 } else {
@@ -1071,11 +1110,12 @@ export default function BancoPlanos({ session }) {
                         turma: regTurmaSel,
                         ...camposRegistro
                     };
-                    const atualizado = {
+                    const atualizado = carimbарTimestamp({ // [offlineSync]
                         ...planoParaRegistro,
                         registrosPosAula: [...(planoParaRegistro.registrosPosAula || []), registro]
-                    };
+                    }); // [offlineSync]
                     setPlanos(planos.map(p => p.id === atualizado.id ? atualizado : p));
+                    if (!userId) marcarPendente('planos', String(atualizado.id)); // [offlineSync]
                     if(planoSelecionado && planoSelecionado.id === atualizado.id) setPlanoSelecionado(atualizado);
                     setPlanoParaRegistro(atualizado);
                 }
@@ -1298,15 +1338,15 @@ export default function BancoPlanos({ session }) {
                 // Atualizar plano
                 setPlanos(planos.map(p => {
                     if (p.id === planoId) {
-                        return { 
-                            ...p, 
+                        return carimbарTimestamp({ // [offlineSync]
+                            ...p,
                             atividadesRoteiro: [...(p.atividadesRoteiro || []), novaAtivRoteiro],
                             conceitos: conceitosMesclados,
                             tags: tagsMescladas,
                             materiais: materiaisMesclados,
                             recursos: recursosUnicos,
                             unidades: unidadesMescladas
-                        };
+                        }); // [offlineSync]
                     }
                     return p;
                 }));
@@ -2175,6 +2215,7 @@ export default function BancoPlanos({ session }) {
                                         { label:'Nova Aula',  short:'Nova',    icon:'➕', mode:'nova',            action: novoPlano, accent: true },
                                         { label:'Hoje',       short:'Hoje',    icon:'☀️', mode:'resumoDia',       action:()=>setViewMode('resumoDia') },
                                         { label:'Calendário', short:'Cal.',    icon:'📅', mode:'calendario',      action:()=>setViewMode('calendario') },
+                                        { label:'Turmas',     short:'Turmas',  icon:'👥', mode:'turmas',          action:()=>setViewMode('turmas') },
                                         { label:'Meu Ano',    short:'Ano',     icon:'🗓️', mode:'anoLetivo',       action:()=>setViewMode('anoLetivo') },
                                         { label:'Histórico',  short:'Hist.',   icon:'📊', mode:'historicoMusical', action:()=>setViewMode('historicoMusical') },
                                     ].map(({label, short, icon, mode, action, accent}) => {
@@ -2242,6 +2283,7 @@ export default function BancoPlanos({ session }) {
 
 
                     <div className="max-w-7xl mx-auto px-4 py-6">
+                        {viewMode === 'turmas' && <ErrorBoundary modulo="Planejamento por Turma"><Suspense fallback={<CarregandoModulo />}><ModuloPlanejamentoTurma /></Suspense></ErrorBoundary>}
                         {viewMode==='resumoDia' && <ErrorBoundary modulo="Resumo do Dia"><Suspense fallback={<CarregandoModulo />}><TelaResumoDia /></Suspense></ErrorBoundary>}
                         {viewMode==='calendario' && <ErrorBoundary modulo="Calendário"><Suspense fallback={<CarregandoModulo />}><TelaCalendario /></Suspense></ErrorBoundary>}
 

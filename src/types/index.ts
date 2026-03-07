@@ -321,6 +321,27 @@ export interface Configuracoes {
   [key: string]: any
 }
 
+// ─── PLANEJAMENTO POR TURMA ──────────────────────────────────
+export interface PlanejamentoTurma {
+  id: string
+  // Chave composta da turma
+  anoLetivoId: string
+  escolaId: string
+  segmentoId: string
+  turmaId: string
+  // Campos do planejamento
+  dataPrevista?: string                  // YYYY-MM-DD
+  origemAula?: 'banco' | 'adaptacao' | 'livre'
+  planosRelacionadosIds?: string[]       // IDs de planos do banco — múltiplos
+  oQuePretendoFazer: string             // campo principal obrigatório
+  objetivo?: string                     // opcional, secundário
+  materiais?: string[]
+  observacoes?: string
+  // Metadados
+  criadoEm: string
+  atualizadoEm: string
+}
+
 // ─── SUPABASE ROW ────────────────────────────────────────────
 export interface SupabaseRow<T = unknown> {
   user_id: string

@@ -111,7 +111,7 @@ export function AtividadesProvider({ children, userId }: AtividadesProviderProps
     if (!userId) { setCarregado(true); return }
     loadFromSupabase('atividades', userId)
       .then(data => {
-        if (data !== null) setAtividades(data.length > 0 ? data as Atividade[] : [])
+        if (data !== null && data.length > 0) setAtividades(data as Atividade[])
       })
       .catch(e => console.error('[AtividadesContext] Erro ao carregar do Supabase:', e))
       .finally(() => setCarregado(true))

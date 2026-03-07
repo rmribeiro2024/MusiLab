@@ -11,6 +11,7 @@ import { useAtividadesContext } from './AtividadesContext'
 import { useSequenciasContext } from './SequenciasContext'
 import { dbGet, dbSet } from '../lib/db'
 import { sanitizeUrl, gerarIdSeguro, validarBackup } from '../lib/utils'
+import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [offlineSync]
 import { useDebounce } from '../lib/hooks'
 import { verificarFeriado } from '../lib/feriados'
 import type { Plano, Musica, Atividade, RegistroPosAula } from '../types'
@@ -481,21 +482,23 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                 }); return
             }
         }
-        const planoParaSalvar = {
+        const planoParaSalvar = carimbарTimestamp({ // [offlineSync]
             ...planoEditando,
             objetivosEspecificos: planoEditando.objetivosEspecificos.filter((i: string) => i.trim() !== ''),
             habilidadesBNCC: (planoEditando.habilidadesBNCC || []).filter((i: string) => i.trim() !== ''),
             materiais: planoEditando.materiais.filter((i: string) => i.trim() !== ''),
             _ultimaEdicao: new Date().toISOString(),
-        }
+        }) // [offlineSync]
         const existe = planos.find((p: any) => p.id === planoParaSalvar.id)
         if (existe) {
             const versaoAnterior = { ...existe, _versaoSalvaEm: new Date().toISOString() }
             const historicoAtual = existe._historicoVersoes || []
             const novoHistorico = [versaoAnterior, ...historicoAtual].slice(0, 3)
             setPlanos(planos.map((p: any) => p.id === planoParaSalvar.id ? { ...planoParaSalvar, _historicoVersoes: novoHistorico } : p))
+            if (!userId) marcarPendente('planos', String(planoParaSalvar.id)) // [offlineSync]
         } else {
             setPlanos([...planos, planoParaSalvar])
+            if (!userId) marcarPendente('planos', String(planoParaSalvar.id)) // [offlineSync]
         }
         edicaoDispatch({ type: 'SET', payload: { modoEdicao: false, planoEditando: null } })
     }

@@ -141,7 +141,7 @@ export function RepertorioProvider({ children, userId }: RepertorioProviderProps
     if (!userId) { setCarregado(true); return }
     loadFromSupabase('repertorio', userId)
       .then(data => {
-        if (data !== null) setRepertorio(data.length > 0 ? data as Musica[] : [])
+        if (data !== null && data.length > 0) setRepertorio(data as Musica[])
       })
       .catch(e => console.error('[RepertorioContext] Erro ao carregar do Supabase:', e))
       .finally(() => setCarregado(true))

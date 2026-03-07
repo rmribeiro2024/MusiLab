@@ -3,6 +3,7 @@ import { FixedSizeList } from 'react-window'
 import { sanitizar } from '../lib/utils'
 import { dbSize } from '../lib/db'
 import { useInfiniteScroll } from '../lib/hooks'
+import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [offlineSync]
 import { usePlanosContext, useAnoLetivoContext, useAtividadesContext, useRepertorioContext, useModalContext, useCalendarioContext } from '../contexts'
 import RichTextEditor from './RichTextEditor'
 import { exportarPlanoPDF } from '../utils/pdf'
@@ -1312,7 +1313,7 @@ export default function TelaPrincipal() {
                                     className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition" title="Editar" aria-label="Editar plano">✏️</button>
                                 <button onClick={(e)=>{e.stopPropagation();exportarPlanoPDF(plano)}}
                                     className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition text-xs font-bold" title="PDF">PDF</button>
-                                <button onClick={(e)=>{e.stopPropagation(); const copia={...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}; setPlanos(prev=>[...prev, copia]); setModalConfirm({ conteudo: '✅ Plano duplicado!', somenteOk: true, labelConfirm: 'OK' });}}
+                                <button onClick={(e)=>{e.stopPropagation(); const copia=carimbарTimestamp({...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}); setPlanos(prev=>[...prev, copia]); if (!userId) marcarPendente('planos', String(copia.id)); setModalConfirm({ conteudo: '✅ Plano duplicado!', somenteOk: true, labelConfirm: 'OK' });}}
                                     className="text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 p-2 rounded-xl transition" title="Duplicar">⎘</button>
                                 <button onClick={(e)=>{e.stopPropagation();excluirPlano(plano.id)}}
                                     className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition" title="Excluir" aria-label="Excluir plano">🗑</button>

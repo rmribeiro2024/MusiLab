@@ -120,7 +120,7 @@ export function EstrategiasProvider({ children, userId }: EstrategiasProviderPro
     if (!userId) { setCarregado(true); return }
     loadFromSupabase('estrategias', userId)
       .then(data => {
-        if (data !== null) setEstrategias(data.length > 0 ? data as Estrategia[] : [])
+        if (data !== null && data.length > 0) setEstrategias(data as Estrategia[])
       })
       .catch(e => console.error('[EstrategiasContext] Erro ao carregar do Supabase:', e))
       .finally(() => setCarregado(true))

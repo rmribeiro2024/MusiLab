@@ -5,6 +5,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, syncConfiguracoes, loadFromSupabase, loadConfiguracoes, gerarIdSeguro } from '../lib/utils'
+import { mergeOffline, marcarPendente, carimbарTimestamp } from '../lib/offlineSync'
 import { useModalContext } from './ModalContext'
 import type { AnoLetivo, EventoEscolar, PlanejamentoAnualItem, PeriodoAnual, Plano } from '../types'
 
@@ -254,9 +255,13 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
       loadConfiguracoes(userId),
     ])
       .then(([anosC, eventosC, planejamentoC, cfg]) => {
-        if (anosC !== null) setAnosLetivos(anosC.length > 0 ? anosC as AnoLetivo[] : [])
-        if (eventosC !== null) setEventosEscolares(eventosC.length > 0 ? eventosC as EventoEscolar[] : [])
-        if (planejamentoC !== null) setPlanejamentoAnual(planejamentoC.length > 0 ? planejamentoC as PlanejamentoAnualItem[] : [])
+        {
+          const anosLocais = (() => { try { const r = dbGet('anosLetivos'); return r ? JSON.parse(r) : [] } catch { return [] } })()
+          const merged = mergeOffline('anos_letivos', anosC as ({ id: string; _updatedAt?: string; [key: string]: unknown })[] | null, anosLocais)
+          if (merged.length > 0) setAnosLetivos(merged as unknown as AnoLetivo[])
+        }
+        if (eventosC !== null && eventosC.length > 0) setEventosEscolares(eventosC as EventoEscolar[])
+        if (planejamentoC !== null && planejamentoC.length > 0) setPlanejamentoAnual(planejamentoC as PlanejamentoAnualItem[])
         if (cfg) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const c = cfg as any
@@ -271,7 +276,17 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
   }, [userId])
 
   // ── Salvar no IndexedDB ───────────────────────────────────────────────────
-  useEffect(() => { dbSet('anosLetivos', JSON.stringify(anosLetivos)) }, [anosLetivos])
+  useEffect(() => {
+    // Stamp _updatedAt e marcar como pendente quando offline (sem userId)
+    const toSave = !userId
+      ? anosLetivos.map(a => carimbарTimestamp(a as unknown as { id: string; _updatedAt?: string; [key: string]: unknown }))
+      : anosLetivos
+    dbSet('anosLetivos', JSON.stringify(toSave))
+    if (!userId && carregado) {
+      anosLetivos.forEach(a => marcarPendente('anos_letivos', String(a.id)))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anosLetivos])
   useEffect(() => { dbSet('eventosEscolares', JSON.stringify(eventosEscolares)) }, [eventosEscolares])
   useEffect(() => { dbSet('planejamentoAnual', JSON.stringify(planejamentoAnual)) }, [planejamentoAnual])
   useEffect(() => { if (anoPlanoAtivoId) dbSet('anoPlanoAtivoId', anoPlanoAtivoId) }, [anoPlanoAtivoId])

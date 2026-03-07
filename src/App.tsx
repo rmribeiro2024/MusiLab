@@ -5,10 +5,10 @@ import BancoPlanos from './components/BancoPlanos'
 import ErrorBoundary from './components/ErrorBoundary'
 import Toast from './components/Toast'
 import OfflineBanner from './components/OfflineBanner'
-import { ModalProvider, EstrategiasProvider, RepertorioProvider, AtividadesProvider, SequenciasProvider, HistoricoProvider, AnoLetivoProvider, CalendarioProvider, PlanosProvider } from './contexts'
+import { ModalProvider, EstrategiasProvider, RepertorioProvider, AtividadesProvider, SequenciasProvider, HistoricoProvider, AnoLetivoProvider, CalendarioProvider, PlanosProvider, PlanejamentoTurmaProvider } from './contexts'
 
 // ── TELA DE LOGIN ──
-function LoginScreen() {
+function LoginScreen({ onUsarSemLogin }: { onUsarSemLogin: () => void }) {
     const [loading, setLoading] = React.useState(false);
     const [erro, setErro] = React.useState('');
     const loginGoogle = async () => {
@@ -38,7 +38,22 @@ function LoginScreen() {
                     {loading ? 'Entrando...' : 'Entrar com Google'}
                 </button>
                 {erro && <p className="text-red-500 text-sm mt-4">{erro}</p>}
-                <p className="text-xs text-gray-400 mt-8">Seus dados ficam salvos na nuvem e acessíveis em qualquer dispositivo.</p>
+
+                {/* Separador */}
+                <div className="flex items-center gap-3 my-5">
+                    <div className="flex-1 h-px bg-gray-200" />
+                    <span className="text-xs text-gray-400">ou</span>
+                    <div className="flex-1 h-px bg-gray-200" />
+                </div>
+
+                {/* Botão usar sem login */}
+                <button onClick={onUsarSemLogin}
+                    className="w-full border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-500 font-medium py-3 px-6 rounded-2xl transition-all duration-200 text-sm">
+                    Usar sem login (modo local)
+                </button>
+                <p className="text-xs text-gray-400 mt-3">Dados salvos apenas neste dispositivo. Sem sincronização na nuvem.</p>
+
+                <p className="text-xs text-gray-400 mt-6">Seus dados ficam salvos na nuvem e acessíveis em qualquer dispositivo.</p>
             </div>
         </div>
     );
@@ -46,11 +61,24 @@ function LoginScreen() {
 
 export default function App() {
   const [session, setSession] = React.useState<Session | null | undefined>(undefined);
+  const [modoLocal, setModoLocal] = React.useState(false);
 
   React.useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    // Timeout de 8s: se o Supabase não responder, mostra a tela de login
+    const timeout = setTimeout(() => {
+      if (session === undefined) setSession(null);
+    }, 8000);
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(timeout);
+      setSession(session);
+    }).catch(() => {
+      clearTimeout(timeout);
+      setSession(null);
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
-    return () => subscription.unsubscribe();
+    return () => { subscription.unsubscribe(); clearTimeout(timeout); };
   }, []);
 
   if (session === undefined) return (
@@ -62,23 +90,27 @@ export default function App() {
     </div>
   );
 
-  if (!session) return <LoginScreen />;
+  if (!session && !modoLocal) return <LoginScreen onUsarSemLogin={() => setModoLocal(true)} />;
+
+  const userId = session?.user?.id ?? '';
 
   return (
     <ModalProvider>
-      <EstrategiasProvider userId={session.user.id}>
-        <RepertorioProvider userId={session.user.id}>
-          <AtividadesProvider userId={session.user.id}>
-            <SequenciasProvider userId={session.user.id}>
+      <EstrategiasProvider userId={userId}>
+        <RepertorioProvider userId={userId}>
+          <AtividadesProvider userId={userId}>
+            <SequenciasProvider userId={userId}>
               <HistoricoProvider>
-                <AnoLetivoProvider userId={session.user.id}>
+                <AnoLetivoProvider userId={userId}>
                   <CalendarioProvider>
-                    <PlanosProvider userId={session.user.id}>
-                      <ErrorBoundary modulo="MusiLab">
-                        <BancoPlanos session={session} />
-                      </ErrorBoundary>
-                      <Toast />
-                      <OfflineBanner />
+                    <PlanosProvider userId={userId}>
+                      <PlanejamentoTurmaProvider userId={userId}>
+                        <ErrorBoundary modulo="MusiLab">
+                          <BancoPlanos session={session ?? null} />
+                        </ErrorBoundary>
+                        <Toast />
+                        <OfflineBanner />
+                      </PlanejamentoTurmaProvider>
                     </PlanosProvider>
                   </CalendarioProvider>
                 </AnoLetivoProvider>

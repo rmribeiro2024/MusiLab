@@ -10,3 +10,4 @@ export { useHistoricoContext, HistoricoProvider } from './HistoricoContext'     
 export { useAnoLetivoContext, AnoLetivoProvider } from './AnoLetivoContext'  // Parte 6
 export { useCalendarioContext, CalendarioProvider } from './CalendarioContext'  // Parte 7
 export { usePlanosContext, PlanosProvider, normalizePlano } from './PlanosContext'   // Parte 8
+export { usePlanejamentoTurmaContext, PlanejamentoTurmaProvider } from './PlanejamentoTurmaContext'

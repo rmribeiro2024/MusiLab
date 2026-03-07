@@ -89,7 +89,7 @@ export function SequenciasProvider({ children, userId }: SequenciasProviderProps
     if (!userId) { setCarregado(true); return }
     loadFromSupabase('sequencias', userId)
       .then(data => {
-        if (data !== null) setSequencias(data.length > 0 ? data as Sequencia[] : [])
+        if (data !== null && data.length > 0) setSequencias(data as Sequencia[])
       })
       .catch(e => console.error('[SequenciasContext] Erro ao carregar do Supabase:', e))
       .finally(() => setCarregado(true))

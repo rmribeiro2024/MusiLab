@@ -180,6 +180,42 @@ export async function loadFromSupabase<T = unknown>(
     }
 }
 
+/**
+ * Carrega dados do Supabase página por página (50 itens/página por padrão).
+ * `onPage` é chamado com cada página assim que chega — permite mostrar dados
+ * progressivamente sem esperar o carregamento completo.
+ */
+export async function loadFromSupabasePaginated<T = unknown>(
+    tabela: string,
+    userId: string,
+    onPage: (items: T[], isLast: boolean) => void,
+    pageSize = 50
+): Promise<void> {
+    let from = 0
+    try {
+        while (true) {
+            const { data, error } = await supabase
+                .from(tabela)
+                .select('data')
+                .eq('user_id', userId)
+                .range(from, from + pageSize - 1)
+            if (error) throw error
+            if (!data || data.length === 0) {
+                if (from === 0) onPage([], true) // tabela vazia
+                break
+            }
+            const items = (data as { data: T }[]).map(row => row.data)
+            const isLast = data.length < pageSize
+            onPage(items, isLast)
+            if (isLast) break
+            from += pageSize
+        }
+    } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e)
+        console.error('[MusiLab] Erro ao carregar ' + tabela + ' paginado:', msg)
+    }
+}
+
 export async function loadConfiguracoes(userId: string): Promise<Record<string, unknown> | null> {
     try {
         const { data, error } = await supabase
