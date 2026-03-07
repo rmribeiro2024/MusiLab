@@ -295,12 +295,36 @@ function FormPlanejamentoInline({
     [turmaSelecionada, gradesSemanas]
   )
 
-  // Modo inicial: respeita origemAula ao editar; null (seletor) para novos
-  const [modo, setModo] = useState<Modo>(
-    planejamentoEditando ? origemParaModo(planejamentoEditando.origemAula) : null
-  )
+  // Computa conteúdo de pré-preenchimento do modo Adaptar
+  function buildAdaptarHtml() {
+    const partes: string[] = []
+    if (ultimoRegistro?.proximaAula?.trim())
+      partes.push(`<p>${ultimoRegistro.proximaAula}</p>`)
+    if (ultimoRegistro?.poderiaMelhorar?.trim())
+      partes.push(`<p>⚠️ Ponto de atenção: ${ultimoRegistro.poderiaMelhorar}</p>`)
+    if (ultimoRegistro?.resumoAula?.trim()) {
+      const r = ultimoRegistro.resumoAula
+      partes.push(`<p>📋 Última aula: ${r.length > 100 ? r.slice(0, 100) + '…' : r}</p>`)
+    }
+    return partes.join('')
+  }
+
+  // Modo inicial: editar → respeita origemAula; novo → Adaptar se houver dados, senão seletor
+  const modoInicial: Modo = (() => {
+    if (planejamentoEditando) return origemParaModo(planejamentoEditando.origemAula)
+    const temDados = !!(
+      ultimoRegistro?.proximaAula?.trim() ||
+      ultimoRegistro?.poderiaMelhorar?.trim() ||
+      ultimoRegistro?.resumoAula?.trim()
+    )
+    return temDados ? 'adaptar' : null
+  })()
+
+  const [modo, setModo] = useState<Modo>(modoInicial)
   const [dataPrevista, setDataPrevista] = useState(planejamentoEditando?.dataPrevista ?? proximaData)
-  const [oQuePretendoFazer, setOQuePretendoFazer] = useState(planejamentoEditando?.oQuePretendoFazer ?? '')
+  const [oQuePretendoFazer, setOQuePretendoFazer] = useState(
+    planejamentoEditando?.oQuePretendoFazer ?? (modoInicial === 'adaptar' ? buildAdaptarHtml() : '')
+  )
   const [planosRelacionadosIds, setPlanosRelacionadosIds] = useState<string[]>(
     planejamentoEditando?.planosRelacionadosIds?.map(String) ?? []
   )
@@ -313,7 +337,9 @@ function FormPlanejamentoInline({
     const id = planejamentoEditando?.planosRelacionadosIds?.[0]
     return id ? planos.find(p => String(p.id) === id) ?? null : null
   })
-  const [badgeAdaptar, setBadgeAdaptar] = useState('')
+  const [badgeAdaptar, setBadgeAdaptar] = useState(
+    modoInicial === 'adaptar' ? (ultimoRegistro?.dataAula ?? ultimoRegistro?.data ?? '') : ''
+  )
 
   // Referência para evitar disparo duplo do acionarAdaptar
   const acionarAdaptarPrevRef = useRef(acionarAdaptar ?? 0)
