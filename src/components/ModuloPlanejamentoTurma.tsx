@@ -418,9 +418,23 @@ function FormPlanejamentoInline({
   const [oQuePretendoFazer, setOQuePretendoFazer] = useState(
     planejamentoEditando?.oQuePretendoFazer ?? (modoInicial === 'adaptar' ? buildAdaptarHtml() : '')
   )
+  // Plano do banco que contém o último registro pós-aula desta turma
+  const planoDaUltimaAulaId: string | null = (() => {
+    if (!ultimoRegistro) return null
+    const found = planos.find(p =>
+      p.registrosPosAula?.some(r => String(r.id) === String(ultimoRegistro.id))
+    )
+    return found ? String(found.id) : null
+  })()
+
   const [planosRelacionadosIds, setPlanosRelacionadosIds] = useState<string[]>(() => {
     if (planejamentoEditando) return planejamentoEditando.planosRelacionadosIds?.map(String) ?? []
-    if (modoInicial === 'adaptar') return ultimoPlanejamento?.planosRelacionadosIds?.map(String) ?? []
+    if (modoInicial === 'adaptar') {
+      // Prioridade: plano do banco que gerou o último registro desta turma
+      if (planoDaUltimaAulaId) return [planoDaUltimaAulaId]
+      // Fallback: planos do último planejamento salvo
+      return ultimoPlanejamento?.planosRelacionadosIds?.map(String) ?? []
+    }
     return []
   })
   const [novoMaterial, setNovoMaterial] = useState('')
@@ -502,12 +516,16 @@ function FormPlanejamentoInline({
     setEditorKey(k => k + 1)
     setBasePlano(null)
     setMateriais([])
-    // Adaptar: herda planos do último planejamento; outros modos: limpa
-    setPlanosRelacionadosIds(
-      novoModo === 'adaptar'
-        ? (ultimoPlanejamento?.planosRelacionadosIds?.map(String) ?? [])
-        : []
-    )
+    // Adaptar: plano do banco do último registro; outros modos: limpa
+    if (novoModo === 'adaptar') {
+      setPlanosRelacionadosIds(
+        planoDaUltimaAulaId
+          ? [planoDaUltimaAulaId]
+          : (ultimoPlanejamento?.planosRelacionadosIds?.map(String) ?? [])
+      )
+    } else {
+      setPlanosRelacionadosIds([])
+    }
     setPainelImportarAberto(novoModo === 'importar')
     setPainelAdaptarAberto(false)
   }
