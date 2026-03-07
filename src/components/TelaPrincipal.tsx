@@ -273,15 +273,14 @@ export default function TelaPrincipal() {
 
                 {/* ════════════ ACCORDION 1: DETALHES DA AULA ════════════ */}
                 <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('detalhes')} className="w-full flex items-center gap-3 px-3 sm:px-6 py-4 text-left hover:bg-slate-50/70 transition-colors group">
-                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 transition-colors ${secoesForm.has('detalhes') ? 'bg-indigo-50 text-indigo-500' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>📊</span>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-slate-700">Detalhes da aula</p>
+                    <button type="button" onClick={() => toggleSecaoForm('detalhes')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Detalhes da aula</span>
                             {!secoesForm.has('detalhes') && (planoEditando.statusPlanejamento || planoEditando.nivel || planoEditando.duracao) && (
-                                <p className="text-xs text-slate-400 mt-0.5 truncate">{[planoEditando.statusPlanejamento, planoEditando.nivel, planoEditando.duracao].filter(Boolean).join(' · ')}</p>
+                                <p className="text-[11px] text-slate-300 mt-0.5 truncate">{[planoEditando.statusPlanejamento, planoEditando.nivel, planoEditando.duracao].filter(Boolean).join(' · ')}</p>
                             )}
                         </div>
-                        <span className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] flex-shrink-0 transition-all duration-200 ${secoesForm.has('detalhes') ? 'border-indigo-200 bg-indigo-50 text-indigo-400 rotate-180' : 'border-slate-200 bg-white text-slate-300'}`}>▼</span>
+                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('detalhes') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     {secoesForm.has('detalhes') && (
                         <div className="px-3 sm:px-6 pb-5 space-y-5">
@@ -322,19 +321,18 @@ export default function TelaPrincipal() {
 
                 {/* ════════════ ACCORDION 2: CLASSIFICAÇÃO ════════════ */}
                 <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('classificacao')} className="w-full flex items-center gap-3 px-3 sm:px-6 py-4 text-left hover:bg-slate-50/70 transition-colors group">
-                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 transition-colors ${secoesForm.has('classificacao') ? 'bg-violet-50 text-violet-500' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>🏷️</span>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-slate-700">Classificação</p>
+                    <button type="button" onClick={() => toggleSecaoForm('classificacao')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Classificação</span>
                             {!secoesForm.has('classificacao') && (() => {
                                 const parts: string[] = []
                                 if ((planoEditando.faixaEtaria||[]).length > 0) parts.push((planoEditando.faixaEtaria||[]).join(', '))
                                 if ((planoEditando.conceitos||[]).length > 0) parts.push(`${(planoEditando.conceitos||[]).length} conceito${(planoEditando.conceitos||[]).length > 1 ? 's' : ''}`)
                                 if ((planoEditando.tags||[]).length > 0) parts.push(`${(planoEditando.tags||[]).length} tag${(planoEditando.tags||[]).length > 1 ? 's' : ''}`)
-                                return parts.length > 0 ? <p className="text-xs text-slate-400 mt-0.5 truncate">{parts.join(' · ')}</p> : null
+                                return parts.length > 0 ? <p className="text-[11px] text-slate-300 mt-0.5 truncate">{parts.join(' · ')}</p> : null
                             })()}
                         </div>
-                        <span className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] flex-shrink-0 transition-all duration-200 ${secoesForm.has('classificacao') ? 'border-violet-200 bg-violet-50 text-violet-400 rotate-180' : 'border-slate-200 bg-white text-slate-300'}`}>▼</span>
+                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('classificacao') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     {secoesForm.has('classificacao') && (
                         <div className="px-3 sm:px-6 pb-5 space-y-5">
@@ -508,15 +506,14 @@ export default function TelaPrincipal() {
 
                 {/* ════════════ ACCORDION 3: OBJETIVOS E BNCC ════════════ */}
                 <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('objetivos')} className="w-full flex items-center gap-3 px-3 sm:px-6 py-4 text-left hover:bg-slate-50/70 transition-colors group">
-                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 transition-colors ${secoesForm.has('objetivos') ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>🎯</span>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-slate-700">Objetivos e BNCC</p>
+                    <button type="button" onClick={() => toggleSecaoForm('objetivos')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Objetivos e BNCC</span>
                             {!secoesForm.has('objetivos') && planoEditando.objetivoGeral && (
-                                <p className="text-xs text-slate-400 mt-0.5 truncate">{planoEditando.objetivoGeral.replace(/<[^>]*>/g,'').slice(0,70)}</p>
+                                <p className="text-[11px] text-slate-300 mt-0.5 truncate">{planoEditando.objetivoGeral.replace(/<[^>]*>/g,'').slice(0,70)}</p>
                             )}
                         </div>
-                        <span className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] flex-shrink-0 transition-all duration-200 ${secoesForm.has('objetivos') ? 'border-emerald-200 bg-emerald-50 text-emerald-400 rotate-180' : 'border-slate-200 bg-white text-slate-300'}`}>▼</span>
+                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('objetivos') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     {secoesForm.has('objetivos') && (
                         <div className="px-3 sm:px-6 pb-5 space-y-5">
@@ -552,10 +549,9 @@ export default function TelaPrincipal() {
 
                 {/* ════════════ ACCORDION 4: ROTEIRO DE ATIVIDADES ════════════ */}
                 <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('roteiro')} className="w-full flex items-center gap-3 px-3 sm:px-6 py-4 text-left hover:bg-slate-50/70 transition-colors group">
-                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 transition-colors ${secoesForm.has('roteiro') ? 'bg-amber-50 text-amber-500' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>📋</span>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-slate-700">Roteiro de Atividades</p>
+                    <button type="button" onClick={() => toggleSecaoForm('roteiro')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Roteiro de Atividades</span>
                             {!secoesForm.has('roteiro') && (() => {
                                 const n = (planoEditando.atividadesRoteiro||[]).length
                                 if (n === 0) return null
@@ -563,15 +559,17 @@ export default function TelaPrincipal() {
                                 ;(planoEditando.atividadesRoteiro||[]).forEach(a => { const num = parseInt((a.duracao||'').toString()); if (!isNaN(num)) totalMin += num })
                                 const parts = [`${n} atividade${n > 1 ? 's' : ''}`]
                                 if (totalMin > 0) parts.push(`${totalMin} min`)
-                                return <p className="text-xs text-slate-400 mt-0.5">{parts.join(' · ')}</p>
+                                return <p className="text-[11px] text-slate-300 mt-0.5">{parts.join(' · ')}</p>
                             })()}
                         </div>
-                        {(planoEditando.atividadesRoteiro||[]).length > 0 && (
-                            <span className="text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full mr-2">
-                                {(planoEditando.atividadesRoteiro||[]).length}
-                            </span>
-                        )}
-                        <span className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] flex-shrink-0 transition-all duration-200 ${secoesForm.has('roteiro') ? 'border-amber-200 bg-amber-50 text-amber-400 rotate-180' : 'border-slate-200 bg-white text-slate-300'}`}>▼</span>
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                            {(planoEditando.atividadesRoteiro||[]).length > 0 && (
+                                <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">
+                                    {(planoEditando.atividadesRoteiro||[]).length}
+                                </span>
+                            )}
+                            <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 ${secoesForm.has('roteiro') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </div>
                     </button>
                     {secoesForm.has('roteiro') && (
                         <div className="px-3 sm:px-6 pb-5">
@@ -910,15 +908,14 @@ export default function TelaPrincipal() {
 
                 {/* ════════════ ACCORDION 5: RECURSOS E AVALIAÇÃO ════════════ */}
                 <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('recursos')} className="w-full flex items-center gap-3 px-3 sm:px-6 py-4 text-left hover:bg-slate-50/70 transition-colors group">
-                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 transition-colors ${secoesForm.has('recursos') ? 'bg-teal-50 text-teal-500' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>📦</span>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-slate-700">Recursos e Avaliação</p>
+                    <button type="button" onClick={() => toggleSecaoForm('recursos')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Recursos e Avaliação</span>
                             {!secoesForm.has('recursos') && planoEditando.materiais.length > 0 && (
-                                <p className="text-xs text-slate-400 mt-0.5">{planoEditando.materiais.length} material{planoEditando.materiais.length > 1 ? 'is' : ''}</p>
+                                <p className="text-[11px] text-slate-300 mt-0.5">{planoEditando.materiais.length} material{planoEditando.materiais.length > 1 ? 'is' : ''}</p>
                             )}
                         </div>
-                        <span className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] flex-shrink-0 transition-all duration-200 ${secoesForm.has('recursos') ? 'border-teal-200 bg-teal-50 text-teal-400 rotate-180' : 'border-slate-200 bg-white text-slate-300'}`}>▼</span>
+                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('recursos') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     {secoesForm.has('recursos') && (
                         <div className="px-3 sm:px-6 pb-5 space-y-5">
