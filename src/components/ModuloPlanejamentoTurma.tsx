@@ -382,12 +382,7 @@ function FormPlanejamentoInline({
       <div className="px-5 py-4 space-y-4">
         {/* Data prevista */}
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">
-            Data prevista
-            {proximaData && !planejamentoEditando && (
-              <span className="ml-2 text-indigo-500 font-normal">— próxima aula: {formatarData(proximaData)}</span>
-            )}
-          </label>
+          <label className="block text-xs font-medium text-slate-500 mb-1">Data prevista</label>
           <input type="date" value={dataPrevista} onChange={e => setDataPrevista(e.target.value)} className={inputClass} />
         </div>
 
@@ -653,10 +648,10 @@ function ConteudoTurma() {
               <InfoRow icon="📝" label="Anotações gerais" valor={ultimoRegistroDaTurma.anotacoesGerais} />
             )}
             {ultimoRegistroDaTurma.proximaAula && (
-              <InfoRow icon="💡" label="Sugestão para próxima aula" valor={ultimoRegistroDaTurma.proximaAula} destacado />
+              <InfoRow icon="💡" label="Ideias / estratégias" valor={ultimoRegistroDaTurma.proximaAula} destacado />
             )}
             {ultimoRegistroDaTurma.proximaAulaOpcao && (
-              <InfoRow icon="🗓" label="Encaminhamento" valor={labelProximaOpcao(ultimoRegistroDaTurma.proximaAulaOpcao)} />
+              <InfoRow icon="🗓" label="Sugestão para próxima aula" valor={labelProximaOpcao(ultimoRegistroDaTurma.proximaAulaOpcao)} destacado />
             )}
           </div>
         </div>
