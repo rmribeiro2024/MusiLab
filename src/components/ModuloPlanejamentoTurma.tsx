@@ -260,6 +260,72 @@ function PainelImportarBanco({
   )
 }
 
+// ─── MODAL PREVIEW DO PLANO ───────────────────────────────────────────────────
+
+function ModalPreviewPlano({ plano, onFechar }: { plano: import('../types').Plano; onFechar: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+      onClick={onFechar}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Cabeçalho */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <h3 className="text-sm font-semibold text-slate-700 truncate pr-4">🏦 {plano.titulo}</h3>
+          <button type="button" onClick={onFechar} className="text-slate-400 hover:text-slate-600 text-base leading-none">✕</button>
+        </div>
+
+        {/* Corpo */}
+        <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
+          {plano.tema && (
+            <p className="text-xs text-slate-400 -mt-2">Tema: {plano.tema}</p>
+          )}
+
+          {plano.objetivoGeral && (
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Objetivo geral</p>
+              <p className="text-sm text-slate-600">{plano.objetivoGeral}</p>
+            </div>
+          )}
+
+          {(plano.atividadesRoteiro ?? []).length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Atividades</p>
+              <div className="space-y-1.5">
+                {(plano.atividadesRoteiro ?? []).map((a, i) => (
+                  <div key={i} className="text-xs bg-slate-50 rounded-lg px-3 py-2">
+                    <span className="font-medium text-slate-700">{a.nome}</span>
+                    {a.descricao && <span className="text-slate-400"> — {a.descricao}</span>}
+                    {a.duracao && <span className="text-slate-300 ml-1">({a.duracao} min)</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(plano.materiais ?? []).length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Materiais</p>
+              <div className="flex flex-wrap gap-1.5">
+                {(plano.materiais ?? []).map((m, i) => (
+                  <span key={i} className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">{m}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!(plano.objetivoGeral) && !(plano.atividadesRoteiro?.length) && (
+            <p className="text-sm text-slate-400 text-center py-4">Nenhum detalhe disponível para este plano.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── BLOCO 3: FORMULÁRIO DE PLANEJAMENTO (3 MODOS) ────────────────────────────
 
 type Modo = 'adaptar' | 'importar' | 'criar' | null
@@ -278,6 +344,7 @@ function FormPlanejamentoInline({
   onCancelarEdicao,
   ultimoRegistro,
   acionarAdaptar,
+  ultimoPlanejamento,
 }: {
   turmaSelecionada: TurmaSelecionada
   planejamentoEditando: import('../types').PlanejamentoTurma | null
@@ -285,6 +352,7 @@ function FormPlanejamentoInline({
   onCancelarEdicao: () => void
   ultimoRegistro?: RegistroPosAula | null
   acionarAdaptar?: number
+  ultimoPlanejamento?: import('../types').PlanejamentoTurma | null
 }) {
   const { planos } = usePlanosContext()
   const { setViewMode } = useRepertorioContext()
@@ -325,9 +393,11 @@ function FormPlanejamentoInline({
   const [oQuePretendoFazer, setOQuePretendoFazer] = useState(
     planejamentoEditando?.oQuePretendoFazer ?? (modoInicial === 'adaptar' ? buildAdaptarHtml() : '')
   )
-  const [planosRelacionadosIds, setPlanosRelacionadosIds] = useState<string[]>(
-    planejamentoEditando?.planosRelacionadosIds?.map(String) ?? []
-  )
+  const [planosRelacionadosIds, setPlanosRelacionadosIds] = useState<string[]>(() => {
+    if (planejamentoEditando) return planejamentoEditando.planosRelacionadosIds?.map(String) ?? []
+    if (modoInicial === 'adaptar') return ultimoPlanejamento?.planosRelacionadosIds?.map(String) ?? []
+    return []
+  })
   const [novoMaterial, setNovoMaterial] = useState('')
   const [materiais, setMateriais] = useState<string[]>(planejamentoEditando?.materiais ?? [])
   const [editorKey, setEditorKey] = useState(0)
@@ -340,6 +410,9 @@ function FormPlanejamentoInline({
   const [badgeAdaptar, setBadgeAdaptar] = useState(
     modoInicial === 'adaptar' ? (ultimoRegistro?.dataAula ?? ultimoRegistro?.data ?? '') : ''
   )
+
+  const [painelAdaptarAberto, setPainelAdaptarAberto] = useState(false)
+  const [planoPreview, setPlanoPreview] = useState<import('../types').Plano | null>(null)
 
   // Referência para evitar disparo duplo do acionarAdaptar
   const acionarAdaptarPrevRef = useRef(acionarAdaptar ?? 0)
@@ -410,9 +483,15 @@ function FormPlanejamentoInline({
     setEditorKey(k => k + 1)
     setBasePlano(null)
     setMateriais([])
-    setPlanosRelacionadosIds([])
+    // Adaptar: herda planos do último planejamento; outros modos: limpa
+    setPlanosRelacionadosIds(
+      novoModo === 'adaptar'
+        ? (ultimoPlanejamento?.planosRelacionadosIds?.map(String) ?? [])
+        : []
+    )
     setBadgeAdaptar(novaBadge)
     setPainelImportarAberto(novoModo === 'importar')
+    setPainelAdaptarAberto(false)
   }
 
   // ── Acionamento externo (botão "Adaptar ↓" do Bloco 2) ──────────────────────
@@ -600,7 +679,7 @@ function FormPlanejamentoInline({
                   <span className="font-medium flex-1 truncate">Aula-base: {basePlano.titulo}</span>
                   <button
                     type="button"
-                    onClick={() => setViewMode('lista')}
+                    onClick={() => setPlanoPreview(basePlano)}
                     className="text-blue-500 hover:text-blue-700 underline whitespace-nowrap"
                   >
                     Ver roteiro
@@ -637,31 +716,81 @@ function FormPlanejamentoInline({
             </div>
           )}
 
+          {/* MODO ADAPTAR — badge data + seção Planos de referência */}
+          {modo === 'adaptar' && (
+            <div className="space-y-2">
+              {/* Badge data */}
+              {badgeAdaptar && (
+                <div className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5">
+                  <span>📌</span>
+                  <span>Baseado na última aula de <strong>{formatarData(badgeAdaptar)}</strong></span>
+                </div>
+              )}
+
+              {/* Seção Planos de referência (Opção B) */}
+              <div className="border border-slate-100 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 bg-slate-50">
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">📚 Planos de referência</span>
+                  <button
+                    type="button"
+                    onClick={() => setPainelAdaptarAberto(v => !v)}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    + Adicionar
+                  </button>
+                </div>
+
+                {planosRelacionados.length === 0 && !painelAdaptarAberto && (
+                  <p className="text-xs text-slate-400 text-center py-3 px-3">
+                    Nenhum plano vinculado —{' '}
+                    <button type="button" onClick={() => setPainelAdaptarAberto(true)} className="text-blue-500 hover:text-blue-700 underline">adicionar</button>
+                  </p>
+                )}
+
+                {planosRelacionados.length > 0 && (
+                  <div className="divide-y divide-slate-50">
+                    {planosRelacionados.map(p => (
+                      <div key={p.id} className="flex items-center justify-between px-3 py-2.5">
+                        <span className="text-xs text-slate-700 font-medium truncate flex-1">🏦 {p.titulo}</span>
+                        <div className="flex items-center gap-3 flex-shrink-0 ml-2">
+                          <button
+                            type="button"
+                            onClick={() => setPlanoPreview(p)}
+                            className="text-xs text-blue-500 hover:text-blue-700 font-medium"
+                          >
+                            👁 Ver
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => togglePlano(String(p.id))}
+                            className="text-xs text-slate-300 hover:text-red-400 transition-colors"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {painelAdaptarAberto && (
+                  <div className="border-t border-slate-100">
+                    <PainelImportarBanco
+                      planosRelacionadosIds={planosRelacionadosIds}
+                      onToggle={togglePlano}
+                      onFechar={() => setPainelAdaptarAberto(false)}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* O que pretendo fazer */}
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">
               O que pretendo fazer <span className="text-red-400">*</span>
             </label>
-
-            {/* Badge: modo Adaptar */}
-            {modo === 'adaptar' && badgeAdaptar && (
-              <div className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5 mb-2">
-                <span>📌</span>
-                <span>Baseado na última aula de {formatarData(badgeAdaptar)}</span>
-              </div>
-            )}
-
-            {/* Chips de planos relacionados (modo não-importar) */}
-            {modo !== 'importar' && planosRelacionados.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-2">
-                {planosRelacionados.map(p => (
-                  <span key={p.id} className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded-lg">
-                    🏦 {p.titulo}
-                    <button type="button" onClick={() => togglePlano(String(p.id))} className="text-blue-400 hover:text-blue-700 ml-0.5">✕</button>
-                  </span>
-                ))}
-              </div>
-            )}
 
             <RichTextEditor
               key={`rte-${planejamentoEditando?.id ?? 'new'}-${turmaSelecionada.turmaId}-${editorKey}`}
@@ -757,6 +886,9 @@ function FormPlanejamentoInline({
           </button>
         </div>
       )}
+
+      {/* Modal preview de plano */}
+      {planoPreview && <ModalPreviewPlano plano={planoPreview} onFechar={() => setPlanoPreview(null)} />}
     </form>
   )
 }
@@ -968,6 +1100,7 @@ function ConteudoTurma() {
           onCancelarEdicao={fecharForm}
           ultimoRegistro={ultimoRegistroDaTurma}
           acionarAdaptar={contadorAdaptar}
+          ultimoPlanejamento={planejamentosDaTurma[0] ?? null}
         />
       </div>
 
