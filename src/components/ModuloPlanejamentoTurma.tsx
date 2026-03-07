@@ -152,9 +152,9 @@ function EstadoVazio() {
 
 // ─── INFO ROW ─────────────────────────────────────────────────────────────────
 
-function InfoRow({ icon, label, valor, destacado }: { icon: string; label: string; valor: string; destacado?: boolean }) {
+function InfoRow({ icon, label, valor }: { icon: string; label: string; valor: string; destacado?: boolean }) {
   return (
-    <div className={`text-xs rounded-lg px-3 py-2 ${destacado ? 'bg-blue-50 text-blue-700' : 'bg-slate-50 text-slate-600'}`}>
+    <div className="text-xs rounded-lg px-3 py-2 bg-slate-50 text-slate-600">
       <span className="mr-1">{icon}</span>
       <span className="font-medium">{label}:</span>{' '}
       <span dangerouslySetInnerHTML={{ __html: valor }} />
@@ -166,18 +166,18 @@ function InfoRow({ icon, label, valor, destacado }: { icon: string; label: strin
 
 function CardProximoPasso({ valor, onAdaptar }: { valor: string; onAdaptar: () => void }) {
   return (
-    <div className="bg-blue-50 border border-blue-100 rounded-2xl shadow-sm p-4">
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Próximo passo sugerido</h3>
+        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Próximo passo sugerido</h3>
         <button
           type="button"
           onClick={onAdaptar}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-white border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-100 transition-colors"
+          className="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-100 transition-colors"
         >
           🔄 Adaptar ↓
         </button>
       </div>
-      <p className="text-sm text-blue-700 font-medium">🗓 {labelProximaOpcao(valor)}</p>
+      <p className="text-sm text-slate-700 font-medium">🗓 {labelProximaOpcao(valor)}</p>
     </div>
   )
 }
