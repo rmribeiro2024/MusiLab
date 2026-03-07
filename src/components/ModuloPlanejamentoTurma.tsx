@@ -391,37 +391,6 @@ function FormPlanejamentoInline({
           <input type="date" value={dataPrevista} onChange={e => setDataPrevista(e.target.value)} className={inputClass} />
         </div>
 
-        {/* Contexto da última aula — proximaAulaOpcao + proximaAula */}
-        {!planejamentoEditando && (ultimoRegistro?.proximaAulaOpcao || ultimoRegistro?.proximaAula) && (
-          <div className="space-y-1.5">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Da última aula</p>
-            {ultimoRegistro.proximaAulaOpcao && (
-              <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 flex items-center gap-2 text-xs text-slate-600">
-                <span className="flex-shrink-0">🗓</span>
-                <div>
-                  <span className="font-medium text-slate-500">Aula sugerida: </span>
-                  {labelProximaOpcao(ultimoRegistro.proximaAulaOpcao)}
-                </div>
-              </div>
-            )}
-            {ultimoRegistro.proximaAula && (
-              <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2.5 flex items-start justify-between gap-2 text-xs text-indigo-700">
-                <div className="min-w-0">
-                  <span className="font-medium">➡️ Planejado: </span>
-                  {ultimoRegistro.proximaAula}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => importarTextoNoEditor(ultimoRegistro.proximaAula!)}
-                  className="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 rounded-lg px-2.5 py-1 hover:bg-indigo-100 transition-colors whitespace-nowrap"
-                >
-                  Usar como base
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* O que pretendo fazer */}
         <div>
           <label className="block text-xs font-medium text-slate-700 mb-1">
@@ -662,16 +631,33 @@ function ConteudoTurma() {
             <span className="text-xs text-slate-400">{ultimoRegistroDaTurma.dataAula ?? ultimoRegistroDaTurma.data ?? '—'}</span>
           </div>
           <div className="space-y-2">
-            {ultimoRegistroDaTurma.resumoAula && <InfoRow icon="📋" label="O que foi feito" valor={ultimoRegistroDaTurma.resumoAula} />}
-            {ultimoRegistroDaTurma.funcionouBem && <InfoRow icon="✅" label="Funcionou bem" valor={ultimoRegistroDaTurma.funcionouBem} />}
-            {ultimoRegistroDaTurma.naoFuncionou && <InfoRow icon="❌" label="Não funcionou" valor={ultimoRegistroDaTurma.naoFuncionou} />}
             {ultimoRegistroDaTurma.resultadoAula && (
               <InfoRow icon="📊" label="Resultado da aula" valor={labelResultado(ultimoRegistroDaTurma.resultadoAula)} />
             )}
-            {ultimoRegistroDaTurma.poderiaMelhorar && (
-              <InfoRow icon="💡" label="Poderia melhorar" valor={ultimoRegistroDaTurma.poderiaMelhorar} />
+            {ultimoRegistroDaTurma.resumoAula && (
+              <InfoRow icon="📋" label="O que foi realizado" valor={ultimoRegistroDaTurma.resumoAula} />
             )}
-            {ultimoRegistroDaTurma.comportamento && <InfoRow icon="👥" label="Comportamento" valor={ultimoRegistroDaTurma.comportamento} />}
+            {ultimoRegistroDaTurma.funcionouBem && (
+              <InfoRow icon="✅" label="O que funcionou bem" valor={ultimoRegistroDaTurma.funcionouBem} />
+            )}
+            {ultimoRegistroDaTurma.naoFuncionou && (
+              <InfoRow icon="⚠️" label="O que não funcionou" valor={ultimoRegistroDaTurma.naoFuncionou} />
+            )}
+            {ultimoRegistroDaTurma.poderiaMelhorar && (
+              <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={ultimoRegistroDaTurma.poderiaMelhorar} />
+            )}
+            {ultimoRegistroDaTurma.comportamento && (
+              <InfoRow icon="👥" label="Comportamento da turma" valor={ultimoRegistroDaTurma.comportamento} />
+            )}
+            {ultimoRegistroDaTurma.anotacoesGerais && (
+              <InfoRow icon="📝" label="Anotações gerais" valor={ultimoRegistroDaTurma.anotacoesGerais} />
+            )}
+            {ultimoRegistroDaTurma.proximaAula && (
+              <InfoRow icon="💡" label="Sugestão para próxima aula" valor={ultimoRegistroDaTurma.proximaAula} destacado />
+            )}
+            {ultimoRegistroDaTurma.proximaAulaOpcao && (
+              <InfoRow icon="🗓" label="Encaminhamento" valor={labelProximaOpcao(ultimoRegistroDaTurma.proximaAulaOpcao)} />
+            )}
           </div>
         </div>
       ) : (
