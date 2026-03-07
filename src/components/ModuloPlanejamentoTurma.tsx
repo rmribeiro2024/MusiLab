@@ -343,6 +343,8 @@ function FormPlanejamentoInline({
 
   // Referência para evitar disparo duplo do acionarAdaptar
   const acionarAdaptarPrevRef = useRef(acionarAdaptar ?? 0)
+  // Rastreia se o usuário editou manualmente o editor (auto-preenchimento não conta)
+  const hasEditedRef = useRef(false)
 
   // Sincroniza data quando proximaData é calculado
   useEffect(() => {
@@ -377,7 +379,7 @@ function FormPlanejamentoInline({
   // ── Selecionar modo ──────────────────────────────────────────────────────────
   function handleSelecionarModo(novoModo: Modo) {
     const temConteudo = oQuePretendoFazer.replace(/<[^>]+>/g, '').trim()
-    if (temConteudo && !window.confirm('Há texto no editor. Deseja trocar de modo e perder o conteúdo?')) return
+    if (temConteudo && hasEditedRef.current && !window.confirm('Há texto no editor. Deseja trocar de modo e perder o conteúdo?')) return
 
     let novoConteudo = ''
     let novaBadge = ''
@@ -402,6 +404,7 @@ function FormPlanejamentoInline({
       novaBadge = ultimoRegistro?.dataAula ?? ultimoRegistro?.data ?? ''
     }
 
+    hasEditedRef.current = false
     setModo(novoModo)
     setOQuePretendoFazer(novoConteudo)
     setEditorKey(k => k + 1)
@@ -420,10 +423,11 @@ function FormPlanejamentoInline({
     }
   }, [acionarAdaptar]) // eslint-disable-line
 
-  // ── Voltar ao seletor com confirmação ────────────────────────────────────────
+  // ── Voltar ao seletor ────────────────────────────────────────────────────────
   function tentarVoltarSeletor() {
     const temConteudo = oQuePretendoFazer.replace(/<[^>]+>/g, '').trim()
-    if (temConteudo && !window.confirm('Há texto no editor. Deseja trocar de modo e perder o conteúdo?')) return
+    if (temConteudo && hasEditedRef.current && !window.confirm('Há texto no editor. Deseja trocar de modo e perder o conteúdo?')) return
+    hasEditedRef.current = false
     setModo(null)
     setOQuePretendoFazer('')
     setEditorKey(k => k + 1)
@@ -662,7 +666,7 @@ function FormPlanejamentoInline({
             <RichTextEditor
               key={`rte-${planejamentoEditando?.id ?? 'new'}-${turmaSelecionada.turmaId}-${editorKey}`}
               value={oQuePretendoFazer}
-              onChange={setOQuePretendoFazer}
+              onChange={html => { hasEditedRef.current = true; setOQuePretendoFazer(html) }}
               placeholder={
                 modo === 'criar' ? 'Descreva o que planeja fazer nesta aula...' :
                 modo === 'adaptar' ? 'Edite o conteúdo pré-preenchido conforme necessário...' :
