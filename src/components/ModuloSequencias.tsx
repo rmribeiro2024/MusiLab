@@ -263,13 +263,13 @@ export default function ModuloSequencias() {
                         <div className="flex gap-3 pt-2">
                             <button
                                 onClick={() => setSequenciaEditando(null)}
-                                className="flex-1 border border-slate-300 hover:bg-slate-50 text-slate-700 py-3 rounded-xl font-semibold text-sm transition"
+                                className="flex-1 border border-slate-200 hover:bg-slate-50 text-slate-500 py-3 rounded-xl font-semibold text-sm transition"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={salvarSequencia}
-                                className="flex-1 bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-xl font-semibold text-sm transition"
+                                className="flex-1 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 py-3 rounded-xl font-semibold text-sm transition"
                             >
                                 Salvar
                             </button>
