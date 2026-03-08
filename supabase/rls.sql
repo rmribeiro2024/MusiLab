@@ -65,6 +65,23 @@ CREATE POLICY "configuracoes: inserção própria" ON configuracoes  FOR INSERT 
 CREATE POLICY "configuracoes: update próprio"   ON configuracoes  FOR UPDATE USING (auth.uid()::text = user_id::text);
 CREATE POLICY "configuracoes: delete próprio"   ON configuracoes  FOR DELETE USING (auth.uid()::text = user_id::text);
 
+-- ── aplicacoes_aula (Fase 1 — AplicacaoAula) ────────────────────
+-- Cria tabela se ainda não existir, depois ativa RLS e cria policies.
+-- Execute no Supabase Dashboard → SQL Editor após o deploy.
+CREATE TABLE IF NOT EXISTS public.aplicacoes_aula (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  item_id      text NOT NULL,
+  data         jsonb NOT NULL,
+  created_at   timestamptz DEFAULT now(),
+  UNIQUE(user_id, item_id)
+);
+ALTER TABLE public.aplicacoes_aula ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "aplicacoes_aula: leitura própria"  ON public.aplicacoes_aula FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "aplicacoes_aula: inserção própria" ON public.aplicacoes_aula FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "aplicacoes_aula: update próprio"   ON public.aplicacoes_aula FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "aplicacoes_aula: delete próprio"   ON public.aplicacoes_aula FOR DELETE USING (auth.uid() = user_id);
+
 -- ══════════════════════════════════════════════════════════════
 -- Para verificar se RLS está ativo:
 --   SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public';

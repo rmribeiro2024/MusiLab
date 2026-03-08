@@ -29,7 +29,7 @@ const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
 const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
 const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
 import { BancoPlanosContext } from './BancoPlanosContext'
-import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext, useSequenciasContext, useHistoricoContext, useAnoLetivoContext, useCalendarioContext, usePlanosContext, normalizePlano } from '../contexts'
+import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext, useSequenciasContext, useHistoricoContext, useAnoLetivoContext, useCalendarioContext, useAplicacoesContext, usePlanosContext, normalizePlano } from '../contexts'
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
 import { dbGet, dbSet, dbDel, dbSetRaw, dbGetRaw } from '../lib/db'
@@ -342,6 +342,17 @@ export default function BancoPlanos({ session }) {
                 adicionarAtividadeRoteiro, removerAtividadeRoteiro, atualizarAtividadeRoteiro,
                 toggleFavorito, handleDragStart, handleDragEnter, handleDragEnd, toggleRecursosAtiv,
             } = usePlanosContext();
+            // ── AplicacoesContext (Fase 1 — AplicacaoAula) ───────────────
+            const {
+                aplicacoes, setAplicacoes,
+                aplicacoesPorData,
+                criarAplicacoes,
+                atualizarStatusAplicacao,
+                salvarAdaptacao,
+                excluirAplicacao,
+                getAplicacoesDoDia,
+                getAplicacoesDaSemana,
+            } = useAplicacoesContext();
             // ============================================================
             // FUNÇÕES: UTILITÁRIOS GERAIS
             // ============================================================
@@ -813,7 +824,7 @@ export default function BancoPlanos({ session }) {
             _autoRef.current.getBackupData = () => ({
                 versao: '2.0', timestamp: new Date().toISOString(),
                 planos, conceitos, unidades, faixas, anosLetivos, gradesSemanas, atividades,
-                eventosEscolares, sequencias, repertorio, tagsGlobais, templatesRoteiro,
+                eventosEscolares, sequencias, repertorio, tagsGlobais, templatesRoteiro, aplicacoes,
                 compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados,
                 escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas,
                 energiasCustomizadas, instrumentacaoCustomizada,
@@ -967,12 +978,30 @@ export default function BancoPlanos({ session }) {
                                 if(backup.dinamicasCustomizadas) setDinamicasCustomizadas(backup.dinamicasCustomizadas);
                                 if(backup.energiasCustomizadas) setEnergiasCustomizadas(backup.energiasCustomizadas);
                                 if(backup.instrumentacaoCustomizada) setInstrumentacaoCustomizada(backup.instrumentacaoCustomizada);
+                                if(backup.aplicacoes) setAplicacoes(backup.aplicacoes);
                                 setModalConfirm({ titulo: 'Backup restaurado!', conteudo: `${backup.planos.length} planos · ${backup.repertorio?.length||0} músicas · ${backup.atividades?.length||0} atividades`, somenteOk: true, labelConfirm: 'OK' });
                             }
                         });
                     } catch { setModalConfirm({ titulo: 'Arquivo inválido', conteudo: 'Não foi possível ler o arquivo. Ele pode estar corrompido.', somenteOk: true, labelConfirm: 'OK' }); }
                 }; reader.readAsText(file); event.target.value = '';
             };
+
+            // ── Compat. retroativa: AplicacaoAula → historicoDatas do Plano ──
+            // Quando uma aplicação muda para 'realizada', AplicacoesContext dispara
+            // musilab:aplicacaoRealizada. Aqui atualizamos historicoDatas do plano-base
+            // para manter o calendário mensal existente funcionando sem alteração.
+            useEffect(() => {
+                const handler = (e: Event) => {
+                    const { planoId, data } = (e as CustomEvent).detail as { planoId: string | number; data: string }
+                    setPlanos(prev => prev.map(p =>
+                        String(p.id) === String(planoId) && !(p.historicoDatas ?? []).includes(data)
+                            ? { ...p, historicoDatas: [...(p.historicoDatas ?? []), data] }
+                            : p
+                    ))
+                }
+                window.addEventListener('musilab:aplicacaoRealizada', handler)
+                return () => window.removeEventListener('musilab:aplicacaoRealizada', handler)
+            }, []) // eslint-disable-line
 
             // ============================================================
             // FUNÇÕES: REPERTÓRIO — UTILITÁRIOS
@@ -2221,6 +2250,16 @@ export default function BancoPlanos({ session }) {
         vincularAtividadeAoPlano,
         vincularMusicaAtividade,
         vincularPlanoAoSlot,
+        // ── AplicacoesContext bridge ──
+        aplicacoes,
+        setAplicacoes,
+        aplicacoesPorData,
+        criarAplicacoes,
+        atualizarStatusAplicacao,
+        salvarAdaptacao,
+        excluirAplicacao,
+        getAplicacoesDoDia,
+        getAplicacoesDaSemana,
         ytIdFromUrl,
         ytPreviewId,
             };

@@ -9,5 +9,6 @@ export { useSequenciasContext, SequenciasProvider } from './SequenciasContext'  
 export { useHistoricoContext, HistoricoProvider } from './HistoricoContext'     // Parte 5
 export { useAnoLetivoContext, AnoLetivoProvider } from './AnoLetivoContext'  // Parte 6
 export { useCalendarioContext, CalendarioProvider } from './CalendarioContext'  // Parte 7
+export { useAplicacoesContext, AplicacoesProvider } from './AplicacoesContext'  // Aplicações de aula
 export { usePlanosContext, PlanosProvider, normalizePlano } from './PlanosContext'   // Parte 8
 export { usePlanejamentoTurmaContext, PlanejamentoTurmaProvider } from './PlanejamentoTurmaContext'

@@ -32,6 +32,34 @@ export interface GradeEditando {
   aulas: AulaGrade[]
 }
 
+// ─── APLICAÇÃO DE AULA ────────────────────────────────────────
+// Representa a aplicação operacional de uma aula-base (Plano) para uma
+// turma específica em uma data específica. Não altera o plano base.
+export interface AplicacaoAula {
+  id: string
+  planoId: string | number        // referência à aula-base (Plano.id)
+  anoLetivoId: string
+  escolaId: string
+  segmentoId: string
+  turmaId: string
+  data: string                    // YYYY-MM-DD
+  horario?: string                // "08:00" — herdado da AulaGrade
+  status: 'planejada' | 'realizada' | 'cancelada'
+  adaptacaoTexto?: string         // anotações locais — nunca afeta o plano base
+  atividadesOcultas?: string[]    // IDs de AtividadeRoteiro a pular nesta turma
+  _updatedAt?: string
+}
+
+// Helper para criar aplicações em lote a partir de slots da grade semanal
+export interface AplicacaoAulaSlot {
+  anoLetivoId: string
+  escolaId: string
+  segmentoId: string
+  turmaId: string
+  data: string
+  horario?: string
+}
+
 // ─── PLANEJAMENTO ANUAL ───────────────────────────────────────
 export interface PeriodoAnual {
   id?: string | number
@@ -484,6 +512,16 @@ export interface BancoPlanosContextValue {
   desativarAutoBackup: () => void
   salvarAutoBackupAgora: () => void
   sincronizarAgora: () => void
+
+  // Aplicações de aula
+  aplicacoes: AplicacaoAula[]
+  aplicacoesPorData: Record<string, AplicacaoAula[]>
+  criarAplicacoes: (planoId: string | number, slots: AplicacaoAulaSlot[]) => void
+  atualizarStatusAplicacao: (id: string, status: AplicacaoAula['status']) => void
+  salvarAdaptacao: (id: string, adaptacaoTexto: string) => void
+  excluirAplicacao: (id: string) => void
+  getAplicacoesDoDia: (data: string) => AplicacaoAula[]
+  getAplicacoesDaSemana: (inicio: string, fim: string) => AplicacaoAula[]
 
   // Calendário / período
   dataFimCustom: string
