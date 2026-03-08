@@ -28,6 +28,7 @@ const ModuloRepertorio       = lazy(() => import('./ModuloRepertorio'))
 const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
 const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
 const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
+const AgendaSemanal          = lazy(() => import('./AgendaSemanal'))
 import { BancoPlanosContext } from './BancoPlanosContext'
 import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext, useSequenciasContext, useHistoricoContext, useAnoLetivoContext, useCalendarioContext, useAplicacoesContext, usePlanosContext, normalizePlano } from '../contexts'
 import ErrorBoundary from './ErrorBoundary'
@@ -2367,6 +2368,7 @@ export default function BancoPlanos({ session }) {
                                         { label:'Início',     short:'Início',  icon:'🏠', mode:'lista',           action:()=>{setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null);} },
                                         { label:'Nova Aula',  short:'Nova',    icon:'➕', mode:'nova',            action: novoPlano, accent: true },
                                         { label:'Hoje',       short:'Hoje',    icon:'☀️', mode:'resumoDia',       action:()=>setViewMode('resumoDia') },
+                                        { label:'Semana',     short:'Semana',  icon:'📆', mode:'agendaSemanal',   action:()=>setViewMode('agendaSemanal') },
                                         { label:'Calendário', short:'Cal.',    icon:'📅', mode:'calendario',      action:()=>setViewMode('calendario') },
                                         { label:'Meu Ano',    short:'Ano',     icon:'🗓️', mode:'anoLetivo',       action:()=>setViewMode('anoLetivo') },
                                         { label:'Histórico',  short:'Hist.',   icon:'📊', mode:'historicoMusical', action:()=>setViewMode('historicoMusical') },
@@ -2438,6 +2440,7 @@ export default function BancoPlanos({ session }) {
                     <div className="max-w-7xl mx-auto px-4 py-6">
                         {viewMode==='resumoDia' && <ErrorBoundary modulo="Resumo do Dia"><Suspense fallback={<CarregandoModulo />}><TelaResumoDia /></Suspense></ErrorBoundary>}
                         {viewMode==='calendario' && <ErrorBoundary modulo="Calendário"><Suspense fallback={<CarregandoModulo />}><TelaCalendario /></Suspense></ErrorBoundary>}
+                        {viewMode==='agendaSemanal' && <ErrorBoundary modulo="Agenda Semanal"><Suspense fallback={<CarregandoModulo />}><AgendaSemanal /></Suspense></ErrorBoundary>}
 
                         {/* ══════════════ PLANEJAMENTO POR TURMA ══════════════ */}
                         {viewMode === 'turmas' && <ErrorBoundary modulo="Planejamento por Turma"><Suspense fallback={<CarregandoModulo />}><ModuloPlanejamentoTurma /></Suspense></ErrorBoundary>}
@@ -2666,6 +2669,7 @@ export default function BancoPlanos({ session }) {
                         <div className="fixed bottom-16 left-0 right-0 sm:hidden bg-white border border-slate-200 rounded-t-2xl shadow-xl z-40 p-4 grid grid-cols-3 gap-2">
                             {[
                                 { mode: 'resumoDia',       icon: '☀️',  label: 'Hoje' },
+                                { mode: 'agendaSemanal',   icon: '📆',  label: 'Semana' },
                                 { mode: 'anoLetivo',        icon: '🗓️',  label: 'Meu Ano' },
                                 { mode: 'historicoMusical', icon: '📊',  label: 'Histórico' },
                                 { mode: 'turmas',           icon: '👥',  label: 'Turmas' },
