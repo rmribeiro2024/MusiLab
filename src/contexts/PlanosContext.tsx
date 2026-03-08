@@ -71,7 +71,7 @@ export function normalizePlano(p: any): Plano {
         conceitos:            p.conceitos            || [],
         tags:                 p.tags                 || [],
         unidades:             p.unidades             || [],
-        faixaEtaria:          p.faixaEtaria          || [],
+        faixaEtaria:          [...new Set(p.faixaEtaria || [])],
         objetivosEspecificos: p.objetivosEspecificos || [],
         materiais:            p.materiais            || [],
         habilidadesBNCC:      p.habilidadesBNCC      || [],
@@ -488,6 +488,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             objetivosEspecificos: planoEditando.objetivosEspecificos.filter((i: string) => i.trim() !== ''),
             habilidadesBNCC: (planoEditando.habilidadesBNCC || []).filter((i: string) => i.trim() !== ''),
             materiais: planoEditando.materiais.filter((i: string) => i.trim() !== ''),
+            faixaEtaria: [...new Set(planoEditando.faixaEtaria || [])], // evita duplicatas
             _ultimaEdicao: new Date().toISOString(),
         }) // [offlineSync]
         const existe = planos.find((p: any) => p.id === planoParaSalvar.id)

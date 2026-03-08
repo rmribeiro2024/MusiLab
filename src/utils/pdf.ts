@@ -49,7 +49,7 @@ export async function exportarPlanoPDF(plano) {
 
     // ── Paleta ──
     const W = 210, H = 297;
-    const mL = 22, mR = 22, mB = 20;
+    const mL = 22, mR = 22, mB = 28;  // mB aumentado de 20→28: mais espaço antes do rodapé
     const cW = W - mL - mR;
     const ACCENT = [55, 65, 81];      // cinza escuro elegante
     const DARK   = [17, 24, 39];       // quase preto — corpo do texto
@@ -76,7 +76,7 @@ export async function exportarPlanoPDF(plano) {
 
     // ── Helpers ──
     const chk = (space) => {
-        if (y + space > H - mB) { doc.addPage(); y = 24; return true; }
+        if (y + space > H - mB) { doc.addPage(); y = 22; return true; }
         return false;
     };
     const rule = (before, after) => {
@@ -113,7 +113,7 @@ export async function exportarPlanoPDF(plano) {
     y = 19;
     doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(19); doc.setTextColor(...DARK);
     const titleLines = doc.splitTextToSize(plano.titulo || "Plano de Aula", cW);
-    titleLines.forEach(l => { doc.text(l, mL, y); y += 9; });
+    titleLines.forEach(l => { chk(9); doc.text(l, mL, y); y += 9; });
 
     if (plano.destaque) {
         doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(9); doc.setTextColor(...LABEL);
