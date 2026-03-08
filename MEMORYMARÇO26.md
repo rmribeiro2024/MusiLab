@@ -1,6 +1,6 @@
 # MusiLab — Histórico de Mudanças
 
-> Última atualização: 2026-03-08 (sessão noturna)
+> Última atualização: 2026-03-08 (Fase 1 AplicacaoAula concluída — commit `0625702`)
 
 ---
 
@@ -524,18 +524,18 @@ O MusiLab mistura dado pedagógico (`Plano`) com dado operacional (quando e para
 
 ### Checklist de implementação
 
-#### ✅ Fase 1 — Fundação (modelo + contexto + Supabase)
-- [ ] `src/types/index.ts` — adicionar `AplicacaoAula` e `AplicacaoAulaSlot` após `GradeEditando` (~linha 33)
-- [ ] `src/types/index.ts` — adicionar campos de aplicações em `BancoPlanosContextValue`
-- [ ] `src/contexts/AplicacoesContext.tsx` — criar arquivo completo (padrão EstrategiasContext)
-- [ ] `src/contexts/index.ts` — adicionar export
-- [ ] `src/App.tsx` — adicionar `<AplicacoesProvider>` entre CalendarioProvider e PlanosProvider
-- [ ] `src/components/BancoPlanos.tsx` — import + destructuring + backup + restore + listener + ctx bridge
-- [ ] `supabase/rls.sql` — adicionar tabela `aplicacoes_aula` + RLS
-- [ ] Executar SQL no Supabase Dashboard
-- [ ] `npx tsc --noEmit` → 0 erros
-- [ ] `npm run build` → sucesso
-- [ ] commit + push + verificar deploy
+#### ✅ Fase 1 — Fundação (modelo + contexto + Supabase) — CONCLUÍDA (commit `0625702`)
+- [x] `src/types/index.ts` — adicionar `AplicacaoAula` e `AplicacaoAulaSlot` após `GradeEditando` (~linha 33)
+- [x] `src/types/index.ts` — adicionar campos de aplicações em `BancoPlanosContextValue`
+- [x] `src/contexts/AplicacoesContext.tsx` — criar arquivo completo (padrão EstrategiasContext)
+- [x] `src/contexts/index.ts` — adicionar export
+- [x] `src/App.tsx` — adicionar `<AplicacoesProvider>` entre CalendarioProvider e PlanosProvider
+- [x] `src/components/BancoPlanos.tsx` — import + destructuring + backup + restore + listener + ctx bridge
+- [x] `supabase/rls.sql` — adicionar tabela `aplicacoes_aula` + RLS
+- [ ] Executar SQL no Supabase Dashboard ← **pendente (manual)**
+- [x] `npx tsc --noEmit` → 0 erros
+- [x] `npm run build` → sucesso
+- [x] commit `0625702` + push → deploy ativo
 
 #### ⬜ Fase 2 — "Aplicar em turmas" UI
 - [ ] Botão `📅 Aplicar em turmas` no card do plano salvo (`TelaPrincipal.tsx`)
