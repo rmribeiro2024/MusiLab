@@ -1,6 +1,6 @@
 # MusiLab — Histórico de Mudanças
 
-> Última atualização: 2026-03-08 (Fase 1 AplicacaoAula concluída — commit `0625702`)
+> Última atualização: 2026-03-08 (Fases 2-5 AplicacaoAula concluídas — commit `a2984ee`)
 
 ---
 
@@ -532,45 +532,80 @@ O MusiLab mistura dado pedagógico (`Plano`) com dado operacional (quando e para
 - [x] `src/App.tsx` — adicionar `<AplicacoesProvider>` entre CalendarioProvider e PlanosProvider
 - [x] `src/components/BancoPlanos.tsx` — import + destructuring + backup + restore + listener + ctx bridge
 - [x] `supabase/rls.sql` — adicionar tabela `aplicacoes_aula` + RLS
-- [ ] Executar SQL no Supabase Dashboard ← **pendente (manual)**
+- [x] Executar SQL no Supabase Dashboard ✅
 - [x] `npx tsc --noEmit` → 0 erros
 - [x] `npm run build` → sucesso
 - [x] commit `0625702` + push → deploy ativo
 
-#### ⬜ Fase 2 — "Aplicar em turmas" UI
-- [ ] Botão `📅 Aplicar em turmas` no card do plano salvo (`TelaPrincipal.tsx`)
-- [ ] Novo modal `ModalAplicarEmTurmas.tsx`
-  - [ ] Seletor de data (semana atual por padrão)
-  - [ ] Turmas do dia via `obterTurmasDoDia(data)` com checkboxes
-  - [ ] Turmas já agendadas: badge de status (não duplicar)
-  - [ ] Aviso quando sem grade configurada
-  - [ ] Bottom sheet em mobile
-- [ ] Confirmar → `criarAplicacoes(plano.id, slotsChecked)` + toast
-- [ ] `npx tsc --noEmit` → 0 erros / `npm run build` / commit
+#### ✅ Fase 2 — "Aplicar em turmas" UI — CONCLUÍDA (commit `a2984ee`)
+- [x] Botão `📅 Aplicar em turmas` no card do plano salvo (`TelaPrincipal.tsx`)
+- [x] Novo modal `ModalAplicarEmTurmas.tsx`
+  - [x] Seletor de data (hoje por padrão)
+  - [x] Turmas do dia via `obterTurmasDoDia(data)` com checkboxes
+  - [x] Turmas já agendadas: badge de status (não duplicar)
+  - [x] Aviso quando sem grade configurada
+  - [x] Bottom sheet em mobile
+- [x] Confirmar → `criarAplicacoes(plano.id, slotsChecked)` + toast
+- [x] `npx tsc --noEmit` → 0 erros / `npm run build` / commit
 
-#### ⬜ Fase 3 — Calendário semanal
-- [ ] Tab "Semana" em `TelaCalendario.tsx`
-- [ ] Componente `CalendarioSemanal`:
-  - [ ] Header: semana atual + setas de navegação
-  - [ ] Grid: colunas = dias úteis, linhas = horários únicos da grade
-  - [ ] `BlocoAplicacao`: nome turma + título plano + badge de status colorido
-  - [ ] `SlotVazio`: célula cinza quando a grade tem turma mas sem plano agendado
-- [ ] `useMemo` para `horariosUnicos[]` e `aplicacoesDaSemana`
-- [ ] `npx tsc --noEmit` → 0 erros / `npm run build` / commit
+#### ✅ Fase 3 — Calendário semanal — CONCLUÍDA (commit `a2984ee`)
+- [x] Tab "Semana" em `TelaCalendario.tsx`
+- [x] Componente `CalendarioSemanal`:
+  - [x] Header: semana atual + setas de navegação
+  - [x] Grid: colunas = dias úteis (Seg–Sex), linhas = horários únicos da grade
+  - [x] `BlocoAplicacao`: nome turma + título plano + badge de status colorido + badge adaptação
+  - [x] `SlotVazio`: célula cinza quando a grade tem turma mas sem plano agendado
+- [x] `useMemo` para `horariosUnicos[]` e lookup O(1)
+- [x] `npx tsc --noEmit` → 0 erros / `npm run build` / commit
 
-#### ⬜ Fase 4 — Painel de adaptação da turma
-- [ ] Clicar no BlocoAplicacao → abrir `PainelDetalhesAplicacao`
-- [ ] Seção "Plano base": objetivo geral + roteiro (minimizado) + materiais (minimizado) — **readonly**
-- [ ] Seção "Adaptação desta turma": textarea/rich text + botão Salvar
-- [ ] `salvarAdaptacao(id, texto)` → nunca altera o plano base
-- [ ] Dropdown de status (planejada / realizada / cancelada)
-  - [ ] Ao marcar realizada: `musilab:aplicacaoRealizada` disparado → historicoDatas atualizado
-- [ ] `npx tsc --noEmit` → 0 erros / `npm run build` / commit
+#### ✅ Fase 4 — Painel de adaptação da turma — CONCLUÍDA (commit `a2984ee`)
+- [x] Clicar no BlocoAplicacao → abre `PainelDetalhesAplicacao`
+- [x] Seção "Plano base": objetivo geral + roteiro (colapsável) — **readonly**
+- [x] Seção "Adaptação desta turma": textarea + botão Salvar
+- [x] `salvarAdaptacao(id, texto)` → nunca altera o plano base
+- [x] Botões de status (planejada / realizada / cancelada)
+  - [x] Ao marcar realizada: `musilab:aplicacaoRealizada` disparado → historicoDatas atualizado
+- [x] `npx tsc --noEmit` → 0 erros / `npm run build` / commit
 
-#### ⬜ Fase 5 — Resumo do dia
-- [ ] Banner colapsável no topo do calendário semanal
-- [ ] Lista de planos do dia agrupados + turmas por plano
-- [ ] Badge "⚠ com adaptação" quando `aplicacao.adaptacaoTexto` não está vazio
-- [ ] Materiais do dia: union sem duplicatas de todos os planos do dia
-- [ ] Aberto por padrão em dias com aulas, fechado nos demais
-- [ ] `npx tsc --noEmit` → 0 erros / `npm run build` / commit
+#### ✅ Fase 5 — Resumo do dia — CONCLUÍDA (commit `a2984ee`)
+- [x] Banner colapsável no topo do calendário semanal
+- [x] Lista de planos do dia agrupados + turmas por plano
+- [x] Badge "⚠ adapt." quando `aplicacao.adaptacaoTexto` não está vazio
+- [x] Materiais do dia: union sem duplicatas de todos os planos do dia
+- [x] Exibido apenas quando há aulas no dia (nulo se sem aulas)
+- [x] `npx tsc --noEmit` → 0 erros / `npm run build` / commit
+
+---
+
+## Agenda Semanal — `AgendaSemanal.tsx` — CONCLUÍDA (commit `f5a67c0`) — 2026-03-08
+
+**Etapa 3 do fluxo pedagógico:** Criar aula → Aplicar em turmas → **Visualizar na agenda semanal** → Registro pós-aula → Próxima aula.
+
+### O que foi implementado
+- **Novo componente** `src/components/AgendaSemanal.tsx` (474 linhas)
+- **Grid Seg–Sex por horário**: colunas = dias úteis, linhas = horários únicos da grade semanal
+- **Blocos de turma** coloridos por status: azul (planejada), verde (realizada), cinza (cancelada), tracejado (sem plano)
+- **Painel lateral** sticky ao clicar num bloco:
+  - Objetivo geral do plano (strip HTML, max 220 chars)
+  - Roteiro resumido: lista numerada de atividades com duração
+  - Metadados: nível, duração, faixas etárias
+  - Adaptações locais desta turma (quando existem)
+- **Navegação de semana** (‹ ›) + botão "esta semana"
+- **Legenda** de status no topo
+- **Turmas sem horário** exibidas em seção separada abaixo da grade
+- Estado vazio: orientação para configurar grade semanal
+- Integrado em `BancoPlanos.tsx`:
+  - Lazy import (`const AgendaSemanal = lazy(...)`)
+  - Tab "📆 Semana" na navbar desktop (entre "Hoje" e "Calendário")
+  - Item "📆 Semana" no menu "Mais" mobile
+  - Render com `ErrorBoundary` + `Suspense`
+
+### Dados usados
+- `obterTurmasDoDia(data)` → `CalendarioContext` (grade semanal)
+- `aplicacoes` → `AplicacoesContext`
+- `planos` → `PlanosContext`
+- `anosLetivos` → `AnoLetivoContext` (resolver nomes das turmas)
+
+### Próximas etapas do fluxo (a implementar)
+- [ ] **Etapa 4:** Registro pós-aula diretamente da agenda semanal
+- [ ] **Etapa 5:** Planejamento da próxima aula com base no histórico
