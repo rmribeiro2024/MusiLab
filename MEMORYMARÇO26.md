@@ -606,6 +606,36 @@ O MusiLab mistura dado pedagógico (`Plano`) com dado operacional (quando e para
 - `planos` → `PlanosContext`
 - `anosLetivos` → `AnoLetivoContext` (resolver nomes das turmas)
 
-### Próximas etapas do fluxo (a implementar)
-- [ ] **Etapa 4:** Registro pós-aula diretamente da agenda semanal
-- [ ] **Etapa 5:** Planejamento da próxima aula com base no histórico
+### Melhorias da AgendaSemanal (2026-03-08) — commits `f9c51b5`
+
+**Melhoria 1 — Registro pós-aula direto da agenda**
+- Painel lateral da aula tem botões "✓ Marcar realizada" e "📝 Registrar pós-aula"
+- "Marcar realizada" usa `atualizarStatusAplicacao(id, 'realizada')`
+- Quando já realizada: mostra botão "↩ Desfazer" (volta para 'planejada') + "📝 Ver / editar registro"
+- "Registrar pós-aula": pré-preenche CalendarioContext (`setPlanoParaRegistro`, `setRegAnoSel/EscolaSel/SegmentoSel/TurmaSel`) e abre `ModalRegistroPosAula`
+
+**Melhoria 2 — Aplicar plano em slot vazio**
+- Hover no slot vazio (grade) ou linha sem aplicacao (lista) mostra botão "+"
+- Clique abre `SeletorPlano`: busca inline + lista de planos
+- Ao selecionar: `criarAplicacoes(plano.id, [slot])` — usa dados da `AulaGrade` para construir o slot
+
+**Melhoria 4 — Filtro por escola**
+- Chips de escola no cabeçalho da agenda (só aparecem se houver > 1 escola)
+- `filtroEscola: string` state; `semanaDataFull` → filtrado → `semanaData`
+
+---
+
+### Mini Timeline por Turma — MiniTimelineTurma (2026-03-08) — commit `705229c`
+
+**Arquivo:** `src/components/ModuloPlanejamentoTurma.tsx`
+**Inserida em:** `ModuloPlanejamentoTurma()` render, entre `<SeletorTurma />` e `<ConteudoTurma />`
+
+**O que faz:**
+- Mostra dots horizontais com ~7 semanas (−14 dias a +35 dias a partir de hoje) de aulas da turma selecionada
+- Usa `obterTurmasDoDia(dateStr)` filtrado por `turmaId + segmentoId` para encontrar dias de aula
+- Cor por status da aplicação: verde=realizada, azul=planejada, cinza=sem plano, vermelho=cancelada
+- Hoje destacado com anel indigo + fundo azul-claro
+- Dias passados sem plano: cinza mais suave
+- Legenda automática (linha "Cancelada" só aparece se houver alguma)
+- Scroll horizontal com `scrollbar-hide` para não quebrar layout
+- Imports adicionados: `useAplicacoesContext` de `'../contexts'`
