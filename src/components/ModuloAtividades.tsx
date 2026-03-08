@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
-import { sanitizar, gerarIdSeguro } from '../lib/utils'
+import { sanitizar, gerarIdSeguro, stripHTML } from '../lib/utils'
 import { useAtividadesContext, useAnoLetivoContext, useModalContext } from '../contexts'
 import type { Atividade } from '../types'
 
@@ -23,7 +23,7 @@ const CardAtividade = React.memo(({ ativ, setAtividadeEditando, excluirAtividade
                     <button onClick={()=>excluirAtividade(ativ.id)} className="text-slate-400 hover:text-red-500 p-2 sm:p-1 rounded transition" title="Excluir">🗑️</button>
                 </div>
             </div>
-            {ativ.descricao && <p className="text-sm text-slate-500 line-clamp-2 mb-3">{ativ.descricao}</p>}
+            {ativ.descricao && <p className="text-sm text-slate-500 line-clamp-2 mb-3">{stripHTML(ativ.descricao)}</p>}
             <div className="flex flex-wrap gap-1.5 mb-3 mt-auto">
                 {ativ.duracao && (
                     <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">⏱ {ativ.duracao}</span>

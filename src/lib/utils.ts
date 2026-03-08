@@ -228,6 +228,12 @@ export async function loadConfiguracoes(userId: string): Promise<Record<string, 
     } catch { return null }
 }
 
+// ── STRIP HTML ──
+// Remove tags HTML e entidades comuns — para exibir como texto puro campos do RichTextEditor.
+export function stripHTML(html: string): string {
+    return html ? html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim() : ''
+}
+
 // ── YOUTUBE URL → ID ──
 export function ytIdFromUrl(url: string | null | undefined): string | null {
     if (!url) return null

@@ -9,6 +9,7 @@ import { usePlanosContext } from '../contexts/PlanosContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import RichTextEditor from './RichTextEditor'
+import { stripHTML } from '../lib/utils'
 import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula } from '../types'
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -329,7 +330,7 @@ function ModalPreviewPlano({ plano, onFechar }: { plano: import('../types').Plan
           {plano.objetivoGeral && (
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Objetivo geral</p>
-              <p className="text-sm text-slate-600">{plano.objetivoGeral}</p>
+              <p className="text-sm text-slate-600">{stripHTML(plano.objetivoGeral)}</p>
             </div>
           )}
 
@@ -340,7 +341,7 @@ function ModalPreviewPlano({ plano, onFechar }: { plano: import('../types').Plan
                 {(plano.atividadesRoteiro ?? []).map((a, i) => (
                   <div key={i} className="text-xs bg-slate-50 rounded-lg px-3 py-2">
                     <span className="font-medium text-slate-700">{a.nome}</span>
-                    {a.descricao && <span className="text-slate-400"> — {a.descricao}</span>}
+                    {a.descricao && <span className="text-slate-400"> — {stripHTML(a.descricao)}</span>}
                     {a.duracao && <span className="text-slate-300 ml-1">({a.duracao} min)</span>}
                   </div>
                 ))}
@@ -463,7 +464,9 @@ function FormPlanejamentoInline({
   const [novoMaterial, setNovoMaterial] = useState('')
   const [materiais, setMateriais] = useState<string[]>(planejamentoEditando?.materiais ?? [])
   const [editorKey, setEditorKey] = useState(0)
-  const [materiaisAbertos, setMateriaisAbertos] = useState(materiais.length > 0)
+  const [materiaisAbertos, setMateriaisAbertos] = useState(
+    modoInicial !== 'adaptar' && materiais.length > 0
+  )
   const [painelImportarAberto, setPainelImportarAberto] = useState(false)
   const [basePlano, setBasePlano] = useState<import('../types').Plano | null>(() => {
     const id = planejamentoEditando?.planosRelacionadosIds?.[0]
@@ -471,8 +474,8 @@ function FormPlanejamentoInline({
   })
   const [painelAdaptarAberto, setPainelAdaptarAberto] = useState(false)
   const [planosAdaptarAbertos, setPlanosAdaptarAbertos] = useState(() =>
-    // Expande automaticamente se já há planos pré-carregados
-    modoInicial === 'adaptar' && (planoDaUltimaAulaId != null || (ultimoPlanejamento?.planosRelacionadosIds?.length ?? 0) > 0)
+    // No modo adaptar sempre fecha — usuário abre se quiser ver
+    false
   )
   const [planoPreview, setPlanoPreview] = useState<import('../types').Plano | null>(null)
 
@@ -555,12 +558,8 @@ function FormPlanejamentoInline({
     }
     setPainelImportarAberto(novoModo === 'importar')
     setPainelAdaptarAberto(false)
-    // Expande planos se modo adaptar já tiver plano carregado
-    if (novoModo === 'adaptar') {
-      setPlanosAdaptarAbertos(planoDaUltimaAulaId != null)
-    } else {
-      setPlanosAdaptarAbertos(false)
-    }
+    setPlanosAdaptarAbertos(false)
+    setMateriaisAbertos(false)
   }
 
   // ── Acionamento externo (botões do Bloco 2: Adaptar / Importar / Novo) ───────
