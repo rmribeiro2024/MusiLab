@@ -624,10 +624,10 @@ export default function TelaPrincipal() {
                                             onDragEnter={() => handleDragEnter(index)}
                                             onDragEnd={handleDragEnd}
                                             onDragOver={e => e.preventDefault()}
-                                            className={`bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm cursor-grab active:cursor-grabbing transition-opacity hover:border-indigo-200 ${dragActiveIndex === index ? 'dragging' : ''} ${dragOverIndex === index && dragActiveIndex !== index ? 'drag-over' : ''}`}>
+                                            className={`bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm transition-opacity hover:border-indigo-200 ${dragActiveIndex === index ? 'dragging' : ''} ${dragOverIndex === index && dragActiveIndex !== index ? 'drag-over' : ''}`}>
                                             <div className="flex justify-between items-center mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="hidden sm:inline text-gray-300 hover:text-indigo-400 transition text-lg select-none" title="Arraste para reordenar">⠿</span>
+                                                <div className="flex items-center gap-2 sm:cursor-grab sm:active:cursor-grabbing select-none" title="Arraste para reordenar">
+                                                    <span className="hidden sm:inline text-gray-300 hover:text-indigo-400 transition text-lg">⠿</span>
                                                     {/* Botões ↑↓ de reordenação — fallback mobile para drag */}
                                                     <div className="flex sm:hidden gap-0.5">
                                                         <button type="button"
