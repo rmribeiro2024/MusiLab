@@ -1,7 +1,514 @@
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
-import { usePlanosContext, useAnoLetivoContext, useRepertorioContext } from '../contexts'
+import { usePlanosContext, useAnoLetivoContext, useRepertorioContext, useAplicacoesContext } from '../contexts'
 import { verificarFeriado } from '../lib/feriados'
+import { stripHTML } from '../lib/utils'
+import type { AnoLetivo, AulaGrade, AplicacaoAula, Plano } from '../types'
+
+// ─── Helpers compartilhados ────────────────────────────────────────────────────
+
+function toStr(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function getNomeTurma(
+    anoLetivoId: string | undefined,
+    escolaId: string | undefined,
+    segmentoId: string,
+    turmaId: string,
+    anosLetivos: AnoLetivo[]
+): string {
+    if (!anoLetivoId || !escolaId) return turmaId
+    const ano = anosLetivos.find(a => a.id === anoLetivoId)
+    const esc = ano?.escolas.find(e => e.id === escolaId)
+    const seg = esc?.segmentos.find(s => s.id === segmentoId)
+    const tur = seg?.turmas.find(t => t.id === turmaId)
+    return [esc?.nome, seg?.nome, tur?.nome].filter(Boolean).join(' › ') || turmaId
+}
+
+// ─── STATUS BADGE ─────────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: AplicacaoAula['status'] }) {
+    const cfg = {
+        planejada:  { cls: 'bg-blue-100 text-blue-700',    label: '📅 Planejada' },
+        realizada:  { cls: 'bg-emerald-100 text-emerald-700', label: '✅ Realizada' },
+        cancelada:  { cls: 'bg-red-100 text-red-600',      label: '✕ Cancelada' },
+    }
+    const c = cfg[status] || cfg.planejada
+    return <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${c.cls}`}>{c.label}</span>
+}
+
+// ─── BLOCO APLICAÇÃO ──────────────────────────────────────────────────────────
+
+interface BlocoProps {
+    aplicacao: AplicacaoAula
+    planoTitulo?: string
+    nomeTurma: string
+    onClick: () => void
+}
+
+function BlocoAplicacao({ aplicacao, planoTitulo, nomeTurma, onClick }: BlocoProps) {
+    const borderCls = aplicacao.status === 'realizada'
+        ? 'border-l-emerald-400'
+        : aplicacao.status === 'cancelada'
+        ? 'border-l-red-300'
+        : 'border-l-indigo-400'
+
+    return (
+        <div
+            onClick={onClick}
+            className={`border-l-4 ${borderCls} bg-white rounded-r-lg p-2 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-1`}
+        >
+            <p className="text-xs font-semibold text-slate-700 leading-tight truncate">{nomeTurma}</p>
+            {planoTitulo && (
+                <p className="text-[10px] text-slate-400 leading-tight truncate mt-0.5">{planoTitulo}</p>
+            )}
+            <div className="mt-1">
+                <StatusBadge status={aplicacao.status} />
+                {aplicacao.adaptacaoTexto && (
+                    <span className="ml-1 text-[10px] text-amber-600 font-semibold">⚠ adapt.</span>
+                )}
+            </div>
+        </div>
+    )
+}
+
+// ─── SLOT VAZIO ───────────────────────────────────────────────────────────────
+
+function SlotVazio({ nomeTurma }: { nomeTurma: string }) {
+    return (
+        <div className="border border-dashed border-slate-200 rounded-lg p-2 text-[10px] text-slate-300 truncate mb-1">
+            {nomeTurma}
+        </div>
+    )
+}
+
+// ─── PAINEL DETALHES APLICAÇÃO (Fase 4) ───────────────────────────────────────
+
+interface PainelProps {
+    aplicacaoId: string
+    onClose: () => void
+}
+
+function PainelDetalhesAplicacao({ aplicacaoId, onClose }: PainelProps) {
+    const { aplicacoes, salvarAdaptacao, atualizarStatusAplicacao } = useAplicacoesContext()
+    const { planos } = usePlanosContext()
+    const { anosLetivos } = useAnoLetivoContext()
+
+    const ap = aplicacoes.find(a => a.id === aplicacaoId)
+    const plano: Plano | undefined = ap ? planos.find(p => String(p.id) === String(ap.planoId)) : undefined
+
+    const [adaptacao, setAdaptacao] = useState(ap?.adaptacaoTexto || '')
+    const [status, setStatus] = useState<AplicacaoAula['status']>(ap?.status || 'planejada')
+    const [verRoteiro, setVerRoteiro] = useState(false)
+
+    if (!ap || !plano) return null
+
+    const nomeTurma = getNomeTurma(ap.anoLetivoId, ap.escolaId, ap.segmentoId, ap.turmaId, anosLetivos)
+    const dataFormatada = ap.data.split('-').reverse().join('/')
+
+    function salvar() {
+        salvarAdaptacao(ap!.id, adaptacao)
+        if (status !== ap!.status) atualizarStatusAplicacao(ap!.id, status)
+        onClose()
+    }
+
+    const statusOpts: Array<{ v: AplicacaoAula['status']; label: string }> = [
+        { v: 'planejada',  label: '📅 Planejada' },
+        { v: 'realizada',  label: '✅ Realizada' },
+        { v: 'cancelada',  label: '✕ Cancelada' },
+    ]
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40"
+            onClick={onClose}
+        >
+            <div
+                className="bg-white w-full sm:max-w-lg sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[92dvh] sm:max-h-[88vh] flex flex-col overflow-hidden"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="px-5 py-4 border-b border-slate-100 flex items-start justify-between shrink-0">
+                    <div>
+                        <p className="text-xs text-slate-400 mb-0.5">{dataFormatada}{ap.horario ? ` · ${ap.horario}` : ''}</p>
+                        <h3 className="font-bold text-slate-800 text-base leading-tight">{nomeTurma}</h3>
+                        <p className="text-xs text-indigo-600 mt-0.5 truncate max-w-[280px]">{plano.titulo}</p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition shrink-0 ml-2"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+                    {/* Status */}
+                    <div>
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-2">
+                            Status da aula
+                        </label>
+                        <div className="flex gap-2">
+                            {statusOpts.map(opt => (
+                                <button
+                                    key={opt.v}
+                                    onClick={() => setStatus(opt.v)}
+                                    className={`flex-1 py-2 rounded-xl border text-xs font-semibold transition
+                                        ${status === opt.v
+                                            ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
+                                            : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Plano base (readonly) */}
+                    <div>
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-2">
+                            Plano base <span className="font-normal text-slate-400">(somente leitura)</span>
+                        </label>
+                        <div className="border border-slate-100 rounded-xl overflow-hidden">
+                            <div className="px-4 py-3 bg-slate-50">
+                                <p className="text-xs font-bold text-slate-700 mb-1">Objetivo geral</p>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    {plano.objetivoGeral ? stripHTML(plano.objetivoGeral) : <span className="italic text-slate-400">Não definido</span>}
+                                </p>
+                            </div>
+                            {(plano.atividadesRoteiro || []).length > 0 && (
+                                <div className="border-t border-slate-100">
+                                    <button
+                                        onClick={() => setVerRoteiro(v => !v)}
+                                        className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+                                    >
+                                        <span>📋 Roteiro ({plano.atividadesRoteiro.length} atividades)</span>
+                                        <span className={`transition-transform ${verRoteiro ? 'rotate-180' : ''}`}>▾</span>
+                                    </button>
+                                    {verRoteiro && (
+                                        <div className="px-4 pb-3 space-y-1.5">
+                                            {plano.atividadesRoteiro.map((a, i) => (
+                                                <div key={i} className="flex items-start gap-2 text-xs">
+                                                    <span className="text-slate-300 shrink-0 font-mono">{i + 1}.</span>
+                                                    <div>
+                                                        <span className="font-medium text-slate-700">{a.nome}</span>
+                                                        {a.duracao && <span className="text-slate-400 ml-1">({a.duracao}min)</span>}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Adaptação desta turma */}
+                    <div>
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-2">
+                            Adaptação para esta turma
+                        </label>
+                        <textarea
+                            value={adaptacao}
+                            onChange={e => setAdaptacao(e.target.value)}
+                            rows={4}
+                            placeholder="Ex: Pular a atividade 2, focar mais no ritmo, reduzir duração da parte 3..."
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 resize-none focus:border-indigo-400 outline-none"
+                        />
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-5 py-4 border-t border-slate-100 flex gap-2 shrink-0">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={salvar}
+                        className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition"
+                    >
+                        Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ─── RESUMO DO DIA (Fase 5) ───────────────────────────────────────────────────
+
+interface ResumoDoDiaProps {
+    data: string // YYYY-MM-DD
+}
+
+function ResumoDoDia({ data }: ResumoDoDiaProps) {
+    const { aplicacoesPorData } = useAplicacoesContext()
+    const { planos } = usePlanosContext()
+    const { anosLetivos } = useAnoLetivoContext()
+
+    const [aberto, setAberto] = useState(true)
+
+    const aplicacoesDoDia = aplicacoesPorData[data] || []
+    const hoje = toStr(new Date())
+
+    // Agrupar aplicações por plano
+    const porPlano = useMemo(() => {
+        const mapa: Record<string, { plano: Plano | undefined; aplicacoes: AplicacaoAula[] }> = {}
+        aplicacoesDoDia.forEach(ap => {
+            const key = String(ap.planoId)
+            if (!mapa[key]) {
+                mapa[key] = { plano: planos.find(p => String(p.id) === key), aplicacoes: [] }
+            }
+            mapa[key].aplicacoes.push(ap)
+        })
+        return Object.values(mapa)
+    }, [aplicacoesDoDia, planos])
+
+    // Materiais únicos do dia
+    const materiaisDoDia = useMemo(() => {
+        const set = new Set<string>()
+        porPlano.forEach(({ plano }) => {
+            plano?.materiais?.forEach(m => m && set.add(m))
+        })
+        return [...set]
+    }, [porPlano])
+
+    // Fechar por padrão se não há aplicações e não é hoje
+    const temAulas = aplicacoesDoDia.length > 0
+    const ehHoje = data === hoje
+
+    if (!temAulas && !ehHoje) return null
+    if (!temAulas) return null
+
+    const dataFormatada = data.split('-').reverse().join('/')
+
+    return (
+        <div className="bg-indigo-50 border border-indigo-100 rounded-2xl overflow-hidden mb-3">
+            {/* Cabeçalho */}
+            <button
+                onClick={() => setAberto(v => !v)}
+                className="w-full px-4 py-3 flex items-center justify-between text-left"
+            >
+                <div className="flex items-center gap-2">
+                    <span className="font-bold text-indigo-800 text-sm">
+                        📋 Resumo do dia — {dataFormatada}
+                    </span>
+                    <span className="text-xs text-indigo-500 bg-indigo-100 px-2 py-0.5 rounded-full">
+                        {aplicacoesDoDia.length} aula{aplicacoesDoDia.length > 1 ? 's' : ''}
+                    </span>
+                </div>
+                <span
+                    className="text-indigo-400 text-xs"
+                    style={{ transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', display: 'inline-block', transition: 'transform .2s' }}
+                >
+                    ▼
+                </span>
+            </button>
+
+            {aberto && (
+                <div className="px-4 pb-4 space-y-3">
+                    {/* Planos do dia */}
+                    <div className="space-y-2">
+                        {porPlano.map(({ plano, aplicacoes: aps }, i) => (
+                            <div key={i} className="bg-white rounded-xl border border-indigo-100 p-3">
+                                <p className="text-xs font-bold text-slate-700 mb-1">
+                                    {plano?.titulo || '(plano removido)'}
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {aps.map(ap => (
+                                        <div key={ap.id} className="flex items-center gap-1">
+                                            <span className="text-xs text-slate-600">
+                                                {getNomeTurma(ap.anoLetivoId, ap.escolaId, ap.segmentoId, ap.turmaId, anosLetivos)}
+                                            </span>
+                                            <StatusBadge status={ap.status} />
+                                            {ap.adaptacaoTexto && (
+                                                <span className="text-[10px] text-amber-600 font-semibold">⚠ adapt.</span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Materiais */}
+                    {materiaisDoDia.length > 0 && (
+                        <div>
+                            <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-1.5">
+                                🎒 Materiais do dia
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {materiaisDoDia.map(m => (
+                                    <span key={m} className="text-xs bg-white border border-indigo-200 text-indigo-700 px-2 py-0.5 rounded-full">
+                                        {m}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ─── CALENDÁRIO SEMANAL (Fase 3) ──────────────────────────────────────────────
+
+interface CalendarioSemanalProps {
+    semana: Date // segunda-feira da semana
+    onBlocoClick: (aplicacaoId: string) => void
+}
+
+function CalendarioSemanal({ semana, onBlocoClick }: CalendarioSemanalProps) {
+    const { gradesSemanas } = useCalendarioContext()
+    const { aplicacoesPorData } = useAplicacoesContext()
+    const { planos } = usePlanosContext()
+    const { anosLetivos } = useAnoLetivoContext()
+
+    const DIAS_PT = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
+    const DIAS_LABEL = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex']
+
+    // Datas de Seg–Sex da semana atual
+    const datasSemanais = useMemo<Date[]>(() =>
+        Array.from({ length: 5 }, (_, i) => {
+            const d = new Date(semana)
+            d.setDate(semana.getDate() + i)
+            return d
+        }), [semana])
+
+    const hojeStr = toStr(new Date())
+
+    // Coletar horários únicos das grades ativas nesta semana
+    const horarios = useMemo<string[]>(() => {
+        const inicio = toStr(datasSemanais[0])
+        const fim = toStr(datasSemanais[4])
+        const set = new Set<string>()
+        gradesSemanas.forEach(grade => {
+            if (grade.dataFim < inicio || grade.dataInicio > fim) return
+            grade.aulas.forEach(aula => {
+                if (aula.horario) set.add(aula.horario)
+            })
+        })
+        return [...set].sort()
+    }, [gradesSemanas, datasSemanais])
+
+    // Buscar AulaGrade que corresponde a (data, horario, diaSemana)
+    function getAulasSlot(dataStr: string, horario: string, diaSemana: string): Array<AulaGrade & { anoLetivoId: string; escolaId: string }> {
+        const result: Array<AulaGrade & { anoLetivoId: string; escolaId: string }> = []
+        gradesSemanas.forEach(grade => {
+            if (dataStr < grade.dataInicio || dataStr > grade.dataFim) return
+            grade.aulas.forEach(aula => {
+                if (aula.diaSemana === diaSemana && aula.horario === horario && aula.turmaId) {
+                    result.push({ ...aula, anoLetivoId: grade.anoLetivoId, escolaId: grade.escolaId })
+                }
+            })
+        })
+        return result
+    }
+
+    if (horarios.length === 0) {
+        return (
+            <div className="text-center py-12">
+                <p className="text-slate-400 text-sm mb-1">Nenhuma grade configurada para esta semana.</p>
+                <p className="text-xs text-slate-300">Configure em Configurações → Grade Semanal.</p>
+            </div>
+        )
+    }
+
+    return (
+        <div className="overflow-x-auto -mx-1">
+            <table className="w-full min-w-[480px] border-collapse">
+                <thead>
+                    <tr>
+                        <th className="w-14 p-2 text-xs text-slate-300 font-medium border-b border-slate-100" />
+                        {datasSemanais.map((d, i) => {
+                            const ds = toStr(d)
+                            const ehHoje = ds === hojeStr
+                            return (
+                                <th
+                                    key={i}
+                                    className={`p-2 text-center border-b border-slate-100 ${ehHoje ? 'bg-indigo-50' : ''}`}
+                                >
+                                    <p className={`text-xs font-semibold ${ehHoje ? 'text-indigo-600' : 'text-slate-500'}`}>
+                                        {DIAS_LABEL[i]}
+                                    </p>
+                                    <p className={`text-base font-bold ${ehHoje ? 'text-indigo-700' : 'text-slate-800'}`}>
+                                        {d.getDate()}
+                                    </p>
+                                </th>
+                            )
+                        })}
+                    </tr>
+                </thead>
+                <tbody>
+                    {horarios.map(horario => (
+                        <tr key={horario}>
+                            <td className="p-2 text-[10px] text-slate-400 font-mono border-b border-slate-50 text-center align-top whitespace-nowrap">
+                                {horario}
+                            </td>
+                            {datasSemanais.map((d, i) => {
+                                const dataStr = toStr(d)
+                                const diaSemana = DIAS_PT[i]
+                                const aulasSlot = getAulasSlot(dataStr, horario, diaSemana)
+                                const apsDoDia = aplicacoesPorData[dataStr] || []
+                                const ehHoje = dataStr === hojeStr
+
+                                return (
+                                    <td
+                                        key={i}
+                                        className={`p-1 border-b border-slate-50 align-top min-w-[100px] ${ehHoje ? 'bg-indigo-50/30' : ''}`}
+                                    >
+                                        {aulasSlot.length === 0 ? (
+                                            <div className="min-h-[40px]" />
+                                        ) : aulasSlot.map((aula, ai) => {
+                                            const ap = apsDoDia.find(
+                                                a => a.turmaId === aula.turmaId && a.anoLetivoId === aula.anoLetivoId
+                                            )
+                                            const nomeTurma = getNomeTurma(
+                                                aula.anoLetivoId,
+                                                aula.escolaId,
+                                                aula.segmentoId,
+                                                aula.turmaId,
+                                                anosLetivos
+                                            )
+                                            if (ap) {
+                                                const planoDoBloco = planos.find(p => String(p.id) === String(ap.planoId))
+                                                return (
+                                                    <BlocoAplicacao
+                                                        key={ai}
+                                                        aplicacao={ap}
+                                                        planoTitulo={planoDoBloco?.titulo}
+                                                        nomeTurma={nomeTurma}
+                                                        onClick={() => onBlocoClick(ap.id)}
+                                                    />
+                                                )
+                                            }
+                                            return <SlotVazio key={ai} nomeTurma={nomeTurma} />
+                                        })}
+                                    </td>
+                                )
+                            })}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    )
+}
+
+// Helper: segunda-feira da semana que contém `d`
+function getSegundaDaSemana(d: Date): Date {
+    const dia = d.getDay()
+    const diff = dia === 0 ? -6 : 1 - dia
+    const seg = new Date(d)
+    seg.setDate(d.getDate() + diff)
+    seg.setHours(0, 0, 0, 0)
+    return seg
+}
 
 export function TelaCalendario() {
     const { planos, setPlanoSelecionado } = usePlanosContext()
@@ -15,6 +522,22 @@ export function TelaCalendario() {
         obterTurmasDoDia,
     } = useCalendarioContext()
 
+    // ── Tab: Mês | Semana ──
+    const [tabCal, setTabCal] = useState<'mes' | 'semana'>('mes')
+    const [semanaGrid, setSemanaGrid] = useState<Date>(() => getSegundaDaSemana(new Date()))
+    const [painelAplicacaoId, setPainelAplicacaoId] = useState<string | null>(null)
+
+    // ── Rótulo da semana na view grade ──
+    const mesesAbr = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
+    const sexta = new Date(semanaGrid); sexta.setDate(semanaGrid.getDate() + 4)
+    const labelSemanaGrid = semanaGrid.getMonth() === sexta.getMonth()
+        ? `${semanaGrid.getDate()}–${sexta.getDate()} ${mesesAbr[sexta.getMonth()]} ${sexta.getFullYear()}`
+        : `${semanaGrid.getDate()} ${mesesAbr[semanaGrid.getMonth()]} – ${sexta.getDate()} ${mesesAbr[sexta.getMonth()]} ${sexta.getFullYear()}`
+
+    const ehSemanaAtual = semanaGrid.getTime() === getSegundaDaSemana(new Date()).getTime()
+    const hojeGridStr = toStr(new Date())
+
+    // ── Construir grade mensal ──
     const ano = dataCalendario.getFullYear(); const mes = dataCalendario.getMonth();
     const diasNoMes = new Date(ano, mes+1, 0).getDate(); const inicio = new Date(ano, mes, 1).getDay();
     const nomes = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -37,8 +560,7 @@ export function TelaCalendario() {
             borderColor = 'border-orange-300';
         }
 
-        // Verificar registros pós-aula neste dia
-        const registrosNoDia = planos.reduce((acc,p)=>{
+        const registrosNoDia = planos.reduce((acc: {planoTitulo:string}[],p)=>{
             (p.registrosPosAula||[]).forEach(r=>{ if(r.data===dataStr) acc.push({...r, planoTitulo:p.titulo}); });
             return acc;
         },[]);
@@ -48,7 +570,6 @@ export function TelaCalendario() {
             <div key={d} className={`${bgColor} border ${borderColor} p-1 min-h-[52px] sm:min-h-[80px] transition group relative`}>
                 <div className="flex justify-between items-start">
                     <span className="text-xs font-bold text-gray-500">{d}</span>
-                    {/* Botão registro rápido — aparece no hover */}
                     <button
                         onClick={()=>{
                             setRrData(dataStr);
@@ -71,32 +592,104 @@ export function TelaCalendario() {
                 {feriado && <div className="text-[10px] bg-red-200 text-red-800 p-1 mb-1 rounded font-bold">🎊 {feriado}</div>}
                 {evento && <div className="text-[10px] bg-orange-200 text-orange-800 p-1 mb-1 rounded font-bold cursor-pointer" onClick={()=>setEventoEditando(evento)}>🎉 {evento.nome}</div>}
                 {aulas.map(p=><div key={p.id} onClick={()=>setPlanoSelecionado(p)} className="text-[10px] bg-indigo-100 text-indigo-800 p-1 mb-1 rounded cursor-pointer truncate">{p.titulo}</div>)}
-                {/* Indicador de registros feitos */}
                 {temRegistro && <div className="text-[10px] bg-emerald-100 text-emerald-800 p-1 rounded font-bold">✅ {registrosNoDia.length} reg.</div>}
             </div>
         );
     }
+
     return (
         <div className="bg-white rounded-2xl shadow-xl p-3 sm:p-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-6 gap-2">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">📅 {nomes[mes]} {ano}</h2>
-                <div className="flex flex-wrap gap-1 sm:gap-2">
-                    <button onClick={()=>setDataCalendario(new Date(ano,mes-1,1))} className="px-3 py-1 bg-gray-200 rounded text-sm">◀</button>
-                    <button onClick={()=>setDataCalendario(new Date())} className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-sm">Hoje</button>
-                    <button onClick={()=>setDataCalendario(new Date(ano,mes+1,1))} className="px-3 py-1 bg-gray-200 rounded text-sm">▶</button>
-                    <button onClick={()=>setModalEventos(true)} className="px-3 py-1 bg-pink-500 hover:bg-pink-600 text-white rounded font-bold text-sm">🎉<span className="hidden sm:inline"> Eventos</span></button>
-                    <label className="px-2 sm:px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded cursor-pointer flex items-center gap-1.5 text-xs sm:text-sm">
-                        <input type="checkbox" checked={ocultarFeriados} onChange={e=>setOcultarFeriados(e.target.checked)} className="w-4 h-4" />
-                        <span className="hidden sm:inline">Ocultar </span><span>Feriados</span>
-                    </label>
+            {/* Tabs Mês / Semana */}
+            <div className="flex items-center justify-between mb-3 sm:mb-5 gap-3 flex-wrap">
+                <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
+                    <button
+                        onClick={() => setTabCal('mes')}
+                        className={`px-4 py-1.5 rounded-lg text-sm font-bold transition
+                            ${tabCal === 'mes' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Mês
+                    </button>
+                    <button
+                        onClick={() => setTabCal('semana')}
+                        className={`px-4 py-1.5 rounded-lg text-sm font-bold transition
+                            ${tabCal === 'semana' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Semana
+                    </button>
                 </div>
+
+                {/* Controles do Mês */}
+                {tabCal === 'mes' && (
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
+                        <h2 className="text-base sm:text-xl font-bold text-gray-800 self-center mr-1">{nomes[mes]} {ano}</h2>
+                        <button onClick={()=>setDataCalendario(new Date(ano,mes-1,1))} className="px-3 py-1 bg-gray-200 rounded text-sm">◀</button>
+                        <button onClick={()=>setDataCalendario(new Date())} className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-sm">Hoje</button>
+                        <button onClick={()=>setDataCalendario(new Date(ano,mes+1,1))} className="px-3 py-1 bg-gray-200 rounded text-sm">▶</button>
+                        <button onClick={()=>setModalEventos(true)} className="px-3 py-1 bg-pink-500 hover:bg-pink-600 text-white rounded font-bold text-sm">🎉<span className="hidden sm:inline"> Eventos</span></button>
+                        <label className="px-2 sm:px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded cursor-pointer flex items-center gap-1.5 text-xs sm:text-sm">
+                            <input type="checkbox" checked={ocultarFeriados} onChange={e=>setOcultarFeriados(e.target.checked)} className="w-4 h-4" />
+                            <span className="hidden sm:inline">Ocultar </span><span>Feriados</span>
+                        </label>
+                    </div>
+                )}
+
+                {/* Controles da Semana */}
+                {tabCal === 'semana' && (
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => { const s = new Date(semanaGrid); s.setDate(s.getDate() - 7); setSemanaGrid(s) }}
+                            className="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 font-bold"
+                        >◀</button>
+                        <div className="text-center">
+                            <p className="font-bold text-slate-700 text-sm">{labelSemanaGrid}</p>
+                        </div>
+                        <button
+                            onClick={() => { const s = new Date(semanaGrid); s.setDate(s.getDate() + 7); setSemanaGrid(s) }}
+                            className="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 font-bold"
+                        >▶</button>
+                        {!ehSemanaAtual && (
+                            <button
+                                onClick={() => setSemanaGrid(getSegundaDaSemana(new Date()))}
+                                className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold"
+                            >Hoje</button>
+                        )}
+                    </div>
+                )}
             </div>
-            <div className="grid grid-cols-7 gap-0 sm:gap-1 text-center font-bold text-gray-500 text-[10px] sm:text-xs mb-2">
-                {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((nome,i)=>(
-                    <div key={i}><span className="hidden sm:inline">{nome}</span><span className="sm:hidden">{nome[0]}</span></div>
-                ))}
-            </div>
-            <div className="grid grid-cols-7 gap-px sm:gap-1 bg-gray-200 border border-gray-200 rounded overflow-hidden">{dias}</div>
+
+            {/* ── TAB MÊS ── */}
+            {tabCal === 'mes' && (
+                <>
+                    <div className="grid grid-cols-7 gap-0 sm:gap-1 text-center font-bold text-gray-500 text-[10px] sm:text-xs mb-2">
+                        {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((nome,i)=>(
+                            <div key={i}><span className="hidden sm:inline">{nome}</span><span className="sm:hidden">{nome[0]}</span></div>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-px sm:gap-1 bg-gray-200 border border-gray-200 rounded overflow-hidden">{dias}</div>
+                </>
+            )}
+
+            {/* ── TAB SEMANA ── */}
+            {tabCal === 'semana' && (
+                <>
+                    {/* Resumo do dia — Fase 5 */}
+                    <ResumoDoDia data={hojeGridStr} />
+
+                    {/* Grade semanal — Fase 3 */}
+                    <CalendarioSemanal
+                        semana={semanaGrid}
+                        onBlocoClick={id => setPainelAplicacaoId(id)}
+                    />
+
+                    {/* Painel detalhes — Fase 4 */}
+                    {painelAplicacaoId && (
+                        <PainelDetalhesAplicacao
+                            aplicacaoId={painelAplicacaoId}
+                            onClose={() => setPainelAplicacaoId(null)}
+                        />
+                    )}
+                </>
+            )}
         </div>
     );
 }

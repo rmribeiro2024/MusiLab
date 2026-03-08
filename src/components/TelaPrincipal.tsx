@@ -6,6 +6,7 @@ import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [off
 import { usePlanosContext, useAnoLetivoContext, useAtividadesContext, useRepertorioContext, useModalContext, useCalendarioContext } from '../contexts'
 import RichTextEditor from './RichTextEditor'
 import { exportarPlanoPDF } from '../utils/pdf'
+import ModalAplicarEmTurmas from './modals/ModalAplicarEmTurmas'
 import type { Plano } from '../types'
 
 // ── LINHA PLANO (memoizado — só re-renderiza quando o próprio plano muda) ──
@@ -151,6 +152,9 @@ export default function TelaPrincipal() {
 
     // Constantes estáticas (não precisam vir do ctx)
     const niveis = ["Todos", "Iniciante", "Intermediário", "Avançado"]
+
+    // ── Modal Aplicar em Turmas ──
+    const [planoParaAplicar, setPlanoParaAplicar] = useState<Plano | null>(null)
 
     // ── ACCORDION do formulário de plano ──
     const [secoesForm, setSecoesForm] = useState<Set<string>>(
@@ -1411,6 +1415,11 @@ export default function TelaPrincipal() {
                                 className="flex-1 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 text-xs font-bold py-2 px-3 rounded-xl transition">
                                 Ver plano
                             </button>
+                            <button onClick={(e)=>{e.stopPropagation();setPlanoParaAplicar(plano)}}
+                                title="Aplicar em turmas"
+                                className="p-2 border border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50 text-indigo-500 rounded-xl transition shrink-0">
+                                📅
+                            </button>
                             <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                                 <button onClick={(e)=>abrirModalRegistro(plano,e)}
                                     className="text-amber-500 hover:text-amber-700 hover:bg-amber-50 p-2 rounded-xl transition" title="Registro Pós-Aula" aria-label="Registro pós-aula">📝</button>
@@ -1562,6 +1571,14 @@ export default function TelaPrincipal() {
                 </div>
             );
         })()}
+
+        {/* ── MODAL APLICAR EM TURMAS ── */}
+        {planoParaAplicar && (
+            <ModalAplicarEmTurmas
+                plano={planoParaAplicar}
+                onClose={() => setPlanoParaAplicar(null)}
+            />
+        )}
     </>
     );
 
