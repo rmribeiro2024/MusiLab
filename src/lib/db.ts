@@ -53,6 +53,18 @@ export function dbDel(key: string): void {
     getDB().then(db => db.delete(STORE, key))
 }
 
+/** Salva qualquer valor estruturado (ex: FileSystemFileHandle) — não usa o cache de strings */
+export async function dbSetRaw(key: string, value: unknown): Promise<void> {
+    const db = await getDB()
+    await db.put(STORE, value, key)
+}
+
+/** Lê qualquer valor estruturado salvo com dbSetRaw */
+export async function dbGetRaw(key: string): Promise<unknown> {
+    const db = await getDB()
+    return db.get(STORE, key)
+}
+
 /** Tamanho estimado de todos os valores em bytes */
 export function dbSize(): number {
     let total = 0

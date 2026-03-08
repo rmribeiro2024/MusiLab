@@ -32,7 +32,7 @@ import { BancoPlanosContext } from './BancoPlanosContext'
 import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext, useSequenciasContext, useHistoricoContext, useAnoLetivoContext, useCalendarioContext, usePlanosContext, normalizePlano } from '../contexts'
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
-import { dbGet, dbSet, dbDel } from '../lib/db'
+import { dbGet, dbSet, dbDel, dbSetRaw, dbGetRaw } from '../lib/db'
 import { exportarPlanoPDF, exportarSequenciaPDF } from '../utils/pdf'
 import ModalConfirm from './modals/ModalConfirm'
 import ModalNovaEscola from './modals/ModalNovaEscola'
@@ -840,12 +840,43 @@ export default function BancoPlanos({ session }) {
                     setAutoBackupHandle(handle);
                     _autoRef.current.handle = handle;
                     await _gravarNoArquivo(handle);
+                    await dbSetRaw('autoBackupHandle', handle); // persiste entre sessões
                     window.dispatchEvent(new CustomEvent('musilab:toast', { detail: { msg: 'Backup automático ativado! Salvo ao fechar o app.', type: 'success' } }));
                 } catch { /* usuário cancelou */ }
             };
 
-            const desativarAutoBackup = () => setAutoBackupHandle(null);
+            const desativarAutoBackup = () => {
+                setAutoBackupHandle(null);
+                dbDel('autoBackupHandle'); // remove do IDB
+            };
             const salvarAutoBackupAgora = () => _gravarNoArquivo(_autoRef.current.handle);
+
+            // Restaura handle do IDB ao abrir o app (sem abrir o seletor de arquivo)
+            useEffect(() => {
+                (async () => {
+                    if (!('showSaveFilePicker' in window)) return;
+                    try {
+                        const saved = await dbGetRaw('autoBackupHandle') as any;
+                        if (!saved) return;
+                        // Verifica/solicita permissão — apenas uma confirmação rápida do browser
+                        const perm = await saved.queryPermission({ mode: 'readwrite' });
+                        if (perm === 'granted') {
+                            setAutoBackupHandle(saved);
+                            _autoRef.current.handle = saved;
+                        } else if (perm === 'prompt') {
+                            const granted = await saved.requestPermission({ mode: 'readwrite' });
+                            if (granted === 'granted') {
+                                setAutoBackupHandle(saved);
+                                _autoRef.current.handle = saved;
+                            } else {
+                                dbDel('autoBackupHandle'); // usuário negou — limpa
+                            }
+                        } else {
+                            dbDel('autoBackupHandle'); // permissão negada — limpa
+                        }
+                    } catch { /* handle inválido ou API não suportada */ }
+                })();
+            }, []); // eslint-disable-line
 
             // Registra handlers UMA VEZ — usa refs para sempre ter dados frescos
             useEffect(() => {
