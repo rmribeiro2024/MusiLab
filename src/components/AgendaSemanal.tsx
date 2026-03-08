@@ -1,5 +1,5 @@
 // src/components/AgendaSemanal.tsx
-// Visualização semanal de agenda — turmas posicionadas por dia/horário com planos vinculados.
+// Visualização semanal de agenda — dois modos: Grade (B) e Lista (D).
 // Etapa 3 do fluxo: Criar aula → Aplicar em turmas → Visualizar na agenda semanal.
 
 import React, { useState, useMemo } from 'react'
@@ -24,6 +24,7 @@ function getSegunda(d: Date): Date {
 }
 
 const DIAS_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex']
+const DIAS_LONGOS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
 const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
 
 function semanaLabel(monday: Date): string {
@@ -63,24 +64,29 @@ function stripHTML(html: string): string {
   return html.replace(/<[^>]*>/g, '').trim()
 }
 
-// ── Configuração visual de status ─────────────────────────────────────────────
+// ── Status ────────────────────────────────────────────────────────────────────
 
 const STATUS_CFG = {
   planejada: {
     bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700',
-    badge: 'bg-blue-100 text-blue-700', dot: 'bg-blue-400', label: 'Planejada',
+    badge: 'bg-blue-100 text-blue-700', dot: 'bg-blue-500', label: 'Planejada',
+    leftBar: 'bg-blue-500',
   },
   realizada: {
     bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700',
-    badge: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-400', label: 'Realizada',
+    badge: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500', label: 'Realizada',
+    leftBar: 'bg-emerald-500',
   },
   cancelada: {
     bg: 'bg-slate-100', border: 'border-slate-200', text: 'text-slate-500',
     badge: 'bg-slate-200 text-slate-500', dot: 'bg-slate-300', label: 'Cancelada',
+    leftBar: 'bg-slate-300',
   },
 } as const
 
 // ── Tipos internos ────────────────────────────────────────────────────────────
+
+type ViewMode = 'grade' | 'lista'
 
 interface SlotInfo {
   aulaGrade: AulaGrade
@@ -101,8 +107,10 @@ export default function AgendaSemanal() {
   const hoje = useMemo(() => getSegunda(new Date()), [])
   const [semana, setSemana] = useState<Date>(hoje)
   const [painel, setPainel] = useState<SlotInfo | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('grade')
+  // lista: índice do dia expandido (-1 = todos fechados, exceto hoje)
+  const [diaExpandido, setDiaExpandido] = useState<number>(-2) // -2 = auto (hoje)
 
-  // 5 dias da semana (Seg–Sex)
   const diasSemana = useMemo(() =>
     Array.from({ length: 5 }, (_, i) => {
       const d = new Date(semana)
@@ -110,14 +118,15 @@ export default function AgendaSemanal() {
       return {
         dataStr: toStr(d),
         label: DIAS_LABELS[i],
+        labelLongo: DIAS_LONGOS[i],
         dia: d.getDate(),
         mes: MESES[d.getMonth()],
         isHoje: toStr(d) === toStr(new Date()),
+        idx: i,
       }
     }),
   [semana])
 
-  // Para cada dia: aulas da grade + aplicação + plano vinculado
   const semanaData = useMemo(() =>
     diasSemana.map(diaInfo => {
       const aulas = obterTurmasDoDia(diaInfo.dataStr)
@@ -139,7 +148,6 @@ export default function AgendaSemanal() {
     }),
   [diasSemana, obterTurmasDoDia, aplicacoes, planos, anosLetivos])
 
-  // Horários únicos ordenados (para as linhas da grade)
   const horarios = useMemo(() => {
     const set = new Set<string>()
     semanaData.forEach(d => d.slots.forEach(s => { if (s.aulaGrade.horario) set.add(s.aulaGrade.horario) }))
@@ -150,45 +158,78 @@ export default function AgendaSemanal() {
   const totalComPlano = semanaData.reduce((acc, d) => acc + d.slots.filter(s => s.aplicacao).length, 0)
   const ehSemanaAtual = toStr(semana) === toStr(hoje)
 
+  // Índice do dia atual (para expandir por padrão na lista)
+  const idxHoje = diasSemana.findIndex(d => d.isHoje)
+  function isDiaAberto(idx: number) {
+    if (diaExpandido === -2) return idx === idxHoje || idxHoje === -1 && idx === 0
+    return diaExpandido === idx
+  }
+  function toggleDia(idx: number) {
+    setDiaExpandido(prev => (prev === idx || (prev === -2 && idx === idxHoje)) ? -1 : idx)
+  }
+
   function prevSemana() {
     const d = new Date(semana); d.setDate(d.getDate() - 7)
-    setSemana(d); setPainel(null)
+    setSemana(d); setPainel(null); setDiaExpandido(-2)
   }
   function nextSemana() {
     const d = new Date(semana); d.setDate(d.getDate() + 7)
-    setSemana(d); setPainel(null)
+    setSemana(d); setPainel(null); setDiaExpandido(-2)
   }
-
   function togglePainel(slot: SlotInfo) {
-    const mesmoSlot = painel?.aulaGrade.id === slot.aulaGrade.id && painel?.dataStr === slot.dataStr
-    setPainel(mesmoSlot ? null : slot)
+    const mesmo = painel?.aulaGrade.id === slot.aulaGrade.id && painel?.dataStr === slot.dataStr
+    setPainel(mesmo ? null : slot)
   }
 
   return (
     <div className="flex flex-col gap-4">
 
       {/* ── HEADER ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-slate-800">Agenda Semanal</h2>
-          {totalSlots > 0 && (
-            <p className="text-xs text-slate-400 mt-0.5">
-              {totalComPlano} de {totalSlots} aula{totalSlots !== 1 ? 's' : ''} com plano vinculado
-            </p>
-          )}
-        </div>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        {/* Navegação de semana */}
         <div className="flex items-center gap-1">
           <button onClick={prevSemana}
             className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-500 text-lg font-bold transition">‹</button>
-          <div className="text-center min-w-[150px]">
-            <p className="font-semibold text-slate-700 text-sm">{semanaLabel(semana)}</p>
-            {!ehSemanaAtual && (
-              <button onClick={() => { setSemana(hoje); setPainel(null) }}
-                className="text-[11px] text-indigo-500 hover:underline">esta semana</button>
-            )}
+          <div className="text-center min-w-[160px]">
+            <p className="font-bold text-slate-800 text-sm">{semanaLabel(semana)}</p>
+            {!ehSemanaAtual
+              ? <button onClick={() => { setSemana(hoje); setPainel(null); setDiaExpandido(-2) }}
+                  className="text-[11px] text-indigo-500 hover:underline">esta semana</button>
+              : <p className="text-[11px] text-slate-400">{totalComPlano}/{totalSlots} com plano</p>
+            }
           </div>
           <button onClick={nextSemana}
             className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-500 text-lg font-bold transition">›</button>
+        </div>
+
+        {/* Toggle de visualização */}
+        <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
+          <button
+            onClick={() => { setViewMode('grade'); setPainel(null) }}
+            title="Visualização em grade (por horário)"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              viewMode === 'grade'
+                ? 'bg-white text-slate-700 shadow-sm'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 3v18M14 3v18" />
+            </svg>
+            Grade
+          </button>
+          <button
+            onClick={() => setViewMode('lista')}
+            title="Visualização em lista (por dia)"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              viewMode === 'lista'
+                ? 'bg-white text-slate-700 shadow-sm'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            Lista
+          </button>
         </div>
       </div>
 
@@ -201,12 +242,12 @@ export default function AgendaSemanal() {
           </div>
         ))}
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full border border-dashed border-slate-300" />
+          <span className="w-2 h-2 rounded-full border-2 border-dashed border-slate-300" />
           <span className="text-[11px] text-slate-400">Sem plano</span>
         </div>
       </div>
 
-      {/* ── CONTEÚDO PRINCIPAL ── */}
+      {/* ── CONTEÚDO ── */}
       {totalSlots === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-slate-400">
           <span className="text-4xl mb-3">📅</span>
@@ -215,140 +256,297 @@ export default function AgendaSemanal() {
             Configure a grade semanal em Configurações → Grade Semanal.
           </p>
         </div>
+      ) : viewMode === 'grade' ? (
+        <ViewGrade
+          semanaData={semanaData}
+          diasSemana={diasSemana}
+          horarios={horarios}
+          painel={painel}
+          onTogglePainel={togglePainel}
+          onClosePanel={() => setPainel(null)}
+        />
       ) : (
-        <div className="flex gap-4 items-start">
+        <ViewLista
+          semanaData={semanaData}
+          isDiaAberto={isDiaAberto}
+          onToggleDia={toggleDia}
+          painel={painel}
+          onTogglePainel={togglePainel}
+          onClosePanel={() => setPainel(null)}
+        />
+      )}
+    </div>
+  )
+}
 
-          {/* ── GRADE ── */}
-          <div className="flex-1 min-w-0 overflow-x-auto">
-            <div className="min-w-[480px]">
+// ── VIEW B: Grade por horário ─────────────────────────────────────────────────
 
-              {/* Cabeçalho com dias */}
-              <div className="grid gap-1.5 mb-2" style={{ gridTemplateColumns: `56px repeat(5, 1fr)` }}>
-                <div /> {/* coluna de horário */}
-                {diasSemana.map(d => (
-                  <div key={d.dataStr}
-                    className={`text-center py-2.5 rounded-xl ${d.isHoje ? 'bg-indigo-50' : 'bg-slate-50'}`}>
-                    <p className={`text-[10px] font-bold uppercase tracking-widest ${d.isHoje ? 'text-indigo-500' : 'text-slate-400'}`}>
-                      {d.label}
-                    </p>
-                    <p className={`text-xl font-bold leading-tight mt-0.5 ${d.isHoje ? 'text-indigo-600' : 'text-slate-700'}`}>
-                      {d.dia}
-                    </p>
-                    <p className={`text-[10px] ${d.isHoje ? 'text-indigo-400' : 'text-slate-300'}`}>{d.mes}</p>
-                  </div>
-                ))}
+interface ViewGradeProps {
+  semanaData: Array<{ dataStr: string; label: string; dia: number; mes: string; isHoje: boolean; slots: SlotInfo[] }>
+  diasSemana: Array<{ dataStr: string; label: string; dia: number; mes: string; isHoje: boolean }>
+  horarios: string[]
+  painel: SlotInfo | null
+  onTogglePainel: (s: SlotInfo) => void
+  onClosePanel: () => void
+}
+
+function ViewGrade({ semanaData, diasSemana, horarios, painel, onTogglePainel, onClosePanel }: ViewGradeProps) {
+  const temSemHorario = semanaData.some(d => d.slots.some(s => !s.aulaGrade.horario))
+
+  return (
+    <div className="flex gap-4 items-start">
+      {/* Grade */}
+      <div className="flex-1 min-w-0 overflow-x-auto">
+        <div className="min-w-[520px] bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+
+          {/* Cabeçalho */}
+          <div className="grid border-b border-slate-200" style={{ gridTemplateColumns: `64px repeat(5, 1fr)` }}>
+            <div className="border-r border-slate-200" />
+            {diasSemana.map(d => (
+              <div key={d.dataStr}
+                className={`text-center py-3 border-r border-slate-200 last:border-r-0 ${d.isHoje ? 'bg-indigo-50' : ''}`}>
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${d.isHoje ? 'text-indigo-500' : 'text-slate-400'}`}>
+                  {d.label}
+                </p>
+                <p className={`text-xl font-bold leading-tight mt-0.5 ${d.isHoje ? 'text-indigo-600' : 'text-slate-700'}`}>
+                  {d.dia}
+                </p>
+                <p className={`text-[10px] ${d.isHoje ? 'text-indigo-400' : 'text-slate-400'}`}>{d.mes}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Linhas de horário */}
+          {horarios.map((horario, rowIdx) => (
+            <div key={horario}
+              className={`grid border-b border-slate-150 last:border-b-0 ${rowIdx % 2 === 1 ? 'bg-slate-50/50' : ''}`}
+              style={{ gridTemplateColumns: `64px repeat(5, 1fr)`, borderBottomColor: '#e8edf2' }}>
+
+              {/* Horário */}
+              <div className="flex items-center justify-center border-r py-3"
+                style={{ borderColor: '#e8edf2' }}>
+                <span className="text-[11px] font-semibold text-slate-500 tabular-nums">{horario}</span>
               </div>
 
-              {/* Linhas de horário */}
-              <div className="space-y-1.5">
-                {horarios.map(horario => (
-                  <div key={horario} className="grid gap-1.5 items-start"
-                    style={{ gridTemplateColumns: `56px repeat(5, 1fr)` }}>
+              {/* Células */}
+              {diasSemana.map(diaInfo => {
+                const dia = semanaData.find(d => d.dataStr === diaInfo.dataStr)!
+                const slots = dia.slots.filter(s => s.aulaGrade.horario === horario)
 
-                    {/* Horário */}
-                    <div className="flex items-start justify-end pr-2 pt-3.5">
-                      <span className="text-[10px] font-mono text-slate-300 tabular-nums">{horario}</span>
-                    </div>
-
-                    {/* Células por dia */}
-                    {diasSemana.map(diaInfo => {
-                      const dia = semanaData.find(d => d.dataStr === diaInfo.dataStr)!
-                      const slots = dia.slots.filter(s => s.aulaGrade.horario === horario)
-
-                      if (slots.length === 0) {
-                        return <div key={diaInfo.dataStr} className="min-h-[64px]" />
-                      }
-
+                return (
+                  <div key={diaInfo.dataStr}
+                    className="border-r last:border-r-0 p-1.5 flex flex-col gap-1"
+                    style={{ borderColor: '#e8edf2', minHeight: 68 }}>
+                    {slots.map(slot => {
+                      const cfg = slot.aplicacao ? (STATUS_CFG[slot.aplicacao.status] ?? STATUS_CFG.planejada) : null
+                      const isSelected = painel?.aulaGrade.id === slot.aulaGrade.id && painel?.dataStr === slot.dataStr
                       return (
-                        <div key={diaInfo.dataStr} className="space-y-1">
-                          {slots.map(slot => {
-                            const cfg = slot.aplicacao
-                              ? (STATUS_CFG[slot.aplicacao.status] ?? STATUS_CFG.planejada)
-                              : null
-                            const isSelected = painel?.aulaGrade.id === slot.aulaGrade.id && painel?.dataStr === slot.dataStr
-
-                            return (
-                              <button
-                                key={slot.aulaGrade.id}
-                                type="button"
-                                onClick={() => togglePainel(slot)}
-                                className={`
-                                  w-full text-left rounded-xl px-3 py-2.5 border transition-all duration-150
-                                  ${isSelected ? 'ring-2 ring-indigo-400 ring-offset-1' : ''}
-                                  ${cfg
-                                    ? `${cfg.bg} ${cfg.border} hover:opacity-80 active:scale-[.98]`
-                                    : 'bg-white border-dashed border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/30 active:scale-[.98]'
-                                  }
-                                `}
-                              >
-                                <p className={`text-[11px] font-bold truncate leading-tight ${cfg ? cfg.text : 'text-slate-400'}`}>
-                                  {slot.nomeTurma}
-                                </p>
-                                {slot.plano
-                                  ? <p className="text-[10px] text-slate-400 truncate mt-0.5 leading-tight">{slot.plano.titulo}</p>
-                                  : <p className="text-[10px] text-slate-300 mt-0.5">Sem plano</p>
-                                }
-                                {cfg && (
-                                  <div className="flex items-center gap-1 mt-1.5">
-                                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
-                                    <span className={`text-[9px] font-semibold uppercase tracking-wide ${cfg.text}`}>{cfg.label}</span>
-                                  </div>
-                                )}
-                              </button>
-                            )
-                          })}
-                        </div>
+                        <button key={slot.aulaGrade.id} type="button"
+                          onClick={() => onTogglePainel(slot)}
+                          className={`
+                            w-full text-left rounded-lg px-2.5 py-2 border transition-all duration-150 active:scale-[.98]
+                            ${isSelected ? 'ring-2 ring-indigo-400 ring-offset-1' : ''}
+                            ${cfg
+                              ? `${cfg.bg} ${cfg.border} hover:opacity-80`
+                              : 'bg-white border-dashed border-slate-300 hover:border-indigo-300 hover:bg-indigo-50/20'
+                            }
+                          `}>
+                          <p className={`text-[11px] font-semibold truncate leading-tight ${cfg ? cfg.text : 'text-slate-500'}`}>
+                            {slot.nomeTurma}
+                          </p>
+                          {slot.plano
+                            ? <p className="text-[10px] text-slate-400 truncate mt-0.5">{slot.plano.titulo}</p>
+                            : <p className="text-[10px] text-slate-400 mt-0.5 italic">Sem plano</p>
+                          }
+                          {cfg && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                              <span className={`text-[9px] font-bold uppercase tracking-wide ${cfg.text}`}>{cfg.label}</span>
+                            </div>
+                          )}
+                        </button>
                       )
                     })}
                   </div>
-                ))}
-              </div>
+                )
+              })}
+            </div>
+          ))}
 
-              {/* Turmas sem horário definido */}
-              {semanaData.some(d => d.slots.some(s => !s.aulaGrade.horario)) && (
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-2 ml-[62px]">
-                    Sem horário definido
-                  </p>
-                  <div className="grid gap-1.5" style={{ gridTemplateColumns: `56px repeat(5, 1fr)` }}>
-                    <div />
-                    {diasSemana.map(diaInfo => {
-                      const dia = semanaData.find(d => d.dataStr === diaInfo.dataStr)!
-                      const slots = dia.slots.filter(s => !s.aulaGrade.horario)
+          {/* Turmas sem horário */}
+          {temSemHorario && (
+            <div className="grid border-t-2 border-slate-200" style={{ gridTemplateColumns: `64px repeat(5, 1fr)` }}>
+              <div className="flex items-center justify-center p-2 border-r border-slate-200">
+                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wide" style={{ writingMode: 'vertical-rl' }}>—</span>
+              </div>
+              {diasSemana.map(diaInfo => {
+                const dia = semanaData.find(d => d.dataStr === diaInfo.dataStr)!
+                const slots = dia.slots.filter(s => !s.aulaGrade.horario)
+                return (
+                  <div key={diaInfo.dataStr} className="border-r last:border-r-0 p-1.5 flex flex-col gap-1" style={{ borderColor: '#e8edf2' }}>
+                    {slots.map(slot => {
+                      const cfg = slot.aplicacao ? (STATUS_CFG[slot.aplicacao.status] ?? STATUS_CFG.planejada) : null
                       return (
-                        <div key={diaInfo.dataStr} className="space-y-1">
-                          {slots.map(slot => {
-                            const cfg = slot.aplicacao
-                              ? (STATUS_CFG[slot.aplicacao.status] ?? STATUS_CFG.planejada)
-                              : null
-                            const isSelected = painel?.aulaGrade.id === slot.aulaGrade.id && painel?.dataStr === slot.dataStr
-                            return (
-                              <button key={slot.aulaGrade.id} type="button"
-                                onClick={() => togglePainel(slot)}
-                                className={`w-full text-left rounded-xl px-3 py-2.5 border transition-all ${isSelected ? 'ring-2 ring-indigo-400 ring-offset-1' : ''} ${cfg ? `${cfg.bg} ${cfg.border} hover:opacity-80` : 'bg-white border-dashed border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/30'}`}>
-                                <p className={`text-[11px] font-bold truncate ${cfg ? cfg.text : 'text-slate-400'}`}>{slot.nomeTurma}</p>
-                                {slot.plano
-                                  ? <p className="text-[10px] text-slate-400 truncate mt-0.5">{slot.plano.titulo}</p>
-                                  : <p className="text-[10px] text-slate-300 mt-0.5">Sem plano</p>
-                                }
-                              </button>
-                            )
-                          })}
-                        </div>
+                        <button key={slot.aulaGrade.id} type="button" onClick={() => onTogglePainel(slot)}
+                          className={`w-full text-left rounded-lg px-2.5 py-2 border transition-all ${cfg ? `${cfg.bg} ${cfg.border} hover:opacity-80` : 'bg-white border-dashed border-slate-300 hover:border-indigo-300'}`}>
+                          <p className={`text-[11px] font-semibold truncate ${cfg ? cfg.text : 'text-slate-500'}`}>{slot.nomeTurma}</p>
+                        </button>
                       )
                     })}
                   </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Painel lateral */}
+      {painel && <PainelPlano slot={painel} onClose={onClosePanel} />}
+    </div>
+  )
+}
+
+// ── VIEW D: Lista accordion por dia ──────────────────────────────────────────
+
+interface ViewListaProps {
+  semanaData: Array<{ dataStr: string; labelLongo: string; dia: number; mes: string; isHoje: boolean; idx: number; slots: SlotInfo[] }>
+  isDiaAberto: (idx: number) => boolean
+  onToggleDia: (idx: number) => void
+  painel: SlotInfo | null
+  onTogglePainel: (s: SlotInfo) => void
+  onClosePanel: () => void
+}
+
+function ViewLista({ semanaData, isDiaAberto, onToggleDia, painel, onTogglePainel, onClosePanel }: ViewListaProps) {
+  return (
+    <div className="flex gap-4 items-start">
+      <div className="flex-1 min-w-0 flex flex-col gap-2">
+        {semanaData.map(diaInfo => {
+          const aberto = isDiaAberto(diaInfo.idx)
+          const comPlano = diaInfo.slots.filter(s => s.aplicacao).length
+          const semPlano = diaInfo.slots.filter(s => !s.aplicacao).length
+
+          return (
+            <div key={diaInfo.dataStr}
+              className={`bg-white rounded-2xl overflow-hidden border transition-all ${
+                diaInfo.isHoje
+                  ? 'border-indigo-200 shadow-sm shadow-indigo-100'
+                  : diaInfo.slots.length === 0
+                  ? 'border-slate-100 opacity-50'
+                  : 'border-slate-200'
+              }`}>
+
+              {/* Cabeçalho do dia */}
+              <button
+                type="button"
+                onClick={() => diaInfo.slots.length > 0 && onToggleDia(diaInfo.idx)}
+                className={`w-full flex items-center gap-4 px-5 py-3.5 text-left transition ${
+                  diaInfo.slots.length > 0 ? 'hover:bg-slate-50 cursor-pointer' : 'cursor-default'
+                } ${diaInfo.isHoje ? 'bg-indigo-50/60' : ''}`}>
+
+                {/* Data */}
+                <div className="flex items-center gap-3 min-w-[100px]">
+                  <div className={`w-9 h-9 rounded-xl flex flex-col items-center justify-center flex-shrink-0 ${
+                    diaInfo.isHoje ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    <span className="text-[8px] font-bold uppercase leading-none opacity-70">{diaInfo.labelLongo.slice(0,3)}</span>
+                    <span className="text-sm font-bold leading-none mt-0.5">{diaInfo.dia}</span>
+                  </div>
+                  <div>
+                    <p className={`text-sm font-bold ${diaInfo.isHoje ? 'text-indigo-700' : 'text-slate-700'}`}>
+                      {diaInfo.labelLongo}
+                    </p>
+                    <p className="text-[10px] text-slate-400">{diaInfo.dia} {diaInfo.mes}</p>
+                  </div>
+                </div>
+
+                {/* Pills de resumo */}
+                <div className="flex-1 flex flex-wrap gap-1.5 min-w-0">
+                  {diaInfo.slots.length === 0 ? (
+                    <span className="text-xs text-slate-300 italic">Sem aulas</span>
+                  ) : (
+                    <>
+                      {comPlano > 0 && (
+                        <span className="text-[11px] font-semibold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                          {comPlano} com plano
+                        </span>
+                      )}
+                      {semPlano > 0 && (
+                        <span className="text-[11px] font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+                          {semPlano} sem plano
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Chevron */}
+                {diaInfo.slots.length > 0 && (
+                  <svg className={`w-4 h-4 text-slate-300 flex-shrink-0 transition-transform duration-200 ${aberto ? 'rotate-180' : ''}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Lista de aulas */}
+              {aberto && diaInfo.slots.length > 0 && (
+                <div className="border-t border-slate-100">
+                  {diaInfo.slots.map((slot, i) => {
+                    const cfg = slot.aplicacao ? (STATUS_CFG[slot.aplicacao.status] ?? STATUS_CFG.planejada) : null
+                    const isSelected = painel?.aulaGrade.id === slot.aulaGrade.id && painel?.dataStr === slot.dataStr
+
+                    return (
+                      <button key={slot.aulaGrade.id} type="button"
+                        onClick={() => onTogglePainel(slot)}
+                        className={`
+                          w-full flex items-center gap-4 px-5 py-3 text-left border-b border-slate-50 last:border-b-0
+                          transition-colors ${isSelected ? 'bg-indigo-50' : 'hover:bg-slate-50'}
+                        `}>
+
+                        {/* Dot + horário */}
+                        <div className="flex items-center gap-2 w-16 flex-shrink-0">
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg ? cfg.dot : 'border-2 border-dashed border-slate-300 bg-transparent'}`} />
+                          <span className="text-[11px] font-semibold text-slate-500 tabular-nums">
+                            {slot.aulaGrade.horario || '—'}
+                          </span>
+                        </div>
+
+                        {/* Turma + plano */}
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-semibold truncate ${cfg ? cfg.text : 'text-slate-600'}`}>
+                            {slot.nomeTurma}
+                          </p>
+                          {slot.plano
+                            ? <p className="text-xs text-slate-400 truncate mt-0.5">{slot.plano.titulo}</p>
+                            : <p className="text-xs text-slate-300 italic mt-0.5">Sem plano vinculado</p>
+                          }
+                        </div>
+
+                        {/* Badge de status */}
+                        {cfg && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.badge}`}>
+                            {cfg.label}
+                          </span>
+                        )}
+
+                        {/* Seta */}
+                        <svg className="w-3.5 h-3.5 text-slate-200 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    )
+                  })}
                 </div>
               )}
             </div>
-          </div>
+          )
+        })}
+      </div>
 
-          {/* ── PAINEL LATERAL (detalhe do plano) ── */}
-          {painel && (
-            <PainelPlano slot={painel} onClose={() => setPainel(null)} />
-          )}
-        </div>
-      )}
+      {/* Painel lateral */}
+      {painel && <PainelPlano slot={painel} onClose={onClosePanel} />}
     </div>
   )
 }
@@ -395,7 +593,6 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
 
         {plano ? (
           <>
-            {/* Objetivo geral */}
             {plano.objetivoGeral && (
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Objetivo</p>
@@ -406,22 +603,16 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
               </div>
             )}
 
-            {/* Metadados: nível, faixa etária, duração */}
             {(plano.nivel || (plano.faixaEtaria ?? []).length > 0 || plano.duracao) && (
               <div className="flex flex-wrap gap-1.5">
-                {plano.nivel && (
-                  <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{plano.nivel}</span>
-                )}
-                {plano.duracao && (
-                  <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">⏱ {plano.duracao}</span>
-                )}
+                {plano.nivel && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{plano.nivel}</span>}
+                {plano.duracao && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">⏱ {plano.duracao}</span>}
                 {(plano.faixaEtaria ?? []).slice(0, 2).map(f => (
                   <span key={f} className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{f}</span>
                 ))}
               </div>
             )}
 
-            {/* Roteiro resumido */}
             {atividades.length > 0 && (
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
@@ -444,7 +635,6 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
               </div>
             )}
 
-            {/* Adaptação local (se houver) */}
             {aplicacao?.adaptacaoTexto && (
               <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
                 <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wide mb-1">Adaptações desta turma</p>
@@ -460,7 +650,7 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
             <span className="text-3xl">📋</span>
             <p className="text-slate-400 text-sm mt-2">Nenhum plano vinculado</p>
             <p className="text-xs text-slate-300 mt-1">
-              Aplique um plano a esta turma usando o botão "Aplicar em turmas" no Banco de Planos.
+              Aplique um plano a esta turma usando "Aplicar em turmas" no Banco de Planos.
             </p>
           </div>
         )}
