@@ -404,8 +404,9 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         const termo = termoBusca.toLowerCase()
         const check = (val: any) => val && val.toLowerCase().includes(termo)
         const objMatch = (plano.objetivosEspecificos || []).some((obj: any) => check(obj))
+        const atividadeMatch = (plano.atividadesRoteiro || []).some((a: any) => check(a.nome) || check(a.descricao))
         return check(plano.titulo) || check(plano.tema) || check(plano.metodologia) ||
-            check(plano.objetivoGeral) || check(plano.escola) || objMatch ||
+            check(plano.objetivoGeral) || check(plano.escola) || objMatch || atividadeMatch ||
             (plano.habilidadesBNCC || []).some((h: any) => check(h))
     }
 
