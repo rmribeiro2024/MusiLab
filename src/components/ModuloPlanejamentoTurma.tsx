@@ -11,7 +11,7 @@ import { useCalendarioContext } from '../contexts/CalendarioContext'
 import RichTextEditor from './RichTextEditor'
 import { stripHTML, gerarIdSeguro } from '../lib/utils'
 import { showToast } from '../lib/toast'
-import { useAtividadesContext } from '../contexts'
+import { useAtividadesContext, useAplicacoesContext } from '../contexts'
 import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula } from '../types'
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -77,6 +77,92 @@ function labelProximaOpcao(valor: string): string {
     decidir:        'Decidir depois',
   }
   return mapa[valor] ?? valor
+}
+
+// ─── MINI TIMELINE ────────────────────────────────────────────────────────────
+
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const MESES_TIMELINE = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
+const DIAS_ABR = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+
+function MiniTimelineTurma() {
+  const { turmaSelecionada } = usePlanejamentoTurmaContext()
+  const { obterTurmasDoDia } = useCalendarioContext()
+  const { aplicacoesPorData } = useAplicacoesContext()
+
+  const classDias = useMemo(() => {
+    if (!turmaSelecionada) return []
+    const hoje = new Date()
+    const hojeStr = toDateStr(hoje)
+    const resultado: { dataStr: string; diaNome: string; diaN: number; mes: string; status: string | null; isHoje: boolean; isPassado: boolean }[] = []
+
+    for (let i = -14; i <= 35; i++) {
+      const d = new Date(hoje)
+      d.setDate(hoje.getDate() + i)
+      const dataStr = toDateStr(d)
+      const aulas = obterTurmasDoDia(dataStr)
+      const minhaAula = aulas.find(
+        a => a.turmaId === turmaSelecionada.turmaId && a.segmentoId === turmaSelecionada.segmentoId
+      )
+      if (!minhaAula) continue
+      const apsDia = aplicacoesPorData[dataStr] ?? []
+      const ap = apsDia.find(
+        a => a.turmaId === turmaSelecionada.turmaId && a.segmentoId === turmaSelecionada.segmentoId
+      )
+      resultado.push({
+        dataStr,
+        diaNome: DIAS_ABR[d.getDay()],
+        diaN: d.getDate(),
+        mes: MESES_TIMELINE[d.getMonth()],
+        status: ap ? ap.status : null,
+        isHoje: dataStr === hojeStr,
+        isPassado: i < 0,
+      })
+    }
+    return resultado
+  }, [turmaSelecionada, obterTurmasDoDia, aplicacoesPorData])
+
+  if (!turmaSelecionada || classDias.length === 0) return null
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Suas aulas</h3>
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        {classDias.map(({ dataStr, diaNome, diaN, mes, status, isHoje, isPassado }) => {
+          const dotCls =
+            status === 'realizada'  ? 'bg-emerald-500 border-emerald-500' :
+            status === 'planejada'  ? 'bg-indigo-500 border-indigo-500' :
+            status === 'cancelada'  ? 'bg-red-400 border-red-400' :
+            isPassado               ? 'border-2 border-slate-200 bg-white' :
+                                      'border-2 border-slate-300 bg-white'
+          const ringCls = isHoje ? 'ring-2 ring-indigo-400 ring-offset-1' : ''
+          return (
+            <div key={dataStr} className={`flex flex-col items-center gap-1 shrink-0 px-1.5 py-1 rounded-lg ${ringCls} ${isHoje ? 'bg-indigo-50' : ''}`}>
+              <span className={`text-[9px] font-semibold uppercase ${isHoje ? 'text-indigo-600' : 'text-slate-400'}`}>{diaNome}</span>
+              <div className={`w-3 h-3 rounded-full ${dotCls}`} />
+              <span className={`text-[9px] ${isHoje ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}>{diaN} {mes}</span>
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex items-center gap-3 mt-2.5 flex-wrap">
+        {([
+          { dot: 'bg-emerald-500', label: 'Realizada' },
+          { dot: 'bg-indigo-500',  label: 'Planejada' },
+          { dot: 'border-2 border-slate-300 bg-white', label: 'Sem plano' },
+          { dot: 'border-2 border-red-400 bg-white',   label: 'Cancelada', hide: !classDias.some(d => d.status === 'cancelada') },
+        ] as const).filter(l => !('hide' in l && l.hide)).map(({ dot, label }) => (
+          <span key={label} className="flex items-center gap-1 text-[9px] text-slate-400">
+            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dot}`} />
+            {label}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 // ─── SELETOR DE TURMA ─────────────────────────────────────────────────────────
@@ -1273,6 +1359,7 @@ export default function ModuloPlanejamentoTurma() {
     <div className="max-w-3xl mx-auto">
       <h1 className="text-xl font-bold text-slate-800 mb-4">👥 Turmas</h1>
       <SeletorTurma />
+      {turmaSelecionada && <MiniTimelineTurma />}
       {!turmaSelecionada && <EstadoVazio />}
       {turmaSelecionada && <ConteudoTurma />}
     </div>
