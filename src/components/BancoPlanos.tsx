@@ -451,13 +451,14 @@ export default function BancoPlanos({ session }) {
                     const tag = document.activeElement?.tagName?.toLowerCase();
                     const emInput = ['input','textarea','select'].includes(tag) || (document.activeElement as HTMLElement)?.isContentEditable;
 
-                    // Ctrl+S — salvar plano em edição (qualquer contexto)
+                    // Ctrl+S — salvar plano em edição + forçar sync imediato na nuvem
                     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                         e.preventDefault();
                         if (s.modoEdicao && s.planoEditando) {
                             s.salvarPlano();
                             s.triggerSalvo();
                         }
+                        s.sincronizarAgora(); // força sync imediato (cancela delay pendente)
                         return;
                     }
 
@@ -601,8 +602,8 @@ export default function BancoPlanos({ session }) {
                 timeoutSalvamento.current = setTimeout(() => {
                     setStatusSalvamento(prev => prev === 'salvando' ? 'salvo' : prev);
                     setTimeout(() => setStatusSalvamento(prev => prev === 'salvo' ? '' : prev), 2000);
-                }, userId ? 16000 : 400); // fallback > syncDelay (15s)
-                // Com userId, onSyncStatus pode resolver antes do fallback (2s de syncDelay + tempo de rede).
+                }, userId ? 5000 : 400); // fallback > syncDelay (3s) + tempo de rede
+                // Com userId, onSyncStatus pode resolver antes do fallback.
                 // Sem userId, o fallback de 400ms continua sendo o caminho normal.
             };
 
@@ -610,7 +611,7 @@ export default function BancoPlanos({ session }) {
             const onSyncStatus = (status) => {
                 setStatusSalvamento(status);
                 if (status === 'erro') {
-                    showToast('Falha ao sincronizar com a nuvem. Dados salvos localmente.', 'error')
+                    showToast('❌ Falha ao salvar na nuvem. Clique em "⚠ Erro nuvem" no topo para baixar backup.', 'error')
                 }
                 if (status === 'salvo') {
                     if (timeoutSalvamento.current) clearTimeout(timeoutSalvamento.current);
@@ -699,9 +700,11 @@ export default function BancoPlanos({ session }) {
             const syncTimeout = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
             const _prevSyncData = useRef(null);
             const syncDelay = (key, fn) => {
-                setStatusSalvamento('salvando');
                 if(syncTimeout.current[key]) clearTimeout(syncTimeout.current[key]);
-                syncTimeout.current[key] = setTimeout(fn, 15000); // delay aumentado de 2s para 15s — reduz Disk IO no Supabase
+                syncTimeout.current[key] = setTimeout(() => {
+                    setStatusSalvamento('salvando'); // só mostra "salvando" quando a req realmente começa
+                    fn();
+                }, 3000); // 3s — dados chegam à nuvem antes de fechar o browser
             };
 
             // ── CLEANUP DE TIMEOUTS NO UNMOUNT (evita memory leaks e erros pós-logout) ──
@@ -816,14 +819,20 @@ export default function BancoPlanos({ session }) {
                 energiasCustomizadas, instrumentacaoCustomizada,
             });
 
-            const _gravarNoArquivo = async (handle: any) => {
+            const _gravarNoArquivo = async (handle: any, mostrarToast = false) => {
                 if (!handle) return;
                 try {
                     const writable = await handle.createWritable();
                     await writable.write(JSON.stringify(_autoRef.current.getBackupData(), null, 2));
                     await writable.close();
+                    if (mostrarToast) window.dispatchEvent(new CustomEvent('musilab:toast', { detail: { msg: '✅ Backup salvo no arquivo!', type: 'success' } }));
                 } catch (e) {
                     console.warn('[MusiLab] Auto-backup local falhou:', e);
+                    if (mostrarToast) {
+                        // Arquivo indisponível: faz download direto como fallback seguro
+                        window.dispatchEvent(new CustomEvent('musilab:toast', { detail: { msg: '⚠ Erro ao gravar arquivo. Baixando cópia de segurança...', type: 'warning' } }));
+                        baixarBackup();
+                    }
                 }
             };
 
@@ -849,7 +858,36 @@ export default function BancoPlanos({ session }) {
                 setAutoBackupHandle(null);
                 dbDel('autoBackupHandle'); // remove do IDB
             };
-            const salvarAutoBackupAgora = () => _gravarNoArquivo(_autoRef.current.handle);
+            const salvarAutoBackupAgora = async () => {
+                if (_autoRef.current.handle) {
+                    // Handle disponível: grava no arquivo configurado
+                    await _gravarNoArquivo(_autoRef.current.handle, true);
+                } else {
+                    // Sem handle (IDB limpo pelo browser ou não configurado): baixar JSON direto
+                    // É o método mais confiável para usuários que limpam dados do browser
+                    baixarBackup();
+                }
+            };
+
+            // ── SINCRONIZAR IMEDIATAMENTE COM A NUVEM ──
+            // Cancela timers pendentes e força sync agora. Usado pelo Ctrl+S e pelo usuário.
+            const sincronizarAgora = async () => {
+                if (!userId || !dadosCarregados) return;
+                // Cancela todos os timers de debounce pendentes
+                Object.values(syncTimeout.current).forEach(id => clearTimeout(id));
+                syncTimeout.current = {};
+                setStatusSalvamento('salvando');
+                const [ok1, ok2] = await Promise.all([
+                    syncToSupabase('planos', planos as any, userId),
+                    syncToSupabase('grades_semanas', gradesSemanas as any, userId),
+                ]);
+                const ok = ok1 && ok2;
+                setStatusSalvamento(ok ? 'salvo' : 'erro');
+                if (ok) {
+                    if (timeoutSalvamento.current) clearTimeout(timeoutSalvamento.current);
+                    timeoutSalvamento.current = setTimeout(() => setStatusSalvamento(''), 2500);
+                }
+            };
 
             // Restaura handle do IDB ao abrir o app (sem abrir o seletor de arquivo)
             useEffect(() => {
@@ -1726,7 +1764,7 @@ export default function BancoPlanos({ session }) {
                 modalRegistro, modalRegistroRapido, modalConfiguracoes, modalNovaFaixa,
                 modalNovaEscola, modalTemplates, modalGradeSemanal, modalEventos,
                 statusDropdownId, viewMode,
-                fecharModal, salvarPlano, triggerSalvo, novoPlano, restaurarVersao,
+                fecharModal, salvarPlano, triggerSalvo, novoPlano, restaurarVersao, sincronizarAgora,
                 setModalConfirm, setModalRegistro, setModalRegistroRapido, setModalConfiguracoes,
                 setModalNovaFaixa, setModalNovaEscola, setModalTemplates, setModalGradeSemanal,
                 setModalEventos, setStatusDropdownId,
@@ -1771,6 +1809,7 @@ export default function BancoPlanos({ session }) {
         configurarAutoBackup,
         desativarAutoBackup,
         salvarAutoBackupAgora,
+        sincronizarAgora,
         baixarBackup,
         busca,
         buscaAtividade,
@@ -2217,9 +2256,13 @@ export default function BancoPlanos({ session }) {
                                                 </span>
                                             )}
                                             {statusSalvamento === 'erro' && (
-                                                <span className="flex items-center gap-1 text-xs text-red-300 bg-red-500/20 border border-red-500/40 px-2 py-0.5 rounded-full" title="Falha ao sincronizar com a nuvem. Seus dados estão salvos localmente e serão sincronizados quando a conexão voltar.">
-                                                    ⚠ Sem conexão — salvo localmente
-                                                </span>
+                                                <button
+                                                    onClick={baixarBackup}
+                                                    className="flex items-center gap-1 text-xs text-red-300 bg-red-500/20 border border-red-500/40 px-2 py-0.5 rounded-full hover:bg-red-500/30 transition cursor-pointer"
+                                                    title="Clique para baixar backup de segurança agora!"
+                                                >
+                                                    ⚠ Erro nuvem — ⬇ baixar backup
+                                                </button>
                                             )}
                                             </div>
                                         </div>

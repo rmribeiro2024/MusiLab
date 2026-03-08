@@ -84,12 +84,18 @@ export async function syncToSupabase(
     onStatus?: OnStatus
 ): Promise<boolean> {
     const MAX_TENTATIVAS = 3
-    const DELAY_RETRY = 1500
+    const DELAY_RETRY = 2000
+    const TIMEOUT_MS = 10000 // 10s por requisição — evita hang indefinido
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms))
 
     for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+        // AbortController garante que a requisição não fique pendurada para sempre
+        const controller = new AbortController()
+        const abortTimer = setTimeout(() => controller.abort(), TIMEOUT_MS)
+
         try {
-            if (!navigator.onLine) throw new Error('Sem conexão com a internet.')
+            // navigator.onLine REMOVIDO — pode dar falso positivo em certas redes/configs
+            // Se realmente sem internet, o fetch vai falhar naturalmente e cair no catch
 
             if (itens && itens.length > 0) {
                 const rows = itens.map(item => {
@@ -110,6 +116,7 @@ export async function syncToSupabase(
                     const { error } = await supabase
                         .from(tabela)
                         .upsert(lote, { onConflict: 'user_id,item_id' })
+                        .abortSignal(controller.signal)
                     if (error) throw error
                 }
 
@@ -119,18 +126,21 @@ export async function syncToSupabase(
                     .delete()
                     .eq('user_id', userId)
                     .not('item_id', 'in', `(${idsAtivos.join(',')})`)
+                    .abortSignal(controller.signal)
             } else {
                 // Lista vazia: apagar tudo do usuário nesta tabela
-                await supabase.from(tabela).delete().eq('user_id', userId)
+                await supabase.from(tabela).delete().eq('user_id', userId).abortSignal(controller.signal)
             }
 
+            clearTimeout(abortTimer)
             if (onStatus) onStatus('salvo')
             return true
         } catch(e: unknown) {
+            clearTimeout(abortTimer)
             const msg = e instanceof Error ? e.message : String(e)
             console.warn(`[MusiLab] Tentativa ${tentativa}/${MAX_TENTATIVAS} falhou para '${tabela}':`, msg)
             if (tentativa < MAX_TENTATIVAS) {
-                await sleep(DELAY_RETRY * tentativa)
+                await sleep(DELAY_RETRY)
             } else {
                 console.error(`[MusiLab] Falha definitiva ao sincronizar '${tabela}'. Dados salvos localmente.`)
                 if (onStatus) onStatus('erro')

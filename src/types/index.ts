@@ -483,6 +483,7 @@ export interface BancoPlanosContextValue {
   configurarAutoBackup: () => Promise<void>
   desativarAutoBackup: () => void
   salvarAutoBackupAgora: () => void
+  sincronizarAgora: () => void
 
   // Calendário / período
   dataFimCustom: string
