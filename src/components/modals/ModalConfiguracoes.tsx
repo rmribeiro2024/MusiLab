@@ -10,86 +10,89 @@ export default function ModalConfiguracoes() {
     if (!modalConfiguracoes) return null
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50" onClick={()=>setModalConfiguracoes(false)}>
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto overscroll-y-contain" onClick={e=>e.stopPropagation()}>
-                <div className="bg-gradient-to-r from-slate-700 to-slate-600 text-white p-5 rounded-t-2xl flex justify-between items-center">
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50" onClick={() => setModalConfiguracoes(false)}>
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm max-h-[90vh] overflow-y-auto overscroll-y-contain" onClick={e => e.stopPropagation()}>
+
+                {/* Header */}
+                <div className="flex justify-between items-center px-5 pt-5 pb-4 border-b border-slate-100">
                     <div>
-                        <h2 className="text-xl font-bold">⚙️ Configurações</h2>
-                        <p className="text-slate-300 text-sm mt-0.5">Gestão do ano letivo e dados do sistema</p>
+                        <h2 className="text-base font-semibold text-slate-800">Configurações</h2>
+                        <p className="text-xs text-slate-400 mt-0.5">Ano letivo, turmas e dados</p>
                     </div>
-                    <button onClick={()=>setModalConfiguracoes(false)} className="text-white/60 hover:text-white text-2xl font-bold">×</button>
+                    <button
+                        onClick={() => setModalConfiguracoes(false)}
+                        className="text-slate-400 hover:text-slate-600 text-xl leading-none transition"
+                    >
+                        ×
+                    </button>
                 </div>
-                <div className="p-5 space-y-3">
 
-                    {/* Ano Letivo / Escola */}
-                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
-                        <div className="flex items-center gap-3 mb-1">
-                            <span className="text-2xl">📅</span>
-                            <div>
-                                <div className="font-bold text-gray-800">Ano Letivo & Escolas</div>
-                                <div className="text-xs text-gray-500">Cadastre anos, escolas e eventos</div>
-                            </div>
-                        </div>
-                        <div className="text-xs text-indigo-600 mb-2">{anosLetivos.length} ano(s) cadastrado(s)</div>
-                        <button onClick={()=>{ setModalConfiguracoes(false); setModalTurmas(true); }}
-                            className="w-full border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 py-2 rounded-lg text-sm font-bold">
-                            Gerenciar Anos Letivos
-                        </button>
-                    </div>
+                {/* Itens */}
+                <div className="p-4 space-y-2">
 
-                    {/* Turmas */}
-                    <div className="bg-teal-50 border border-teal-100 rounded-xl p-4">
-                        <div className="flex items-center gap-3 mb-1">
-                            <span className="text-2xl">🏫</span>
-                            <div>
-                                <div className="font-bold text-gray-800">Turmas & Horários</div>
-                                <div className="text-xs text-gray-500">Configure suas turmas por escola</div>
-                            </div>
-                        </div>
-                        <button onClick={()=>{ setModalConfiguracoes(false); setModalTurmas(true); }}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-lg text-sm font-bold">
-                            Gerenciar Turmas
-                        </button>
-                    </div>
+                    <ConfigItem
+                        label="Ano Letivo & Escolas"
+                        desc={`${anosLetivos.length} ano${anosLetivos.length !== 1 ? 's' : ''} cadastrado${anosLetivos.length !== 1 ? 's' : ''}`}
+                        actionLabel="Gerenciar"
+                        onAction={() => { setModalConfiguracoes(false); setModalTurmas(true) }}
+                    />
 
-                    {/* Grade Semanal */}
-                    <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
-                        <div className="flex items-center gap-3 mb-1">
-                            <span className="text-2xl">📆</span>
-                            <div>
-                                <div className="font-bold text-gray-800">Grade Semanal</div>
-                                <div className="text-xs text-gray-500">Horários fixos por escola e semana</div>
-                            </div>
-                        </div>
-                        <button onClick={()=>{ setModalConfiguracoes(false); setModalGradeSemanal(true); }}
-                            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg text-sm font-bold">
-                            Gerenciar Grade Semanal
-                        </button>
-                    </div>
+                    <ConfigItem
+                        label="Turmas & Horários"
+                        desc="Configure suas turmas por escola"
+                        actionLabel="Gerenciar"
+                        onAction={() => { setModalConfiguracoes(false); setModalTurmas(true) }}
+                    />
+
+                    <ConfigItem
+                        label="Grade Semanal"
+                        desc="Horários fixos por escola e semana"
+                        actionLabel="Gerenciar"
+                        onAction={() => { setModalConfiguracoes(false); setModalGradeSemanal(true) }}
+                    />
 
                     {/* Backup */}
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                        <div className="flex items-center gap-3 mb-3">
-                            <span className="text-2xl">💾</span>
-                            <div>
-                                <div className="font-bold text-gray-800">Backup & Restauração</div>
-                                <div className="text-xs text-gray-500">Salve ou recupere todos os dados</div>
-                            </div>
-                        </div>
+                    <div className="border border-slate-100 rounded-xl p-4">
+                        <p className="text-sm font-semibold text-slate-700 mb-0.5">Backup & Restauração</p>
+                        <p className="text-xs text-slate-400 mb-3">Salve ou recupere todos os dados</p>
                         <div className="flex gap-2">
-                            <button onClick={()=>{ baixarBackup(); setModalConfiguracoes(false); }}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-bold">
-                                💾 Baixar Backup
+                            <button
+                                onClick={() => { baixarBackup(); setModalConfiguracoes(false) }}
+                                className="flex-1 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 py-2 rounded-lg text-xs font-semibold transition"
+                            >
+                                Baixar backup
                             </button>
-                            <label className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg text-sm font-bold text-center cursor-pointer">
-                                📥 Restaurar
-                                <input type="file" accept=".json" onChange={(e)=>{ restaurarBackup(e); setModalConfiguracoes(false); }} className="hidden"/>
+                            <label className="flex-1 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 py-2 rounded-lg text-xs font-semibold text-center cursor-pointer transition">
+                                Restaurar
+                                <input type="file" accept=".json" onChange={e => { restaurarBackup(e); setModalConfiguracoes(false) }} className="hidden" />
                             </label>
                         </div>
                     </div>
 
                 </div>
             </div>
+        </div>
+    )
+}
+
+function ConfigItem({ label, desc, actionLabel, onAction }: {
+    label: string
+    desc: string
+    actionLabel: string
+    onAction: () => void
+}) {
+    return (
+        <div className="border border-slate-100 rounded-xl p-4 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-700 truncate">{label}</p>
+                <p className="text-xs text-slate-400">{desc}</p>
+            </div>
+            <button
+                onClick={onAction}
+                className="shrink-0 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+            >
+                {actionLabel}
+            </button>
         </div>
     )
 }
