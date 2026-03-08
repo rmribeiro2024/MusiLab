@@ -563,27 +563,24 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
         {plano ? (
           <>
             {/* Ações rápidas (melhoria 1) */}
-            {aplicacao && aplicacao.status !== 'realizada' && (
+            {aplicacao && (
               <div className="flex gap-2">
-                <button onClick={() => atualizarStatusAplicacao(aplicacao.id, 'realizada')}
-                  className="flex-1 py-2 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition">
-                  ✓ Marcar realizada
+                <button
+                  onClick={() => atualizarStatusAplicacao(
+                    aplicacao.id,
+                    aplicacao.status === 'realizada' ? 'planejada' : 'realizada'
+                  )}
+                  className={`flex-1 py-2 text-xs font-semibold rounded-xl border transition ${
+                    aplicacao.status === 'realizada'
+                      ? 'bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                  }`}
+                >
+                  {aplicacao.status === 'realizada' ? '✓ Realizada' : '✓ Marcar realizada'}
                 </button>
                 <button onClick={abrirRegistro}
                   className="flex-1 py-2 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl hover:bg-indigo-100 transition">
-                  📝 Registrar pós-aula
-                </button>
-              </div>
-            )}
-            {aplicacao?.status === 'realizada' && (
-              <div className="flex gap-2">
-                <button onClick={() => atualizarStatusAplicacao(aplicacao.id, 'planejada')}
-                  className="py-2 px-3 text-xs font-semibold bg-slate-50 text-slate-500 border border-slate-200 rounded-xl hover:bg-slate-100 transition">
-                  ↩ Desfazer
-                </button>
-                <button onClick={abrirRegistro}
-                  className="flex-1 py-2 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl hover:bg-indigo-100 transition">
-                  📝 Ver / editar registro
+                  📝 {aplicacao.status === 'realizada' ? 'Ver registro' : 'Registrar pós-aula'}
                 </button>
               </div>
             )}
