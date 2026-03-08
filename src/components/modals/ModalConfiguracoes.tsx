@@ -3,7 +3,7 @@ import { useAnoLetivoContext, useCalendarioContext } from '../../contexts'
 import { useBancoPlanos } from '../BancoPlanosContext'
 
 export default function ModalConfiguracoes() {
-    const { modalConfiguracoes, setModalConfiguracoes, baixarBackup, restaurarBackup } = useBancoPlanos()
+    const { modalConfiguracoes, setModalConfiguracoes, baixarBackup, restaurarBackup, autoBackupAtivo, configurarAutoBackup, desativarAutoBackup, salvarAutoBackupAgora } = useBancoPlanos()
     const { anosLetivos, setModalTurmas } = useAnoLetivoContext()
     const { setModalGradeSemanal } = useCalendarioContext()
 
@@ -67,6 +67,42 @@ export default function ModalConfiguracoes() {
                                 <input type="file" accept=".json" onChange={e => { restaurarBackup(e); setModalConfiguracoes(false) }} className="hidden" />
                             </label>
                         </div>
+                    </div>
+
+                    {/* Auto-backup local */}
+                    <div className="border-l-2 border-slate-300 pl-3 py-3">
+                        <p className="text-sm font-semibold text-slate-700 mb-0.5">
+                            Backup automático local
+                            {autoBackupAtivo && <span className="ml-2 text-xs font-normal text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">ativo</span>}
+                        </p>
+                        <p className="text-xs text-slate-400 mb-2">
+                            {autoBackupAtivo
+                                ? 'Dados salvos automaticamente ao fechar o app.'
+                                : 'Salva no PC ao fechar o app — sem depender da internet.'}
+                        </p>
+                        {autoBackupAtivo ? (
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={salvarAutoBackupAgora}
+                                    className="flex-1 border border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50 text-emerald-700 py-1.5 rounded-lg text-xs font-semibold transition"
+                                >
+                                    Salvar agora
+                                </button>
+                                <button
+                                    onClick={desativarAutoBackup}
+                                    className="flex-1 border border-slate-200 hover:border-red-200 hover:bg-red-50 text-slate-500 hover:text-red-600 py-1.5 rounded-lg text-xs font-semibold transition"
+                                >
+                                    Desativar
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={configurarAutoBackup}
+                                className="w-full border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 py-1.5 rounded-lg text-xs font-semibold transition"
+                            >
+                                Configurar
+                            </button>
+                        )}
                     </div>
 
                 </div>

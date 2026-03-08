@@ -800,6 +800,65 @@ export default function BancoPlanos({ session }) {
                 link.download = `musilab-backup-${new Date().toISOString().split('T')[0]}.json`;
                 link.click(); URL.revokeObjectURL(url);
             };
+
+            // ── AUTO-BACKUP LOCAL (File System Access API) ──────────────────────
+            const [autoBackupHandle, setAutoBackupHandle] = useState<any>(null);
+
+            // Ref para acesso sem stale closure nos event handlers de pagehide/visibilitychange
+            const _autoRef = useRef<{ handle: any; getBackupData: () => object }>({ handle: null, getBackupData: () => ({}) });
+            _autoRef.current.handle = autoBackupHandle;
+            _autoRef.current.getBackupData = () => ({
+                versao: '2.0', timestamp: new Date().toISOString(),
+                planos, conceitos, unidades, faixas, anosLetivos, gradesSemanas, atividades,
+                eventosEscolares, sequencias, repertorio, tagsGlobais, templatesRoteiro,
+                compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados,
+                escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas,
+                energiasCustomizadas, instrumentacaoCustomizada,
+            });
+
+            const _gravarNoArquivo = async (handle: any) => {
+                if (!handle) return;
+                try {
+                    const writable = await handle.createWritable();
+                    await writable.write(JSON.stringify(_autoRef.current.getBackupData(), null, 2));
+                    await writable.close();
+                } catch (e) {
+                    console.warn('[MusiLab] Auto-backup local falhou:', e);
+                }
+            };
+
+            const configurarAutoBackup = async () => {
+                if (!('showSaveFilePicker' in window)) {
+                    // Navegador sem suporte — faz download normal como fallback
+                    baixarBackup(); return;
+                }
+                try {
+                    const handle = await (window as any).showSaveFilePicker({
+                        suggestedName: 'musilab-backup-auto.json',
+                        types: [{ description: 'Backup MusiLab', accept: { 'application/json': ['.json'] } }],
+                    });
+                    setAutoBackupHandle(handle);
+                    _autoRef.current.handle = handle;
+                    await _gravarNoArquivo(handle);
+                    window.dispatchEvent(new CustomEvent('musilab:toast', { detail: { msg: 'Backup automático ativado! Salvo ao fechar o app.', type: 'success' } }));
+                } catch { /* usuário cancelou */ }
+            };
+
+            const desativarAutoBackup = () => setAutoBackupHandle(null);
+            const salvarAutoBackupAgora = () => _gravarNoArquivo(_autoRef.current.handle);
+
+            // Registra handlers UMA VEZ — usa refs para sempre ter dados frescos
+            useEffect(() => {
+                const onHide = () => _gravarNoArquivo(_autoRef.current.handle);
+                const onVisibility = () => { if (document.visibilityState === 'hidden') _gravarNoArquivo(_autoRef.current.handle); };
+                window.addEventListener('pagehide', onHide);
+                document.addEventListener('visibilitychange', onVisibility);
+                return () => {
+                    window.removeEventListener('pagehide', onHide);
+                    document.removeEventListener('visibilitychange', onVisibility);
+                };
+            }, []); // eslint-disable-line
+
             const restaurarBackup = (event) => {
                 const file = event.target.files[0]; if (!file) return;
                 const reader = new FileReader();
@@ -1677,6 +1736,10 @@ export default function BancoPlanos({ session }) {
         atualizarAtividadeRoteiro,
         atualizarAulaGrade,
         atualizarRascunhoSlot,
+        autoBackupAtivo: !!autoBackupHandle,
+        configurarAutoBackup,
+        desativarAutoBackup,
+        salvarAutoBackupAgora,
         baixarBackup,
         busca,
         buscaAtividade,

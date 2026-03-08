@@ -479,6 +479,10 @@ export interface BancoPlanosContextValue {
   // Backup
   baixarBackup: () => void
   restaurarBackup: (e: React.ChangeEvent<HTMLInputElement>) => void
+  autoBackupAtivo: boolean
+  configurarAutoBackup: () => Promise<void>
+  desativarAutoBackup: () => void
+  salvarAutoBackupAgora: () => void
 
   // Calendário / período
   dataFimCustom: string
