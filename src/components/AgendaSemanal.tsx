@@ -530,7 +530,6 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
     setModalRegistro, setPlanoParaRegistro,
     setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel,
   } = useCalendarioContext()
-  const { atualizarStatusAplicacao } = useAplicacoesContext()
   const cfg = aplicacao ? (STATUS_CFG[aplicacao.status] ?? STATUS_CFG.planejada) : null
   const atividades = plano?.atividadesRoteiro ?? []
 
@@ -576,27 +575,12 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
 
         {plano ? (
           <>
-            {/* Ações rápidas (melhoria 1) */}
+            {/* Registrar pós-aula */}
             {aplicacao && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => atualizarStatusAplicacao(
-                    aplicacao.id,
-                    aplicacao.status === 'realizada' ? 'planejada' : 'realizada'
-                  )}
-                  className={`flex-1 py-2 text-xs font-semibold rounded-xl border transition ${
-                    aplicacao.status === 'realizada'
-                      ? 'bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-50'
-                      : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                  }`}
-                >
-                  {aplicacao.status === 'realizada' ? '✓ Realizada' : '✓ Marcar realizada'}
-                </button>
-                <button onClick={abrirRegistro}
-                  className="flex-1 py-2 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl hover:bg-indigo-100 transition">
-                  📝 {aplicacao.status === 'realizada' ? 'Ver registro' : 'Registrar pós-aula'}
-                </button>
-              </div>
+              <button onClick={abrirRegistro}
+                className="w-full py-2 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl hover:bg-indigo-100 transition">
+                📝 {aplicacao.status === 'realizada' ? 'Ver / editar registro' : 'Registrar pós-aula'}
+              </button>
             )}
 
             {plano.objetivoGeral && (

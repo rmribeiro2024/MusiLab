@@ -1,7 +1,7 @@
 import React from 'react'
 import { useCalendarioContext } from '../../contexts'
 import { useAnoLetivoContext } from '../../contexts'
-import { usePlanosContext } from '../../contexts'
+import { usePlanosContext, useAplicacoesContext } from '../../contexts'
 
 // ── ACCORDION CHIP — campo colapsável genérico ──
 const AccordionChip = React.forwardRef<() => void, {
@@ -327,6 +327,7 @@ export default function ModalRegistroPosAula() {
     } = useCalendarioContext()
     const { anosLetivos } = useAnoLetivoContext()
     const { planos, salvarRegistro, editarRegistro, excluirRegistro } = usePlanosContext()
+    const { aplicacoes, atualizarStatusAplicacao } = useAplicacoesContext()
     const setRegSerieSel: ((v: string) => void) | undefined = undefined
 
     // ── Estados de janela ──
@@ -661,7 +662,20 @@ export default function ModalRegistroPosAula() {
                                     </div>
 
                                     {/* Botão salvar */}
-                                    <button ref={salvarBtnRef} onClick={salvarRegistro}
+                                    <button ref={salvarBtnRef} onClick={() => {
+                                        const algumCampo = !!(novoRegistro.resumoAula || novoRegistro.funcionouBem || novoRegistro.naoFuncionou || novoRegistro.proximaAula || novoRegistro.comportamento)
+                                        salvarRegistro()
+                                        // Ao salvar novo registro, marca aplicacao vinculada como realizada
+                                        if (algumCampo && !registroEditando) {
+                                            const ap = aplicacoes.find(a =>
+                                                a.turmaId === regTurmaSel &&
+                                                a.anoLetivoId === regAnoSel &&
+                                                a.data === (novoRegistro.dataAula || new Date().toISOString().split('T')[0]) &&
+                                                String(a.planoId) === String(planoParaRegistro?.id)
+                                            )
+                                            if (ap && ap.status !== 'realizada') atualizarStatusAplicacao(ap.id, 'realizada')
+                                        }
+                                    }}
                                         style={{ width: '100%', padding: '12px', background: '#f8fafc', color: '#334155', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'all .15s' }}
                                         onMouseOver={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8' }}
                                         onMouseOut={e  => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0' }}
