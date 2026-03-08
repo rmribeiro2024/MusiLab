@@ -91,7 +91,8 @@ export default function AgendaSemanal() {
 
   const hoje = useMemo(() => getSegunda(new Date()), [])
   const [semana, setSemana] = useState<Date>(hoje)
-  const [painel, setPainel] = useState<SlotInfo | null>(null)
+  // Guarda só a chave; o slot ao vivo é derivado de semanaData
+  const [painelKey, setPainelKey] = useState<{ aulaGradeId: number; dataStr: string } | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('grade')
   const [diaExpandido, setDiaExpandido] = useState<number>(-2)
   const [filtroEscola, setFiltroEscola] = useState<string>('') // '' = todas
@@ -143,15 +144,28 @@ export default function AgendaSemanal() {
     return Array.from(set).sort()
   }, [semanaData])
 
+  // Slot ao vivo (sempre atualizado quando aplicacoes/planos mudam)
+  const painel = useMemo(() => {
+    if (!painelKey) return null
+    for (const d of semanaData) {
+      const s = d.slots.find(sl => sl.aulaGrade.id === painelKey.aulaGradeId && sl.dataStr === painelKey.dataStr)
+      if (s) return s
+    }
+    return null
+  }, [painelKey, semanaData])
+
   const totalSlots = semanaData.reduce((acc, d) => acc + d.slots.length, 0)
   const totalComPlano = semanaData.reduce((acc, d) => acc + d.slots.filter(s => s.aplicacao).length, 0)
   const ehSemanaAtual = toStr(semana) === toStr(hoje)
   const idxHoje = diasSemana.findIndex(d => d.isHoje)
   function isDiaAberto(idx: number) { return diaExpandido === -2 ? idx === idxHoje || (idxHoje === -1 && idx === 0) : diaExpandido === idx }
   function toggleDia(idx: number) { setDiaExpandido(prev => (prev === idx || (prev === -2 && idx === idxHoje)) ? -1 : idx) }
-  function prevSemana() { const d = new Date(semana); d.setDate(d.getDate() - 7); setSemana(d); setPainel(null); setDiaExpandido(-2) }
-  function nextSemana() { const d = new Date(semana); d.setDate(d.getDate() + 7); setSemana(d); setPainel(null); setDiaExpandido(-2) }
-  function togglePainel(slot: SlotInfo) { const mesmo = painel?.aulaGrade.id === slot.aulaGrade.id && painel?.dataStr === slot.dataStr; setPainel(mesmo ? null : slot) }
+  function prevSemana() { const d = new Date(semana); d.setDate(d.getDate() - 7); setSemana(d); setPainelKey(null); setDiaExpandido(-2) }
+  function nextSemana() { const d = new Date(semana); d.setDate(d.getDate() + 7); setSemana(d); setPainelKey(null); setDiaExpandido(-2) }
+  function togglePainel(slot: SlotInfo) {
+    const mesmo = painelKey?.aulaGradeId === slot.aulaGrade.id && painelKey?.dataStr === slot.dataStr
+    setPainelKey(mesmo ? null : { aulaGradeId: slot.aulaGrade.id, dataStr: slot.dataStr })
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -165,7 +179,7 @@ export default function AgendaSemanal() {
             <div className="text-center min-w-[160px]">
               <p className="font-bold text-slate-800 text-sm">{semanaLabel(semana)}</p>
               {!ehSemanaAtual
-                ? <button onClick={() => { setSemana(hoje); setPainel(null); setDiaExpandido(-2) }} className="text-[11px] text-indigo-500 hover:underline">esta semana</button>
+                ? <button onClick={() => { setSemana(hoje); setPainelKey(null); setDiaExpandido(-2) }} className="text-[11px] text-indigo-500 hover:underline">esta semana</button>
                 : <p className="text-[11px] text-slate-400">{totalComPlano}/{totalSlots} com plano</p>
               }
             </div>
@@ -174,7 +188,7 @@ export default function AgendaSemanal() {
 
           {/* Toggle Grade / Lista */}
           <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
-            <button onClick={() => { setViewMode('grade'); setPainel(null) }} title="Grade por horário"
+            <button onClick={() => { setViewMode('grade'); setPainelKey(null) }} title="Grade por horário"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'grade' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 3v18M14 3v18" />
@@ -231,9 +245,9 @@ export default function AgendaSemanal() {
           <p className="text-xs mt-1 text-center max-w-xs text-slate-300">Configure a grade semanal em Configurações → Grade Semanal.</p>
         </div>
       ) : viewMode === 'grade' ? (
-        <ViewGrade semanaData={semanaData} diasSemana={diasSemana} horarios={horarios} painel={painel} onTogglePainel={togglePainel} onClosePanel={() => setPainel(null)} onAplicarPlano={setSelecionandoSlot} />
+        <ViewGrade semanaData={semanaData} diasSemana={diasSemana} horarios={horarios} painel={painel} onTogglePainel={togglePainel} onClosePanel={() => setPainelKey(null)} onAplicarPlano={setSelecionandoSlot} />
       ) : (
-        <ViewLista semanaData={semanaData} isDiaAberto={isDiaAberto} onToggleDia={toggleDia} painel={painel} onTogglePainel={togglePainel} onClosePanel={() => setPainel(null)} onAplicarPlano={setSelecionandoSlot} />
+        <ViewLista semanaData={semanaData} isDiaAberto={isDiaAberto} onToggleDia={toggleDia} painel={painel} onTogglePainel={togglePainel} onClosePanel={() => setPainelKey(null)} onAplicarPlano={setSelecionandoSlot} />
       )}
 
       {/* ── MODAL SELETOR DE PLANO (melhoria 2) ── */}
