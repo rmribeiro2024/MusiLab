@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro, stripHTML } from '../lib/utils'
-import { useAtividadesContext, useAnoLetivoContext, useModalContext } from '../contexts'
+import { useAtividadesContext, useAnoLetivoContext, useModalContext, useRepertorioContext, usePlanosContext } from '../contexts'
 import type { Atividade } from '../types'
 
 interface CardAtividadeProps {
@@ -12,39 +12,53 @@ interface CardAtividadeProps {
 }
 
 // ── CARD ATIVIDADE (memoizado — só re-renderiza quando a atividade muda) ──
-const CardAtividade = React.memo(({ ativ, setAtividadeEditando, excluirAtividade, setModalAdicionarAoPlano }: CardAtividadeProps) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-all duration-200 flex flex-col overflow-hidden group">
-        <div className="h-1.5 bg-gradient-to-r from-amber-400 to-orange-400 rounded-t-2xl" />
-        <div className="p-4 flex flex-col flex-1">
-            <div className="flex items-start justify-between gap-2 mb-2">
-                <h3 className="font-bold text-gray-800 leading-tight line-clamp-2">{ativ.nome}</h3>
-                <div className="flex gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                    <button onClick={()=>setAtividadeEditando(ativ)} className="text-slate-400 hover:text-blue-600 p-2 sm:p-1 rounded transition" title="Editar">✏️</button>
-                    <button onClick={()=>excluirAtividade(ativ.id)} className="text-slate-400 hover:text-red-500 p-2 sm:p-1 rounded transition" title="Excluir">🗑️</button>
+const CardAtividade = React.memo(({ ativ, setAtividadeEditando, excluirAtividade, setModalAdicionarAoPlano }: CardAtividadeProps) => {
+    const { setViewMode } = useRepertorioContext()
+    const { setBusca } = usePlanosContext()
+
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-all duration-200 flex flex-col overflow-hidden group">
+            <div className="h-1.5 bg-gradient-to-r from-amber-400 to-orange-400 rounded-t-2xl" />
+            <div className="p-4 flex flex-col flex-1">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                    <h3 className="font-bold text-gray-800 leading-tight line-clamp-2">{ativ.nome}</h3>
+                    <div className="flex gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <button onClick={()=>setAtividadeEditando(ativ)} className="text-slate-400 hover:text-blue-600 p-2 sm:p-1 rounded transition" title="Editar">✏️</button>
+                        <button onClick={()=>excluirAtividade(ativ.id)} className="text-slate-400 hover:text-red-500 p-2 sm:p-1 rounded transition" title="Excluir">🗑️</button>
+                    </div>
                 </div>
-            </div>
-            {ativ.descricao && <p className="text-sm text-slate-500 line-clamp-2 mb-3">{stripHTML(ativ.descricao)}</p>}
-            <div className="flex flex-wrap gap-1.5 mb-3 mt-auto">
-                {ativ.duracao && (
-                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">⏱ {ativ.duracao}</span>
+                {ativ.descricao && <p className="text-sm text-slate-500 line-clamp-2 mb-2">{stripHTML(ativ.descricao)}</p>}
+                {ativ.origemAula && (
+                    <button
+                        onClick={() => { setBusca(ativ.origemAula.planoTitulo); setViewMode('lista') }}
+                        className="text-left text-xs text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg mb-2 transition truncate font-medium"
+                        title="Ver aula de origem no banco"
+                    >
+                        ↗ De: {ativ.origemAula.planoTitulo}
+                    </button>
                 )}
-                {(ativ.faixaEtaria||[]).slice(0,2).map(f=>(
-                    <span key={f} className="text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-0.5 rounded-full font-medium">👥 {f}</span>
-                ))}
-                {(ativ.conceitos||[]).slice(0,1).map(c=>(
-                    <span key={c} className="text-xs bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full font-medium">🎵 {c}</span>
-                ))}
-                {(ativ.tags||[]).slice(0,2).map(t=>(
-                    <span key={t} className="text-xs bg-amber-50 text-amber-600 border border-amber-100 px-2 py-0.5 rounded-full">#{t}</span>
-                ))}
+                <div className="flex flex-wrap gap-1.5 mb-3 mt-auto">
+                    {ativ.duracao && (
+                        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">⏱ {ativ.duracao}</span>
+                    )}
+                    {(ativ.faixaEtaria||[]).slice(0,2).map(f=>(
+                        <span key={f} className="text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-0.5 rounded-full font-medium">👥 {f}</span>
+                    ))}
+                    {(ativ.conceitos||[]).slice(0,1).map(c=>(
+                        <span key={c} className="text-xs bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full font-medium">🎵 {c}</span>
+                    ))}
+                    {(ativ.tags||[]).slice(0,2).map(t=>(
+                        <span key={t} className="text-xs bg-amber-50 text-amber-600 border border-amber-100 px-2 py-0.5 rounded-full">#{t}</span>
+                    ))}
+                </div>
+                <button onClick={()=>setModalAdicionarAoPlano(ativ)}
+                    className="w-full border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 py-2 rounded-xl font-bold text-sm transition mt-1">
+                    + Adicionar ao Plano
+                </button>
             </div>
-            <button onClick={()=>setModalAdicionarAoPlano(ativ)}
-                className="w-full border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 py-2 rounded-xl font-bold text-sm transition mt-1">
-                + Adicionar ao Plano
-            </button>
         </div>
-    </div>
-));
+    )
+});
 
 export default function ModuloAtividades() {
     const {

@@ -9,7 +9,9 @@ import { usePlanosContext } from '../contexts/PlanosContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import RichTextEditor from './RichTextEditor'
-import { stripHTML } from '../lib/utils'
+import { stripHTML, gerarIdSeguro } from '../lib/utils'
+import { showToast } from '../lib/toast'
+import { useAtividadesContext } from '../contexts'
 import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula } from '../types'
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -306,6 +308,28 @@ function PainelImportarBanco({
 // ─── MODAL PREVIEW DO PLANO ───────────────────────────────────────────────────
 
 function ModalPreviewPlano({ plano, onFechar }: { plano: import('../types').Plano; onFechar: () => void }) {
+  const { setAtividades } = useAtividadesContext()
+  const [exportados, setExportados] = useState<Set<string>>(new Set())
+
+  function exportarAtividade(a: import('../types').AtividadeRoteiro) {
+    const key = String(a.id ?? a.nome)
+    if (exportados.has(key)) return
+    const novaAtiv: import('../types').Atividade = {
+      id: gerarIdSeguro(),
+      nome: a.nome,
+      descricao: stripHTML(a.descricao || ''),
+      duracao: a.duracao || '',
+      faixaEtaria: [],
+      tags: [],
+      recursos: [],
+      origemAula: { planoId: String(plano.id), planoTitulo: plano.titulo },
+      createdAt: new Date().toISOString(),
+    }
+    setAtividades(prev => [novaAtiv, ...prev])
+    setExportados(prev => new Set(prev).add(key))
+    showToast(`"${a.nome}" salva em Atividades`, 'success')
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
@@ -338,13 +362,32 @@ function ModalPreviewPlano({ plano, onFechar }: { plano: import('../types').Plan
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Atividades</p>
               <div className="space-y-1.5">
-                {(plano.atividadesRoteiro ?? []).map((a, i) => (
-                  <div key={i} className="text-xs bg-slate-50 rounded-lg px-3 py-2">
-                    <span className="font-medium text-slate-700">{a.nome}</span>
-                    {a.descricao && <span className="text-slate-400"> — {stripHTML(a.descricao)}</span>}
-                    {a.duracao && <span className="text-slate-300 ml-1">({a.duracao} min)</span>}
-                  </div>
-                ))}
+                {(plano.atividadesRoteiro ?? []).map((a, i) => {
+                  const key = String(a.id ?? a.nome)
+                  const jaExportado = exportados.has(key)
+                  return (
+                    <div key={i} className="text-xs bg-slate-50 rounded-lg px-3 py-2 flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-slate-700">{a.nome}</span>
+                        {a.descricao && <span className="text-slate-400"> — {stripHTML(a.descricao)}</span>}
+                        {a.duracao && <span className="text-slate-300 ml-1">({a.duracao} min)</span>}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => exportarAtividade(a)}
+                        disabled={jaExportado}
+                        className={`shrink-0 border px-2 py-1 rounded-lg text-xs font-semibold transition ${
+                          jaExportado
+                            ? 'border-emerald-200 text-emerald-500 cursor-default'
+                            : 'border-slate-200 hover:border-slate-300 hover:bg-white text-slate-400 hover:text-slate-600'
+                        }`}
+                        title="Salvar em Atividades"
+                      >
+                        {jaExportado ? '✓' : '+ Ativ.'}
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -363,6 +406,17 @@ function ModalPreviewPlano({ plano, onFechar }: { plano: import('../types').Plan
           {!(plano.objetivoGeral) && !(plano.atividadesRoteiro?.length) && (
             <p className="text-sm text-slate-400 text-center py-4">Nenhum detalhe disponível para este plano.</p>
           )}
+        </div>
+
+        {/* Rodapé */}
+        <div className="px-5 py-3 border-t border-slate-100 flex-shrink-0">
+          <button
+            type="button"
+            onClick={onFechar}
+            className="w-full border border-slate-200 hover:bg-slate-50 text-slate-500 py-2.5 rounded-xl text-sm font-semibold transition"
+          >
+            ← Voltar
+          </button>
         </div>
       </div>
     </div>
