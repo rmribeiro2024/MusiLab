@@ -16,6 +16,7 @@ import {
   loadConfiguracoes,
 } from '../lib/utils'
 import { showToast } from '../lib/toast'
+import { mergeOffline, totalPendentes, useVoltouOnline } from '../lib/offlineSync'
 import type { GradeEditando } from '../types'
 // Módulos carregados sob demanda — Vite cria um chunk por arquivo
 const ModuloPlanejamentoTurma = lazy(() => import('./ModuloPlanejamentoTurma'))
@@ -640,6 +641,7 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             const [dadosCarregados, setDadosCarregados] = useState(false);
             const [maisAberto, setMaisAberto] = useState(false);
+            const voltouOnline = useVoltouOnline();
             useEffect(() => {
                 // Sem userId (modo local): carrega dados do IndexedDB diretamente
                 if (!userId) {
@@ -669,13 +671,22 @@ export default function BancoPlanos({ session }) {
                             loadConfiguracoes(userId)
                         ]);
 
-                        // Supabase sempre prevalece sobre localStorage quando retorna dados
-                        if (planosC !== null) setPlanos(planosC.length > 0 ? planosC.map(normalizePlano) : []);
-                        // atividadesC removido — carregado em AtividadesContext (Parte 4)
-                        // repertorioC removido — carregado em RepertorioContext (Parte 3)
-                        // sequenciasC removido — carregado em SequenciasContext (Parte 5)
-                        // anosC removido — carregado em AnoLetivoContext (Parte 6)
-                        if (gradesC !== null) setGradesSemanas(gradesC.length > 0 ? gradesC as GradeEditando[] : []);
+                        // [offlineSync] — merge: nuvem + itens criados/editados offline
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const planosLocais: any[] = (() => { try { const r = dbGet('planosAula'); return r ? JSON.parse(r).map(normalizePlano) : [] } catch { return [] } })()
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const gradesLocais: any[] = (() => { try { const r = dbGet('gradesSemanas'); return r ? JSON.parse(r) : [] } catch { return [] } })()
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const planosMergeados: any[] = mergeOffline('planos', planosC as any, planosLocais)
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const gradesMergeadas: any[] = mergeOffline('grades_semanas', gradesC as any, gradesLocais)
+                        setPlanos(planosMergeados)
+                        setGradesSemanas(gradesMergeadas as GradeEditando[])
+                        // Se houve merge de itens offline, sincroniza imediatamente
+                        if (totalPendentes() > 0) {
+                            syncToSupabase('planos', planosMergeados as unknown as Record<string, unknown>[], userId, onSyncStatus)
+                            syncToSupabase('grades_semanas', gradesMergeadas as unknown as Record<string, unknown>[], userId, onSyncStatus)
+                        }
                         // eventosC removido — carregado em AnoLetivoContext (Parte 6)
                         // estratégiasC removido — carregado em EstrategiasContext (Parte 2)
                         // planejamentoAnualC removido — carregado em AnoLetivoContext (Parte 6)
@@ -748,6 +759,16 @@ export default function BancoPlanos({ session }) {
                     }
                 });
             }, [planos, gradesSemanas]); // anos_letivos/eventos_escolares/planejamento_anual removidos — sync em AnoLetivoContext (Parte 6) — sync em AtividadesContext/SequenciasContext (Partes 4/5)
+            // [offlineSync] — ao voltar online, sobe itens pendentes imediatamente
+            useEffect(() => {
+                if (!voltouOnline || !userId || !dadosCarregados) return
+                const pendentes = totalPendentes()
+                if (pendentes === 0) return
+                syncToSupabase('planos', planos as unknown as Record<string, unknown>[], userId, onSyncStatus)
+                syncToSupabase('grades_semanas', gradesSemanas as unknown as Record<string, unknown>[], userId, onSyncStatus)
+                showToast(`Reconectado — sincronizando dados pendentes…`, 'success')
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+            }, [voltouOnline])
             useEffect(() => {
                 if(!userId||!dadosCarregados) return;
                 // conceitos, unidades, faixas, tagsGlobais removidos — sincronizados em AnoLetivoContext (Parte 6)
