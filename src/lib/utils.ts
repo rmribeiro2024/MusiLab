@@ -112,7 +112,7 @@ export async function syncToSupabase(
                     return { user_id: userId, item_id: String(item.id), data: item }
                 })
 
-                const LOTE = 10 // reduzido de 50 → evita timeout 57014 com JSONB grandes
+                const LOTE = 3 // lote pequeno — evita timeout 57014 com JSONB grandes // reduzido de 50 → evita timeout 57014 com JSONB grandes
                 for (let i = 0; i < rows.length; i += LOTE) {
                     const lote = rows.slice(i, i + LOTE)
                     const { error } = await supabase
@@ -166,7 +166,7 @@ export async function syncDelta(
     for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
         try {
             if (changed.length > 0) {
-                const LOTE = 10
+                const LOTE = 3 // lote pequeno — evita timeout 57014 com JSONB grandes
                 for (let i = 0; i < changed.length; i += LOTE) {
                     const lote = changed.slice(i, i + LOTE).map(item => ({
                         user_id: userId,

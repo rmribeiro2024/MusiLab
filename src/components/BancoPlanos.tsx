@@ -775,8 +775,9 @@ export default function BancoPlanos({ session }) {
             // [offlineSync] — ao voltar online, sobe itens pendentes imediatamente
             useEffect(() => {
                 if (!voltouOnline || !userId || !dadosCarregados) return
-                // Sempre sincroniza ao reconectar — independente da fila de pendentes
-                syncToSupabase('planos', planos as unknown as Record<string, unknown>[], userId, onSyncStatus)
+                // Usa syncDelta (sem DELETE global) para evitar timeout 57014 com muitos planos
+                // Envia todos como "changed" mas sem deletions — mais leve que syncToSupabase completo
+                syncDelta('planos', planos as unknown as Record<string, unknown>[], [], userId, onSyncStatus)
                 syncToSupabase('grades_semanas', gradesSemanas as unknown as Record<string, unknown>[], userId, onSyncStatus)
                 showToast(`Reconectado — sincronizando dados pendentes…`, 'success')
             // eslint-disable-next-line react-hooks/exhaustive-deps
