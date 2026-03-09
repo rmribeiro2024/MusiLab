@@ -547,9 +547,13 @@ export default function ModalRegistroPosAula() {
                                 style={{ color: verRegistros ? '#1e293b' : '#94a3b8', borderBottom: verRegistros ? '2px solid #1e293b' : '2px solid transparent' }}>
                                 📚 Histórico{' '}
                                 {planoParaRegistro.registrosPosAula?.length > 0 && (() => {
-                                    const countFiltrado = filtroRegTurma
-                                        ? (planoParaRegistro.registrosPosAula || []).filter((r: any) => r.turma == filtroRegTurma).length
-                                        : planoParaRegistro.registrosPosAula.length
+                                    const countFiltrado = (planoParaRegistro.registrosPosAula || []).filter((r: any) => {
+                                        if (filtroRegAno      && r.anoLetivo             != filtroRegAno)      return false
+                                        if (filtroRegEscola   && r.escola                != filtroRegEscola)   return false
+                                        if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
+                                        if (filtroRegTurma    && r.turma                 != filtroRegTurma)    return false
+                                        return true
+                                    }).length
                                     return (
                                         <span style={{ background: '#f1f5f9', color: '#94a3b8', fontSize: 11, padding: '1px 6px', borderRadius: 99, marginLeft: 4 }}>
                                             {countFiltrado}
