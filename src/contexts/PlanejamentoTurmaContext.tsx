@@ -91,7 +91,8 @@ function registrosDaTurma(
   registros: RegistroPosAula[],
   turmaId: string
 ): RegistroPosAula[] {
-  return registros.filter(r => String(r.turma) === turmaId)
+  // eslint-disable-next-line eqeqeq
+  return registros.filter(r => r.turma == turmaId)
 }
 
 // ─── PROVIDER ─────────────────────────────────────────────────────────────────
