@@ -211,12 +211,15 @@ function SeletorDiaTurma() {
   const aulasDoDia = useMemo(() => obterTurmasDoDia(dateStr), [obterTurmasDoDia, dateStr])
 
   // Busca nome da turma / escola percorrendo anosLetivos
+  // Usa == (igualdade frouxa) porque segmentoId/turmaId são salvos como numbers pelo ModalGradeSemanal
   function getTurmaInfo(aula: import('../types').AulaGrade) {
     for (const ano of anosLetivos) {
       for (const escola of (ano.escolas ?? [])) {
         for (const seg of (escola.segmentos ?? [])) {
-          if (String(seg.id) !== aula.segmentoId) continue
-          const turma = (seg.turmas ?? []).find((t: Turma) => String(t.id) === aula.turmaId)
+          // eslint-disable-next-line eqeqeq
+          if (seg.id != aula.segmentoId) continue
+          // eslint-disable-next-line eqeqeq
+          const turma = (seg.turmas ?? []).find((t: Turma) => t.id == aula.turmaId)
           if (turma) return {
             turmaNome:   turma.nome,
             escolaNome:  escola.nome,
@@ -261,32 +264,32 @@ function SeletorDiaTurma() {
   const restante = aulasDoDia.length - MAX_VISIBLE
 
   return (
-    <div className="w-48 flex-shrink-0 flex flex-col rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+    <div className="w-48 flex-shrink-0 flex flex-col rounded-3xl overflow-hidden border border-slate-200/80 shadow-md bg-white">
 
       {/* ── Navegação de dia ── */}
-      <div className="flex items-center justify-between px-2.5 pt-2.5 gap-1">
+      <div className="flex items-center justify-between px-3 pt-3 pb-1 gap-1">
         <button
           type="button"
           onClick={() => setCurrentDate(d => stepDay(d, -1))}
-          className="w-6 h-6 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-sm transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-base transition-colors"
         >
           ‹
         </button>
         <div className="flex-1 text-center">
-          <div className="text-[9px] font-bold tracking-widest uppercase text-slate-500">{diaNome}</div>
-          <div className="text-[10px] font-semibold text-slate-600">{diaNum} de {mesAbr}</div>
+          <div className="text-[9px] font-bold tracking-widest uppercase text-slate-400">{diaNome}</div>
+          <div className="text-[10px] font-semibold text-slate-500">{diaNum} de {mesAbr}</div>
         </div>
         <button
           type="button"
           onClick={() => setCurrentDate(d => stepDay(d, 1))}
-          className="w-6 h-6 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-sm transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-base transition-colors"
         >
           ›
         </button>
       </div>
 
       {/* ── Cabeçalho navy ── */}
-      <div className="bg-[#1e3a6e] px-4 py-3 mt-2 relative overflow-hidden">
+      <div className="bg-[#1e3a6e] mx-2 rounded-2xl px-4 py-3 relative overflow-hidden">
         <div className="absolute -top-5 -right-5 w-20 h-20 rounded-full bg-white/10 pointer-events-none" />
         <div className="text-[9px] font-black tracking-[.14em] uppercase text-white/50 relative z-10">{diaLabel}</div>
         <div className="text-4xl font-black text-white leading-none tracking-tight relative z-10">{diaNum}</div>
@@ -300,7 +303,7 @@ function SeletorDiaTurma() {
       </div>
 
       {/* ── Lista de turmas ── */}
-      <div className="flex-1 py-1">
+      <div className="flex-1 py-1.5">
         {aulasDoDia.length === 0 && (
           <p className="text-xs text-slate-400 text-center py-5 px-3">Nenhuma turma neste dia</p>
         )}
@@ -308,8 +311,10 @@ function SeletorDiaTurma() {
           const { turmaNome, escolaNome } = getTurmaInfo(aula)
           const status = getStatus(aula)
           const isSelected =
-            turmaSelecionada?.turmaId    === aula.turmaId &&
-            turmaSelecionada?.segmentoId === aula.segmentoId
+            // eslint-disable-next-line eqeqeq
+            turmaSelecionada?.turmaId    == aula.turmaId &&
+            // eslint-disable-next-line eqeqeq
+            turmaSelecionada?.segmentoId == aula.segmentoId
           const dotColor =
             status === 'realizada' ? 'bg-emerald-500' :
             status === 'planejada' ? 'bg-[#4f6fb5]'   : 'bg-slate-300'
