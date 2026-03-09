@@ -767,15 +767,16 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         const agora = new Date()
         const { dataAula, ...camposRegistro } = novoRegistro
         if (_regEdit) {
-            const atualizado = {
+            const atualizado = carimbарTimestamp({
                 ...planoParaRegistro!,
                 registrosPosAula: planoParaRegistro!.registrosPosAula.map((r: any) =>
                     r.id === _regEdit.id
                         ? { ...r, data: dataAula || r.data, anoLetivo: regAnoSel, escola: regEscolaSel, segmento: regSegmentoSel, turma: regTurmaSel, ...camposRegistro, dataEdicao: agora.toISOString().split('T')[0] }
                         : r
                 )
-            }
+            })
             setPlanos(planos.map((p: any) => p.id === atualizado.id ? atualizado : p))
+            marcarPendente('planos', String(atualizado.id)) // [offlineSync] garante sync mesmo se app fechar antes do delay
             if (planoSelecionado && planoSelecionado.id === atualizado.id) setPlanoSelecionado(atualizado)
             setPlanoParaRegistro(atualizado)
         } else {
@@ -785,8 +786,9 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                 anoLetivo: regAnoSel, escola: regEscolaSel, segmento: regSegmentoSel, turma: regTurmaSel,
                 ...camposRegistro
             }
-            const atualizado = { ...planoParaRegistro!, registrosPosAula: [...(planoParaRegistro!.registrosPosAula || []), registro] }
+            const atualizado = carimbарTimestamp({ ...planoParaRegistro!, registrosPosAula: [...(planoParaRegistro!.registrosPosAula || []), registro] })
             setPlanos(planos.map((p: any) => p.id === atualizado.id ? atualizado : p))
+            marcarPendente('planos', String(atualizado.id)) // [offlineSync] garante sync mesmo se app fechar antes do delay
             if (planoSelecionado && planoSelecionado.id === atualizado.id) setPlanoSelecionado(atualizado)
             setPlanoParaRegistro(atualizado)
         }
@@ -797,8 +799,9 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
 
     const excluirRegistro = useCallback((registroId: string | number) => {
         setModalConfirm({ titulo: 'Excluir registro?', conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => {
-            const atualizado = { ...planoParaRegistro!, registrosPosAula: planoParaRegistro!.registrosPosAula.filter((r: any) => r.id !== registroId) }
+            const atualizado = carimbарTimestamp({ ...planoParaRegistro!, registrosPosAula: planoParaRegistro!.registrosPosAula.filter((r: any) => r.id !== registroId) })
             setPlanos(planos.map((p: any) => p.id === atualizado.id ? atualizado : p))
+            marcarPendente('planos', String(atualizado.id)) // [offlineSync]
             if (planoSelecionado && planoSelecionado.id === atualizado.id) setPlanoSelecionado(atualizado)
             setPlanoParaRegistro(atualizado)
         } })
@@ -876,11 +879,12 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                         planoModificado = true; totalNovos++
                     }
                 })
-                if (planoModificado) return { ...plano, registrosPosAula: [...(plano.registrosPosAula || []), ...novosRegistros] }
+                if (planoModificado) return carimbарTimestamp({ ...plano, registrosPosAula: [...(plano.registrosPosAula || []), ...novosRegistros] })
                 return plano
             })
             if (totalNovos > 0 || totalAtualizados > 0) {
                 setPlanos(planosAtualizados)
+                planosAtualizados.forEach((p: any, i: number) => { if (p !== planos[i]) marcarPendente('planos', String(p.id)) }) // [offlineSync]
                 let msg = '✅ '; if (totalNovos > 0) msg += `${totalNovos} novo(s)`; if (totalNovos > 0 && totalAtualizados > 0) msg += ' + '; if (totalAtualizados > 0) msg += `${totalAtualizados} atualizado(s)`; msg += '!'
                 setModalConfirm({ conteudo: msg, somenteOk: true, labelConfirm: 'OK' })
                 setModalRegistroRapido(false)
