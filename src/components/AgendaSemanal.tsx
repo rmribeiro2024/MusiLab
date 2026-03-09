@@ -530,6 +530,7 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
     setModalRegistro, setPlanoParaRegistro,
     setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel,
   } = useCalendarioContext()
+  const { editarPlano } = usePlanosContext()
   const cfg = aplicacao ? (STATUS_CFG[aplicacao.status] ?? STATUS_CFG.planejada) : null
   const atividades = plano?.atividadesRoteiro ?? []
 
@@ -547,11 +548,20 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
     <div className="w-72 shrink-0 bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col shadow-sm self-start sticky top-4">
       {/* Header */}
       <div className="px-4 py-3.5 border-b border-slate-100 flex items-start justify-between gap-2 bg-slate-50/60">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide truncate">{nomeTurma}</p>
-          <p className="text-sm font-bold text-slate-800 mt-0.5 leading-snug">
-            {plano?.titulo ?? <span className="text-slate-400 font-normal italic text-sm">Sem plano vinculado</span>}
-          </p>
+          {plano ? (
+            <button
+              type="button"
+              onClick={() => { editarPlano(plano); onClose() }}
+              className="text-sm font-bold text-slate-800 mt-0.5 leading-snug text-left hover:text-indigo-600 hover:underline underline-offset-2 transition-colors w-full truncate"
+              title="Abrir plano"
+            >
+              {plano.titulo}
+            </button>
+          ) : (
+            <p className="text-slate-400 font-normal italic text-sm mt-0.5">Sem plano vinculado</p>
+          )}
         </div>
         <button onClick={onClose} className="text-slate-300 hover:text-slate-500 p-1 rounded-lg shrink-0 transition">✕</button>
       </div>
