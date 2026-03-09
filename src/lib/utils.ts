@@ -77,6 +77,18 @@ type OnStatus = (status: SyncStatus, detail?: string) => void
 // Último erro de sync — usado para mostrar detalhe no toast de erro
 export let lastSyncErrorDetail = ''
 
+// Extrai mensagem de erro — lida com PostgrestError (objeto Supabase) e JS Error
+function extractMsg(e: unknown): string {
+    if (!e) return 'erro desconhecido'
+    if (e instanceof Error) return e.message
+    if (typeof e === 'object') {
+        const o = e as Record<string, unknown>
+        const parts = [o['code'], o['message'], o['details'], o['hint']].filter(Boolean)
+        return parts.length ? parts.join(' | ') : JSON.stringify(e)
+    }
+    return String(e)
+}
+
 // ── SYNC ROBUSTO: upsert por item individual com retry ──
 // Cada item precisa ter um campo 'id' único para o upsert funcionar.
 // A tabela no Supabase deve ter coluna unique em (user_id, item_id).
@@ -88,14 +100,10 @@ export async function syncToSupabase(
 ): Promise<boolean> {
     const MAX_TENTATIVAS = 3
     const DELAY_RETRY = 2000
-    const TIMEOUT_MS = 10000 // 10s por requisição — evita hang indefinido
+    const TIMEOUT_POR_LOTE = 20000 // 20s por lote individual — o timer era global antes e expirava somando todos os lotes
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms))
 
     for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
-        // AbortController garante que a requisição não fique pendurada para sempre
-        const controller = new AbortController()
-        const abortTimer = setTimeout(() => controller.abort(), TIMEOUT_MS)
-
         try {
             // navigator.onLine REMOVIDO — pode dar falso positivo em certas redes/configs
             // Se realmente sem internet, o fetch vai falhar naturalmente e cair no catch
@@ -112,36 +120,39 @@ export async function syncToSupabase(
                     }
                 })
 
-                // Upsert em lotes de 50 para evitar timeout
+                // Upsert em lotes de 50 — cada lote tem seu próprio AbortController
+                // (antes era um único timer de 10s para TODOS os lotes, causando abort prematuro)
                 const LOTE = 50
                 for (let i = 0; i < rows.length; i += LOTE) {
                     const lote = rows.slice(i, i + LOTE)
+                    const ctrl = new AbortController()
+                    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_POR_LOTE)
                     const { error } = await supabase
                         .from(tabela)
                         .upsert(lote, { onConflict: 'user_id,item_id' })
-                        .abortSignal(controller.signal)
+                        .abortSignal(ctrl.signal)
+                    clearTimeout(timer)
                     if (error) throw error
                 }
 
+                // DELETE sem AbortSignal — é uma operação simples e o timer global
+                // causava abort logo após os lotes de upsert terminarem
                 const idsAtivos = rows.map(r => r.item_id)
                 const { error: deleteError } = await supabase
                     .from(tabela)
                     .delete()
                     .eq('user_id', userId)
                     .not('item_id', 'in', `(${idsAtivos.join(',')})`)
-                    .abortSignal(controller.signal)
                 if (deleteError) throw deleteError
             } else {
                 // Lista vazia: apagar tudo do usuário nesta tabela
-                await supabase.from(tabela).delete().eq('user_id', userId).abortSignal(controller.signal)
+                await supabase.from(tabela).delete().eq('user_id', userId)
             }
 
-            clearTimeout(abortTimer)
             if (onStatus) onStatus('salvo')
             return true
         } catch(e: unknown) {
-            clearTimeout(abortTimer)
-            const msg = e instanceof Error ? e.message : String(e)
+            const msg = extractMsg(e)
             console.warn(`[MusiLab] Tentativa ${tentativa}/${MAX_TENTATIVAS} falhou para '${tabela}':`, msg)
             if (tentativa < MAX_TENTATIVAS) {
                 await sleep(DELAY_RETRY)
@@ -176,7 +187,7 @@ export async function syncConfiguracoes(
             if (onStatus) onStatus('salvo')
             return true
         } catch(e: unknown) {
-            const msg = e instanceof Error ? e.message : String(e)
+            const msg = extractMsg(e)
             console.warn(`[MusiLab] Tentativa ${tentativa}/${MAX_TENTATIVAS} falhou para 'configuracoes':`, msg)
             if (tentativa < MAX_TENTATIVAS) {
                 await sleep(DELAY_RETRY)
@@ -203,7 +214,7 @@ export async function loadFromSupabase<T = unknown>(
         if (error) throw error
         return (data as { data: T }[]).map(row => row.data)
     } catch(e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e)
+        const msg = extractMsg(e)
         console.error('[MusiLab] Erro ao carregar ' + tabela + ':', msg)
         return null
     }
@@ -240,7 +251,7 @@ export async function loadFromSupabasePaginated<T = unknown>(
             from += pageSize
         }
     } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e)
+        const msg = extractMsg(e)
         console.error('[MusiLab] Erro ao carregar ' + tabela + ' paginado:', msg)
     }
 }
