@@ -165,83 +165,188 @@ function MiniTimelineTurma() {
   )
 }
 
-// ─── SELETOR DE TURMA ─────────────────────────────────────────────────────────
+// ─── SELETOR DE DIA + TURMA (painel lateral vertical) ────────────────────────
 
-function SeletorTurma() {
-  const { selecionarTurma, turmaSelecionada } = usePlanejamentoTurmaContext()
+const DIAS_LABEL: Record<number, string> = { 1:'SEG', 2:'TER', 3:'QUA', 4:'QUI', 5:'SEX' }
+const DIAS_NOME:  Record<number, string> = { 1:'SEGUNDA', 2:'TERÇA', 3:'QUARTA', 4:'QUINTA', 5:'SEXTA' }
+const MESES_ABR  = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
+const MESES_COMP = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
+
+function nearestWeekday(d: Date): Date {
+  const dow = d.getDay()
+  if (dow === 0) { const n = new Date(d); n.setDate(d.getDate() + 1); return n }
+  if (dow === 6) { const n = new Date(d); n.setDate(d.getDate() + 2); return n }
+  return d
+}
+
+function stepDay(d: Date, delta: number): Date {
+  const next = new Date(d)
+  next.setDate(d.getDate() + delta)
+  const dow = next.getDay()
+  if (dow === 0) next.setDate(next.getDate() + (delta > 0 ? 1 : -2))
+  if (dow === 6) next.setDate(next.getDate() + (delta > 0 ? 2 : -1))
+  return next
+}
+
+function SeletorDiaTurma() {
+  const { selecionarTurma, turmaSelecionada, planejamentos } = usePlanejamentoTurmaContext()
   const { anosLetivos } = useAnoLetivoContext()
-  const { setViewMode } = useRepertorioContext()
+  const { obterTurmasDoDia } = useCalendarioContext()
+  const { aplicacoesPorData } = useAplicacoesContext()
 
-  const [anoSel, setAnoSel] = useState(turmaSelecionada?.anoLetivoId ?? '')
-  const [escolaSel, setEscolaSel] = useState(turmaSelecionada?.escolaId ?? '')
-  const [segmentoSel, setSegmentoSel] = useState(turmaSelecionada?.segmentoId ?? '')
+  const [currentDate, setCurrentDate] = useState<Date>(() => nearestWeekday(new Date()))
+  const [maisAberto, setMaisAberto] = useState(false)
 
-  const anoAtual: AnoLetivo | undefined = anosLetivos.find(a => String(a.id) === anoSel)
-  const escolas: Escola[] = anoAtual?.escolas ?? []
-  const escolaAtual: Escola | undefined = escolas.find(e => String(e.id) === escolaSel)
-  const segmentos: Segmento[] = escolaAtual?.segmentos ?? []
-  const segmentoAtual: Segmento | undefined = segmentos.find(s => String(s.id) === segmentoSel)
-  const turmas: Turma[] = segmentoAtual?.turmas ?? []
+  const dateStr = toDateStr(currentDate)
+  const diaDaSemana = currentDate.getDay()
+  const diaLabel  = DIAS_LABEL[diaDaSemana] ?? '?'
+  const diaNome   = DIAS_NOME[diaDaSemana]  ?? '?'
+  const diaNum    = currentDate.getDate()
+  const mesAbr    = MESES_ABR[currentDate.getMonth()]
+  const mesComp   = MESES_COMP[currentDate.getMonth()]
 
-  function handleAno(id: string) { setAnoSel(id); setEscolaSel(''); setSegmentoSel('') }
-  function handleEscola(id: string) { setEscolaSel(id); setSegmentoSel('') }
-  function handleSegmento(id: string) { setSegmentoSel(id) }
-  function handleTurma(t: Turma) {
-    selecionarTurma({ anoLetivoId: anoSel, escolaId: escolaSel, segmentoId: segmentoSel, turmaId: String(t.id) })
+  // Reset "+mais" quando o dia mudar
+  useEffect(() => { setMaisAberto(false) }, [dateStr])
+
+  const aulasDoDia = useMemo(() => obterTurmasDoDia(dateStr), [obterTurmasDoDia, dateStr])
+
+  // Busca nome da turma / escola percorrendo anosLetivos
+  function getTurmaInfo(aula: import('../types').AulaGrade) {
+    for (const ano of anosLetivos) {
+      for (const escola of (ano.escolas ?? [])) {
+        for (const seg of (escola.segmentos ?? [])) {
+          if (String(seg.id) !== aula.segmentoId) continue
+          const turma = (seg.turmas ?? []).find((t: Turma) => String(t.id) === aula.turmaId)
+          if (turma) return {
+            turmaNome:   turma.nome,
+            escolaNome:  escola.nome,
+            anoLetivoId: String(ano.id),
+            escolaId:    String(escola.id),
+          }
+        }
+      }
+    }
+    return {
+      turmaNome: aula.turmaId, escolaNome: '',
+      anoLetivoId: aula.anoLetivoId ?? '',
+      escolaId:    aula.escolaId    ?? '',
+    }
   }
 
-  const selectClass = 'text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 w-full'
+  // Status: verifica aplicações do dia e depois planejamentos
+  function getStatus(aula: import('../types').AulaGrade): 'realizada' | 'planejada' | 'sem-plano' {
+    const aps = aplicacoesPorData[dateStr] ?? []
+    const ap  = aps.find(a => a.turmaId === aula.turmaId && a.segmentoId === aula.segmentoId)
+    if (ap) return ap.status === 'realizada' ? 'realizada' : 'planejada'
+    const temPlano = planejamentos.some(p =>
+      p.turmaId    === aula.turmaId &&
+      p.segmentoId === aula.segmentoId &&
+      p.dataPrevista === dateStr
+    )
+    return temPlano ? 'planejada' : 'sem-plano'
+  }
+
+  function handleSelect(aula: import('../types').AulaGrade) {
+    const info = getTurmaInfo(aula)
+    selecionarTurma({
+      anoLetivoId: info.anoLetivoId,
+      escolaId:    info.escolaId,
+      segmentoId:  aula.segmentoId,
+      turmaId:     aula.turmaId,
+    })
+  }
+
+  const MAX_VISIBLE = 3
+  const visiveisAulas = maisAberto ? aulasDoDia : aulasDoDia.slice(0, MAX_VISIBLE)
+  const restante = aulasDoDia.length - MAX_VISIBLE
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 mb-4">
-      <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Selecionar turma</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <select value={anoSel} onChange={e => handleAno(e.target.value)} className={selectClass}>
-          <option value="">Ano letivo…</option>
-          {anosLetivos.map(a => <option key={a.id} value={String(a.id)}>{a.nome ?? a.ano}</option>)}
-        </select>
-        <select value={escolaSel} onChange={e => handleEscola(e.target.value)} disabled={!anoSel} className={selectClass}>
-          <option value="">Escola…</option>
-          {escolas.map(e => <option key={e.id} value={String(e.id)}>{e.nome}</option>)}
-        </select>
-        <select value={segmentoSel} onChange={e => handleSegmento(e.target.value)} disabled={!escolaSel} className={selectClass}>
-          <option value="">Segmento…</option>
-          {segmentos.map(s => <option key={s.id} value={String(s.id)}>{s.nome}</option>)}
-        </select>
-        <div className="flex flex-wrap gap-1 items-center">
-          {segmentoSel && turmas.length === 0 && <span className="text-xs text-slate-400">Sem turmas</span>}
-          {turmas.map(t => {
-            const isActive = turmaSelecionada?.turmaId === String(t.id)
-            return (
-              <button key={t.id} onClick={() => handleTurma(t)}
-                className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${isActive ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700'}`}>
-                {t.nome}
-              </button>
-            )
-          })}
+    <div className="w-48 flex-shrink-0 flex flex-col rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+
+      {/* ── Navegação de dia ── */}
+      <div className="flex items-center justify-between px-2.5 pt-2.5 gap-1">
+        <button
+          type="button"
+          onClick={() => setCurrentDate(d => stepDay(d, -1))}
+          className="w-6 h-6 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-sm transition-colors"
+        >
+          ‹
+        </button>
+        <div className="flex-1 text-center">
+          <div className="text-[9px] font-bold tracking-widest uppercase text-slate-500">{diaNome}</div>
+          <div className="text-[10px] font-semibold text-slate-600">{diaNum} de {mesAbr}</div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setCurrentDate(d => stepDay(d, 1))}
+          className="w-6 h-6 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-sm transition-colors"
+        >
+          ›
+        </button>
+      </div>
+
+      {/* ── Cabeçalho navy ── */}
+      <div className="bg-[#1e3a6e] px-4 py-3 mt-2 relative overflow-hidden">
+        <div className="absolute -top-5 -right-5 w-20 h-20 rounded-full bg-white/10 pointer-events-none" />
+        <div className="text-[9px] font-black tracking-[.14em] uppercase text-white/50 relative z-10">{diaLabel}</div>
+        <div className="text-4xl font-black text-white leading-none tracking-tight relative z-10">{diaNum}</div>
+        <div className="text-[11px] text-white/45 font-medium mt-0.5 relative z-10">{mesComp}</div>
+        <div className="mt-2.5 inline-flex items-center gap-1 bg-white/10 rounded-full px-2.5 py-0.5 relative z-10">
+          <div className="w-1.5 h-1.5 rounded-full bg-white/80" />
+          <span className="text-[10px] font-bold text-white/75">
+            {aulasDoDia.length} turma{aulasDoDia.length !== 1 ? 's' : ''}
+          </span>
         </div>
       </div>
 
-      {anoSel && escolas.length === 0 && (
-        <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-xs text-amber-700">
-          <span className="mt-0.5">⚠️</span>
-          <span>
-            Nenhuma escola encontrada para este ano letivo.{' '}
-            <button type="button" className="underline font-medium hover:text-amber-900" onClick={() => setViewMode('anoLetivo')}>Configure em Meu Ano →</button>
-          </span>
-        </div>
-      )}
-
-      {turmaSelecionada && (
-        <div className="mt-2 text-xs text-blue-600 font-medium">
-          {[
-            anosLetivos.find(a => String(a.id) === turmaSelecionada.anoLetivoId)?.nome,
-            escolas.find(e => String(e.id) === turmaSelecionada.escolaId)?.nome,
-            segmentos.find(s => String(s.id) === turmaSelecionada.segmentoId)?.nome,
-            turmas.find(t => String(t.id) === turmaSelecionada.turmaId)?.nome,
-          ].filter(Boolean).join(' › ')}
-        </div>
-      )}
+      {/* ── Lista de turmas ── */}
+      <div className="flex-1 py-1">
+        {aulasDoDia.length === 0 && (
+          <p className="text-xs text-slate-400 text-center py-5 px-3">Nenhuma turma neste dia</p>
+        )}
+        {visiveisAulas.map((aula, i) => {
+          const { turmaNome, escolaNome } = getTurmaInfo(aula)
+          const status = getStatus(aula)
+          const isSelected =
+            turmaSelecionada?.turmaId    === aula.turmaId &&
+            turmaSelecionada?.segmentoId === aula.segmentoId
+          const dotColor =
+            status === 'realizada' ? 'bg-emerald-500' :
+            status === 'planejada' ? 'bg-[#4f6fb5]'   : 'bg-slate-300'
+          return (
+            <React.Fragment key={`${aula.id}-${i}`}>
+              {i > 0 && <div className="h-px bg-slate-100 mx-2.5" />}
+              <button
+                type="button"
+                onClick={() => handleSelect(aula)}
+                className={`w-full text-left flex items-center gap-2 px-3 py-2 transition-colors relative ${
+                  isSelected ? 'bg-[#eef3fb]' : 'hover:bg-slate-50'
+                }`}
+              >
+                <span className={`absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r transition-colors ${
+                  isSelected ? 'bg-[#1e3a6e]' : 'bg-transparent'
+                }`} />
+                <div className="flex-1 min-w-0 pl-0.5">
+                  <div className={`text-[12px] font-bold truncate ${isSelected ? 'text-[#1e3a6e]' : 'text-slate-800'}`}>
+                    {turmaNome}
+                  </div>
+                  <div className="text-[10px] text-slate-400 truncate">{escolaNome}</div>
+                </div>
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`} />
+              </button>
+            </React.Fragment>
+          )
+        })}
+        {restante > 0 && (
+          <button
+            type="button"
+            onClick={() => setMaisAberto(v => !v)}
+            className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-slate-400 hover:text-[#1e3a6e] transition-colors"
+          >
+            {maisAberto ? '− menos' : `+${restante} mais`}
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -1356,12 +1461,16 @@ export default function ModuloPlanejamentoTurma() {
   const { turmaSelecionada } = usePlanejamentoTurmaContext()
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-xl font-bold text-slate-800 mb-4">👥 Turmas</h1>
-      <SeletorTurma />
-      {turmaSelecionada && <MiniTimelineTurma />}
-      {!turmaSelecionada && <EstadoVazio />}
-      {turmaSelecionada && <ConteudoTurma />}
+    <div className="flex gap-4 items-start">
+      {/* Painel lateral — seletor de dia + turma */}
+      <SeletorDiaTurma />
+
+      {/* Painel direito — conteúdo de planejamento */}
+      <div className="flex-1 min-w-0 space-y-3">
+        {!turmaSelecionada && <EstadoVazio />}
+        {turmaSelecionada && <MiniTimelineTurma />}
+        {turmaSelecionada && <ConteudoTurma />}
+      </div>
     </div>
   )
 }
