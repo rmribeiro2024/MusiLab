@@ -495,7 +495,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         if (existe) {
             const versaoAnterior = { ...existe, _versaoSalvaEm: new Date().toISOString() }
             const historicoAtual = existe._historicoVersoes || []
-            const novoHistorico = [versaoAnterior, ...historicoAtual].slice(0, 3)
+            const novoHistorico = [versaoAnterior, ...historicoAtual].slice(0, 2)
             setPlanos(planos.map((p: any) => p.id === planoParaSalvar.id ? { ...planoParaSalvar, _historicoVersoes: novoHistorico } : p))
             if (!userId) marcarPendente('planos', String(planoParaSalvar.id)) // [offlineSync]
         } else {

@@ -154,6 +154,9 @@ export default function TelaPrincipal() {
     // ── Modal Aplicar em Turmas ──
     const [planoParaAplicar, setPlanoParaAplicar] = useState<Plano | null>(null)
 
+    // ── Dropdown Restaurar versão ──
+    const [restaurarOpen, setRestaurarOpen] = useState(false)
+
     // ── ACCORDION do formulário de plano ──
     const [secoesForm, setSecoesForm] = useState<Set<string>>(
         () => new Set(['detalhes', 'classificacao', 'objetivos', 'roteiro', 'recursos'])
@@ -1040,7 +1043,7 @@ export default function TelaPrincipal() {
                                 )}
                             </div>
                             {/* Links e Imagens */}
-                            <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🔗 Links e Imagens</label><div className="flex gap-2 mb-3 flex-col md:flex-row"><input type="text" placeholder="URL..." value={novoRecursoUrl} onChange={e => setNovoRecursoUrl(e.target.value)} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /><select value={novoRecursoTipo} onChange={e => setNovoRecursoTipo(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white"><option value="link">Link</option><option value="imagem">Imagem</option></select><button type="button" onClick={adicionarRecurso} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-4 py-2 rounded-xl text-sm font-semibold transition-colors">Add</button></div><div className="space-y-2">{(planoEditando.recursos || []).map((rec, idx) => (<div key={idx} className="flex justify-between items-center bg-white p-2 rounded-xl border border-slate-200"><div className="flex items-center gap-2 overflow-hidden"><span>{rec.tipo === 'imagem' ? '🖼️' : '🔗'}</span><span className="text-sm truncate max-w-xs text-slate-700">{rec.url}</span></div><button type="button" onClick={() => removerRecurso(idx)} className="text-red-400 hover:text-red-600 font-bold px-2">✕</button></div>))}</div></div>
+                            <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🔗 Links e Imagens</label><div className="flex gap-2 mb-3 flex-col md:flex-row"><input type="text" placeholder="URL..." value={novoRecursoUrl} onChange={e => setNovoRecursoUrl(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarRecurso(); } }} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /><select value={novoRecursoTipo} onChange={e => setNovoRecursoTipo(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white"><option value="link">Link</option><option value="imagem">Imagem</option></select><button type="button" onClick={adicionarRecurso} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-4 py-2 rounded-xl text-sm font-semibold transition-colors">Add</button></div><div className="space-y-2">{(planoEditando.recursos || []).map((rec, idx) => (<div key={idx} className="flex justify-between items-center bg-white p-2 rounded-xl border border-slate-200"><div className="flex items-center gap-2 overflow-hidden"><span>{rec.tipo === 'imagem' ? '🖼️' : '🔗'}</span><span className="text-sm truncate max-w-xs text-slate-700">{rec.url}</span></div><button type="button" onClick={() => removerRecurso(idx)} className="text-red-400 hover:text-red-600 font-bold px-2">✕</button></div>))}</div></div>
                             {/* Avaliação / Observações */}
                             <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={3} /></div>
                         </div>
@@ -1049,19 +1052,28 @@ export default function TelaPrincipal() {
 
                 {/* ─── FOOTER STICKY ─── */}
                 <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white border-t border-slate-100 sticky bottom-0">
-                    {planoEditando._historicoVersoes?.length ? (
-                        <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
-                            <span className="text-xs text-slate-400">↩ Restaurar:</span>
-                            {planoEditando._historicoVersoes.map((v, i) => (
-                                <button key={i} type="button" onClick={() => restaurarVersao(planoEditando, v)}
-                                    className="text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-lg transition font-medium">
-                                    {new Date(v._versaoSalvaEm).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}
-                                </button>
-                            ))}
-                        </div>
-                    ) : null}
-                    <div className="flex gap-3">
+                    <div className="flex gap-2">
                         <button type="button" onClick={handleFechar} className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm active:scale-95">Cancelar</button>
+                        {planoEditando._historicoVersoes?.length ? (
+                            <div className="relative">
+                                <button type="button" onClick={() => setRestaurarOpen(o => !o)}
+                                    className="h-full px-3 py-2.5 rounded-xl font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors text-sm active:scale-95 whitespace-nowrap">
+                                    ↩ Restaurar
+                                </button>
+                                {restaurarOpen && (
+                                    <div className="absolute bottom-full left-0 mb-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px]"
+                                         onClick={e => e.stopPropagation()}>
+                                        {planoEditando._historicoVersoes.map((v, i) => (
+                                            <button key={i} type="button"
+                                                onClick={() => { restaurarVersao(planoEditando, v); setRestaurarOpen(false); }}
+                                                className="w-full text-left px-4 py-2.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50 transition border-b border-slate-100 last:border-0">
+                                                {new Date(v._versaoSalvaEm).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : null}
                         <button type="button" onClick={() => salvarPlano()} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-sm text-sm active:scale-95">💾 Salvar Plano</button>
                     </div>
                 </div>
