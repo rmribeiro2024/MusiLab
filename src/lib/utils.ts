@@ -121,12 +121,13 @@ export async function syncToSupabase(
                 }
 
                 const idsAtivos = rows.map(r => r.item_id)
-                await supabase
+                const { error: deleteError } = await supabase
                     .from(tabela)
                     .delete()
                     .eq('user_id', userId)
                     .not('item_id', 'in', `(${idsAtivos.join(',')})`)
                     .abortSignal(controller.signal)
+                if (deleteError) throw deleteError
             } else {
                 // Lista vazia: apagar tudo do usuário nesta tabela
                 await supabase.from(tabela).delete().eq('user_id', userId).abortSignal(controller.signal)
@@ -156,20 +157,33 @@ export async function syncConfiguracoes(
     userId: string,
     onStatus?: OnStatus
 ): Promise<boolean> {
-    try {
-        if (!navigator.onLine) throw new Error('Sem conexão.')
-        const { error } = await supabase
-            .from('configuracoes')
-            .upsert({ user_id: userId, data: cfg }, { onConflict: 'user_id' })
-        if (error) throw error
-        if (onStatus) onStatus('salvo')
-        return true
-    } catch(e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e)
-        console.warn('[MusiLab] Erro sync configuracoes:', msg)
-        if (onStatus) onStatus('erro')
-        return false
+    // Mesma estratégia de retry do syncToSupabase — evita mostrar erro por falha transitória
+    const MAX_TENTATIVAS = 3
+    const DELAY_RETRY = 2000
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms))
+
+    for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+        try {
+            // navigator.onLine REMOVIDO — pode dar falso positivo em certas redes/configs
+            const { error } = await supabase
+                .from('configuracoes')
+                .upsert({ user_id: userId, data: cfg }, { onConflict: 'user_id' })
+            if (error) throw error
+            if (onStatus) onStatus('salvo')
+            return true
+        } catch(e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e)
+            console.warn(`[MusiLab] Tentativa ${tentativa}/${MAX_TENTATIVAS} falhou para 'configuracoes':`, msg)
+            if (tentativa < MAX_TENTATIVAS) {
+                await sleep(DELAY_RETRY)
+            } else {
+                console.error('[MusiLab] Falha definitiva ao sincronizar configuracoes.')
+                if (onStatus) onStatus('erro')
+                return false
+            }
+        }
     }
+    return false
 }
 
 export async function loadFromSupabase<T = unknown>(
