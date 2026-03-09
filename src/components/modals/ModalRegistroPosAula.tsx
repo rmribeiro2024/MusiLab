@@ -546,11 +546,16 @@ export default function ModalRegistroPosAula() {
                             <button onClick={() => setVerRegistros(true)} className="flex-1 py-3 text-sm font-bold transition-colors"
                                 style={{ color: verRegistros ? '#1e293b' : '#94a3b8', borderBottom: verRegistros ? '2px solid #1e293b' : '2px solid transparent' }}>
                                 📚 Histórico{' '}
-                                {planoParaRegistro.registrosPosAula?.length > 0 && (
-                                    <span style={{ background: '#f1f5f9', color: '#94a3b8', fontSize: 11, padding: '1px 6px', borderRadius: 99, marginLeft: 4 }}>
-                                        {planoParaRegistro.registrosPosAula.length}
-                                    </span>
-                                )}
+                                {planoParaRegistro.registrosPosAula?.length > 0 && (() => {
+                                    const countFiltrado = filtroRegTurma
+                                        ? (planoParaRegistro.registrosPosAula || []).filter((r: any) => r.turma == filtroRegTurma).length
+                                        : planoParaRegistro.registrosPosAula.length
+                                    return (
+                                        <span style={{ background: '#f1f5f9', color: '#94a3b8', fontSize: 11, padding: '1px 6px', borderRadius: 99, marginLeft: 4 }}>
+                                            {countFiltrado}
+                                        </span>
+                                    )
+                                })()}
                             </button>
                         </div>
 
@@ -758,8 +763,8 @@ export default function ModalRegistroPosAula() {
                                                             {t.nome}
                                                         </button>
                                                     ))}
-                                                    <button type="button" onClick={() => setFiltroRegTurma('')}
-                                                        style={{ padding: '5px 11px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#fff', color: '#94a3b8', border: '1px dashed #e2e8f0' }}>
+                                                    <button type="button" onClick={() => { setFiltroRegTurma(''); setExpandedRegs(new Set()) }}
+                                                        style={{ padding: '5px 11px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .12s', background: !filtroRegTurma ? '#475569' : '#fff', color: !filtroRegTurma ? '#fff' : '#94a3b8', border: !filtroRegTurma ? '1px solid #475569' : '1px dashed #e2e8f0' }}>
                                                         Todas
                                                     </button>
                                                 </div>
