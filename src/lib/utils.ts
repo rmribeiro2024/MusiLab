@@ -72,7 +72,10 @@ export function gerarIdSeguro(): string {
     })
 }
 
-type OnStatus = (status: SyncStatus) => void
+type OnStatus = (status: SyncStatus, detail?: string) => void
+
+// Último erro de sync — usado para mostrar detalhe no toast de erro
+export let lastSyncErrorDetail = ''
 
 // ── SYNC ROBUSTO: upsert por item individual com retry ──
 // Cada item precisa ter um campo 'id' único para o upsert funcionar.
@@ -144,7 +147,8 @@ export async function syncToSupabase(
                 await sleep(DELAY_RETRY)
             } else {
                 console.error(`[MusiLab] Falha definitiva ao sincronizar '${tabela}'. Dados salvos localmente.`)
-                if (onStatus) onStatus('erro')
+                lastSyncErrorDetail = `${tabela}: ${msg}`
+                if (onStatus) onStatus('erro', `${tabela}: ${msg}`)
                 return false
             }
         }
@@ -178,7 +182,8 @@ export async function syncConfiguracoes(
                 await sleep(DELAY_RETRY)
             } else {
                 console.error('[MusiLab] Falha definitiva ao sincronizar configuracoes.')
-                if (onStatus) onStatus('erro')
+                lastSyncErrorDetail = `configuracoes: ${msg}`
+                if (onStatus) onStatus('erro', `configuracoes: ${msg}`)
                 return false
             }
         }

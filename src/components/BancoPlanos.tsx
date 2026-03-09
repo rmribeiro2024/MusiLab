@@ -621,10 +621,11 @@ export default function BancoPlanos({ session }) {
             };
 
             // Callback para receber o resultado real do sync da nuvem
-            const onSyncStatus = (status) => {
+            const onSyncStatus = (status, detail?: string) => {
                 setStatusSalvamento(status);
                 if (status === 'erro') {
-                    showToast('❌ Falha ao salvar na nuvem. Clique em "⚠ Erro nuvem" no topo para baixar backup.', 'error')
+                    const hint = detail ? ` [${detail.slice(0, 80)}]` : ''
+                    showToast(`❌ Falha ao salvar na nuvem.${hint}`, 'error')
                 }
                 if (status === 'salvo') {
                     if (timeoutSalvamento.current) clearTimeout(timeoutSalvamento.current);
