@@ -529,6 +529,7 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
   const {
     setModalRegistro, setPlanoParaRegistro,
     setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel,
+    setVerRegistros, setRegistroEditando, setNovoRegistro,
   } = useCalendarioContext()
   const { editarPlano } = usePlanosContext()
   const cfg = aplicacao ? (STATUS_CFG[aplicacao.status] ?? STATUS_CFG.planejada) : null
@@ -541,6 +542,9 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
     setRegEscolaSel(slot.aulaGrade.escolaId ?? '')
     setRegSegmentoSel(slot.aulaGrade.segmentoId)
     setRegTurmaSel(slot.aulaGrade.turmaId)
+    setVerRegistros(false)       // sempre abre em "Novo registro"
+    setRegistroEditando(null)
+    setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '' })
     setModalRegistro(true)
   }
 
