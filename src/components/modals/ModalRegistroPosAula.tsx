@@ -142,7 +142,7 @@ function RegistroChip({ icon, label, text }: { icon: string, label: string, text
             <span style={{ fontSize: 13, flexShrink: 0, marginTop: 1 }}>{icon}</span>
             <div>
                 <span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', display: 'block', marginBottom: 2 }}>{label}</span>
-                <span style={{ fontSize: 12, color: '#334155', lineHeight: 1.4 }}>{text}</span>
+                <span style={{ fontSize: 12, color: '#334155', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>{text}</span>
             </div>
         </div>
     )

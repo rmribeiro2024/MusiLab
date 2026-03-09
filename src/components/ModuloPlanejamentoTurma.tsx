@@ -375,7 +375,7 @@ function InfoRow({ icon, label, valor }: { icon: string; label: string; valor: s
     <div className="text-xs rounded-lg px-3 py-2 bg-slate-50 text-slate-600">
       <span className="mr-1">{icon}</span>
       <span className="font-medium">{label}:</span>{' '}
-      <span dangerouslySetInnerHTML={{ __html: valor }} />
+      <span style={{ whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: valor }} />
     </div>
   )
 }
