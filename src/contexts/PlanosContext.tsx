@@ -271,6 +271,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         regSegmentoSel, setRegSegmentoSel,
         regTurmaSel, setRegTurmaSel,
         filtroRegAno: _filtroRegAno, setFiltroRegAno,
+        setFiltroRegData,
         modalRegistroRapido: _modalRR, setModalRegistroRapido,
         rrData, rrAnoSel, rrEscolaSel, rrPlanosSegmento, rrTextos,
         setRrTextos, setRrPlanosSegmento,
@@ -755,10 +756,11 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '' })
         setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('')
         setFiltroRegAno('')
+        setFiltroRegData('')
         setRegistroEditando(null)
         setVerRegistros(false)
         setModalRegistro(true)
-    }, [setPlanoParaRegistro, setNovoRegistro, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel, setFiltroRegAno, setRegistroEditando, setVerRegistros, setModalRegistro])
+    }, [setPlanoParaRegistro, setNovoRegistro, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel, setFiltroRegAno, setFiltroRegData, setRegistroEditando, setVerRegistros, setModalRegistro])
 
     const salvarRegistro = useCallback(() => {
         if (!novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.naoFuncionou && !novoRegistro.proximaAula && !novoRegistro.comportamento) {

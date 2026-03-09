@@ -530,7 +530,7 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
     setModalRegistro, setPlanoParaRegistro,
     setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel,
     setVerRegistros, setRegistroEditando, setNovoRegistro,
-    setFiltroRegAno, setFiltroRegEscola, setFiltroRegSegmento, setFiltroRegTurma,
+    setFiltroRegAno, setFiltroRegEscola, setFiltroRegSegmento, setFiltroRegTurma, setFiltroRegData,
   } = useCalendarioContext()
   const { editarPlano } = usePlanosContext()
   const cfg = aplicacao ? (STATUS_CFG[aplicacao.status] ?? STATUS_CFG.planejada) : null
@@ -546,11 +546,14 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
     const realizada = aplicacao?.status === 'realizada'
     setVerRegistros(realizada)
     if (realizada) {
-      // pré-seleciona filtros do Histórico para a turma em questão
+      // Filtra por dia (todas as turmas do dia), com a turma clicada pré-selecionada
       setFiltroRegAno(slot.aulaGrade.anoLetivoId ?? '')
       setFiltroRegEscola(slot.aulaGrade.escolaId ?? '')
       setFiltroRegSegmento(slot.aulaGrade.segmentoId)
       setFiltroRegTurma(slot.aulaGrade.turmaId)
+      setFiltroRegData(dataStr) // filtra por este dia específico
+    } else {
+      setFiltroRegData('')
     }
     setRegistroEditando(null)
     setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '' })

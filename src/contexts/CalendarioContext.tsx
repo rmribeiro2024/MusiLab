@@ -79,6 +79,8 @@ export interface CalendarioContextValue {
   setFiltroRegSegmento: React.Dispatch<React.SetStateAction<string>>
   filtroRegTurma: string
   setFiltroRegTurma: React.Dispatch<React.SetStateAction<string>>
+  filtroRegData: string
+  setFiltroRegData: React.Dispatch<React.SetStateAction<string>>
   buscaRegistros: string
   setBuscaRegistros: React.Dispatch<React.SetStateAction<string>>
   ytPreviewId: string | null
@@ -188,6 +190,7 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
   const [filtroRegEscola, setFiltroRegEscola] = useState('')
   const [filtroRegSegmento, setFiltroRegSegmento] = useState('')
   const [filtroRegTurma, setFiltroRegTurma] = useState('')
+  const [filtroRegData, setFiltroRegData] = useState('')
   const [buscaRegistros, setBuscaRegistros] = useState('')
   const [ytPreviewId, setYtPreviewId] = useState<string | null>(null)
 
@@ -339,6 +342,7 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
     filtroRegEscola, setFiltroRegEscola,
     filtroRegSegmento, setFiltroRegSegmento,
     filtroRegTurma, setFiltroRegTurma,
+    filtroRegData, setFiltroRegData,
     buscaRegistros, setBuscaRegistros,
     ytPreviewId, setYtPreviewId,
     novaGradeSemanal,

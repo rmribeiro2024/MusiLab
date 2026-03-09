@@ -324,6 +324,7 @@ export default function ModalRegistroPosAula() {
         filtroRegEscola, setFiltroRegEscola,
         filtroRegSegmento, setFiltroRegSegmento,
         filtroRegTurma, setFiltroRegTurma,
+        filtroRegData,
         buscaRegistros, setBuscaRegistros,
         obterTurmasDoDia,
     } = useCalendarioContext()
@@ -341,7 +342,7 @@ export default function ModalRegistroPosAula() {
             const seg = (esc.segmentos ?? []).find((s: any) => s.id == segmentoId)
             if (!seg) continue
             const tur = (seg.turmas ?? []).find((t: any) => t.id == turmaId)
-            if (tur) return `${seg.nome} · ${tur.nome}`
+            if (tur) return `${esc.nome} · ${seg.nome} · ${tur.nome}`
         }
         return ''
     }
@@ -372,16 +373,21 @@ export default function ModalRegistroPosAula() {
     const [copiandoRegId, setCopiandoRegId] = React.useState<any>(null)
     const [turmasCopiar, setTurmasCopiar] = React.useState<Set<string>>(new Set())
 
-    // Expande automaticamente o registro mais recente ao abrir no Histórico com turma pré-filtrada
+    // Expande automaticamente o registro mais recente da turma clicada ao abrir no Histórico
     React.useEffect(() => {
-        if (!verRegistros || !filtroRegTurma || !planoParaRegistro) return
-        const regsForTurma = (planoParaRegistro.registrosPosAula || [])
-            .filter((r: any) => r.turma == filtroRegTurma)
-            .sort((a: any, b: any) => (b.data || '').localeCompare(a.data || ''))
-        if (regsForTurma.length > 0) {
-            setExpandedRegs(new Set([regsForTurma[0].id ?? 0]))
+        if (!verRegistros || !planoParaRegistro) return
+        const regs = (planoParaRegistro.registrosPosAula || [])
+        // Se filtro por dia: expande o registro da turma específica neste dia
+        // Se só filtro por turma: expande o mais recente daquela turma
+        const candidatos = regs.filter((r: any) => {
+            if (filtroRegData  && r.data  != filtroRegData)  return false
+            if (filtroRegTurma && r.turma != filtroRegTurma) return false
+            return true
+        }).sort((a: any, b: any) => (b.data || '').localeCompare(a.data || ''))
+        if (candidatos.length > 0) {
+            setExpandedRegs(new Set([candidatos[0].id ?? 0]))
         }
-    }, [verRegistros, filtroRegTurma]) // eslint-disable-line
+    }, [verRegistros, filtroRegTurma, filtroRegData]) // eslint-disable-line
 
     // Centraliza ao abrir
     React.useEffect(() => {
@@ -548,6 +554,7 @@ export default function ModalRegistroPosAula() {
                                 📚 Histórico{' '}
                                 {planoParaRegistro.registrosPosAula?.length > 0 && (() => {
                                     const countFiltrado = (planoParaRegistro.registrosPosAula || []).filter((r: any) => {
+                                        if (filtroRegData     && r.data                  != filtroRegData)     return false
                                         if (filtroRegAno      && r.anoLetivo             != filtroRegAno)      return false
                                         if (filtroRegEscola   && r.escola                != filtroRegEscola)   return false
                                         if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
@@ -793,6 +800,7 @@ export default function ModalRegistroPosAula() {
                                     {/* Lista de registros — cards colapsáveis */}
                                     {(() => {
                                         const regs = (planoParaRegistro.registrosPosAula || []).filter(r => {
+                                            if (filtroRegData     && r.data      != filtroRegData) return false
                                             if (filtroRegAno      && r.anoLetivo != filtroRegAno) return false
                                             if (filtroRegEscola   && r.escola    != filtroRegEscola) return false
                                             if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
