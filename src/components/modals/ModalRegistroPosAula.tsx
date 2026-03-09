@@ -554,11 +554,14 @@ export default function ModalRegistroPosAula() {
                                 📚 Histórico{' '}
                                 {planoParaRegistro.registrosPosAula?.length > 0 && (() => {
                                     const countFiltrado = (planoParaRegistro.registrosPosAula || []).filter((r: any) => {
-                                        if (filtroRegData     && r.data                  != filtroRegData)     return false
-                                        if (filtroRegAno      && r.anoLetivo             != filtroRegAno)      return false
-                                        if (filtroRegEscola   && r.escola                != filtroRegEscola)   return false
-                                        if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
-                                        if (filtroRegTurma    && r.turma                 != filtroRegTurma)    return false
+                                        if (filtroRegData) {
+                                            if (r.data != filtroRegData) return false
+                                        } else {
+                                            if (filtroRegAno      && r.anoLetivo             != filtroRegAno)      return false
+                                            if (filtroRegEscola   && r.escola                != filtroRegEscola)   return false
+                                            if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
+                                        }
+                                        if (filtroRegTurma && r.turma != filtroRegTurma) return false
                                         return true
                                     }).length
                                     return (
@@ -754,8 +757,48 @@ export default function ModalRegistroPosAula() {
                                    HISTÓRICO — Layout Opção A
                                    ════════════════════════════════ */
                                 <>
-                                    {/* Filtro pré-selecionado: ano + escola fixos, pills de turma */}
+                                    {/* Filtro de turma — modo dia ou modo escola */}
                                     {(() => {
+                                        const pillStyle = (ativo: boolean) => ({
+                                            padding: '5px 11px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .12s',
+                                            background: ativo ? '#475569' : '#fff',
+                                            color: ativo ? '#fff' : '#64748b',
+                                            border: ativo ? '1px solid #475569' : '1px solid #e2e8f0'
+                                        })
+                                        const btnTodas = (
+                                            <button type="button" onClick={() => { setFiltroRegTurma(''); setExpandedRegs(new Set()) }}
+                                                style={{ ...pillStyle(!filtroRegTurma), color: !filtroRegTurma ? '#fff' : '#94a3b8', border: !filtroRegTurma ? '1px solid #475569' : '1px dashed #e2e8f0' }}>
+                                                Todas
+                                            </button>
+                                        )
+
+                                        if (filtroRegData) {
+                                            // Modo dia: pills de TODAS as turmas agendadas naquele dia (qualquer escola)
+                                            const turmasDoDia = obterTurmasDoDia(filtroRegData)
+                                            const dataFmt = new Date(filtroRegData + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })
+                                            return (
+                                                <div style={{ background: '#f1f5f9', borderRadius: 10, padding: '10px 12px' }}>
+                                                    <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 6 }}>
+                                                        Turmas de {dataFmt}
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                                        {turmasDoDia.map(a => {
+                                                            const label = resolverTurmaLabel(a.anoLetivoId, a.escolaId, a.segmentoId, a.turmaId) || `Turma ${a.turmaId}`
+                                                            return (
+                                                                <button key={`${a.escolaId}-${a.segmentoId}-${a.turmaId}`} type="button"
+                                                                    onClick={() => setFiltroRegTurma(filtroRegTurma == a.turmaId ? '' : a.turmaId)}
+                                                                    style={pillStyle(filtroRegTurma == a.turmaId)}>
+                                                                    {label}
+                                                                </button>
+                                                            )
+                                                        })}
+                                                        {btnTodas}
+                                                    </div>
+                                                </div>
+                                            )
+                                        }
+
+                                        // Modo escola: hierarquia ano → escola → segmento → turmas
                                         const ano = anosLetivos.find(a => a.id == filtroRegAno)
                                         const esc = ano?.escolas.find(e => e.id == filtroRegEscola)
                                         const seg = esc?.segmentos.find(s => s.id == filtroRegSegmento)
@@ -770,14 +813,11 @@ export default function ModalRegistroPosAula() {
                                                     {seg?.turmas.map(t => (
                                                         <button key={t.id} type="button"
                                                             onClick={() => setFiltroRegTurma(filtroRegTurma == t.id ? '' : t.id)}
-                                                            style={{ padding: '5px 11px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .12s', background: filtroRegTurma == t.id ? '#475569' : '#fff', color: filtroRegTurma == t.id ? '#fff' : '#64748b', border: filtroRegTurma == t.id ? '1px solid #475569' : '1px solid #e2e8f0' }}>
+                                                            style={pillStyle(filtroRegTurma == t.id)}>
                                                             {t.nome}
                                                         </button>
                                                     ))}
-                                                    <button type="button" onClick={() => { setFiltroRegTurma(''); setExpandedRegs(new Set()) }}
-                                                        style={{ padding: '5px 11px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .12s', background: !filtroRegTurma ? '#475569' : '#fff', color: !filtroRegTurma ? '#fff' : '#94a3b8', border: !filtroRegTurma ? '1px solid #475569' : '1px dashed #e2e8f0' }}>
-                                                        Todas
-                                                    </button>
+                                                    {btnTodas}
                                                 </div>
                                             </div>
                                         )
@@ -800,11 +840,14 @@ export default function ModalRegistroPosAula() {
                                     {/* Lista de registros — cards colapsáveis */}
                                     {(() => {
                                         const regs = (planoParaRegistro.registrosPosAula || []).filter(r => {
-                                            if (filtroRegData     && r.data      != filtroRegData) return false
-                                            if (filtroRegAno      && r.anoLetivo != filtroRegAno) return false
-                                            if (filtroRegEscola   && r.escola    != filtroRegEscola) return false
-                                            if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
-                                            if (filtroRegTurma    && r.turma     != filtroRegTurma) return false
+                                            if (filtroRegData) {
+                                                if (r.data != filtroRegData) return false
+                                            } else {
+                                                if (filtroRegAno      && r.anoLetivo != filtroRegAno) return false
+                                                if (filtroRegEscola   && r.escola    != filtroRegEscola) return false
+                                                if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
+                                            }
+                                            if (filtroRegTurma && r.turma != filtroRegTurma) return false
                                             if (buscaRegistros.trim()) {
                                                 const q = buscaRegistros.toLowerCase()
                                                 const campos = [r.resumoAula, r.funcionouBem, r.naoFuncionou, r.poderiaMelhorar, r.proximaAula, r.comportamento, r.anotacoesGerais]

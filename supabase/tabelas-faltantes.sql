@@ -60,6 +60,25 @@ CREATE POLICY "planejamento_anual: inserção própria" ON public.planejamento_a
 CREATE POLICY "planejamento_anual: update próprio"   ON public.planejamento_anual FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "planejamento_anual: delete próprio"   ON public.planejamento_anual FOR DELETE USING (auth.uid() = user_id);
 
+-- ── grades_semanas (PGRST002 — tabela faltando) ────────────────
+CREATE TABLE IF NOT EXISTS public.grades_semanas (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  item_id     text NOT NULL,
+  data        jsonb NOT NULL,
+  created_at  timestamptz DEFAULT now(),
+  UNIQUE(user_id, item_id)
+);
+ALTER TABLE public.grades_semanas ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "grades_semanas: leitura própria"  ON public.grades_semanas;
+DROP POLICY IF EXISTS "grades_semanas: inserção própria" ON public.grades_semanas;
+DROP POLICY IF EXISTS "grades_semanas: update próprio"   ON public.grades_semanas;
+DROP POLICY IF EXISTS "grades_semanas: delete próprio"   ON public.grades_semanas;
+CREATE POLICY "grades_semanas: leitura própria"  ON public.grades_semanas FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "grades_semanas: inserção própria" ON public.grades_semanas FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "grades_semanas: update próprio"   ON public.grades_semanas FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "grades_semanas: delete próprio"   ON public.grades_semanas FOR DELETE USING (auth.uid() = user_id);
+
 -- ══════════════════════════════════════════════════════════════
 -- Verificação: todas as tabelas devem aparecer com rowsecurity = true
 -- SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public';

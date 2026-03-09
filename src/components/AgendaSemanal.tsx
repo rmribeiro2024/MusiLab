@@ -546,13 +546,17 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
     const realizada = aplicacao?.status === 'realizada'
     setVerRegistros(realizada)
     if (realizada) {
-      // Filtra por dia (todas as turmas do dia), com a turma clicada pré-selecionada
-      setFiltroRegAno(slot.aulaGrade.anoLetivoId ?? '')
-      setFiltroRegEscola(slot.aulaGrade.escolaId ?? '')
-      setFiltroRegSegmento(slot.aulaGrade.segmentoId)
-      setFiltroRegTurma(slot.aulaGrade.turmaId)
-      setFiltroRegData(dataStr) // filtra por este dia específico
+      // Filtra por dia — mostra TODAS as turmas/escolas daquele dia
+      setFiltroRegAno('')
+      setFiltroRegEscola('')
+      setFiltroRegSegmento('')
+      setFiltroRegTurma(slot.aulaGrade.turmaId) // apenas para auto-expandir
+      setFiltroRegData(dataStr)
     } else {
+      setFiltroRegAno('')
+      setFiltroRegEscola('')
+      setFiltroRegSegmento('')
+      setFiltroRegTurma('')
       setFiltroRegData('')
     }
     setRegistroEditando(null)
