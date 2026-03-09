@@ -372,6 +372,17 @@ export default function ModalRegistroPosAula() {
     const [copiandoRegId, setCopiandoRegId] = React.useState<any>(null)
     const [turmasCopiar, setTurmasCopiar] = React.useState<Set<string>>(new Set())
 
+    // Expande automaticamente o registro mais recente ao abrir no Histórico com turma pré-filtrada
+    React.useEffect(() => {
+        if (!verRegistros || !filtroRegTurma || !planoParaRegistro) return
+        const regsForTurma = (planoParaRegistro.registrosPosAula || [])
+            .filter((r: any) => r.turma == filtroRegTurma)
+            .sort((a: any, b: any) => (b.data || '').localeCompare(a.data || ''))
+        if (regsForTurma.length > 0) {
+            setExpandedRegs(new Set([regsForTurma[0].id ?? 0]))
+        }
+    }, [verRegistros, filtroRegTurma]) // eslint-disable-line
+
     // Centraliza ao abrir
     React.useEffect(() => {
         if (modalRegistro && pos === null) {
