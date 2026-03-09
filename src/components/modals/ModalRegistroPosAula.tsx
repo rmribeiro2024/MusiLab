@@ -311,7 +311,7 @@ function ResultadoAulaSelector({ value, onChange, firstRef }: ResultadoAulaSelec
 export default function ModalRegistroPosAula() {
     const {
         modalRegistro, setModalRegistro,
-        planoParaRegistro,
+        planoParaRegistro, setPlanoParaRegistro,
         verRegistros, setVerRegistros,
         registroEditando, setRegistroEditando,
         novoRegistro, setNovoRegistro,
@@ -324,11 +324,41 @@ export default function ModalRegistroPosAula() {
         filtroRegSegmento, setFiltroRegSegmento,
         filtroRegTurma, setFiltroRegTurma,
         buscaRegistros, setBuscaRegistros,
+        obterTurmasDoDia,
     } = useCalendarioContext()
     const { anosLetivos } = useAnoLetivoContext()
-    const { planos, salvarRegistro, editarRegistro, excluirRegistro } = usePlanosContext()
+    const { planos, setPlanos, salvarRegistro, editarRegistro, excluirRegistro } = usePlanosContext()
     const { aplicacoes, atualizarStatusAplicacao } = useAplicacoesContext()
     const setRegSerieSel: ((v: string) => void) | undefined = undefined
+
+    // ── Copiar registro para outras turmas ──
+    function resolverTurmaLabel(anoLetivoId: unknown, escolaId: unknown, segmentoId: unknown, turmaId: unknown): string {
+        for (const a of anosLetivos) {
+            if (a.id != anoLetivoId) continue
+            const esc = (a.escolas ?? []).find((e: any) => e.id == escolaId)
+            if (!esc) continue
+            const seg = (esc.segmentos ?? []).find((s: any) => s.id == segmentoId)
+            if (!seg) continue
+            const tur = (seg.turmas ?? []).find((t: any) => t.id == turmaId)
+            if (tur) return `${seg.nome} · ${tur.nome}`
+        }
+        return ''
+    }
+
+    function confirmarCopia(reg: any) {
+        if (!planoParaRegistro || turmasCopiar.size === 0) { setCopiandoRegId(null); return }
+        const novos = [...turmasCopiar].map((chave, idx) => {
+            const [anoId, escId, segId, turId] = chave.split('|')
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { dataEdicao: _de, ...camposReg } = reg
+            return { ...camposReg, id: Date.now() + idx + 1, anoLetivo: anoId, escola: escId, segmento: segId, turma: turId, dataRegistro: new Date().toISOString().split('T')[0] }
+        })
+        const atualizado = { ...planoParaRegistro, registrosPosAula: [...(planoParaRegistro.registrosPosAula || []), ...novos] }
+        setPlanos((prev: any[]) => prev.map((p: any) => p.id === atualizado.id ? atualizado : p))
+        setPlanoParaRegistro(atualizado)
+        setCopiandoRegId(null)
+        setTurmasCopiar(new Set())
+    }
 
     // ── Estados de janela ──
     const [minimizado, setMinimizado] = React.useState(false)
@@ -337,6 +367,9 @@ export default function ModalRegistroPosAula() {
     const [size, setSize] = React.useState({ w: 512, h: 600 })
     // Registros expandidos no histórico
     const [expandedRegs, setExpandedRegs] = React.useState<Set<any>>(new Set())
+    // Copiar registro para outras turmas
+    const [copiandoRegId, setCopiandoRegId] = React.useState<any>(null)
+    const [turmasCopiar, setTurmasCopiar] = React.useState<Set<string>>(new Set())
 
     // Centraliza ao abrir
     React.useEffect(() => {
@@ -806,12 +839,52 @@ export default function ModalRegistroPosAula() {
                                                                 </div>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                                                     <button onClick={e => { e.stopPropagation(); editarRegistro(reg) }}
-                                                                        style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }}>✏️</button>
+                                                                        style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }} title="Editar">✏️</button>
+                                                                    <button onClick={e => { e.stopPropagation(); if (copiandoRegId === (reg.id ?? i)) { setCopiandoRegId(null); setTurmasCopiar(new Set()) } else { setCopiandoRegId(reg.id ?? i); setTurmasCopiar(new Set()) } }}
+                                                                        style={{ padding: '3px 7px', fontSize: 11, color: copiandoRegId === (reg.id ?? i) ? '#2563eb' : '#94a3b8', border: `1px solid ${copiandoRegId === (reg.id ?? i) ? '#93c5fd' : '#e2e8f0'}`, borderRadius: 6, background: copiandoRegId === (reg.id ?? i) ? '#eff6ff' : '#fff', cursor: 'pointer' }} title="Copiar para outras turmas">📋</button>
                                                                     <button onClick={e => { e.stopPropagation(); excluirRegistro(reg.id) }}
-                                                                        style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }}>🗑️</button>
+                                                                        style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }} title="Excluir">🗑️</button>
                                                                     <span style={{ fontSize: 10, color: '#94a3b8', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
                                                                 </div>
                                                             </div>
+
+                                                            {/* Painel: copiar para outras turmas */}
+                                                            {copiandoRegId === (reg.id ?? i) && (() => {
+                                                                const turmasDoDia = obterTurmasDoDia(reg.data).filter(a =>
+                                                                    !(a.turmaId == reg.turma && a.segmentoId == (reg.segmento || reg.serie))
+                                                                )
+                                                                return (
+                                                                    <div style={{ padding: '10px 12px', background: '#f0f9ff', borderBottom: '1px solid #e2e8f0' }} onClick={e => e.stopPropagation()}>
+                                                                        <p style={{ fontSize: 11, fontWeight: 700, color: '#0284c7', marginBottom: 8, letterSpacing: '.04em' }}>COPIAR PARA TURMAS DO DIA {reg.data ? new Date(reg.data + 'T12:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''}</p>
+                                                                        {turmasDoDia.length === 0
+                                                                            ? <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Nenhuma outra turma agendada neste dia.</p>
+                                                                            : <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+                                                                                {turmasDoDia.map(a => {
+                                                                                    const chave = `${a.anoLetivoId}|${a.escolaId}|${a.segmentoId}|${a.turmaId}`
+                                                                                    const label = resolverTurmaLabel(a.anoLetivoId, a.escolaId, a.segmentoId, a.turmaId) || `Turma ${a.turmaId}`
+                                                                                    const sel = turmasCopiar.has(chave)
+                                                                                    return (
+                                                                                        <label key={chave} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, background: sel ? '#dbeafe' : '#fff', border: `1px solid ${sel ? '#93c5fd' : '#e2e8f0'}`, cursor: 'pointer', fontSize: 12, color: '#1e293b', fontWeight: sel ? 600 : 400 }}>
+                                                                                            <input type="checkbox" checked={sel} onChange={() => setTurmasCopiar(prev => { const next = new Set(prev); sel ? next.delete(chave) : next.add(chave); return next })} style={{ accentColor: '#3b82f6' }} />
+                                                                                            {label}
+                                                                                        </label>
+                                                                                    )
+                                                                                })}
+                                                                            </div>
+                                                                        }
+                                                                        <div style={{ display: 'flex', gap: 6 }}>
+                                                                            <button onClick={() => confirmarCopia(reg)} disabled={turmasCopiar.size === 0}
+                                                                                style={{ flex: 1, padding: '6px 0', fontSize: 12, fontWeight: 700, background: turmasCopiar.size > 0 ? '#2563eb' : '#e2e8f0', color: turmasCopiar.size > 0 ? '#fff' : '#94a3b8', border: 'none', borderRadius: 8, cursor: turmasCopiar.size > 0 ? 'pointer' : 'default', transition: 'all .15s' }}>
+                                                                                Copiar {turmasCopiar.size > 0 ? `(${turmasCopiar.size})` : ''}
+                                                                            </button>
+                                                                            <button onClick={() => { setCopiandoRegId(null); setTurmasCopiar(new Set()) }}
+                                                                                style={{ padding: '6px 12px', fontSize: 12, color: '#64748b', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer' }}>
+                                                                                Cancelar
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })()}
 
                                                             {/* Corpo expandido com chips de leitura */}
                                                             {isOpen && (
