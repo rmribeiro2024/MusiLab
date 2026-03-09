@@ -100,43 +100,27 @@ export async function syncToSupabase(
 ): Promise<boolean> {
     const MAX_TENTATIVAS = 3
     const DELAY_RETRY = 2000
-    const TIMEOUT_POR_LOTE = 20000 // 20s por lote individual — o timer era global antes e expirava somando todos os lotes
+    // AbortController REMOVIDO — causava "AbortError: signal is aborted without reason"
+    // em redes lentas. O timeout natural do fetch/TCP é suficiente para evitar hang indefinido.
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms))
 
     for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
         try {
-            // navigator.onLine REMOVIDO — pode dar falso positivo em certas redes/configs
-            // Se realmente sem internet, o fetch vai falhar naturalmente e cair no catch
-
             if (itens && itens.length > 0) {
                 const rows = itens.map(item => {
-                    if (!item.id) {
-                        item.id = gerarIdSeguro()
-                    }
-                    return {
-                        user_id: userId,
-                        item_id: String(item.id),
-                        data: item
-                    }
+                    if (!item.id) item.id = gerarIdSeguro()
+                    return { user_id: userId, item_id: String(item.id), data: item }
                 })
 
-                // Upsert em lotes de 50 — cada lote tem seu próprio AbortController
-                // (antes era um único timer de 10s para TODOS os lotes, causando abort prematuro)
                 const LOTE = 50
                 for (let i = 0; i < rows.length; i += LOTE) {
                     const lote = rows.slice(i, i + LOTE)
-                    const ctrl = new AbortController()
-                    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_POR_LOTE)
                     const { error } = await supabase
                         .from(tabela)
                         .upsert(lote, { onConflict: 'user_id,item_id' })
-                        .abortSignal(ctrl.signal)
-                    clearTimeout(timer)
                     if (error) throw error
                 }
 
-                // DELETE sem AbortSignal — é uma operação simples e o timer global
-                // causava abort logo após os lotes de upsert terminarem
                 const idsAtivos = rows.map(r => r.item_id)
                 const { error: deleteError } = await supabase
                     .from(tabela)
@@ -145,7 +129,6 @@ export async function syncToSupabase(
                     .not('item_id', 'in', `(${idsAtivos.join(',')})`)
                 if (deleteError) throw deleteError
             } else {
-                // Lista vazia: apagar tudo do usuário nesta tabela
                 await supabase.from(tabela).delete().eq('user_id', userId)
             }
 
@@ -158,6 +141,60 @@ export async function syncToSupabase(
                 await sleep(DELAY_RETRY)
             } else {
                 console.error(`[MusiLab] Falha definitiva ao sincronizar '${tabela}'. Dados salvos localmente.`)
+                lastSyncErrorDetail = `${tabela}: ${msg}`
+                if (onStatus) onStatus('erro', `${tabela}: ${msg}`)
+                return false
+            }
+        }
+    }
+    return false
+}
+
+// ── DELTA SYNC: envia apenas itens alterados + deleta apenas removidos ──
+// Mais eficiente que syncToSupabase completo quando poucos itens mudaram.
+export async function syncDelta(
+    tabela: string,
+    changed: Record<string, unknown>[],   // itens novos ou modificados
+    deletedIds: string[],                  // IDs removidos
+    userId: string,
+    onStatus?: OnStatus
+): Promise<boolean> {
+    const MAX_TENTATIVAS = 3
+    const DELAY_RETRY = 2000
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms))
+
+    for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+        try {
+            if (changed.length > 0) {
+                const LOTE = 50
+                for (let i = 0; i < changed.length; i += LOTE) {
+                    const lote = changed.slice(i, i + LOTE).map(item => ({
+                        user_id: userId,
+                        item_id: String(item.id || gerarIdSeguro()),
+                        data: item,
+                    }))
+                    const { error } = await supabase
+                        .from(tabela)
+                        .upsert(lote, { onConflict: 'user_id,item_id' })
+                    if (error) throw error
+                }
+            }
+            if (deletedIds.length > 0) {
+                const { error } = await supabase
+                    .from(tabela)
+                    .delete()
+                    .eq('user_id', userId)
+                    .in('item_id', deletedIds)
+                if (error) throw error
+            }
+            if (onStatus) onStatus('salvo')
+            return true
+        } catch(e: unknown) {
+            const msg = extractMsg(e)
+            console.warn(`[MusiLab] delta tentativa ${tentativa}/${MAX_TENTATIVAS} falhou para '${tabela}':`, msg)
+            if (tentativa < MAX_TENTATIVAS) {
+                await sleep(DELAY_RETRY)
+            } else {
                 lastSyncErrorDetail = `${tabela}: ${msg}`
                 if (onStatus) onStatus('erro', `${tabela}: ${msg}`)
                 return false

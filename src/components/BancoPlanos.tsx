@@ -11,6 +11,7 @@ import {
   validarBackup,
   gerarIdSeguro,
   syncToSupabase,
+  syncDelta,
   syncConfiguracoes,
   loadFromSupabase,
   loadConfiguracoes,
@@ -754,11 +755,22 @@ export default function BancoPlanos({ session }) {
                 const prev = _prevSyncData.current;
                 _prevSyncData.current = atual;
                 if (!prev) return; // primeira execução após carga — evita regravar tudo
-                Object.entries(atual).forEach(([tabela, dados]) => {
-                    if (dados !== prev[tabela]) {
-                        syncDelay(tabela, () => syncToSupabase(tabela, dados as unknown as Record<string, unknown>[], userId, onSyncStatus));
-                    }
-                });
+                // planos — delta sync: só envia itens alterados/novos + deleta removidos
+                if (atual.planos !== prev.planos) {
+                    const prevPlanos = prev.planos as typeof planos
+                    const changed = atual.planos.filter(p => {
+                        const prevP = prevPlanos.find(pp => pp.id === p.id)
+                        return !prevP || prevP !== p
+                    })
+                    const deletedIds = prevPlanos
+                        .filter(p => !atual.planos.find(np => np.id === p.id))
+                        .map(p => String(p.id))
+                    syncDelay('planos', () => syncDelta('planos', changed as unknown as Record<string, unknown>[], deletedIds, userId, onSyncStatus))
+                }
+                // grades_semanas — full sync (dataset pequeno, muda raramente)
+                if (atual.grades_semanas !== prev.grades_semanas) {
+                    syncDelay('grades_semanas', () => syncToSupabase('grades_semanas', atual.grades_semanas as unknown as Record<string, unknown>[], userId, onSyncStatus))
+                }
             }, [planos, gradesSemanas]); // anos_letivos/eventos_escolares/planejamento_anual removidos — sync em AnoLetivoContext (Parte 6) — sync em AtividadesContext/SequenciasContext (Partes 4/5)
             // [offlineSync] — ao voltar online, sobe itens pendentes imediatamente
             useEffect(() => {
