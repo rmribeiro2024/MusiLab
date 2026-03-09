@@ -42,6 +42,7 @@ const AccordionChip = React.forwardRef<() => void, {
 
 // ── BEHAVIOR CHIP — comportamento com tags clicáveis + campo livre ──
 const BEHAVIOR_TAGS = [
+    { id: 'bom',      label: 'Bom comportamento geral' },
     { id: 'focada',   label: 'Focada e participativa' },
     { id: 'dispersa', label: 'Muito dispersa / difícil conduzir' },
     { id: 'apatica',  label: 'Apática / pouco engajamento' },
