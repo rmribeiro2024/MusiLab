@@ -1341,104 +1341,94 @@ export default function TelaPrincipal() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {planosFiltrados.map(plano => {
                     const status = plano.statusPlanejamento || 'A Fazer';
-                    const barraGrad = plano.destaque
-                        ? 'from-amber-400 to-yellow-300'
-                        : status === 'Concluído'    ? 'from-emerald-400 to-teal-400'
-                        : status === 'Em Andamento' ? 'from-blue-400 to-indigo-400'
-                        : 'from-slate-300 to-slate-400';
-                    const statusStyle = {
-                        'A Fazer':      'bg-slate-100 text-slate-500',
-                        'Em Andamento': 'bg-blue-50 text-blue-600 border border-blue-100',
-                        'Concluído':    'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                    }[status];
+                    const borderColor = status === 'Concluído' ? '#10b981' : status === 'Em Andamento' ? '#6366f1' : '#cbd5e1';
+                    const dotClass   = status === 'Concluído' ? 'bg-emerald-500' : status === 'Em Andamento' ? 'bg-indigo-500' : 'bg-slate-400';
+                    const txtClass   = status === 'Concluído' ? 'text-emerald-700' : status === 'Em Andamento' ? 'text-indigo-600' : 'text-slate-500';
                     return (
-                    <div key={plano.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all duration-200 flex flex-col overflow-hidden group">
-                        {/* Barra gradiente de status no topo */}
-                        <div className={`h-1.5 bg-gradient-to-r ${barraGrad}`}/>
-                        <div className="p-4 flex-1">
-                            <div className="flex items-start justify-between gap-2 mb-2">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    {/* Badge de status clicável com dropdown */}
-                                    <div className="relative">
-                                        <button
-                                            onClick={(e)=>{e.stopPropagation(); setStatusDropdownId(statusDropdownId===plano.id ? null : plano.id);}}
-                                            title="Clique para alterar o status"
-                                            className={`text-xs font-semibold px-2 py-0.5 rounded-full cursor-pointer hover:opacity-80 transition flex items-center gap-1 ${statusStyle}`}>
-                                            {status} <span className="opacity-40 text-xs">▾</span>
-                                        </button>
-                                        {statusDropdownId === plano.id && (
-                                            <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px]"
-                                                 onClick={e=>e.stopPropagation()}>
-                                                {['A Fazer','Em Andamento','Concluído'].map(s => {
-                                                    const cores = {
-                                                        'A Fazer':      'hover:bg-slate-50 text-slate-600',
-                                                        'Em Andamento': 'hover:bg-blue-50 text-blue-700',
-                                                        'Concluído':    'hover:bg-emerald-50 text-emerald-700'
-                                                    };
-                                                    const icons = {'A Fazer':'⬜','Em Andamento':'🔵','Concluído':'✅'};
-                                                    return (
-                                                        <button key={s}
-                                                            onClick={()=>{ setPlanos(planos.map(p=>p.id===plano.id?{...p,statusPlanejamento:s}:p)); setStatusDropdownId(null); }}
-                                                            className={`w-full text-left px-4 py-2.5 text-xs font-bold flex items-center gap-2 ${cores[s]} ${status===s?'opacity-50 cursor-default':''}`}>
-                                                            {icons[s]} {s}
-                                                            {status===s && <span className="ml-auto text-slate-300">✓</span>}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                    {plano.numeroAula && <span className="text-xs text-slate-400 font-medium">{plano.numeroAula}</span>}
+                    <div key={plano.id} style={{borderLeft:`3px solid ${borderColor}`}}
+                        className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200 flex flex-col overflow-hidden group">
+                        <div className="px-4 pt-4 pb-3 flex-1">
+                            <div className="flex items-start justify-between gap-2 mb-3">
+                                {/* Status dot + label clicável com dropdown */}
+                                <div className="relative">
+                                    <button onClick={(e)=>{e.stopPropagation(); setStatusDropdownId(statusDropdownId===plano.id ? null : plano.id);}}
+                                        title="Clique para alterar o status"
+                                        className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition">
+                                        <span className={`w-1.5 h-1.5 rounded-full ${dotClass} shrink-0`}></span>
+                                        <span className={`text-xs font-semibold ${txtClass}`}>{status}</span>
+                                    </button>
+                                    {statusDropdownId === plano.id && (
+                                        <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px]"
+                                             onClick={e=>e.stopPropagation()}>
+                                            {['A Fazer','Em Andamento','Concluído'].map(s => {
+                                                const cores = {'A Fazer':'hover:bg-slate-50 text-slate-600','Em Andamento':'hover:bg-blue-50 text-blue-700','Concluído':'hover:bg-emerald-50 text-emerald-700'};
+                                                return (
+                                                    <button key={s}
+                                                        onClick={()=>{ setPlanos(planos.map(p=>p.id===plano.id?{...p,statusPlanejamento:s}:p)); setStatusDropdownId(null); }}
+                                                        className={`w-full text-left px-4 py-2.5 text-xs font-bold flex items-center gap-2 ${cores[s]} ${status===s?'opacity-50 cursor-default':''}`}>
+                                                        {s} {status===s && <span className="ml-auto text-slate-300">✓</span>}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                                 <button onClick={(e)=>toggleFavorito(plano,e)} className={`text-base shrink-0 hover:scale-110 transition ${plano.destaque ? 'text-amber-400' : 'text-slate-200 hover:text-amber-300'}`}>
                                     {plano.destaque ? '★' : '☆'}
                                 </button>
                             </div>
 
-                            <h3 className="font-bold text-slate-800 text-base leading-snug mb-1">{plano.titulo}</h3>
-                            {plano.tema && <p className="text-xs text-slate-400 mb-3 line-clamp-1">{plano.tema}</p>}
+                            <h3 className="font-bold text-slate-800 text-sm leading-snug mb-2">{plano.titulo}</h3>
 
-                            {/* Badges */}
-                            <div className="flex flex-wrap gap-1.5 mb-3">
-                                {plano.escola && <span className="text-xs text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">🏫 {plano.escola}</span>}
-                                {(plano.faixaEtaria||[])[0] && <span className="text-xs text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">👥 {(plano.faixaEtaria||[])[0]}</span>}
-                                {(plano.unidades||[])[0] && <span className="text-xs text-teal-600 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">📚 {(plano.unidades||[])[0]}</span>}
+                            {/* Meta: escola · faixa · unidade — linha única */}
+                            <div className="flex items-center gap-1.5 flex-wrap text-xs text-slate-400 mb-2.5">
+                                {plano.escola && <span className="font-semibold text-slate-600 uppercase text-[11px]">{plano.escola}</span>}
+                                {plano.escola && ((plano.faixaEtaria||[])[0]||(plano.unidades||[])[0]) && <span className="text-slate-300">·</span>}
+                                {(plano.faixaEtaria||[])[0] && <span>{(plano.faixaEtaria||[])[0]}</span>}
+                                {(plano.faixaEtaria||[])[0] && (plano.unidades||[])[0] && <span className="text-slate-300">·</span>}
+                                {(plano.unidades||[])[0] && <span>{(plano.unidades||[])[0]}</span>}
                             </div>
 
-                            {/* Conceitos */}
+                            {/* Conceitos — outlined, sem fundo colorido */}
                             {(plano.conceitos||[]).length > 0 && (
                                 <div className="flex flex-wrap gap-1">
                                     {(plano.conceitos||[]).slice(0,3).map(c=>(
-                                        <span key={c} className="text-xs bg-violet-50 text-violet-600 border border-violet-100 px-2 py-0.5 rounded-full">{c}</span>
+                                        <span key={c} className="text-xs text-slate-500 border border-slate-200 px-2 py-0.5 rounded-md">{c}</span>
                                     ))}
                                     {(plano.conceitos||[]).length > 3 && <span className="text-xs text-slate-400">+{(plano.conceitos||[]).length-3}</span>}
                                 </div>
                             )}
                         </div>
 
-                        {/* Rodapé com ações */}
-                        <div className="border-t border-slate-100 px-3 py-2.5 flex items-center gap-1">
+                        {/* Rodapé — SVG coloridos, sempre visíveis */}
+                        <div className="border-t border-slate-100 px-3 py-2 flex items-center gap-0.5">
                             <button onClick={(e)=>{e.stopPropagation();setPlanoSelecionado(plano)}}
-                                className="flex-1 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 text-xs font-bold py-2 px-3 rounded-xl transition">
+                                className="flex-1 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-50 py-1.5 rounded-lg transition">
                                 Ver plano
                             </button>
-                            <button onClick={(e)=>{e.stopPropagation();setPlanoParaAplicar(plano)}}
-                                title="Aplicar em turmas"
-                                className="p-2 border border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50 text-indigo-500 rounded-xl transition shrink-0">
-                                📅
+                            <div className="w-px h-4 bg-slate-200 mx-1 shrink-0"></div>
+                            <button onClick={(e)=>{e.stopPropagation();setPlanoParaAplicar(plano)}} title="Aplicar em turmas"
+                                className="p-1.5 rounded-lg hover:bg-blue-50 transition shrink-0">
+                                <svg className="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                             </button>
-                            <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                                <button onClick={(e)=>abrirModalRegistro(plano,e)}
-                                    className="text-amber-500 hover:text-amber-700 hover:bg-amber-50 p-2 rounded-xl transition" title="Registro Pós-Aula" aria-label="Registro pós-aula">📝</button>
-                                <button onClick={(e)=>{e.stopPropagation();editarPlano(plano)}}
-                                    className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition" title="Editar" aria-label="Editar plano">✏️</button>
-                                <button onClick={(e)=>{e.stopPropagation();exportarPlanoPDF(plano)}}
-                                    className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition text-xs font-bold" title="PDF">PDF</button>
-                                <button onClick={(e)=>{e.stopPropagation(); const copia=carimbарTimestamp({...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}); setPlanos(prev=>[...prev, copia]); if (!userId) marcarPendente('planos', String(copia.id)); setModalConfirm({ conteudo: '✅ Plano duplicado!', somenteOk: true, labelConfirm: 'OK' });}}
-                                    className="text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 p-2 rounded-xl transition" title="Duplicar">⎘</button>
-                                <button onClick={(e)=>{e.stopPropagation();excluirPlano(plano.id)}}
-                                    className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition" title="Excluir" aria-label="Excluir plano">🗑</button>
-                            </div>
+                            <button onClick={(e)=>abrirModalRegistro(plano,e)} title="Registro pós-aula"
+                                className="p-1.5 rounded-lg hover:bg-violet-50 transition shrink-0">
+                                <svg className="w-3.5 h-3.5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/><path d="M17.586 3.414a2 2 0 112.828 2.828L12 14.828l-4 1 1-4 8.586-8.414z"/></svg>
+                            </button>
+                            <button onClick={(e)=>{e.stopPropagation();editarPlano(plano)}} title="Editar"
+                                className="p-1.5 rounded-lg hover:bg-indigo-50 transition shrink-0">
+                                <svg className="w-3.5 h-3.5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828 8 17l1.172-3.828z"/></svg>
+                            </button>
+                            <button onClick={(e)=>{e.stopPropagation();exportarPlanoPDF(plano)}} title="PDF"
+                                className="p-1.5 rounded-lg hover:bg-orange-50 transition text-[10px] font-bold text-orange-500 shrink-0">PDF</button>
+                            <button onClick={(e)=>{e.stopPropagation(); const copia=carimbарTimestamp({...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}); setPlanos(prev=>[...prev, copia]); if (!userId) marcarPendente('planos', String(copia.id)); setModalConfirm({ conteudo: '✅ Plano duplicado!', somenteOk: true, labelConfirm: 'OK' });}}
+                                title="Duplicar" className="p-1.5 rounded-lg hover:bg-teal-50 transition shrink-0">
+                                <svg className="w-3.5 h-3.5 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                            </button>
+                            <button onClick={(e)=>{e.stopPropagation();excluirPlano(plano.id)}} title="Excluir"
+                                className="p-1.5 rounded-lg hover:bg-red-50 transition shrink-0">
+                                <svg className="w-3.5 h-3.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                            </button>
                         </div>
                     </div>
                     );
