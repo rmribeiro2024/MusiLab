@@ -542,7 +542,7 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
     setRegEscolaSel(slot.aulaGrade.escolaId ?? '')
     setRegSegmentoSel(slot.aulaGrade.segmentoId)
     setRegTurmaSel(slot.aulaGrade.turmaId)
-    setVerRegistros(false)       // sempre abre em "Novo registro"
+    setVerRegistros(aplicacao?.status === 'realizada') // aula realizada → abre direto no Histórico
     setRegistroEditando(null)
     setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '' })
     setModalRegistro(true)
