@@ -19,7 +19,6 @@ interface LinhaPlanoProps {
   editarPlano: (plano: Plano) => void
 }
 const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPlanoSelecionado, abrirModalRegistro, editarPlano }: LinhaPlanoProps) => {
-    const nRegs = (plano.registrosPosAula || []).length;
     const conceito1 = (plano.conceitos || [])[0] || '';
     const faixa = (plano.faixaEtaria || [])[0] || plano.nivel || '';
     const status = plano.statusPlanejamento || 'A Fazer';
@@ -45,7 +44,6 @@ const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPl
                     {faixa && <span className="text-xs text-slate-500">{faixa}</span>}
                     {faixa && conceito1 && <span className="text-xs text-slate-300">·</span>}
                     {conceito1 && <span className="text-xs text-teal-600 font-medium">{conceito1}</span>}
-                    {nRegs > 0 && <span className="text-xs bg-amber-50 text-amber-600 font-semibold px-2 py-0.5 rounded-full">📝 {nRegs}</span>}
                 </div>
             </div>
             <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
@@ -1392,10 +1390,7 @@ export default function TelaPrincipal() {
                             <div className="flex flex-wrap gap-1.5 mb-3">
                                 {plano.escola && <span className="text-xs text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">🏫 {plano.escola}</span>}
                                 {(plano.faixaEtaria||[])[0] && <span className="text-xs text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">👥 {(plano.faixaEtaria||[])[0]}</span>}
-                                {plano.historicoDatas?.length > 0 && <span className="text-xs text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">📅 {plano.historicoDatas.length}×</span>}
                                 {(plano.unidades||[])[0] && <span className="text-xs text-teal-600 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">📚 {(plano.unidades||[])[0]}</span>}
-                                {plano.registrosPosAula?.length > 0 && <span className="text-xs text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">📝 {plano.registrosPosAula.length}</span>}
-                                {(() => { const t=(plano.atividadesRoteiro||[]).reduce((s,a)=>s+(parseInt(a.duracao)||0),0); return t>0?<span className="text-xs text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">⏱ {t}min</span>:null; })()}
                             </div>
 
                             {/* Conceitos */}
