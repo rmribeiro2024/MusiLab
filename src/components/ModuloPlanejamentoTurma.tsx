@@ -95,15 +95,28 @@ interface TLItem {
   aplicacaoId?: string
 }
 
-function TimelinePedagogica({ onAcionar }: {
+function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
   onAcionar: (modo: 'adaptar' | 'importar' | 'criar') => void
+  dataAtiva: string | null
+  setDataAtiva: (d: string | null) => void
+  turmaNome: string
 }) {
   const { turmaSelecionada, historicoDaTurma } = usePlanejamentoTurmaContext()
   const { aplicacoes } = useAplicacoesContext()
   const { planos } = usePlanosContext()
   const { obterTurmasDoDia } = useCalendarioContext()
-  const [dataAtiva, setDataAtiva] = useState<string | null>(null)
   const [verTodos, setVerTodos] = useState(false)
+  const hojeStr = useMemo(() => toDateStr(new Date()), [])
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll para centralizar o ponto selecionado
+  useEffect(() => {
+    if (!dataAtiva || !scrollRef.current) return
+    const el = scrollRef.current.querySelector(`[data-date="${dataAtiva}"]`) as HTMLElement | null
+    if (!el) return
+    const c = scrollRef.current
+    c.scrollTo({ left: el.offsetLeft - c.clientWidth / 2 + el.offsetWidth / 2, behavior: 'smooth' })
+  }, [dataAtiva])
 
   // Todos os itens da timeline: aplicacoes + datas futuras sem plano
   const todosItens = useMemo<TLItem[]>(() => {
@@ -176,7 +189,10 @@ function TimelinePedagogica({ onAcionar }: {
 
       {/* Cabeçalho */}
       <div className="flex items-center justify-between mb-1">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Progresso pedagógico</h3>
+        <div className="flex items-baseline gap-1.5 min-w-0">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest shrink-0">Progresso pedagógico</h3>
+          {turmaNome && <span className="text-xs text-slate-400 font-medium truncate">— {turmaNome}</span>}
+        </div>
         {temMais && (
           <button type="button" onClick={() => setVerTodos(true)}
             className="text-[11px] font-semibold text-indigo-500 hover:text-indigo-700 transition-colors">
@@ -210,7 +226,7 @@ function TimelinePedagogica({ onAcionar }: {
         {/* Linha de conexão */}
         <div className="absolute top-[18px] left-5 right-5 h-0.5 bg-slate-100 rounded-full pointer-events-none" />
 
-        <div className="relative flex items-start overflow-x-auto scrollbar-hide pb-1"
+        <div ref={scrollRef} className="relative flex items-start overflow-x-auto scrollbar-hide pb-1"
           style={{ gap: itensVisiveis.length > 6 ? '0' : undefined, justifyContent: itensVisiveis.length <= 8 ? 'space-between' : undefined }}>
           {itensVisiveis.map((item) => {
             const isAtivo = dataAtiva === item.dataStr
@@ -231,13 +247,21 @@ function TimelinePedagogica({ onAcionar }: {
               : 'ring-4 ring-offset-2 ring-slate-300 shadow-[0_0_8px_2px_rgba(148,163,184,0.35)] scale-125'
               : 'hover:scale-110'
 
+            const isHoje = item.dataStr === hojeStr
             return (
               <button
                 key={item.dataStr}
+                data-date={item.dataStr}
                 type="button"
                 onClick={() => setDataAtiva(isAtivo ? null : item.dataStr)}
-                className="relative z-10 flex flex-col items-center shrink-0 px-2 pt-1 group focus:outline-none"
+                className="relative z-10 flex flex-col items-center shrink-0 px-2 pt-5 group focus:outline-none"
               >
+                {/* Badge "Hoje" */}
+                {isHoje && (
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 text-[8px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-full whitespace-nowrap leading-tight">
+                    Hoje
+                  </span>
+                )}
                 {/* Tooltip CSS */}
                 <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 pointer-events-none">
                   <div className="bg-slate-800 text-white rounded-lg px-2.5 py-2 text-[10px] whitespace-nowrap shadow-xl text-left min-w-[90px]">
@@ -1537,19 +1561,50 @@ function ConteudoTurma() {
     fecharForm,
   } = usePlanejamentoTurmaContext()
 
+  const { anosLetivos } = useAnoLetivoContext()
   const [historicoExpandido, setHistoricoExpandido] = useState(false)
   const [planejamentosExpandidos, setPlanejamentosExpandidos] = useState(false)
   const [acionarBloco2, setAcionarBloco2] = useState<{ n: number; modo: Exclude<Modo, null> } | null>(null)
+  const [dataAtiva, setDataAtiva] = useState<string | null>(null)
   const formBlockRef = useRef<HTMLDivElement>(null)
+
+  // Resetar seleção ao trocar de turma
+  useEffect(() => { setDataAtiva(null) }, [turmaSelecionada?.turmaId])
+
+  // Nome da turma para exibição na timeline
+  const turmaNome = useMemo(() => {
+    if (!turmaSelecionada) return ''
+    for (const ano of anosLetivos) {
+      for (const escola of ano.escolas ?? []) {
+        for (const seg of escola.segmentos ?? []) {
+          // eslint-disable-next-line eqeqeq
+          if (seg.id == turmaSelecionada.segmentoId) {
+            // eslint-disable-next-line eqeqeq
+            const t = (seg.turmas ?? []).find((t: Turma) => t.id == turmaSelecionada.turmaId)
+            if (t) return t.nome
+          }
+        }
+      }
+    }
+    return `Turma ${turmaSelecionada.turmaId}`
+  }, [turmaSelecionada, anosLetivos])
+
+  // Registro exibido: seleção na timeline tem prioridade sobre o mais recente
+  const registroExibido = useMemo<RegistroPosAula | null>(() =>
+    dataAtiva
+      ? historicoDaTurma.find(r => (r.dataAula ?? r.data) === dataAtiva) ?? null
+      : ultimoRegistroDaTurma,
+    [dataAtiva, historicoDaTurma, ultimoRegistroDaTurma]
+  )
 
   if (!turmaSelecionada) return null
 
   const registrosAnteriores = historicoDaTurma.slice(1)
 
   const podeAdaptarBloco2 = !!(
-    ultimoRegistroDaTurma?.proximaAula?.trim() ||
-    ultimoRegistroDaTurma?.poderiaMelhorar?.trim() ||
-    ultimoRegistroDaTurma?.resumoAula?.trim()
+    registroExibido?.proximaAula?.trim() ||
+    registroExibido?.poderiaMelhorar?.trim() ||
+    registroExibido?.resumoAula?.trim()
   )
 
   function acionarModoFromBloco2(modo: Exclude<Modo, null>) {
@@ -1563,41 +1618,48 @@ function ConteudoTurma() {
     <div className="space-y-4">
 
       {/* ── TIMELINE PEDAGÓGICA ────────────────────────────────────────────────── */}
-      <TimelinePedagogica onAcionar={acionarModoFromBloco2} />
+      <TimelinePedagogica
+        onAcionar={acionarModoFromBloco2}
+        dataAtiva={dataAtiva}
+        setDataAtiva={setDataAtiva}
+        turmaNome={turmaNome}
+      />
 
-      {/* ── BLOCO 1: Último registro pós-aula ─────────────────────────────────── */}
-      {ultimoRegistroDaTurma ? (
+      {/* ── BLOCO 1: Registro pós-aula ─────────────────────────────────────────── */}
+      {registroExibido ? (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-slate-700">Último registro</h3>
+            <h3 className="text-sm font-semibold text-slate-700">
+              {dataAtiva ? 'Registro selecionado' : 'Último registro'}
+            </h3>
             <span className="text-xs text-slate-400">
-              {formatarData(ultimoRegistroDaTurma.dataAula ?? ultimoRegistroDaTurma.data ?? '')}
+              {formatarData(registroExibido.dataAula ?? registroExibido.data ?? '')}
             </span>
           </div>
           <div className="space-y-2">
-            {ultimoRegistroDaTurma.resultadoAula && (
-              <InfoRow icon="📊" label="Resultado da aula" valor={labelResultado(ultimoRegistroDaTurma.resultadoAula)} />
+            {registroExibido.resultadoAula && (
+              <InfoRow icon="📊" label="Resultado da aula" valor={labelResultado(registroExibido.resultadoAula)} />
             )}
-            {ultimoRegistroDaTurma.resumoAula && (
-              <InfoRow icon="📋" label="O que foi realizado" valor={ultimoRegistroDaTurma.resumoAula} />
+            {registroExibido.resumoAula && (
+              <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
             )}
-            {ultimoRegistroDaTurma.funcionouBem && (
-              <InfoRow icon="✅" label="O que funcionou bem" valor={ultimoRegistroDaTurma.funcionouBem} />
+            {registroExibido.funcionouBem && (
+              <InfoRow icon="✅" label="O que funcionou bem" valor={registroExibido.funcionouBem} />
             )}
-            {ultimoRegistroDaTurma.naoFuncionou && (
-              <InfoRow icon="⚠️" label="O que não funcionou" valor={ultimoRegistroDaTurma.naoFuncionou} />
+            {registroExibido.naoFuncionou && (
+              <InfoRow icon="⚠️" label="O que não funcionou" valor={registroExibido.naoFuncionou} />
             )}
-            {ultimoRegistroDaTurma.poderiaMelhorar && (
-              <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={ultimoRegistroDaTurma.poderiaMelhorar} />
+            {registroExibido.poderiaMelhorar && (
+              <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
             )}
-            {ultimoRegistroDaTurma.comportamento && (
-              <InfoRow icon="👥" label="Comportamento da turma" valor={ultimoRegistroDaTurma.comportamento} />
+            {registroExibido.comportamento && (
+              <InfoRow icon="👥" label="Comportamento da turma" valor={registroExibido.comportamento} />
             )}
-            {ultimoRegistroDaTurma.anotacoesGerais && (
-              <InfoRow icon="📝" label="Anotações gerais" valor={ultimoRegistroDaTurma.anotacoesGerais} />
+            {registroExibido.anotacoesGerais && (
+              <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
             )}
-            {ultimoRegistroDaTurma.proximaAula && (
-              <InfoRow icon="💡" label="Ideias / estratégias" valor={ultimoRegistroDaTurma.proximaAula} destacado />
+            {registroExibido.proximaAula && (
+              <InfoRow icon="💡" label="Ideias / estratégias" valor={registroExibido.proximaAula} destacado />
             )}
           </div>
         </div>
@@ -1608,9 +1670,9 @@ function ConteudoTurma() {
       )}
 
       {/* ── BLOCO 2: Próximo Passo Sugerido ───────────────────────────────────── */}
-      {ultimoRegistroDaTurma?.proximaAulaOpcao && (
+      {registroExibido?.proximaAulaOpcao && (
         <CardProximoPasso
-          valor={ultimoRegistroDaTurma.proximaAulaOpcao}
+          valor={registroExibido.proximaAulaOpcao}
           podeAdaptar={podeAdaptarBloco2}
           onAdaptar={() => acionarModoFromBloco2('adaptar')}
           onImportar={() => acionarModoFromBloco2('importar')}
