@@ -44,6 +44,9 @@ const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPl
                     {faixa && <span className="text-xs text-slate-500">{faixa}</span>}
                     {faixa && conceito1 && <span className="text-xs text-slate-300">·</span>}
                     {conceito1 && <span className="text-xs text-teal-600 font-medium">{conceito1}</span>}
+                    {(plano.segmentos||[]).map(s=>(
+                        <span key={s} className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-md">{s}</span>
+                    ))}
                 </div>
             </div>
             <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
@@ -83,6 +86,7 @@ export default function TelaPrincipal() {
         duracoesSugestao,
         editarPlano,
         escolas,
+        segmentosPlanos,
         excluirPlano,
         fecharModal,
         restaurarVersao,
@@ -91,6 +95,7 @@ export default function TelaPrincipal() {
         filtroFaixa,
         filtroFavorito,
         filtroNivel,
+        filtroSegmento,
         filtroStatus,
         filtroTag,
         filtroUnidade,
@@ -130,6 +135,7 @@ export default function TelaPrincipal() {
         setFiltroFaixa,
         setFiltroFavorito,
         setFiltroNivel,
+        setFiltroSegmento,
         setFiltroStatus,
         setFiltroTag,
         setFiltroUnidade,
@@ -1245,6 +1251,7 @@ export default function TelaPrincipal() {
                 <div className="md:col-span-6"><input type="text" inputMode="search" placeholder="🔍 Buscar por título, objetivo, conceito..." value={busca} onChange={(e)=>setBusca(e.target.value)} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /></div>
                 <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Escola</label><select value={filtroEscola} onChange={(e)=>setFiltroEscola(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">{escolas.map(e=><option key={e} value={e}>{e}</option>)}</select></div>
                 <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nível</label><select value={filtroNivel} onChange={(e)=>setFiltroNivel(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">{niveis.map(n=><option key={n} value={n}>{n}</option>)}</select></div>
+                <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Segmento</label><select value={filtroSegmento} onChange={(e)=>setFiltroSegmento(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">{segmentosPlanos.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
                 <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Faixa Etária</label><select value={filtroFaixa} onChange={(e)=>setFiltroFaixa(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">{faixas.map(f=><option key={f} value={f}>{f}</option>)}</select></div>
                 <div>
                     <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Conceito</label>
@@ -1359,13 +1366,21 @@ export default function TelaPrincipal() {
                             <h3 className="font-bold text-slate-800 text-sm leading-snug mb-2">{plano.titulo}</h3>
 
                             {/* Meta: escola · faixa · unidade — linha única */}
-                            <div className="flex items-center gap-1.5 flex-wrap text-xs text-slate-400 mb-2.5">
+                            <div className="flex items-center gap-1.5 flex-wrap text-xs text-slate-400 mb-2">
                                 {plano.escola && <span className="font-semibold text-slate-600 uppercase text-[11px]">{plano.escola}</span>}
                                 {plano.escola && ((plano.faixaEtaria||[])[0]||(plano.unidades||[])[0]) && <span className="text-slate-300">·</span>}
                                 {(plano.faixaEtaria||[])[0] && <span>{(plano.faixaEtaria||[])[0]}</span>}
                                 {(plano.faixaEtaria||[])[0] && (plano.unidades||[])[0] && <span className="text-slate-300">·</span>}
                                 {(plano.unidades||[])[0] && <span>{(plano.unidades||[])[0]}</span>}
                             </div>
+                            {/* Segmentos — chips auto-catalogados */}
+                            {(plano.segmentos||[]).length > 0 && (
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                    {(plano.segmentos||[]).map(s=>(
+                                        <span key={s} className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-md">{s}</span>
+                                    ))}
+                                </div>
+                            )}
 
                             {/* Conceitos — outlined, sem fundo colorido */}
                             {(plano.conceitos||[]).length > 0 && (

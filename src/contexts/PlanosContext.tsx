@@ -93,6 +93,7 @@ interface FiltrosState {
     filtroNivel: string
     filtroEscola: string
     filtroTag: string
+    filtroSegmento: string
     filtroFavorito: boolean
     filtroStatus: string
     modoVisualizacao: string
@@ -100,7 +101,7 @@ interface FiltrosState {
 }
 const FILTROS_INITIAL: FiltrosState = {
     busca: '', filtroConceito: 'Todos', filtroUnidade: 'Todos', filtroFaixa: 'Todos',
-    filtroNivel: 'Todos', filtroEscola: 'Todas', filtroTag: 'Todas',
+    filtroNivel: 'Todos', filtroEscola: 'Todas', filtroTag: 'Todas', filtroSegmento: 'Todos',
     filtroFavorito: false, filtroStatus: 'Todos', modoVisualizacao: 'grade', ordenacaoCards: 'recente',
 }
 type FiltrosAction = { type: 'SET'; payload: Partial<FiltrosState> } | { type: 'RESET' }
@@ -157,6 +158,7 @@ export interface PlanosContextValue {
     filtroNivel: string; setFiltroNivel: React.Dispatch<React.SetStateAction<string>>
     filtroEscola: string; setFiltroEscola: React.Dispatch<React.SetStateAction<string>>
     filtroTag: string; setFiltroTag: React.Dispatch<React.SetStateAction<string>>
+    filtroSegmento: string; setFiltroSegmento: React.Dispatch<React.SetStateAction<string>>
     recursosExpandidos: Record<string, boolean>; setRecursosExpandidos: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
     modalImportarMusica: boolean; setModalImportarMusica: React.Dispatch<React.SetStateAction<boolean>>
     modalImportarAtividade: boolean; setModalImportarAtividade: React.Dispatch<React.SetStateAction<boolean>>
@@ -170,6 +172,7 @@ export interface PlanosContextValue {
     dragOverIndex: number | null; setDragOverIndex: React.Dispatch<React.SetStateAction<number | null>>
     // computed
     escolas: string[]
+    segmentosPlanos: string[]
     duracoesSugestao: string[]
     planosFiltrados: Plano[]
     // funções
@@ -318,7 +321,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const [dataEdicao, setDataEdicao] = useState('')
     // useReducer: filtros e visualização (busca + 8 filtros + modoVisualizacao + ordenacaoCards)
     const [filtros, filtrosDispatch] = useReducer(filtrosReducer, FILTROS_INITIAL)
-    const { busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroFavorito, filtroStatus, modoVisualizacao, ordenacaoCards } = filtros
+    const { busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, modoVisualizacao, ordenacaoCards } = filtros
     const filtrosRef = useRef(filtros); filtrosRef.current = filtros
     const buscaDebounced = useDebounce(busca, 300)
     const setBusca: React.Dispatch<React.SetStateAction<string>> = (v) =>
@@ -335,6 +338,8 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         filtrosDispatch({ type: 'SET', payload: { filtroEscola: typeof v === 'function' ? v(filtrosRef.current.filtroEscola) : v } })
     const setFiltroTag: React.Dispatch<React.SetStateAction<string>> = (v) =>
         filtrosDispatch({ type: 'SET', payload: { filtroTag: typeof v === 'function' ? v(filtrosRef.current.filtroTag) : v } })
+    const setFiltroSegmento: React.Dispatch<React.SetStateAction<string>> = (v) =>
+        filtrosDispatch({ type: 'SET', payload: { filtroSegmento: typeof v === 'function' ? v(filtrosRef.current.filtroSegmento) : v } })
     const setFiltroFavorito: React.Dispatch<React.SetStateAction<boolean>> = (v) =>
         filtrosDispatch({ type: 'SET', payload: { filtroFavorito: typeof v === 'function' ? v(filtrosRef.current.filtroFavorito) : v } })
     const setFiltroStatus: React.Dispatch<React.SetStateAction<string>> = (v) =>
@@ -394,6 +399,12 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         return ['Todas', ...Array.from(s).sort()]
     }, [planos])
 
+    const segmentosPlanos = useMemo(() => {
+        const s = new Set<string>()
+        planos.forEach(p => (p.segmentos ?? []).forEach(seg => s.add(seg)))
+        return ['Todos', ...Array.from(s).sort()]
+    }, [planos])
+
     const duracoesSugestao = useMemo(() => {
         const d = new Set<string>()
         planos.forEach(p => { if (p.duracao) d.add(p.duracao) })
@@ -420,9 +431,10 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             const matchNivel    = filtroNivel    === 'Todos'  || plano.nivel === filtroNivel
             const matchEscola   = filtroEscola   === 'Todas'  || plano.escola === filtroEscola
             const matchTag      = filtroTag      === 'Todas'  || (plano.tags && plano.tags.includes(filtroTag))
+            const matchSegmento = filtroSegmento === 'Todos'  || (plano.segmentos ?? []).includes(filtroSegmento)
             const matchFavorito = !filtroFavorito || plano.destaque
             const matchStatus   = filtroStatus   === 'Todos'  || (plano.statusPlanejamento || 'A Fazer') === filtroStatus
-            return matchBusca && matchConceito && matchUnidade && matchFaixa && matchNivel && matchEscola && matchTag && matchFavorito && matchStatus
+            return matchBusca && matchConceito && matchUnidade && matchFaixa && matchNivel && matchEscola && matchTag && matchSegmento && matchFavorito && matchStatus
         }).sort((a: any, b: any) => {
             if (ordenacaoCards === 'az')        return (a.titulo || '').localeCompare(b.titulo || '', 'pt-BR')
             if (ordenacaoCards === 'status') {
@@ -432,7 +444,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             if (ordenacaoCards === 'favoritos') return (b.destaque ? 1 : 0) - (a.destaque ? 1 : 0)
             return b.id - a.id
         })
-    }, [planos, buscaDebounced, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroFavorito, filtroStatus, ordenacaoCards])
+    }, [planos, buscaDebounced, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, ordenacaoCards])
 
     // ── FUNÇÕES: PLANOS ───────────────────────────────────────────────────
     const novoPlano = () => {
@@ -1022,6 +1034,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         filtroNivel, setFiltroNivel,
         filtroEscola, setFiltroEscola,
         filtroTag, setFiltroTag,
+        filtroSegmento, setFiltroSegmento,
         filtroFavorito, setFiltroFavorito,
         filtroStatus, setFiltroStatus,
         modoVisualizacao, setModoVisualizacao,
@@ -1033,7 +1046,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         modalImportarAtividade, setModalImportarAtividade,
         dragActiveIndex, setDragActiveIndex,
         dragOverIndex, setDragOverIndex,
-        escolas, duracoesSugestao, planosFiltrados,
+        escolas, segmentosPlanos, duracoesSugestao, planosFiltrados,
         normalizePlano, buscaAvancada, sugerirBNCC,
         novoPlano, editarPlano, salvarPlano, excluirPlano, fecharModal, restaurarVersao,
         toggleConceito, toggleFaixa, toggleUnidade,

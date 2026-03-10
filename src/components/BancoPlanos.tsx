@@ -1021,22 +1021,37 @@ export default function BancoPlanos({ session }) {
                 }; reader.readAsText(file); event.target.value = '';
             };
 
-            // ── Compat. retroativa: AplicacaoAula → historicoDatas do Plano ──
+            // ── Compat. retroativa: AplicacaoAula → historicoDatas + segmentos do Plano ──
             // Quando uma aplicação muda para 'realizada', AplicacoesContext dispara
-            // musilab:aplicacaoRealizada. Aqui atualizamos historicoDatas do plano-base
-            // para manter o calendário mensal existente funcionando sem alteração.
+            // musilab:aplicacaoRealizada. Aqui atualizamos historicoDatas e segmentos do plano-base.
             useEffect(() => {
                 const handler = (e: Event) => {
-                    const { planoId, data } = (e as CustomEvent).detail as { planoId: string | number; data: string }
-                    setPlanos(prev => prev.map(p =>
-                        String(p.id) === String(planoId) && !(p.historicoDatas ?? []).includes(data)
-                            ? { ...p, historicoDatas: [...(p.historicoDatas ?? []), data] }
-                            : p
-                    ))
+                    const { planoId, data, anoLetivoId, escolaId, segmentoId } = (e as CustomEvent).detail as {
+                        planoId: string | number; data: string
+                        anoLetivoId?: string; escolaId?: string; segmentoId?: string
+                    }
+                    // Resolve nome do segmento a partir do anoLetivo
+                    let nomeSegmento: string | undefined
+                    if (anoLetivoId && escolaId && segmentoId) {
+                        const ano = anosLetivos.find(a => a.id === anoLetivoId)
+                        const escola = ano?.escolas.find(e => e.id === escolaId)
+                        const seg = escola?.segmentos.find(s => s.id === segmentoId)
+                        nomeSegmento = seg?.nome
+                    }
+                    setPlanos(prev => prev.map(p => {
+                        if (String(p.id) !== String(planoId)) return p
+                        const novasDatas = !(p.historicoDatas ?? []).includes(data)
+                            ? [...(p.historicoDatas ?? []), data]
+                            : (p.historicoDatas ?? [])
+                        const novosSegs = nomeSegmento && !(p.segmentos ?? []).includes(nomeSegmento)
+                            ? [...(p.segmentos ?? []), nomeSegmento]
+                            : (p.segmentos ?? [])
+                        return { ...p, historicoDatas: novasDatas, segmentos: novosSegs }
+                    }))
                 }
                 window.addEventListener('musilab:aplicacaoRealizada', handler)
                 return () => window.removeEventListener('musilab:aplicacaoRealizada', handler)
-            }, []) // eslint-disable-line
+            }, [anosLetivos]) // eslint-disable-line
 
             // ============================================================
             // FUNÇÕES: REPERTÓRIO — UTILITÁRIOS

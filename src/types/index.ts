@@ -156,6 +156,7 @@ export interface Plano {
   avaliacaoObservacoes?: string
   unidade?: string
   segmento?: string
+  segmentos?: string[]   // auto-catalogado ao aplicar em turmas
   createdAt?: string
   updatedAt?: string
   _ultimaEdicao?: string

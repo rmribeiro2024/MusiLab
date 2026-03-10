@@ -137,7 +137,7 @@ export function AplicacoesProvider({ children, userId }: AplicacoesProviderProps
       const aplicacao = aplicacoes.find(a => a.id === id)
       if (aplicacao) {
         window.dispatchEvent(new CustomEvent('musilab:aplicacaoRealizada', {
-          detail: { planoId: aplicacao.planoId, data: aplicacao.data }
+          detail: { planoId: aplicacao.planoId, data: aplicacao.data, segmentoId: aplicacao.segmentoId, anoLetivoId: aplicacao.anoLetivoId, escolaId: aplicacao.escolaId }
         }))
       }
     }
