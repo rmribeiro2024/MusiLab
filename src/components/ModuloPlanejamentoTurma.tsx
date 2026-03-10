@@ -263,6 +263,11 @@ function TimelinePedagogica({ onAcionar }: {
                   item.status === 'planejada' ? 'text-indigo-600' : 'text-slate-500'
                 ) : 'text-slate-500'}`}>{dd}</span>
                 <span className="text-[9px] text-slate-400">{mesAbr}</span>
+                {item.planoTitulo && (
+                  <span className="text-[8px] text-slate-400 text-center leading-tight mt-0.5 whitespace-normal break-words max-w-[72px]">
+                    {item.planoTitulo}
+                  </span>
+                )}
               </button>
             )
           })}
