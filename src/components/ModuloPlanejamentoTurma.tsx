@@ -206,10 +206,10 @@ function TimelinePedagogica({ onAcionar }: {
               'bg-white border-slate-300'
 
             const dotGlow = isAtivo
-              ? item.status === 'realizada' ? 'ring-[3px] ring-offset-1 ring-emerald-300'
-              : item.status === 'planejada' ? 'ring-[3px] ring-offset-1 ring-indigo-300'
-              : 'ring-[3px] ring-offset-1 ring-slate-300'
-              : ''
+              ? item.status === 'realizada' ? 'ring-4 ring-offset-2 ring-emerald-300 shadow-[0_0_10px_3px_rgba(52,211,153,0.45)] scale-125'
+              : item.status === 'planejada' ? 'ring-4 ring-offset-2 ring-indigo-300 shadow-[0_0_10px_3px_rgba(129,140,248,0.45)] scale-125'
+              : 'ring-4 ring-offset-2 ring-slate-300 shadow-[0_0_8px_2px_rgba(148,163,184,0.35)] scale-125'
+              : 'hover:scale-110'
 
             return (
               <button
