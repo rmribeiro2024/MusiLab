@@ -374,10 +374,13 @@ export default function ModalRegistroPosAula() {
         for (const chave of turmasCopiar) {
             const [anoId, escId, segId, turId] = chave.split('|')
             const ap = aplicacoes.find(a =>
-                String(a.planoId)     === String(planoParaRegistro.id) &&
-                a.anoLetivoId === anoId && a.escolaId  === escId &&
-                a.segmentoId  === segId && a.turmaId   === turId &&
-                a.data        === reg.data
+                // eslint-disable-next-line eqeqeq
+                a.planoId == planoParaRegistro.id &&
+                // eslint-disable-next-line eqeqeq
+                a.anoLetivoId == anoId && a.escolaId == escId &&
+                // eslint-disable-next-line eqeqeq
+                a.segmentoId == segId && a.turmaId == turId &&
+                a.data === reg.data
             )
             if (ap && ap.status !== 'realizada') atualizarStatusAplicacao(ap.id, 'realizada')
         }
@@ -577,13 +580,14 @@ export default function ModalRegistroPosAula() {
                                 📚 Histórico{' '}
                                 {planoParaRegistro.registrosPosAula?.length > 0 && (() => {
                                     const countFiltrado = (planoParaRegistro.registrosPosAula || []).filter((r: any) => {
-                                        if (filtroRegData) {
+                                        if (filtroRegTurma) {
+                                            if (r.turma != filtroRegTurma) return false
+                                        } else if (filtroRegData) {
                                             if (r.data != filtroRegData) return false
                                         } else {
                                             if (filtroRegAno      && r.anoLetivo             != filtroRegAno)      return false
                                             if (filtroRegEscola   && r.escola                != filtroRegEscola)   return false
                                             if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
-                                            if (filtroRegTurma    && r.turma                 != filtroRegTurma)    return false
                                         }
                                         return true
                                     }).length
@@ -864,13 +868,14 @@ export default function ModalRegistroPosAula() {
                                     {/* Lista de registros — cards colapsáveis */}
                                     {(() => {
                                         const regs = (planoParaRegistro.registrosPosAula || []).filter(r => {
-                                            if (filtroRegData) {
+                                            if (filtroRegTurma) {
+                                                if (r.turma != filtroRegTurma) return false
+                                            } else if (filtroRegData) {
                                                 if (r.data != filtroRegData) return false
                                             } else {
                                                 if (filtroRegAno      && r.anoLetivo != filtroRegAno) return false
                                                 if (filtroRegEscola   && r.escola    != filtroRegEscola) return false
                                                 if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
-                                                if (filtroRegTurma    && r.turma     != filtroRegTurma) return false
                                             }
                                             if (buscaRegistros.trim()) {
                                                 const q = buscaRegistros.toLowerCase()
