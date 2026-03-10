@@ -660,7 +660,7 @@ export function TelaCalendario() {
             {/* ── TAB MÊS ── */}
             {tabCal === 'mes' && (
                 <>
-                    <div className="grid grid-cols-7 gap-0 sm:gap-1 text-center font-bold text-gray-500 text-[10px] sm:text-xs mb-2">
+                    <div className="grid grid-cols-7 gap-px sm:gap-1 text-center font-bold text-gray-500 text-[10px] sm:text-xs mb-2">
                         {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((nome,i)=>(
                             <div key={i}><span className="hidden sm:inline">{nome}</span><span className="sm:hidden">{nome[0]}</span></div>
                         ))}
@@ -1092,8 +1092,8 @@ export default function TelaResumoDia() {
                                                             temRegistroNoDia ? 'bg-emerald-50 border border-emerald-200' :
                                                             temPlano ? 'bg-blue-50 border border-blue-200' :
                                                             'bg-white border border-gray-200'}`}>
-                                                            <span className="shrink-0 text-base">
-                                                                {temRegistroNoDia ? '✅' : temPlano ? '📋' : '⬜'}
+                                                            <span className="shrink-0 w-5 h-5 flex items-center justify-center leading-none text-base">
+                                                                {temRegistroNoDia ? '✅' : temPlano ? '📋' : <span className="w-3.5 h-3.5 border-2 border-slate-300 rounded-sm inline-block" />}
                                                             </span>
                                                             <span className="font-mono font-bold text-slate-600 shrink-0">{aula.horario}</span>
                                                             <span className="text-slate-500 shrink-0">{esc?.nome}</span>
@@ -1124,7 +1124,7 @@ export default function TelaResumoDia() {
                         <div className="flex gap-3 px-2 pt-1 flex-wrap">
                             <span className="text-xs text-gray-400 flex items-center gap-1">✅ <span>Aula registrada</span></span>
                             <span className="text-xs text-gray-400 flex items-center gap-1">📋 <span>Planejada (sem registro)</span></span>
-                            <span className="text-xs text-gray-400 flex items-center gap-1">⬜ <span>Sem plano vinculado</span></span>
+                            <span className="text-xs text-gray-400 flex items-center gap-1"><span className="w-3.5 h-3.5 border-2 border-slate-300 rounded-sm inline-block" /> <span>Sem plano vinculado</span></span>
                         </div>
                     </div>
                 );

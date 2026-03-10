@@ -372,6 +372,7 @@ export default function ModalRegistroPosAula() {
     // Copiar registro para outras turmas
     const [copiandoRegId, setCopiandoRegId] = React.useState<any>(null)
     const [turmasCopiar, setTurmasCopiar] = React.useState<Set<string>>(new Set())
+    const [copiarOutroDia, setCopiarOutroDia] = React.useState<string>('')
 
     // Expande automaticamente o registro mais recente da turma clicada ao abrir no Histórico
     React.useEffect(() => {
@@ -912,7 +913,7 @@ export default function ModalRegistroPosAula() {
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                                                     <button onClick={e => { e.stopPropagation(); editarRegistro(reg) }}
                                                                         style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }} title="Editar">✏️</button>
-                                                                    <button onClick={e => { e.stopPropagation(); if (copiandoRegId === (reg.id ?? i)) { setCopiandoRegId(null); setTurmasCopiar(new Set()) } else { setCopiandoRegId(reg.id ?? i); setTurmasCopiar(new Set()) } }}
+                                                                    <button onClick={e => { e.stopPropagation(); if (copiandoRegId === (reg.id ?? i)) { setCopiandoRegId(null); setTurmasCopiar(new Set()); setCopiarOutroDia('') } else { setCopiandoRegId(reg.id ?? i); setTurmasCopiar(new Set()); setCopiarOutroDia('') } }}
                                                                         style={{ padding: '3px 7px', fontSize: 11, color: copiandoRegId === (reg.id ?? i) ? '#2563eb' : '#94a3b8', border: `1px solid ${copiandoRegId === (reg.id ?? i) ? '#93c5fd' : '#e2e8f0'}`, borderRadius: 6, background: copiandoRegId === (reg.id ?? i) ? '#eff6ff' : '#fff', cursor: 'pointer' }} title="Copiar para outras turmas">📋</button>
                                                                     <button onClick={e => { e.stopPropagation(); excluirRegistro(reg.id) }}
                                                                         style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }} title="Excluir">🗑️</button>
@@ -922,14 +923,33 @@ export default function ModalRegistroPosAula() {
 
                                                             {/* Painel: copiar para outras turmas */}
                                                             {copiandoRegId === (reg.id ?? i) && (() => {
-                                                                const turmasDoDia = obterTurmasDoDia(reg.data).filter(a =>
-                                                                    !(a.turmaId == reg.turma && a.segmentoId == (reg.segmento || reg.serie))
+                                                                const dataRef = copiarOutroDia || reg.data
+                                                                const turmasDoDia = obterTurmasDoDia(dataRef).filter(a =>
+                                                                    copiarOutroDia
+                                                                        ? true
+                                                                        : !(a.turmaId == reg.turma && a.segmentoId == (reg.segmento || reg.serie))
                                                                 )
+                                                                const labelData = dataRef ? new Date(dataRef + 'T12:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''
                                                                 return (
                                                                     <div style={{ padding: '10px 12px', background: '#f0f9ff', borderBottom: '1px solid #e2e8f0' }} onClick={e => e.stopPropagation()}>
-                                                                        <p style={{ fontSize: 11, fontWeight: 700, color: '#0284c7', marginBottom: 8, letterSpacing: '.04em' }}>COPIAR PARA TURMAS DO DIA {reg.data ? new Date(reg.data + 'T12:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''}</p>
+                                                                        <p style={{ fontSize: 11, fontWeight: 700, color: '#0284c7', marginBottom: 8, letterSpacing: '.04em' }}>COPIAR PARA TURMAS</p>
+                                                                        {/* Seletor de dia */}
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                                                                            <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#334155', cursor: 'pointer' }}>
+                                                                                <input type="radio" name={`copiar-dia-${reg.id ?? i}`} checked={!copiarOutroDia} onChange={() => { setCopiarOutroDia(''); setTurmasCopiar(new Set()) }} style={{ accentColor: '#3b82f6' }} />
+                                                                                Mesmo dia ({reg.data ? new Date(reg.data + 'T12:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''})
+                                                                            </label>
+                                                                            <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#334155', cursor: 'pointer' }}>
+                                                                                <input type="radio" name={`copiar-dia-${reg.id ?? i}`} checked={!!copiarOutroDia} onChange={() => { setCopiarOutroDia(reg.data || ''); setTurmasCopiar(new Set()) }} style={{ accentColor: '#3b82f6' }} />
+                                                                                Outro dia:
+                                                                            </label>
+                                                                            {copiarOutroDia !== '' && (
+                                                                                <input type="date" value={copiarOutroDia} onChange={e => { setCopiarOutroDia(e.target.value); setTurmasCopiar(new Set()) }}
+                                                                                    style={{ fontSize: 12, border: '1px solid #93c5fd', borderRadius: 6, padding: '2px 6px', color: '#0284c7', background: '#fff', outline: 'none' }} />
+                                                                            )}
+                                                                        </div>
                                                                         {turmasDoDia.length === 0
-                                                                            ? <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Nenhuma outra turma agendada neste dia.</p>
+                                                                            ? <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Nenhuma turma agendada para {labelData}.</p>
                                                                             : <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
                                                                                 {turmasDoDia.map(a => {
                                                                                     const chave = `${a.anoLetivoId}|${a.escolaId}|${a.segmentoId}|${a.turmaId}`
@@ -938,7 +958,8 @@ export default function ModalRegistroPosAula() {
                                                                                     return (
                                                                                         <label key={chave} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, background: sel ? '#dbeafe' : '#fff', border: `1px solid ${sel ? '#93c5fd' : '#e2e8f0'}`, cursor: 'pointer', fontSize: 12, color: '#1e293b', fontWeight: sel ? 600 : 400 }}>
                                                                                             <input type="checkbox" checked={sel} onChange={() => setTurmasCopiar(prev => { const next = new Set(prev); sel ? next.delete(chave) : next.add(chave); return next })} style={{ accentColor: '#3b82f6' }} />
-                                                                                            {label}
+                                                                                            {a.horario && <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#7c3aed', flexShrink: 0 }}>{a.horario}</span>}
+                                                                                            <span>{label}</span>
                                                                                         </label>
                                                                                     )
                                                                                 })}
@@ -949,7 +970,7 @@ export default function ModalRegistroPosAula() {
                                                                                 style={{ flex: 1, padding: '6px 0', fontSize: 12, fontWeight: 700, background: turmasCopiar.size > 0 ? '#2563eb' : '#e2e8f0', color: turmasCopiar.size > 0 ? '#fff' : '#94a3b8', border: 'none', borderRadius: 8, cursor: turmasCopiar.size > 0 ? 'pointer' : 'default', transition: 'all .15s' }}>
                                                                                 Copiar {turmasCopiar.size > 0 ? `(${turmasCopiar.size})` : ''}
                                                                             </button>
-                                                                            <button onClick={() => { setCopiandoRegId(null); setTurmasCopiar(new Set()) }}
+                                                                            <button onClick={() => { setCopiandoRegId(null); setTurmasCopiar(new Set()); setCopiarOutroDia('') }}
                                                                                 style={{ padding: '6px 12px', fontSize: 12, color: '#64748b', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer' }}>
                                                                                 Cancelar
                                                                             </button>
