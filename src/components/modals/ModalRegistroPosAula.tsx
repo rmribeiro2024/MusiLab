@@ -370,6 +370,17 @@ export default function ModalRegistroPosAula() {
         const atualizado = { ...planoParaRegistro, registrosPosAula: [...(planoParaRegistro.registrosPosAula || []), ...novos] }
         setPlanos((prev: any[]) => prev.map((p: any) => p.id === atualizado.id ? atualizado : p))
         setPlanoParaRegistro(atualizado)
+        // Marcar aplicações das turmas destino como "realizada" no calendário
+        for (const chave of turmasCopiar) {
+            const [anoId, escId, segId, turId] = chave.split('|')
+            const ap = aplicacoes.find(a =>
+                String(a.planoId)     === String(planoParaRegistro.id) &&
+                a.anoLetivoId === anoId && a.escolaId  === escId &&
+                a.segmentoId  === segId && a.turmaId   === turId &&
+                a.data        === reg.data
+            )
+            if (ap && ap.status !== 'realizada') atualizarStatusAplicacao(ap.id, 'realizada')
+        }
         setCopiandoRegId(null)
         setTurmasCopiar(new Set())
     }
