@@ -9,7 +9,8 @@ const AccordionChip = React.forwardRef<() => void, {
     value: string, filled: boolean, defaultOpen?: boolean,
     onChange: (v: string) => void,
     onTabNext?: () => void,
-}>(function AccordionChip({ id, icon, label, placeholder, value, filled, defaultOpen, onChange, onTabNext }, ref) {
+    quickOptions?: string[],
+}>(function AccordionChip({ id, icon, label, placeholder, value, filled, defaultOpen, onChange, onTabNext, quickOptions }, ref) {
     const [open, setOpen] = React.useState(defaultOpen ?? false)
     React.useImperativeHandle(ref, () => () => setOpen(true))
     React.useEffect(() => { if (filled) setOpen(true) }, [filled])
@@ -27,6 +28,17 @@ const AccordionChip = React.forwardRef<() => void, {
             </div>
             {open && (
                 <div style={{ padding: '0 12px 10px' }}>
+                    {quickOptions && quickOptions.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+                            {quickOptions.map(opt => (
+                                <button key={opt} type="button"
+                                    onClick={() => onChange(value ? value + (value.endsWith('\n') ? '' : '\n') + opt : opt)}
+                                    style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                    + {opt}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                     <textarea id={id} value={value} onChange={e => onChange(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Tab') { e.preventDefault(); setOpen(false); onTabNext?.() } }}
                         rows={2} placeholder={placeholder} autoFocus
@@ -560,8 +572,8 @@ export default function ModalRegistroPosAula() {
                                             if (filtroRegAno      && r.anoLetivo             != filtroRegAno)      return false
                                             if (filtroRegEscola   && r.escola                != filtroRegEscola)   return false
                                             if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
+                                            if (filtroRegTurma    && r.turma                 != filtroRegTurma)    return false
                                         }
-                                        if (filtroRegTurma && r.turma != filtroRegTurma) return false
                                         return true
                                     }).length
                                     return (
@@ -681,6 +693,7 @@ export default function ModalRegistroPosAula() {
                                                     onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v })}
                                                     onTabNext={() => { const next = chipOpenRefs.current[idx + 1]; if (next) next(); else salvarBtnRef.current?.focus() }}
                                                     ref={(fn: (() => void) | null) => { chipOpenRefs.current[idx] = fn }}
+                                                    quickOptions={field === 'resumoAula' ? ['Plano de aula completo'] : undefined}
                                                 />
                                             )
                                         })}
@@ -846,8 +859,8 @@ export default function ModalRegistroPosAula() {
                                                 if (filtroRegAno      && r.anoLetivo != filtroRegAno) return false
                                                 if (filtroRegEscola   && r.escola    != filtroRegEscola) return false
                                                 if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
+                                                if (filtroRegTurma    && r.turma     != filtroRegTurma) return false
                                             }
-                                            if (filtroRegTurma && r.turma != filtroRegTurma) return false
                                             if (buscaRegistros.trim()) {
                                                 const q = buscaRegistros.toLowerCase()
                                                 const campos = [r.resumoAula, r.funcionouBem, r.naoFuncionou, r.poderiaMelhorar, r.proximaAula, r.comportamento, r.anotacoesGerais]
