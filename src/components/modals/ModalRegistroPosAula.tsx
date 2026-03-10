@@ -814,7 +814,19 @@ export default function ModalRegistroPosAula() {
                                                             const label = resolverTurmaLabel(a.anoLetivoId, a.escolaId, a.segmentoId, a.turmaId) || `Turma ${a.turmaId}`
                                                             return (
                                                                 <button key={`${a.escolaId}-${a.segmentoId}-${a.turmaId}`} type="button"
-                                                                    onClick={() => setFiltroRegTurma(filtroRegTurma == a.turmaId ? '' : a.turmaId)}
+                                                                    onClick={() => {
+                                                                        const novaTurma = filtroRegTurma == a.turmaId ? '' : a.turmaId
+                                                                        setFiltroRegTurma(novaTurma)
+                                                                        setExpandedRegs(new Set())
+                                                                        if (novaTurma) {
+                                                                            // turma pode ser de outro plano — trocar planoParaRegistro
+                                                                            const ap = aplicacoes.find(ap => ap.turmaId == novaTurma && ap.data === filtroRegData)
+                                                                            if (ap) {
+                                                                                const plano = planos.find(p => String(p.id) === String(ap.planoId))
+                                                                                if (plano) setPlanoParaRegistro(plano)
+                                                                            }
+                                                                        }
+                                                                    }}
                                                                     style={pillStyle(filtroRegTurma == a.turmaId)}>
                                                                     {label}
                                                                 </button>
