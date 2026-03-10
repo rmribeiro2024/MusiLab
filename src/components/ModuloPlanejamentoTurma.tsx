@@ -163,13 +163,19 @@ function TimelinePedagogica({ onAcionar }: {
     ? historicoDaTurma.find(r => (r.dataAula ?? r.data) === dataAtiva) ?? null
     : null
 
+  const contadores = useMemo(() => ({
+    realizadas: todosItens.filter(i => i.status === 'realizada').length,
+    planejadas:  todosItens.filter(i => i.status === 'planejada').length,
+    semPlano:    todosItens.filter(i => i.status === 'sem-plano').length,
+  }), [todosItens])
+
   if (!turmaSelecionada || itensVisiveis.length === 0) return null
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
 
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-1">
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Progresso pedagógico</h3>
         {temMais && (
           <button type="button" onClick={() => setVerTodos(true)}
@@ -183,6 +189,20 @@ function TimelinePedagogica({ onAcionar }: {
             Ver resumo
           </button>
         )}
+      </div>
+
+      {/* Resumo de indicadores */}
+      <div className="flex items-center gap-1 mb-4 text-[11px] flex-wrap">
+        <span className="font-bold text-emerald-600">{contadores.realizadas}</span>
+        <span className="text-slate-400">realizadas</span>
+        <span className="text-slate-300 mx-1">•</span>
+        <span className="font-bold text-indigo-500">{contadores.planejadas}</span>
+        <span className="text-slate-400">planejadas</span>
+        {contadores.semPlano > 0 && <>
+          <span className="text-slate-300 mx-1">•</span>
+          <span className="font-bold text-slate-400">{contadores.semPlano}</span>
+          <span className="text-slate-400">sem plano</span>
+        </>}
       </div>
 
       {/* Timeline: linha horizontal + pontos conectados */}
@@ -243,6 +263,11 @@ function TimelinePedagogica({ onAcionar }: {
                   item.status === 'planejada' ? 'text-indigo-600' : 'text-slate-500'
                 ) : 'text-slate-500'}`}>{dd}</span>
                 <span className="text-[9px] text-slate-400">{mesAbr}</span>
+                {item.planoTitulo && (
+                  <span className="text-[8px] text-slate-400 max-w-[56px] truncate leading-tight mt-0.5 text-center">
+                    {item.planoTitulo}
+                  </span>
+                )}
               </button>
             )
           })}
