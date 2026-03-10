@@ -2517,23 +2517,12 @@ export default function BancoPlanos({ session }) {
                                         <div>
                                             {planoSelecionado.destaque && <span className="inline-flex items-center text-xs bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-0.5 rounded-full font-semibold mb-1.5">★ Favorita</span>}
                                             <h2 className="text-2xl font-bold text-slate-800 leading-tight">{planoSelecionado.titulo}</h2>
-                                            {planoSelecionado.escola && <p className="text-slate-500 text-sm mt-1">🏫 {planoSelecionado.escola}</p>}
                                         </div>
                                         <button onClick={fecharModal} className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition shrink-0 text-lg">✕</button>
                                     </div>
                                 </div>
 
                                 <div className="p-6 space-y-5">
-
-                                    {/* Histórico de Aulas */}
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">📅 Histórico de Aulas</p>
-                                        <div className="flex gap-2 mb-3">
-                                            <input type="date" value={novaDataAula} onChange={e=>setNovaDataAula(e.target.value)} className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-400"/>
-                                            <button onClick={adicionarDataAulaVisualizacao} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-4 py-2 rounded-xl text-sm font-semibold transition">+ Adicionar</button>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">{planoSelecionado.historicoDatas?.map(d=><span key={d} className="bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full text-sm">{new Date(d+'T12:00:00').toLocaleDateString('pt-BR')} <button onClick={()=>removerDataAulaVisualizacao(d)} className="text-slate-400 hover:text-red-500 font-bold ml-1">×</button></span>)}</div>
-                                    </div>
 
                                     {/* Ações */}
                                     <div className="flex gap-2 flex-wrap">
@@ -2578,7 +2567,6 @@ export default function BancoPlanos({ session }) {
                                         <div>
                                             <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Detalhes</p>
                                             <div className="space-y-1 text-sm">
-                                                {planoSelecionado.nivel && <p><span className="text-slate-400">Nível:</span> <span className="text-slate-700 font-medium">{planoSelecionado.nivel}</span></p>}
                                                 {planoSelecionado.duracao && <p><span className="text-slate-400">Duração:</span> <span className="text-slate-700 font-medium">{planoSelecionado.duracao}</span></p>}
                                                 {planoSelecionado.tema && <p><span className="text-slate-400">Tema:</span> <span className="text-slate-700 font-medium">{planoSelecionado.tema}</span></p>}
                                             </div>
