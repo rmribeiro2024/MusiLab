@@ -203,6 +203,10 @@ export default function TelaPrincipal() {
         const m = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/shorts\/))([a-zA-Z0-9_-]{11})/)
         return m ? m[1] : null
     }
+    function getDriveThumb(url: string): string | null {
+        const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/)
+        return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w320` : null
+    }
     const RECURSO_TIPOS: { value: string; label: string; icone: string }[] = [
         { value: 'musica',   label: 'Música',         icone: '🎵' },
         { value: 'video',    label: 'Vídeo',           icone: '▶️' },
@@ -1189,11 +1193,18 @@ export default function TelaPrincipal() {
                                             const tipo = rec.tipo || detectarTipoRecurso(rec.url)
                                             const { icone, label, cor } = getRecursoMeta(tipo)
                                             const ytId = (tipo === 'video' || tipo === 'youtube') ? getYoutubeId(rec.url) : null
+                                            const driveThumb = /drive\.google\.com/.test(rec.url) ? getDriveThumb(rec.url) : null
+                                            const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : driveThumb
                                             return (
                                                 <div key={idx} className={`flex items-start gap-2.5 p-2.5 rounded-xl border ${cor.split(' ').slice(0,2).join(' ')} bg-opacity-40`}>
-                                                    {ytId ? (
+                                                    {thumbUrl ? (
                                                         <a href={rec.url} target="_blank" rel="noopener noreferrer" className="shrink-0">
-                                                            <img src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`} alt="thumb" className="w-16 h-11 object-cover rounded-lg shadow-sm" />
+                                                            <img
+                                                                src={thumbUrl}
+                                                                alt="thumb"
+                                                                className="w-16 h-11 object-cover rounded-lg shadow-sm"
+                                                                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                                            />
                                                         </a>
                                                     ) : (
                                                         <span className="text-lg shrink-0 mt-0.5 leading-none">{icone}</span>
