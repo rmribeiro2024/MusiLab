@@ -1229,96 +1229,34 @@ export default function TelaPrincipal() {
             </div>
         )}
 
-        {/* ── DASHBOARD (#1) ── */}
-        <div className="mb-6 space-y-3">
-            {/* Linha 1: KPIs principais */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {/* Total de planos */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                    <p className="text-xs font-semibold text-slate-400 uppercase mb-1">Planos de Aula</p>
-                    <p className="text-3xl font-bold text-slate-800">{totalPlanos}</p>
-                    <div className="mt-2 flex gap-1.5 flex-wrap">
-                        <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{porStatus['A Fazer']} a fazer</span>
-                        <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{porStatus['Em Andamento']} em andamento</span>
-                        <span className="text-xs bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full">{porStatus['Concluído']} concluídos</span>
-                    </div>
-                </div>
-                {/* Registros Pós-Aula */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                    <p className="text-xs font-semibold text-slate-400 uppercase mb-1">Registros Pós-Aula</p>
-                    <p className="text-3xl font-bold text-amber-600">{totalRegistros}</p>
-                    {ultimoRegistro ? (
-                        <p className="text-xs text-slate-400 mt-2 line-clamp-2">
-                            Último: <span className="text-slate-600 font-medium">{ultimoRegistro.planoTitulo}</span>
-                            {ultimoRegistro.data && <> · {new Date(ultimoRegistro.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</>}
-                        </p>
-                    ) : <p className="text-xs text-slate-400 mt-2">Nenhum registro ainda</p>}
-                </div>
-                {/* Próxima aula */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                    <p className="text-xs font-semibold text-slate-400 uppercase mb-1">Próxima Aula</p>
-                    {proximaAula ? (
-                        <>
-                            <p className="text-xl font-bold text-indigo-700">
-                                {new Date(proximaAula.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}
-                            </p>
-                            <p className="text-xs text-slate-500 mt-1 line-clamp-2 font-medium">{proximaAula.plano.titulo}</p>
-                            {proximaAula.plano.escola && <p className="text-xs text-indigo-400 mt-0.5">🏫 {proximaAula.plano.escola}</p>}
-                        </>
-                    ) : <p className="text-2xl font-bold text-slate-300 mt-1">—</p>}
-                </div>
-                {/* Repertório */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                    <p className="text-xs font-semibold text-slate-400 uppercase mb-1">Repertório</p>
-                    <p className="text-3xl font-bold text-purple-600">{totalRepertorio}</p>
-                    <p className="text-xs text-slate-400 mt-2">{totalRepertorio === 1 ? 'música cadastrada' : 'músicas cadastradas'}</p>
+        {/* ── INDICADORES ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5 flex items-center gap-3">
+                <span className="text-2xl font-bold text-slate-800">{totalPlanos}</span>
+                <div>
+                    <p className="text-xs font-semibold text-slate-500">Planos de Aula</p>
+                    <p className="text-[10px] text-slate-400">{porStatus['Concluído']} concluídos · {porStatus['Em Andamento']} em andamento</p>
                 </div>
             </div>
-
-            {/* Linha 2: Barra de progresso de status + Turmas hoje */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Progresso geral */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                    <p className="text-xs font-semibold text-slate-400 uppercase mb-3">Progresso Geral dos Planos</p>
-                    {totalPlanos === 0 ? (
-                        <p className="text-sm text-slate-400">Nenhum plano criado ainda.</p>
-                    ) : (
-                        <>
-                            <div className="flex rounded-full overflow-hidden h-4 mb-2">
-                                {porStatus['Concluído'] > 0 && <div style={{width: `${(porStatus['Concluído']/totalPlanos*100).toFixed(1)}%`}} className="bg-emerald-400 transition-all" title="Concluído"></div>}
-                                {porStatus['Em Andamento'] > 0 && <div style={{width: `${(porStatus['Em Andamento']/totalPlanos*100).toFixed(1)}%`}} className="bg-blue-400 transition-all" title="Em Andamento"></div>}
-                                {porStatus['A Fazer'] > 0 && <div style={{width: `${(porStatus['A Fazer']/totalPlanos*100).toFixed(1)}%`}} className="bg-slate-200 transition-all" title="A Fazer"></div>}
-                            </div>
-                            <div className="flex gap-4 text-xs text-slate-500 mt-1">
-                                <span>✅ {(porStatus['Concluído']/totalPlanos*100).toFixed(0)}% concluídos</span>
-                                <span>🔵 {(porStatus['Em Andamento']/totalPlanos*100).toFixed(0)}% em andamento</span>
-                                <span>⬜ {(porStatus['A Fazer']/totalPlanos*100).toFixed(0)}% a fazer</span>
-                            </div>
-                        </>
-                    )}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5 flex items-center gap-3">
+                <span className="text-2xl font-bold text-amber-600">{totalRegistros}</span>
+                <div>
+                    <p className="text-xs font-semibold text-slate-500">Registros Pós-Aula</p>
+                    <p className="text-[10px] text-slate-400">{ultimoRegistro ? `Último: ${new Date(ultimoRegistro.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}` : 'Nenhum ainda'}</p>
                 </div>
-
-                {/* Hoje */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                    <p className="text-xs font-semibold text-slate-400 uppercase mb-3">Hoje</p>
-                    {turmasHoje.length > 0 ? (
-                        <>
-                            <p className="text-sm font-bold text-emerald-700 mb-2">🎓 {turmasHoje.length} aula(s) registrada(s) hoje</p>
-                            <div className="flex flex-wrap gap-1.5">
-                                {turmasHoje.map((t,i) => (
-                                    <span key={i} className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">{t}</span>
-                                ))}
-                            </div>
-                        </>
-                    ) : (
-                        <p className="text-sm text-slate-400">Nenhuma aula registrada hoje.</p>
-                    )}
-                    {ultimoRegistro && ultimoRegistro.data !== hojeStr && (
-                        <p className="text-xs text-slate-400 mt-2 border-t border-slate-100 pt-2">
-                            Último registro: <span className="text-slate-600 font-medium">{new Date(ultimoRegistro.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}</span>
-                            {' · '}{ultimoRegistro.planoTitulo}
-                        </p>
-                    )}
+            </div>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5 flex items-center gap-3">
+                <span className="text-2xl font-bold text-indigo-700">{proximaAula ? new Date(proximaAula.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : '—'}</span>
+                <div>
+                    <p className="text-xs font-semibold text-slate-500">Próxima Aula</p>
+                    <p className="text-[10px] text-slate-400 truncate max-w-[100px]">{proximaAula ? proximaAula.plano.titulo : 'Nenhuma agendada'}</p>
+                </div>
+            </div>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5 flex items-center gap-3">
+                <span className="text-2xl font-bold text-purple-600">{totalRepertorio}</span>
+                <div>
+                    <p className="text-xs font-semibold text-slate-500">Repertório</p>
+                    <p className="text-[10px] text-slate-400">{totalRepertorio === 1 ? 'música cadastrada' : 'músicas cadastradas'}</p>
                 </div>
             </div>
         </div>

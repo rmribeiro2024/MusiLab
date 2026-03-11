@@ -2414,7 +2414,7 @@ export default function BancoPlanos({ session }) {
                                 {/* GRUPO 1: Trabalho diário */}
                                 <div className="flex items-end gap-0.5 sm:gap-1 mr-2 sm:mr-3">
                                     {[
-                                        { label:'Início',     short:'Início',  icon:'🏠', mode:'lista',           action:()=>{setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null);} },
+                                        { label:'Banco de Aulas', short:'Banco', icon:'📚', mode:'lista', action:()=>{setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null);} },
                                         { label:'Nova Aula',  short:'Nova',    icon:'➕', mode:'nova',            action: novoPlano, accent: true },
                                         { label:'Hoje',       short:'Hoje',    icon:'☀️', mode:'resumoDia',       action:()=>setViewMode('resumoDia') },
                                         { label:'Semana',     short:'Semana',  icon:'📆', mode:'agendaSemanal',   action:()=>setViewMode('agendaSemanal') },
@@ -2508,7 +2508,7 @@ export default function BancoPlanos({ session }) {
 
                         {/* ═══════════ VIEW SEQUÊNCIAS DIDÁTICAS ═══════════ */}
                         {viewMode === 'sequencias' && <ErrorBoundary modulo="Sequências"><Suspense fallback={<CarregandoModulo />}><ModuloSequencias /></Suspense></ErrorBoundary>}
-                        {viewMode === 'lista' && <ErrorBoundary modulo="Início"><Suspense fallback={<CarregandoModulo />}><TelaPrincipal /></Suspense></ErrorBoundary>}
+                        {viewMode === 'lista' && <ErrorBoundary modulo="Banco de Aulas"><Suspense fallback={<CarregandoModulo />}><TelaPrincipal /></Suspense></ErrorBoundary>}
                     </div>
 
                     {/* MODAL VER COMPLETO */}
@@ -2727,7 +2727,7 @@ export default function BancoPlanos({ session }) {
                     <nav className="fixed bottom-0 left-0 right-0 sm:hidden bg-white border-t border-slate-200 flex justify-around items-center z-40"
                          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
                         {[
-                            { mode: 'lista',      icon: '🏠', label: 'Início',  action: () => { setViewMode('lista'); setMaisAberto(false); setModoEdicao(false); setPlanoEditando(null); } },
+                            { mode: 'lista',      icon: '📚', label: 'Banco',  action: () => { setViewMode('lista'); setMaisAberto(false); setModoEdicao(false); setPlanoEditando(null); } },
                             { mode: 'calendario', icon: '📅', label: 'Agenda',  action: () => { setViewMode('calendario'); setMaisAberto(false); } },
                             { mode: 'nova',       icon: '➕', label: 'Nova',    action: novoPlano },
                             { mode: 'repertorio', icon: '🎼', label: 'Músicas', action: () => { setViewMode('repertorio'); setMaisAberto(false); } },
