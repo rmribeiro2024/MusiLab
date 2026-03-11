@@ -1013,7 +1013,7 @@ Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no in
         setGerandoObjetivos(true)
         try {
             const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1089,7 +1089,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         setGerandoBNCC(true)
         try {
             const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
