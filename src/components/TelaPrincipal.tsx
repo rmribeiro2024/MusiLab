@@ -1163,50 +1163,23 @@ export default function TelaPrincipal() {
                                 </div>
 
                                 {/* Formulário de novo recurso */}
-                                <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 space-y-2 mb-3">
-                                    <div className="flex gap-2">
-                                        <select
-                                            value={novoRecursoTipo}
-                                            onChange={e => setNovoRecursoTipo(e.target.value)}
-                                            className="border border-slate-200 rounded-xl px-2 py-2 text-sm bg-white focus:border-indigo-400 outline-none shrink-0"
-                                        >
-                                            {RECURSO_TIPOS.map(t => (
-                                                <option key={t.value} value={t.value}>{t.icone} {t.label}</option>
-                                            ))}
-                                        </select>
+                                <div className="flex gap-2 mb-3">
+                                    <div className="relative flex-1">
                                         <input
                                             type="text"
-                                            placeholder="Título do recurso..."
-                                            value={novoRecursoTitulo}
-                                            onChange={e => setNovoRecursoTitulo(e.target.value)}
-                                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarRecurso(); } }}
-                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none"
-                                        />
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="URL (opcional)..."
+                                            placeholder="Cole aqui: YouTube, Spotify, PDF, link..."
                                             value={novoRecursoUrl}
                                             onChange={e => { setNovoRecursoUrl(e.target.value); if (e.target.value) setNovoRecursoTipo(detectarTipoRecurso(e.target.value)); }}
                                             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarRecurso(); } }}
-                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none"
+                                            className="w-full pl-3 pr-10 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none"
                                         />
-                                        <input
-                                            type="text"
-                                            placeholder="Observação (opcional)..."
-                                            value={novoRecursoObservacao}
-                                            onChange={e => setNovoRecursoObservacao(e.target.value)}
-                                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarRecurso(); } }}
-                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none"
-                                        />
+                                        {novoRecursoUrl && (
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base">
+                                                {getRecursoMeta(detectarTipoRecurso(novoRecursoUrl)).icone}
+                                            </span>
+                                        )}
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={adicionarRecurso}
-                                        disabled={!novoRecursoTitulo.trim() && !novoRecursoUrl.trim()}
-                                        className="w-full py-2 border border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                    >+ Adicionar recurso</button>
+                                    <button type="button" onClick={adicionarRecurso} disabled={!novoRecursoUrl.trim()} className="border border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 px-4 py-2 rounded-xl text-sm font-semibold transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed">+ Add</button>
                                 </div>
 
                                 {/* Lista de recursos adicionados */}
@@ -1226,10 +1199,7 @@ export default function TelaPrincipal() {
                                                         <span className="text-lg shrink-0 mt-0.5 leading-none">{icone}</span>
                                                     )}
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className={`text-[10px] font-bold uppercase tracking-wide ${cor.split(' ').slice(2).join(' ')}`}>{label}</span>
-                                                            {rec.titulo && <span className="text-sm font-medium text-slate-700 truncate">{rec.titulo}</span>}
-                                                        </div>
+                                                        <span className={`text-[10px] font-bold uppercase tracking-wide ${cor.split(' ').slice(2).join(' ')}`}>{label}</span>
                                                         {rec.url && <a href={rec.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-400 hover:underline truncate block">{rec.url}</a>}
                                                         {rec.observacao && <p className="text-[11px] text-slate-500 italic mt-0.5">{rec.observacao}</p>}
                                                     </div>
