@@ -1026,17 +1026,21 @@ Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no in
                 throw new Error(`HTTP ${res.status}`)
             }
             const data = await res.json()
-            const texto = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
-            const jsonMatch = texto.match(/\{[\s\S]*\}/)
+            // Pega o texto ignorando thinking parts (parts com thought:true)
+            const parts = data?.candidates?.[0]?.content?.parts || []
+            const textPart = parts.find((p: any) => !p.thought) || parts[0]
+            const texto = textPart?.text || ''
+            const jsonMatch = texto.match(/\{[\s\S]*?\}(?=\s*$|\s*```)/s) || texto.match(/\{[\s\S]*\}/)
             if (!jsonMatch) throw new Error('Resposta inválida')
             const obj = JSON.parse(jsonMatch[0])
-            setPlanoEditando({
-                ...planoEditando,
-                objetivoGeral: obj.geral || planoEditando.objetivoGeral,
+            if (!obj.geral && !obj.especificos?.length) throw new Error('Resposta sem objetivos')
+            setPlanoEditando(prev => ({
+                ...(prev!),
+                objetivoGeral: obj.geral || prev?.objetivoGeral || '',
                 objetivosEspecificos: obj.especificos?.length
-                    ? ['<ul>' + obj.especificos.map((o: string) => `<li>${o}</li>`).join('') + '</ul>']
-                    : planoEditando.objetivosEspecificos
-            })
+                    ? obj.especificos
+                    : (prev?.objetivosEspecificos || [])
+            }))
             setModalConfirm({ conteudo: '✅ Objetivos gerados com IA!', somenteOk: true, labelConfirm: 'OK' })
         } catch (err) {
             console.error('Gemini objetivos:', err)
@@ -1102,14 +1106,18 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
                 throw new Error(`HTTP ${res.status}`)
             }
             const data = await res.json()
-            const texto = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+            const parts = data?.candidates?.[0]?.content?.parts || []
+            const textPart = parts.find((p: any) => !p.thought) || parts[0]
+            const texto = textPart?.text || ''
             const jsonMatch = texto.match(/\{[\s\S]*\}/)
             if (!jsonMatch) throw new Error('Resposta inválida')
             const obj = JSON.parse(jsonMatch[0])
             const novas: string[] = obj.habilidades || []
             if (novas.length === 0) throw new Error('Nenhuma habilidade retornada')
-            const atuais = planoEditando.habilidadesBNCC || []
-            setPlanoEditando({ ...planoEditando, habilidadesBNCC: [...new Set([...atuais, ...novas])] })
+            setPlanoEditando(prev => {
+                const atuais = prev?.habilidadesBNCC || []
+                return { ...(prev!), habilidadesBNCC: [...new Set([...atuais, ...novas])] }
+            })
             setModalConfirm({ conteudo: `✅ ${novas.length} habilidade(s) BNCC sugeridas pela IA!`, somenteOk: true, labelConfirm: 'OK' })
         } catch (err) {
             console.error('Gemini BNCC:', err)
