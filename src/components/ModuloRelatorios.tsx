@@ -116,7 +116,8 @@ export default function ModuloRelatorios() {
                 : buildPromptTurma(relatorioTurma!, periodoInicio, periodoFim)
             setSinteseIA(await chamarGemini(prompt))
         } catch (e) {
-            setErroIA('Não foi possível gerar a síntese. Verifique sua conexão e a chave da API.')
+            const msg = e instanceof Error ? e.message : String(e)
+            setErroIA(`Não foi possível gerar a síntese. ${msg}`)
         } finally {
             setGerandoIA(false)
         }
