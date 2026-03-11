@@ -96,7 +96,7 @@ interface RepertorioProviderProps {
 export function RepertorioProvider({ children, userId }: RepertorioProviderProps) {
 
   // ── Navegação global ───────────────────────────────────────────────────────
-  const [viewMode, setViewMode] = useState('lista')
+  const [viewMode, setViewMode] = useState('resumoDia')
 
   // ── Edição de música ───────────────────────────────────────────────────────
   const [musicaEditando, setMusicaEditando] = useState<Musica | null>(null)
