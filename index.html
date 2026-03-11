@@ -3329,6 +3329,25 @@
                                                                             {aula.observacao && (
                                                                                 <span className="text-gray-400 italic text-xs">({aula.observacao})</span>
                                                                             )}
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    const planoId = sugerirPlanoParaTurma(aula.anoLetivoId, aula.escolaId, aula.segmentoId, aula.turmaId);
+                                                                                    const plano = planoId ? planos.find(p => p.id === planoId) : (planos[0] || null);
+                                                                                    if (!plano) { setModalConfirm({ conteudo: 'Nenhum plano encontrado. Crie um plano de aula primeiro.', somenteOk: true, labelConfirm: 'OK' }); return; }
+                                                                                    setPlanoParaRegistro(plano);
+                                                                                    setNovoRegistro({ dataAula: dataDia, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '' });
+                                                                                    setRegAnoSel(aula.anoLetivoId);
+                                                                                    setRegEscolaSel(aula.escolaId);
+                                                                                    setRegSegmentoSel(aula.segmentoId);
+                                                                                    setRegTurmaSel(aula.turmaId);
+                                                                                    setFiltroRegAno(''); setFiltroRegEscola(''); setFiltroRegSegmento(''); setFiltroRegTurma('');
+                                                                                    setRegistroEditando(null);
+                                                                                    setVerRegistros(false);
+                                                                                    setModalRegistro(true);
+                                                                                }}
+                                                                                className="ml-auto shrink-0 bg-amber-400 hover:bg-amber-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-md"
+                                                                                title="Registro pós-aula completo"
+                                                                            >📝 Registrar</button>
                                                                         </div>
                                                                     );
                                                                 })}
@@ -3443,8 +3462,31 @@
                                                                         <span className="font-medium text-slate-700">{seg?.nome}</span>
                                                                         <span className="text-slate-400">›</span>
                                                                         <span className="text-slate-600">{tur?.nome}</span>
-                                                                        <span className="ml-auto text-slate-400 italic text-[10px]">
-                                                                            {temRegistroNoDia ? 'Registrada' : temPlano ? 'Planejada' : 'Sem plano'}
+                                                                        <span className="ml-auto flex items-center gap-2">
+                                                                            <span className="text-slate-400 italic text-[10px]">
+                                                                                {temRegistroNoDia ? 'Registrada' : temPlano ? 'Planejada' : 'Sem plano'}
+                                                                            </span>
+                                                                            {!temRegistroNoDia && (
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        const planoId = sugerirPlanoParaTurma(aula.anoLetivoId, aula.escolaId, aula.segmentoId, aula.turmaId);
+                                                                                        const plano = planoId ? planos.find(p => p.id === planoId) : (planos[0] || null);
+                                                                                        if (!plano) { setModalConfirm({ conteudo: 'Nenhum plano encontrado. Crie um plano de aula primeiro.', somenteOk: true, labelConfirm: 'OK' }); return; }
+                                                                                        setPlanoParaRegistro(plano);
+                                                                                        setNovoRegistro({ dataAula: dataStr, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '' });
+                                                                                        setRegAnoSel(aula.anoLetivoId);
+                                                                                        setRegEscolaSel(aula.escolaId);
+                                                                                        setRegSegmentoSel(aula.segmentoId);
+                                                                                        setRegTurmaSel(aula.turmaId);
+                                                                                        setFiltroRegAno(''); setFiltroRegEscola(''); setFiltroRegSegmento(''); setFiltroRegTurma('');
+                                                                                        setRegistroEditando(null);
+                                                                                        setVerRegistros(false);
+                                                                                        setModalRegistro(true);
+                                                                                    }}
+                                                                                    className="bg-amber-400 hover:bg-amber-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded"
+                                                                                    title="Registro pós-aula completo"
+                                                                                >📝</button>
+                                                                            )}
                                                                         </span>
                                                                     </div>
                                                                 ))}
