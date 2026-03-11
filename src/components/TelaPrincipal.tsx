@@ -163,9 +163,15 @@ export default function TelaPrincipal() {
     // ── Dropdown Restaurar versão ──
     const [restaurarOpen, setRestaurarOpen] = useState(false)
 
+    // ── Modo Rápido ──
+    const [modoRapido, setModoRapido] = useState(false)
+
+    // ── Drag-and-drop: só permite arrastar quando iniciado pelo handle ──
+    const dragFromHandle = useRef(false)
+
     // ── ACCORDION do formulário de plano ──
     const [secoesForm, setSecoesForm] = useState<Set<string>>(
-        () => new Set(['detalhes', 'classificacao', 'objetivos', 'roteiro', 'recursos'])
+        () => new Set(['faixaEtaria', 'roteiro', 'materiais', 'objetivos', 'classificacao', 'bncc', 'recursos'])
     )
     function toggleSecaoForm(id: string) {
         setSecoesForm(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
@@ -260,283 +266,68 @@ export default function TelaPrincipal() {
             {/* ── CONTEÚDO DO FORM (igual nos dois modos) ── */}
             <div className={`overflow-y-auto ${formExpandido ? 'flex-1' : ''}`} style={!formExpandido ? {maxHeight:'calc(100dvh - 260px)'} : {}}>
 
-                {/* ─── TÍTULO — sempre visível ─── */}
-                <div className="px-3 sm:px-6 pt-5 pb-4 border-b border-slate-100">
-                    <div><label htmlFor="plano-titulo" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Título *</label><input id="plano-titulo" type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /></div>
+                {/* ─── MODO RÁPIDO toggle ─── */}
+                <div className="px-3 sm:px-6 pt-3 pb-2.5 border-b border-slate-100 flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Modo de edição</span>
+                    <button type="button" onClick={() => {
+                        const next = !modoRapido
+                        setModoRapido(next)
+                        setSecoesForm(next
+                            ? new Set(['roteiro', 'materiais'])
+                            : new Set(['faixaEtaria', 'roteiro', 'materiais', 'objetivos', 'classificacao', 'bncc', 'recursos'])
+                        )
+                    }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${modoRapido ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'}`}>
+                        ⚡ {modoRapido ? 'Modo Rápido (ativo)' : 'Modo Rápido'}
+                    </button>
                 </div>
 
-                {/* ════════════ ACCORDION 1: DETALHES DA AULA ════════════ */}
+                {/* ─── TÍTULO + DURAÇÃO — sempre visíveis ─── */}
+                <div className="px-3 sm:px-6 pt-5 pb-4 border-b border-slate-100 space-y-4">
+                    <div>
+                        <label htmlFor="plano-titulo" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Título *</label>
+                        <input id="plano-titulo" type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Duração</label>
+                        <input type="text" value={planoEditando.duracao} onChange={e=>setPlanoEditando({...planoEditando, duracao: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Ex: 50 min" list="duracoes-list" />
+                        <datalist id="duracoes-list">{duracoesSugestao.map(d=><option key={d} value={d}/>)}</datalist>
+                    </div>
+                </div>
+
+                {/* ════════════ ACCORDION: FAIXA ETÁRIA ════════════ */}
+                {!modoRapido && (
                 <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('detalhes')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
+                    <button type="button" onClick={() => toggleSecaoForm('faixaEtaria')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
                         <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Detalhes da aula</span>
-                            {!secoesForm.has('detalhes') && (planoEditando.statusPlanejamento || planoEditando.duracao) && (
-                                <p className="text-[11px] text-slate-300 mt-0.5 truncate">{[planoEditando.statusPlanejamento, planoEditando.duracao].filter(Boolean).join(' · ')}</p>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Faixa Etária</span>
+                            {!secoesForm.has('faixaEtaria') && (planoEditando.faixaEtaria||[]).length > 0 && (
+                                <p className="text-[11px] text-slate-300 mt-0.5 truncate">{(planoEditando.faixaEtaria||[]).join(', ')}</p>
                             )}
                         </div>
-                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('detalhes') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('faixaEtaria') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
-                    {secoesForm.has('detalhes') && (
-                        <div className="px-3 sm:px-6 pb-5 space-y-5">
-                            {/* Status do Planejamento */}
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">📊 Status</label>
-                                <div className="flex gap-2">
-                                    {[
-                                        {value: 'A Fazer', color: 'bg-slate-50 border-slate-200 text-slate-500', activeColor: 'bg-slate-600 border-slate-600 text-white'},
-                                        {value: 'Em Andamento', color: 'bg-blue-50 border-blue-200 text-blue-600', activeColor: 'bg-blue-500 border-blue-500 text-white'},
-                                        {value: 'Concluído', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', activeColor: 'bg-emerald-500 border-emerald-500 text-white'}
-                                    ].map(s => (
-                                        <button key={s.value} type="button"
-                                            onClick={()=>setPlanoEditando({...planoEditando, statusPlanejamento: s.value})}
-                                            className={`flex-1 px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                                                (planoEditando.statusPlanejamento || 'A Fazer') === s.value ? s.activeColor : s.color
-                                            }`}>
-                                            {s.value}
-                                        </button>
-                                    ))}
-                                </div>
+                    {secoesForm.has('faixaEtaria') && (
+                        <div className="px-3 sm:px-6 pb-5">
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Faixa Etária</label>
+                                <button type="button" onClick={()=>{ setNovaFaixaNome(''); setModalNovaFaixa(true); }}
+                                    className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors"
+                                    title="Adicionar nova faixa etária">+ Nova faixa</button>
                             </div>
-                            {/* Duração */}
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Duração</label>
-                                {/* AUTOCOMPLETE DE DURAÇÃO */}
-                                <input type="text" value={planoEditando.duracao} onChange={e=>setPlanoEditando({...planoEditando, duracao: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Ex: 50 min" list="duracoes-list" />
-                                <datalist id="duracoes-list">{duracoesSugestao.map(d=><option key={d} value={d}/>)}</datalist>
+                            <div className="flex flex-wrap gap-2">
+                                {faixas.slice(1).map(faixa => (
+                                    <button key={faixa} type="button" onClick={() => toggleFaixa(faixa)}
+                                        className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition-all ${planoEditando.faixaEtaria.includes(faixa) ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                                        {faixa}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     )}
                 </div>
+                )}
 
-                {/* ════════════ ACCORDION 2: CLASSIFICAÇÃO ════════════ */}
-                <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('classificacao')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
-                        <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Classificação</span>
-                            {!secoesForm.has('classificacao') && (() => {
-                                const parts: string[] = []
-                                if ((planoEditando.faixaEtaria||[]).length > 0) parts.push((planoEditando.faixaEtaria||[]).join(', '))
-                                if ((planoEditando.conceitos||[]).length > 0) parts.push(`${(planoEditando.conceitos||[]).length} conceito${(planoEditando.conceitos||[]).length > 1 ? 's' : ''}`)
-                                if ((planoEditando.tags||[]).length > 0) parts.push(`${(planoEditando.tags||[]).length} tag${(planoEditando.tags||[]).length > 1 ? 's' : ''}`)
-                                return parts.length > 0 ? <p className="text-[11px] text-slate-300 mt-0.5 truncate">{parts.join(' · ')}</p> : null
-                            })()}
-                        </div>
-                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('classificacao') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    </button>
-                    {secoesForm.has('classificacao') && (
-                        <div className="px-3 sm:px-6 pb-5 space-y-5">
-                            {/* Faixa Etária */}
-                            <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Faixa Etária</label>
-                                    <button type="button" onClick={()=>{ setNovaFaixaNome(''); setModalNovaFaixa(true); }}
-                                        className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors"
-                                        title="Adicionar nova faixa etária">+ Nova faixa</button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {faixas.slice(1).map(faixa => (
-                                        <button key={faixa} type="button" onClick={() => toggleFaixa(faixa)}
-                                            className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition-all ${planoEditando.faixaEtaria.includes(faixa) ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                            {faixa}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Conceitos Musicais */}
-                            <div>
-                                <div className="flex justify-between items-center mb-3">
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🎵 Conceitos Musicais</label>
-                                    <div className="flex gap-1.5">
-                                        {!adicionandoConceito && (
-                                            <>
-                                                <button type="button" onClick={() => setAdicionandoConceito('editar')}
-                                                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${adicionandoConceito === 'editar' ? 'bg-slate-200 text-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>
-                                                    Editar
-                                                </button>
-                                                <button type="button" onClick={() => setAdicionandoConceito(true)}
-                                                    className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
-                                                    + Novo
-                                                </button>
-                                            </>
-                                        )}
-                                        {adicionandoConceito === 'editar' && (
-                                            <button type="button" onClick={() => setAdicionandoConceito(false)}
-                                                className="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
-                                                ✓ Concluir
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                                {adicionandoConceito === true && (
-                                    <div className="mb-3 flex gap-2">
-                                        <input type="text" value={novoConceito} onChange={(e) => setNovoConceito(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarConceitoNovo()} className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Nome do conceito..." autoFocus />
-                                        <button type="button" onClick={adicionarConceitoNovo} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✓</button>
-                                        <button type="button" onClick={() => { setAdicionandoConceito(false); setNovoConceito(""); }} className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✕</button>
-                                    </div>
-                                )}
-                                <div className="flex flex-wrap gap-2">
-                                    {(conceitos || []).map(conceito => (
-                                        adicionandoConceito === 'editar' ? (
-                                            <span key={conceito} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold border ${(planoEditando.conceitos || []).includes(conceito) ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-600 border-slate-200'}`}>
-                                                {conceito}
-                                                <button type="button"
-                                                    onClick={() => setConceitos(prev => prev.filter(c => c !== conceito))}
-                                                    className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full hover:bg-black/20 text-xs leading-none transition-colors">
-                                                    ×
-                                                </button>
-                                            </span>
-                                        ) : (
-                                            <button key={conceito} type="button" onClick={() => toggleConceito(conceito)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.conceitos || []).includes(conceito) ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>{conceito}</button>
-                                        )
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Tags */}
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">🏷️ Tags</label>
-                                {(planoEditando.tags || []).length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-slate-100">
-                                        {(planoEditando.tags || []).map((tag, idx) => (
-                                            <span key={idx} className="bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
-                                                #{tag}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setPlanoEditando({
-                                                        ...planoEditando,
-                                                        tags: planoEditando.tags.filter((_,i)=>i!==idx)
-                                                    })}
-                                                    className="hover:bg-indigo-200 rounded-full w-4 h-4 flex items-center justify-center text-indigo-500 transition-colors"
-                                                >
-                                                    ×
-                                                </button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                                <p className="text-xs text-slate-400 mb-2">Selecione das existentes:</p>
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {(tagsGlobais || []).map(tag => (
-                                        <div key={tag} className="flex items-center gap-0 bg-white border border-slate-200 rounded-full hover:border-slate-300 transition-colors">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    if (!(planoEditando.tags||[]).includes(tag)) {
-                                                        setPlanoEditando({
-                                                            ...planoEditando,
-                                                            tags: [...(planoEditando.tags||[]), tag]
-                                                        });
-                                                    }
-                                                }}
-                                                disabled={(planoEditando.tags||[]).includes(tag)}
-                                                className={`px-3 py-1 rounded-l-full text-sm transition-all ${
-                                                    (planoEditando.tags||[]).includes(tag)
-                                                    ? 'text-slate-300 cursor-not-allowed'
-                                                    : 'text-slate-600 hover:bg-slate-50'
-                                                }`}
-                                            >
-                                                #{tag}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setModalConfirm({ titulo: 'Remover tag?', conteudo: `Remover "${tag}" da lista permanentemente?`, labelConfirm: 'Remover', perigo: true, onConfirm: () => {
-                                                        setTagsGlobais(tagsGlobais.filter(t => t !== tag));
-                                                        if ((planoEditando.tags||[]).includes(tag)) {
-                                                            setPlanoEditando({
-                                                                ...planoEditando,
-                                                                tags: planoEditando.tags.filter(t => t !== tag)
-                                                            });
-                                                        }
-                                                    } });
-                                                }}
-                                                className="text-slate-300 hover:text-red-400 px-2 py-1 rounded-r-full transition-all"
-                                            >
-                                                ✕
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                                <p className="text-xs text-slate-400 mb-2">Ou adicione nova:</p>
-                                <input
-                                    type="text"
-                                    onKeyDown={e => {
-                                        const t = e.target as HTMLInputElement;
-                                        if ((e.key === 'Enter' || e.key === ' ') && t.value.trim()) {
-                                            e.preventDefault();
-                                            const novaTag = t.value.trim().replace(/^#/, '');
-                                            if (novaTag && !(planoEditando.tags || []).includes(novaTag)) {
-                                                setPlanoEditando({
-                                                    ...planoEditando,
-                                                    tags: [...(planoEditando.tags||[]), novaTag]
-                                                });
-                                                if (!tagsGlobais.includes(novaTag)) {
-                                                    setTagsGlobais([...tagsGlobais, novaTag].sort());
-                                                }
-                                            }
-                                            t.value = '';
-                                        }
-                                    }}
-                                    className="w-full px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none"
-                                    placeholder="Digite e pressione Enter... Ex: roda, jogos"
-                                />
-                            </div>
-
-                            {/* Unidades */}
-                            <div>
-                                <div className="flex justify-between items-center mb-3"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">📚 Unidades</label>{!adicionandoUnidade && (<button type="button" onClick={() => setAdicionandoUnidade(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">+ Novo</button>)}</div>
-                                {adicionandoUnidade && (<div className="mb-3 flex gap-2"><input type="text" value={novaUnidade} onChange={(e) => setNovaUnidade(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarUnidadeNova()} className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Nome da unidade..." autoFocus /><button type="button" onClick={adicionarUnidadeNova} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✓</button><button type="button" onClick={() => { setAdicionandoUnidade(false); setNovaUnidade(""); }} className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✕</button></div>)}
-                                <div className="flex flex-wrap gap-2">{(unidades || []).map(unidade => (<button key={unidade} type="button" onClick={() => toggleUnidade(unidade)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.unidades || []).includes(unidade) ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>{unidade}</button>))}</div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* ════════════ ACCORDION 3: OBJETIVOS E BNCC ════════════ */}
-                <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('objetivos')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
-                        <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Objetivos e BNCC</span>
-                            {!secoesForm.has('objetivos') && planoEditando.objetivoGeral && (
-                                <p className="text-[11px] text-slate-300 mt-0.5 truncate">{planoEditando.objetivoGeral.replace(/<[^>]*>/g,'').slice(0,70)}</p>
-                            )}
-                        </div>
-                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('objetivos') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    </button>
-                    {secoesForm.has('objetivos') && (
-                        <div className="px-3 sm:px-6 pb-5 space-y-5">
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivo Geral *</label>
-                                <RichTextEditor
-                                    value={planoEditando.objetivoGeral}
-                                    onChange={val => setPlanoEditando({...planoEditando, objetivoGeral: val})}
-                                    placeholder="Descreva o objetivo geral da aula..."
-                                    rows={3}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivos Específicos</label>
-                                <RichTextEditor
-                                    value={Array.isArray(planoEditando.objetivosEspecificos)
-                                        ? (planoEditando.objetivosEspecificos.length > 0 && typeof planoEditando.objetivosEspecificos[0] === 'string' && !planoEditando.objetivosEspecificos[0].startsWith('<')
-                                            ? '<ul>' + planoEditando.objetivosEspecificos.map(o=>`<li>${o}</li>`).join('') + '</ul>'
-                                            : planoEditando.objetivosEspecificos.join('\n'))
-                                        : planoEditando.objetivosEspecificos}
-                                    onChange={val => setPlanoEditando({...planoEditando, objetivosEspecificos: [val]})}
-                                    placeholder="Liste os objetivos específicos da aula..."
-                                    rows={5}
-                                />
-                            </div>
-                            <div>
-                                <div className="flex justify-between items-center mb-2"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🏛️ Habilidades BNCC</label><button type="button" onClick={sugerirBNCC} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">✨ Sugerir</button></div>
-                                <textarea value={(planoEditando.habilidadesBNCC || []).join('\n')} onChange={e => setPlanoEditando({...planoEditando, habilidadesBNCC: e.target.value.split('\n')})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={5} placeholder="EF15ARXX - Descrição..." />
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* ════════════ ACCORDION 4: ROTEIRO DE ATIVIDADES ════════════ */}
+                {/* ════════════ ACCORDION: ROTEIRO DE ATIVIDADES ════════════ */}
                 <div className="border-b border-slate-100">
                     <button type="button" onClick={() => toggleSecaoForm('roteiro')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
                         <div className="min-w-0">
@@ -609,14 +400,18 @@ export default function TelaPrincipal() {
                                     {(planoEditando.atividadesRoteiro || []).map((atividade, index) => (
                                         <div key={atividade.id}
                                             draggable
-                                            onDragStart={() => handleDragStart(index)}
+                                            onDragStart={(e) => { if (!dragFromHandle.current) { e.preventDefault(); return; } handleDragStart(index); }}
                                             onDragEnter={() => handleDragEnter(index)}
-                                            onDragEnd={handleDragEnd}
+                                            onDragEnd={() => { dragFromHandle.current = false; handleDragEnd(); }}
                                             onDragOver={e => e.preventDefault()}
                                             className={`bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm transition-opacity hover:border-indigo-200 ${dragActiveIndex === index ? 'dragging' : ''} ${dragOverIndex === index && dragActiveIndex !== index ? 'drag-over' : ''}`}>
                                             <div className="flex justify-between items-center mb-3">
-                                                <div className="flex items-center gap-2 sm:cursor-grab sm:active:cursor-grabbing select-none" title="Arraste para reordenar">
-                                                    <span className="hidden sm:inline text-gray-300 hover:text-indigo-400 transition text-lg">⠿</span>
+                                                <div className="flex items-center gap-2 select-none">
+                                                    <span
+                                                        className="hidden sm:inline text-gray-300 hover:text-indigo-400 transition text-lg cursor-grab active:cursor-grabbing touch-none"
+                                                        title="Arraste para reordenar"
+                                                        onPointerDown={() => { dragFromHandle.current = true; }}
+                                                    >⠿</span>
                                                     {/* Botões ↑↓ de reordenação — fallback mobile para drag */}
                                                     <div className="flex sm:hidden gap-0.5">
                                                         <button type="button"
@@ -895,19 +690,19 @@ export default function TelaPrincipal() {
                     )}
                 </div>
 
-                {/* ════════════ ACCORDION 5: RECURSOS E AVALIAÇÃO ════════════ */}
+                {/* ════════════ ACCORDION: MATERIAIS ════════════ */}
                 <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('recursos')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
+                    <button type="button" onClick={() => toggleSecaoForm('materiais')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
                         <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Recursos e Avaliação</span>
-                            {!secoesForm.has('recursos') && planoEditando.materiais.length > 0 && (
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Materiais</span>
+                            {!secoesForm.has('materiais') && planoEditando.materiais.length > 0 && (
                                 <p className="text-[11px] text-slate-300 mt-0.5">{planoEditando.materiais.length} material{planoEditando.materiais.length > 1 ? 'is' : ''}</p>
                             )}
                         </div>
-                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('recursos') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('materiais') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
-                    {secoesForm.has('recursos') && (
-                        <div className="px-3 sm:px-6 pb-5 space-y-5">
+                    {secoesForm.has('materiais') && (
+                        <div className="px-3 sm:px-6 pb-5">
                             {/* MATERIAIS - Sistema Inteligente */}
                             <div>
                                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">📦 Materiais</label>
@@ -1026,6 +821,275 @@ export default function TelaPrincipal() {
                                     </div>
                                 )}
                             </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* ════════════ ACCORDION: OBJETIVOS ════════════ */}
+                {!modoRapido && (
+                <div className="border-b border-slate-100">
+                    <button type="button" onClick={() => toggleSecaoForm('objetivos')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Objetivos</span>
+                            {!secoesForm.has('objetivos') && planoEditando.objetivoGeral && (
+                                <p className="text-[11px] text-slate-300 mt-0.5 truncate">{planoEditando.objetivoGeral.replace(/<[^>]*>/g,'').slice(0,70)}</p>
+                            )}
+                        </div>
+                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('objetivos') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    {secoesForm.has('objetivos') && (
+                        <div className="px-3 sm:px-6 pb-5 space-y-5">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivo Geral *</label>
+                                <RichTextEditor
+                                    value={planoEditando.objetivoGeral}
+                                    onChange={val => setPlanoEditando({...planoEditando, objetivoGeral: val})}
+                                    placeholder="Descreva o objetivo geral da aula..."
+                                    rows={3}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivos Específicos</label>
+                                <RichTextEditor
+                                    value={Array.isArray(planoEditando.objetivosEspecificos)
+                                        ? (planoEditando.objetivosEspecificos.length > 0 && typeof planoEditando.objetivosEspecificos[0] === 'string' && !planoEditando.objetivosEspecificos[0].startsWith('<')
+                                            ? '<ul>' + planoEditando.objetivosEspecificos.map(o=>`<li>${o}</li>`).join('') + '</ul>'
+                                            : planoEditando.objetivosEspecificos.join('\n'))
+                                        : planoEditando.objetivosEspecificos}
+                                    onChange={val => setPlanoEditando({...planoEditando, objetivosEspecificos: [val]})}
+                                    placeholder="Liste os objetivos específicos da aula..."
+                                    rows={5}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+                )}
+
+                {/* ════════════ ACCORDION: CLASSIFICAÇÃO PEDAGÓGICA ════════════ */}
+                {!modoRapido && (
+                <div className="border-b border-slate-100">
+                    <button type="button" onClick={() => toggleSecaoForm('classificacao')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Classificação Pedagógica</span>
+                            {!secoesForm.has('classificacao') && (() => {
+                                const parts: string[] = []
+                                if (planoEditando.statusPlanejamento) parts.push(planoEditando.statusPlanejamento)
+                                if ((planoEditando.conceitos||[]).length > 0) parts.push(`${(planoEditando.conceitos||[]).length} conceito${(planoEditando.conceitos||[]).length > 1 ? 's' : ''}`)
+                                if ((planoEditando.tags||[]).length > 0) parts.push(`${(planoEditando.tags||[]).length} tag${(planoEditando.tags||[]).length > 1 ? 's' : ''}`)
+                                return parts.length > 0 ? <p className="text-[11px] text-slate-300 mt-0.5 truncate">{parts.join(' · ')}</p> : null
+                            })()}
+                        </div>
+                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('classificacao') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    {secoesForm.has('classificacao') && (
+                        <div className="px-3 sm:px-6 pb-5 space-y-5">
+                            {/* Status do Planejamento */}
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">📊 Status</label>
+                                <div className="flex gap-2">
+                                    {[
+                                        {value: 'A Fazer', color: 'bg-slate-50 border-slate-200 text-slate-500', activeColor: 'bg-slate-600 border-slate-600 text-white'},
+                                        {value: 'Em Andamento', color: 'bg-blue-50 border-blue-200 text-blue-600', activeColor: 'bg-blue-500 border-blue-500 text-white'},
+                                        {value: 'Concluído', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', activeColor: 'bg-emerald-500 border-emerald-500 text-white'}
+                                    ].map(s => (
+                                        <button key={s.value} type="button"
+                                            onClick={()=>setPlanoEditando({...planoEditando, statusPlanejamento: s.value})}
+                                            className={`flex-1 px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
+                                                (planoEditando.statusPlanejamento || 'A Fazer') === s.value ? s.activeColor : s.color
+                                            }`}>
+                                            {s.value}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Conceitos Musicais */}
+                            <div>
+                                <div className="flex justify-between items-center mb-3">
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🎵 Conceitos Musicais</label>
+                                    <div className="flex gap-1.5">
+                                        {!adicionandoConceito && (
+                                            <>
+                                                <button type="button" onClick={() => setAdicionandoConceito('editar')}
+                                                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${adicionandoConceito === 'editar' ? 'bg-slate-200 text-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>
+                                                    Editar
+                                                </button>
+                                                <button type="button" onClick={() => setAdicionandoConceito(true)}
+                                                    className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                                                    + Novo
+                                                </button>
+                                            </>
+                                        )}
+                                        {adicionandoConceito === 'editar' && (
+                                            <button type="button" onClick={() => setAdicionandoConceito(false)}
+                                                className="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                                                ✓ Concluir
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                {adicionandoConceito === true && (
+                                    <div className="mb-3 flex gap-2">
+                                        <input type="text" value={novoConceito} onChange={(e) => setNovoConceito(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarConceitoNovo()} className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Nome do conceito..." autoFocus />
+                                        <button type="button" onClick={adicionarConceitoNovo} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✓</button>
+                                        <button type="button" onClick={() => { setAdicionandoConceito(false); setNovoConceito(""); }} className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✕</button>
+                                    </div>
+                                )}
+                                <div className="flex flex-wrap gap-2">
+                                    {(conceitos || []).map(conceito => (
+                                        adicionandoConceito === 'editar' ? (
+                                            <span key={conceito} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold border ${(planoEditando.conceitos || []).includes(conceito) ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-600 border-slate-200'}`}>
+                                                {conceito}
+                                                <button type="button"
+                                                    onClick={() => setConceitos(prev => prev.filter(c => c !== conceito))}
+                                                    className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full hover:bg-black/20 text-xs leading-none transition-colors">
+                                                    ×
+                                                </button>
+                                            </span>
+                                        ) : (
+                                            <button key={conceito} type="button" onClick={() => toggleConceito(conceito)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.conceitos || []).includes(conceito) ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>{conceito}</button>
+                                        )
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Tags */}
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">🏷️ Tags</label>
+                                {(planoEditando.tags || []).length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-slate-100">
+                                        {(planoEditando.tags || []).map((tag, idx) => (
+                                            <span key={idx} className="bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+                                                #{tag}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPlanoEditando({
+                                                        ...planoEditando,
+                                                        tags: planoEditando.tags.filter((_,i)=>i!==idx)
+                                                    })}
+                                                    className="hover:bg-indigo-200 rounded-full w-4 h-4 flex items-center justify-center text-indigo-500 transition-colors"
+                                                >
+                                                    ×
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                                <p className="text-xs text-slate-400 mb-2">Selecione das existentes:</p>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {(tagsGlobais || []).map(tag => (
+                                        <div key={tag} className="flex items-center gap-0 bg-white border border-slate-200 rounded-full hover:border-slate-300 transition-colors">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!(planoEditando.tags||[]).includes(tag)) {
+                                                        setPlanoEditando({
+                                                            ...planoEditando,
+                                                            tags: [...(planoEditando.tags||[]), tag]
+                                                        });
+                                                    }
+                                                }}
+                                                disabled={(planoEditando.tags||[]).includes(tag)}
+                                                className={`px-3 py-1 rounded-l-full text-sm transition-all ${
+                                                    (planoEditando.tags||[]).includes(tag)
+                                                    ? 'text-slate-300 cursor-not-allowed'
+                                                    : 'text-slate-600 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                #{tag}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setModalConfirm({ titulo: 'Remover tag?', conteudo: `Remover "${tag}" da lista permanentemente?`, labelConfirm: 'Remover', perigo: true, onConfirm: () => {
+                                                        setTagsGlobais(tagsGlobais.filter(t => t !== tag));
+                                                        if ((planoEditando.tags||[]).includes(tag)) {
+                                                            setPlanoEditando({
+                                                                ...planoEditando,
+                                                                tags: planoEditando.tags.filter(t => t !== tag)
+                                                            });
+                                                        }
+                                                    } });
+                                                }}
+                                                className="text-slate-300 hover:text-red-400 px-2 py-1 rounded-r-full transition-all"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-slate-400 mb-2">Ou adicione nova:</p>
+                                <input
+                                    type="text"
+                                    onKeyDown={e => {
+                                        const t = e.target as HTMLInputElement;
+                                        if ((e.key === 'Enter' || e.key === ' ') && t.value.trim()) {
+                                            e.preventDefault();
+                                            const novaTag = t.value.trim().replace(/^#/, '');
+                                            if (novaTag && !(planoEditando.tags || []).includes(novaTag)) {
+                                                setPlanoEditando({
+                                                    ...planoEditando,
+                                                    tags: [...(planoEditando.tags||[]), novaTag]
+                                                });
+                                                if (!tagsGlobais.includes(novaTag)) {
+                                                    setTagsGlobais([...tagsGlobais, novaTag].sort());
+                                                }
+                                            }
+                                            t.value = '';
+                                        }
+                                    }}
+                                    className="w-full px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none"
+                                    placeholder="Digite e pressione Enter... Ex: roda, jogos"
+                                />
+                            </div>
+
+                            {/* Unidades */}
+                            <div>
+                                <div className="flex justify-between items-center mb-3"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">📚 Unidades</label>{!adicionandoUnidade && (<button type="button" onClick={() => setAdicionandoUnidade(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">+ Novo</button>)}</div>
+                                {adicionandoUnidade && (<div className="mb-3 flex gap-2"><input type="text" value={novaUnidade} onChange={(e) => setNovaUnidade(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarUnidadeNova()} className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Nome da unidade..." autoFocus /><button type="button" onClick={adicionarUnidadeNova} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✓</button><button type="button" onClick={() => { setAdicionandoUnidade(false); setNovaUnidade(""); }} className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✕</button></div>)}
+                                <div className="flex flex-wrap gap-2">{(unidades || []).map(unidade => (<button key={unidade} type="button" onClick={() => toggleUnidade(unidade)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.unidades || []).includes(unidade) ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>{unidade}</button>))}</div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                )}
+
+                {/* ════════════ ACCORDION: BNCC ════════════ */}
+                {!modoRapido && (
+                <div className="border-b border-slate-100">
+                    <button type="button" onClick={() => toggleSecaoForm('bncc')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">BNCC</span>
+                            {!secoesForm.has('bncc') && (planoEditando.habilidadesBNCC||[]).filter(Boolean).length > 0 && (
+                                <p className="text-[11px] text-slate-300 mt-0.5">{(planoEditando.habilidadesBNCC||[]).filter(Boolean).length} habilidade{(planoEditando.habilidadesBNCC||[]).filter(Boolean).length > 1 ? 's' : ''}</p>
+                            )}
+                        </div>
+                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('bncc') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    {secoesForm.has('bncc') && (
+                        <div className="px-3 sm:px-6 pb-5">
+                            <div className="flex justify-between items-center mb-2"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🏛️ Habilidades BNCC</label><button type="button" onClick={sugerirBNCC} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">✨ Sugerir</button></div>
+                            <textarea value={(planoEditando.habilidadesBNCC || []).join('\n')} onChange={e => setPlanoEditando({...planoEditando, habilidadesBNCC: e.target.value.split('\n')})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={5} placeholder="EF15ARXX - Descrição..." />
+                        </div>
+                    )}
+                </div>
+                )}
+
+                {/* ════════════ ACCORDION: AVALIAÇÃO / RECURSOS ════════════ */}
+                {!modoRapido && (
+                <div className="border-b border-slate-100">
+                    <button type="button" onClick={() => toggleSecaoForm('recursos')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Avaliação / Recursos</span>
+                            {!secoesForm.has('recursos') && planoEditando.avaliacaoObservacoes && (
+                                <p className="text-[11px] text-slate-300 mt-0.5 truncate">{planoEditando.avaliacaoObservacoes.slice(0,60)}</p>
+                            )}
+                        </div>
+                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('recursos') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    {secoesForm.has('recursos') && (
+                        <div className="px-3 sm:px-6 pb-5 space-y-5">
                             {/* Links e Imagens */}
                             <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🔗 Links e Imagens</label><div className="flex gap-2 mb-3 flex-col md:flex-row"><input type="text" placeholder="URL..." value={novoRecursoUrl} onChange={e => setNovoRecursoUrl(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarRecurso(); } }} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /><select value={novoRecursoTipo} onChange={e => setNovoRecursoTipo(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white"><option value="link">Link</option><option value="imagem">Imagem</option></select><button type="button" onClick={adicionarRecurso} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-4 py-2 rounded-xl text-sm font-semibold transition-colors">Add</button></div><div className="space-y-2">{(planoEditando.recursos || []).map((rec, idx) => (<div key={idx} className="flex justify-between items-center bg-white p-2 rounded-xl border border-slate-200"><div className="flex items-center gap-2 overflow-hidden"><span>{rec.tipo === 'imagem' ? '🖼️' : '🔗'}</span><span className="text-sm truncate max-w-xs text-slate-700">{rec.url}</span></div><button type="button" onClick={() => removerRecurso(idx)} className="text-red-400 hover:text-red-600 font-bold px-2">✕</button></div>))}</div></div>
                             {/* Avaliação / Observações */}
@@ -1033,6 +1097,7 @@ export default function TelaPrincipal() {
                         </div>
                     )}
                 </div>
+                )}
 
                 {/* ─── FOOTER STICKY ─── */}
                 <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white border-t border-slate-100 sticky bottom-0">
