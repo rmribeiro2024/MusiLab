@@ -72,6 +72,19 @@
 
 ---
 
+### Módulo Relatórios — Passos 6-9: PDF, IA e visual
+**Data:** 2026-03-11
+**Arquivos:**
+- `src/lib/exportarPDF.ts` — criado (geração programática com jsPDF, sem html2canvas)
+- `src/components/ModuloRelatorios.tsx` — exportação PDF + síntese IA + visual refinado
+**O que foi feito:**
+- **Passo 6**: Estrutura separada controles vs. conteúdo; `RelatorioCabecalho`, `Section`, `CardMetrica` isolados; pronto para PDF
+- **Passo 7**: `exportarPDF.ts` com classe `PdfWriter` (jsPDF programático): título, cards, barras de progresso, tags, linha do tempo, caixa IA, rodapé com paginação; botão "⬇ Exportar PDF" no componente
+- **Passo 8**: Síntese pedagógica com Gemini (`gemini-1.5-flash`); prompts específicos para mensal e por turma; seção claramente marcada como "sugerida por IA — não é dado absoluto"; botão "✨ Síntese pedagógica com IA"
+- **Passo 9**: Cards coloridos por métrica (âmbar/esmeralda/índigo/violeta), lista com numeração e ranking, gradiente no resumo da turma, espaçamento e tipografia refinados
+
+---
+
 ### Módulo Relatórios — Passo 5: Filtros em cascata
 **Data:** 2026-03-11
 **Arquivos:**
