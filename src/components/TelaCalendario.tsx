@@ -695,10 +695,12 @@ export function TelaCalendario() {
 }
 
 export default function TelaResumoDia() {
-    const { planos, sugerirPlanoParaTurma } = usePlanosContext()
+    const { planos, sugerirPlanoParaTurma, setPlanoSelecionado } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
     const { setViewMode } = useRepertorioContext()
-    const { setModalGradeSemanal, dataDia, diasExpandidos, modoResumo, semanaResumo, obterTurmasDoDia, setDataDia, setDiasExpandidos, setModalRegistroRapido, setModoResumo, setRrAnoSel, setRrData, setRrEscolaSel, setRrPlanosSegmento, setRrTextos, setSemanaResumo } = useCalendarioContext()
+    const { setModalGradeSemanal, dataDia, diasExpandidos, modoResumo, semanaResumo, obterTurmasDoDia, setDataDia, setDiasExpandidos, setModalRegistroRapido, setModoResumo, setRrAnoSel, setRrData, setRrEscolaSel, setRrPlanosSegmento, setRrTextos, setSemanaResumo, setModalRegistro, setPlanoParaRegistro, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel, setVerRegistros, setRegistroEditando, setNovoRegistro } = useCalendarioContext()
+
+    const [aulaExpandida, setAulaExpandida] = React.useState<string | null>(null)
 
     const diasSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -968,24 +970,59 @@ export default function TelaResumoDia() {
                                     {Object.keys(porEscola).sort().map(escolaNome => {
                                         const aulas = porEscola[escolaNome].sort((a,b) => a.horario.localeCompare(b.horario));
                                         return (
-                                            <div key={escolaNome} className="bg-white rounded-lg border border-purple-200 p-2">
-                                                <p className="text-xs font-bold text-purple-900 mb-2">🏫 {escolaNome}</p>
-                                                <div className="space-y-1">
+                                            <div key={escolaNome} className="bg-white rounded-lg border border-purple-200 overflow-hidden">
+                                                <p className="text-xs font-bold text-purple-900 px-3 py-2 bg-purple-50 border-b border-purple-100">🏫 {escolaNome}</p>
+                                                <div className="divide-y divide-purple-50">
                                                     {aulas.map(aula => {
                                                         const ano = anosLetivos.find(a=>a.id==aula.anoLetivoId);
                                                         const esc = ano?.escolas.find(e=>e.id==aula.escolaId);
                                                         const seg = esc?.segmentos.find(s=>s.id==aula.segmentoId);
                                                         const tur = seg?.turmas.find(t=>t.id==aula.turmaId);
+                                                        const plano = sugerirPlanoParaTurma(aula.anoLetivoId, aula.escolaId, aula.segmentoId, aula.turmaId);
+                                                        const aulaKey = `${aula.id}-${dataDia}`;
+                                                        const expandida = aulaExpandida === aulaKey;
 
                                                         return (
-                                                            <div key={aula.id} className="flex items-center gap-2 text-xs">
-                                                                <span className="font-mono font-bold text-purple-700 shrink-0">{aula.horario}</span>
-                                                                <span className="text-gray-400">•</span>
-                                                                <span className="text-purple-800 font-medium">{seg?.nome || '?'}</span>
-                                                                <span className="text-gray-400">›</span>
-                                                                <span className="text-gray-700">{tur?.nome || '?'}</span>
-                                                                {aula.observacao && (
-                                                                    <span className="text-gray-400 italic text-xs">({aula.observacao})</span>
+                                                            <div key={aula.id}>
+                                                                <button onClick={()=>setAulaExpandida(expandida ? null : aulaKey)}
+                                                                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-purple-50 transition ${expandida ? 'bg-purple-50' : ''}`}>
+                                                                    <span className="font-mono font-bold text-purple-700 shrink-0">{aula.horario}</span>
+                                                                    <span className="text-gray-400">•</span>
+                                                                    <span className="text-purple-800 font-medium">{seg?.nome || '?'}</span>
+                                                                    <span className="text-gray-400">›</span>
+                                                                    <span className="text-gray-700">{tur?.nome || '?'}</span>
+                                                                    {plano && <span className="ml-auto text-purple-500 italic truncate max-w-[120px]">{plano.titulo}</span>}
+                                                                    <span className={`text-purple-400 text-xs ml-1 shrink-0 transition-transform ${expandida ? 'rotate-180' : ''}`} style={{display:'inline-block'}}>▾</span>
+                                                                </button>
+                                                                {expandida && (
+                                                                    <div className="px-3 pb-2 flex flex-col gap-1.5">
+                                                                        {plano && (
+                                                                            <button onClick={()=>setPlanoSelecionado(plano)}
+                                                                                className="w-full py-1.5 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition">
+                                                                                🗺 Ver plano de aula
+                                                                            </button>
+                                                                        )}
+                                                                        <button onClick={()=>{
+                                                                            if (!plano) return;
+                                                                            setPlanoParaRegistro(plano);
+                                                                            setRegAnoSel(aula.anoLetivoId ?? '');
+                                                                            setRegEscolaSel(aula.escolaId ?? '');
+                                                                            setRegSegmentoSel(aula.segmentoId);
+                                                                            setRegTurmaSel(aula.turmaId);
+                                                                            setVerRegistros(false);
+                                                                            setRegistroEditando(null);
+                                                                            setNovoRegistro({ dataAula: dataDia, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '' });
+                                                                            setModalRegistro(true);
+                                                                        }}
+                                                                            disabled={!plano}
+                                                                            className={`w-full py-1.5 text-xs font-semibold border rounded-lg transition ${plano ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}>
+                                                                            📝 {plano ? 'Registrar pós-aula' : 'Registrar pós-aula (sem plano)'}
+                                                                        </button>
+                                                                        <button onClick={()=>setViewMode('turmas')}
+                                                                            className="w-full py-1.5 text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 transition">
+                                                                            👥 Abrir planejamento da turma
+                                                                        </button>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         );
