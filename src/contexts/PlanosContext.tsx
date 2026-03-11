@@ -9,6 +9,7 @@ import { useRepertorioContext } from './RepertorioContext'
 import { useCalendarioContext } from './CalendarioContext'
 import { useAtividadesContext } from './AtividadesContext'
 import { useSequenciasContext } from './SequenciasContext'
+import { useEstrategiasContext } from './EstrategiasContext'
 import { dbGet, dbSet } from '../lib/db'
 import { sanitizeUrl, gerarIdSeguro, validarBackup } from '../lib/utils'
 import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [offlineSync]
@@ -298,6 +299,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         setModalAdicionarAoPlano,
     } = useAtividadesContext()
     const { sequencias, setSequencias } = useSequenciasContext()
+    const { estrategias, registrarUsoEstrategia } = useEstrategiasContext()
 
     // ── ESTADOS ──────────────────────────────────────────────────────────
     const [planos, setPlanos] = useState<Plano[]>(() => {
@@ -527,6 +529,17 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             if (!userId) marcarPendente('planos', String(planoParaSalvar.id)) // [offlineSync]
         }
         edicaoDispatch({ type: 'SET', payload: { modoEdicao: false, planoEditando: null } })
+
+        // ── Registrar uso de estratégias vinculadas nas atividades do roteiro ─
+        // Coleta todos os nomes únicos de estratégias usadas nas atividades
+        const nomesEstrategias = new Set<string>()
+        ;(planoParaSalvar.atividadesRoteiro || []).forEach((ativ: any) => {
+            ;(ativ.estrategiasVinculadas || []).forEach((nome: string) => nomesEstrategias.add(nome))
+        })
+        nomesEstrategias.forEach(nome => {
+            const estr = estrategias.find(e => e.nome === nome)
+            if (estr) registrarUsoEstrategia(estr.id, planoParaSalvar.id, planoParaSalvar.titulo || 'Plano sem título')
+        })
 
         // ── Detectar músicas do repertório citadas no plano ──────────────────
         const detectadas = detectarMusicasNoPlano(planoParaSalvar, repertorio)

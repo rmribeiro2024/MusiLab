@@ -6,7 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, loadFromSupabase, gerarIdSeguro } from '../lib/utils'
 import { useModalContext } from './ModalContext'
-import type { Estrategia } from '../types'
+import type { Estrategia, HistoricoUsoEstrategia } from '../types'
 
 // ─── VALORES PADRÃO ───────────────────────────────────────────────────────────
 
@@ -45,6 +45,8 @@ export interface EstrategiasContextValue {
   setFiltroObjetivoEstrategia: React.Dispatch<React.SetStateAction<string>>
   mostrarArquivadasEstrategia: boolean
   setMostrarArquivadasEstrategia: React.Dispatch<React.SetStateAction<boolean>>
+  filtroDimensaoEstrategia: string
+  setFiltroDimensaoEstrategia: React.Dispatch<React.SetStateAction<string>>
   // Listas customizáveis
   categoriasEstrategia: string[]
   setCategoriasEstrategia: React.Dispatch<React.SetStateAction<string[]>>
@@ -65,6 +67,8 @@ export interface EstrategiasContextValue {
   excluirEstrategia: (id: string) => void
   arquivarEstrategia: (id: string) => void
   restaurarEstrategia: (id: string) => void
+  /** Registra uso da estratégia em um plano (anti-duplicata por planoId). */
+  registrarUsoEstrategia: (estrategiaId: string, planoId: string | number, planoTitulo: string) => void
 }
 
 // ─── CONTEXTO ─────────────────────────────────────────────────────────────────
@@ -98,6 +102,7 @@ export function EstrategiasProvider({ children, userId }: EstrategiasProviderPro
   const [filtroFuncaoEstrategia, setFiltroFuncaoEstrategia] = useState('Todas')
   const [filtroObjetivoEstrategia, setFiltroObjetivoEstrategia] = useState('Todos')
   const [mostrarArquivadasEstrategia, setMostrarArquivadasEstrategia] = useState(false)
+  const [filtroDimensaoEstrategia, setFiltroDimensaoEstrategia] = useState('Todas')
   const [categoriasEstrategia, setCategoriasEstrategia] = useState<string[]>(() => {
     const saved = dbGet('categoriasEstrategia')
     return saved ? JSON.parse(saved) : CATEGORIAS_PADRAO
@@ -202,6 +207,25 @@ export function EstrategiasProvider({ children, userId }: EstrategiasProviderPro
     ))
   }
 
+  /**
+   * Registra que uma estratégia foi usada em um plano.
+   * Anti-duplicata: se o planoId já está em historicoUso, ignora.
+   * Chamado por PlanosContext.salvarPlano via estrategiasVinculadas nas atividades.
+   */
+  function registrarUsoEstrategia(estrategiaId: string, planoId: string | number, planoTitulo: string) {
+    setEstrategias(prev => prev.map(e => {
+      if (e.id !== estrategiaId) return e
+      const historico: HistoricoUsoEstrategia[] = e.historicoUso || []
+      const jaRegistrado = historico.some(h => String(h.planoId) === String(planoId))
+      if (jaRegistrado) return e
+      return {
+        ...e,
+        contadorUso: (e.contadorUso || 0) + 1,
+        historicoUso: [...historico, { planoId, planoTitulo, data: new Date().toISOString() }],
+      }
+    }))
+  }
+
   // ── VALUE ─────────────────────────────────────────────────────────────────
 
   const value: EstrategiasContextValue = {
@@ -212,6 +236,7 @@ export function EstrategiasProvider({ children, userId }: EstrategiasProviderPro
     filtroFuncaoEstrategia, setFiltroFuncaoEstrategia,
     filtroObjetivoEstrategia, setFiltroObjetivoEstrategia,
     mostrarArquivadasEstrategia, setMostrarArquivadasEstrategia,
+    filtroDimensaoEstrategia, setFiltroDimensaoEstrategia,
     categoriasEstrategia, setCategoriasEstrategia,
     funcoesEstrategia, setFuncoesEstrategia,
     objetivosEstrategia, setObjetivosEstrategia,
@@ -219,7 +244,7 @@ export function EstrategiasProvider({ children, userId }: EstrategiasProviderPro
     novaFuncaoEstr, setNovaFuncaoEstr,
     novoObjetivoEstr, setNovoObjetivoEstr,
     novaEstrategia, salvarEstrategia, excluirEstrategia,
-    arquivarEstrategia, restaurarEstrategia,
+    arquivarEstrategia, restaurarEstrategia, registrarUsoEstrategia,
   }
 
   return (

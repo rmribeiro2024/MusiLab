@@ -279,9 +279,16 @@ export interface Sequencia {
 }
 
 // ─── ESTRATÉGIA PEDAGÓGICA ────────────────────────────────────
+export interface HistoricoUsoEstrategia {
+  planoId: string | number
+  planoTitulo: string
+  data: string
+}
+
 export interface Estrategia {
   id: string
   nome: string
+  // Campos originais — preservados
   categoria?: string
   funcao?: string
   objetivo?: string
@@ -294,6 +301,14 @@ export interface Estrategia {
   createdAt?: string
   _criadoEm?: string
   _ultimaEdicao?: string
+  // Campos pedagógicos novos
+  dimensoes?: string[]                    // ['Musical', 'Condução', 'Cultura de Sala de Aula']
+  origem?: string                         // Referência: 'Kodály, RCPPM...'
+  variacoes?: string                      // Campo separado da descrição
+  tempoEstimado?: string                  // '5 min', '10-15 min'
+  // Mielinização pedagógica
+  contadorUso?: number                    // Quantas vezes foi usada em planos
+  historicoUso?: HistoricoUsoEstrategia[] // Registro completo de uso
 }
 
 // ─── ANO LETIVO / ESCOLA ──────────────────────────────────────
