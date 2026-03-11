@@ -1068,13 +1068,15 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     async function detectarEstrategiaNoRoteiro(plano: Plano) {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY
         if (!apiKey) return
+        const stripHtml = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
         const textoRoteiro = [
+            plano.titulo,
             plano.objetivoGeral,
             ...(plano.atividadesRoteiro || []).map((a: any) =>
-                [a.nome, a.descricao].filter(Boolean).join(': ')
+                [a.nome, a.descricao].filter(Boolean).map(stripHtml).join(': ')
             ),
             (plano as any).conteudo,
-        ].filter(Boolean).join('\n')
+        ].filter(Boolean).map(stripHtml).join('\n')
         if (!textoRoteiro.trim() || textoRoteiro.length < 30) return
 
         const prompt = `Você é um assistente especializado em pedagogia musical. Analise o roteiro abaixo e identifique se há uma sequência CLARA e INEQUÍVOCA de:

@@ -56,9 +56,11 @@ function extrairCitacoes(plano: Plano): Array<{ titulo: string; origem: string }
     const blocos = extrairTextosPlano(plano)
     const citacoes: Array<{ titulo: string; origem: string }> = []
     for (const bloco of blocos) {
+        // Remove HTML antes de rodar o regex — evita capturar atributos style="..." como títulos
+        const textoLimpo = bloco.texto.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
         RE_CITACAO.lastIndex = 0
         let m: RegExpExecArray | null
-        while ((m = RE_CITACAO.exec(bloco.texto)) !== null) {
+        while ((m = RE_CITACAO.exec(textoLimpo)) !== null) {
             const titulo = (m[1] || m[2] || m[3]).trim()
             if (titulo) citacoes.push({ titulo, origem: bloco.origem })
         }
