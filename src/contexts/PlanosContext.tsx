@@ -222,6 +222,10 @@ export interface PlanosContextValue {
     limparMusicasDetectadas: () => void
     showModalMusicas: boolean
     setShowModalMusicas: React.Dispatch<React.SetStateAction<boolean>>
+    // detecção de estratégia no roteiro (IA)
+    estrategiaDetectadaIA: { tipo: 'aquecimento_corporal' | 'vocalizes'; nomeSugerido: string; planoId: string | number } | null
+    showModalEstrategiaIA: boolean
+    setShowModalEstrategiaIA: React.Dispatch<React.SetStateAction<boolean>>
     vincularMusicaAoPlano: (planoId: string | number, vinculo: VinculoMusicaPlano) => void
     desvincularMusicaDoPlano: (planoId: string | number, musicaId: string | number) => void
     // funções cross-domain
@@ -589,6 +593,9 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             setMusicasDetectadas(detectadas)
             setShowModalMusicas(true)
         }
+
+        // Detecção de estratégia no roteiro — fire and forget, não bloqueia o fluxo
+        detectarEstrategiaNoRoteiro(planoParaSalvar).catch(() => {})
     }
 
     const excluirPlano = useCallback((id: any) => {
@@ -1050,6 +1057,62 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const limparMusicasDetectadas = () => setMusicasDetectadas([])
     const [showModalMusicas, setShowModalMusicas] = useState(false)
 
+    // ── Detecção de estratégia no roteiro (IA) ────────────────────────────
+    const [estrategiaDetectadaIA, setEstrategiaDetectadaIA] = useState<{
+        tipo: 'aquecimento_corporal' | 'vocalizes'
+        nomeSugerido: string
+        planoId: string | number
+    } | null>(null)
+    const [showModalEstrategiaIA, setShowModalEstrategiaIA] = useState(false)
+
+    async function detectarEstrategiaNoRoteiro(plano: Plano) {
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+        if (!apiKey) return
+        const textoRoteiro = [
+            plano.objetivoGeral,
+            ...(plano.atividadesRoteiro || []).map((a: any) =>
+                [a.nome, a.descricao].filter(Boolean).join(': ')
+            ),
+            (plano as any).conteudo,
+        ].filter(Boolean).join('\n')
+        if (!textoRoteiro.trim() || textoRoteiro.length < 30) return
+
+        const prompt = `Você é um assistente especializado em pedagogia musical. Analise o roteiro abaixo e identifique se há uma sequência CLARA e INEQUÍVOCA de:
+
+1. AQUECIMENTO_CORPORAL: preparação física com massagem, despertar sensorial, mobilização de segmentos do corpo (cabeça, ombro, pés, língua, articulações), esticar, relaxar, sacudir, respiração corporal, imagens metafóricas guiando o corpo.
+2. VOCALIZES: aquecimento vocal, vocalises, exercícios de vogais, dicção, ressonância, Corposolfa, preparação da voz.
+
+REGRAS:
+- Só detecte se o padrão for óbvio e dominante no roteiro
+- Em caso de dúvida, retorne detectado: false
+- Nunca invente — só detecte o que está explícito
+- Se houver os dois, retorne o mais dominante
+
+Roteiro:
+${textoRoteiro}
+
+Responda APENAS com JSON válido:
+{"detectado": true/false, "tipo": "aquecimento_corporal" | "vocalizes" | null, "nome_sugerido": "nome curto em português" | null}`
+
+        try {
+            const res = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+                { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
+            )
+            if (!res.ok) return
+            const json = await res.json()
+            const text: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+            const match = text.match(/\{[\s\S]*\}/)
+            if (!match) return
+            const result = JSON.parse(match[0])
+            if (result.detectado && result.tipo && result.nome_sugerido) {
+                setEstrategiaDetectadaIA({ tipo: result.tipo, nomeSugerido: result.nome_sugerido, planoId: plano.id })
+                setShowModalEstrategiaIA(true)
+            }
+        } catch { /* silencioso — não interrompe o fluxo */ }
+    }
+
     /** Adiciona um vínculo música↔plano e persiste. */
     const vincularMusicaAoPlano = useCallback((planoId: string | number, vinculo: VinculoMusicaPlano) => {
         // Atualiza plano → músicas
@@ -1297,6 +1360,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         modalConfiguracoes, setModalConfiguracoes,
         musicasDetectadas, limparMusicasDetectadas,
         showModalMusicas, setShowModalMusicas,
+        estrategiaDetectadaIA, showModalEstrategiaIA, setShowModalEstrategiaIA,
         vincularMusicaAoPlano, desvincularMusicaDoPlano,
         vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano,
         abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro,

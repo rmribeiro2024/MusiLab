@@ -8,6 +8,7 @@ import RichTextEditor from './RichTextEditor'
 import { exportarPlanoPDF } from '../utils/pdf'
 import ModalAplicarEmTurmas from './modals/ModalAplicarEmTurmas'
 import ModalMusicasDetectadas from './modals/ModalMusicasDetectadas'
+import ModalEstrategiaDetectada from './modals/ModalEstrategiaDetectada'
 import type { Plano } from '../types'
 
 // ── LINHA PLANO (memoizado — só re-renderiza quando o próprio plano muda) ──
@@ -1801,6 +1802,7 @@ export default function TelaPrincipal() {
             />
         )}
         <ModalMusicasDetectadas />
+        <ModalEstrategiaDetectada />
     </>
     );
 
