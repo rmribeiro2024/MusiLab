@@ -72,6 +72,24 @@
 
 ---
 
+### Módulo Relatórios — Passo 4: Refatoração de agregação de dados
+**Data:** 2026-03-11
+**Arquivos:**
+- `src/lib/relatorios.ts` — criado (helpers puros e reutilizáveis)
+- `src/components/ModuloRelatorios.tsx` — refatorado para usar os helpers
+**O que foi feito:**
+- Criado `src/lib/relatorios.ts` com funções puras separadas por responsabilidade:
+  - `filtrarAplicacoes()` — filtra por período, turma e status
+  - `contarAulas/Turmas/PlanosUnicos/RegistrosPosAula()` — contadores individuais
+  - `agregarPlanos/Conceitos/Repertorio/Turmas()` — agregações com ordenação
+  - `buildLinhaDoTempo()` — lista cronológica para relatório por turma
+  - `buildRelatorioMensal/Turma()` — builders completos que compõem os helpers
+  - `listarTurmas/getNomeTurma()` — lookups de hierarquia ano/escola/segmento/turma
+- `ModuloRelatorios.tsx` reduzido a lógica de UI pura (sem cálculos inline)
+- Views separadas: `RelatorioMensalView`, `RelatorioTurmaView`
+
+---
+
 ### Módulo Relatórios — Passo 3: Relatório por Turma
 **Data:** 2026-03-11
 **Arquivo:** `src/components/ModuloRelatorios.tsx`
