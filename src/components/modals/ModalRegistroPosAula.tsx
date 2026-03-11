@@ -9,7 +9,8 @@ const AccordionChip = React.forwardRef<() => void, {
     value: string, filled: boolean, defaultOpen?: boolean,
     onChange: (v: string) => void,
     onTabNext?: () => void,
-}>(function AccordionChip({ id, icon, label, placeholder, value, filled, defaultOpen, onChange, onTabNext }, ref) {
+    quickOptions?: string[],
+}>(function AccordionChip({ id, icon, label, placeholder, value, filled, defaultOpen, onChange, onTabNext, quickOptions }, ref) {
     const [open, setOpen] = React.useState(defaultOpen ?? false)
     React.useImperativeHandle(ref, () => () => setOpen(true))
     React.useEffect(() => { if (filled) setOpen(true) }, [filled])
@@ -27,6 +28,17 @@ const AccordionChip = React.forwardRef<() => void, {
             </div>
             {open && (
                 <div style={{ padding: '0 12px 10px' }}>
+                    {quickOptions && quickOptions.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+                            {quickOptions.map(opt => (
+                                <button key={opt} type="button"
+                                    onClick={() => onChange(value ? value + (value.endsWith('\n') ? '' : '\n') + opt : opt)}
+                                    style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                    + {opt}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                     <textarea id={id} value={value} onChange={e => onChange(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Tab') { e.preventDefault(); setOpen(false); onTabNext?.() } }}
                         rows={2} placeholder={placeholder} autoFocus
@@ -358,6 +370,20 @@ export default function ModalRegistroPosAula() {
         const atualizado = { ...planoParaRegistro, registrosPosAula: [...(planoParaRegistro.registrosPosAula || []), ...novos] }
         setPlanos((prev: any[]) => prev.map((p: any) => p.id === atualizado.id ? atualizado : p))
         setPlanoParaRegistro(atualizado)
+        // Marcar aplicações das turmas destino como "realizada" no calendário
+        for (const chave of turmasCopiar) {
+            const [anoId, escId, segId, turId] = chave.split('|')
+            const ap = aplicacoes.find(a =>
+                // eslint-disable-next-line eqeqeq
+                a.planoId == planoParaRegistro.id &&
+                // eslint-disable-next-line eqeqeq
+                a.anoLetivoId == anoId && a.escolaId == escId &&
+                // eslint-disable-next-line eqeqeq
+                a.segmentoId == segId && a.turmaId == turId &&
+                a.data === reg.data
+            )
+            if (ap && ap.status !== 'realizada') atualizarStatusAplicacao(ap.id, 'realizada')
+        }
         setCopiandoRegId(null)
         setTurmasCopiar(new Set())
     }
@@ -555,14 +581,15 @@ export default function ModalRegistroPosAula() {
                                 📚 Histórico{' '}
                                 {planoParaRegistro.registrosPosAula?.length > 0 && (() => {
                                     const countFiltrado = (planoParaRegistro.registrosPosAula || []).filter((r: any) => {
-                                        if (filtroRegData) {
+                                        if (filtroRegTurma) {
+                                            if (r.turma != filtroRegTurma) return false
+                                        } else if (filtroRegData) {
                                             if (r.data != filtroRegData) return false
                                         } else {
                                             if (filtroRegAno      && r.anoLetivo             != filtroRegAno)      return false
                                             if (filtroRegEscola   && r.escola                != filtroRegEscola)   return false
                                             if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
                                         }
-                                        if (filtroRegTurma && r.turma != filtroRegTurma) return false
                                         return true
                                     }).length
                                     return (
@@ -682,6 +709,7 @@ export default function ModalRegistroPosAula() {
                                                     onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v })}
                                                     onTabNext={() => { const next = chipOpenRefs.current[idx + 1]; if (next) next(); else salvarBtnRef.current?.focus() }}
                                                     ref={(fn: (() => void) | null) => { chipOpenRefs.current[idx] = fn }}
+                                                    quickOptions={field === 'resumoAula' ? ['Plano de aula completo'] : undefined}
                                                 />
                                             )
                                         })}
@@ -787,7 +815,19 @@ export default function ModalRegistroPosAula() {
                                                             const label = resolverTurmaLabel(a.anoLetivoId, a.escolaId, a.segmentoId, a.turmaId) || `Turma ${a.turmaId}`
                                                             return (
                                                                 <button key={`${a.escolaId}-${a.segmentoId}-${a.turmaId}`} type="button"
-                                                                    onClick={() => setFiltroRegTurma(filtroRegTurma == a.turmaId ? '' : a.turmaId)}
+                                                                    onClick={() => {
+                                                                        const novaTurma = filtroRegTurma == a.turmaId ? '' : a.turmaId
+                                                                        setFiltroRegTurma(novaTurma)
+                                                                        setExpandedRegs(new Set())
+                                                                        if (novaTurma) {
+                                                                            // turma pode ser de outro plano — trocar planoParaRegistro
+                                                                            const ap = aplicacoes.find(ap => ap.turmaId == novaTurma && ap.data === filtroRegData)
+                                                                            if (ap) {
+                                                                                const plano = planos.find(p => String(p.id) === String(ap.planoId))
+                                                                                if (plano) setPlanoParaRegistro(plano)
+                                                                            }
+                                                                        }
+                                                                    }}
                                                                     style={pillStyle(filtroRegTurma == a.turmaId)}>
                                                                     {label}
                                                                 </button>
@@ -841,14 +881,15 @@ export default function ModalRegistroPosAula() {
                                     {/* Lista de registros — cards colapsáveis */}
                                     {(() => {
                                         const regs = (planoParaRegistro.registrosPosAula || []).filter(r => {
-                                            if (filtroRegData) {
+                                            if (filtroRegTurma) {
+                                                if (r.turma != filtroRegTurma) return false
+                                            } else if (filtroRegData) {
                                                 if (r.data != filtroRegData) return false
                                             } else {
                                                 if (filtroRegAno      && r.anoLetivo != filtroRegAno) return false
                                                 if (filtroRegEscola   && r.escola    != filtroRegEscola) return false
                                                 if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
                                             }
-                                            if (filtroRegTurma && r.turma != filtroRegTurma) return false
                                             if (buscaRegistros.trim()) {
                                                 const q = buscaRegistros.toLowerCase()
                                                 const campos = [r.resumoAula, r.funcionouBem, r.naoFuncionou, r.poderiaMelhorar, r.proximaAula, r.comportamento, r.anotacoesGerais]

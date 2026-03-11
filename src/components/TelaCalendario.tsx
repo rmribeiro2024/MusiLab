@@ -19,10 +19,14 @@ function getNomeTurma(
     anosLetivos: AnoLetivo[]
 ): string {
     if (!anoLetivoId || !escolaId) return turmaId
-    const ano = anosLetivos.find(a => a.id === anoLetivoId)
-    const esc = ano?.escolas.find(e => e.id === escolaId)
-    const seg = esc?.segmentos.find(s => s.id === segmentoId)
-    const tur = seg?.turmas.find(t => t.id === turmaId)
+    // eslint-disable-next-line eqeqeq
+    const ano = anosLetivos.find(a => a.id == anoLetivoId)
+    // eslint-disable-next-line eqeqeq
+    const esc = ano?.escolas.find(e => e.id == escolaId)
+    // eslint-disable-next-line eqeqeq
+    const seg = esc?.segmentos.find(s => s.id == segmentoId)
+    // eslint-disable-next-line eqeqeq
+    const tur = seg?.turmas.find(t => t.id == turmaId)
     return [esc?.nome, seg?.nome, tur?.nome].filter(Boolean).join(' › ') || turmaId
 }
 
@@ -695,12 +699,13 @@ export function TelaCalendario() {
 }
 
 export default function TelaResumoDia() {
-    const { planos, sugerirPlanoParaTurma, setPlanoSelecionado } = usePlanosContext()
+    const { planos, sugerirPlanoParaTurma } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
     const { setViewMode } = useRepertorioContext()
-    const { setModalGradeSemanal, dataDia, diasExpandidos, modoResumo, semanaResumo, obterTurmasDoDia, setDataDia, setDiasExpandidos, setModalRegistroRapido, setModoResumo, setRrAnoSel, setRrData, setRrEscolaSel, setRrPlanosSegmento, setRrTextos, setSemanaResumo, setModalRegistro, setPlanoParaRegistro, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel, setVerRegistros, setRegistroEditando, setNovoRegistro } = useCalendarioContext()
-
-    const [aulaExpandida, setAulaExpandida] = React.useState<string | null>(null)
+    const { setModalGradeSemanal, dataDia, diasExpandidos, modoResumo, semanaResumo, obterTurmasDoDia, setDataDia, setDiasExpandidos, setModalRegistroRapido, setModoResumo, setRrAnoSel, setRrData, setRrEscolaSel, setRrPlanosSegmento, setRrTextos, setSemanaResumo } = useCalendarioContext()
+    const { aplicacoesPorData } = useAplicacoesContext()
+    const [aulaAcaoAtiva, setAulaAcaoAtiva] = useState<AulaGrade | null>(null)
+    const [planoAulaPreview, setPlanoAulaPreview] = useState<Plano | null>(null)
 
     const diasSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -934,6 +939,7 @@ export default function TelaResumoDia() {
                         {/* Widget: Turmas do Dia (da Grade Semanal) */}
                         {(() => {
                             const turmasDoDia = obterTurmasDoDia(dataDia);
+                            const apsDoDia = aplicacoesPorData[dataDia] || [];
 
                             if (turmasDoDia.length === 0) {
                                 return (
@@ -948,89 +954,172 @@ export default function TelaResumoDia() {
                                 );
                             }
 
-                            // Agrupar por escola
-                            const porEscola = {};
-                            turmasDoDia.forEach(aula => {
-                                const ano = anosLetivos.find(a=>a.id==aula.anoLetivoId);
-                                const esc = ano?.escolas.find(e=>e.id==aula.escolaId);
-                                const escolaNome = esc?.nome || 'Escola não encontrada';
-                                if (!porEscola[escolaNome]) porEscola[escolaNome] = [];
-                                porEscola[escolaNome].push(aula);
+                            type AulaEnriq = {
+                                aula: AulaGrade
+                                escNome: string
+                                segNome: string
+                                turNome: string
+                                aplicacao: AplicacaoAula | undefined
+                                plano: Plano | undefined
+                                status: 'realizada' | 'planejada' | 'sem-plano'
+                            }
+
+                            const aulasSorted = [...turmasDoDia].sort((a, b) => a.horario.localeCompare(b.horario));
+                            const turmasEnriq: AulaEnriq[] = aulasSorted.map(aula => {
+                                const ano = anosLetivos.find(a => a.id == aula.anoLetivoId);
+                                const esc = ano?.escolas.find(e => e.id == aula.escolaId);
+                                const seg = esc?.segmentos.find(s => s.id == aula.segmentoId);
+                                const tur = seg?.turmas.find(t => t.id == aula.turmaId);
+                                const aplicacao = apsDoDia.find(ap => ap.turmaId == aula.turmaId && ap.segmentoId == aula.segmentoId);
+                                const plano = aplicacao ? planos.find(p => String(p.id) === String(aplicacao.planoId)) : undefined;
+                                const status: 'realizada' | 'planejada' | 'sem-plano' =
+                                    aplicacao?.status === 'realizada' ? 'realizada' :
+                                    aplicacao ? 'planejada' :
+                                    sugerirPlanoParaTurma(aula.anoLetivoId, aula.escolaId, aula.segmentoId, aula.turmaId) ? 'planejada' :
+                                    'sem-plano';
+                                return { aula, escNome: esc?.nome || '', segNome: seg?.nome || '?', turNome: tur?.nome || '?', aplicacao, plano, status };
                             });
+
+                            const totalTurmas = turmasEnriq.length;
+                            const totalRegistradas = turmasEnriq.filter(t => t.status === 'realizada').length;
+                            const totalPendentes = totalTurmas - totalRegistradas;
+                            const totalSemPlano = turmasEnriq.filter(t => t.status === 'sem-plano').length;
+                            const proximaAula = turmasEnriq.find(t => t.status !== 'realizada') ?? null;
+
+                            const materiaisSet = new Set<string>();
+                            turmasEnriq.forEach(t => {
+                                t.plano?.materiais?.forEach(m => { if (m?.trim()) materiaisSet.add(m.trim().toLowerCase()); });
+                            });
+                            const materiaisList = Array.from(materiaisSet);
+
+                            const porEscola: Record<string, AulaEnriq[]> = {};
+                            turmasEnriq.forEach(t => {
+                                const k = t.escNome || 'Escola';
+                                if (!porEscola[k]) porEscola[k] = [];
+                                porEscola[k].push(t);
+                            });
+
+                            const dotCls = (s: 'realizada' | 'planejada' | 'sem-plano') =>
+                                s === 'realizada' ? 'bg-emerald-400' : s === 'planejada' ? 'bg-blue-400' : 'bg-gray-300';
+                            const statusLbl = (s: 'realizada' | 'planejada' | 'sem-plano') =>
+                                s === 'realizada' ? 'text-emerald-600' : s === 'planejada' ? 'text-blue-500' : 'text-gray-400';
 
                             return (
                                 <div className="px-4 py-3 bg-purple-50 border-t border-purple-100 space-y-3">
+                                    {/* Header */}
                                     <div className="flex items-center justify-between">
                                         <p className="text-xs font-bold text-purple-800 uppercase">📅 Minhas Turmas de Hoje</p>
-                                        <button onClick={()=>setModalGradeSemanal(true)} className="text-xs text-purple-600 hover:text-purple-800 underline font-bold">
-                                            Ver grade
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => setViewMode('agendaSemanal')} className="text-xs text-indigo-600 hover:text-indigo-800 font-bold">
+                                                Ver agenda →
+                                            </button>
+                                            <button onClick={() => setModalGradeSemanal(true)} className="text-xs text-purple-600 hover:text-purple-800 underline font-bold">
+                                                Ver grade
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    {Object.keys(porEscola).sort().map(escolaNome => {
-                                        const aulas = porEscola[escolaNome].sort((a,b) => a.horario.localeCompare(b.horario));
-                                        return (
-                                            <div key={escolaNome} className="bg-white rounded-lg border border-purple-200 overflow-hidden">
-                                                <p className="text-xs font-bold text-purple-900 px-3 py-2 bg-purple-50 border-b border-purple-100">🏫 {escolaNome}</p>
-                                                <div className="divide-y divide-purple-50">
-                                                    {aulas.map(aula => {
-                                                        const ano = anosLetivos.find(a=>a.id==aula.anoLetivoId);
-                                                        const esc = ano?.escolas.find(e=>e.id==aula.escolaId);
-                                                        const seg = esc?.segmentos.find(s=>s.id==aula.segmentoId);
-                                                        const tur = seg?.turmas.find(t=>t.id==aula.turmaId);
-                                                        const plano = sugerirPlanoParaTurma(aula.anoLetivoId, aula.escolaId, aula.segmentoId, aula.turmaId);
-                                                        const aulaKey = `${aula.id}-${dataDia}`;
-                                                        const expandida = aulaExpandida === aulaKey;
+                                    {/* Resumo pedagógico */}
+                                    <div className="flex flex-wrap gap-1.5">
+                                        <span className="text-[11px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">{totalTurmas} turma{totalTurmas !== 1 ? 's' : ''}</span>
+                                        {totalRegistradas > 0 && <span className="text-[11px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{totalRegistradas} registrada{totalRegistradas !== 1 ? 's' : ''}</span>}
+                                        {totalPendentes > 0 && <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">{totalPendentes} pendente{totalPendentes !== 1 ? 's' : ''}</span>}
+                                        {totalSemPlano > 0 && <span className="text-[11px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{totalSemPlano} sem plano</span>}
+                                    </div>
 
-                                                        return (
-                                                            <div key={aula.id}>
-                                                                <button onClick={()=>setAulaExpandida(expandida ? null : aulaKey)}
-                                                                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-purple-50 transition ${expandida ? 'bg-purple-50' : ''}`}>
-                                                                    <span className="font-mono font-bold text-purple-700 shrink-0">{aula.horario}</span>
-                                                                    <span className="text-gray-400">•</span>
-                                                                    <span className="text-purple-800 font-medium">{seg?.nome || '?'}</span>
-                                                                    <span className="text-gray-400">›</span>
-                                                                    <span className="text-gray-700">{tur?.nome || '?'}</span>
-                                                                    {plano && <span className="ml-auto text-purple-500 italic truncate max-w-[120px]">{plano.titulo}</span>}
-                                                                    <span className={`text-purple-400 text-xs ml-1 shrink-0 transition-transform ${expandida ? 'rotate-180' : ''}`} style={{display:'inline-block'}}>▾</span>
-                                                                </button>
-                                                                {expandida && (
-                                                                    <div className="px-3 pb-2 flex flex-col gap-1.5">
-                                                                        {plano && (
-                                                                            <button onClick={()=>setPlanoSelecionado(plano)}
-                                                                                className="w-full py-1.5 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition">
-                                                                                🗺 Ver plano de aula
-                                                                            </button>
-                                                                        )}
-                                                                        <button onClick={()=>{
-                                                                            if (!plano) return;
-                                                                            setPlanoParaRegistro(plano);
-                                                                            setRegAnoSel(aula.anoLetivoId ?? '');
-                                                                            setRegEscolaSel(aula.escolaId ?? '');
-                                                                            setRegSegmentoSel(aula.segmentoId);
-                                                                            setRegTurmaSel(aula.turmaId);
-                                                                            setVerRegistros(false);
-                                                                            setRegistroEditando(null);
-                                                                            setNovoRegistro({ dataAula: dataDia, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '' });
-                                                                            setModalRegistro(true);
-                                                                        }}
-                                                                            disabled={!plano}
-                                                                            className={`w-full py-1.5 text-xs font-semibold border rounded-lg transition ${plano ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}>
-                                                                            📝 {plano ? 'Registrar pós-aula' : 'Registrar pós-aula (sem plano)'}
-                                                                        </button>
-                                                                        <button onClick={()=>setViewMode('turmas')}
-                                                                            className="w-full py-1.5 text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 transition">
-                                                                            👥 Abrir planejamento da turma
-                                                                        </button>
+                                    {/* Próxima aula */}
+                                    {proximaAula && ehHoje && (
+                                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                                            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Próxima aula</p>
+                                            <p className="font-bold text-amber-800 text-sm">{proximaAula.aula.horario}</p>
+                                            <p className="text-xs text-amber-700">{proximaAula.segNome} • {proximaAula.turNome}</p>
+                                            {proximaAula.plano
+                                                ? <p className="text-xs text-amber-600 mt-0.5">{proximaAula.plano.titulo}</p>
+                                                : <p className="text-xs text-gray-400 italic mt-0.5">Sem plano</p>}
+                                        </div>
+                                    )}
+
+                                    {/* Lista por escola */}
+                                    {Object.keys(porEscola).sort().map(escolaNome => (
+                                        <div key={escolaNome} className="bg-white rounded-lg border border-purple-200 p-2">
+                                            <p className="text-xs font-bold text-purple-900 mb-2">🏫 {escolaNome}</p>
+                                            <div className="space-y-0.5">
+                                                {porEscola[escolaNome].map(t => (
+                                                    <div key={t.aula.id}>
+                                                        <button
+                                                            onClick={() => setAulaAcaoAtiva(prev => prev?.id === t.aula.id ? null : t.aula)}
+                                                            className="w-full text-left"
+                                                        >
+                                                            <div className={`flex items-start gap-2 px-2.5 py-2 rounded-lg text-xs transition ${aulaAcaoAtiva?.id === t.aula.id ? 'bg-indigo-50 ring-1 ring-indigo-300' : 'hover:bg-gray-50'}`}>
+                                                                <span className={`shrink-0 w-2.5 h-2.5 rounded-full mt-0.5 ${dotCls(t.status)}`} />
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                                        <span className="font-mono font-bold text-purple-700 shrink-0">{t.aula.horario}</span>
+                                                                        <span className="text-gray-400">•</span>
+                                                                        <span className="text-purple-800 font-medium">{t.segNome}</span>
+                                                                        <span className="text-gray-400">•</span>
+                                                                        <span className="text-gray-700">{t.turNome}</span>
                                                                     </div>
-                                                                )}
+                                                                    {t.plano
+                                                                        ? <p className="text-[11px] text-gray-500 mt-0.5">{t.plano.titulo}</p>
+                                                                        : <p className="text-[11px] text-gray-300 italic mt-0.5">Sem plano</p>}
+                                                                </div>
+                                                                <span className={`shrink-0 text-[10px] font-semibold ${statusLbl(t.status)}`}>
+                                                                    {t.status === 'realizada' ? 'realizada' : t.status === 'planejada' ? 'planejada' : 'sem plano'}
+                                                                </span>
                                                             </div>
-                                                        );
-                                                    })}
-                                                </div>
+                                                        </button>
+                                                        {/* Painel de ações rápidas */}
+                                                        {aulaAcaoAtiva?.id === t.aula.id && (
+                                                            <div className="mx-2 mb-1.5 mt-0.5 flex flex-col gap-1">
+                                                                {t.plano && (
+                                                                    <button
+                                                                        onClick={e => { e.stopPropagation(); setPlanoAulaPreview(t.plano!); }}
+                                                                        className="w-full text-left px-3 py-2 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-xs text-indigo-700 font-medium">
+                                                                        📄 Ver plano de aula
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    onClick={e => {
+                                                                        e.stopPropagation();
+                                                                        setRrData(dataDia);
+                                                                        setRrAnoSel(t.aula.anoLetivoId);
+                                                                        setRrEscolaSel(t.aula.escolaId);
+                                                                        setRrTextos({});
+                                                                        setRrPlanosSegmento({});
+                                                                        setModalRegistroRapido(true);
+                                                                        setAulaAcaoAtiva(null);
+                                                                    }}
+                                                                    className="w-full text-left px-3 py-2 bg-green-50 hover:bg-green-100 rounded-lg text-xs text-green-700 font-medium">
+                                                                    📝 Registrar pós-aula
+                                                                </button>
+                                                                <button
+                                                                    onClick={e => { e.stopPropagation(); setViewMode('turmas'); setAulaAcaoAtiva(null); }}
+                                                                    className="w-full text-left px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg text-xs text-purple-700 font-medium">
+                                                                    👥 Abrir planejamento da turma
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
                                             </div>
-                                        );
-                                    })}
+                                        </div>
+                                    ))}
+
+                                    {/* Materiais necessários */}
+                                    {materiaisList.length > 0 && (
+                                        <div className="bg-white rounded-lg border border-purple-200 p-3">
+                                            <p className="text-xs font-bold text-purple-900 mb-2">🎵 Materiais necessários hoje</p>
+                                            <ul className="space-y-0.5">
+                                                {materiaisList.map(m => (
+                                                    <li key={m} className="text-xs text-gray-600 flex items-center gap-1.5">
+                                                        <span className="w-1 h-1 rounded-full bg-purple-400 shrink-0" />
+                                                        {m}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })()}
@@ -1166,6 +1255,35 @@ export default function TelaResumoDia() {
                     </div>
                 );
             })()}
+
+            {/* Modal: preview rápido do plano */}
+            {planoAulaPreview && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40" onClick={() => setPlanoAulaPreview(null)}>
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-3" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-start justify-between gap-2">
+                            <h3 className="font-bold text-slate-800 text-sm leading-snug">{planoAulaPreview.titulo}</h3>
+                            <button onClick={() => setPlanoAulaPreview(null)} className="shrink-0 text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
+                        </div>
+                        {planoAulaPreview.objetivoGeral && (
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Objetivo</p>
+                                <p className="text-xs text-slate-600 leading-relaxed">{stripHTML(planoAulaPreview.objetivoGeral)}</p>
+                            </div>
+                        )}
+                        {planoAulaPreview.materiais && planoAulaPreview.materiais.length > 0 && (
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Materiais</p>
+                                <p className="text-xs text-slate-600">{planoAulaPreview.materiais.join(', ')}</p>
+                            </div>
+                        )}
+                        <button
+                            onClick={() => { setPlanoAulaPreview(null); setAulaAcaoAtiva(null); setViewMode('lista'); }}
+                            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl">
+                            Abrir plano completo
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

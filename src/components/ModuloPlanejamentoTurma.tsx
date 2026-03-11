@@ -11,7 +11,7 @@ import { useCalendarioContext } from '../contexts/CalendarioContext'
 import RichTextEditor from './RichTextEditor'
 import { stripHTML, gerarIdSeguro } from '../lib/utils'
 import { showToast } from '../lib/toast'
-import { useAtividadesContext, useAplicacoesContext } from '../contexts'
+import { useAtividadesContext, useAplicacoesContext, useSequenciasContext } from '../contexts'
 import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula } from '../types'
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -79,88 +79,360 @@ function labelProximaOpcao(valor: string): string {
   return mapa[valor] ?? valor
 }
 
-// ─── MINI TIMELINE ────────────────────────────────────────────────────────────
+// ─── TIMELINE PEDAGÓGICA ──────────────────────────────────────────────────────
 
 function toDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 const MESES_TIMELINE = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
-const DIAS_ABR = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
 
-function MiniTimelineTurma() {
-  const { turmaSelecionada } = usePlanejamentoTurmaContext()
+interface TLItem {
+  dataStr: string
+  status: 'realizada' | 'planejada' | 'sem-plano'
+  planoId?: string | number
+  planoTitulo?: string
+  aplicacaoId?: string
+  sequenciaTitulo?: string  // sequência pedagógica ou tema
+}
+
+function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
+  onAcionar: (modo: 'adaptar' | 'importar' | 'criar') => void
+  dataAtiva: string | null
+  setDataAtiva: (d: string | null) => void
+  turmaNome: string
+}) {
+  const { turmaSelecionada, historicoDaTurma } = usePlanejamentoTurmaContext()
+  const { aplicacoes } = useAplicacoesContext()
+  const { planos } = usePlanosContext()
   const { obterTurmasDoDia } = useCalendarioContext()
-  const { aplicacoesPorData } = useAplicacoesContext()
+  const { sequencias } = useSequenciasContext()
+  const [verTodos, setVerTodos] = useState(false)
+  const hojeStr = useMemo(() => toDateStr(new Date()), [])
 
-  const classDias = useMemo(() => {
+  // Auto-scroll: centraliza o ponto ativo na sua row
+  useEffect(() => {
+    if (!dataAtiva) return
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-date="${dataAtiva}"]`) as HTMLElement | null
+      if (el) el.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' })
+    })
+  }, [dataAtiva])
+
+  // Todos os itens da timeline: aplicacoes + datas futuras sem plano
+  const todosItens = useMemo<TLItem[]>(() => {
     if (!turmaSelecionada) return []
+
+    // eslint-disable-next-line eqeqeq
+    const apsDaTurma = aplicacoes.filter(a => a.turmaId == turmaSelecionada.turmaId && a.segmentoId == turmaSelecionada.segmentoId)
+      .sort((a, b) => a.data.localeCompare(b.data))
+    const datasComAp = new Set(apsDaTurma.map(a => a.data))
+
+    // Próximas datas no calendário sem aplicação (até 60 dias, máx 6 itens)
+    const semAp: string[] = []
     const hoje = new Date()
-    const hojeStr = toDateStr(hoje)
-    const resultado: { dataStr: string; diaNome: string; diaN: number; mes: string; status: string | null; isHoje: boolean; isPassado: boolean }[] = []
-
-    for (let i = -14; i <= 35; i++) {
-      const d = new Date(hoje)
-      d.setDate(hoje.getDate() + i)
-      const dataStr = toDateStr(d)
-      const aulas = obterTurmasDoDia(dataStr)
-      const minhaAula = aulas.find(
-        a => a.turmaId === turmaSelecionada.turmaId && a.segmentoId === turmaSelecionada.segmentoId
-      )
-      if (!minhaAula) continue
-      const apsDia = aplicacoesPorData[dataStr] ?? []
-      const ap = apsDia.find(
-        a => a.turmaId === turmaSelecionada.turmaId && a.segmentoId === turmaSelecionada.segmentoId
-      )
-      resultado.push({
-        dataStr,
-        diaNome: DIAS_ABR[d.getDay()],
-        diaN: d.getDate(),
-        mes: MESES_TIMELINE[d.getMonth()],
-        status: ap ? ap.status : null,
-        isHoje: dataStr === hojeStr,
-        isPassado: i < 0,
-      })
+    for (let i = 1; i <= 60 && semAp.length < 6; i++) {
+      const d = new Date(hoje); d.setDate(hoje.getDate() + i)
+      const ds = toDateStr(d)
+      if (datasComAp.has(ds)) continue
+      const aulas = obterTurmasDoDia(ds)
+      // eslint-disable-next-line eqeqeq
+      if (aulas.some(a => a.turmaId == turmaSelecionada.turmaId && a.segmentoId == turmaSelecionada.segmentoId))
+        semAp.push(ds)
     }
-    return resultado
-  }, [turmaSelecionada, obterTurmasDoDia, aplicacoesPorData])
 
-  if (!turmaSelecionada || classDias.length === 0) return null
+    const fromAps: TLItem[] = apsDaTurma.map(ap => {
+      const plano = planos.find(p => String(p.id) === String(ap.planoId))
+      // Sequência pedagógica → fallback para tema do plano
+      const seq = ap.planoId != null
+        ? sequencias.find(s => s.slots.some(sl => sl.planoVinculado != null && String(sl.planoVinculado) === String(ap.planoId)))
+        : undefined
+      const sequenciaTitulo = seq?.titulo ?? plano?.tema ?? undefined
+      return {
+        dataStr: ap.data,
+        status: ap.status === 'realizada' ? 'realizada' : 'planejada',
+        planoId: ap.planoId,
+        planoTitulo: plano?.titulo,
+        aplicacaoId: ap.id,
+        sequenciaTitulo,
+      }
+    })
+
+    const fromSemAp: TLItem[] = semAp.map(ds => ({ dataStr: ds, status: 'sem-plano' as const }))
+
+    return [...fromAps, ...fromSemAp].sort((a, b) => a.dataStr.localeCompare(b.dataStr))
+  }, [turmaSelecionada, aplicacoes, planos, obterTurmasDoDia])
+
+  // Janela padrão: últimas 5 realizadas + próximas 3 (planejada/sem-plano)
+  const itensPadrao = useMemo<TLItem[]>(() => {
+    const hojeStr = toDateStr(new Date())
+    const realizadas = todosItens.filter(i => i.status === 'realizada').slice(-5)
+    const futuras    = todosItens.filter(i => i.dataStr >= hojeStr && i.status !== 'realizada').slice(0, 3)
+    const seen = new Set<string>()
+    return [...realizadas, ...futuras]
+      .filter(i => !seen.has(i.dataStr) && !!seen.add(i.dataStr))
+      .sort((a, b) => a.dataStr.localeCompare(b.dataStr))
+  }, [todosItens])
+
+  const itensVisiveis = verTodos ? todosItens : itensPadrao
+  const temMais       = !verTodos && todosItens.length > itensPadrao.length
+
+  // Agrupar itens por sequência pedagógica / tema
+  const grupos = useMemo(() => {
+    const map = new Map<string, TLItem[]>()
+    const noGroup: TLItem[] = []
+    for (const item of itensVisiveis) {
+      if (item.sequenciaTitulo) {
+        if (!map.has(item.sequenciaTitulo)) map.set(item.sequenciaTitulo, [])
+        map.get(item.sequenciaTitulo)!.push(item)
+      } else {
+        noGroup.push(item)
+      }
+    }
+    const result: { titulo: string | null; items: TLItem[] }[] = []
+    map.forEach((items, titulo) => result.push({ titulo, items }))
+    if (noGroup.length) result.push({ titulo: null, items: noGroup })
+    return result
+  }, [itensVisiveis])
+  const temAgrupamento = grupos.some(g => g.titulo !== null)
+
+  // Detalhe do ponto selecionado
+  const itemAtivo    = dataAtiva ? itensVisiveis.find(i => i.dataStr === dataAtiva) ?? null : null
+  const [planoPreview, setPlanoPreview] = useState<import('../types').Plano | null>(null)
+
+  const contadores = useMemo(() => ({
+    realizadas: todosItens.filter(i => i.status === 'realizada').length,
+    planejadas:  todosItens.filter(i => i.status === 'planejada').length,
+    semPlano:    todosItens.filter(i => i.status === 'sem-plano').length,
+  }), [todosItens])
+
+  if (!turmaSelecionada || itensVisiveis.length === 0) return null
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
-      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Suas aulas</h3>
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-        {classDias.map(({ dataStr, diaNome, diaN, mes, status, isHoje, isPassado }) => {
-          const dotCls =
-            status === 'realizada'  ? 'bg-emerald-500 border-emerald-500' :
-            status === 'planejada'  ? 'bg-indigo-500 border-indigo-500' :
-            status === 'cancelada'  ? 'bg-red-400 border-red-400' :
-            isPassado               ? 'border-2 border-slate-200 bg-white' :
-                                      'border-2 border-slate-300 bg-white'
-          const ringCls = isHoje ? 'ring-2 ring-indigo-400 ring-offset-1' : ''
-          return (
-            <div key={dataStr} className={`flex flex-col items-center gap-1 shrink-0 px-1.5 py-1 rounded-lg ${ringCls} ${isHoje ? 'bg-indigo-50' : ''}`}>
-              <span className={`text-[9px] font-semibold uppercase ${isHoje ? 'text-indigo-600' : 'text-slate-400'}`}>{diaNome}</span>
-              <div className={`w-3 h-3 rounded-full ${dotCls}`} />
-              <span className={`text-[9px] ${isHoje ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}>{diaN} {mes}</span>
-            </div>
-          )
-        })}
+
+      {/* Cabeçalho */}
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-baseline gap-1.5 min-w-0">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest shrink-0">Progresso pedagógico</h3>
+          {turmaNome && <span className="text-xs text-slate-400 font-medium truncate">— {turmaNome}</span>}
+        </div>
+        {temMais && (
+          <button type="button" onClick={() => setVerTodos(true)}
+            className="text-[11px] font-semibold text-indigo-500 hover:text-indigo-700 transition-colors">
+            Ver histórico completo
+          </button>
+        )}
+        {verTodos && (
+          <button type="button" onClick={() => setVerTodos(false)}
+            className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 transition-colors">
+            Ver resumo
+          </button>
+        )}
       </div>
-      <div className="flex items-center gap-3 mt-2.5 flex-wrap">
-        {([
-          { dot: 'bg-emerald-500', label: 'Realizada' },
-          { dot: 'bg-indigo-500',  label: 'Planejada' },
-          { dot: 'border-2 border-slate-300 bg-white', label: 'Sem plano' },
-          { dot: 'border-2 border-red-400 bg-white',   label: 'Cancelada', hide: !classDias.some(d => d.status === 'cancelada') },
-        ] as const).filter(l => !('hide' in l && l.hide)).map(({ dot, label }) => (
+
+      {/* Resumo de indicadores */}
+      <div className="flex items-center gap-1 mb-4 text-[11px] flex-wrap">
+        <span className="font-bold text-emerald-600">{contadores.realizadas}</span>
+        <span className="text-slate-400">realizadas</span>
+        <span className="text-slate-300 mx-1">•</span>
+        <span className="font-bold text-indigo-500">{contadores.planejadas}</span>
+        <span className="text-slate-400">planejadas</span>
+        {contadores.semPlano > 0 && <>
+          <span className="text-slate-300 mx-1">•</span>
+          <span className="font-bold text-slate-400">{contadores.semPlano}</span>
+          <span className="text-slate-400">sem plano</span>
+        </>}
+      </div>
+
+      {/* Timeline: agrupada por sequência ou plana */}
+      <div className={temAgrupamento ? 'space-y-4' : ''}>
+        {grupos.map((grupo) => (
+          <div key={grupo.titulo ?? '__none__'}>
+
+            {/* Cabeçalho da sequência */}
+            {grupo.titulo && (
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                  {grupo.titulo}
+                </span>
+                <div className="flex-1 h-px bg-slate-100" />
+                <span className="text-[9px] text-slate-400 whitespace-nowrap shrink-0">
+                  {grupo.items.filter(i => i.status === 'realizada').length} realizad{grupo.items.filter(i => i.status === 'realizada').length !== 1 ? 'as' : 'a'}
+                  {grupo.items.filter(i => i.status === 'planejada').length > 0 && ` · ${grupo.items.filter(i => i.status === 'planejada').length} planejad${grupo.items.filter(i => i.status === 'planejada').length !== 1 ? 'as' : 'a'}`}
+                </span>
+              </div>
+            )}
+            {!grupo.titulo && temAgrupamento && (
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                  Sem sequência
+                </span>
+                <div className="flex-1 h-px bg-slate-100" />
+              </div>
+            )}
+
+            {/* Dots row */}
+            <div className="relative px-3">
+              <div className="absolute top-[29px] left-5 right-5 h-0.5 bg-slate-100 rounded-full pointer-events-none" />
+              <div className="relative flex items-start overflow-x-auto scrollbar-hide pb-1"
+                style={{ gap: grupo.items.length > 6 ? '0' : undefined, justifyContent: grupo.items.length <= 8 ? 'space-between' : undefined }}>
+                {grupo.items.map((item) => {
+                  const isAtivo = dataAtiva === item.dataStr
+                  const [, mm, dd] = item.dataStr.split('-')
+                  const mesAbr = MESES_TIMELINE[parseInt(mm) - 1]
+                  const statusLabel =
+                    item.status === 'realizada' ? 'Realizada' :
+                    item.status === 'planejada' ? 'Planejada' : 'Sem plano'
+                  const dotColor =
+                    item.status === 'realizada' ? 'bg-emerald-500 border-emerald-500' :
+                    item.status === 'planejada' ? 'bg-indigo-500 border-indigo-500' :
+                    'bg-white border-slate-300'
+                  const dotGlow = isAtivo
+                    ? item.status === 'realizada' ? 'ring-4 ring-offset-2 ring-emerald-300 shadow-[0_0_10px_3px_rgba(52,211,153,0.45)] scale-125'
+                    : item.status === 'planejada' ? 'ring-4 ring-offset-2 ring-indigo-300 shadow-[0_0_10px_3px_rgba(129,140,248,0.45)] scale-125'
+                    : 'ring-4 ring-offset-2 ring-slate-300 shadow-[0_0_8px_2px_rgba(148,163,184,0.35)] scale-125'
+                    : 'hover:scale-110'
+                  const isHoje = item.dataStr === hojeStr
+                  return (
+                    <button
+                      key={item.dataStr}
+                      data-date={item.dataStr}
+                      type="button"
+                      onClick={() => setDataAtiva(isAtivo ? null : item.dataStr)}
+                      className="relative z-10 flex flex-col items-center shrink-0 px-2 pt-5 group focus:outline-none"
+                    >
+                      {isHoje && (
+                        <span className="absolute top-0 left-1/2 -translate-x-1/2 text-[8px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-full whitespace-nowrap leading-tight">
+                          Hoje
+                        </span>
+                      )}
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 pointer-events-none">
+                        <div className="bg-slate-800 text-white rounded-lg px-2.5 py-2 text-[10px] whitespace-nowrap shadow-xl text-left min-w-[90px]">
+                          <div className="font-bold text-white">{dd}/{mm}</div>
+                          {item.planoTitulo && <div className="text-slate-300 mt-0.5 max-w-[130px] truncate">{item.planoTitulo}</div>}
+                          <div className={`mt-1 font-semibold ${item.status === 'realizada' ? 'text-emerald-400' : item.status === 'planejada' ? 'text-indigo-400' : 'text-slate-400'}`}>{statusLabel}</div>
+                        </div>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-800 w-0 h-0" />
+                      </div>
+                      {/* Dot */}
+                      <div className={`w-[18px] h-[18px] rounded-full border-2 transition-all duration-200 ${dotColor} ${dotGlow}`} />
+                      {/* Rótulos */}
+                      <span className={`text-[9px] font-bold mt-1 transition-colors ${isAtivo ? (item.status === 'realizada' ? 'text-emerald-600' : item.status === 'planejada' ? 'text-indigo-600' : 'text-slate-500') : 'text-slate-500'}`}>{dd}</span>
+                      <span className="text-[9px] text-slate-400">{mesAbr}</span>
+                      {item.planoTitulo && (
+                        <span className="text-[8px] text-slate-400 text-center leading-tight mt-0.5 whitespace-normal break-words max-w-[72px]">
+                          {item.planoTitulo}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Legenda */}
+      <div className="flex items-center gap-3 mt-3 flex-wrap">
+        {[
+          { cls: 'bg-emerald-500 border-emerald-500', label: 'Realizada' },
+          { cls: 'bg-indigo-500 border-indigo-500',   label: 'Planejada' },
+          { cls: 'bg-white border-slate-300',          label: 'Sem plano' },
+        ].map(({ cls, label }) => (
           <span key={label} className="flex items-center gap-1 text-[9px] text-slate-400">
-            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dot}`} />
+            <span className={`w-2.5 h-2.5 rounded-full border-2 shrink-0 ${cls}`} />
             {label}
           </span>
         ))}
       </div>
+
+      {/* Painel de detalhe da data selecionada */}
+      {itemAtivo && (
+        <div className="mt-4 border-t border-slate-100 pt-3 space-y-2.5">
+
+          {/* Data + status */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-slate-700">{formatarData(itemAtivo.dataStr)}</span>
+            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+              itemAtivo.status === 'realizada' ? 'bg-emerald-50 text-emerald-700' :
+              itemAtivo.status === 'planejada' ? 'bg-indigo-50 text-indigo-700' :
+              'bg-slate-100 text-slate-500'
+            }`}>
+              {itemAtivo.status === 'realizada' ? '● Realizada' :
+               itemAtivo.status === 'planejada' ? '● Planejada' : '○ Sem plano'}
+            </span>
+          </div>
+
+          {/* Plano vinculado — clicável */}
+          {itemAtivo.planoTitulo && itemAtivo.planoId && (
+            <button
+              type="button"
+              onClick={() => {
+                const p = planos.find(p => String(p.id) === String(itemAtivo.planoId))
+                if (p) setPlanoPreview(p)
+              }}
+              className="w-full flex items-center justify-between gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2.5 transition-colors group"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-sm shrink-0">📄</span>
+                <span className="text-xs text-slate-700 font-medium truncate">{itemAtivo.planoTitulo}</span>
+              </div>
+              <span className="text-[11px] font-semibold text-indigo-500 group-hover:text-indigo-700 shrink-0 transition-colors">
+                Ver plano →
+              </span>
+            </button>
+          )}
+
+          {/* Sem plano → 3 ações */}
+          {itemAtivo.status === 'sem-plano' && (
+            <div className="bg-slate-50 rounded-xl p-3">
+              <p className="text-[11px] font-semibold text-slate-500 mb-2">Planejar aula desta turma</p>
+              <div className="flex flex-col gap-1.5">
+                <button type="button" onClick={() => onAcionar('adaptar')}
+                  className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100 transition-colors">
+                  🔄 Adaptar última aula
+                </button>
+                <button type="button" onClick={() => onAcionar('importar')}
+                  className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
+                  🏛 Importar do banco
+                </button>
+                <button type="button" onClick={() => onAcionar('criar')}
+                  className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
+                  ✏️ Criar nova aula
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Planejada → 3 ações */}
+          {itemAtivo.status === 'planejada' && (
+            <div className="bg-indigo-50 rounded-xl p-3">
+              <p className="text-[11px] font-semibold text-indigo-600 mb-2">Adicionar planejamento para esta aula</p>
+              <div className="flex flex-col gap-1.5">
+                <button type="button" onClick={() => onAcionar('adaptar')}
+                  className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-blue-700 hover:bg-blue-50 border border-blue-100 transition-colors">
+                  🔄 Adaptar última aula
+                </button>
+                <button type="button" onClick={() => onAcionar('importar')}
+                  className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
+                  🏛 Importar do banco
+                </button>
+                <button type="button" onClick={() => onAcionar('criar')}
+                  className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
+                  ✏️ Criar nova aula
+                </button>
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* Modal preview do plano */}
+      {planoPreview && <ModalPreviewPlano plano={planoPreview} onFechar={() => setPlanoPreview(null)} />}
     </div>
   )
 }
@@ -1324,19 +1596,50 @@ function ConteudoTurma() {
     fecharForm,
   } = usePlanejamentoTurmaContext()
 
+  const { anosLetivos } = useAnoLetivoContext()
   const [historicoExpandido, setHistoricoExpandido] = useState(false)
   const [planejamentosExpandidos, setPlanejamentosExpandidos] = useState(false)
   const [acionarBloco2, setAcionarBloco2] = useState<{ n: number; modo: Exclude<Modo, null> } | null>(null)
+  const [dataAtiva, setDataAtiva] = useState<string | null>(null)
   const formBlockRef = useRef<HTMLDivElement>(null)
+
+  // Resetar seleção ao trocar de turma
+  useEffect(() => { setDataAtiva(null) }, [turmaSelecionada?.turmaId])
+
+  // Nome da turma para exibição na timeline
+  const turmaNome = useMemo(() => {
+    if (!turmaSelecionada) return ''
+    for (const ano of anosLetivos) {
+      for (const escola of ano.escolas ?? []) {
+        for (const seg of escola.segmentos ?? []) {
+          // eslint-disable-next-line eqeqeq
+          if (seg.id == turmaSelecionada.segmentoId) {
+            // eslint-disable-next-line eqeqeq
+            const t = (seg.turmas ?? []).find((t: Turma) => t.id == turmaSelecionada.turmaId)
+            if (t) return t.nome
+          }
+        }
+      }
+    }
+    return `Turma ${turmaSelecionada.turmaId}`
+  }, [turmaSelecionada, anosLetivos])
+
+  // Registro exibido: seleção na timeline tem prioridade sobre o mais recente
+  const registroExibido = useMemo<RegistroPosAula | null>(() =>
+    dataAtiva
+      ? historicoDaTurma.find(r => (r.dataAula ?? r.data) === dataAtiva) ?? null
+      : ultimoRegistroDaTurma,
+    [dataAtiva, historicoDaTurma, ultimoRegistroDaTurma]
+  )
 
   if (!turmaSelecionada) return null
 
   const registrosAnteriores = historicoDaTurma.slice(1)
 
   const podeAdaptarBloco2 = !!(
-    ultimoRegistroDaTurma?.proximaAula?.trim() ||
-    ultimoRegistroDaTurma?.poderiaMelhorar?.trim() ||
-    ultimoRegistroDaTurma?.resumoAula?.trim()
+    registroExibido?.proximaAula?.trim() ||
+    registroExibido?.poderiaMelhorar?.trim() ||
+    registroExibido?.resumoAula?.trim()
   )
 
   function acionarModoFromBloco2(modo: Exclude<Modo, null>) {
@@ -1349,39 +1652,49 @@ function ConteudoTurma() {
   return (
     <div className="space-y-4">
 
-      {/* ── BLOCO 1: Último registro pós-aula ─────────────────────────────────── */}
-      {ultimoRegistroDaTurma ? (
+      {/* ── TIMELINE PEDAGÓGICA ────────────────────────────────────────────────── */}
+      <TimelinePedagogica
+        onAcionar={acionarModoFromBloco2}
+        dataAtiva={dataAtiva}
+        setDataAtiva={setDataAtiva}
+        turmaNome={turmaNome}
+      />
+
+      {/* ── BLOCO 1: Registro pós-aula ─────────────────────────────────────────── */}
+      {registroExibido ? (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-slate-700">Último registro</h3>
+            <h3 className="text-sm font-semibold text-slate-700">
+              {dataAtiva ? 'Registro selecionado' : 'Último registro'}
+            </h3>
             <span className="text-xs text-slate-400">
-              {formatarData(ultimoRegistroDaTurma.dataAula ?? ultimoRegistroDaTurma.data ?? '')}
+              {formatarData(registroExibido.dataAula ?? registroExibido.data ?? '')}
             </span>
           </div>
           <div className="space-y-2">
-            {ultimoRegistroDaTurma.resultadoAula && (
-              <InfoRow icon="📊" label="Resultado da aula" valor={labelResultado(ultimoRegistroDaTurma.resultadoAula)} />
+            {registroExibido.resultadoAula && (
+              <InfoRow icon="📊" label="Resultado da aula" valor={labelResultado(registroExibido.resultadoAula)} />
             )}
-            {ultimoRegistroDaTurma.resumoAula && (
-              <InfoRow icon="📋" label="O que foi realizado" valor={ultimoRegistroDaTurma.resumoAula} />
+            {registroExibido.resumoAula && (
+              <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
             )}
-            {ultimoRegistroDaTurma.funcionouBem && (
-              <InfoRow icon="✅" label="O que funcionou bem" valor={ultimoRegistroDaTurma.funcionouBem} />
+            {registroExibido.funcionouBem && (
+              <InfoRow icon="✅" label="O que funcionou bem" valor={registroExibido.funcionouBem} />
             )}
-            {ultimoRegistroDaTurma.naoFuncionou && (
-              <InfoRow icon="⚠️" label="O que não funcionou" valor={ultimoRegistroDaTurma.naoFuncionou} />
+            {registroExibido.naoFuncionou && (
+              <InfoRow icon="⚠️" label="O que não funcionou" valor={registroExibido.naoFuncionou} />
             )}
-            {ultimoRegistroDaTurma.poderiaMelhorar && (
-              <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={ultimoRegistroDaTurma.poderiaMelhorar} />
+            {registroExibido.poderiaMelhorar && (
+              <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
             )}
-            {ultimoRegistroDaTurma.comportamento && (
-              <InfoRow icon="👥" label="Comportamento da turma" valor={ultimoRegistroDaTurma.comportamento} />
+            {registroExibido.comportamento && (
+              <InfoRow icon="👥" label="Comportamento da turma" valor={registroExibido.comportamento} />
             )}
-            {ultimoRegistroDaTurma.anotacoesGerais && (
-              <InfoRow icon="📝" label="Anotações gerais" valor={ultimoRegistroDaTurma.anotacoesGerais} />
+            {registroExibido.anotacoesGerais && (
+              <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
             )}
-            {ultimoRegistroDaTurma.proximaAula && (
-              <InfoRow icon="💡" label="Ideias / estratégias" valor={ultimoRegistroDaTurma.proximaAula} destacado />
+            {registroExibido.proximaAula && (
+              <InfoRow icon="💡" label="Ideias / estratégias" valor={registroExibido.proximaAula} destacado />
             )}
           </div>
         </div>
@@ -1392,9 +1705,9 @@ function ConteudoTurma() {
       )}
 
       {/* ── BLOCO 2: Próximo Passo Sugerido ───────────────────────────────────── */}
-      {ultimoRegistroDaTurma?.proximaAulaOpcao && (
+      {registroExibido?.proximaAulaOpcao && (
         <CardProximoPasso
-          valor={ultimoRegistroDaTurma.proximaAulaOpcao}
+          valor={registroExibido.proximaAulaOpcao}
           podeAdaptar={podeAdaptarBloco2}
           onAdaptar={() => acionarModoFromBloco2('adaptar')}
           onImportar={() => acionarModoFromBloco2('importar')}
@@ -1473,7 +1786,6 @@ export default function ModuloPlanejamentoTurma() {
       {/* Painel direito — conteúdo de planejamento */}
       <div className="flex-1 min-w-0 space-y-3">
         {!turmaSelecionada && <EstadoVazio />}
-        {turmaSelecionada && <MiniTimelineTurma />}
         {turmaSelecionada && <ConteudoTurma />}
       </div>
     </div>

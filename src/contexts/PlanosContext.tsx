@@ -149,8 +149,6 @@ export interface PlanosContextValue {
     adicionandoUnidade: boolean; setAdicionandoUnidade: React.Dispatch<React.SetStateAction<boolean>>
     novoRecursoUrl: string; setNovoRecursoUrl: React.Dispatch<React.SetStateAction<string>>
     novoRecursoTipo: string; setNovoRecursoTipo: React.Dispatch<React.SetStateAction<string>>
-    novoRecursoTitulo: string; setNovoRecursoTitulo: React.Dispatch<React.SetStateAction<string>>
-    novoRecursoObservacao: string; setNovoRecursoObservacao: React.Dispatch<React.SetStateAction<string>>
     novaDataAula: string; setNovaDataAula: React.Dispatch<React.SetStateAction<string>>
     dataEdicao: string; setDataEdicao: React.Dispatch<React.SetStateAction<string>>
     busca: string; setBusca: React.Dispatch<React.SetStateAction<string>>
@@ -322,8 +320,6 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const [adicionandoUnidade, setAdicionandoUnidade] = useState(false)
     const [novoRecursoUrl, setNovoRecursoUrl] = useState('')
     const [novoRecursoTipo, setNovoRecursoTipo] = useState('link')
-    const [novoRecursoTitulo, setNovoRecursoTitulo] = useState('')
-    const [novoRecursoObservacao, setNovoRecursoObservacao] = useState('')
     const [novaDataAula, setNovaDataAula] = useState('')
     const [dataEdicao, setDataEdicao] = useState('')
     // useReducer: filtros e visualização (busca + 8 filtros + modoVisualizacao + ordenacaoCards)
@@ -567,17 +563,9 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         setPlanoEditando({ ...planoEditando, unidades: atual.includes(u) ? atual.filter((x: string) => x !== u) : [...atual, u] })
     }
     const adicionarRecurso = () => {
-        if (novoRecursoUrl.trim() || novoRecursoTitulo.trim()) {
-            setPlanoEditando({ ...planoEditando, recursos: [...(planoEditando.recursos || []), {
-                url: sanitizeUrl(novoRecursoUrl.trim()),
-                tipo: novoRecursoTipo,
-                titulo: novoRecursoTitulo.trim() || undefined,
-                observacao: novoRecursoObservacao.trim() || undefined,
-            }] })
+        if (novoRecursoUrl.trim()) {
+            setPlanoEditando({ ...planoEditando, recursos: [...(planoEditando.recursos || []), { url: sanitizeUrl(novoRecursoUrl.trim()), tipo: novoRecursoTipo }] })
             setNovoRecursoUrl('')
-            setNovoRecursoTitulo('')
-            setNovoRecursoObservacao('')
-            setNovoRecursoTipo('link')
         }
     }
     const removerRecurso = (idx: number) => {
@@ -1025,7 +1013,7 @@ Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no in
         setGerandoObjetivos(true)
         try {
             const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1101,7 +1089,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         setGerandoBNCC(true)
         try {
             const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1145,8 +1133,6 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         adicionandoUnidade, setAdicionandoUnidade,
         novoRecursoUrl, setNovoRecursoUrl,
         novoRecursoTipo, setNovoRecursoTipo,
-        novoRecursoTitulo, setNovoRecursoTitulo,
-        novoRecursoObservacao, setNovoRecursoObservacao,
         novaDataAula, setNovaDataAula,
         dataEdicao, setDataEdicao,
         busca, setBusca,
