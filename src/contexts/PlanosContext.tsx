@@ -15,7 +15,7 @@ import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [off
 import { useDebounce } from '../lib/hooks'
 import { verificarFeriado } from '../lib/feriados'
 import { detectarMusicasNoPlano, type MusicaDetectada } from '../lib/detectarMusicas'
-import type { Plano, Musica, Atividade, RegistroPosAula } from '../types'
+import type { Plano, Musica, Atividade, RegistroPosAula, VinculoMusicaPlano } from '../types'
 
 // ── bancoBNCC ── base de habilidades BNCC (copiada de BancoPlanos.tsx)
 export const bancoBNCC = [
@@ -219,6 +219,10 @@ export interface PlanosContextValue {
     // detecção de músicas no plano
     musicasDetectadas: MusicaDetectada[]
     limparMusicasDetectadas: () => void
+    showModalMusicas: boolean
+    setShowModalMusicas: React.Dispatch<React.SetStateAction<boolean>>
+    vincularMusicaAoPlano: (planoId: string | number, vinculo: VinculoMusicaPlano) => void
+    desvincularMusicaDoPlano: (planoId: string | number, musicaId: string | number) => void
     // funções cross-domain
     vincularMusicaAtividade: (musica: Musica) => void
     importarMusicaParaPlano: (musica: Musica) => void
@@ -524,9 +528,43 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         }
         edicaoDispatch({ type: 'SET', payload: { modoEdicao: false, planoEditando: null } })
 
-        // Detectar músicas do repertório citadas no plano (sem IA)
+        // ── Detectar músicas do repertório citadas no plano ──────────────────
         const detectadas = detectarMusicasNoPlano(planoParaSalvar, repertorio)
-        setMusicasDetectadas(detectadas.filter(d => !d.jaVinculada))
+        // Auto-vincular "encontradas" com alta confiança (match único + não vinculada)
+        const autoVinculos: VinculoMusicaPlano[] = detectadas
+            .filter(d => d.classificacao === 'encontrada' && !d.jaVinculada && d.musica)
+            .map(d => ({
+                musicaId: d.musica!.id ?? d.musica!.titulo,
+                titulo: d.musica!.titulo,
+                autor: d.musica!.autor,
+                origemDeteccao: 'encontrada' as const,
+                confirmadoPor: 'auto' as const,
+                confirmadoEm: new Date().toISOString(),
+            }))
+        if (autoVinculos.length > 0) {
+            const jaVinculadosIds = new Set(
+                (planoParaSalvar.musicasVinculadasPlano || []).map(v => String(v.musicaId))
+            )
+            const novos = autoVinculos.filter(v => !jaVinculadosIds.has(String(v.musicaId)))
+            if (novos.length > 0) {
+                const planoAtualizado = {
+                    ...planoParaSalvar,
+                    musicasVinculadasPlano: [
+                        ...(planoParaSalvar.musicasVinculadasPlano || []),
+                        ...novos,
+                    ],
+                }
+                // Re-salvar com os auto-vínculos
+                setPlanos(prev => prev.map((p: any) =>
+                    p.id === planoAtualizado.id ? planoAtualizado : p
+                ))
+            }
+        }
+        // Abrir modal somente se há músicas para mostrar
+        if (detectadas.length > 0) {
+            setMusicasDetectadas(detectadas)
+            setShowModalMusicas(true)
+        }
     }
 
     const excluirPlano = useCallback((id: any) => {
@@ -986,6 +1024,32 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     // ── Detecção de músicas no plano ──────────────────────────────────────
     const [musicasDetectadas, setMusicasDetectadas] = useState<MusicaDetectada[]>([])
     const limparMusicasDetectadas = () => setMusicasDetectadas([])
+    const [showModalMusicas, setShowModalMusicas] = useState(false)
+
+    /** Adiciona um vínculo música↔plano e persiste. */
+    const vincularMusicaAoPlano = useCallback((planoId: string | number, vinculo: VinculoMusicaPlano) => {
+        setPlanos(prev => prev.map((p: any) => {
+            if (p.id !== planoId) return p
+            const jaExiste = (p.musicasVinculadasPlano || []).some(
+                (v: VinculoMusicaPlano) => String(v.musicaId) === String(vinculo.musicaId)
+            )
+            if (jaExiste) return p
+            return { ...p, musicasVinculadasPlano: [...(p.musicasVinculadasPlano || []), vinculo] }
+        }))
+    }, [setPlanos])
+
+    /** Remove um vínculo música↔plano e persiste. */
+    const desvincularMusicaDoPlano = useCallback((planoId: string | number, musicaId: string | number) => {
+        setPlanos(prev => prev.map((p: any) => {
+            if (p.id !== planoId) return p
+            return {
+                ...p,
+                musicasVinculadasPlano: (p.musicasVinculadasPlano || []).filter(
+                    (v: VinculoMusicaPlano) => String(v.musicaId) !== String(musicaId)
+                ),
+            }
+        }))
+    }, [setPlanos])
 
     // ── OBJETIVOS COM IA (Gemini) ──────────────────────────────────────────
     const [gerandoObjetivos, setGerandoObjetivos] = React.useState(false)
@@ -1186,6 +1250,8 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         templatesRoteiro, setTemplatesRoteiro, modalTemplates, setModalTemplates, nomeNovoTemplate, setNomeNovoTemplate,
         modalConfiguracoes, setModalConfiguracoes,
         musicasDetectadas, limparMusicasDetectadas,
+        showModalMusicas, setShowModalMusicas,
+        vincularMusicaAoPlano, desvincularMusicaDoPlano,
         vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano,
         abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro,
         adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido,

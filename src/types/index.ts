@@ -158,10 +158,26 @@ export interface Plano {
   unidade?: string
   segmento?: string
   segmentos?: string[]   // auto-catalogado ao aplicar em turmas
+  musicasVinculadasPlano?: VinculoMusicaPlano[]  // vínculo plano ↔ repertório
   createdAt?: string
   updatedAt?: string
   _ultimaEdicao?: string
   _historicoVersoes?: Array<Plano & { _versaoSalvaEm: string }>
+}
+
+// ─── VÍNCULO MÚSICA ↔ PLANO ──────────────────────────────────
+// Separa a entidade Música (Repertório) da relação de uso (Plano ↔ Música).
+// Permite responder: em quais planos uma música foi usada, quantas vezes,
+// por quais turmas. Campo atividadeIdx reservado para vínculo por atividade
+// específica — implementação futura.
+export interface VinculoMusicaPlano {
+  musicaId: string | number
+  titulo: string
+  autor?: string
+  atividadeIdx?: number                             // futuro: atividade específica
+  origemDeteccao?: 'encontrada' | 'nova' | 'manual'
+  confirmadoPor?: 'auto' | 'professor'
+  confirmadoEm?: string                             // ISO timestamp
 }
 
 // ─── ATIVIDADE PEDAGÓGICA ─────────────────────────────────────
