@@ -46,6 +46,9 @@ export default function ModuloEstrategias() {
     const [detalhesEstrategia, setDetalhesEstrategia] = useState<import('../types').Estrategia | null>(null)
     const { setModalConfirm } = useModalContext()
 
+    // Dashboard colapsável
+    const [dashAberto, setDashAberto] = useState(false)
+
     // Formulário de edição
     if (estrategiaEditando !== null) {
         return (
@@ -308,7 +311,6 @@ export default function ModuloEstrategias() {
 
             {/* Dashboard colapsável */}
             {(() => {
-                const [dashAberto, setDashAberto] = React.useState(false)
                 return (
                     <div className="mb-5">
                         <button onClick={()=>setDashAberto(o=>!o)}
