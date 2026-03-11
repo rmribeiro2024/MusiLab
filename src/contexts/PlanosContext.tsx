@@ -1066,8 +1066,6 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const [showModalEstrategiaIA, setShowModalEstrategiaIA] = useState(false)
 
     async function detectarEstrategiaNoRoteiro(plano: Plano) {
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-        if (!apiKey) return
         const stripHtml = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
         const textoRoteiro = [
             plano.titulo,
@@ -1076,8 +1074,28 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                 [a.nome, a.descricao].filter(Boolean).map(stripHtml).join(': ')
             ),
             (plano as any).conteudo,
-        ].filter(Boolean).map(stripHtml).join('\n')
+        ].filter(Boolean).map(stripHtml).join('\n').toLowerCase()
         if (!textoRoteiro.trim() || textoRoteiro.length < 30) return
+
+        // ── Fallback por palavras-chave (funciona sem API key) ───────────────
+        // Para esses dois padrões as palavras são inequívocas — IA não é necessária
+        const kwAquecimento = ['aquecimento', 'relaxamento corporal', 'despertar sensorial', 'auto-massagem', 'automassagem']
+        const kwVocalizes   = ['vocalise', 'vocalize', 'vocalizo', 'aquecimento vocal', 'corposolfa']
+
+        const matchAquecimento = kwAquecimento.some(kw => textoRoteiro.includes(kw))
+        const matchVocalizes   = kwVocalizes.some(kw => textoRoteiro.includes(kw))
+
+        if (matchAquecimento || matchVocalizes) {
+            const tipo = matchAquecimento ? 'aquecimento_corporal' : 'vocalizes'
+            const nomeSugerido = matchAquecimento ? 'Aquecimento e Relaxamento Corporal' : 'Vocalizes / Aquecimento Vocal'
+            setEstrategiaDetectadaIA({ tipo, nomeSugerido, planoId: plano.id })
+            setShowModalEstrategiaIA(true)
+            return
+        }
+
+        // ── Detecção por IA (quando API key disponível) ──────────────────────
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+        if (!apiKey) return
 
         const prompt = `Você é um assistente especializado em pedagogia musical. Analise o roteiro abaixo e identifique se há uma sequência CLARA e INEQUÍVOCA de:
 
