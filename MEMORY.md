@@ -72,6 +72,19 @@
 
 ---
 
+### Módulo Relatórios — Passo 2: Relatório Mensal Geral
+**Data:** 2026-03-11
+**Arquivo:** `src/components/ModuloRelatorios.tsx`
+**O que foi feito:**
+- Implementado cálculo completo usando dados reais: `useAplicacoesContext`, `usePlanosContext`, `useAnoLetivoContext`
+- Filtra aplicações com `status === 'realizada'` no período selecionado
+- Seções: Resumo (4 cards), Planos mais usados, Conceitos musicais, Repertório, Turmas atendidas
+- Barras de progresso relativas ao maior valor de cada seção
+- Sem IA — 100% dados objetivos do sistema
+- Relatório por Turma marcado como "em breve"
+
+---
+
 ### Módulo Relatórios — Passo 1: Estrutura e Navegação
 **Data:** 2026-03-11
 **Arquivos:**
