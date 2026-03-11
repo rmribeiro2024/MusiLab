@@ -7,7 +7,7 @@
 export type SyncStatus = 'idle' | 'salvando' | 'salvo' | 'erro'
 
 // ─── TIPOS AUXILIARES ────────────────────────────────────────
-export interface RecursoItem { url: string; tipo?: string }
+export interface RecursoItem { url: string; tipo?: string; titulo?: string; observacao?: string }
 export interface MusicaVinculo { id?: string | number; titulo?: string; autor?: string }
 export type ArquivoMidia = string | { nome: string; data?: string; url?: string }
 

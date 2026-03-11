@@ -27,6 +27,7 @@ const ModuloEstrategias      = lazy(() => import('./ModuloEstrategias'))
 const ModuloAtividades       = lazy(() => import('./ModuloAtividades'))
 const ModuloSequencias       = lazy(() => import('./ModuloSequencias'))
 const ModuloRepertorio       = lazy(() => import('./ModuloRepertorio'))
+const ModuloRelatorios       = lazy(() => import('./ModuloRelatorios'))
 const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
 const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
 const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
@@ -2422,6 +2423,7 @@ export default function BancoPlanos({ session }) {
                                         { label:'Meu Ano',    short:'Ano',     icon:'🗓️', mode:'anoLetivo',       action:()=>setViewMode('anoLetivo') },
                                         { label:'Histórico',  short:'Hist.',   icon:'📊', mode:'historicoMusical', action:()=>setViewMode('historicoMusical') },
                                         { label:'Turmas',     short:'Turmas',  icon:'👥', mode:'turmas',          action:()=>setViewMode('turmas') },
+                                        { label:'Relatórios', short:'Rel.',    icon:'📋', mode:'relatorios',      action:()=>setViewMode('relatorios') },
                                     ].map(({label, short, icon, mode, action, accent}) => {
                                         const isActive = viewMode === mode;
                                         return (
@@ -2493,6 +2495,9 @@ export default function BancoPlanos({ session }) {
 
                         {/* ══════════════ PLANEJAMENTO POR TURMA ══════════════ */}
                         {viewMode === 'turmas' && <ErrorBoundary modulo="Planejamento por Turma"><Suspense fallback={<CarregandoModulo />}><ModuloPlanejamentoTurma /></Suspense></ErrorBoundary>}
+
+                        {/* ══════════════ RELATÓRIOS ══════════════ */}
+                        {viewMode === 'relatorios' && <ErrorBoundary modulo="Relatórios"><Suspense fallback={<CarregandoModulo />}><ModuloRelatorios /></Suspense></ErrorBoundary>}
 
                         {/* ══════════════ HISTÓRICO MUSICAL DA TURMA ══════════════ */}
                         {viewMode === 'historicoMusical' && <ErrorBoundary modulo="Histórico Musical"><Suspense fallback={<CarregandoModulo />}><ModuloHistoricoMusical /></Suspense></ErrorBoundary>}

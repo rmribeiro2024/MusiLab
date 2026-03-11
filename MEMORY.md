@@ -72,6 +72,91 @@
 
 ---
 
+### Módulo Relatórios — Passos 6-9: PDF, IA e visual
+**Data:** 2026-03-11
+**Arquivos:**
+- `src/lib/exportarPDF.ts` — criado (geração programática com jsPDF, sem html2canvas)
+- `src/components/ModuloRelatorios.tsx` — exportação PDF + síntese IA + visual refinado
+**O que foi feito:**
+- **Passo 6**: Estrutura separada controles vs. conteúdo; `RelatorioCabecalho`, `Section`, `CardMetrica` isolados; pronto para PDF
+- **Passo 7**: `exportarPDF.ts` com classe `PdfWriter` (jsPDF programático): título, cards, barras de progresso, tags, linha do tempo, caixa IA, rodapé com paginação; botão "⬇ Exportar PDF" no componente
+- **Passo 8**: Síntese pedagógica com Gemini (`gemini-1.5-flash`); prompts específicos para mensal e por turma; seção claramente marcada como "sugerida por IA — não é dado absoluto"; botão "✨ Síntese pedagógica com IA"
+- **Passo 9**: Cards coloridos por métrica (âmbar/esmeralda/índigo/violeta), lista com numeração e ranking, gradiente no resumo da turma, espaçamento e tipografia refinados
+
+---
+
+### Módulo Relatórios — Passo 5: Filtros em cascata
+**Data:** 2026-03-11
+**Arquivos:**
+- `src/lib/relatorios.ts` — adicionados `listarEscolas()`, `listarSegmentos()`, `escolaId`/`segmentoId` em `filtrarAplicacoes` e `buildRelatorioMensal`
+- `src/components/ModuloRelatorios.tsx` — filtros em cascata escola → segmento → turma
+**O que foi feito:**
+- Filtros: Período (obrigatório) + Escola + Segmento + Turma (turma obrigatória só no relatório por turma)
+- Seleção em cascata: mudar escola limpa segmento e turma; mudar segmento limpa turma
+- Listas de opções filtradas dinamicamente por escola/segmento selecionados
+- Componentes `CampoFiltro` e `SelectFiltro` reutilizáveis com badge "obrigatório/opcional"
+- Relatório mensal aceita qualquer combinação de filtros opcionais
+
+---
+
+### Módulo Relatórios — Passo 4: Refatoração de agregação de dados
+**Data:** 2026-03-11
+**Arquivos:**
+- `src/lib/relatorios.ts` — criado (helpers puros e reutilizáveis)
+- `src/components/ModuloRelatorios.tsx` — refatorado para usar os helpers
+**O que foi feito:**
+- Criado `src/lib/relatorios.ts` com funções puras separadas por responsabilidade:
+  - `filtrarAplicacoes()` — filtra por período, turma e status
+  - `contarAulas/Turmas/PlanosUnicos/RegistrosPosAula()` — contadores individuais
+  - `agregarPlanos/Conceitos/Repertorio/Turmas()` — agregações com ordenação
+  - `buildLinhaDoTempo()` — lista cronológica para relatório por turma
+  - `buildRelatorioMensal/Turma()` — builders completos que compõem os helpers
+  - `listarTurmas/getNomeTurma()` — lookups de hierarquia ano/escola/segmento/turma
+- `ModuloRelatorios.tsx` reduzido a lógica de UI pura (sem cálculos inline)
+- Views separadas: `RelatorioMensalView`, `RelatorioTurmaView`
+
+---
+
+### Módulo Relatórios — Passo 3: Relatório por Turma
+**Data:** 2026-03-11
+**Arquivo:** `src/components/ModuloRelatorios.tsx`
+**O que foi feito:**
+- Implementado Relatório por Turma completo com dados reais
+- Filtros: dropdown com todas as turmas do sistema + período
+- Seções: Resumo (nome da turma, total aulas), Linha do tempo cronológica, Conceitos musicais, Repertório, Planos aplicados
+- Linha do tempo: data (DD/MM/YYYY) + nome do plano + badge "realizada"
+- Turmas carregadas de `useAnoLetivoContext` → `anosLetivos` (hierarquia ano → escola → segmento → turma)
+
+---
+
+### Módulo Relatórios — Passo 2: Relatório Mensal Geral
+**Data:** 2026-03-11
+**Arquivo:** `src/components/ModuloRelatorios.tsx`
+**O que foi feito:**
+- Implementado cálculo completo usando dados reais: `useAplicacoesContext`, `usePlanosContext`, `useAnoLetivoContext`
+- Filtra aplicações com `status === 'realizada'` no período selecionado
+- Seções: Resumo (4 cards), Planos mais usados, Conceitos musicais, Repertório, Turmas atendidas
+- Barras de progresso relativas ao maior valor de cada seção
+- Sem IA — 100% dados objetivos do sistema
+- Relatório por Turma marcado como "em breve"
+
+---
+
+### Módulo Relatórios — Passo 1: Estrutura e Navegação
+**Data:** 2026-03-11
+**Arquivos:**
+- `src/components/ModuloRelatorios.tsx` — criado (novo módulo)
+- `src/components/BancoPlanos.tsx` — adicionado item na navbar e lazy import
+**O que foi feito:**
+- Criado componente `ModuloRelatorios` com tela inicial do módulo
+- Dois tipos de relatório: Relatório Mensal Geral e Relatório por Turma
+- Filtros básicos: período (data início/fim) e turma (visível só no tipo "por turma")
+- Botão "Gerar relatório" desabilitado até filtros preenchidos (placeholder para próximos passos)
+- Adicionado aba 📋 Relatórios no Grupo 1 da navbar
+- Lazy loading via `React.lazy` igual aos outros módulos
+
+---
+
 ## Pendências Futuras
 
 ### Migração: Faixa Etária → Segmento
