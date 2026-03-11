@@ -179,6 +179,8 @@ export interface PlanosContextValue {
     normalizePlano: (p: Record<string, unknown>) => Plano
     buscaAvancada: (plano: Plano, termoBusca: string) => boolean
     sugerirBNCC: () => void
+    sugerirObjetivosIA: () => Promise<void>
+    gerandoObjetivos: boolean
     novoPlano: () => void
     editarPlano: (plano: Plano) => void
     salvarPlano: (ignorarAvisoEscola?: boolean) => void
@@ -972,6 +974,71 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         reader.readAsText(file); event.target.value = ''
     }
 
+    // ── OBJETIVOS COM IA (Gemini) ──────────────────────────────────────────
+    const [gerandoObjetivos, setGerandoObjetivos] = React.useState(false)
+
+    const sugerirObjetivosIA = async () => {
+        const atividades = planoEditando.atividadesRoteiro || []
+        if (atividades.length === 0) {
+            setModalConfirm({ conteudo: 'Adicione pelo menos uma atividade no roteiro antes de gerar objetivos.', somenteOk: true, labelConfirm: 'OK' })
+            return
+        }
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+        if (!apiKey) {
+            setModalConfirm({ conteudo: 'Chave VITE_GEMINI_API_KEY não encontrada no .env.', somenteOk: true, labelConfirm: 'OK' })
+            return
+        }
+        const listaAtividades = atividades.map((a, i) => {
+            const partes = [`${i + 1}. ${a.nome || 'Atividade'}`]
+            if (a.duracao) partes.push(`(${a.duracao} min)`)
+            if ((a.conceitos || []).length > 0) partes.push(`— conceitos: ${a.conceitos.join(', ')}`)
+            return partes.join(' ')
+        }).join('\n')
+        const faixa = (planoEditando.faixaEtaria || []).join(', ')
+        const prompt = `Você é um professor de música. Com base nas atividades abaixo, gere objetivos de aula curtos e diretos.
+
+Faixa etária: ${faixa || 'não informada'}
+Atividades:
+${listaAtividades}
+
+Responda APENAS no formato JSON:
+{
+  "geral": "objetivo geral em uma frase curta",
+  "especificos": ["objetivo 1", "objetivo 2", "objetivo 3"]
+}
+
+Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no infinitivo, e ser práticos.`
+
+        setGerandoObjetivos(true)
+        try {
+            const res = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                }
+            )
+            const data = await res.json()
+            const texto = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+            const jsonMatch = texto.match(/\{[\s\S]*\}/)
+            if (!jsonMatch) throw new Error('Resposta inválida')
+            const obj = JSON.parse(jsonMatch[0])
+            setPlanoEditando({
+                ...planoEditando,
+                objetivoGeral: obj.geral || planoEditando.objetivoGeral,
+                objetivosEspecificos: obj.especificos?.length
+                    ? ['<ul>' + obj.especificos.map((o: string) => `<li>${o}</li>`).join('') + '</ul>']
+                    : planoEditando.objetivosEspecificos
+            })
+            setModalConfirm({ conteudo: '✅ Objetivos gerados com IA!', somenteOk: true, labelConfirm: 'OK' })
+        } catch {
+            setModalConfirm({ conteudo: '❌ Erro ao conectar com a IA. Verifique sua chave ou conexão.', somenteOk: true, labelConfirm: 'OK' })
+        } finally {
+            setGerandoObjetivos(false)
+        }
+    }
+
     // ── BNCC ──────────────────────────────────────────────────────────────
     const sugerirBNCC = () => {
         const textoAnalise = (
@@ -1047,7 +1114,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         dragActiveIndex, setDragActiveIndex,
         dragOverIndex, setDragOverIndex,
         escolas, segmentosPlanos, duracoesSugestao, planosFiltrados,
-        normalizePlano, buscaAvancada, sugerirBNCC,
+        normalizePlano, buscaAvancada, sugerirBNCC, sugerirObjetivosIA, gerandoObjetivos,
         novoPlano, editarPlano, salvarPlano, excluirPlano, fecharModal, restaurarVersao,
         toggleConceito, toggleFaixa, toggleUnidade,
         adicionarRecurso, removerRecurso,

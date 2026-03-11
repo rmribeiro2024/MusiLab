@@ -121,6 +121,8 @@ export default function TelaPrincipal() {
         salvarPlano,
         statusDropdownId,
         sugerirBNCC,
+        sugerirObjetivosIA,
+        gerandoObjetivos,
         toggleConceito,
         toggleFaixa,
         toggleFavorito,
@@ -839,6 +841,16 @@ export default function TelaPrincipal() {
                     </button>
                     {secoesForm.has('objetivos') && (
                         <div className="px-3 sm:px-6 pb-5 space-y-5">
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={sugerirObjetivosIA}
+                                    disabled={gerandoObjetivos}
+                                    className="flex items-center gap-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {gerandoObjetivos ? '⏳ Gerando...' : '✨ Gerar com IA'}
+                                </button>
+                            </div>
                             <div>
                                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivo Geral *</label>
                                 <RichTextEditor
