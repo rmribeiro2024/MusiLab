@@ -180,6 +180,10 @@ export default function TelaPrincipal() {
     const [pickerEstrategiaIdx, setPickerEstrategiaIdx] = useState<number | null>(null)
     const [buscaEstrategia, setBuscaEstrategia] = useState('')
 
+    // ── Picker manual de músicas vinculadas ao plano ──
+    const [buscaManual, setBuscaManual] = useState('')
+    const [pickerAberto, setPickerAberto] = useState(false)
+
     // ── Drag-and-drop: só permite arrastar quando iniciado pelo handle ──
     const dragFromHandle = useRef(false)
 
@@ -1230,8 +1234,6 @@ export default function TelaPrincipal() {
                 {/* ════════════ MÚSICAS VINCULADAS AO PLANO ════════════ */}
                 {(() => {
                     const vinculadas = planoEditando.musicasVinculadasPlano || []
-                    const [buscaManual, setBuscaManual] = React.useState('')
-                    const [pickerAberto, setPickerAberto] = React.useState(false)
                     const vinculadosIds = new Set(vinculadas.map(v => String(v.musicaId)))
                     const sugestoesManual = buscaManual.trim().length >= 2
                         ? repertorio.filter(m =>
