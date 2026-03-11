@@ -1013,13 +1013,18 @@ Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no in
         setGerandoObjetivos(true)
         try {
             const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 }
             )
+            if (!res.ok) {
+                const errText = await res.text()
+                console.error('Gemini error:', res.status, errText)
+                throw new Error(`HTTP ${res.status}`)
+            }
             const data = await res.json()
             const texto = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
             const jsonMatch = texto.match(/\{[\s\S]*\}/)
@@ -1033,8 +1038,9 @@ Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no in
                     : planoEditando.objetivosEspecificos
             })
             setModalConfirm({ conteudo: '✅ Objetivos gerados com IA!', somenteOk: true, labelConfirm: 'OK' })
-        } catch {
-            setModalConfirm({ conteudo: '❌ Erro ao conectar com a IA. Verifique sua chave ou conexão.', somenteOk: true, labelConfirm: 'OK' })
+        } catch (err) {
+            console.error('Gemini objetivos:', err)
+            setModalConfirm({ conteudo: `❌ Erro: ${err instanceof Error ? err.message : 'Falha na conexão'}`, somenteOk: true, labelConfirm: 'OK' })
         } finally {
             setGerandoObjetivos(false)
         }
@@ -1083,13 +1089,18 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         setGerandoBNCC(true)
         try {
             const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 }
             )
+            if (!res.ok) {
+                const errText = await res.text()
+                console.error('Gemini BNCC error:', res.status, errText)
+                throw new Error(`HTTP ${res.status}`)
+            }
             const data = await res.json()
             const texto = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
             const jsonMatch = texto.match(/\{[\s\S]*\}/)
@@ -1100,8 +1111,9 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
             const atuais = planoEditando.habilidadesBNCC || []
             setPlanoEditando({ ...planoEditando, habilidadesBNCC: [...new Set([...atuais, ...novas])] })
             setModalConfirm({ conteudo: `✅ ${novas.length} habilidade(s) BNCC sugeridas pela IA!`, somenteOk: true, labelConfirm: 'OK' })
-        } catch {
-            setModalConfirm({ conteudo: '❌ Erro ao conectar com a IA. Verifique sua chave ou conexão.', somenteOk: true, labelConfirm: 'OK' })
+        } catch (err) {
+            console.error('Gemini BNCC:', err)
+            setModalConfirm({ conteudo: `❌ Erro: ${err instanceof Error ? err.message : 'Falha na conexão'}`, somenteOk: true, labelConfirm: 'OK' })
         } finally {
             setGerandoBNCC(false)
         }
