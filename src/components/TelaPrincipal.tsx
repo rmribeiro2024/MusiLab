@@ -111,6 +111,8 @@ export default function TelaPrincipal() {
         novoConceito,
         novoRecursoTipo,
         novoRecursoUrl,
+        novoRecursoTitulo,
+        novoRecursoObservacao,
         ordenacaoCards,
         planoEditando,
         planos,
@@ -151,6 +153,8 @@ export default function TelaPrincipal() {
         setNovoConceito,
         setNovoRecursoTipo,
         setNovoRecursoUrl,
+        setNovoRecursoTitulo,
+        setNovoRecursoObservacao,
         setOrdenacaoCards,
         setPlanoEditando,
         setPlanoSelecionado,
@@ -187,9 +191,10 @@ export default function TelaPrincipal() {
     // ── Helpers para detecção de tipo de recurso externo ──
     function detectarTipoRecurso(url: string): string {
         if (!url) return 'link'
-        if (/youtube\.com|youtu\.be/.test(url)) return 'youtube'
-        if (/spotify\.com/.test(url)) return 'spotify'
-        if (/drive\.google\.com/.test(url)) return 'drive'
+        if (/youtube\.com|youtu\.be/.test(url)) return 'video'
+        if (/spotify\.com\/playlist/.test(url)) return 'playlist'
+        if (/spotify\.com/.test(url)) return 'musica'
+        if (/drive\.google\.com/.test(url)) return 'link'
         if (/\.pdf(\?|$)/i.test(url)) return 'pdf'
         if (/\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url)) return 'imagem'
         return 'link'
@@ -198,12 +203,28 @@ export default function TelaPrincipal() {
         const m = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/shorts\/))([a-zA-Z0-9_-]{11})/)
         return m ? m[1] : null
     }
-    function getSpotifyType(url: string): string {
-        if (/\/playlist\//.test(url)) return 'Playlist'
-        if (/\/track\//.test(url)) return 'Faixa'
-        if (/\/album\//.test(url)) return 'Álbum'
-        if (/\/artist\//.test(url)) return 'Artista'
-        return 'Spotify'
+    const RECURSO_TIPOS: { value: string; label: string; icone: string }[] = [
+        { value: 'musica',   label: 'Música',         icone: '🎵' },
+        { value: 'video',    label: 'Vídeo',           icone: '▶️' },
+        { value: 'pdf',      label: 'PDF / Partitura', icone: '📄' },
+        { value: 'imagem',   label: 'Imagem',          icone: '🖼️' },
+        { value: 'link',     label: 'Link externo',    icone: '🔗' },
+        { value: 'playlist', label: 'Playlist',        icone: '🎶' },
+    ]
+    function getRecursoMeta(tipo: string): { label: string; icone: string; cor: string } {
+        // compatibilidade com tipos legados (youtube, spotify, drive)
+        const t = tipo === 'youtube' ? 'video' : (tipo === 'spotify' || tipo === 'drive') ? 'musica' : tipo
+        const found = RECURSO_TIPOS.find(r => r.value === t)
+        const icone = found?.icone ?? '🔗'
+        const label = found?.label ?? 'Link'
+        const cor =
+            t === 'musica'   ? 'bg-green-50 border-green-100 text-green-700' :
+            t === 'video'    ? 'bg-red-50 border-red-100 text-red-600' :
+            t === 'pdf'      ? 'bg-orange-50 border-orange-100 text-orange-600' :
+            t === 'imagem'   ? 'bg-violet-50 border-violet-100 text-violet-600' :
+            t === 'playlist' ? 'bg-teal-50 border-teal-100 text-teal-700' :
+                               'bg-slate-50 border-slate-100 text-slate-500'
+        return { label, icone, cor }
     }
 
     // ── Detecção de alterações não salvas ──
@@ -1115,102 +1136,116 @@ export default function TelaPrincipal() {
                 </div>
                 )}
 
-                {/* ════════════ ACCORDION: AVALIAÇÃO / RECURSOS ════════════ */}
+                {/* ════════════ ACCORDION: RECURSOS / AVALIAÇÃO ════════════ */}
                 {!modoRapido && (
                 <div className="border-b border-slate-100">
                     <button type="button" onClick={() => toggleSecaoForm('recursos')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
                         <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Avaliação / Recursos</span>
-                            {!secoesForm.has('recursos') && planoEditando.avaliacaoObservacoes && (
-                                <p className="text-[11px] text-slate-300 mt-0.5 truncate">{planoEditando.avaliacaoObservacoes.slice(0,60)}</p>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Recursos / Avaliação</span>
+                            {!secoesForm.has('recursos') && (
+                                <p className="text-[11px] text-slate-300 mt-0.5">
+                                    {(planoEditando.recursos||[]).length > 0 && `${(planoEditando.recursos||[]).length} recurso${(planoEditando.recursos||[]).length > 1 ? 's' : ''}`}
+                                    {(planoEditando.recursos||[]).length > 0 && planoEditando.avaliacaoObservacoes && ' · '}
+                                    {planoEditando.avaliacaoObservacoes && planoEditando.avaliacaoObservacoes.slice(0,40)}
+                                </p>
                             )}
                         </div>
                         <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('recursos') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     {secoesForm.has('recursos') && (
-                        <div className="px-3 sm:px-6 pb-5 space-y-5">
-                            {/* Links e Recursos Externos */}
+                        <div className="px-3 sm:px-6 pb-5 space-y-6">
+
+                            {/* ── Recursos da Aula ── */}
                             <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🔗 Recursos Externos</label>
-                                <p className="text-[11px] text-slate-400 mb-3">Cole uma URL do YouTube, Spotify, Google Drive, PDF ou qualquer link. O tipo é detectado automaticamente.</p>
-                                <div className="flex gap-2 mb-4">
-                                    <div className="relative flex-1">
+                                <div className="mb-3">
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🎬 Recursos da Aula</label>
+                                    <p className="text-[11px] text-slate-400 mt-0.5">Conteúdos digitais de apoio — músicas, vídeos, partituras, imagens, links.</p>
+                                </div>
+
+                                {/* Formulário de novo recurso */}
+                                <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 space-y-2 mb-3">
+                                    <div className="flex gap-2">
+                                        <select
+                                            value={novoRecursoTipo}
+                                            onChange={e => setNovoRecursoTipo(e.target.value)}
+                                            className="border border-slate-200 rounded-xl px-2 py-2 text-sm bg-white focus:border-indigo-400 outline-none shrink-0"
+                                        >
+                                            {RECURSO_TIPOS.map(t => (
+                                                <option key={t.value} value={t.value}>{t.icone} {t.label}</option>
+                                            ))}
+                                        </select>
                                         <input
                                             type="text"
-                                            placeholder="Cole aqui: YouTube, Spotify, Drive, PDF, link..."
-                                            value={novoRecursoUrl}
-                                            onChange={e => { setNovoRecursoUrl(e.target.value); setNovoRecursoTipo(detectarTipoRecurso(e.target.value)); }}
+                                            placeholder="Título do recurso..."
+                                            value={novoRecursoTitulo}
+                                            onChange={e => setNovoRecursoTitulo(e.target.value)}
                                             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarRecurso(); } }}
-                                            className="w-full pl-3 pr-10 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none"
+                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none"
                                         />
-                                        {novoRecursoUrl && (
-                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base">
-                                                {detectarTipoRecurso(novoRecursoUrl) === 'youtube' ? '▶️' :
-                                                 detectarTipoRecurso(novoRecursoUrl) === 'spotify' ? '🎵' :
-                                                 detectarTipoRecurso(novoRecursoUrl) === 'drive' ? '📂' :
-                                                 detectarTipoRecurso(novoRecursoUrl) === 'pdf' ? '📄' :
-                                                 detectarTipoRecurso(novoRecursoUrl) === 'imagem' ? '🖼️' : '🔗'}
-                                            </span>
-                                        )}
                                     </div>
-                                    <button type="button" onClick={adicionarRecurso} className="border border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 px-4 py-2 rounded-xl text-sm font-semibold transition-colors shrink-0">+ Add</button>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="URL (opcional)..."
+                                            value={novoRecursoUrl}
+                                            onChange={e => { setNovoRecursoUrl(e.target.value); if (e.target.value) setNovoRecursoTipo(detectarTipoRecurso(e.target.value)); }}
+                                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarRecurso(); } }}
+                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Observação (opcional)..."
+                                            value={novoRecursoObservacao}
+                                            onChange={e => setNovoRecursoObservacao(e.target.value)}
+                                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarRecurso(); } }}
+                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={adicionarRecurso}
+                                        disabled={!novoRecursoTitulo.trim() && !novoRecursoUrl.trim()}
+                                        className="w-full py-2 border border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >+ Adicionar recurso</button>
                                 </div>
-                                {/* Cards de preview */}
-                                <div className="space-y-2">
-                                    {(planoEditando.recursos || []).map((rec, idx) => {
-                                        const tipo = rec.tipo || detectarTipoRecurso(rec.url)
-                                        const ytId = tipo === 'youtube' ? getYoutubeId(rec.url) : null
-                                        return (
-                                            <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${
-                                                tipo === 'youtube' ? 'bg-red-50 border-red-100' :
-                                                tipo === 'spotify' ? 'bg-green-50 border-green-100' :
-                                                tipo === 'drive' ? 'bg-blue-50 border-blue-100' :
-                                                tipo === 'pdf' ? 'bg-orange-50 border-orange-100' :
-                                                tipo === 'imagem' ? 'bg-violet-50 border-violet-100' :
-                                                'bg-slate-50 border-slate-100'
-                                            }`}>
-                                                {/* Thumbnail / ícone */}
-                                                {tipo === 'youtube' && ytId ? (
-                                                    <a href={rec.url} target="_blank" rel="noopener noreferrer" className="shrink-0">
-                                                        <img src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`} alt="thumb" className="w-20 h-14 object-cover rounded-lg shadow-sm" />
-                                                    </a>
-                                                ) : (
-                                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-xl ${
-                                                        tipo === 'spotify' ? 'bg-green-500 text-white' :
-                                                        tipo === 'drive' ? 'bg-blue-500 text-white' :
-                                                        tipo === 'pdf' ? 'bg-orange-500 text-white' :
-                                                        tipo === 'imagem' ? 'bg-violet-500 text-white' :
-                                                        'bg-slate-300 text-white'
-                                                    }`}>
-                                                        {tipo === 'spotify' ? '🎵' : tipo === 'drive' ? '📂' : tipo === 'pdf' ? '📄' : tipo === 'imagem' ? '🖼️' : '🔗'}
+
+                                {/* Lista de recursos adicionados */}
+                                {(planoEditando.recursos || []).length > 0 && (
+                                    <div className="space-y-1.5">
+                                        {(planoEditando.recursos || []).map((rec, idx) => {
+                                            const tipo = rec.tipo || detectarTipoRecurso(rec.url)
+                                            const { icone, label, cor } = getRecursoMeta(tipo)
+                                            const ytId = (tipo === 'video' || tipo === 'youtube') ? getYoutubeId(rec.url) : null
+                                            return (
+                                                <div key={idx} className={`flex items-start gap-2.5 p-2.5 rounded-xl border ${cor.split(' ').slice(0,2).join(' ')} bg-opacity-40`}>
+                                                    {ytId ? (
+                                                        <a href={rec.url} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                                                            <img src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`} alt="thumb" className="w-16 h-11 object-cover rounded-lg shadow-sm" />
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-lg shrink-0 mt-0.5 leading-none">{icone}</span>
+                                                    )}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className={`text-[10px] font-bold uppercase tracking-wide ${cor.split(' ').slice(2).join(' ')}`}>{label}</span>
+                                                            {rec.titulo && <span className="text-sm font-medium text-slate-700 truncate">{rec.titulo}</span>}
+                                                        </div>
+                                                        {rec.url && <a href={rec.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-400 hover:underline truncate block">{rec.url}</a>}
+                                                        {rec.observacao && <p className="text-[11px] text-slate-500 italic mt-0.5">{rec.observacao}</p>}
                                                     </div>
-                                                )}
-                                                {/* Info */}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className={`text-xs font-bold uppercase tracking-wide mb-0.5 ${
-                                                        tipo === 'youtube' ? 'text-red-500' :
-                                                        tipo === 'spotify' ? 'text-green-600' :
-                                                        tipo === 'drive' ? 'text-blue-600' :
-                                                        tipo === 'pdf' ? 'text-orange-600' :
-                                                        tipo === 'imagem' ? 'text-violet-600' :
-                                                        'text-slate-500'
-                                                    }`}>
-                                                        {tipo === 'youtube' ? 'YouTube' :
-                                                         tipo === 'spotify' ? `Spotify · ${getSpotifyType(rec.url)}` :
-                                                         tipo === 'drive' ? 'Google Drive' :
-                                                         tipo === 'pdf' ? 'PDF' :
-                                                         tipo === 'imagem' ? 'Imagem' : 'Link'}
-                                                    </p>
-                                                    <a href={rec.url} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-600 hover:underline truncate block max-w-full">{rec.url}</a>
+                                                    <button type="button" onClick={() => removerRecurso(idx)} className="text-slate-300 hover:text-red-500 transition shrink-0 text-xs mt-0.5">✕</button>
                                                 </div>
-                                                <button type="button" onClick={() => removerRecurso(idx)} className="text-slate-300 hover:text-red-500 transition shrink-0 mt-0.5">✕</button>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
                             </div>
-                            {/* Avaliação / Observações */}
-                            <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={3} /></div>
+
+                            {/* ── Avaliação / Observações ── */}
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label>
+                                <textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={3} />
+                            </div>
                         </div>
                     )}
                 </div>
