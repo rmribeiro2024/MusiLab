@@ -2418,9 +2418,7 @@ export default function BancoPlanos({ session }) {
                                         { label:'Banco de Aulas', short:'Banco', icon:'📚', mode:'lista', action:()=>{setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null);} },
                                         { label:'Nova Aula',  short:'Nova',    icon:'➕', mode:'nova',            action: novoPlano, accent: true },
                                         { label:'Hoje',       short:'Hoje',    icon:'☀️', mode:'resumoDia',       action:()=>setViewMode('resumoDia') },
-                                        { label:'Semana',     short:'Semana',  icon:'📆', mode:'agendaSemanal',   action:()=>setViewMode('agendaSemanal') },
                                         { label:'Calendário', short:'Cal.',    icon:'📅', mode:'calendario',      action:()=>setViewMode('calendario') },
-                                        { label:'Meu Ano',    short:'Ano',     icon:'🗓️', mode:'anoLetivo',       action:()=>setViewMode('anoLetivo') },
                                         { label:'Turmas',     short:'Turmas',  icon:'👥', mode:'turmas',          action:()=>setViewMode('turmas') },
                                         { label:'Relatórios', short:'Rel.',    icon:'📋', mode:'relatorios',      action:()=>setViewMode('relatorios') },
                                     ].map(({label, short, icon, mode, action, accent}) => {
@@ -2448,6 +2446,8 @@ export default function BancoPlanos({ session }) {
                                 {/* GRUPO 2: Biblioteca */}
                                 <div className="flex items-end gap-0.5 sm:gap-1">
                                     {[
+                                        { label:'Semana',      short:'Sem.',  icon:'📆', mode:'agendaSemanal' },
+                                        { label:'Meu Ano',     short:'Ano',   icon:'🗓️', mode:'anoLetivo' },
                                         { label:'Repertório',  short:'Rep.',  icon:'🎼', mode:'repertorio' },
                                         { label:'Estratégias', short:'Estr.', icon:'🧩', mode:'estrategias' },
                                         { label:'Atividades',  short:'Atv.',  icon:'🎁', mode:'atividades' },
