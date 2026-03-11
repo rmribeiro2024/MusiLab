@@ -2415,11 +2415,11 @@ export default function BancoPlanos({ session }) {
                                 {/* GRUPO 1: Trabalho diário */}
                                 <div className="flex items-end gap-0.5 sm:gap-1 mr-2 sm:mr-3">
                                     {[
-                                        { label:'Banco de Aulas', short:'Banco', icon:'📚', mode:'lista', action:()=>{setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null);} },
+                                        { label:'Planos', short:'Planos', icon:'📚', mode:'lista', action:()=>{setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null);} },
                                         { label:'Nova Aula',  short:'Nova',    icon:'➕', mode:'nova',            action: novoPlano, accent: true },
                                         { label:'Hoje',       short:'Hoje',    icon:'☀️', mode:'resumoDia',       action:()=>setViewMode('resumoDia') },
                                         { label:'Calendário', short:'Cal.',    icon:'📅', mode:'calendario',      action:()=>setViewMode('calendario') },
-                                        { label:'Turmas',     short:'Turmas',  icon:'👥', mode:'turmas',          action:()=>setViewMode('turmas') },
+                                        { label:'Caderno da Turma', short:'Caderno', icon:'👥', mode:'turmas', action:()=>setViewMode('turmas') },
                                         { label:'Relatórios', short:'Rel.',    icon:'📋', mode:'relatorios',      action:()=>setViewMode('relatorios') },
                                     ].map(({label, short, icon, mode, action, accent}) => {
                                         const isActive = viewMode === mode;
@@ -2447,7 +2447,7 @@ export default function BancoPlanos({ session }) {
                                 <div className="flex items-end gap-0.5 sm:gap-1">
                                     {[
                                         { label:'Semana',      short:'Sem.',  icon:'📆', mode:'agendaSemanal' },
-                                        { label:'Meu Ano',     short:'Ano',   icon:'🗓️', mode:'anoLetivo' },
+                                        { label:'Estrutura Escolar', short:'Escola', icon:'🗓️', mode:'anoLetivo' },
                                         { label:'Repertório',  short:'Rep.',  icon:'🎼', mode:'repertorio' },
                                         { label:'Estratégias', short:'Estr.', icon:'🧩', mode:'estrategias' },
                                         { label:'Atividades',  short:'Atv.',  icon:'🎁', mode:'atividades' },
@@ -2493,7 +2493,7 @@ export default function BancoPlanos({ session }) {
                         {viewMode==='agendaSemanal' && <ErrorBoundary modulo="Agenda Semanal"><Suspense fallback={<CarregandoModulo />}><AgendaSemanal /></Suspense></ErrorBoundary>}
 
                         {/* ══════════════ PLANEJAMENTO POR TURMA ══════════════ */}
-                        {viewMode === 'turmas' && <ErrorBoundary modulo="Planejamento por Turma"><Suspense fallback={<CarregandoModulo />}><ModuloPlanejamentoTurma /></Suspense></ErrorBoundary>}
+                        {viewMode === 'turmas' && <ErrorBoundary modulo="Caderno da Turma"><Suspense fallback={<CarregandoModulo />}><ModuloPlanejamentoTurma /></Suspense></ErrorBoundary>}
 
                         {/* ══════════════ RELATÓRIOS ══════════════ */}
                         {viewMode === 'relatorios' && <ErrorBoundary modulo="Relatórios"><Suspense fallback={<CarregandoModulo />}><ModuloRelatorios /></Suspense></ErrorBoundary>}
@@ -2711,7 +2711,7 @@ export default function BancoPlanos({ session }) {
                             {[
                                 { mode: 'resumoDia',       icon: '☀️',  label: 'Hoje' },
                                 { mode: 'agendaSemanal',   icon: '📆',  label: 'Semana' },
-                                { mode: 'anoLetivo',        icon: '🗓️',  label: 'Meu Ano' },
+                                { mode: 'anoLetivo',        icon: '🗓️',  label: 'Estrutura' },
                                 { mode: 'turmas',           icon: '👥',  label: 'Turmas' },
                                 { mode: 'estrategias',      icon: '🧩',  label: 'Estratégias' },
                                 { mode: 'atividades',       icon: '🎁',  label: 'Atividades' },
@@ -2730,7 +2730,7 @@ export default function BancoPlanos({ session }) {
                     <nav className="fixed bottom-0 left-0 right-0 sm:hidden bg-white border-t border-slate-200 flex justify-around items-center z-40"
                          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
                         {[
-                            { mode: 'lista',      icon: '📚', label: 'Banco',  action: () => { setViewMode('lista'); setMaisAberto(false); setModoEdicao(false); setPlanoEditando(null); } },
+                            { mode: 'lista',      icon: '📚', label: 'Planos', action: () => { setViewMode('lista'); setMaisAberto(false); setModoEdicao(false); setPlanoEditando(null); } },
                             { mode: 'calendario', icon: '📅', label: 'Agenda',  action: () => { setViewMode('calendario'); setMaisAberto(false); } },
                             { mode: 'nova',       icon: '➕', label: 'Nova',    action: novoPlano },
                             { mode: 'repertorio', icon: '🎼', label: 'Músicas', action: () => { setViewMode('repertorio'); setMaisAberto(false); } },
