@@ -772,7 +772,7 @@ export default function ModalRegistroPosAula() {
                                                 setSugestaoIA(null)
                                                 setLoadingIA(true)
                                                 const prompt = `Você é um assistente pedagógico para professor de música.\nPlano de aula: "${tituloPlano}"\nResumo da aula: "${dadosParaIA.resumoAula || ''}"\nO que funcionou: "${dadosParaIA.funcionouBem || ''}"\nO que não funcionou: "${dadosParaIA.naoFuncionou || ''}"\nPróxima aula (professor): "${dadosParaIA.proximaAula || ''}"\nComportamento: "${dadosParaIA.comportamento || ''}"\n\nCom base neste registro, sugira em 2-3 frases objetivas o que priorizar na próxima aula e uma estratégia específica. Responda em português, de forma direta e prática.`
-                                                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`, {
+                                                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
                                                     method: 'POST',
                                                     headers: { 'Content-Type': 'application/json' },
                                                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
