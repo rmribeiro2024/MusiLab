@@ -172,9 +172,7 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
 
   // Detalhe do ponto selecionado
   const itemAtivo    = dataAtiva ? itensVisiveis.find(i => i.dataStr === dataAtiva) ?? null : null
-  const registroAtivo = dataAtiva
-    ? historicoDaTurma.find(r => (r.dataAula ?? r.data) === dataAtiva) ?? null
-    : null
+  const [planoPreview, setPlanoPreview] = useState<import('../types').Plano | null>(null)
 
   const contadores = useMemo(() => ({
     realizadas: todosItens.filter(i => i.status === 'realizada').length,
@@ -314,13 +312,11 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
 
       {/* Painel de detalhe da data selecionada */}
       {itemAtivo && (
-        <div className="mt-4 border-t border-slate-100 pt-4 space-y-3">
+        <div className="mt-4 border-t border-slate-100 pt-3 space-y-2.5">
 
-          {/* Cabeçalho da data */}
+          {/* Data + status */}
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-700">
-              {formatarData(itemAtivo.dataStr)}
-            </span>
+            <span className="text-sm font-semibold text-slate-700">{formatarData(itemAtivo.dataStr)}</span>
             <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
               itemAtivo.status === 'realizada' ? 'bg-emerald-50 text-emerald-700' :
               itemAtivo.status === 'planejada' ? 'bg-indigo-50 text-indigo-700' :
@@ -331,33 +327,30 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
             </span>
           </div>
 
-          {/* Plano vinculado */}
-          {itemAtivo.planoTitulo && (
-            <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2">
-              <span className="text-sm">📄</span>
-              <span className="text-xs text-slate-600 font-medium truncate">{itemAtivo.planoTitulo}</span>
-            </div>
+          {/* Plano vinculado — clicável */}
+          {itemAtivo.planoTitulo && itemAtivo.planoId && (
+            <button
+              type="button"
+              onClick={() => {
+                const p = planos.find(p => String(p.id) === String(itemAtivo.planoId))
+                if (p) setPlanoPreview(p)
+              }}
+              className="w-full flex items-center justify-between gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2.5 transition-colors group"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-sm shrink-0">📄</span>
+                <span className="text-xs text-slate-700 font-medium truncate">{itemAtivo.planoTitulo}</span>
+              </div>
+              <span className="text-[11px] font-semibold text-indigo-500 group-hover:text-indigo-700 shrink-0 transition-colors">
+                Ver plano →
+              </span>
+            </button>
           )}
 
-          {/* Registro pós-aula (compacto) */}
-          {registroAtivo && (
-            <div className="space-y-1.5">
-              {registroAtivo.resultadoAula && (
-                <InfoRow icon="📊" label="Resultado" valor={labelResultado(registroAtivo.resultadoAula)} />
-              )}
-              {registroAtivo.resumoAula && (
-                <InfoRow icon="📋" label="O que foi feito" valor={stripHTML(registroAtivo.resumoAula)} />
-              )}
-              {registroAtivo.proximaAula && (
-                <InfoRow icon="💡" label="Próxima aula" valor={stripHTML(registroAtivo.proximaAula)} />
-              )}
-            </div>
-          )}
-
-          {/* Sem plano vinculado → 3 ações para o formulário */}
+          {/* Sem plano → 3 ações */}
           {itemAtivo.status === 'sem-plano' && (
             <div className="bg-slate-50 rounded-xl p-3">
-              <p className="text-[11px] font-semibold text-slate-500 mb-2.5">Planejar aula desta turma</p>
+              <p className="text-[11px] font-semibold text-slate-500 mb-2">Planejar aula desta turma</p>
               <div className="flex flex-col gap-1.5">
                 <button type="button" onClick={() => onAcionar('adaptar')}
                   className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100 transition-colors">
@@ -375,10 +368,10 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
             </div>
           )}
 
-          {/* Planejada mas sem registro: opções */}
-          {itemAtivo.status === 'planejada' && !registroAtivo && (
+          {/* Planejada → 3 ações */}
+          {itemAtivo.status === 'planejada' && (
             <div className="bg-indigo-50 rounded-xl p-3">
-              <p className="text-[11px] font-semibold text-indigo-600 mb-2.5">Adicionar planejamento para esta aula</p>
+              <p className="text-[11px] font-semibold text-indigo-600 mb-2">Adicionar planejamento para esta aula</p>
               <div className="flex flex-col gap-1.5">
                 <button type="button" onClick={() => onAcionar('adaptar')}
                   className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-blue-700 hover:bg-blue-50 border border-blue-100 transition-colors">
@@ -398,6 +391,9 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
 
         </div>
       )}
+
+      {/* Modal preview do plano */}
+      {planoPreview && <ModalPreviewPlano plano={planoPreview} onFechar={() => setPlanoPreview(null)} />}
     </div>
   )
 }
