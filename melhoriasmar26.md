@@ -4,11 +4,11 @@
 
 | # | Prompt | Status |
 |---|--------|--------|
-| 1 | Timeline pedagógica: linha + dots coloridos (verde/azul/cinza) | ⏳ |
-| 2 | Click em ponto → mostrar registro pós-aula + plano vinculado | ⏳ |
-| 3 | Indicador de progresso: últimas 5 realizadas + próximas 3 + tooltips | ⏳ |
-| 4 | Sem plano → "Planejar aula desta turma" com 3 botões no form existente | ⏳ |
-| 5 | Visual: linha horizontal, dots conectados, glow no ponto selecionado | ⏳ |
+| 1 | Timeline pedagógica: linha + dots coloridos (verde/azul/cinza) | ✅ |
+| 2 | Click em ponto → mostrar registro pós-aula + plano vinculado | ✅ |
+| 3 | Indicador de progresso: últimas 5 realizadas + próximas 3 + tooltips | ✅ |
+| 4 | Sem plano → "Planejar aula desta turma" com 3 botões no form existente | ✅ |
+| 5 | Visual: linha horizontal, dots conectados, glow no ponto selecionado | ✅ |
 
 ---
 

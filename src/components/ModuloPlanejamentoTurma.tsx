@@ -11,7 +11,7 @@ import { useCalendarioContext } from '../contexts/CalendarioContext'
 import RichTextEditor from './RichTextEditor'
 import { stripHTML, gerarIdSeguro } from '../lib/utils'
 import { showToast } from '../lib/toast'
-import { useAtividadesContext, useAplicacoesContext } from '../contexts'
+import { useAtividadesContext, useAplicacoesContext, useSequenciasContext } from '../contexts'
 import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula } from '../types'
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -93,6 +93,7 @@ interface TLItem {
   planoId?: string | number
   planoTitulo?: string
   aplicacaoId?: string
+  sequenciaTitulo?: string  // sequência pedagógica ou tema
 }
 
 function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
@@ -105,17 +106,17 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
   const { aplicacoes } = useAplicacoesContext()
   const { planos } = usePlanosContext()
   const { obterTurmasDoDia } = useCalendarioContext()
+  const { sequencias } = useSequenciasContext()
   const [verTodos, setVerTodos] = useState(false)
   const hojeStr = useMemo(() => toDateStr(new Date()), [])
-  const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Auto-scroll para centralizar o ponto selecionado
+  // Auto-scroll: centraliza o ponto ativo na sua row
   useEffect(() => {
-    if (!dataAtiva || !scrollRef.current) return
-    const el = scrollRef.current.querySelector(`[data-date="${dataAtiva}"]`) as HTMLElement | null
-    if (!el) return
-    const c = scrollRef.current
-    c.scrollTo({ left: el.offsetLeft - c.clientWidth / 2 + el.offsetWidth / 2, behavior: 'smooth' })
+    if (!dataAtiva) return
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-date="${dataAtiva}"]`) as HTMLElement | null
+      if (el) el.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' })
+    })
   }, [dataAtiva])
 
   // Todos os itens da timeline: aplicacoes + datas futuras sem plano
@@ -142,12 +143,18 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
 
     const fromAps: TLItem[] = apsDaTurma.map(ap => {
       const plano = planos.find(p => String(p.id) === String(ap.planoId))
+      // Sequência pedagógica → fallback para tema do plano
+      const seq = ap.planoId != null
+        ? sequencias.find(s => s.slots.some(sl => sl.planoVinculado != null && String(sl.planoVinculado) === String(ap.planoId)))
+        : undefined
+      const sequenciaTitulo = seq?.titulo ?? plano?.tema ?? undefined
       return {
         dataStr: ap.data,
         status: ap.status === 'realizada' ? 'realizada' : 'planejada',
         planoId: ap.planoId,
         planoTitulo: plano?.titulo,
         aplicacaoId: ap.id,
+        sequenciaTitulo,
       }
     })
 
@@ -169,6 +176,25 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
 
   const itensVisiveis = verTodos ? todosItens : itensPadrao
   const temMais       = !verTodos && todosItens.length > itensPadrao.length
+
+  // Agrupar itens por sequência pedagógica / tema
+  const grupos = useMemo(() => {
+    const map = new Map<string, TLItem[]>()
+    const noGroup: TLItem[] = []
+    for (const item of itensVisiveis) {
+      if (item.sequenciaTitulo) {
+        if (!map.has(item.sequenciaTitulo)) map.set(item.sequenciaTitulo, [])
+        map.get(item.sequenciaTitulo)!.push(item)
+      } else {
+        noGroup.push(item)
+      }
+    }
+    const result: { titulo: string | null; items: TLItem[] }[] = []
+    map.forEach((items, titulo) => result.push({ titulo, items }))
+    if (noGroup.length) result.push({ titulo: null, items: noGroup })
+    return result
+  }, [itensVisiveis])
+  const temAgrupamento = grupos.some(g => g.titulo !== null)
 
   // Detalhe do ponto selecionado
   const itemAtivo    = dataAtiva ? itensVisiveis.find(i => i.dataStr === dataAtiva) ?? null : null
@@ -219,81 +245,94 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
         </>}
       </div>
 
-      {/* Timeline: linha horizontal + pontos conectados */}
-      <div className="relative px-3">
-        {/* Linha de conexão */}
-        <div className="absolute top-[18px] left-5 right-5 h-0.5 bg-slate-100 rounded-full pointer-events-none" />
+      {/* Timeline: agrupada por sequência ou plana */}
+      <div className={temAgrupamento ? 'space-y-4' : ''}>
+        {grupos.map((grupo) => (
+          <div key={grupo.titulo ?? '__none__'}>
 
-        <div ref={scrollRef} className="relative flex items-start overflow-x-auto scrollbar-hide pb-1"
-          style={{ gap: itensVisiveis.length > 6 ? '0' : undefined, justifyContent: itensVisiveis.length <= 8 ? 'space-between' : undefined }}>
-          {itensVisiveis.map((item) => {
-            const isAtivo = dataAtiva === item.dataStr
-            const [, mm, dd] = item.dataStr.split('-')
-            const mesAbr = MESES_TIMELINE[parseInt(mm) - 1]
-            const statusLabel =
-              item.status === 'realizada' ? 'Realizada' :
-              item.status === 'planejada' ? 'Planejada' : 'Sem plano'
+            {/* Cabeçalho da sequência */}
+            {grupo.titulo && (
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                  {grupo.titulo}
+                </span>
+                <div className="flex-1 h-px bg-slate-100" />
+                <span className="text-[9px] text-slate-400 whitespace-nowrap shrink-0">
+                  {grupo.items.filter(i => i.status === 'realizada').length} realizad{grupo.items.filter(i => i.status === 'realizada').length !== 1 ? 'as' : 'a'}
+                  {grupo.items.filter(i => i.status === 'planejada').length > 0 && ` · ${grupo.items.filter(i => i.status === 'planejada').length} planejad${grupo.items.filter(i => i.status === 'planejada').length !== 1 ? 'as' : 'a'}`}
+                </span>
+              </div>
+            )}
+            {!grupo.titulo && temAgrupamento && (
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                  Sem sequência
+                </span>
+                <div className="flex-1 h-px bg-slate-100" />
+              </div>
+            )}
 
-            const dotColor =
-              item.status === 'realizada' ? 'bg-emerald-500 border-emerald-500' :
-              item.status === 'planejada' ? 'bg-indigo-500 border-indigo-500' :
-              'bg-white border-slate-300'
-
-            const dotGlow = isAtivo
-              ? item.status === 'realizada' ? 'ring-4 ring-offset-2 ring-emerald-300 shadow-[0_0_10px_3px_rgba(52,211,153,0.45)] scale-125'
-              : item.status === 'planejada' ? 'ring-4 ring-offset-2 ring-indigo-300 shadow-[0_0_10px_3px_rgba(129,140,248,0.45)] scale-125'
-              : 'ring-4 ring-offset-2 ring-slate-300 shadow-[0_0_8px_2px_rgba(148,163,184,0.35)] scale-125'
-              : 'hover:scale-110'
-
-            const isHoje = item.dataStr === hojeStr
-            return (
-              <button
-                key={item.dataStr}
-                data-date={item.dataStr}
-                type="button"
-                onClick={() => setDataAtiva(isAtivo ? null : item.dataStr)}
-                className="relative z-10 flex flex-col items-center shrink-0 px-2 pt-5 group focus:outline-none"
-              >
-                {/* Badge "Hoje" */}
-                {isHoje && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 text-[8px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-full whitespace-nowrap leading-tight">
-                    Hoje
-                  </span>
-                )}
-                {/* Tooltip CSS */}
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 pointer-events-none">
-                  <div className="bg-slate-800 text-white rounded-lg px-2.5 py-2 text-[10px] whitespace-nowrap shadow-xl text-left min-w-[90px]">
-                    <div className="font-bold text-white">{dd}/{mm}</div>
-                    {item.planoTitulo && (
-                      <div className="text-slate-300 mt-0.5 max-w-[130px] truncate">{item.planoTitulo}</div>
-                    )}
-                    <div className={`mt-1 font-semibold ${
-                      item.status === 'realizada' ? 'text-emerald-400' :
-                      item.status === 'planejada' ? 'text-indigo-400' : 'text-slate-400'
-                    }`}>{statusLabel}</div>
-                  </div>
-                  {/* Seta */}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-800 w-0 h-0" />
-                </div>
-
-                {/* Dot */}
-                <div className={`w-[18px] h-[18px] rounded-full border-2 transition-all duration-200 ${dotColor} ${dotGlow}`} />
-
-                {/* Rótulos */}
-                <span className={`text-[9px] font-bold mt-1 transition-colors ${isAtivo ? (
-                  item.status === 'realizada' ? 'text-emerald-600' :
-                  item.status === 'planejada' ? 'text-indigo-600' : 'text-slate-500'
-                ) : 'text-slate-500'}`}>{dd}</span>
-                <span className="text-[9px] text-slate-400">{mesAbr}</span>
-                {item.planoTitulo && (
-                  <span className="text-[8px] text-slate-400 text-center leading-tight mt-0.5 whitespace-normal break-words max-w-[72px]">
-                    {item.planoTitulo}
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
+            {/* Dots row */}
+            <div className="relative px-3">
+              <div className="absolute top-[29px] left-5 right-5 h-0.5 bg-slate-100 rounded-full pointer-events-none" />
+              <div className="relative flex items-start overflow-x-auto scrollbar-hide pb-1"
+                style={{ gap: grupo.items.length > 6 ? '0' : undefined, justifyContent: grupo.items.length <= 8 ? 'space-between' : undefined }}>
+                {grupo.items.map((item) => {
+                  const isAtivo = dataAtiva === item.dataStr
+                  const [, mm, dd] = item.dataStr.split('-')
+                  const mesAbr = MESES_TIMELINE[parseInt(mm) - 1]
+                  const statusLabel =
+                    item.status === 'realizada' ? 'Realizada' :
+                    item.status === 'planejada' ? 'Planejada' : 'Sem plano'
+                  const dotColor =
+                    item.status === 'realizada' ? 'bg-emerald-500 border-emerald-500' :
+                    item.status === 'planejada' ? 'bg-indigo-500 border-indigo-500' :
+                    'bg-white border-slate-300'
+                  const dotGlow = isAtivo
+                    ? item.status === 'realizada' ? 'ring-4 ring-offset-2 ring-emerald-300 shadow-[0_0_10px_3px_rgba(52,211,153,0.45)] scale-125'
+                    : item.status === 'planejada' ? 'ring-4 ring-offset-2 ring-indigo-300 shadow-[0_0_10px_3px_rgba(129,140,248,0.45)] scale-125'
+                    : 'ring-4 ring-offset-2 ring-slate-300 shadow-[0_0_8px_2px_rgba(148,163,184,0.35)] scale-125'
+                    : 'hover:scale-110'
+                  const isHoje = item.dataStr === hojeStr
+                  return (
+                    <button
+                      key={item.dataStr}
+                      data-date={item.dataStr}
+                      type="button"
+                      onClick={() => setDataAtiva(isAtivo ? null : item.dataStr)}
+                      className="relative z-10 flex flex-col items-center shrink-0 px-2 pt-5 group focus:outline-none"
+                    >
+                      {isHoje && (
+                        <span className="absolute top-0 left-1/2 -translate-x-1/2 text-[8px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-full whitespace-nowrap leading-tight">
+                          Hoje
+                        </span>
+                      )}
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 pointer-events-none">
+                        <div className="bg-slate-800 text-white rounded-lg px-2.5 py-2 text-[10px] whitespace-nowrap shadow-xl text-left min-w-[90px]">
+                          <div className="font-bold text-white">{dd}/{mm}</div>
+                          {item.planoTitulo && <div className="text-slate-300 mt-0.5 max-w-[130px] truncate">{item.planoTitulo}</div>}
+                          <div className={`mt-1 font-semibold ${item.status === 'realizada' ? 'text-emerald-400' : item.status === 'planejada' ? 'text-indigo-400' : 'text-slate-400'}`}>{statusLabel}</div>
+                        </div>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-800 w-0 h-0" />
+                      </div>
+                      {/* Dot */}
+                      <div className={`w-[18px] h-[18px] rounded-full border-2 transition-all duration-200 ${dotColor} ${dotGlow}`} />
+                      {/* Rótulos */}
+                      <span className={`text-[9px] font-bold mt-1 transition-colors ${isAtivo ? (item.status === 'realizada' ? 'text-emerald-600' : item.status === 'planejada' ? 'text-indigo-600' : 'text-slate-500') : 'text-slate-500'}`}>{dd}</span>
+                      <span className="text-[9px] text-slate-400">{mesAbr}</span>
+                      {item.planoTitulo && (
+                        <span className="text-[8px] text-slate-400 text-center leading-tight mt-0.5 whitespace-normal break-words max-w-[72px]">
+                          {item.planoTitulo}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Legenda */}
