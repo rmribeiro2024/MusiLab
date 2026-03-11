@@ -1,6 +1,6 @@
 import { dbSet } from '../lib/db'
 import { sanitizeUrl, ytIdFromUrl } from '../lib/utils'
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useDebounce } from '../lib/hooks'
 import { useRepertorioContext, useAtividadesContext, usePlanosContext, useModalContext, useCalendarioContext } from '../contexts'
 
@@ -94,6 +94,27 @@ export default function ModuloRepertorio() {
     const { planoEditando, setPlanoEditando, planos, setPlanoSelecionado } = usePlanosContext()
     const { setModalConfirm } = useModalContext()
     const { ytPreviewId, setYtPreviewId } = useCalendarioContext()
+
+    const [usoExpandidoId, setUsoExpandidoId] = useState<string | null>(null)
+
+    const getUsosMusica = (musicaId: string | number) => {
+        const usos: { data: string; planoId: unknown; planoTitulo: string }[] = []
+        planos.forEach(p => {
+            const temMusica = (p.atividadesRoteiro || []).some(atv =>
+                (atv.musicasVinculadas || []).some(mv => String(mv.id) === String(musicaId))
+            )
+            if (!temMusica) return
+            const datas = (p.historicoDatas || []).length > 0
+                ? p.historicoDatas
+                : (p.registrosPosAula || []).map(r => r.data).filter(Boolean)
+            if (datas.length === 0) {
+                usos.push({ data: '', planoId: p.id, planoTitulo: p.titulo })
+            } else {
+                [...new Set(datas)].forEach(d => usos.push({ data: d, planoId: p.id, planoTitulo: p.titulo }))
+            }
+        })
+        return usos.sort((a, b) => b.data.localeCompare(a.data))
+    }
 
     // Filtrar músicas (useMemo + debounce na busca)
     const buscaRepertorioDebounced = useDebounce(buscaRepertorio, 300)
@@ -368,8 +389,46 @@ export default function ModuloRepertorio() {
                                 );
                             })()}
                             <button onClick={() => setMusicaEditando(m)} className="text-xs bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-200 transition mr-1">✏️ Editar</button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setUsoExpandidoId(usoExpandidoId === String(m.id) ? null : String(m.id)) }}
+                                className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition mr-1 ${usoExpandidoId === String(m.id) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'}`}
+                                title="Onde foi usada">
+                                📊 Usos
+                            </button>
                             <button onClick={() => { setModalConfirm({ titulo: `Excluir "${m.titulo}"?`, conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => { setRepertorio(repertorio.filter(r => r.id !== m.id)); } }); }} className="text-xs bg-red-100 text-red-600 font-bold px-3 py-1.5 rounded-lg hover:bg-red-200 transition">🗑️</button>
                         </div>
+                        {/* Seção "Onde foi usada" */}
+                        {usoExpandidoId === String(m.id) && (() => {
+                            const usos = getUsosMusica(m.id)
+                            const fmtData = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'
+                            return (
+                                <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <p className="text-xs font-bold text-emerald-800 uppercase tracking-wide">📊 Onde foi usada</p>
+                                        <span className="text-xs text-emerald-600 font-semibold">{usos.length} uso{usos.length !== 1 ? 's' : ''}</span>
+                                    </div>
+                                    {usos.length === 0 ? (
+                                        <p className="text-xs text-emerald-600 italic">Ainda não usada em nenhum plano de aula.</p>
+                                    ) : (
+                                        <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                            {usos.slice(0, 10).map((uso, i) => {
+                                                const planoRef = planos.find(p => p.id === uso.planoId)
+                                                return (
+                                                    <button key={i}
+                                                        onClick={() => { if (planoRef) { setUsoExpandidoId(null); setPlanoSelecionado(planoRef) } }}
+                                                        className={`w-full flex items-center gap-2 bg-white border border-emerald-100 rounded-lg px-3 py-2 text-left transition ${planoRef ? 'hover:border-emerald-300 hover:bg-emerald-50 cursor-pointer' : 'cursor-default'}`}>
+                                                        <span className="text-xs font-bold text-emerald-700 shrink-0 w-16">{uso.data ? fmtData(uso.data) : 'sem data'}</span>
+                                                        <span className="text-xs text-slate-600 truncate flex-1">{uso.planoTitulo}</span>
+                                                        {planoRef && <span className="text-xs text-emerald-400 shrink-0">→</span>}
+                                                    </button>
+                                                )
+                                            })}
+                                            {usos.length > 10 && <p className="text-xs text-emerald-500 text-center pt-1">+ {usos.length - 10} mais</p>}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })()}
                         {/* #9: Player embutido */}
                         {ytPreviewId===String(m.id) && (() => {
                             const ytId = (m.links||[]).map(l=>ytIdFromUrl(l)).find(Boolean);

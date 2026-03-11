@@ -2421,7 +2421,6 @@ export default function BancoPlanos({ session }) {
                                         { label:'Semana',     short:'Semana',  icon:'📆', mode:'agendaSemanal',   action:()=>setViewMode('agendaSemanal') },
                                         { label:'Calendário', short:'Cal.',    icon:'📅', mode:'calendario',      action:()=>setViewMode('calendario') },
                                         { label:'Meu Ano',    short:'Ano',     icon:'🗓️', mode:'anoLetivo',       action:()=>setViewMode('anoLetivo') },
-                                        { label:'Histórico',  short:'Hist.',   icon:'📊', mode:'historicoMusical', action:()=>setViewMode('historicoMusical') },
                                         { label:'Turmas',     short:'Turmas',  icon:'👥', mode:'turmas',          action:()=>setViewMode('turmas') },
                                         { label:'Relatórios', short:'Rel.',    icon:'📋', mode:'relatorios',      action:()=>setViewMode('relatorios') },
                                     ].map(({label, short, icon, mode, action, accent}) => {
@@ -2713,7 +2712,6 @@ export default function BancoPlanos({ session }) {
                                 { mode: 'resumoDia',       icon: '☀️',  label: 'Hoje' },
                                 { mode: 'agendaSemanal',   icon: '📆',  label: 'Semana' },
                                 { mode: 'anoLetivo',        icon: '🗓️',  label: 'Meu Ano' },
-                                { mode: 'historicoMusical', icon: '📊',  label: 'Histórico' },
                                 { mode: 'turmas',           icon: '👥',  label: 'Turmas' },
                                 { mode: 'estrategias',      icon: '🧩',  label: 'Estratégias' },
                                 { mode: 'atividades',       icon: '🎁',  label: 'Atividades' },
