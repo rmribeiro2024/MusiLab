@@ -121,6 +121,7 @@ export default function TelaPrincipal() {
         salvarPlano,
         statusDropdownId,
         sugerirBNCC,
+        gerandoBNCC,
         sugerirObjetivosIA,
         gerandoObjetivos,
         toggleConceito,
@@ -1081,7 +1082,7 @@ export default function TelaPrincipal() {
                     </button>
                     {secoesForm.has('bncc') && (
                         <div className="px-3 sm:px-6 pb-5">
-                            <div className="flex justify-between items-center mb-2"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🏛️ Habilidades BNCC</label><button type="button" onClick={sugerirBNCC} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">✨ Sugerir</button></div>
+                            <div className="flex justify-between items-center mb-2"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🏛️ Habilidades BNCC</label><button type="button" onClick={sugerirBNCC} disabled={gerandoBNCC} className="flex items-center gap-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{gerandoBNCC ? '⏳ Gerando...' : '✨ Sugerir com IA'}</button></div>
                             <textarea value={(planoEditando.habilidadesBNCC || []).join('\n')} onChange={e => setPlanoEditando({...planoEditando, habilidadesBNCC: e.target.value.split('\n')})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={5} placeholder="EF15ARXX - Descrição..." />
                         </div>
                     )}

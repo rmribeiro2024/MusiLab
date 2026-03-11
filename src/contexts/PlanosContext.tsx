@@ -178,7 +178,8 @@ export interface PlanosContextValue {
     // funções
     normalizePlano: (p: Record<string, unknown>) => Plano
     buscaAvancada: (plano: Plano, termoBusca: string) => boolean
-    sugerirBNCC: () => void
+    sugerirBNCC: () => Promise<void>
+    gerandoBNCC: boolean
     sugerirObjetivosIA: () => Promise<void>
     gerandoObjetivos: boolean
     novoPlano: () => void
@@ -1039,43 +1040,71 @@ Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no in
         }
     }
 
-    // ── BNCC ──────────────────────────────────────────────────────────────
-    const sugerirBNCC = () => {
-        const textoAnalise = (
-            (planoEditando.titulo || '') + ' ' + (planoEditando.tema || '') + ' ' +
-            (planoEditando.objetivoGeral || '') + ' ' +
-            (planoEditando.objetivosEspecificos || []).join(' ') + ' ' +
-            (planoEditando.conceitos || []).join(' ')
-        ).toLowerCase()
-        const fxs = planoEditando.faixaEtaria || []
-        const fl = fxs.map((f: string) => f.toLowerCase())
-        const ehInfantil = fl.some((f: string) => ['infantil', 'berçário', 'maternal', 'bercario', 'creche', 'jardim', 'pré', 'pre-'].some(s => f.includes(s)))
-        const ehEF69 = fl.some((f: string) => ['6°', '7°', '8°', '9°', '6º', '7º', '8º', '9º', '6 ano', '7 ano', '8 ano', '9 ano'].some(s => f.includes(s)))
-        const ehEJA = fl.some((f: string) => f.includes('eja') || f.includes('jovens e adultos') || f.includes('adult') || f.includes('ead'))
-        const sugestoes = bancoBNCC.filter(item => {
-            const keyMatch = item.keywords.some(key => textoAnalise.includes(key))
-            if (!keyMatch) return false
-            if (ehEJA) return true
-            if (ehInfantil && item.segmento === 'Infantil') return true
-            if (ehEF69    && item.segmento === 'EF6-9')    return true
-            if (!ehInfantil && !ehEF69 && item.segmento === 'EF1-5') return true
-            if (!item.segmento) return true
-            return false
-        })
-        if (sugestoes.length === 0) {
-            const todas = bancoBNCC.filter(item => item.keywords.some(key => textoAnalise.includes(key)))
-            if (todas.length === 0) { setModalConfirm({ conteudo: 'Adicione mais texto (título, objetivos) para receber sugestões.', somenteOk: true, labelConfirm: 'OK' }); return }
-            const formatadas = todas.map(s => `[${s.segmento || 'BNCC'}] ${s.codigo} - ${s.desc}`)
-            const atuais = planoEditando.habilidadesBNCC || []
-            setPlanoEditando({ ...planoEditando, habilidadesBNCC: [...new Set([...atuais, ...formatadas])] })
-            setModalConfirm({ conteudo: `✨ ${todas.length} sugestões encontradas!`, somenteOk: true, labelConfirm: 'OK' })
+    // ── BNCC COM IA (Gemini) ───────────────────────────────────────────────
+    const [gerandoBNCC, setGerandoBNCC] = React.useState(false)
+
+    const sugerirBNCC = async () => {
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+        if (!apiKey) {
+            setModalConfirm({ conteudo: 'Chave VITE_GEMINI_API_KEY não encontrada no .env.', somenteOk: true, labelConfirm: 'OK' })
             return
         }
-        const formatadas = sugestoes.map(s => `[${s.segmento}] ${s.codigo} - ${s.desc}`)
-        const atuais = planoEditando.habilidadesBNCC || []
-        setPlanoEditando({ ...planoEditando, habilidadesBNCC: [...new Set([...atuais, ...formatadas])] })
-        const segLabel = ehEJA ? 'EJA/Adultos' : ehInfantil ? 'Ed. Infantil' : ehEF69 ? 'EF 6-9' : 'EF 1-5'
-        setModalConfirm({ conteudo: `✨ ${sugestoes.length} sugestão(ões) encontrada(s) para ${segLabel}!`, somenteOk: true, labelConfirm: 'OK' })
+        const atividades = (planoEditando.atividadesRoteiro || []).map(a => a.nome).filter(Boolean).join(', ')
+        const conceitos = (planoEditando.conceitos || []).join(', ')
+        const faixa = (planoEditando.faixaEtaria || []).join(', ')
+        const titulo = planoEditando.titulo || ''
+        const objetivo = planoEditando.objetivoGeral?.replace(/<[^>]*>/g, '') || ''
+
+        if (!titulo && !atividades && !conceitos) {
+            setModalConfirm({ conteudo: 'Preencha pelo menos o título ou as atividades antes de sugerir habilidades BNCC.', somenteOk: true, labelConfirm: 'OK' })
+            return
+        }
+
+        const prompt = `Você é especialista em educação musical e na Base Nacional Comum Curricular (BNCC) do Brasil.
+
+Com base nos dados abaixo, sugira as habilidades BNCC mais adequadas para esta aula de música:
+
+Título: ${titulo}
+Faixa etária: ${faixa || 'não informada'}
+Objetivo: ${objetivo}
+Atividades: ${atividades || 'não informadas'}
+Conceitos musicais: ${conceitos || 'não informados'}
+
+Responda APENAS no formato JSON:
+{
+  "habilidades": [
+    "EF01AR14 - Descrição curta da habilidade",
+    "EF02AR15 - Descrição curta da habilidade"
+  ]
+}
+
+Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos corretos (ex: EF01AR14, EF69AR15). Seja preciso.`
+
+        setGerandoBNCC(true)
+        try {
+            const res = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                }
+            )
+            const data = await res.json()
+            const texto = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+            const jsonMatch = texto.match(/\{[\s\S]*\}/)
+            if (!jsonMatch) throw new Error('Resposta inválida')
+            const obj = JSON.parse(jsonMatch[0])
+            const novas: string[] = obj.habilidades || []
+            if (novas.length === 0) throw new Error('Nenhuma habilidade retornada')
+            const atuais = planoEditando.habilidadesBNCC || []
+            setPlanoEditando({ ...planoEditando, habilidadesBNCC: [...new Set([...atuais, ...novas])] })
+            setModalConfirm({ conteudo: `✅ ${novas.length} habilidade(s) BNCC sugeridas pela IA!`, somenteOk: true, labelConfirm: 'OK' })
+        } catch {
+            setModalConfirm({ conteudo: '❌ Erro ao conectar com a IA. Verifique sua chave ou conexão.', somenteOk: true, labelConfirm: 'OK' })
+        } finally {
+            setGerandoBNCC(false)
+        }
     }
 
     // ── CONTEXT VALUE ─────────────────────────────────────────────────────
@@ -1114,7 +1143,7 @@ Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no in
         dragActiveIndex, setDragActiveIndex,
         dragOverIndex, setDragOverIndex,
         escolas, segmentosPlanos, duracoesSugestao, planosFiltrados,
-        normalizePlano, buscaAvancada, sugerirBNCC, sugerirObjetivosIA, gerandoObjetivos,
+        normalizePlano, buscaAvancada, sugerirBNCC, gerandoBNCC, sugerirObjetivosIA, gerandoObjetivos,
         novoPlano, editarPlano, salvarPlano, excluirPlano, fecharModal, restaurarVersao,
         toggleConceito, toggleFaixa, toggleUnidade,
         adicionarRecurso, removerRecurso,
