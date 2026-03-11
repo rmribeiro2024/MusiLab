@@ -72,6 +72,21 @@
 
 ---
 
+### Módulo Relatórios — Passo 1: Estrutura e Navegação
+**Data:** 2026-03-11
+**Arquivos:**
+- `src/components/ModuloRelatorios.tsx` — criado (novo módulo)
+- `src/components/BancoPlanos.tsx` — adicionado item na navbar e lazy import
+**O que foi feito:**
+- Criado componente `ModuloRelatorios` com tela inicial do módulo
+- Dois tipos de relatório: Relatório Mensal Geral e Relatório por Turma
+- Filtros básicos: período (data início/fim) e turma (visível só no tipo "por turma")
+- Botão "Gerar relatório" desabilitado até filtros preenchidos (placeholder para próximos passos)
+- Adicionado aba 📋 Relatórios no Grupo 1 da navbar
+- Lazy loading via `React.lazy` igual aos outros módulos
+
+---
+
 ## Pendências Futuras
 
 ### Migração: Faixa Etária → Segmento
