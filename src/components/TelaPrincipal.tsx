@@ -1199,18 +1199,17 @@ export default function TelaPrincipal() {
                                             const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : driveThumb ?? (isImagem ? rec.url : null)
                                             return (
                                                 <div key={idx} className={`flex items-start gap-2.5 p-2.5 rounded-xl border ${cor.split(' ').slice(0,2).join(' ')} bg-opacity-40`}>
-                                                    {thumbUrl ? (
-                                                        <a href={rec.url} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                                                    <a href={rec.url} target="_blank" rel="noopener noreferrer" className="relative w-16 h-11 shrink-0 flex items-center justify-center">
+                                                        <span className="text-xl leading-none">{icone}</span>
+                                                        {thumbUrl && (
                                                             <img
                                                                 src={thumbUrl}
                                                                 alt="thumb"
-                                                                className="w-16 h-11 object-cover rounded-lg shadow-sm"
+                                                                className="absolute inset-0 w-full h-full object-cover rounded-lg shadow-sm"
                                                                 onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
                                                             />
-                                                        </a>
-                                                    ) : (
-                                                        <span className="text-lg shrink-0 mt-0.5 leading-none">{icone}</span>
-                                                    )}
+                                                        )}
+                                                    </a>
                                                     <div className="flex-1 min-w-0">
                                                         <span className={`text-[10px] font-bold uppercase tracking-wide ${cor.split(' ').slice(2).join(' ')}`}>{label}</span>
                                                         {rec.url && <a href={rec.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-400 hover:underline truncate block">{rec.url}</a>}
