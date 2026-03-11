@@ -7,6 +7,7 @@ import { usePlanosContext, useAnoLetivoContext, useAtividadesContext, useReperto
 import RichTextEditor from './RichTextEditor'
 import { exportarPlanoPDF } from '../utils/pdf'
 import ModalAplicarEmTurmas from './modals/ModalAplicarEmTurmas'
+import ModalInserirEmSequencia from './modals/ModalInserirEmSequencia'
 import type { Plano } from '../types'
 
 // ── LINHA PLANO (memoizado — só re-renderiza quando o próprio plano muda) ──
@@ -163,6 +164,9 @@ export default function TelaPrincipal() {
     // ── Modal Aplicar em Turmas ──
     const [planoParaAplicar, setPlanoParaAplicar] = useState<Plano | null>(null)
 
+    // ── Modal Inserir em Sequência ──
+    const [planoParaSequencia, setPlanoParaSequencia] = useState<Plano | null>(null)
+
     // ── Dropdown Restaurar versão ──
     const [restaurarOpen, setRestaurarOpen] = useState(false)
 
@@ -178,6 +182,28 @@ export default function TelaPrincipal() {
     )
     function toggleSecaoForm(id: string) {
         setSecoesForm(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
+    }
+
+    // ── Helpers para detecção de tipo de recurso externo ──
+    function detectarTipoRecurso(url: string): string {
+        if (!url) return 'link'
+        if (/youtube\.com|youtu\.be/.test(url)) return 'youtube'
+        if (/spotify\.com/.test(url)) return 'spotify'
+        if (/drive\.google\.com/.test(url)) return 'drive'
+        if (/\.pdf(\?|$)/i.test(url)) return 'pdf'
+        if (/\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url)) return 'imagem'
+        return 'link'
+    }
+    function getYoutubeId(url: string): string | null {
+        const m = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/shorts\/))([a-zA-Z0-9_-]{11})/)
+        return m ? m[1] : null
+    }
+    function getSpotifyType(url: string): string {
+        if (/\/playlist\//.test(url)) return 'Playlist'
+        if (/\/track\//.test(url)) return 'Faixa'
+        if (/\/album\//.test(url)) return 'Álbum'
+        if (/\/artist\//.test(url)) return 'Artista'
+        return 'Spotify'
     }
 
     // ── Detecção de alterações não salvas ──
@@ -1103,8 +1129,86 @@ export default function TelaPrincipal() {
                     </button>
                     {secoesForm.has('recursos') && (
                         <div className="px-3 sm:px-6 pb-5 space-y-5">
-                            {/* Links e Imagens */}
-                            <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🔗 Links e Imagens</label><div className="flex gap-2 mb-3 flex-col md:flex-row"><input type="text" placeholder="URL..." value={novoRecursoUrl} onChange={e => setNovoRecursoUrl(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarRecurso(); } }} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /><select value={novoRecursoTipo} onChange={e => setNovoRecursoTipo(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white"><option value="link">Link</option><option value="imagem">Imagem</option></select><button type="button" onClick={adicionarRecurso} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-4 py-2 rounded-xl text-sm font-semibold transition-colors">Add</button></div><div className="space-y-2">{(planoEditando.recursos || []).map((rec, idx) => (<div key={idx} className="flex justify-between items-center bg-white p-2 rounded-xl border border-slate-200"><div className="flex items-center gap-2 overflow-hidden"><span>{rec.tipo === 'imagem' ? '🖼️' : '🔗'}</span><span className="text-sm truncate max-w-xs text-slate-700">{rec.url}</span></div><button type="button" onClick={() => removerRecurso(idx)} className="text-red-400 hover:text-red-600 font-bold px-2">✕</button></div>))}</div></div>
+                            {/* Links e Recursos Externos */}
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🔗 Recursos Externos</label>
+                                <p className="text-[11px] text-slate-400 mb-3">Cole uma URL do YouTube, Spotify, Google Drive, PDF ou qualquer link. O tipo é detectado automaticamente.</p>
+                                <div className="flex gap-2 mb-4">
+                                    <div className="relative flex-1">
+                                        <input
+                                            type="text"
+                                            placeholder="Cole aqui: YouTube, Spotify, Drive, PDF, link..."
+                                            value={novoRecursoUrl}
+                                            onChange={e => { setNovoRecursoUrl(e.target.value); setNovoRecursoTipo(detectarTipoRecurso(e.target.value)); }}
+                                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarRecurso(); } }}
+                                            className="w-full pl-3 pr-10 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none"
+                                        />
+                                        {novoRecursoUrl && (
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base">
+                                                {detectarTipoRecurso(novoRecursoUrl) === 'youtube' ? '▶️' :
+                                                 detectarTipoRecurso(novoRecursoUrl) === 'spotify' ? '🎵' :
+                                                 detectarTipoRecurso(novoRecursoUrl) === 'drive' ? '📂' :
+                                                 detectarTipoRecurso(novoRecursoUrl) === 'pdf' ? '📄' :
+                                                 detectarTipoRecurso(novoRecursoUrl) === 'imagem' ? '🖼️' : '🔗'}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <button type="button" onClick={adicionarRecurso} className="border border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 px-4 py-2 rounded-xl text-sm font-semibold transition-colors shrink-0">+ Add</button>
+                                </div>
+                                {/* Cards de preview */}
+                                <div className="space-y-2">
+                                    {(planoEditando.recursos || []).map((rec, idx) => {
+                                        const tipo = rec.tipo || detectarTipoRecurso(rec.url)
+                                        const ytId = tipo === 'youtube' ? getYoutubeId(rec.url) : null
+                                        return (
+                                            <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${
+                                                tipo === 'youtube' ? 'bg-red-50 border-red-100' :
+                                                tipo === 'spotify' ? 'bg-green-50 border-green-100' :
+                                                tipo === 'drive' ? 'bg-blue-50 border-blue-100' :
+                                                tipo === 'pdf' ? 'bg-orange-50 border-orange-100' :
+                                                tipo === 'imagem' ? 'bg-violet-50 border-violet-100' :
+                                                'bg-slate-50 border-slate-100'
+                                            }`}>
+                                                {/* Thumbnail / ícone */}
+                                                {tipo === 'youtube' && ytId ? (
+                                                    <a href={rec.url} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                                                        <img src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`} alt="thumb" className="w-20 h-14 object-cover rounded-lg shadow-sm" />
+                                                    </a>
+                                                ) : (
+                                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-xl ${
+                                                        tipo === 'spotify' ? 'bg-green-500 text-white' :
+                                                        tipo === 'drive' ? 'bg-blue-500 text-white' :
+                                                        tipo === 'pdf' ? 'bg-orange-500 text-white' :
+                                                        tipo === 'imagem' ? 'bg-violet-500 text-white' :
+                                                        'bg-slate-300 text-white'
+                                                    }`}>
+                                                        {tipo === 'spotify' ? '🎵' : tipo === 'drive' ? '📂' : tipo === 'pdf' ? '📄' : tipo === 'imagem' ? '🖼️' : '🔗'}
+                                                    </div>
+                                                )}
+                                                {/* Info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className={`text-xs font-bold uppercase tracking-wide mb-0.5 ${
+                                                        tipo === 'youtube' ? 'text-red-500' :
+                                                        tipo === 'spotify' ? 'text-green-600' :
+                                                        tipo === 'drive' ? 'text-blue-600' :
+                                                        tipo === 'pdf' ? 'text-orange-600' :
+                                                        tipo === 'imagem' ? 'text-violet-600' :
+                                                        'text-slate-500'
+                                                    }`}>
+                                                        {tipo === 'youtube' ? 'YouTube' :
+                                                         tipo === 'spotify' ? `Spotify · ${getSpotifyType(rec.url)}` :
+                                                         tipo === 'drive' ? 'Google Drive' :
+                                                         tipo === 'pdf' ? 'PDF' :
+                                                         tipo === 'imagem' ? 'Imagem' : 'Link'}
+                                                    </p>
+                                                    <a href={rec.url} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-600 hover:underline truncate block max-w-full">{rec.url}</a>
+                                                </div>
+                                                <button type="button" onClick={() => removerRecurso(idx)} className="text-slate-300 hover:text-red-500 transition shrink-0 mt-0.5">✕</button>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
                             {/* Avaliação / Observações */}
                             <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={3} /></div>
                         </div>
@@ -1420,6 +1524,10 @@ export default function TelaPrincipal() {
                                 className="p-1.5 rounded-lg hover:bg-blue-50 transition shrink-0">
                                 <svg className="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                             </button>
+                            <button onClick={(e)=>{e.stopPropagation();setPlanoParaSequencia(plano)}} title="Inserir em sequência"
+                                className="p-1.5 rounded-lg hover:bg-emerald-50 transition shrink-0">
+                                <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M4 6h16M4 10h16M4 14h8"/><circle cx="17" cy="17" r="3"/><path d="M17 15v2l1 1"/></svg>
+                            </button>
                             <button onClick={(e)=>abrirModalRegistro(plano,e)} title="Registro pós-aula"
                                 className="p-1.5 rounded-lg hover:bg-violet-50 transition shrink-0">
                                 <svg className="w-3.5 h-3.5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/><path d="M17.586 3.414a2 2 0 112.828 2.828L12 14.828l-4 1 1-4 8.586-8.414z"/></svg>
@@ -1583,6 +1691,14 @@ export default function TelaPrincipal() {
             <ModalAplicarEmTurmas
                 plano={planoParaAplicar}
                 onClose={() => setPlanoParaAplicar(null)}
+            />
+        )}
+
+        {/* ── MODAL INSERIR EM SEQUÊNCIA ── */}
+        {planoParaSequencia && (
+            <ModalInserirEmSequencia
+                plano={planoParaSequencia}
+                onClose={() => setPlanoParaSequencia(null)}
             />
         )}
     </>

@@ -4,6 +4,8 @@ import { sanitizar, gerarIdSeguro } from '../lib/utils'
 import { dbSize } from '../lib/db'
 import { usePlanosContext, useAnoLetivoContext, useRepertorioContext, useModalContext, useCalendarioContext } from '../contexts'
 import { exportarPlanoPDF } from '../utils/pdf'
+import ModalInserirEmSequencia from './modals/ModalInserirEmSequencia'
+import type { Plano } from '../types'
 
 export default function ModuloLista() {
     const {
@@ -32,6 +34,9 @@ export default function ModuloLista() {
 
     // Constantes estáticas (não precisam vir do ctx)
     const niveis = ["Todos", "Iniciante", "Intermediário", "Avançado"]
+
+    // ── Modal Inserir em Sequência ──
+    const [planoParaSequencia, setPlanoParaSequencia] = useState<Plano | null>(null)
 
     // ── DASHBOARD ──
     const totalPlanos = planos.length;
@@ -431,6 +436,10 @@ export default function ModuloLista() {
                                     className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition" title="Editar">✏️</button>
                                 <button onClick={(e)=>{e.stopPropagation();exportarPlanoPDF(plano)}}
                                     className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition text-xs font-bold" title="PDF">PDF</button>
+                                <button onClick={(e)=>{e.stopPropagation();setPlanoParaSequencia(plano)}}
+                                    className="text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 p-2 rounded-xl transition" title="Inserir em sequência">
+                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+                                </button>
                                 <button onClick={(e)=>{e.stopPropagation(); const copia={...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}; setPlanos(prev=>[...prev, copia]); setModalConfirm({ conteudo: '✅ Plano duplicado!', somenteOk: true, labelConfirm: 'OK' });}}
                                     className="text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 p-2 rounded-xl transition" title="Duplicar">⎘</button>
                                 <button onClick={(e)=>{e.stopPropagation();excluirPlano(plano.id)}}
@@ -575,6 +584,9 @@ export default function ModuloLista() {
                 </div>
             );
         })()}
+    {planoParaSequencia && (
+        <ModalInserirEmSequencia plano={planoParaSequencia} onClose={() => setPlanoParaSequencia(null)} />
+    )}
     </>
     );
 
