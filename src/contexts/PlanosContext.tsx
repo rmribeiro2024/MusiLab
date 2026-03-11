@@ -14,6 +14,7 @@ import { sanitizeUrl, gerarIdSeguro, validarBackup } from '../lib/utils'
 import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [offlineSync]
 import { useDebounce } from '../lib/hooks'
 import { verificarFeriado } from '../lib/feriados'
+import { detectarMusicasNoPlano, type MusicaDetectada } from '../lib/detectarMusicas'
 import type { Plano, Musica, Atividade, RegistroPosAula } from '../types'
 
 // ── bancoBNCC ── base de habilidades BNCC (copiada de BancoPlanos.tsx)
@@ -215,6 +216,9 @@ export interface PlanosContextValue {
     modalTemplates: boolean; setModalTemplates: React.Dispatch<React.SetStateAction<boolean>>
     nomeNovoTemplate: string; setNomeNovoTemplate: React.Dispatch<React.SetStateAction<string>>
     modalConfiguracoes: boolean; setModalConfiguracoes: React.Dispatch<React.SetStateAction<boolean>>
+    // detecção de músicas no plano
+    musicasDetectadas: MusicaDetectada[]
+    limparMusicasDetectadas: () => void
     // funções cross-domain
     vincularMusicaAtividade: (musica: Musica) => void
     importarMusicaParaPlano: (musica: Musica) => void
@@ -519,6 +523,10 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             if (!userId) marcarPendente('planos', String(planoParaSalvar.id)) // [offlineSync]
         }
         edicaoDispatch({ type: 'SET', payload: { modoEdicao: false, planoEditando: null } })
+
+        // Detectar músicas do repertório citadas no plano (sem IA)
+        const detectadas = detectarMusicasNoPlano(planoParaSalvar, repertorio)
+        setMusicasDetectadas(detectadas.filter(d => !d.jaVinculada))
     }
 
     const excluirPlano = useCallback((id: any) => {
@@ -975,6 +983,10 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         reader.readAsText(file); event.target.value = ''
     }
 
+    // ── Detecção de músicas no plano ──────────────────────────────────────
+    const [musicasDetectadas, setMusicasDetectadas] = useState<MusicaDetectada[]>([])
+    const limparMusicasDetectadas = () => setMusicasDetectadas([])
+
     // ── OBJETIVOS COM IA (Gemini) ──────────────────────────────────────────
     const [gerandoObjetivos, setGerandoObjetivos] = React.useState(false)
 
@@ -1173,6 +1185,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         toggleFavorito, handleDragStart, handleDragEnter, handleDragEnd, toggleRecursosAtiv,
         templatesRoteiro, setTemplatesRoteiro, modalTemplates, setModalTemplates, nomeNovoTemplate, setNomeNovoTemplate,
         modalConfiguracoes, setModalConfiguracoes,
+        musicasDetectadas, limparMusicasDetectadas,
         vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano,
         abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro,
         adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido,

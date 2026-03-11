@@ -68,6 +68,7 @@ export default function TelaPrincipal() {
 
     // Itens de planos: via PlanosContext
     const {
+        musicasDetectadas, limparMusicasDetectadas,
         abrirModalRegistro,
         baixarBackup,
         userId,
@@ -1338,6 +1339,38 @@ export default function TelaPrincipal() {
                     className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg ${avisoStorage.critico ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-amber-500 text-white hover:bg-amber-600'}`}>
                     ⬇ Backup
                 </button>
+            </div>
+        )}
+
+        {/* ── MÚSICAS DETECTADAS NO PLANO ── */}
+        {musicasDetectadas.length > 0 && (
+            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap flex-1">
+                        <span className="text-base shrink-0">🎵</span>
+                        <p className="text-sm font-semibold text-amber-800">
+                            {musicasDetectadas.length === 1
+                                ? '1 música do repertório detectada neste plano'
+                                : `${musicasDetectadas.length} músicas do repertório detectadas neste plano`}
+                        </p>
+                    </div>
+                    <button onClick={limparMusicasDetectadas}
+                        className="text-amber-500 hover:text-amber-700 text-lg leading-none shrink-0" title="Dispensar">✕</button>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                    {musicasDetectadas.map(({ musica, origem }) => (
+                        <span key={String(musica.id || musica.titulo)}
+                            className="inline-flex items-center gap-1.5 bg-white border border-amber-200 text-amber-800 text-xs font-medium px-2.5 py-1.5 rounded-lg"
+                            title={`Encontrada em: ${origem}`}>
+                            🎵 {musica.titulo}
+                            {musica.autor && <span className="text-amber-500">· {musica.autor}</span>}
+                            <span className="text-amber-400 text-[10px]">({origem})</span>
+                        </span>
+                    ))}
+                </div>
+                <p className="text-[11px] text-amber-600 mt-2">
+                    Para vincular formalmente, abra o plano → edite a atividade → clique em 🎵 Vincular música.
+                </p>
             </div>
         )}
 
