@@ -1,11 +1,13 @@
 // src/components/ModuloRelatorios.tsx
-// Módulo de Relatórios — Passo 4: agregação refatorada com helpers reutilizáveis
+// Módulo de Relatórios — Passo 5: filtros em cascata (escola → segmento → turma)
 
 import React, { useState, useMemo } from 'react'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import {
+    listarEscolas,
+    listarSegmentos,
     listarTurmas,
     buildRelatorioMensal,
     buildRelatorioTurma,
@@ -25,31 +27,43 @@ export default function ModuloRelatorios() {
     const [tipoSelecionado, setTipoSelecionado] = useState<TipoRelatorio | null>(null)
     const [periodoInicio, setPeriodoInicio] = useState('')
     const [periodoFim, setPeriodoFim] = useState('')
-    const [turmaSelecionadaId, setTurmaSelecionadaId] = useState('')
+    const [escolaId, setEscolaId] = useState('')
+    const [segmentoId, setSegmentoId] = useState('')
+    const [turmaId, setTurmaId] = useState('')
     const [relatorioPronto, setRelatorioPronto] = useState(false)
 
-    const turmasDisponiveis = useMemo(() => listarTurmas(anosLetivos), [anosLetivos])
+    // Opções em cascata
+    const escolas    = useMemo(() => listarEscolas(anosLetivos), [anosLetivos])
+    const segmentos  = useMemo(() => listarSegmentos(anosLetivos, escolaId || undefined), [anosLetivos, escolaId])
+    const turmas     = useMemo(() => listarTurmas(anosLetivos, escolaId || undefined, segmentoId || undefined), [anosLetivos, escolaId, segmentoId])
+
+    // Reset em cascata ao mudar escola ou segmento
+    function handleEscolaChange(id: string) { setEscolaId(id); setSegmentoId(''); setTurmaId(''); setRelatorioPronto(false) }
+    function handleSegmentoChange(id: string) { setSegmentoId(id); setTurmaId(''); setRelatorioPronto(false) }
+    function handleTurmaChange(id: string) { setTurmaId(id); setRelatorioPronto(false) }
+    function reset() { setRelatorioPronto(false) }
+
+    const podeGerar = tipoSelecionado === 'turma'
+        ? !!periodoInicio && !!periodoFim && !!turmaId
+        : !!periodoInicio && !!periodoFim
+
+    const filtrosMensal = { inicio: periodoInicio, fim: periodoFim, escolaId: escolaId || undefined, segmentoId: segmentoId || undefined, turmaId: turmaId || undefined }
+    const filtrosTurma  = { inicio: periodoInicio, fim: periodoFim, turmaId }
 
     const relatorioMensal = useMemo<RelatorioMensalData | null>(() => {
         if (!relatorioPronto || tipoSelecionado !== 'mensal' || !periodoInicio || !periodoFim) return null
-        return buildRelatorioMensal(aplicacoes, planos, anosLetivos, { inicio: periodoInicio, fim: periodoFim })
-    }, [relatorioPronto, tipoSelecionado, periodoInicio, periodoFim, aplicacoes, planos, anosLetivos])
+        return buildRelatorioMensal(aplicacoes, planos, anosLetivos, filtrosMensal)
+    }, [relatorioPronto, tipoSelecionado, periodoInicio, periodoFim, escolaId, segmentoId, turmaId, aplicacoes, planos, anosLetivos])
 
     const relatorioTurma = useMemo<RelatorioTurmaData | null>(() => {
-        if (!relatorioPronto || tipoSelecionado !== 'turma' || !periodoInicio || !periodoFim || !turmaSelecionadaId) return null
-        return buildRelatorioTurma(aplicacoes, planos, anosLetivos, { inicio: periodoInicio, fim: periodoFim, turmaId: turmaSelecionadaId })
-    }, [relatorioPronto, tipoSelecionado, periodoInicio, periodoFim, turmaSelecionadaId, aplicacoes, planos, anosLetivos])
+        if (!relatorioPronto || tipoSelecionado !== 'turma' || !periodoInicio || !periodoFim || !turmaId) return null
+        return buildRelatorioTurma(aplicacoes, planos, anosLetivos, filtrosTurma)
+    }, [relatorioPronto, tipoSelecionado, periodoInicio, periodoFim, turmaId, aplicacoes, planos, anosLetivos])
 
     const tipos = [
         { value: 'mensal' as TipoRelatorio, label: 'Relatório Mensal Geral', descricao: 'Visão geral de todas as aulas e turmas no período.', icone: '📅' },
         { value: 'turma'  as TipoRelatorio, label: 'Relatório por Turma',    descricao: 'Detalhamento das aulas de uma turma específica.',   icone: '👥' },
     ]
-
-    const podeGerar = tipoSelecionado === 'turma'
-        ? !!periodoInicio && !!periodoFim && !!turmaSelecionadaId
-        : !!periodoInicio && !!periodoFim
-
-    function reset() { setRelatorioPronto(false) }
 
     return (
         <div className="max-w-3xl mx-auto py-8 px-4">
@@ -87,26 +101,8 @@ export default function ModuloRelatorios() {
                 <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6 space-y-4">
                     <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Filtros</label>
 
-                    {tipoSelecionado === 'turma' && (
-                        <div>
-                            <label className="block text-xs text-slate-500 mb-1.5">Turma</label>
-                            {turmasDisponiveis.length === 0 ? (
-                                <p className="text-xs text-slate-400 italic">Nenhuma turma cadastrada ainda.</p>
-                            ) : (
-                                <select value={turmaSelecionadaId}
-                                    onChange={e => { setTurmaSelecionadaId(e.target.value); reset() }}
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">
-                                    <option value="">Selecione uma turma...</option>
-                                    {turmasDisponiveis.map(t => (
-                                        <option key={t.id} value={t.id}>{t.label}</option>
-                                    ))}
-                                </select>
-                            )}
-                        </div>
-                    )}
-
-                    <div>
-                        <label className="block text-xs text-slate-500 mb-1.5">Período</label>
+                    {/* Período — sempre visível */}
+                    <CampoFiltro label="Período" obrigatorio>
                         <div className="flex gap-2 items-center">
                             <input type="date" value={periodoInicio}
                                 onChange={e => { setPeriodoInicio(e.target.value); reset() }}
@@ -116,7 +112,47 @@ export default function ModuloRelatorios() {
                                 onChange={e => { setPeriodoFim(e.target.value); reset() }}
                                 className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" />
                         </div>
-                    </div>
+                    </CampoFiltro>
+
+                    {/* Escola */}
+                    {escolas.length > 0 && (
+                        <CampoFiltro label="Escola" opcional={tipoSelecionado === 'mensal'}>
+                            <SelectFiltro
+                                value={escolaId}
+                                onChange={handleEscolaChange}
+                                placeholder="Todas as escolas"
+                                opcoes={escolas}
+                            />
+                        </CampoFiltro>
+                    )}
+
+                    {/* Segmento */}
+                    {segmentos.length > 0 && (
+                        <CampoFiltro label="Segmento" opcional={tipoSelecionado === 'mensal'}>
+                            <SelectFiltro
+                                value={segmentoId}
+                                onChange={handleSegmentoChange}
+                                placeholder="Todos os segmentos"
+                                opcoes={segmentos}
+                            />
+                        </CampoFiltro>
+                    )}
+
+                    {/* Turma */}
+                    {tipoSelecionado === 'turma' ? (
+                        <CampoFiltro label="Turma" obrigatorio>
+                            {turmas.length === 0
+                                ? <p className="text-xs text-slate-400 italic">Nenhuma turma encontrada com esses filtros.</p>
+                                : <SelectFiltro value={turmaId} onChange={handleTurmaChange} placeholder="Selecione uma turma..." opcoes={turmas} />
+                            }
+                        </CampoFiltro>
+                    ) : (
+                        turmas.length > 0 && (
+                            <CampoFiltro label="Turma" opcional>
+                                <SelectFiltro value={turmaId} onChange={handleTurmaChange} placeholder="Todas as turmas" opcoes={turmas} />
+                            </CampoFiltro>
+                        )
+                    )}
 
                     <button type="button" onClick={() => setRelatorioPronto(true)} disabled={!podeGerar}
                         className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
@@ -125,12 +161,10 @@ export default function ModuloRelatorios() {
                 </div>
             )}
 
-            {/* ══ Resultado — Mensal ══ */}
+            {/* Resultados */}
             {relatorioMensal && (
                 <RelatorioMensalView data={relatorioMensal} inicio={periodoInicio} fim={periodoFim} onLimpar={reset} />
             )}
-
-            {/* ══ Resultado — Turma ══ */}
             {relatorioTurma && (
                 <RelatorioTurmaView data={relatorioTurma} inicio={periodoInicio} fim={periodoFim} onLimpar={reset} />
             )}
@@ -140,13 +174,10 @@ export default function ModuloRelatorios() {
 
 // ─── Views de resultado ───────────────────────────────────────────────────────
 
-function RelatorioMensalView({ data, inicio, fim, onLimpar }: {
-    data: RelatorioMensalData; inicio: string; fim: string; onLimpar: () => void
-}) {
+function RelatorioMensalView({ data, inicio, fim, onLimpar }: { data: RelatorioMensalData; inicio: string; fim: string; onLimpar: () => void }) {
     return (
         <div className="space-y-5">
             <RelatorioCabecalho titulo="Relatório Mensal Geral" inicio={inicio} fim={fim} onLimpar={onLimpar} />
-
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
                     { label: 'Aulas realizadas',   value: data.totalAulas,     icone: '☀️' },
@@ -155,26 +186,22 @@ function RelatorioMensalView({ data, inicio, fim, onLimpar }: {
                     { label: 'Registros pós-aula', value: data.totalRegistros, icone: '📝' },
                 ].map(item => <CardMetrica key={item.label} {...item} />)}
             </div>
-
-            {data.totalAulas === 0 ? <EmptyState texto="Nenhuma aula realizada encontrada no período." /> : (
+            {data.totalAulas === 0 ? <EmptyState texto="Nenhuma aula realizada encontrada no período com os filtros selecionados." /> : (
                 <>
-                    {data.planosUsados.length > 0   && <Section titulo="📚 Planos mais usados"><ListaBarras items={data.planosUsados} sufixo="aplicação" /></Section>}
-                    {data.conceitos.length > 0       && <Section titulo="🎵 Conceitos musicais trabalhados"><TagCloud items={data.conceitos} /></Section>}
-                    {data.repertorio.length > 0      && <Section titulo="🎼 Repertório utilizado"><ListaBarras items={data.repertorio} sufixo="vez" /></Section>}
-                    {data.turmas.length > 0          && <Section titulo="👥 Turmas atendidas"><ListaBarras items={data.turmas} sufixo="aula" cor="bg-emerald-400" /></Section>}
+                    {data.planosUsados.length > 0  && <Section titulo="📚 Planos mais usados"><ListaBarras items={data.planosUsados} sufixo="aplicação" /></Section>}
+                    {data.conceitos.length > 0     && <Section titulo="🎵 Conceitos musicais trabalhados"><TagCloud items={data.conceitos} /></Section>}
+                    {data.repertorio.length > 0    && <Section titulo="🎼 Repertório utilizado"><ListaBarras items={data.repertorio} sufixo="vez" /></Section>}
+                    {data.turmas.length > 0        && <Section titulo="👥 Turmas atendidas"><ListaBarras items={data.turmas} sufixo="aula" cor="bg-emerald-400" /></Section>}
                 </>
             )}
         </div>
     )
 }
 
-function RelatorioTurmaView({ data, inicio, fim, onLimpar }: {
-    data: RelatorioTurmaData; inicio: string; fim: string; onLimpar: () => void
-}) {
+function RelatorioTurmaView({ data, inicio, fim, onLimpar }: { data: RelatorioTurmaData; inicio: string; fim: string; onLimpar: () => void }) {
     return (
         <div className="space-y-5">
             <RelatorioCabecalho titulo="Relatório por Turma" inicio={inicio} fim={fim} onLimpar={onLimpar} />
-
             <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Resumo da Turma</h3>
                 <p className="text-lg font-bold text-slate-800 mb-1">{data.turmaNome}</p>
@@ -184,7 +211,6 @@ function RelatorioTurmaView({ data, inicio, fim, onLimpar }: {
                     <span className="text-sm text-slate-500">aula{data.totalAulas !== 1 ? 's' : ''} realizada{data.totalAulas !== 1 ? 's' : ''}</span>
                 </div>
             </div>
-
             {data.totalAulas === 0 ? <EmptyState texto="Nenhuma aula realizada para esta turma no período." /> : (
                 <>
                     <Section titulo="📅 Linha do tempo">
@@ -207,7 +233,36 @@ function RelatorioTurmaView({ data, inicio, fim, onLimpar }: {
     )
 }
 
-// ─── Componentes de UI compartilhados ────────────────────────────────────────
+// ─── Componentes de filtro ────────────────────────────────────────────────────
+
+function CampoFiltro({ label, obrigatorio, opcional, children }: {
+    label: string; obrigatorio?: boolean; opcional?: boolean; children: React.ReactNode
+}) {
+    return (
+        <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+                <label className="block text-xs text-slate-500">{label}</label>
+                {obrigatorio && <span className="text-[10px] text-red-400 font-semibold">obrigatório</span>}
+                {opcional    && <span className="text-[10px] text-slate-300">opcional</span>}
+            </div>
+            {children}
+        </div>
+    )
+}
+
+function SelectFiltro({ value, onChange, placeholder, opcoes }: {
+    value: string; onChange: (v: string) => void; placeholder: string; opcoes: { id: string; label: string }[]
+}) {
+    return (
+        <select value={value} onChange={e => onChange(e.target.value)}
+            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">
+            <option value="">{placeholder}</option>
+            {opcoes.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        </select>
+    )
+}
+
+// ─── Componentes de UI ────────────────────────────────────────────────────────
 
 function RelatorioCabecalho({ titulo, inicio, fim, onLimpar }: { titulo: string; inicio: string; fim: string; onLimpar: () => void }) {
     return (
@@ -244,18 +299,15 @@ function ListaBarras({ items, sufixo, cor = 'bg-indigo-400' }: { items: ItemCont
     const max = items[0]?.count ?? 1
     return (
         <>
-            {items.map((item, i) => {
-                const pct = Math.round((item.count / max) * 100)
-                return (
-                    <div key={i} className="flex items-center gap-3">
-                        <span className="text-sm text-slate-700 w-48 shrink-0 truncate">{item.label}</span>
-                        <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
-                            <div className={`${cor} h-2 rounded-full`} style={{ width: `${pct}%` }} />
-                        </div>
-                        <span className="text-xs text-slate-400 shrink-0 w-20 text-right">{item.count} {item.count === 1 ? sufixo : sufixo + 's'}</span>
+            {items.map((item, i) => (
+                <div key={i} className="flex items-center gap-3">
+                    <span className="text-sm text-slate-700 w-48 shrink-0 truncate">{item.label}</span>
+                    <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div className={`${cor} h-2 rounded-full`} style={{ width: `${Math.round((item.count / max) * 100)}%` }} />
                     </div>
-                )
-            })}
+                    <span className="text-xs text-slate-400 shrink-0 w-20 text-right">{item.count} {item.count === 1 ? sufixo : sufixo + 's'}</span>
+                </div>
+            ))}
         </>
     )
 }
@@ -275,8 +327,6 @@ function TagCloud({ items }: { items: ItemContagem[] }) {
 
 function EmptyState({ texto }: { texto: string }) {
     return (
-        <div className="text-center py-8 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-slate-200">
-            {texto}
-        </div>
+        <div className="text-center py-8 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-slate-200">{texto}</div>
     )
 }

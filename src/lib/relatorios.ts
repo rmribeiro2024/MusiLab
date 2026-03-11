@@ -42,9 +42,13 @@ export interface RelatorioTurmaData {
 export interface FiltrosPeriodo {
     inicio: string   // YYYY-MM-DD
     fim: string      // YYYY-MM-DD
+    escolaId?: string
+    segmentoId?: string
     turmaId?: string
     status?: AplicacaoAula['status']
 }
+
+export interface OpcaoFiltro { id: string; label: string }
 
 // ─── Helpers de formatação ────────────────────────────────────────────────────
 
@@ -56,16 +60,57 @@ export function formatarData(data: string): string {
 
 // ─── Helpers de lookup ───────────────────────────────────────────────────────
 
-/** Retorna lista plana de todas as turmas com id e label legível. */
-export function listarTurmas(anosLetivos: AnoLetivo[]): { id: string; label: string }[] {
-    const lista: { id: string; label: string }[] = []
+/** Lista de escolas únicas (de todos os anos letivos). */
+export function listarEscolas(anosLetivos: AnoLetivo[]): OpcaoFiltro[] {
+    const visto = new Set<string>()
+    const lista: OpcaoFiltro[] = []
     for (const ano of anosLetivos) {
         for (const escola of ano.escolas || []) {
+            const id = String(escola.id)
+            if (!visto.has(id)) {
+                visto.add(id)
+                lista.push({ id, label: escola.nome })
+            }
+        }
+    }
+    return lista
+}
+
+/** Lista de segmentos de uma escola (ou de todas se escolaId omitido). */
+export function listarSegmentos(anosLetivos: AnoLetivo[], escolaId?: string): OpcaoFiltro[] {
+    const visto = new Set<string>()
+    const lista: OpcaoFiltro[] = []
+    for (const ano of anosLetivos) {
+        for (const escola of ano.escolas || []) {
+            if (escolaId && String(escola.id) !== escolaId) continue
             for (const seg of escola.segmentos || []) {
+                const id = String(seg.id)
+                if (!visto.has(id)) {
+                    visto.add(id)
+                    lista.push({ id, label: seg.nome })
+                }
+            }
+        }
+    }
+    return lista
+}
+
+/** Lista de turmas filtradas por escola e/ou segmento. */
+export function listarTurmas(
+    anosLetivos: AnoLetivo[],
+    escolaId?: string,
+    segmentoId?: string,
+): OpcaoFiltro[] {
+    const lista: OpcaoFiltro[] = []
+    for (const ano of anosLetivos) {
+        for (const escola of ano.escolas || []) {
+            if (escolaId && String(escola.id) !== escolaId) continue
+            for (const seg of escola.segmentos || []) {
+                if (segmentoId && String(seg.id) !== segmentoId) continue
                 for (const turma of seg.turmas || []) {
                     lista.push({
                         id: String(turma.id),
-                        label: `${turma.nome} — ${seg.nome} (${ano.ano || ano.nome})`,
+                        label: `${turma.nome} — ${seg.nome}`,
                     })
                 }
             }
@@ -76,8 +121,7 @@ export function listarTurmas(anosLetivos: AnoLetivo[]): { id: string; label: str
 
 /** Retorna o label legível de uma turma pelo id. */
 export function getNomeTurma(turmaId: string, anosLetivos: AnoLetivo[]): string {
-    const turmas = listarTurmas(anosLetivos)
-    return turmas.find(t => t.id === String(turmaId))?.label ?? turmaId
+    return listarTurmas(anosLetivos).find(t => t.id === String(turmaId))?.label ?? turmaId
 }
 
 /** Retorna o plano pelo id ou null. */
@@ -99,7 +143,9 @@ export function filtrarAplicacoes(
     return aplicacoes.filter(a => {
         if (a.status !== status) return false
         if (a.data < filtros.inicio || a.data > filtros.fim) return false
-        if (filtros.turmaId && String(a.turmaId) !== filtros.turmaId) return false
+        if (filtros.escolaId    && String(a.escolaId)    !== filtros.escolaId)    return false
+        if (filtros.segmentoId  && String(a.segmentoId)  !== filtros.segmentoId)  return false
+        if (filtros.turmaId     && String(a.turmaId)     !== filtros.turmaId)     return false
         return true
     })
 }
@@ -261,7 +307,7 @@ export function buildRelatorioMensal(
     aplicacoes: AplicacaoAula[],
     planos: Plano[],
     anosLetivos: AnoLetivo[],
-    filtros: { inicio: string; fim: string },
+    filtros: { inicio: string; fim: string; escolaId?: string; segmentoId?: string; turmaId?: string },
 ): RelatorioMensalData {
     const aplic = filtrarAplicacoes(aplicacoes, { ...filtros, status: 'realizada' })
     return {

@@ -72,6 +72,20 @@
 
 ---
 
+### Módulo Relatórios — Passo 5: Filtros em cascata
+**Data:** 2026-03-11
+**Arquivos:**
+- `src/lib/relatorios.ts` — adicionados `listarEscolas()`, `listarSegmentos()`, `escolaId`/`segmentoId` em `filtrarAplicacoes` e `buildRelatorioMensal`
+- `src/components/ModuloRelatorios.tsx` — filtros em cascata escola → segmento → turma
+**O que foi feito:**
+- Filtros: Período (obrigatório) + Escola + Segmento + Turma (turma obrigatória só no relatório por turma)
+- Seleção em cascata: mudar escola limpa segmento e turma; mudar segmento limpa turma
+- Listas de opções filtradas dinamicamente por escola/segmento selecionados
+- Componentes `CampoFiltro` e `SelectFiltro` reutilizáveis com badge "obrigatório/opcional"
+- Relatório mensal aceita qualquer combinação de filtros opcionais
+
+---
+
 ### Módulo Relatórios — Passo 4: Refatoração de agregação de dados
 **Data:** 2026-03-11
 **Arquivos:**
