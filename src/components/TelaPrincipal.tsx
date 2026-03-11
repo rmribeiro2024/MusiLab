@@ -197,6 +197,7 @@ export default function TelaPrincipal() {
         if (/drive\.google\.com/.test(url)) return 'link'
         if (/\.pdf(\?|$)/i.test(url)) return 'pdf'
         if (/\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url)) return 'imagem'
+        if (/gstatic\.com|googleusercontent\.com|imgur\.com|i\.pinimg\.com|pbs\.twimg\.com/.test(url)) return 'imagem'
         return 'link'
     }
     function getYoutubeId(url: string): string | null {
@@ -1194,7 +1195,8 @@ export default function TelaPrincipal() {
                                             const { icone, label, cor } = getRecursoMeta(tipo)
                                             const ytId = (tipo === 'video' || tipo === 'youtube') ? getYoutubeId(rec.url) : null
                                             const driveThumb = /drive\.google\.com/.test(rec.url) ? getDriveThumb(rec.url) : null
-                                            const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : driveThumb
+                                            const isImagem = tipo === 'imagem'
+                                            const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : driveThumb ?? (isImagem ? rec.url : null)
                                             return (
                                                 <div key={idx} className={`flex items-start gap-2.5 p-2.5 rounded-xl border ${cor.split(' ').slice(0,2).join(' ')} bg-opacity-40`}>
                                                     {thumbUrl ? (
