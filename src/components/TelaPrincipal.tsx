@@ -3,7 +3,7 @@ import { sanitizar } from '../lib/utils'
 import { dbSize } from '../lib/db'
 import { useInfiniteScroll } from '../lib/hooks'
 import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [offlineSync]
-import { usePlanosContext, useAnoLetivoContext, useAtividadesContext, useRepertorioContext, useModalContext, useCalendarioContext } from '../contexts'
+import { usePlanosContext, useAnoLetivoContext, useAtividadesContext, useRepertorioContext, useModalContext, useCalendarioContext, useEstrategiasContext } from '../contexts'
 import RichTextEditor from './RichTextEditor'
 import { exportarPlanoPDF } from '../utils/pdf'
 import ModalAplicarEmTurmas from './modals/ModalAplicarEmTurmas'
@@ -64,6 +64,7 @@ export default function TelaPrincipal() {
     const { repertorio } = useRepertorioContext()
     const { setModalConfirm } = useModalContext()
     const { periodoDias, setPeriodoDias, dataInicioCustom, setDataInicioCustom, dataFimCustom, setDataFimCustom } = useCalendarioContext()
+    const { estrategias } = useEstrategiasContext()
 
     // Itens de planos: via PlanosContext
     const {
@@ -168,6 +169,13 @@ export default function TelaPrincipal() {
 
     // ── Modo Rápido ──
     const [modoRapido, setModoRapido] = useState(false)
+
+    // ── Painel contexto da turma ──
+    const [contextoAberto, setContextoAberto] = useState(true)
+
+    // ── Picker de estratégia por atividade ──
+    const [pickerEstrategiaIdx, setPickerEstrategiaIdx] = useState<number | null>(null)
+    const [buscaEstrategia, setBuscaEstrategia] = useState('')
 
     // ── Drag-and-drop: só permite arrastar quando iniciado pelo handle ──
     const dragFromHandle = useRef(false)
@@ -283,6 +291,52 @@ export default function TelaPrincipal() {
                         ⚡ {modoRapido ? 'Modo Rápido (ativo)' : 'Modo Rápido'}
                     </button>
                 </div>
+
+                {/* ─── CONTEXTO DA TURMA — painel recolhível ─── */}
+                {(() => {
+                    const registros = [...(planoEditando.registrosPosAula || [])].sort((a, b) => (b.data || '').localeCompare(a.data || ''))
+                    const ultimoReg = registros[0]
+                    const musicas = Array.from(new Set(
+                        (planoEditando.atividadesRoteiro || [])
+                            .flatMap(a => (a.musicasVinculadas || []).map((m: { titulo?: string }) => m.titulo || '').filter(Boolean))
+                    ))
+                    if (!ultimoReg && musicas.length === 0) return null
+                    return (
+                        <div className="border-b border-blue-100 bg-blue-50/40">
+                            <button type="button" onClick={() => setContextoAberto(v => !v)}
+                                className="w-full flex items-center justify-between px-3 sm:px-6 py-3 text-left">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wide">📚 Contexto deste plano</span>
+                                    {ultimoReg && <span className="text-[10px] text-blue-400 font-medium">Última aula: {ultimoReg.data ? new Date(ultimoReg.data + 'T12:00').toLocaleDateString('pt-BR') : '—'}</span>}
+                                </div>
+                                <svg className={`w-3.5 h-3.5 text-blue-400 transition-transform duration-200 ${contextoAberto ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            {contextoAberto && (
+                                <div className="px-3 sm:px-6 pb-4 space-y-3">
+                                    {ultimoReg && (
+                                        <div className="bg-white rounded-xl border border-blue-100 p-3 text-xs space-y-1.5">
+                                            {ultimoReg.resumoAula && <p className="text-slate-700"><span className="font-semibold text-slate-500">Resumo:</span> {ultimoReg.resumoAula}</p>}
+                                            {ultimoReg.funcionouBem && <p className="text-emerald-700"><span className="font-semibold">✓ Funcionou:</span> {ultimoReg.funcionouBem}</p>}
+                                            {ultimoReg.naoFuncionou && <p className="text-red-600"><span className="font-semibold">✗ Não funcionou:</span> {ultimoReg.naoFuncionou}</p>}
+                                            {ultimoReg.proximaAula && <p className="text-indigo-700"><span className="font-semibold">→ Próxima aula:</span> {ultimoReg.proximaAula}</p>}
+                                            {registros.length > 1 && <p className="text-slate-400 pt-1">{registros.length} registros no total</p>}
+                                        </div>
+                                    )}
+                                    {musicas.length > 0 && (
+                                        <div>
+                                            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wide mb-1.5">Músicas vinculadas</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {musicas.map(m => (
+                                                    <span key={m} className="bg-white border border-blue-100 text-blue-700 text-[11px] font-medium px-2 py-1 rounded-lg">🎵 {m}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )
+                })()}
 
                 {/* ─── TÍTULO + DURAÇÃO — sempre visíveis ─── */}
                 <div className="px-3 sm:px-6 pt-5 pb-4 border-b border-slate-100 space-y-4">
@@ -593,6 +647,64 @@ export default function TelaPrincipal() {
                                                         </div>
                                                     )}
                                                 </div>
+                                                {/* ── Estratégias Vinculadas ── */}
+                                                <div className="mt-3">
+                                                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                                                        {(atividade.estrategiasVinculadas || []).map((nome, ei) => (
+                                                            <span key={ei} className="inline-flex items-center gap-1 bg-violet-50 border border-violet-200 text-violet-700 text-[11px] font-semibold px-2 py-1 rounded-lg">
+                                                                🧩 {nome}
+                                                                <button type="button" onClick={() => {
+                                                                    const arr = [...planoEditando.atividadesRoteiro]
+                                                                    arr[index] = { ...arr[index], estrategiasVinculadas: (arr[index].estrategiasVinculadas || []).filter((_, i) => i !== ei) }
+                                                                    setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
+                                                                }} className="hover:text-red-600 font-bold ml-0.5">×</button>
+                                                            </span>
+                                                        ))}
+                                                        <button type="button"
+                                                            onClick={() => { setPickerEstrategiaIdx(pickerEstrategiaIdx === index ? null : index); setBuscaEstrategia('') }}
+                                                            className="text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 hover:bg-violet-100 px-2 py-1 rounded-lg transition-colors">
+                                                            + Estratégia
+                                                        </button>
+                                                    </div>
+                                                    {pickerEstrategiaIdx === index && (
+                                                        <div className="bg-white border border-violet-200 rounded-xl shadow-lg p-3 mb-2">
+                                                            <input
+                                                                autoFocus
+                                                                type="text"
+                                                                placeholder="Buscar estratégia..."
+                                                                value={buscaEstrategia}
+                                                                onChange={e => setBuscaEstrategia(e.target.value)}
+                                                                className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs mb-2 focus:border-violet-400 outline-none"
+                                                            />
+                                                            {estrategias.length === 0
+                                                                ? <p className="text-xs text-slate-400 text-center py-2">Nenhuma estratégia na biblioteca ainda.</p>
+                                                                : <div className="max-h-40 overflow-y-auto space-y-1">
+                                                                    {estrategias
+                                                                        .filter(e => !buscaEstrategia || e.nome.toLowerCase().includes(buscaEstrategia.toLowerCase()))
+                                                                        .map(e => {
+                                                                            const jaVinculada = (atividade.estrategiasVinculadas || []).includes(e.nome)
+                                                                            return (
+                                                                                <button key={e.id} type="button"
+                                                                                    onClick={() => {
+                                                                                        if (jaVinculada) return
+                                                                                        const arr = [...planoEditando.atividadesRoteiro]
+                                                                                        arr[index] = { ...arr[index], estrategiasVinculadas: [...(arr[index].estrategiasVinculadas || []), e.nome] }
+                                                                                        setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
+                                                                                        setPickerEstrategiaIdx(null)
+                                                                                    }}
+                                                                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${jaVinculada ? 'bg-violet-50 text-violet-400 cursor-default' : 'hover:bg-violet-50 text-slate-700 hover:text-violet-700'}`}>
+                                                                                    <span className="font-semibold">🧩 {e.nome}</span>
+                                                                                    {e.categoria && <span className="text-slate-400 ml-1">· {e.categoria}</span>}
+                                                                                    {jaVinculada && <span className="text-violet-400 ml-1">✓</span>}
+                                                                                </button>
+                                                                            )
+                                                                        })}
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    )}
+                                                </div>
+
                                                 {/* Conceitos/Tags Editáveis */}
                                                 <div className="mt-3 space-y-2">
                                                     <div>

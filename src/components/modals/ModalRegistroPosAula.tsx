@@ -345,6 +345,10 @@ export default function ModalRegistroPosAula() {
     const { aplicacoes, atualizarStatusAplicacao } = useAplicacoesContext()
     const setRegSerieSel: ((v: string) => void) | undefined = undefined
 
+    // ── IA pós-aula ──
+    const [sugestaoIA, setSugestaoIA] = React.useState<string | null>(null)
+    const [loadingIA, setLoadingIA] = React.useState(false)
+
     // ── Copiar registro para outras turmas ──
     function resolverTurmaLabel(anoLetivoId: unknown, escolaId: unknown, segmentoId: unknown, turmaId: unknown): string {
         for (const a of anosLetivos) {
@@ -757,7 +761,28 @@ export default function ModalRegistroPosAula() {
                                     {/* Botão salvar */}
                                     <button ref={salvarBtnRef} onClick={() => {
                                         const algumCampo = !!(novoRegistro.resumoAula || novoRegistro.funcionouBem || novoRegistro.naoFuncionou || novoRegistro.proximaAula || novoRegistro.comportamento)
+                                        // Capturar antes do reset
+                                        const dadosParaIA = { ...novoRegistro }
+                                        const tituloPlano = planoParaRegistro?.titulo || ''
                                         salvarRegistro()
+                                        // IA: gerar sugestão para próxima aula (só em novos registros com conteúdo)
+                                        if (algumCampo && !registroEditando) {
+                                            const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+                                            if (apiKey) {
+                                                setSugestaoIA(null)
+                                                setLoadingIA(true)
+                                                const prompt = `Você é um assistente pedagógico para professor de música.\nPlano de aula: "${tituloPlano}"\nResumo da aula: "${dadosParaIA.resumoAula || ''}"\nO que funcionou: "${dadosParaIA.funcionouBem || ''}"\nO que não funcionou: "${dadosParaIA.naoFuncionou || ''}"\nPróxima aula (professor): "${dadosParaIA.proximaAula || ''}"\nComportamento: "${dadosParaIA.comportamento || ''}"\n\nCom base neste registro, sugira em 2-3 frases objetivas o que priorizar na próxima aula e uma estratégia específica. Responda em português, de forma direta e prática.`
+                                                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                                                })
+                                                    .then(r => r.json())
+                                                    .then(d => setSugestaoIA(d.candidates?.[0]?.content?.parts?.[0]?.text || null))
+                                                    .catch(() => setSugestaoIA(null))
+                                                    .finally(() => setLoadingIA(false))
+                                            }
+                                        }
                                         // Ao salvar novo registro, marca aplicacao vinculada como realizada
                                         if (algumCampo && !registroEditando) {
                                             const ap = aplicacoes.find(a =>
@@ -786,6 +811,27 @@ export default function ModalRegistroPosAula() {
                                    HISTÓRICO — Layout Opção A
                                    ════════════════════════════════ */
                                 <>
+                                    {/* ── Sugestão IA pós-aula ── */}
+                                    {(loadingIA || sugestaoIA) && (
+                                        <div style={{ margin: '12px 0 4px', padding: '12px 14px', background: 'linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%)', borderRadius: 12, border: '1px solid #c7d2fe' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                                                <span style={{ fontSize: 13 }}>✨</span>
+                                                <span style={{ fontSize: 11, fontWeight: 700, color: '#4338ca', textTransform: 'uppercase' as const, letterSpacing: '.06em' }}>Sugestão para a próxima aula</span>
+                                            </div>
+                                            {loadingIA
+                                                ? <p style={{ fontSize: 12, color: '#6366f1', fontStyle: 'italic' }}>Gerando sugestão...</p>
+                                                : <>
+                                                    <p style={{ fontSize: 12.5, color: '#334155', lineHeight: 1.6, margin: 0 }}>{sugestaoIA}</p>
+                                                    <button type="button"
+                                                        onClick={() => { navigator.clipboard?.writeText(sugestaoIA || ''); setSugestaoIA('✓ Copiado!') }}
+                                                        style={{ marginTop: 8, fontSize: 11, fontWeight: 600, color: '#4338ca', background: '#e0e7ff', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                                                        📋 Copiar
+                                                    </button>
+                                                </>
+                                            }
+                                        </div>
+                                    )}
+
                                     {/* Filtro de turma — modo dia ou modo escola */}
                                     {(() => {
                                         const pillStyle = (ativo: boolean) => ({

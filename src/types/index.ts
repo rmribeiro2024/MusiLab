@@ -95,6 +95,7 @@ export interface AtividadeRoteiro {
   tags?: string[]
   recursos?: RecursoItem[]
   musicaId?: string | number
+  estrategiasVinculadas?: string[]
 }
 
 export interface RegistroPosAula {
