@@ -72,6 +72,18 @@
 
 ---
 
+### Módulo Relatórios — Passo 3: Relatório por Turma
+**Data:** 2026-03-11
+**Arquivo:** `src/components/ModuloRelatorios.tsx`
+**O que foi feito:**
+- Implementado Relatório por Turma completo com dados reais
+- Filtros: dropdown com todas as turmas do sistema + período
+- Seções: Resumo (nome da turma, total aulas), Linha do tempo cronológica, Conceitos musicais, Repertório, Planos aplicados
+- Linha do tempo: data (DD/MM/YYYY) + nome do plano + badge "realizada"
+- Turmas carregadas de `useAnoLetivoContext` → `anosLetivos` (hierarquia ano → escola → segmento → turma)
+
+---
+
 ### Módulo Relatórios — Passo 2: Relatório Mensal Geral
 **Data:** 2026-03-11
 **Arquivo:** `src/components/ModuloRelatorios.tsx`
