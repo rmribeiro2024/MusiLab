@@ -558,6 +558,17 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                 setPlanos(prev => prev.map((p: any) =>
                     p.id === planoAtualizado.id ? planoAtualizado : p
                 ))
+                // Sincronizar música → planos (relação bidirecional)
+                const planoId = planoParaSalvar.id
+                setRepertorio(prev => prev.map((m: any) => {
+                    const vinculo = novos.find(v => String(v.musicaId) === String(m.id ?? m.titulo))
+                    if (!vinculo) return m
+                    const jaTemPlano = (m.planosVinculados || []).some(
+                        (pId: any) => String(pId) === String(planoId)
+                    )
+                    if (jaTemPlano) return m
+                    return { ...m, planosVinculados: [...(m.planosVinculados || []), planoId] }
+                }))
             }
         }
         // Abrir modal somente se há músicas para mostrar
@@ -1028,6 +1039,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
 
     /** Adiciona um vínculo música↔plano e persiste. */
     const vincularMusicaAoPlano = useCallback((planoId: string | number, vinculo: VinculoMusicaPlano) => {
+        // Atualiza plano → músicas
         setPlanos(prev => prev.map((p: any) => {
             if (p.id !== planoId) return p
             const jaExiste = (p.musicasVinculadasPlano || []).some(
@@ -1036,10 +1048,21 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             if (jaExiste) return p
             return { ...p, musicasVinculadasPlano: [...(p.musicasVinculadasPlano || []), vinculo] }
         }))
-    }, [setPlanos])
+        // Atualiza música → planos (relação bidirecional para usos futuros:
+        // relatórios, histórico de turma, busca por música, sugestões IA)
+        setRepertorio(prev => prev.map((m: any) => {
+            if (String(m.id ?? m.titulo) !== String(vinculo.musicaId)) return m
+            const jaTemPlano = (m.planosVinculados || []).some(
+                (pId: any) => String(pId) === String(planoId)
+            )
+            if (jaTemPlano) return m
+            return { ...m, planosVinculados: [...(m.planosVinculados || []), planoId] }
+        }))
+    }, [setPlanos, setRepertorio])
 
-    /** Remove um vínculo música↔plano e persiste. */
+    /** Remove um vínculo música↔plano e persiste (ambas as direções). */
     const desvincularMusicaDoPlano = useCallback((planoId: string | number, musicaId: string | number) => {
+        // Atualiza plano → músicas
         setPlanos(prev => prev.map((p: any) => {
             if (p.id !== planoId) return p
             return {
@@ -1049,7 +1072,17 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                 ),
             }
         }))
-    }, [setPlanos])
+        // Atualiza música → planos
+        setRepertorio(prev => prev.map((m: any) => {
+            if (String(m.id ?? m.titulo) !== String(musicaId)) return m
+            return {
+                ...m,
+                planosVinculados: (m.planosVinculados || []).filter(
+                    (pId: any) => String(pId) !== String(planoId)
+                ),
+            }
+        }))
+    }, [setPlanos, setRepertorio])
 
     // ── OBJETIVOS COM IA (Gemini) ──────────────────────────────────────────
     const [gerandoObjetivos, setGerandoObjetivos] = React.useState(false)

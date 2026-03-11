@@ -158,6 +158,7 @@ export default function TelaPrincipal() {
         setPlanos,
         setStatusDropdownId,
         desvincularMusicaDoPlano,
+        vincularMusicaAoPlano,
     } = usePlanosContext()
 
     // Constantes estáticas (não precisam vir do ctx)
@@ -1227,32 +1228,101 @@ export default function TelaPrincipal() {
                 )}
 
                 {/* ════════════ MÚSICAS VINCULADAS AO PLANO ════════════ */}
-                {(planoEditando.musicasVinculadasPlano || []).length > 0 && (
-                <div className="border-b border-slate-100 px-3 sm:px-6 py-4">
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] mb-2">🎵 Músicas vinculadas ao plano</p>
-                    <div className="flex flex-col gap-1.5">
-                        {(planoEditando.musicasVinculadasPlano || []).map(v => (
-                            <div key={String(v.musicaId)}
-                                className="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm">
-                                <span className="flex-1 min-w-0 truncate text-slate-700">
-                                    {v.titulo}
-                                    {v.autor && <span className="text-slate-400 ml-1.5 text-xs">· {v.autor}</span>}
-                                    {v.confirmadoPor === 'auto' && (
-                                        <span className="ml-1.5 text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded">auto</span>
-                                    )}
-                                </span>
+                {(() => {
+                    const vinculadas = planoEditando.musicasVinculadasPlano || []
+                    const [buscaManual, setBuscaManual] = React.useState('')
+                    const [pickerAberto, setPickerAberto] = React.useState(false)
+                    const vinculadosIds = new Set(vinculadas.map(v => String(v.musicaId)))
+                    const sugestoesManual = buscaManual.trim().length >= 2
+                        ? repertorio.filter(m =>
+                            !vinculadosIds.has(String(m.id ?? m.titulo)) &&
+                            m.titulo.toLowerCase().includes(buscaManual.toLowerCase())
+                          ).slice(0, 8)
+                        : []
+                    function adicionarManual(m: import('../types').Musica) {
+                        const vinculo = {
+                            musicaId: m.id ?? m.titulo,
+                            titulo: m.titulo,
+                            autor: m.autor,
+                            origemDeteccao: 'manual' as const,
+                            confirmadoPor: 'professor' as const,
+                            confirmadoEm: new Date().toISOString(),
+                        }
+                        setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: [...vinculadas, vinculo] })
+                        vincularMusicaAoPlano(planoEditando.id, vinculo)
+                        setBuscaManual('')
+                        setPickerAberto(false)
+                    }
+                    return (
+                        <div className="border-b border-slate-100 px-3 sm:px-6 py-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em]">🎵 Músicas vinculadas ao plano</p>
                                 <button type="button"
-                                    onClick={() => {
-                                        setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: (planoEditando.musicasVinculadasPlano || []).filter(x => String(x.musicaId) !== String(v.musicaId)) })
-                                        desvincularMusicaDoPlano(planoEditando.id, v.musicaId)
-                                    }}
-                                    className="text-slate-300 hover:text-red-500 text-base leading-none shrink-0 transition-colors"
-                                    title="Remover vínculo">✕</button>
+                                    onClick={() => setPickerAberto(o => !o)}
+                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                                    {pickerAberto ? '✕ Fechar' : '+ Adicionar'}
+                                </button>
                             </div>
-                        ))}
-                    </div>
-                </div>
-                )}
+
+                            {/* Picker manual */}
+                            {pickerAberto && (
+                                <div className="mb-3 relative">
+                                    <input type="text" autoFocus
+                                        placeholder="Buscar no repertório…"
+                                        className="w-full px-3 py-2 border border-indigo-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                        value={buscaManual}
+                                        onChange={e => setBuscaManual(e.target.value)} />
+                                    {sugestoesManual.length > 0 && (
+                                        <div className="absolute top-full left-0 right-0 z-10 bg-white border border-slate-200 rounded-xl shadow-lg mt-1 overflow-hidden max-h-48 overflow-y-auto">
+                                            {sugestoesManual.map(m => (
+                                                <button key={String(m.id ?? m.titulo)} type="button"
+                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 border-b border-slate-100 last:border-0"
+                                                    onClick={() => adicionarManual(m)}>
+                                                    <span className="font-medium text-slate-800">{m.titulo}</span>
+                                                    {m.autor && <span className="text-slate-400 ml-2 text-xs">{m.autor}</span>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {buscaManual.trim().length >= 2 && sugestoesManual.length === 0 && (
+                                        <p className="text-xs text-slate-400 mt-1.5">Nenhuma música no repertório com esse nome.</p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Lista de vínculos */}
+                            {vinculadas.length === 0 && !pickerAberto && (
+                                <p className="text-xs text-slate-400 italic">Nenhuma música vinculada ainda.</p>
+                            )}
+                            {vinculadas.length > 0 && (
+                                <div className="flex flex-col gap-1.5">
+                                    {vinculadas.map(v => (
+                                        <div key={String(v.musicaId)}
+                                            className="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm">
+                                            <span className="flex-1 min-w-0 truncate text-slate-700">
+                                                {v.titulo}
+                                                {v.autor && <span className="text-slate-400 ml-1.5 text-xs">· {v.autor}</span>}
+                                                {v.confirmadoPor === 'auto' && (
+                                                    <span className="ml-1.5 text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded">auto</span>
+                                                )}
+                                                {v.origemDeteccao === 'manual' && (
+                                                    <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">manual</span>
+                                                )}
+                                            </span>
+                                            <button type="button"
+                                                onClick={() => {
+                                                    setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: vinculadas.filter(x => String(x.musicaId) !== String(v.musicaId)) })
+                                                    desvincularMusicaDoPlano(planoEditando.id, v.musicaId)
+                                                }}
+                                                className="text-slate-300 hover:text-red-500 text-base leading-none shrink-0 transition-colors"
+                                                title="Remover vínculo">✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )
+                })()}
 
                 {/* ─── FOOTER STICKY ─── */}
                 <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white border-t border-slate-100 sticky bottom-0">
