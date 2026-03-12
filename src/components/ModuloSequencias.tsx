@@ -17,10 +17,17 @@ export default function ModuloSequencias() {
     } = useSequenciasContext()
     const { anosLetivos, unidades } = useAnoLetivoContext()
     const { atividades } = useAtividadesContext()
-    const { planos } = usePlanosContext()
+    const { planos, criarPlanosDeSequencia } = usePlanosContext()
     const { setModalConfirm } = useModalContext()
 
     const dragSlotIdx = useRef<number | null>(null)
+
+    // ── estado do modal C4 (sequential planning) ──
+    const [seqParaPlanejar, setSeqParaPlanejar] = React.useState<typeof sequencias[0] | null>(null)
+    const [planDataInicio, setPlanDataInicio] = React.useState(new Date().toISOString().split('T')[0])
+    const [planDiasSemana, setPlanDiasSemana] = React.useState<number[]>([1]) // segunda-feira por padrão
+    const [planEscola, setPlanEscola] = React.useState('')
+    const [planNivel, setPlanNivel] = React.useState('')
 
     const reordenarSlots = (seqId: string, fromIdx: number, toIdx: number) => {
         const novas = sequencias.map(s => {
@@ -312,6 +319,7 @@ export default function ModuloSequencias() {
     const infoSeq = sequenciaDetalhe ? obterInfoSequencia(sequenciaDetalhe) : null
 
     return (
+        <>
         <div>
             {/* ══════════════════════════════════════════════
                 VISTA 2 — Detalhe (slots de uma sequência)
@@ -335,6 +343,12 @@ export default function ModuloSequencias() {
                         )}
                     </div>
                     <div className="flex gap-2 shrink-0">
+                        <button
+                            onClick={() => { setSeqParaPlanejar(seq); setPlanDataInicio(new Date().toISOString().split('T')[0]); setPlanDiasSemana([1]); setPlanEscola(''); setPlanNivel('') }}
+                            className="border border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg font-semibold text-sm transition"
+                        >
+                            📅 Planejar
+                        </button>
                         <button
                             onClick={() => setSequenciaEditando(seq)}
                             className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-semibold text-sm transition"
@@ -645,5 +659,104 @@ export default function ModuloSequencias() {
                 </div>
             )}
         </div>
+
+        {/* ── MODAL SEQUENTIAL PLANNING (C4) ── */}
+        {seqParaPlanejar && (() => {
+            const DIAS = [
+                { idx: 0, label: 'Dom' }, { idx: 1, label: 'Seg' }, { idx: 2, label: 'Ter' },
+                { idx: 3, label: 'Qua' }, { idx: 4, label: 'Qui' }, { idx: 5, label: 'Sex' }, { idx: 6, label: 'Sáb' },
+            ]
+            // Preview das datas calculadas
+            function proximasDatas(inicio: string, qtd: number, dias: number[]): string[] {
+                if (!inicio || dias.length === 0 || qtd === 0) return []
+                const res: string[] = []; const d = new Date(inicio + 'T12:00:00')
+                while (res.length < qtd) {
+                    if (dias.includes(d.getDay())) res.push(d.toISOString().split('T')[0])
+                    d.setDate(d.getDate() + 1)
+                }
+                return res
+            }
+            const preview = proximasDatas(planDataInicio, seqParaPlanejar.slots.length, planDiasSemana)
+            return (
+                <div style={{ position: 'fixed', inset: 0, background: '#0007', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+                    onClick={() => setSeqParaPlanejar(null)}>
+                    <div style={{ background: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 440, maxHeight: '90dvh', overflowY: 'auto' }}
+                        onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+                            <div>
+                                <p style={{ fontSize: 14, fontWeight: 800, color: '#1e293b' }}>📅 Planejar sequência</p>
+                                <p style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{seqParaPlanejar.titulo} · {seqParaPlanejar.slots.length} aulas</p>
+                            </div>
+                            <button onClick={() => setSeqParaPlanejar(null)} style={{ fontSize: 18, background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>✕</button>
+                        </div>
+                        {/* Data de início */}
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>
+                            Data da 1ª aula
+                        </label>
+                        <input type="date" value={planDataInicio} onChange={e => setPlanDataInicio(e.target.value)}
+                            style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, marginBottom: 14, boxSizing: 'border-box' as const }} />
+                        {/* Dias da semana */}
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
+                            Dias da semana
+                        </label>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+                            {DIAS.map(d => {
+                                const sel = planDiasSemana.includes(d.idx)
+                                return (
+                                    <button key={d.idx} type="button"
+                                        onClick={() => setPlanDiasSemana(prev => sel ? prev.filter(x => x !== d.idx) : [...prev, d.idx].sort())}
+                                        style={{ padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, border: sel ? '1.5px solid #6366f1' : '1px solid #e2e8f0', background: sel ? '#eef2ff' : '#f8fafc', color: sel ? '#4f46e5' : '#64748b', cursor: 'pointer' }}>
+                                        {d.label}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                        {/* Escola / nível (opcionais) */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Escola</label>
+                                <input type="text" value={planEscola} onChange={e => setPlanEscola(e.target.value)} placeholder="Opcional"
+                                    style={{ width: '100%', padding: '7px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, boxSizing: 'border-box' as const }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Nível</label>
+                                <input type="text" value={planNivel} onChange={e => setPlanNivel(e.target.value)} placeholder="Ex: Básico"
+                                    style={{ width: '100%', padding: '7px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, boxSizing: 'border-box' as const }} />
+                            </div>
+                        </div>
+                        {/* Preview de datas */}
+                        {preview.length > 0 && (
+                            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 12px', marginBottom: 16, border: '1px solid #e2e8f0' }}>
+                                <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>Datas previstas</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                    {preview.map((dt, i) => (
+                                        <span key={dt} style={{ fontSize: 12, color: '#334155' }}>
+                                            Aula {i + 1}: {new Date(dt + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {planDiasSemana.length === 0 && (
+                            <p style={{ fontSize: 12, color: '#ef4444', marginBottom: 12 }}>Selecione ao menos um dia da semana.</p>
+                        )}
+                        <button type="button"
+                            disabled={planDiasSemana.length === 0 || !planDataInicio}
+                            onClick={() => {
+                                const qtd = criarPlanosDeSequencia(seqParaPlanejar, {
+                                    escola: planEscola, nivel: planNivel || 'Geral',
+                                    dataInicio: planDataInicio, diasSemana: planDiasSemana,
+                                })
+                                setSeqParaPlanejar(null)
+                                setModalConfirm({ conteudo: `✅ ${qtd} plano${qtd !== 1 ? 's' : ''} criado${qtd !== 1 ? 's' : ''} como rascunho na aba Planos!`, somenteOk: true, labelConfirm: 'OK' })
+                            }}
+                            style={{ width: '100%', padding: '11px', borderRadius: 10, background: planDiasSemana.length === 0 || !planDataInicio ? '#e2e8f0' : '#6366f1', color: planDiasSemana.length === 0 || !planDataInicio ? '#94a3b8' : '#fff', border: 'none', fontSize: 14, fontWeight: 700, cursor: planDiasSemana.length === 0 || !planDataInicio ? 'default' : 'pointer', transition: 'all .15s' }}>
+                            Criar {seqParaPlanejar.slots.length} planos rascunho
+                        </button>
+                    </div>
+                </div>
+            )
+        })()}
+        </>
     )
 }

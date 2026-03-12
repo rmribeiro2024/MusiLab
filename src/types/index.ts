@@ -172,6 +172,8 @@ export interface Plano {
   _ultimaEdicao?: string
   _historicoVersoes?: Array<Plano & { _versaoSalvaEm: string }>
   kanbanStatus?: 'rascunho' | 'pronto' | 'aplicado' | 'revisado'
+  origemSequenciaId?: string   // C4: preenchido quando criado via sequential planning
+  origemSlotOrdem?: number     // C4: posição do slot que originou este plano
 }
 
 // ─── VÍNCULO MÚSICA ↔ PLANO ──────────────────────────────────

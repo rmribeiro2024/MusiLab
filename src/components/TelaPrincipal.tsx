@@ -49,6 +49,7 @@ const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPl
                     {(plano.segmentos||[]).map(s=>(
                         <span key={s} className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-md">{s}</span>
                     ))}
+                    {plano.origemSequenciaId && <span className="text-[10px] font-semibold text-sky-700 bg-sky-50 border border-sky-100 px-1.5 py-0.5 rounded-md">📚 Seq. #{plano.origemSlotOrdem ?? '?'}</span>}
                 </div>
             </div>
             <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">

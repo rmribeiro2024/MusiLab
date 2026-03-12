@@ -16,7 +16,7 @@ import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [off
 import { useDebounce } from '../lib/hooks'
 import { verificarFeriado } from '../lib/feriados'
 import { detectarMusicasNoPlano, type MusicaDetectada } from '../lib/detectarMusicas'
-import type { Plano, Musica, Atividade, RegistroPosAula, VinculoMusicaPlano } from '../types'
+import type { Plano, Musica, Atividade, RegistroPosAula, VinculoMusicaPlano, Sequencia } from '../types'
 
 // ── bancoBNCC ── base de habilidades BNCC (copiada de BancoPlanos.tsx)
 export const bancoBNCC = [
@@ -240,6 +240,7 @@ export interface PlanosContextValue {
     sugerirPlanoParaTurma: (anoId: string, escolaId: string, segmentoId: string, turmaId: string) => string | null
     salvarRegistroRapido: () => void
     atualizarKanbanStatus: (id: string | number, status: Plano['kanbanStatus']) => void
+    criarPlanosDeSequencia: (sequencia: Sequencia, opts: { turma?: string; escola?: string; nivel?: string; dataInicio: string; diasSemana: number[] }) => number
     // backup
     baixarBackup: () => void
     restaurarBackup: (event: React.ChangeEvent<HTMLInputElement>) => void
@@ -1023,6 +1024,63 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         setPlanos(prev => prev.map(p => String(p.id) === String(id) ? { ...p, kanbanStatus: status } : p))
     }, [setPlanos])
 
+    // ── SEQUENTIAL UNIT PLANNING (C4) ────────────────────────────────────────
+    /** Gera N planos rascunho a partir dos slots de uma sequência didática.
+     *  Calcula automaticamente as datas com base em dataInicio + diasSemana.
+     *  Retorna a quantidade de planos criados. */
+    const criarPlanosDeSequencia = useCallback((
+        sequencia: Sequencia,
+        opts: { turma?: string; escola?: string; nivel?: string; dataInicio: string; diasSemana: number[] }
+    ): number => {
+        const { turma = '', escola = '', nivel = 'Geral', dataInicio, diasSemana } = opts
+        if (!sequencia.slots || sequencia.slots.length === 0) return 0
+        if (diasSemana.length === 0) return 0
+
+        // Gera datas sequenciais respeitando os dias da semana escolhidos
+        function proximasDatas(inicio: string, qtd: number, dias: number[]): string[] {
+            const resultado: string[] = []
+            const d = new Date(inicio + 'T12:00:00')
+            while (resultado.length < qtd) {
+                if (dias.includes(d.getDay())) resultado.push(d.toISOString().split('T')[0])
+                d.setDate(d.getDate() + 1)
+            }
+            return resultado
+        }
+
+        const datas = proximasDatas(dataInicio, sequencia.slots.length, diasSemana)
+        const base = Date.now()
+        const novos: Plano[] = sequencia.slots.map((slot, i) => ({
+            id: base + i,
+            titulo: `${sequencia.titulo} — Aula ${slot.ordem ?? i + 1}`,
+            tema: slot.rascunho?.observacoes || '',
+            nivel,
+            duracao: '50',
+            escola,
+            turma,
+            data: datas[i],
+            historicoDatas: [datas[i]],
+            objetivoGeral: '',
+            objetivosEspecificos: [],
+            conceitos: [],
+            tags: [],
+            unidades: [],
+            faixaEtaria: [],
+            materiais: slot.rascunho?.materiais || [],
+            habilidadesBNCC: [],
+            recursos: [],
+            atividadesRoteiro: [],
+            registrosPosAula: [],
+            destaque: false,
+            statusPlanejamento: 'A Fazer',
+            kanbanStatus: 'rascunho' as const,
+            origemSequenciaId: sequencia.id,
+            origemSlotOrdem: slot.ordem ?? i + 1,
+            createdAt: new Date().toISOString(),
+        }))
+        setPlanos(prev => [...prev, ...novos])
+        return novos.length
+    }, [setPlanos])
+
     // ── BACKUP ──────────────────────────────────────────────────────────────
     const baixarBackup = () => {
         const backup = {
@@ -1416,7 +1474,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         vincularMusicaAoPlano, desvincularMusicaDoPlano,
         vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano,
         abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro,
-        adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido, atualizarKanbanStatus,
+        adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido, atualizarKanbanStatus, criarPlanosDeSequencia,
         baixarBackup, restaurarBackup,
         userId,
     }
