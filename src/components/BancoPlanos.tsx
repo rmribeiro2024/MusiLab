@@ -2367,7 +2367,14 @@ export default function BancoPlanos({ session }) {
                                         </div>
                                         <p className="text-slate-300 text-sm mt-0.5 flex items-center gap-2 flex-wrap">
                                             Planejamento Musical · {userName}
-                                            <span className="text-slate-500 text-xs" title="Atalhos: N = Nova aula | Esc = Fechar | Ctrl+S = Salvar">⌨ atalhos</span>
+                                            <button
+                                                onClick={() => setShowBuscaGlobal(true)}
+                                                className="flex items-center gap-1 text-slate-400 hover:text-white bg-blue-800/50 hover:bg-blue-700/60 border border-blue-700/40 hover:border-blue-600/60 px-2 py-0.5 rounded-lg text-xs transition"
+                                                title="Busca global (Ctrl+K)"
+                                            >
+                                                🔍 Busca <kbd className="text-slate-500 font-mono text-[10px]">Ctrl+K</kbd>
+                                            </button>
+                                            <span className="text-slate-500 text-xs" title="Atalhos: N = Nova aula | Esc = Fechar | Ctrl+S = Salvar | Ctrl+K = Busca global">⌨ atalhos</span>
                                             <button onClick={fazerLogout} className="text-slate-400 hover:text-red-400 transition text-xs">⎋ sair</button>
                                             <button onClick={()=>setDarkMode(!darkMode)} className="text-slate-400 hover:text-yellow-300 transition text-xs ml-1" title="Alternar modo escuro">
                                                 {darkMode ? '☀️' : '🌙'}
