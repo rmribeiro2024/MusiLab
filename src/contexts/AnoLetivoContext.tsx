@@ -110,6 +110,10 @@ export interface AnoLetivoContextValue {
   gtAddTurma: () => void
   gtRemoveTurma: (anoId: string, escolaId: string, segmentoId: string, turmaId: string) => void
   gtMudarStatusAno: (anoId: string, novoStatus: string) => void
+  // Alunos em destaque
+  alunosAddOrUpdate: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, aluno: import('../types').AlunoDestaque) => void
+  alunosRemove: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string) => void
+  alunosGetByTurma: (anoId: string, escolaId: string, segmentoId: string, turmaId: string) => import('../types').AlunoDestaque[]
   // Faixas e escolas — funções
   salvarNovaFaixa: () => void
   salvarNovaEscola: (planoEditando?: Plano | null, setPlanoEditando?: React.Dispatch<React.SetStateAction<Plano | null>>) => void
@@ -571,6 +575,52 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     }))
   }
 
+  // ── Alunos em destaque ────────────────────────────────────────────────────
+  function alunosAddOrUpdate(anoId: string, escolaId: string, segmentoId: string, turmaId: string, aluno: import('../types').AlunoDestaque) {
+    setAnosLetivos(prev => prev.map(a => {
+      if (a.id !== anoId) return a
+      return { ...a, escolas: a.escolas.map(e => {
+        if (e.id !== escolaId) return e
+        return { ...e, segmentos: e.segmentos.map(s => {
+          if (s.id !== segmentoId) return s
+          return { ...s, turmas: s.turmas.map(t => {
+            if (t.id !== turmaId) return t
+            const alunos = t.alunos || []
+            const existe = alunos.findIndex(al => al.id === aluno.id)
+            return { ...t, alunos: existe >= 0
+              ? alunos.map(al => al.id === aluno.id ? aluno : al)
+              : [...alunos, aluno]
+            }
+          })}
+        })}
+      })}
+    }))
+  }
+
+  function alunosRemove(anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string) {
+    setAnosLetivos(prev => prev.map(a => {
+      if (a.id !== anoId) return a
+      return { ...a, escolas: a.escolas.map(e => {
+        if (e.id !== escolaId) return e
+        return { ...e, segmentos: e.segmentos.map(s => {
+          if (s.id !== segmentoId) return s
+          return { ...s, turmas: s.turmas.map(t => {
+            if (t.id !== turmaId) return t
+            return { ...t, alunos: (t.alunos || []).filter(al => al.id !== alunoId) }
+          })}
+        })}
+      })}
+    }))
+  }
+
+  function alunosGetByTurma(anoId: string, escolaId: string, segmentoId: string, turmaId: string): import('../types').AlunoDestaque[] {
+    const ano = anosLetivos.find(a => a.id === anoId)
+    const escola = ano?.escolas.find(e => e.id === escolaId)
+    const seg = escola?.segmentos.find(s => s.id === segmentoId)
+    const turma = seg?.turmas.find(t => t.id === turmaId)
+    return turma?.alunos || []
+  }
+
   // ── salvarNovaFaixa ───────────────────────────────────────────────────────
 
   function salvarNovaFaixa() {
@@ -649,6 +699,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     gtAddEscola, gtRemoveEscola,
     gtAddSegmento, gtRemoveSegmento,
     gtAddTurma, gtRemoveTurma,
+    alunosAddOrUpdate, alunosRemove, alunosGetByTurma,
     salvarNovaFaixa,
     salvarNovaEscola,
   }

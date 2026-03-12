@@ -321,9 +321,17 @@ export interface Estrategia {
 }
 
 // ─── ANO LETIVO / ESCOLA ──────────────────────────────────────
+export interface AlunoDestaque {
+  id: string
+  nome: string
+  flag: boolean          // ⚠️ atenção especial
+  nota?: string          // observação rápida (1 linha)
+}
+
 export interface Turma {
   id: string
   nome: string
+  alunos?: AlunoDestaque[]
 }
 
 export interface Segmento {

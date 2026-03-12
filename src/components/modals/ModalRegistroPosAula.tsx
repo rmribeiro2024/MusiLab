@@ -340,7 +340,7 @@ export default function ModalRegistroPosAula() {
         buscaRegistros, setBuscaRegistros,
         obterTurmasDoDia,
     } = useCalendarioContext()
-    const { anosLetivos } = useAnoLetivoContext()
+    const { anosLetivos, alunosGetByTurma } = useAnoLetivoContext()
     const { planos, setPlanos, salvarRegistro, editarRegistro, excluirRegistro } = usePlanosContext()
     const { aplicacoes, atualizarStatusAplicacao } = useAplicacoesContext()
     const setRegSerieSel: ((v: string) => void) | undefined = undefined
@@ -670,6 +670,26 @@ export default function ModalRegistroPosAula() {
                                         })()}
                                         {!regAnoSel && <p className="text-xs text-slate-400">Cadastre anos letivos, escolas e turmas em <strong>🏫 Turmas</strong>.</p>}
                                     </div>
+
+                                    {/* ⚠️ Alunos com flag de atenção */}
+                                    {regTurmaSel && regAnoSel && regEscolaSel && regSegmentoSel && (() => {
+                                        const flagged = alunosGetByTurma(regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel).filter(a => a.flag)
+                                        if (flagged.length === 0) return null
+                                        return (
+                                            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '10px 12px' }}>
+                                                <p className="text-[11px] font-bold text-amber-700 mb-1.5 uppercase tracking-wide">⚠️ Atenção especial</p>
+                                                <div className="flex flex-col gap-1">
+                                                    {flagged.map(al => (
+                                                        <div key={al.id} className="flex items-start gap-1.5">
+                                                            <span className="text-amber-500 text-xs shrink-0 mt-0.5">•</span>
+                                                            <span className="text-xs text-amber-800 font-semibold">{al.nome}</span>
+                                                            {al.nota && <span className="text-xs text-amber-600 italic">— {al.nota}</span>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )
+                                    })()}
 
                                     {/* Banner última aula */}
                                     {regTurmaSel && (() => {

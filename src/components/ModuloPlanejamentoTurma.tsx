@@ -12,7 +12,7 @@ import RichTextEditor from './RichTextEditor'
 import { stripHTML, gerarIdSeguro } from '../lib/utils'
 import { showToast } from '../lib/toast'
 import { useAtividadesContext, useAplicacoesContext, useSequenciasContext } from '../contexts'
-import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula } from '../types'
+import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula, AlunoDestaque } from '../types'
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -1596,9 +1596,14 @@ function ConteudoTurma() {
     fecharForm,
   } = usePlanejamentoTurmaContext()
 
-  const { anosLetivos } = useAnoLetivoContext()
+  const { anosLetivos, alunosAddOrUpdate, alunosRemove, alunosGetByTurma } = useAnoLetivoContext()
   const [historicoExpandido, setHistoricoExpandido] = useState(false)
   const [planejamentosExpandidos, setPlanejamentosExpandidos] = useState(false)
+  const [alunosExpandidos, setAlunosExpandidos] = useState(false)
+  const [novoAlunoNome, setNovoAlunoNome] = useState('')
+  const [novoAlunoNota, setNovoAlunoNota] = useState('')
+  const [novoAlunoFlag, setNovoAlunoFlag] = useState(false)
+  const [editandoAlunoId, setEditandoAlunoId] = useState<string | null>(null)
   const [acionarBloco2, setAcionarBloco2] = useState<{ n: number; modo: Exclude<Modo, null> } | null>(null)
   const [dataAtiva, setDataAtiva] = useState<string | null>(null)
   const formBlockRef = useRef<HTMLDivElement>(null)
@@ -1769,6 +1774,135 @@ function ConteudoTurma() {
           )}
         </div>
       )}
+
+      {/* ── ALUNOS EM DESTAQUE ──────────────────────────────────────────────────── */}
+      {(() => {
+        const alunos = alunosGetByTurma(
+          turmaSelecionada.anoLetivoId,
+          turmaSelecionada.escolaId,
+          turmaSelecionada.segmentoId,
+          turmaSelecionada.turmaId
+        )
+        const flagged = alunos.filter(a => a.flag)
+        const others = alunos.filter(a => !a.flag)
+
+        function salvarAluno() {
+          const nome = novoAlunoNome.trim()
+          if (!nome) return
+          const id = editandoAlunoId ?? gerarIdSeguro()
+          alunosAddOrUpdate(
+            turmaSelecionada!.anoLetivoId,
+            turmaSelecionada!.escolaId,
+            turmaSelecionada!.segmentoId,
+            turmaSelecionada!.turmaId,
+            { id, nome, flag: novoAlunoFlag, nota: novoAlunoNota.trim() || undefined }
+          )
+          setNovoAlunoNome(''); setNovoAlunoNota(''); setNovoAlunoFlag(false); setEditandoAlunoId(null)
+        }
+
+        function iniciarEdicao(al: AlunoDestaque) {
+          setEditandoAlunoId(al.id)
+          setNovoAlunoNome(al.nome)
+          setNovoAlunoNota(al.nota ?? '')
+          setNovoAlunoFlag(al.flag)
+          setAlunosExpandidos(true)
+        }
+
+        return (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <button
+              onClick={() => setAlunosExpandidos(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                👥 Alunos em destaque
+                {flagged.length > 0 && (
+                  <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">
+                    ⚠️ {flagged.length}
+                  </span>
+                )}
+                {alunos.length > 0 && (
+                  <span className="text-[10px] text-slate-400">({alunos.length} aluno{alunos.length !== 1 ? 's' : ''})</span>
+                )}
+              </span>
+              <span className="text-slate-400">{alunosExpandidos ? '▲' : '▼'}</span>
+            </button>
+
+            {alunosExpandidos && (
+              <div className="px-4 pb-4 space-y-3">
+                {/* Lista de alunos */}
+                {alunos.length > 0 && (
+                  <div className="space-y-1.5">
+                    {[...flagged, ...others].map(al => (
+                      <div key={al.id} className={`flex items-start gap-2 p-2.5 rounded-xl border text-sm ${al.flag ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'}`}>
+                        <button
+                          onClick={() => alunosAddOrUpdate(
+                            turmaSelecionada!.anoLetivoId, turmaSelecionada!.escolaId,
+                            turmaSelecionada!.segmentoId, turmaSelecionada!.turmaId,
+                            { ...al, flag: !al.flag }
+                          )}
+                          title={al.flag ? 'Remover flag' : 'Marcar atenção'}
+                          className="text-base shrink-0 mt-0.5"
+                        >{al.flag ? '⚠️' : '👤'}</button>
+                        <div className="flex-1 min-w-0">
+                          <span className={`font-semibold ${al.flag ? 'text-amber-800' : 'text-slate-700'}`}>{al.nome}</span>
+                          {al.nota && <p className="text-[11px] text-slate-500 mt-0.5 italic">{al.nota}</p>}
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <button onClick={() => iniciarEdicao(al)} className="text-slate-400 hover:text-indigo-500 transition text-xs px-1">✏️</button>
+                          <button onClick={() => alunosRemove(
+                            turmaSelecionada!.anoLetivoId, turmaSelecionada!.escolaId,
+                            turmaSelecionada!.segmentoId, turmaSelecionada!.turmaId, al.id
+                          )} className="text-slate-300 hover:text-red-500 transition text-xs px-1">✕</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Formulário de adição/edição */}
+                <div className="border border-dashed border-slate-200 rounded-xl p-3 space-y-2">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                    {editandoAlunoId ? 'Editando aluno' : '+ Adicionar aluno'}
+                  </p>
+                  <input
+                    type="text"
+                    placeholder="Nome do aluno"
+                    value={novoAlunoNome}
+                    onChange={e => setNovoAlunoNome(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAluno() } }}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-400 outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Observação (opcional)"
+                    value={novoAlunoNota}
+                    onChange={e => setNovoAlunoNota(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAluno() } }}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-400 outline-none"
+                  />
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
+                      <input type="checkbox" checked={novoAlunoFlag} onChange={e => setNovoAlunoFlag(e.target.checked)} className="accent-amber-500" />
+                      ⚠️ Atenção especial
+                    </label>
+                    <div className="flex gap-2">
+                      {editandoAlunoId && (
+                        <button onClick={() => { setEditandoAlunoId(null); setNovoAlunoNome(''); setNovoAlunoNota(''); setNovoAlunoFlag(false) }}
+                          className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1">Cancelar</button>
+                      )}
+                      <button onClick={salvarAluno} disabled={!novoAlunoNome.trim()}
+                        className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                        {editandoAlunoId ? 'Salvar' : 'Adicionar'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })()}
     </div>
   )
 }
