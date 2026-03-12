@@ -1045,6 +1045,12 @@ function FormPlanejamentoInline({
 
     if (novoModo === 'adaptar') {
       const partes: string[] = []
+      // 0. Encaminhamentos pendentes — incluir como checklist no topo
+      const encs = ((ultimoRegistro as any)?.encaminhamentos as { id: string; texto: string; concluido: boolean }[] | undefined)
+      const pendentes = encs?.filter(e => !e.concluido) ?? []
+      if (pendentes.length > 0) {
+        partes.push(pendentes.map(e => `<p>📌 ${e.texto}</p>`).join(''))
+      }
       // 1. Ideias/estratégias — prioridade máxima, sem prefixo
       if (ultimoRegistro?.proximaAula?.trim()) {
         partes.push(`<p>${ultimoRegistro.proximaAula}</p>`)
@@ -1197,6 +1203,30 @@ function FormPlanejamentoInline({
       {/* ── SELETOR DE MODO (quando modo === null) ───────────────────────────── */}
       {modo === null ? (
         <div className="px-5 py-5">
+
+          {/* Banner encaminhamentos pendentes */}
+          {(() => {
+            const encs = ((ultimoRegistro as any)?.encaminhamentos as { id: string; texto: string; concluido: boolean }[] | undefined)
+            const pendentes = encs?.filter(e => !e.concluido) ?? []
+            if (pendentes.length === 0) return null
+            return (
+              <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-xl p-3">
+                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-2">
+                  📌 {pendentes.length} encaminhamento{pendentes.length !== 1 ? 's' : ''} da última aula
+                </p>
+                <ul className="space-y-1">
+                  {pendentes.map(e => (
+                    <li key={e.id} className="flex items-start gap-1.5 text-xs text-indigo-700">
+                      <span className="shrink-0 mt-0.5">•</span>
+                      <span>{e.texto}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[10px] text-indigo-400 mt-2">Use "Adaptar da última aula" para incluí-los no roteiro.</p>
+              </div>
+            )
+          })()}
+
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
             Como deseja planejar?
           </p>

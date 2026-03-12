@@ -870,6 +870,72 @@ export default function TelaResumoDia() {
                 </button>
             </div>
 
+            {/* ── PROGRESS BAR ANUAL ── */}
+            {(() => {
+                const anoAtivo = anosLetivos.find(a => a.status === 'ativo') ?? anosLetivos[0]
+                if (!anoAtivo?.dataInicio || !anoAtivo?.dataFim) return null
+
+                const inicio = new Date(anoAtivo.dataInicio + 'T12:00:00')
+                const fim    = new Date(anoAtivo.dataFim    + 'T12:00:00')
+                const agora  = new Date()
+                const totalDias = Math.max(1, Math.round((fim.getTime() - inicio.getTime()) / 86400000))
+                const diasPassados = Math.max(0, Math.min(totalDias, Math.round((agora.getTime() - inicio.getTime()) / 86400000)))
+                const pct = Math.round((diasPassados / totalDias) * 100)
+
+                // Semana do ano
+                const diffMs = agora.getTime() - inicio.getTime()
+                const semanaAtual = Math.max(1, Math.min(Math.ceil(diffMs / (7 * 86400000)), 52))
+                const totalSemanas = Math.round(totalDias / 7)
+
+                // Aulas registradas por turma
+                const aulasPorTurma: Record<string, number> = {}
+                planos.forEach(p => {
+                    ;(p.registrosPosAula || []).forEach(r => {
+                        const turmaId = String(r.turma ?? '')
+                        if (!turmaId) return
+                        if (!aulasPorTurma[turmaId]) aulasPorTurma[turmaId] = 0
+                        aulasPorTurma[turmaId]++
+                    })
+                })
+
+                // Montar lista de turmas do ano ativo
+                const turmasList: { id: string; label: string; aulas: number }[] = []
+                for (const esc of anoAtivo.escolas ?? []) {
+                    for (const seg of esc.segmentos ?? []) {
+                        for (const tur of seg.turmas ?? []) {
+                            turmasList.push({ id: String(tur.id), label: tur.nome, aulas: aulasPorTurma[String(tur.id)] ?? 0 })
+                        }
+                    }
+                }
+
+                return (
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-semibold text-slate-600">
+                                📅 {anoAtivo.nome ?? anoAtivo.ano} — Semana {semanaAtual} de {totalSemanas}
+                            </span>
+                            <span className="text-xs font-bold text-indigo-600">{pct}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
+                            <div
+                                className="h-full bg-indigo-400 rounded-full transition-all"
+                                style={{ width: `${pct}%` }}
+                            />
+                        </div>
+                        {turmasList.length > 0 && (
+                            <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                {turmasList.map(t => (
+                                    <span key={t.id} className="text-[11px] text-slate-500">
+                                        <span className="font-semibold text-slate-700">{t.label}</span>
+                                        {' '}<span className={t.aulas === 0 ? 'text-red-400' : 'text-green-600'}>{t.aulas} aula{t.aulas !== 1 ? 's' : ''}</span>
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )
+            })()}
+
             {/* ── BARRA DE CONTROLES ── */}
             <div className="bg-white rounded-2xl shadow-lg p-3 space-y-3">
 

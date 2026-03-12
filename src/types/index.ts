@@ -127,6 +127,7 @@ export interface RegistroPosAula {
   proximaAulaOpcao?: string
   urlEvidencia?: string
   chamada?: { alunoId: string; presente: boolean }[]
+  encaminhamentos?: { id: string; texto: string; concluido: boolean }[]
 }
 
 export interface Plano {

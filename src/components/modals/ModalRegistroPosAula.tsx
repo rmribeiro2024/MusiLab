@@ -403,6 +403,7 @@ export default function ModalRegistroPosAula() {
     const [copiandoRegId, setCopiandoRegId] = React.useState<any>(null)
     const [turmasCopiar, setTurmasCopiar] = React.useState<Set<string>>(new Set())
     const [copiarOutroDia, setCopiarOutroDia] = React.useState<string>('')
+    const [novoEnc, setNovoEnc] = React.useState('')
 
     // Expande automaticamente o registro mais recente da turma clicada ao abrir no Histórico
     React.useEffect(() => {
@@ -882,6 +883,64 @@ export default function ModalRegistroPosAula() {
                                             onDone={() => salvarBtnRef.current?.focus()}
                                             firstRef={proximaAulaFirstRef}
                                         />
+
+                                        {/* Encaminhamentos → próxima aula */}
+                                        {(() => {
+                                            const encaminhamentos: { id: string; texto: string; concluido: boolean }[] = (novoRegistro as any).encaminhamentos || []
+                                            const addEnc = () => {
+                                                const txt = novoEnc.trim()
+                                                if (!txt) return
+                                                const novo = [...encaminhamentos, { id: String(Date.now()), texto: txt, concluido: false }]
+                                                setNovoRegistro({ ...novoRegistro, encaminhamentos: novo } as any)
+                                                setNovoEnc('')
+                                            }
+                                            return (
+                                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
+                                                        <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📌</span>
+                                                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: encaminhamentos.length > 0 ? '#334155' : '#64748b', flex: 1 }}>
+                                                            Encaminhamentos para próxima aula
+                                                        </span>
+                                                        {encaminhamentos.length > 0 && (
+                                                            <span style={{ fontSize: 10, color: '#6366f1', fontWeight: 700, background: '#eef2ff', padding: '1px 8px', borderRadius: 99, border: '1px solid #c7d2fe', flexShrink: 0 }}>
+                                                                {encaminhamentos.length}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                        {encaminhamentos.map((enc, idx) => (
+                                                            <div key={enc.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                <input type="checkbox" checked={enc.concluido}
+                                                                    onChange={() => {
+                                                                        const nova = encaminhamentos.map((e, i) => i === idx ? { ...e, concluido: !e.concluido } : e)
+                                                                        setNovoRegistro({ ...novoRegistro, encaminhamentos: nova } as any)
+                                                                    }}
+                                                                    style={{ accentColor: '#6366f1', flexShrink: 0 }}
+                                                                />
+                                                                <span style={{ fontSize: 12, color: enc.concluido ? '#94a3b8' : '#334155', flex: 1, textDecoration: enc.concluido ? 'line-through' : 'none' }}>{enc.texto}</span>
+                                                                <button type="button" onClick={() => {
+                                                                    const nova = encaminhamentos.filter((_, i) => i !== idx)
+                                                                    setNovoRegistro({ ...novoRegistro, encaminhamentos: nova } as any)
+                                                                }} style={{ color: '#cbd5e1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, padding: '0 2px', flexShrink: 0 }}>✕</button>
+                                                            </div>
+                                                        ))}
+                                                        <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+                                                            <input type="text" value={novoEnc} onChange={e => setNovoEnc(e.target.value)}
+                                                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEnc() } }}
+                                                                placeholder="Ex: Trazer partitura do Noturno, revisar compasso 12"
+                                                                style={{ flex: 1, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', fontFamily: 'inherit', outline: 'none' }}
+                                                                onFocus={e => (e.target.style.borderColor = '#94a3b8')}
+                                                                onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
+                                                            />
+                                                            <button type="button" onClick={addEnc} disabled={!novoEnc.trim()}
+                                                                style={{ padding: '7px 12px', background: novoEnc.trim() ? '#6366f1' : '#e2e8f0', color: novoEnc.trim() ? '#fff' : '#94a3b8', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: novoEnc.trim() ? 'pointer' : 'default', transition: 'all .15s', flexShrink: 0 }}>
+                                                                + Add
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })()}
                                     </div>
 
                                     {/* Botão salvar */}
