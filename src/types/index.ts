@@ -125,6 +125,7 @@ export interface RegistroPosAula {
   resultadoAula?: string
   anotacoesGerais?: string
   proximaAulaOpcao?: string
+  urlEvidencia?: string
 }
 
 export interface Plano {

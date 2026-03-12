@@ -870,7 +870,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const abrirModalRegistro = useCallback((plano: Plano, e?: React.MouseEvent) => {
         if (e) e.stopPropagation()
         setPlanoParaRegistro(plano)
-        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '' })
+        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' })
         setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('')
         setFiltroRegAno('')
         setFiltroRegData('')
@@ -912,7 +912,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             setPlanoParaRegistro(atualizado)
         }
         setRegistroEditando(null); setVerRegistros(true)
-        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '' })
+        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' })
         setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('')
     }, [novoRegistro, _regEdit, planoParaRegistro, regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel, planos, planoSelecionado, setModalConfirm, setPlanoParaRegistro, setRegistroEditando, setVerRegistros, setNovoRegistro, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel])
 
@@ -934,7 +934,8 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             naoFuncionou: reg.naoFuncionou || '', proximaAula: reg.proximaAula || '',
             comportamento: reg.comportamento || '', poderiaMelhorar: reg.poderiaMelhorar || '',
             resultadoAula: reg.resultadoAula || '', anotacoesGerais: reg.anotacoesGerais || '',
-            proximaAulaOpcao: reg.proximaAulaOpcao || ''
+            proximaAulaOpcao: reg.proximaAulaOpcao || '',
+            urlEvidencia: (reg as any).urlEvidencia || ''
         })
         setRegAnoSel(String(reg.anoLetivo || '')); setRegEscolaSel(String(reg.escola || ''))
         setRegSegmentoSel(String(reg.segmento || reg.serie || '')); setRegTurmaSel(String(reg.turma || ''))

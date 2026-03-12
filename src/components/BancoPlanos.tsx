@@ -1260,7 +1260,7 @@ export default function BancoPlanos({ session }) {
             const abrirModalRegistro = useCallback((plano, e?) => {
                 if(e) e.stopPropagation();
                 setPlanoParaRegistro(plano);
-                setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '' });
+                setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' });
                 setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('');
                 setFiltroRegAno(''); setFiltroRegEscola(''); setFiltroRegSegmento(''); setFiltroRegTurma('');
                 setRegistroEditando(null);
@@ -1312,7 +1312,7 @@ export default function BancoPlanos({ session }) {
 
                 setRegistroEditando(null);
                 setVerRegistros(true);
-                setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '' });
+                setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' });
                 setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('');
             };
 
@@ -1340,7 +1340,8 @@ export default function BancoPlanos({ session }) {
                     poderiaMelhorar: reg.poderiaMelhorar || '',
                     resultadoAula: reg.resultadoAula || '',
                     anotacoesGerais: reg.anotacoesGerais || '',
-                    proximaAulaOpcao: reg.proximaAulaOpcao || ''
+                    proximaAulaOpcao: reg.proximaAulaOpcao || '',
+                    urlEvidencia: reg.urlEvidencia || ''
                 });
                 setRegAnoSel(reg.anoLetivo || '');
                 setRegEscolaSel(reg.escola || '');

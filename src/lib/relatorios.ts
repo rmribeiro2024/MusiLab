@@ -37,6 +37,31 @@ export interface RelatorioTurmaData {
     conceitos: ItemContagem[]
     repertorio: ItemContagem[]
     planos: ItemContagem[]
+    // Feature 3: observações pós-aula agregadas
+    registrosResumidos: {
+        data: string
+        resumoAula?: string
+        funcionouBem?: string
+        naoFuncionou?: string
+        comportamento?: string
+        urlEvidencia?: string
+    }[]
+    resultadosDistribuicao: ItemContagem[]
+}
+
+// ─── Feature 2: Painel de Tendência da Turma ─────────────────────────────────
+
+export interface PainelTendenciaData {
+    turmaNome: string
+    totalRegistros: number
+    periodoInicio: string
+    periodoFim: string
+    humor: ItemContagem[]
+    funcionouBem: string[]
+    naoFuncionou: string[]
+    comportamentos: string[]
+    proximosPassos: string[]
+    evidencias: { url: string; data: string }[]
 }
 
 export interface FiltrosPeriodo {
@@ -330,6 +355,34 @@ export function buildRelatorioTurma(
     filtros: { inicio: string; fim: string; turmaId: string },
 ): RelatorioTurmaData {
     const aplic = filtrarAplicacoes(aplicacoes, { ...filtros, status: 'realizada' })
+
+    // Feature 3: coletar registros pós-aula da turma no período
+    const registrosResumidos: RelatorioTurmaData['registrosResumidos'] = []
+    const contagemResultado: Record<string, number> = {}
+    for (const plano of planos) {
+        for (const reg of plano.registrosPosAula || []) {
+            const data = reg.data || reg.dataAula || ''
+            if (String(reg.turma) !== String(filtros.turmaId)) continue
+            if (data < filtros.inicio || data > filtros.fim) continue
+            registrosResumidos.push({
+                data,
+                resumoAula: reg.resumoAula,
+                funcionouBem: reg.funcionouBem,
+                naoFuncionou: reg.naoFuncionou,
+                comportamento: reg.comportamento,
+                urlEvidencia: (reg as any).urlEvidencia,
+            })
+            if (reg.resultadoAula) {
+                const k = reg.resultadoAula
+                contagemResultado[k] = (contagemResultado[k] ?? 0) + 1
+            }
+        }
+    }
+    registrosResumidos.sort((a, b) => a.data.localeCompare(b.data))
+    const resultadosDistribuicao: ItemContagem[] = Object.entries(contagemResultado)
+        .map(([id, count]) => ({ id, label: id, count }))
+        .sort((a, b) => b.count - a.count)
+
     return {
         turmaNome:    getNomeTurma(filtros.turmaId, anosLetivos),
         totalAulas:   contarAulas(aplic),
@@ -337,5 +390,84 @@ export function buildRelatorioTurma(
         conceitos:    agregarConceitos(aplic, planos),
         repertorio:   agregarRepertorio(aplic, planos),
         planos:       agregarPlanos(aplic, planos, 20),
+        registrosResumidos,
+        resultadosDistribuicao,
     }
+}
+
+// ─── Feature 2: Painel de Tendência da Turma ─────────────────────────────────
+
+/** Agrega registros pós-aula de uma turma para o Painel de Tendência. */
+export function buildPainelTendencia(
+    planos: Plano[],
+    turmaId: string,
+    turmaNome: string,
+    filtros: { inicio: string; fim: string },
+): PainelTendenciaData {
+    const contagemHumor: Record<string, number> = {}
+    const funcionouBem: string[] = []
+    const naoFuncionou: string[] = []
+    const comportamentos: string[] = []
+    const proximosPassos: string[] = []
+    const evidencias: { url: string; data: string }[] = []
+
+    for (const plano of planos) {
+        for (const reg of plano.registrosPosAula || []) {
+            const data = reg.data || reg.dataAula || ''
+            if (String(reg.turma) !== String(turmaId)) continue
+            if (data < filtros.inicio || data > filtros.fim) continue
+
+            if (reg.resultadoAula) {
+                contagemHumor[reg.resultadoAula] = (contagemHumor[reg.resultadoAula] ?? 0) + 1
+            }
+            if (reg.funcionouBem?.trim())  funcionouBem.push(reg.funcionouBem.trim())
+            if (reg.naoFuncionou?.trim())  naoFuncionou.push(reg.naoFuncionou.trim())
+            if (reg.comportamento?.trim()) comportamentos.push(reg.comportamento.trim())
+            if (reg.proximaAula?.trim())   proximosPassos.push(reg.proximaAula.trim())
+            const url = (reg as any).urlEvidencia
+            if (url?.trim()) evidencias.push({ url: url.trim(), data })
+        }
+    }
+
+    const humor: ItemContagem[] = Object.entries(contagemHumor)
+        .map(([id, count]) => ({ id, label: id, count }))
+        .sort((a, b) => b.count - a.count)
+
+    return {
+        turmaNome,
+        totalRegistros: funcionouBem.length + naoFuncionou.length > 0
+            ? Math.max(funcionouBem.length, naoFuncionou.length, comportamentos.length)
+            : humor.reduce((s, h) => s + h.count, 0),
+        periodoInicio: filtros.inicio,
+        periodoFim: filtros.fim,
+        humor,
+        funcionouBem: funcionouBem.slice(-10),
+        naoFuncionou: naoFuncionou.slice(-10),
+        comportamentos: comportamentos.slice(-10),
+        proximosPassos: proximosPassos.slice(-5),
+        evidencias,
+    }
+}
+
+/** Monta o prompt Gemini para síntese do Painel de Tendência. */
+export function buildPromptTendencia(data: PainelTendenciaData): string {
+    const resultado = data.humor.map(h => `${h.label}: ${h.count}×`).join(', ') || 'sem dados'
+    const linhas = [
+        `Você é um assistente pedagógico para professor de música.`,
+        `Analise os registros pós-aula da turma "${data.turmaNome}" no período ${formatarData(data.periodoInicio)} a ${formatarData(data.periodoFim)}.`,
+        `Total de registros: ${data.totalRegistros}.`,
+        `Resultado das aulas: ${resultado}.`,
+        data.funcionouBem.length > 0 ? `O que funcionou bem (registros): ${data.funcionouBem.join(' | ')}` : '',
+        data.naoFuncionou.length > 0 ? `O que não funcionou (registros): ${data.naoFuncionou.join(' | ')}` : '',
+        data.comportamentos.length > 0 ? `Comportamento observado: ${data.comportamentos.join(' | ')}` : '',
+        data.proximosPassos.length > 0 ? `Ideias para próximas aulas: ${data.proximosPassos.join(' | ')}` : '',
+        ``,
+        `Com base nesses dados, identifique em até 4 parágrafos curtos:`,
+        `1. Padrões pedagógicos que funcionam com esta turma`,
+        `2. Desafios recorrentes e como abordá-los`,
+        `3. Perfil de comportamento e engajamento da turma`,
+        `4. Sugestões específicas para as próximas aulas`,
+        `Responda em português, de forma direta e prática, sem markdown.`,
+    ].filter(Boolean).join('\n')
+    return linhas
 }

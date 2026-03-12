@@ -55,8 +55,8 @@ export interface CalendarioContextValue {
   setModalRegistro: React.Dispatch<React.SetStateAction<boolean>>
   planoParaRegistro: Plano | null
   setPlanoParaRegistro: React.Dispatch<React.SetStateAction<Plano | null>>
-  novoRegistro: { dataAula: string; resumoAula: string; funcionouBem: string; naoFuncionou: string; proximaAula: string; comportamento: string; poderiaMelhorar: string; resultadoAula: string; anotacoesGerais: string; proximaAulaOpcao: string }
-  setNovoRegistro: React.Dispatch<React.SetStateAction<{ dataAula: string; resumoAula: string; funcionouBem: string; naoFuncionou: string; proximaAula: string; comportamento: string; poderiaMelhorar: string; resultadoAula: string; anotacoesGerais: string; proximaAulaOpcao: string }>>
+  novoRegistro: { dataAula: string; resumoAula: string; funcionouBem: string; naoFuncionou: string; proximaAula: string; comportamento: string; poderiaMelhorar: string; resultadoAula: string; anotacoesGerais: string; proximaAulaOpcao: string; urlEvidencia: string }
+  setNovoRegistro: React.Dispatch<React.SetStateAction<{ dataAula: string; resumoAula: string; funcionouBem: string; naoFuncionou: string; proximaAula: string; comportamento: string; poderiaMelhorar: string; resultadoAula: string; anotacoesGerais: string; proximaAulaOpcao: string; urlEvidencia: string }>>
   verRegistros: boolean
   setVerRegistros: React.Dispatch<React.SetStateAction<boolean>>
   registroEditando: RegistroPosAula | null
@@ -174,7 +174,8 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
     poderiaMelhorar: '',
     resultadoAula: '',
     anotacoesGerais: '',
-    proximaAulaOpcao: ''
+    proximaAulaOpcao: '',
+    urlEvidencia: ''
   })
   const [verRegistros, setVerRegistros] = useState(false)
   const [registroEditando, setRegistroEditando] = useState<RegistroPosAula | null>(null)

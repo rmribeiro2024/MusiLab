@@ -560,7 +560,7 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
       setFiltroRegData('')
     }
     setRegistroEditando(null)
-    setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '' })
+    setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' })
     setModalRegistro(true)
   }
 

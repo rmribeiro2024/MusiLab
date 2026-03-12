@@ -616,7 +616,7 @@ export default function ModalRegistroPosAula() {
                                     {registroEditando && (
                                         <div className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                                             <span className="text-xs font-medium text-slate-600">Editando registro</span>
-                                            <button onClick={() => { setRegistroEditando(null); setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', poderiaMelhorar: '', proximaAula: '', proximaAulaOpcao: '', resultadoAula: '', comportamento: '', anotacoesGerais: '' }); setRegEscolaSel(''); setRegTurmaSel('') }}
+                                            <button onClick={() => { setRegistroEditando(null); setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', poderiaMelhorar: '', proximaAula: '', proximaAulaOpcao: '', resultadoAula: '', comportamento: '', anotacoesGerais: '', urlEvidencia: '' }); setRegEscolaSel(''); setRegTurmaSel('') }}
                                                 className="text-xs font-bold text-slate-500 hover:text-red-500 transition-colors">✕ Cancelar</button>
                                         </div>
                                     )}
@@ -738,6 +738,41 @@ export default function ModalRegistroPosAula() {
                                             ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length + 1] = fn }}
                                         />
 
+                                        {/* Evidência de Aula — URL */}
+                                        {(() => {
+                                            const url = (novoRegistro as any).urlEvidencia || ''
+                                            let urlValida = false
+                                            try { urlValida = url.length > 0 && !!new URL(url) } catch { urlValida = false }
+                                            return (
+                                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
+                                                        <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📎</span>
+                                                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: url ? '#334155' : '#64748b', flex: 1 }}>
+                                                            Evidência de aula
+                                                        </span>
+                                                        {url && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                    </div>
+                                                    <div style={{ padding: '0 12px 10px', display: 'flex', gap: 6 }}>
+                                                        <input
+                                                            type="url"
+                                                            value={url}
+                                                            onChange={e => setNovoRegistro({ ...novoRegistro, urlEvidencia: e.target.value })}
+                                                            placeholder="Cole um link (Google Drive, YouTube, áudio...)"
+                                                            style={{ flex: 1, padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#334155', fontFamily: 'inherit', outline: 'none', background: '#fff' }}
+                                                            onFocus={e => (e.target.style.borderColor = '#94a3b8')}
+                                                            onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
+                                                        />
+                                                        {urlValida && (
+                                                            <a href={url} target="_blank" rel="noopener noreferrer"
+                                                                style={{ padding: '8px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#1d4ed8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                                                                🔗 Abrir
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })()}
+
                                         {/* Ideias / estratégias */}
                                         <AccordionChip
                                             id="reg-proxima" icon="💡" label="Ideias / estratégias"
@@ -772,7 +807,7 @@ export default function ModalRegistroPosAula() {
                                                 setSugestaoIA(null)
                                                 setLoadingIA(true)
                                                 const prompt = `Você é um assistente pedagógico para professor de música.\nPlano de aula: "${tituloPlano}"\nResumo da aula: "${dadosParaIA.resumoAula || ''}"\nO que funcionou: "${dadosParaIA.funcionouBem || ''}"\nO que não funcionou: "${dadosParaIA.naoFuncionou || ''}"\nPróxima aula (professor): "${dadosParaIA.proximaAula || ''}"\nComportamento: "${dadosParaIA.comportamento || ''}"\n\nCom base neste registro, sugira em 2-3 frases objetivas o que priorizar na próxima aula e uma estratégia específica. Responda em português, de forma direta e prática.`
-                                                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`, {
+                                                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
                                                     method: 'POST',
                                                     headers: { 'Content-Type': 'application/json' },
                                                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
@@ -983,6 +1018,8 @@ export default function ModalRegistroPosAula() {
                                                         { icon: '👥', label: 'Comportamento',           text: reg.comportamento },
                                                         { icon: '📝', label: 'Anotações gerais',        text: reg.anotacoesGerais },
                                                     ].filter(f => f.text?.trim())
+                                                    let urlEvidenciaValida = false
+                                                    try { urlEvidenciaValida = !!(reg as any).urlEvidencia && !!new URL((reg as any).urlEvidencia) } catch { urlEvidenciaValida = false }
 
                                                     return (
                                                         <div key={reg.id ?? i} style={{ border: registroEditando?.id === reg.id ? '1px solid #94a3b8' : '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', background: registroEditando?.id === reg.id ? '#f8fafc' : '#fff' }}>
@@ -1073,6 +1110,16 @@ export default function ModalRegistroPosAula() {
                                                                         ? chipFields.map(f => <RegistroChip key={f.label} icon={f.icon} label={f.label} text={f.text!} />)
                                                                         : <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Nenhum campo preenchido.</p>
                                                                     }
+                                                                    {urlEvidenciaValida && (
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                                                                            <span style={{ fontSize: 13, flexShrink: 0 }}>📎</span>
+                                                                            <span style={{ fontSize: 9, fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '.08em', flexShrink: 0 }}>Evidência</span>
+                                                                            <a href={(reg as any).urlEvidencia} target="_blank" rel="noopener noreferrer"
+                                                                                style={{ fontSize: 12, color: '#1d4ed8', fontWeight: 600, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                                                                🔗 Abrir link
+                                                                            </a>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )}
                                                         </div>

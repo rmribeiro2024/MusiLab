@@ -7,13 +7,13 @@ import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import {
     listarEscolas, listarSegmentos, listarTurmas,
-    buildRelatorioMensal, buildRelatorioTurma,
+    buildRelatorioMensal, buildRelatorioTurma, buildPainelTendencia, buildPromptTendencia,
     formatarData,
-    type ItemContagem, type RelatorioMensalData, type RelatorioTurmaData,
+    type ItemContagem, type RelatorioMensalData, type RelatorioTurmaData, type PainelTendenciaData,
 } from '../lib/relatorios'
 import { exportarRelatorioMensalPDF, exportarRelatorioTurmaPDF } from '../lib/exportarPDF'
 
-type TipoRelatorio = 'mensal' | 'turma'
+type TipoRelatorio = 'mensal' | 'turma' | 'tendencia'
 
 // ─── Gemini ───────────────────────────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ async function chamarGemini(prompt: string): Promise<string> {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY
     if (!apiKey) throw new Error('VITE_GEMINI_API_KEY não configurada.')
     const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -50,6 +50,9 @@ Responda em português. Não use markdown, apenas texto simples.`
 }
 
 function buildPromptTurma(data: RelatorioTurmaData, inicio: string, fim: string): string {
+    const obsLinhas = data.registrosResumidos.slice(-5).map(r =>
+        [r.funcionouBem && `Funcionou: ${r.funcionouBem}`, r.naoFuncionou && `Não funcionou: ${r.naoFuncionou}`].filter(Boolean).join(' | ')
+    ).filter(Boolean).join('\n')
     return `Você é um assistente pedagógico especializado em educação musical.
 Com base nos dados abaixo, escreva uma síntese pedagógica concisa (máximo 4 parágrafos) sobre a evolução desta turma.
 Inclua: síntese da evolução, o que funcionou bem, dificuldades recorrentes e próximos encaminhamentos sugeridos.
@@ -60,6 +63,7 @@ Aulas realizadas: ${data.totalAulas}
 Conceitos trabalhados: ${data.conceitos.slice(0,5).map(c=>`${c.label}(${c.count}x)`).join(', ')}
 Repertório usado: ${data.repertorio.slice(0,5).map(r=>`${r.label}(${r.count}x)`).join(', ')}
 Planos aplicados: ${data.planos.slice(0,3).map(p=>`${p.label}(${p.count}x)`).join(', ')}
+${obsLinhas ? `\nObservações dos últimos registros:\n${obsLinhas}` : ''}
 
 Responda em português. Não use markdown, apenas texto simples.`
 }
@@ -91,7 +95,7 @@ export default function ModuloRelatorios() {
     function handleTurmaChange(id: string)    { setTurmaId(id); resetRelatorio() }
     function resetRelatorio()                 { setRelatorioPronto(false); setSinteseIA(''); setErroIA('') }
 
-    const podeGerar = tipoSelecionado === 'turma'
+    const podeGerar = (tipoSelecionado === 'turma' || tipoSelecionado === 'tendencia')
         ? !!periodoInicio && !!periodoFim && !!turmaId
         : !!periodoInicio && !!periodoFim
 
@@ -107,13 +111,21 @@ export default function ModuloRelatorios() {
             { inicio: periodoInicio, fim: periodoFim, turmaId })
     }, [relatorioPronto, tipoSelecionado, periodoInicio, periodoFim, turmaId, aplicacoes, planos, anosLetivos])
 
+    const painelTendencia = useMemo<PainelTendenciaData | null>(() => {
+        if (!relatorioPronto || tipoSelecionado !== 'tendencia' || !periodoInicio || !periodoFim || !turmaId) return null
+        const turmaNome = turmas.find(t => t.id === turmaId)?.label ?? turmaId
+        return buildPainelTendencia(planos, turmaId, turmaNome, { inicio: periodoInicio, fim: periodoFim })
+    }, [relatorioPronto, tipoSelecionado, periodoInicio, periodoFim, turmaId, planos, turmas])
+
     async function handleGerarIA() {
-        if (!relatorioMensal && !relatorioTurma) return
+        if (!relatorioMensal && !relatorioTurma && !painelTendencia) return
         setGerandoIA(true); setErroIA(''); setSinteseIA('')
         try {
             const prompt = relatorioMensal
                 ? buildPromptMensal(relatorioMensal, periodoInicio, periodoFim)
-                : buildPromptTurma(relatorioTurma!, periodoInicio, periodoFim)
+                : painelTendencia
+                    ? buildPromptTendencia(painelTendencia)
+                    : buildPromptTurma(relatorioTurma!, periodoInicio, periodoFim)
             setSinteseIA(await chamarGemini(prompt))
         } catch (e) {
             const msg = e instanceof Error ? e.message : String(e)
@@ -132,11 +144,12 @@ export default function ModuloRelatorios() {
         }
     }
 
-    const temRelatorio = !!(relatorioMensal || relatorioTurma)
+    const temRelatorio = !!(relatorioMensal || relatorioTurma || painelTendencia)
 
     const tipos = [
-        { value: 'mensal' as TipoRelatorio, label: 'Relatório Mensal Geral', descricao: 'Visão geral de todas as aulas e turmas no período.', icone: '📅' },
-        { value: 'turma'  as TipoRelatorio, label: 'Relatório por Turma',    descricao: 'Detalhamento das aulas de uma turma específica.',   icone: '👥' },
+        { value: 'mensal'    as TipoRelatorio, label: 'Relatório Mensal Geral',    descricao: 'Visão geral de todas as aulas e turmas no período.',  icone: '📅' },
+        { value: 'turma'     as TipoRelatorio, label: 'Relatório por Turma',       descricao: 'Detalhamento das aulas de uma turma específica.',      icone: '👥' },
+        { value: 'tendencia' as TipoRelatorio, label: 'Tendência da Turma',        descricao: 'Padrões pedagógicos a partir dos registros pós-aula.', icone: '📈' },
     ]
 
     return (
@@ -197,7 +210,7 @@ export default function ModuloRelatorios() {
                         </CampoFiltro>
                     )}
 
-                    {tipoSelecionado === 'turma' ? (
+                    {(tipoSelecionado === 'turma' || tipoSelecionado === 'tendencia') ? (
                         <CampoFiltro label="Turma" obrigatorio>
                             {turmas.length === 0
                                 ? <p className="text-xs text-slate-400 italic">Nenhuma turma encontrada com esses filtros.</p>
@@ -256,6 +269,11 @@ export default function ModuloRelatorios() {
             {/* Resultado — Turma */}
             {relatorioTurma && (
                 <RelatorioTurmaView data={relatorioTurma} inicio={periodoInicio} fim={periodoFim} />
+            )}
+
+            {/* Resultado — Tendência */}
+            {painelTendencia && (
+                <PainelTendenciaView data={painelTendencia} />
             )}
         </div>
     )
@@ -320,6 +338,142 @@ function RelatorioTurmaView({ data, inicio, fim }: { data: RelatorioTurmaData; i
                     {data.conceitos.length > 0  && <Section titulo="🎵 Conceitos musicais trabalhados"><TagCloud items={data.conceitos} /></Section>}
                     {data.repertorio.length > 0 && <Section titulo="🎼 Repertório utilizado"><ListaOrdenada items={data.repertorio} sufixo="vez" /></Section>}
                     {data.planos.length > 0     && <Section titulo="📚 Planos aplicados"><ListaOrdenada items={data.planos} sufixo="vez" cor="bg-violet-400" /></Section>}
+                    {data.registrosResumidos.length > 0 && (
+                        <Section titulo="📋 Observações pós-aula">
+                            <div className="divide-y divide-slate-100">
+                                {data.registrosResumidos.map((r, i) => (
+                                    <div key={i} className="py-3 space-y-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-xs font-mono text-slate-400 w-20 shrink-0">{formatarData(r.data)}</span>
+                                            {r.urlEvidencia && (
+                                                <a href={r.urlEvidencia} target="_blank" rel="noopener noreferrer"
+                                                    className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-100 transition">
+                                                    📎 Evidência
+                                                </a>
+                                            )}
+                                        </div>
+                                        {r.funcionouBem  && <p className="text-xs text-slate-600"><span className="font-semibold text-emerald-600">✅</span> {r.funcionouBem}</p>}
+                                        {r.naoFuncionou  && <p className="text-xs text-slate-600"><span className="font-semibold text-amber-600">⚠️</span> {r.naoFuncionou}</p>}
+                                        {r.comportamento && <p className="text-xs text-slate-500 italic"><span className="font-semibold text-slate-400">👥</span> {r.comportamento}</p>}
+                                    </div>
+                                ))}
+                            </div>
+                        </Section>
+                    )}
+                </>
+            )}
+        </div>
+    )
+}
+
+// ─── Feature 2: Painel de Tendência ──────────────────────────────────────────
+
+function PainelTendenciaView({ data }: { data: PainelTendenciaData }) {
+    const RESULTADO_COR: Record<string, string> = {
+        bem:     'bg-emerald-100 text-emerald-700 border-emerald-200',
+        parcial: 'bg-amber-100 text-amber-700 border-amber-200',
+        nao:     'bg-red-100 text-red-700 border-red-200',
+    }
+    const RESULTADO_LABEL: Record<string, string> = {
+        bem: 'Funcionou bem', parcial: 'Parcial', nao: 'Não funcionou',
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="pb-1 border-b border-slate-100">
+                <h2 className="text-lg font-bold text-slate-800">📈 Tendência da Turma</h2>
+                <p className="text-xs text-slate-400">{data.turmaNome} · {formatarData(data.periodoInicio)} → {formatarData(data.periodoFim)}</p>
+            </div>
+
+            <div className="bg-gradient-to-r from-indigo-50 to-white border border-indigo-100 rounded-2xl p-5">
+                <p className="text-[11px] font-bold text-indigo-400 uppercase tracking-wide mb-1">Turma</p>
+                <p className="text-xl font-bold text-slate-800">{data.turmaNome}</p>
+                <div className="mt-2 flex items-baseline gap-1.5">
+                    <span className="text-4xl font-bold text-indigo-600">{data.totalRegistros}</span>
+                    <span className="text-sm text-slate-500">registro{data.totalRegistros !== 1 ? 's' : ''} analisado{data.totalRegistros !== 1 ? 's' : ''}</span>
+                </div>
+            </div>
+
+            {data.totalRegistros === 0 ? (
+                <div className="text-center py-12 text-slate-400">
+                    <p className="text-4xl mb-3">📋</p>
+                    <p className="text-sm">Nenhum registro pós-aula encontrado para esta turma no período.</p>
+                    <p className="text-xs mt-1 text-slate-300">Faça registros pós-aula para ver tendências.</p>
+                </div>
+            ) : (
+                <>
+                    {data.humor.length > 0 && (
+                        <Section titulo="📊 Resultado das aulas">
+                            <div className="flex flex-wrap gap-2">
+                                {data.humor.map(h => (
+                                    <div key={h.id} className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-semibold ${RESULTADO_COR[h.id] ?? 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                        <span>{RESULTADO_LABEL[h.id] ?? h.label}</span>
+                                        <span className="text-xs font-bold opacity-70">{h.count}×</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </Section>
+                    )}
+
+                    {data.funcionouBem.length > 0 && (
+                        <Section titulo="✅ O que funcionou bem">
+                            <ul className="space-y-2">
+                                {data.funcionouBem.map((t, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                                        <span className="text-emerald-500 mt-0.5 shrink-0">•</span>{t}
+                                    </li>
+                                ))}
+                            </ul>
+                        </Section>
+                    )}
+
+                    {data.naoFuncionou.length > 0 && (
+                        <Section titulo="⚠️ Desafios recorrentes">
+                            <ul className="space-y-2">
+                                {data.naoFuncionou.map((t, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                                        <span className="text-amber-500 mt-0.5 shrink-0">•</span>{t}
+                                    </li>
+                                ))}
+                            </ul>
+                        </Section>
+                    )}
+
+                    {data.comportamentos.length > 0 && (
+                        <Section titulo="👥 Comportamento observado">
+                            <ul className="space-y-2">
+                                {data.comportamentos.map((t, i) => (
+                                    <li key={i} className="text-sm text-slate-600 italic">{t}</li>
+                                ))}
+                            </ul>
+                        </Section>
+                    )}
+
+                    {data.proximosPassos.length > 0 && (
+                        <Section titulo="💡 Ideias para próximas aulas">
+                            <ul className="space-y-2">
+                                {data.proximosPassos.map((t, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                                        <span className="text-indigo-400 mt-0.5 shrink-0">→</span>{t}
+                                    </li>
+                                ))}
+                            </ul>
+                        </Section>
+                    )}
+
+                    {data.evidencias.length > 0 && (
+                        <Section titulo="📎 Evidências de aula">
+                            <div className="flex flex-col gap-2">
+                                {data.evidencias.map((e, i) => (
+                                    <a key={i} href={e.url} target="_blank" rel="noopener noreferrer"
+                                        className="flex items-center gap-3 px-3 py-2 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 hover:bg-blue-100 transition">
+                                        <span className="shrink-0 text-xs font-mono text-slate-400">{formatarData(e.data)}</span>
+                                        <span className="font-semibold">🔗 Abrir evidência</span>
+                                    </a>
+                                ))}
+                            </div>
+                        </Section>
+                    )}
                 </>
             )}
         </div>
