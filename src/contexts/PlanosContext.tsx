@@ -239,6 +239,7 @@ export interface PlanosContextValue {
     adicionarAtividadeAoPlano: (atividadeId: string | number, planoId: string | number) => void
     sugerirPlanoParaTurma: (anoId: string, escolaId: string, segmentoId: string, turmaId: string) => string | null
     salvarRegistroRapido: () => void
+    atualizarKanbanStatus: (id: string | number, status: Plano['kanbanStatus']) => void
     // backup
     baixarBackup: () => void
     restaurarBackup: (event: React.ChangeEvent<HTMLInputElement>) => void
@@ -1017,6 +1018,11 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         else { _executar() }
     }, [rrData, rrTextos, rrAnoSel, rrEscolaSel, rrPlanosSegmento, planos, anosLetivos, setPlanos, setModalConfirm, setModalRegistroRapido, setRrTextos, setRrPlanosSegmento])
 
+    // ── KANBAN STATUS ────────────────────────────────────────────────────────
+    const atualizarKanbanStatus = useCallback((id: string | number, status: Plano['kanbanStatus']) => {
+        setPlanos(prev => prev.map(p => String(p.id) === String(id) ? { ...p, kanbanStatus: status } : p))
+    }, [setPlanos])
+
     // ── BACKUP ──────────────────────────────────────────────────────────────
     const baixarBackup = () => {
         const backup = {
@@ -1410,7 +1416,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         vincularMusicaAoPlano, desvincularMusicaDoPlano,
         vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano,
         abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro,
-        adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido,
+        adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido, atualizarKanbanStatus,
         baixarBackup, restaurarBackup,
         userId,
     }

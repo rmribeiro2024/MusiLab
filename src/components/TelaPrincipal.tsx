@@ -160,6 +160,7 @@ export default function TelaPrincipal() {
         setStatusDropdownId,
         desvincularMusicaDoPlano,
         vincularMusicaAoPlano,
+        atualizarKanbanStatus,
     } = usePlanosContext()
 
     // Constantes estáticas (não precisam vir do ctx)
@@ -1639,6 +1640,7 @@ export default function TelaPrincipal() {
                             {[
                                 { id:'grade',    label:'⊞', title:'Grade' },
                                 { id:'compacto', label:'☰', title:'Lista' },
+                                { id:'kanban',   label:'⠿', title:'Kanban' },
                                 { id:'periodo',  label:'📆', title:'Por Período' },
                                 { id:'segmento', label:'👥', title:'Por Segmento' },
                             ].map(m=>(
@@ -1895,6 +1897,63 @@ export default function TelaPrincipal() {
                     )}
                 </div>
             );
+        })()}
+
+        {/* ── MODO KANBAN ── */}
+        {modoVisualizacao === 'kanban' && (() => {
+            const COLUNAS: { id: 'rascunho' | 'pronto' | 'aplicado' | 'revisado'; label: string; cor: string; bg: string }[] = [
+                { id: 'rascunho',  label: '✏️ Rascunho',  cor: '#64748b', bg: '#f1f5f9' },
+                { id: 'pronto',    label: '✅ Pronto',     cor: '#2563eb', bg: '#eff6ff' },
+                { id: 'aplicado',  label: '🎵 Aplicado',  cor: '#059669', bg: '#f0fdf4' },
+                { id: 'revisado',  label: '🔍 Revisado',  cor: '#7c3aed', bg: '#faf5ff' },
+            ]
+            const porColuna = (colId: string) =>
+                planosFiltrados.filter(p => (p.kanbanStatus ?? 'rascunho') === colId)
+            return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, overflowX: 'auto', paddingBottom: 12 }}>
+                    {COLUNAS.map(col => {
+                        const itens = porColuna(col.id)
+                        return (
+                            <div key={col.id} style={{ background: col.bg, borderRadius: 14, padding: '10px 8px', minHeight: 200, border: `1.5px solid ${col.cor}22` }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, padding: '0 4px' }}>
+                                    <span style={{ fontSize: 12, fontWeight: 700, color: col.cor }}>{col.label}</span>
+                                    <span style={{ fontSize: 11, fontWeight: 600, color: col.cor, background: `${col.cor}18`, borderRadius: 99, padding: '1px 8px' }}>{itens.length}</span>
+                                </div>
+                                {itens.length === 0 && (
+                                    <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', padding: '16px 0', fontStyle: 'italic' }}>Vazio</p>
+                                )}
+                                {itens.map(plano => {
+                                    const colidx = COLUNAS.findIndex(c => c.id === col.id)
+                                    const podeMover = (dir: -1 | 1) => {
+                                        const next = COLUNAS[colidx + dir]
+                                        if (!next) return null
+                                        return (
+                                            <button
+                                                onClick={() => atualizarKanbanStatus(plano.id, next.id)}
+                                                style={{ padding: '2px 7px', fontSize: 11, color: next.cor, background: next.bg, border: `1px solid ${next.cor}44`, borderRadius: 6, cursor: 'pointer', fontWeight: 700 }}
+                                                title={`Mover para ${next.label}`}>
+                                                {dir === -1 ? '←' : '→'}
+                                            </button>
+                                        )
+                                    }
+                                    return (
+                                        <div key={plano.id}
+                                            style={{ background: '#fff', borderRadius: 10, padding: '8px 10px', marginBottom: 7, border: '1px solid #e2e8f0', cursor: 'pointer', boxShadow: '0 1px 3px #0001' }}
+                                            onClick={() => setPlanoSelecionado(plano)}>
+                                            <p style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', margin: '0 0 4px', lineHeight: 1.4, wordBreak: 'break-word' as const }}>{plano.titulo}</p>
+                                            {plano.escola && <p style={{ fontSize: 10, color: '#64748b', margin: '0 0 6px' }}>{plano.escola}</p>}
+                                            <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                                                {podeMover(-1)}
+                                                {podeMover(1)}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )
+                    })}
+                </div>
+            )
         })()}
 
         {/* ── MODAL APLICAR EM TURMAS ── */}

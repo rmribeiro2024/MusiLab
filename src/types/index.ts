@@ -171,6 +171,7 @@ export interface Plano {
   updatedAt?: string
   _ultimaEdicao?: string
   _historicoVersoes?: Array<Plano & { _versaoSalvaEm: string }>
+  kanbanStatus?: 'rascunho' | 'pronto' | 'aplicado' | 'revisado'
 }
 
 // ─── VÍNCULO MÚSICA ↔ PLANO ──────────────────────────────────
