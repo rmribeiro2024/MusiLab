@@ -58,6 +58,10 @@ const makeBP = (overrides = {}) => ({
 
 vi.mock('../contexts', () => ({
     useRepertorioContext: () => makeRC(),
+    useAtividadesContext: () => ({ atividades: [], pendingAtividadeId: null, setPendingAtividadeId: fn }),
+    usePlanosContext: () => ({ planoEditando: null, setPlanoEditando: fn, planos: [], setPlanoSelecionado: fn }),
+    useModalContext: () => ({ setModalConfirm: fn }),
+    useCalendarioContext: () => ({ ytPreviewId: null, setYtPreviewId: fn }),
     normalizePlano: (p: unknown) => p,
 }))
 vi.mock('../components/BancoPlanosContext', () => ({

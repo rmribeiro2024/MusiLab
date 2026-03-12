@@ -53,6 +53,7 @@ import ModalVincularMusica from './modals/ModalVincularMusica'
 import ModalImportarAtividade from './modals/ModalImportarAtividade'
 import ModalImportarMusica from './modals/ModalImportarMusica'
 import ModalGradeSemanal from './modals/ModalGradeSemanal'
+import ModalBuscaGlobal from './modals/ModalBuscaGlobal'
 
 // Fallback exibido enquanto o chunk do módulo está sendo baixado
 const CarregandoModulo = () => (
@@ -382,6 +383,7 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             // eventosEscolares, setEventosEscolares — migrados para AnoLetivoContext (Parte 6)
             const [modalEventos, setModalEventos] = useState(false);
+            const [showBuscaGlobal, setShowBuscaGlobal] = useState(false); // Prompt 2
             const [eventoEditando, setEventoEditando] = useState(null);
             const [ocultarFeriados, setOcultarFeriados] = useState(() => {
                 const saved = dbGet('ocultarFeriados');
@@ -465,6 +467,13 @@ export default function BancoPlanos({ session }) {
                     const s = _kbRef.current;
                     const tag = document.activeElement?.tagName?.toLowerCase();
                     const emInput = ['input','textarea','select'].includes(tag) || (document.activeElement as HTMLElement)?.isContentEditable;
+
+                    // Ctrl+K — busca global
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                        e.preventDefault();
+                        s.setShowBuscaGlobal(v => !v);
+                        return;
+                    }
 
                     // Ctrl+S — salvar plano em edição + forçar sync imediato na nuvem
                     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -1847,7 +1856,7 @@ export default function BancoPlanos({ session }) {
                 fecharModal, salvarPlano, triggerSalvo, novoPlano, restaurarVersao, sincronizarAgora,
                 setModalConfirm, setModalRegistro, setModalRegistroRapido, setModalConfiguracoes,
                 setModalNovaFaixa, setModalNovaEscola, setModalTemplates, setModalGradeSemanal,
-                setModalEventos, setStatusDropdownId,
+                setModalEventos, setStatusDropdownId, setShowBuscaGlobal,
             };
 
             // ============================================================
@@ -2764,6 +2773,13 @@ export default function BancoPlanos({ session }) {
                     <ModalNovaFaixa />
                     {/* ── MODAL NOVA ESCOLA ── */}
                     <ModalNovaEscola />
+
+                    {/* ── BUSCA GLOBAL (Ctrl+K) — Prompt 2 ── */}
+                    <ModalBuscaGlobal
+                        show={showBuscaGlobal}
+                        onClose={() => setShowBuscaGlobal(false)}
+                        setViewMode={setViewMode}
+                    />
 
                     {/* ── MODAL DE CONFIRMAÇÃO GLOBAL ── */}
                     <ModalConfirm />

@@ -594,6 +594,31 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             setShowModalMusicas(true)
         }
 
+        // ── Prompt 1: Atualizar métricas de uso das atividades da biblioteca ──
+        // Atividades adicionadas ao roteiro com origemAtividadeId têm contadorUso/ultimoUso atualizados
+        const agora = new Date().toISOString()
+        const ativsUsadas = new Map<string | number, boolean>()
+        ;(planoParaSalvar.atividadesRoteiro || []).forEach((atv: any) => {
+            if (atv.origemAtividadeId != null) ativsUsadas.set(atv.origemAtividadeId, true)
+        })
+        if (ativsUsadas.size > 0) {
+            setAtividades((prev: any[]) => prev.map(a => {
+                if (!ativsUsadas.has(a.id)) return a
+                const jaTemPlano = (a.planosVinculados || []).some(
+                    (v: any) => String(v.planoId) === String(planoParaSalvar.id)
+                )
+                const novoRegistro = { planoId: planoParaSalvar.id, planoTitulo: planoParaSalvar.titulo || 'Plano sem título', usadoEm: agora }
+                return {
+                    ...a,
+                    contadorUso: (a.contadorUso || 0) + 1,
+                    ultimoUso: agora,
+                    planosVinculados: jaTemPlano
+                        ? (a.planosVinculados || [])
+                        : [...(a.planosVinculados || []), novoRegistro],
+                }
+            }))
+        }
+
         // Detecção de estratégia no roteiro — fire and forget, não bloqueia o fluxo
         detectarEstrategiaNoRoteiro(planoParaSalvar).catch(() => {})
     }
@@ -1116,7 +1141,7 @@ Responda APENAS com JSON válido:
 
         try {
             const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
                 { method: 'POST', headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
             )
@@ -1218,7 +1243,7 @@ Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no in
         setGerandoObjetivos(true)
         try {
             const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1298,7 +1323,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         setGerandoBNCC(true)
         try {
             const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

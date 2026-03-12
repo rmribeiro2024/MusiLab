@@ -51,6 +51,16 @@ const CardAtividade = React.memo(({ ativ, setAtividadeEditando, excluirAtividade
                         <span key={t} className="text-xs bg-amber-50 text-amber-600 border border-amber-100 px-2 py-0.5 rounded-full">#{t}</span>
                     ))}
                 </div>
+                {/* Prompt 1: métricas de uso */}
+                {ativ.contadorUso != null && ativ.contadorUso > 0 ? (
+                    <p className="text-xs text-emerald-600 mb-2">
+                        {ativ.ultimoUso
+                            ? `Última: ${new Date(ativ.ultimoUso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} · `
+                            : ''}{ativ.contadorUso} uso{ativ.contadorUso !== 1 ? 's' : ''}
+                    </p>
+                ) : (
+                    <p className="text-xs text-slate-300 mb-2 italic">Nunca usada em plano</p>
+                )}
                 <button onClick={()=>setModalAdicionarAoPlano(ativ)}
                     className="w-full border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 py-2 rounded-xl font-bold text-sm transition mt-1">
                     + Adicionar ao Plano
@@ -416,6 +426,11 @@ export default function ModuloAtividades() {
                                             {ativ.duracao && <span className="text-xs text-slate-400">⏱ {ativ.duracao}</span>}
                                             {(ativ.faixaEtaria||[]).slice(0,1).map(f=><span key={f} className="text-xs text-indigo-500">👥 {f}</span>)}
                                             {(ativ.tags||[]).slice(0,2).map(t=><span key={t} className="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full border border-amber-100">#{t}</span>)}
+                                            {/* Prompt 1: métricas de uso (lista) */}
+                                            {ativ.contadorUso != null && ativ.contadorUso > 0
+                                                ? <span className="text-xs text-emerald-600">{ativ.contadorUso} uso{ativ.contadorUso !== 1 ? 's' : ''}</span>
+                                                : <span className="text-xs text-slate-300 italic">Nunca usada</span>
+                                            }
                                         </div>
                                     </div>
                                     <div className="flex gap-1.5 shrink-0">

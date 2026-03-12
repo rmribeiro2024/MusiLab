@@ -96,6 +96,8 @@ export default function ModuloRepertorio() {
     const { ytPreviewId, setYtPreviewId } = useCalendarioContext()
 
     const [usoExpandidoId, setUsoExpandidoId] = useState<string | null>(null)
+    // Prompt 4: filtros avançados recolhíveis (padrão: fechado)
+    const [filtrosAvancadosAbertos, setFiltrosAvancadosAbertos] = useState(false)
 
     const getUsosMusica = (musicaId: string | number) => {
         const usos: { data: string; planoId: unknown; planoTitulo: string }[] = []
@@ -115,6 +117,28 @@ export default function ModuloRepertorio() {
         })
         return usos.sort((a, b) => b.data.localeCompare(a.data))
     }
+
+    // Prompt 3: mapa de uso por música calculado uma vez de todos os planos
+    const usosMusicaMap = useMemo(() => {
+        const map: Record<string, { total: number; ultima: string }> = {}
+        planos.forEach(p => {
+            (p.atividadesRoteiro || []).forEach(atv => {
+                (atv.musicasVinculadas || []).forEach(mv => {
+                    const key = String(mv.id)
+                    const datas = (p.historicoDatas || []).length > 0
+                        ? p.historicoDatas
+                        : (p.registrosPosAula || []).map((r: {data?: string}) => r.data).filter(Boolean)
+                    if (!map[key]) map[key] = { total: 0, ultima: '' }
+                    map[key].total += datas.length > 0 ? datas.length : 1
+                    if (datas.length > 0) {
+                        const maxData = [...datas].sort().pop() as string || ''
+                        if (maxData > map[key].ultima) map[key].ultima = maxData
+                    }
+                })
+            })
+        })
+        return map
+    }, [planos])
 
     // Filtrar músicas (useMemo + debounce na busca)
     const buscaRepertorioDebounced = useDebounce(buscaRepertorio, 300)
@@ -176,8 +200,17 @@ export default function ModuloRepertorio() {
 
                 {/* Painel de Filtros */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                    {/* Prompt 4: cabeçalho filtros com toggle avançados */}
                     <div className="flex items-center justify-between mb-3">
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Filtros</p>
+                        <div className="flex items-center gap-3">
+                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Filtros</p>
+                            <button
+                                onClick={() => setFiltrosAvancadosAbertos(v => !v)}
+                                className="text-xs text-slate-500 hover:text-slate-700 font-medium border border-slate-200 rounded-full px-2 py-0.5 transition"
+                            >
+                                {filtrosAvancadosAbertos ? '▲ Menos filtros' : '▼ Mais filtros'}
+                            </button>
+                        </div>
                         <button
                             onClick={() => {
                                 setBuscaRepertorio('');
@@ -224,6 +257,8 @@ export default function ModuloRepertorio() {
                         </div>
                     </div>
 
+                    {/* Prompt 4: Linhas 2 e 3 somente visíveis quando filtrosAvancadosAbertos */}
+                    {filtrosAvancadosAbertos && <>
                     {/* Linha 2: Estilo + Tonalidade + Compasso + Andamento + Estrutura */}
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-2">
                         <div>
@@ -287,6 +322,7 @@ export default function ModuloRepertorio() {
                             </select>
                         </div>
                     </div>
+                    </>}
                 </div>
 
                 {/* Lista de músicas */}
@@ -299,6 +335,19 @@ export default function ModuloRepertorio() {
                                 <div className="min-w-[180px]">
                                     <h3 className="font-bold text-slate-800 text-sm">{m.titulo}</h3>
                                     <p className="text-xs text-slate-500 mt-0.5">{m.autor || '—'}</p>
+                                    {/* Prompt 3: última vez usada */}
+                                    {(() => {
+                                        const uso = usosMusicaMap[String(m.id)]
+                                        if (!uso || uso.total === 0) {
+                                            return <p className="text-xs text-slate-300 mt-0.5 italic">Nunca usada</p>
+                                        }
+                                        const fmtData = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : ''
+                                        return (
+                                            <p className="text-xs text-emerald-600 mt-0.5">
+                                                {uso.ultima ? `Última: ${fmtData(uso.ultima)} · ` : ''}{uso.total} uso{uso.total !== 1 ? 's' : ''}
+                                            </p>
+                                        )
+                                    })()}
                                 </div>
 
                                 {/* Energias */}

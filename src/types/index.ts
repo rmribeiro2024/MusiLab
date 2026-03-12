@@ -96,6 +96,7 @@ export interface AtividadeRoteiro {
   recursos?: RecursoItem[]
   musicaId?: string | number
   estrategiasVinculadas?: string[]
+  origemAtividadeId?: string | number // referência à atividade da biblioteca
 }
 
 export interface RegistroPosAula {
@@ -197,6 +198,10 @@ export interface Atividade {
   conceitos?: string[]
   arquivada?: boolean
   createdAt?: string
+  // Métricas de uso (Prompt 1 / Analytics)
+  contadorUso?: number
+  ultimoUso?: string // ISO date
+  planosVinculados?: Array<{ planoId: string | number; planoTitulo: string; usadoEm: string }>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
@@ -276,6 +281,9 @@ export interface Sequencia {
   dataFim?: string
   slots: SlotSequencia[]
   createdAt?: string
+  // Prompt 6: campos analytics
+  contadorUso?: number
+  ultimoUso?: string // ISO date — quando o último slot foi preenchido
 }
 
 // ─── ESTRATÉGIA PEDAGÓGICA ────────────────────────────────────

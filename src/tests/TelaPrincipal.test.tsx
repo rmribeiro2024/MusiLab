@@ -17,6 +17,9 @@ vi.mock('../lib/db', () => ({ dbSize: vi.fn(() => 1024 * 1024) }))
 vi.mock('../lib/toast', () => ({ showToast: vi.fn() }))
 vi.mock('../utils/pdf', () => ({ exportarPlanoPDF: vi.fn() }))
 vi.mock('../lib/supabase', () => ({ supabase: { from: vi.fn() } }))
+vi.mock('../components/modals/ModalMusicasDetectadas', () => ({ default: () => null }))
+vi.mock('../components/modals/ModalEstrategiaDetectada', () => ({ default: () => null }))
+vi.mock('../components/modals/ModalAplicarEmTurmas', () => ({ default: () => null }))
 vi.mock('./RichTextEditor', () => ({
     default: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
         <textarea data-testid="rich-editor" value={value ?? ''} onChange={e => onChange(e.target.value)} />
@@ -52,9 +55,8 @@ const makePC = (overrides = {}) => ({
     dragActiveIndex: null, dragOverIndex: null, duracoesSugestao: [],
     editarPlano: fn, excluirPlano: fn, fecharModal: fn, restaurarVersao: fn,
     filtroConceito: '', filtroEscola: '', filtroFaixa: '',
-    filtroFavorito: false, filtroNivel: '', filtroStatus: '',
+    filtroFavorito: false, filtroNivel: '', filtroSegmento: '', filtroStatus: '',
     filtroTag: '', filtroUnidade: '', formExpandido: false,
-    // 'compacto' é o modo que exibe LinhaPlano e mensagem de vazio
     handleDragEnd: fn, handleDragEnter: fn, handleDragStart: fn,
     materiaisBloqueados: [], modoEdicao: false, modoVisualizacao: 'compacto',
     novaUnidade: '', novoConceito: '', novoRecursoTipo: 'link',
@@ -62,19 +64,23 @@ const makePC = (overrides = {}) => ({
     planoEditando: null, planos: [], planosFiltrados: [],
     recursosExpandidos: {}, removerAtividadeRoteiro: fn,
     removerDataEdicao: fn, removerRecurso: fn, salvarPlano: fn,
-    statusDropdownId: null, sugerirBNCC: fn,
+    statusDropdownId: null, sugerirBNCC: fn, gerandoBNCC: false,
+    sugerirObjetivosIA: fn, gerandoObjetivos: false,
     toggleConceito: fn, toggleFaixa: fn, toggleFavorito: fn,
     toggleRecursosAtiv: fn, toggleUnidade: fn,
     setAdicionandoConceito: fn, setAdicionandoUnidade: fn,
     setBusca: fn, setDataEdicao: fn, setFiltroConceito: fn,
     setFiltroEscola: fn, setFiltroFaixa: fn, setFiltroFavorito: fn,
-    setFiltroNivel: fn, setFiltroStatus: fn, setFiltroTag: fn,
+    setFiltroNivel: fn, setFiltroSegmento: fn, setFiltroStatus: fn, setFiltroTag: fn,
     setFiltroUnidade: fn, setFormExpandido: fn, setMateriaisBloqueados: fn,
     setModalImportarAtividade: fn, setModoVisualizacao: fn,
     setNovaUnidade: fn, setNovoConceito: fn, setNovoRecursoTipo: fn,
     setNovoRecursoUrl: fn, setOrdenacaoCards: fn, setPlanoEditando: fn,
     setPlanoSelecionado: fn, setPlanos: fn, setStatusDropdownId: fn,
-    escolas: [],
+    escolas: [], segmentosPlanos: [],
+    // campos usados via usePlanosContext mas não em makePC antes
+    abrirModalRegistro: fn, baixarBackup: fn, userId: 'u1',
+    setModalTemplates: fn,
     ...overrides,
 })
 
@@ -83,6 +89,12 @@ vi.mock('../components/BancoPlanosContext', () => ({
 }))
 vi.mock('../contexts', () => ({
     usePlanosContext: () => makePC(),
+    useAnoLetivoContext: () => ({ anosLetivos: [], conceitos: [], setConceitos: fn, faixas: [], tagsGlobais: [], setTagsGlobais: fn, unidades: [], setModalNovaEscola: fn, setNovaEscolaAnoId: fn, setNovaEscolaNome: fn, setModalNovaFaixa: fn, setNovaFaixaNome: fn }),
+    useAtividadesContext: () => ({ atividades: [], setAtividades: fn, setAtividadeVinculandoMusica: fn }),
+    useRepertorioContext: () => ({ repertorio: [], setViewMode: fn }),
+    useModalContext: () => ({ setModalConfirm: fn }),
+    useCalendarioContext: () => ({ periodoDias: 30, setPeriodoDias: fn, dataInicioCustom: '', setDataInicioCustom: fn, dataFimCustom: '', setDataFimCustom: fn }),
+    useEstrategiasContext: () => ({ estrategias: [] }),
     normalizePlano: (p: unknown) => p,
 }))
 
