@@ -129,6 +129,9 @@ export interface RegistroPosAula {
   chamada?: { alunoId: string; presente: boolean }[]
   encaminhamentos?: { id: string; texto: string; concluido: boolean }[]
   rubrica?: ItemRubrica[]
+  audioNotaDeVoz?: string   // base64 do blob de áudio (sem prefixo data:...)
+  audioDuracao?: number     // segundos gravados
+  audioMime?: string        // mime type (ex: 'audio/webm')
 }
 
 export interface Plano {
