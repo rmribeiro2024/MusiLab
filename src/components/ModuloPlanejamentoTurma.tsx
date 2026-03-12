@@ -1885,6 +1885,7 @@ function ConteudoTurma() {
             instrumento: novoAlunoInstrumento.trim() || undefined,
           } as AlunoDestaque)
           setNovoAlunoNome(''); setNovoAlunoNota(''); setNovoAlunoFlag(false); setNovoAlunoInstrumento(''); setEditandoAlunoId(null)
+          setAlunosExpandidos(true) // garante que a lista fique visível após salvar
         }
 
         function iniciarEdicao(al: AlunoDestaque) {

@@ -298,10 +298,9 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
 
   // ── Salvar no IndexedDB ───────────────────────────────────────────────────
   useEffect(() => {
-    // Stamp _updatedAt e marcar como pendente quando offline (sem userId)
-    const toSave = !userId
-      ? anosLetivos.map(a => carimbарTimestamp(a as unknown as { id: string; _updatedAt?: string; [key: string]: unknown }))
-      : anosLetivos
+    // Sempre carimbar _updatedAt — garante que o merge offline/online escolha
+    // a versão mais recente corretamente mesmo quando logado com egress bloqueado
+    const toSave = anosLetivos.map(a => carimbарTimestamp(a as unknown as { id: string; _updatedAt?: string; [key: string]: unknown }))
     dbSet('anosLetivos', JSON.stringify(toSave))
     if (!userId && carregado) {
       anosLetivos.forEach(a => marcarPendente('anos_letivos', String(a.id)))
@@ -595,13 +594,13 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
   // ── Alunos em destaque ────────────────────────────────────────────────────
   function alunosAddOrUpdate(anoId: string, escolaId: string, segmentoId: string, turmaId: string, aluno: import('../types').AlunoDestaque) {
     setAnosLetivos(prev => prev.map(a => {
-      if (a.id !== anoId) return a
+      if (String(a.id) !== String(anoId)) return a
       return { ...a, escolas: a.escolas.map(e => {
-        if (e.id !== escolaId) return e
+        if (String(e.id) !== String(escolaId)) return e
         return { ...e, segmentos: e.segmentos.map(s => {
-          if (s.id !== segmentoId) return s
+          if (String(s.id) !== String(segmentoId)) return s
           return { ...s, turmas: s.turmas.map(t => {
-            if (t.id !== turmaId) return t
+            if (String(t.id) !== String(turmaId)) return t
             const alunos = t.alunos || []
             const existe = alunos.findIndex(al => al.id === aluno.id)
             return { ...t, alunos: existe >= 0
@@ -616,13 +615,13 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
 
   function alunosRemove(anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string) {
     setAnosLetivos(prev => prev.map(a => {
-      if (a.id !== anoId) return a
+      if (String(a.id) !== String(anoId)) return a
       return { ...a, escolas: a.escolas.map(e => {
-        if (e.id !== escolaId) return e
+        if (String(e.id) !== String(escolaId)) return e
         return { ...e, segmentos: e.segmentos.map(s => {
-          if (s.id !== segmentoId) return s
+          if (String(s.id) !== String(segmentoId)) return s
           return { ...s, turmas: s.turmas.map(t => {
-            if (t.id !== turmaId) return t
+            if (String(t.id) !== String(turmaId)) return t
             return { ...t, alunos: (t.alunos || []).filter(al => al.id !== alunoId) }
           })}
         })}
@@ -631,22 +630,22 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
   }
 
   function alunosGetByTurma(anoId: string, escolaId: string, segmentoId: string, turmaId: string): import('../types').AlunoDestaque[] {
-    const ano = anosLetivos.find(a => a.id === anoId)
-    const escola = ano?.escolas.find(e => e.id === escolaId)
-    const seg = escola?.segmentos.find(s => s.id === segmentoId)
-    const turma = seg?.turmas.find(t => t.id === turmaId)
+    const ano = anosLetivos.find(a => String(a.id) === String(anoId))
+    const escola = ano?.escolas.find(e => String(e.id) === String(escolaId))
+    const seg = escola?.segmentos.find(s => String(s.id) === String(segmentoId))
+    const turma = seg?.turmas.find(t => String(t.id) === String(turmaId))
     return turma?.alunos || []
   }
 
   function _updateAluno(anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string, updater: (al: import('../types').AlunoDestaque) => import('../types').AlunoDestaque) {
     setAnosLetivos(prev => prev.map(a => {
-      if (a.id !== anoId) return a
+      if (String(a.id) !== String(anoId)) return a
       return { ...a, escolas: a.escolas.map(e => {
-        if (e.id !== escolaId) return e
+        if (String(e.id) !== String(escolaId)) return e
         return { ...e, segmentos: e.segmentos.map(s => {
-          if (s.id !== segmentoId) return s
+          if (String(s.id) !== String(segmentoId)) return s
           return { ...s, turmas: s.turmas.map(t => {
-            if (t.id !== turmaId) return t
+            if (String(t.id) !== String(turmaId)) return t
             return { ...t, alunos: (t.alunos || []).map(al => al.id === alunoId ? updater(al) : al) }
           })}
         })}
@@ -682,43 +681,43 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
 
   function turmaSetRubricas(anoId: string, escolaId: string, segmentoId: string, turmaId: string, rubricas: import('../types').CriterioRubrica[]) {
     setAnosLetivos(prev => prev.map(a => {
-      if (a.id !== anoId) return a
+      if (String(a.id) !== String(anoId)) return a
       return { ...a, escolas: a.escolas.map(e => {
-        if (e.id !== escolaId) return e
+        if (String(e.id) !== String(escolaId)) return e
         return { ...e, segmentos: e.segmentos.map(s => {
-          if (s.id !== segmentoId) return s
-          return { ...s, turmas: s.turmas.map(t => t.id !== turmaId ? t : { ...t, rubricas }) }
+          if (String(s.id) !== String(segmentoId)) return s
+          return { ...s, turmas: s.turmas.map(t => String(t.id) !== String(turmaId) ? t : { ...t, rubricas }) }
         })}
       })}
     }))
   }
 
   function turmaGetRubricas(anoId: string, escolaId: string, segmentoId: string, turmaId: string): import('../types').CriterioRubrica[] {
-    const ano = anosLetivos.find(a => a.id === anoId)
-    const esc = ano?.escolas.find(e => e.id === escolaId)
-    const seg = esc?.segmentos.find(s => s.id === segmentoId)
-    const tur = seg?.turmas.find(t => t.id === turmaId)
+    const ano = anosLetivos.find(a => String(a.id) === String(anoId))
+    const esc = ano?.escolas.find(e => String(e.id) === String(escolaId))
+    const seg = esc?.segmentos.find(s => String(s.id) === String(segmentoId))
+    const tur = seg?.turmas.find(t => String(t.id) === String(turmaId))
     return tur?.rubricas ?? RUBRICAS_PADRAO
   }
 
   // ── Tipos de anotação por turma ───────────────────────────────────────────
 
   function turmaGetTiposAnotacao(anoId: string, escolaId: string, segmentoId: string, turmaId: string): string[] {
-    const ano = anosLetivos.find(a => a.id === anoId)
-    const esc = ano?.escolas.find(e => e.id === escolaId)
-    const seg = esc?.segmentos.find(s => s.id === segmentoId)
-    const tur = seg?.turmas.find(t => t.id === turmaId)
+    const ano = anosLetivos.find(a => String(a.id) === String(anoId))
+    const esc = ano?.escolas.find(e => String(e.id) === String(escolaId))
+    const seg = esc?.segmentos.find(s => String(s.id) === String(segmentoId))
+    const tur = seg?.turmas.find(t => String(t.id) === String(turmaId))
     return tur?.tiposAnotacao ?? []
   }
 
   function _updateTurma(anoId: string, escolaId: string, segmentoId: string, turmaId: string, fn: (t: import('../types').Turma) => import('../types').Turma) {
     setAnosLetivos(prev => prev.map(a => {
-      if (a.id !== anoId) return a
+      if (String(a.id) !== String(anoId)) return a
       return { ...a, escolas: a.escolas.map(e => {
-        if (e.id !== escolaId) return e
+        if (String(e.id) !== String(escolaId)) return e
         return { ...e, segmentos: e.segmentos.map(s => {
-          if (s.id !== segmentoId) return s
-          return { ...s, turmas: s.turmas.map(t => t.id !== turmaId ? t : fn(t)) }
+          if (String(s.id) !== String(segmentoId)) return s
+          return { ...s, turmas: s.turmas.map(t => String(t.id) !== String(turmaId) ? t : fn(t)) }
         })}
       })}
     }))
