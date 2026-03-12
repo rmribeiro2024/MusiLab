@@ -2774,12 +2774,13 @@ export default function BancoPlanos({ session }) {
                     {/* ── MODAL NOVA ESCOLA ── */}
                     <ModalNovaEscola />
 
-                    {/* ── BUSCA GLOBAL (Ctrl+K) — Prompt 2 ── */}
-                    <ModalBuscaGlobal
-                        show={showBuscaGlobal}
-                        onClose={() => setShowBuscaGlobal(false)}
-                        setViewMode={setViewMode}
-                    />
+                    {/* ── BUSCA GLOBAL (Ctrl+K) — montado condicionalmente: sem subscriptions extras no carregamento ── */}
+                    {showBuscaGlobal && (
+                        <ModalBuscaGlobal
+                            onClose={() => setShowBuscaGlobal(false)}
+                            setViewMode={setViewMode}
+                        />
+                    )}
 
                     {/* ── MODAL DE CONFIRMAÇÃO GLOBAL ── */}
                     <ModalConfirm />

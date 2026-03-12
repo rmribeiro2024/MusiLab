@@ -10,14 +10,14 @@ import { useRepertorioContext } from '../../contexts/RepertorioContext'
 import { useSequenciasContext } from '../../contexts/SequenciasContext'
 
 interface Props {
-    show: boolean
     onClose: () => void
     setViewMode: (mode: string) => void
 }
 
 const MAX_POR_GRUPO = 5
 
-export default function ModalBuscaGlobal({ show, onClose, setViewMode }: Props) {
+// Montado condicionalmente em BancoPlanos — hooks só executam quando o modal está aberto
+export default function ModalBuscaGlobal({ onClose, setViewMode }: Props) {
     const { planos, setPlanoSelecionado } = usePlanosContext()
     const { atividades, setAtividadeEditando } = useAtividadesContext()
     const { estrategias } = useEstrategiasContext()
@@ -28,19 +28,17 @@ export default function ModalBuscaGlobal({ show, onClose, setViewMode }: Props) 
     const inputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
-        if (show) {
-            setQuery('')
-            setTimeout(() => inputRef.current?.focus(), 50)
-        }
-    }, [show])
+        setQuery('')
+        setTimeout(() => inputRef.current?.focus(), 50)
+    }, [])
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose()
         }
-        if (show) document.addEventListener('keydown', handler)
+        document.addEventListener('keydown', handler)
         return () => document.removeEventListener('keydown', handler)
-    }, [show, onClose])
+    }, [onClose])
 
     const q = query.trim().toLowerCase()
 
@@ -74,8 +72,6 @@ export default function ModalBuscaGlobal({ show, onClose, setViewMode }: Props) 
     const total = resultados
         ? resultados.rPlanos.length + resultados.rAtividades.length + resultados.rEstrategias.length + resultados.rMusicas.length + resultados.rSequencias.length
         : 0
-
-    if (!show) return null
 
     function navPlano(plano: any) {
         setPlanoSelecionado(plano)
