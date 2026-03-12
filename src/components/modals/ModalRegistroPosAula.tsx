@@ -1,6 +1,6 @@
 import React from 'react'
 import { useCalendarioContext } from '../../contexts'
-import { useAnoLetivoContext } from '../../contexts'
+import { useAnoLetivoContext, RUBRICAS_PADRAO } from '../../contexts/AnoLetivoContext'
 import { usePlanosContext, useAplicacoesContext } from '../../contexts'
 
 // ── ACCORDION CHIP — campo colapsável genérico ──
@@ -340,7 +340,7 @@ export default function ModalRegistroPosAula() {
         buscaRegistros, setBuscaRegistros,
         obterTurmasDoDia,
     } = useCalendarioContext()
-    const { anosLetivos, alunosGetByTurma } = useAnoLetivoContext()
+    const { anosLetivos, alunosGetByTurma, turmaGetRubricas, turmaSetRubricas } = useAnoLetivoContext() as any
     const { planos, setPlanos, salvarRegistro, editarRegistro, excluirRegistro } = usePlanosContext()
     const { aplicacoes, atualizarStatusAplicacao } = useAplicacoesContext()
     const setRegSerieSel: ((v: string) => void) | undefined = undefined
@@ -348,6 +348,8 @@ export default function ModalRegistroPosAula() {
     // ── IA pós-aula ──
     const [sugestaoIA, setSugestaoIA] = React.useState<string | null>(null)
     const [loadingIA, setLoadingIA] = React.useState(false)
+    const [resumoPais, setResumoPais] = React.useState<string | null>(null)
+    const [loadingResumoPais, setLoadingResumoPais] = React.useState(false)
 
     // ── Copiar registro para outras turmas ──
     function resolverTurmaLabel(anoLetivoId: unknown, escolaId: unknown, segmentoId: unknown, turmaId: unknown): string {
@@ -787,6 +789,58 @@ export default function ModalRegistroPosAula() {
                                         )
                                     })()}
 
+                                        {/* Rubrica de avaliação */}
+                                        {regTurmaSel && regAnoSel && regEscolaSel && regSegmentoSel && (() => {
+                                            const criterios = (typeof turmaGetRubricas === 'function'
+                                                ? turmaGetRubricas(regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel)
+                                                : RUBRICAS_PADRAO) as { id: string; nome: string; escala: number }[]
+                                            const rubricaAtual: { criterioId: string; valor: number }[] = (novoRegistro as any).rubrica || []
+                                            const getValor = (id: string) => rubricaAtual.find(r => r.criterioId === id)?.valor ?? 0
+                                            const setValor = (criterioId: string, valor: number) => {
+                                                const nova = [...rubricaAtual.filter(r => r.criterioId !== criterioId), { criterioId, valor }]
+                                                setNovoRegistro({ ...novoRegistro, rubrica: nova } as any)
+                                            }
+                                            const preenchida = rubricaAtual.some(r => r.valor > 0)
+                                            return (
+                                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
+                                                        <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📊</span>
+                                                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: preenchida ? '#334155' : '#64748b', flex: 1 }}>
+                                                            Avaliação da aula
+                                                        </span>
+                                                        {preenchida && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                    </div>
+                                                    <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                                        {criterios.map(c => {
+                                                            const val = getValor(c.id)
+                                                            return (
+                                                                <div key={c.id}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                                                        <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>{c.nome}</span>
+                                                                        <span style={{ fontSize: 11, color: val > 0 ? '#6366f1' : '#94a3b8' }}>{val > 0 ? `${val}/${c.escala}` : '—'}</span>
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', gap: 4 }}>
+                                                                        {Array.from({ length: c.escala }, (_, i) => i + 1).map(n => (
+                                                                            <button key={n} type="button"
+                                                                                onClick={() => setValor(c.id, val === n ? 0 : n)}
+                                                                                style={{
+                                                                                    flex: 1, height: 28, borderRadius: 6, cursor: 'pointer', transition: 'all .15s', border: 'none',
+                                                                                    background: n <= val ? '#6366f1' : '#e2e8f0',
+                                                                                    color: n <= val ? '#fff' : '#94a3b8',
+                                                                                    fontSize: 11, fontWeight: 700,
+                                                                                }}>
+                                                                                {n}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })()}
+
                                         {/* Resultado da aula */}
                                         <ResultadoAulaSelector
                                             value={(novoRegistro as any).resultadoAula || ''}
@@ -1014,6 +1068,58 @@ export default function ModalRegistroPosAula() {
                                                     </button>
                                                 </>
                                             }
+                                        </div>
+                                    )}
+
+                                    {/* ── Resumo para pais ── */}
+                                    {sugestaoIA && !loadingIA && (
+                                        <div style={{ margin: '0 0 4px', padding: '12px 14px', background: '#faf5ff', borderRadius: 12, border: '1px solid #e9d5ff' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <span style={{ fontSize: 13 }}>📱</span>
+                                                    <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase' as const, letterSpacing: '.06em' }}>Resumo para os pais</span>
+                                                </div>
+                                                {!resumoPais && !loadingResumoPais && (
+                                                    <button type="button"
+                                                        onClick={() => {
+                                                            const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+                                                            if (!apiKey) return
+                                                            setLoadingResumoPais(true)
+                                                            setResumoPais(null)
+                                                            const reg = novoRegistro
+                                                            const prompt = `Você é assistente de um professor de música. Com base no registro desta aula:\n- O que foi trabalhado: "${reg.resumoAula || ''}"\n- O que funcionou bem: "${reg.funcionouBem || ''}"\n- Observações: "${reg.anotacoesGerais || ''}"\n\nEscreva uma mensagem amigável e breve (máx. 4 linhas) para os pais/responsáveis, em português informal, informando o que foi feito na aula e uma dica prática do que o aluno pode praticar em casa. Sem saudação formal, direto ao ponto.`
+                                                            fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                                                            })
+                                                                .then(r => r.json())
+                                                                .then(d => setResumoPais(d.candidates?.[0]?.content?.parts?.[0]?.text || null))
+                                                                .catch(() => setResumoPais(null))
+                                                                .finally(() => setLoadingResumoPais(false))
+                                                        }}
+                                                        style={{ fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#ede9fe', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                                                        ✨ Gerar
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {loadingResumoPais && <p style={{ fontSize: 12, color: '#7c3aed', fontStyle: 'italic' }}>Gerando resumo...</p>}
+                                            {resumoPais && (
+                                                <>
+                                                    <p style={{ fontSize: 12.5, color: '#334155', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>{resumoPais}</p>
+                                                    <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                                                        <button type="button"
+                                                            onClick={() => { navigator.clipboard?.writeText(resumoPais); setResumoPais('✓ Copiado!') }}
+                                                            style={{ fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#ede9fe', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                                                            📋 Copiar
+                                                        </button>
+                                                        <button type="button" onClick={() => setResumoPais(null)}
+                                                            style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', background: '#f1f5f9', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                                                            Regenerar
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                     )}
 

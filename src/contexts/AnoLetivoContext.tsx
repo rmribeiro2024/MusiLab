@@ -14,6 +14,12 @@ import type { AnoLetivo, EventoEscolar, PlanejamentoAnualItem, PeriodoAnual, Pla
 const conceitosIniciais = ['Ritmo','Melodia','Harmonia','Timbre','Dinâmica','Forma','Textura','Andamento','Altura','Duração','Compasso','Tonalidade','Escala','Expressão','Improvisação','Criação','Apreciação'];
 const unidadesIniciais = ['Unidade 1','Unidade 2','Unidade 3','Unidade 4'];
 
+export const RUBRICAS_PADRAO: import('../types').CriterioRubrica[] = [
+  { id: 'participacao',  nome: 'Participação',          escala: 5 },
+  { id: 'tecnica',       nome: 'Desenvolvimento técnico', escala: 5 },
+  { id: 'engajamento',   nome: 'Engajamento',            escala: 5 },
+];
+
 // ─── INTERFACE DO CONTEXTO ────────────────────────────────────────────────────
 
 export interface AnoLetivoContextValue {
@@ -118,6 +124,9 @@ export interface AnoLetivoContextValue {
   alunoRemoveAnotacao: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string, anotacaoId: string) => void
   alunoAddMarco: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string, marco: import('../types').MarcoAluno) => void
   alunoRemoveMarco: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string, marcoId: string) => void
+  // Rubricas por turma
+  turmaSetRubricas: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, rubricas: import('../types').CriterioRubrica[]) => void
+  turmaGetRubricas: (anoId: string, escolaId: string, segmentoId: string, turmaId: string) => import('../types').CriterioRubrica[]
   // Faixas e escolas — funções
   salvarNovaFaixa: () => void
   salvarNovaEscola: (planoEditando?: Plano | null, setPlanoEditando?: React.Dispatch<React.SetStateAction<Plano | null>>) => void
@@ -665,6 +674,29 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     }))
   }
 
+  // ── Rubricas por turma ────────────────────────────────────────────────────
+
+  function turmaSetRubricas(anoId: string, escolaId: string, segmentoId: string, turmaId: string, rubricas: import('../types').CriterioRubrica[]) {
+    setAnosLetivos(prev => prev.map(a => {
+      if (a.id !== anoId) return a
+      return { ...a, escolas: a.escolas.map(e => {
+        if (e.id !== escolaId) return e
+        return { ...e, segmentos: e.segmentos.map(s => {
+          if (s.id !== segmentoId) return s
+          return { ...s, turmas: s.turmas.map(t => t.id !== turmaId ? t : { ...t, rubricas }) }
+        })}
+      })}
+    }))
+  }
+
+  function turmaGetRubricas(anoId: string, escolaId: string, segmentoId: string, turmaId: string): import('../types').CriterioRubrica[] {
+    const ano = anosLetivos.find(a => a.id === anoId)
+    const esc = ano?.escolas.find(e => e.id === escolaId)
+    const seg = esc?.segmentos.find(s => s.id === segmentoId)
+    const tur = seg?.turmas.find(t => t.id === turmaId)
+    return tur?.rubricas ?? RUBRICAS_PADRAO
+  }
+
   // ── salvarNovaFaixa ───────────────────────────────────────────────────────
 
   function salvarNovaFaixa() {
@@ -745,6 +777,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     gtAddTurma, gtRemoveTurma,
     alunosAddOrUpdate, alunosRemove, alunosGetByTurma,
     alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco,
+    turmaSetRubricas, turmaGetRubricas,
     salvarNovaFaixa,
     salvarNovaEscola,
   }

@@ -128,6 +128,7 @@ export interface RegistroPosAula {
   urlEvidencia?: string
   chamada?: { alunoId: string; presente: boolean }[]
   encaminhamentos?: { id: string; texto: string; concluido: boolean }[]
+  rubrica?: ItemRubrica[]
 }
 
 export interface Plano {
@@ -348,10 +349,22 @@ export interface AlunoDestaque {
   marcos?: MarcoAluno[]
 }
 
+export interface CriterioRubrica {
+  id: string
+  nome: string
+  escala: 3 | 5       // pontos na escala (1-3 ou 1-5)
+}
+
+export interface ItemRubrica {
+  criterioId: string
+  valor: number       // pontuação obtida
+}
+
 export interface Turma {
   id: string
   nome: string
   alunos?: AlunoDestaque[]
+  rubricas?: CriterioRubrica[]   // critérios configurados para esta turma
 }
 
 export interface Segmento {
