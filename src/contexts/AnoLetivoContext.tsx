@@ -114,6 +114,10 @@ export interface AnoLetivoContextValue {
   alunosAddOrUpdate: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, aluno: import('../types').AlunoDestaque) => void
   alunosRemove: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string) => void
   alunosGetByTurma: (anoId: string, escolaId: string, segmentoId: string, turmaId: string) => import('../types').AlunoDestaque[]
+  alunoAddAnotacao: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string, anotacao: import('../types').AnotacaoAluno) => void
+  alunoRemoveAnotacao: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string, anotacaoId: string) => void
+  alunoAddMarco: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string, marco: import('../types').MarcoAluno) => void
+  alunoRemoveMarco: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string, marcoId: string) => void
   // Faixas e escolas — funções
   salvarNovaFaixa: () => void
   salvarNovaEscola: (planoEditando?: Plano | null, setPlanoEditando?: React.Dispatch<React.SetStateAction<Plano | null>>) => void
@@ -621,6 +625,46 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     return turma?.alunos || []
   }
 
+  function _updateAluno(anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string, updater: (al: import('../types').AlunoDestaque) => import('../types').AlunoDestaque) {
+    setAnosLetivos(prev => prev.map(a => {
+      if (a.id !== anoId) return a
+      return { ...a, escolas: a.escolas.map(e => {
+        if (e.id !== escolaId) return e
+        return { ...e, segmentos: e.segmentos.map(s => {
+          if (s.id !== segmentoId) return s
+          return { ...s, turmas: s.turmas.map(t => {
+            if (t.id !== turmaId) return t
+            return { ...t, alunos: (t.alunos || []).map(al => al.id === alunoId ? updater(al) : al) }
+          })}
+        })}
+      })}
+    }))
+  }
+
+  function alunoAddAnotacao(anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string, anotacao: import('../types').AnotacaoAluno) {
+    _updateAluno(anoId, escolaId, segmentoId, turmaId, alunoId, al => ({
+      ...al, anotacoes: [...(al.anotacoes || []), anotacao]
+    }))
+  }
+
+  function alunoRemoveAnotacao(anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string, anotacaoId: string) {
+    _updateAluno(anoId, escolaId, segmentoId, turmaId, alunoId, al => ({
+      ...al, anotacoes: (al.anotacoes || []).filter(x => x.id !== anotacaoId)
+    }))
+  }
+
+  function alunoAddMarco(anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string, marco: import('../types').MarcoAluno) {
+    _updateAluno(anoId, escolaId, segmentoId, turmaId, alunoId, al => ({
+      ...al, marcos: [...(al.marcos || []), marco]
+    }))
+  }
+
+  function alunoRemoveMarco(anoId: string, escolaId: string, segmentoId: string, turmaId: string, alunoId: string, marcoId: string) {
+    _updateAluno(anoId, escolaId, segmentoId, turmaId, alunoId, al => ({
+      ...al, marcos: (al.marcos || []).filter(x => x.id !== marcoId)
+    }))
+  }
+
   // ── salvarNovaFaixa ───────────────────────────────────────────────────────
 
   function salvarNovaFaixa() {
@@ -700,6 +744,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     gtAddSegmento, gtRemoveSegmento,
     gtAddTurma, gtRemoveTurma,
     alunosAddOrUpdate, alunosRemove, alunosGetByTurma,
+    alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco,
     salvarNovaFaixa,
     salvarNovaEscola,
   }

@@ -715,6 +715,77 @@ export default function ModalRegistroPosAula() {
                                             className="flex-1 bg-transparent outline-none border-none text-right" style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }} />
                                     </div>
 
+                                    {/* Chamada rápida */}
+                                    {regTurmaSel && regAnoSel && regEscolaSel && regSegmentoSel && (() => {
+                                        const todosAlunos = alunosGetByTurma(regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel)
+                                        if (todosAlunos.length === 0) return null
+                                        const chamadaAtual: { alunoId: string; presente: boolean }[] = (novoRegistro as any).chamada || []
+                                        const getPresente = (id: string) => {
+                                            const entry = chamadaAtual.find(c => c.alunoId === id)
+                                            return entry ? entry.presente : null // null = não marcado
+                                        }
+                                        const togglePresente = (alunoId: string, presente: boolean) => {
+                                            const atual = chamadaAtual.find(c => c.alunoId === alunoId)
+                                            let nova: { alunoId: string; presente: boolean }[]
+                                            if (atual && atual.presente === presente) {
+                                                // clique duplo = desmarcar
+                                                nova = chamadaAtual.filter(c => c.alunoId !== alunoId)
+                                            } else {
+                                                nova = [...chamadaAtual.filter(c => c.alunoId !== alunoId), { alunoId, presente }]
+                                            }
+                                            setNovoRegistro({ ...novoRegistro, chamada: nova } as any)
+                                        }
+                                        const presentes = chamadaAtual.filter(c => c.presente).length
+                                        const ausentes = chamadaAtual.filter(c => !c.presente).length
+                                        const total = todosAlunos.length
+                                        return (
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
+                                                    <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>✋</span>
+                                                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: '#64748b', flex: 1 }}>
+                                                        Chamada
+                                                    </span>
+                                                    {(presentes > 0 || ausentes > 0) && (
+                                                        <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 8px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>
+                                                            {presentes}/{total} presentes
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div style={{ padding: '0 12px 10px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                                    {todosAlunos.map(al => {
+                                                        const estado = getPresente(al.id)
+                                                        return (
+                                                            <div key={al.id} style={{ display: 'flex', gap: 2 }}>
+                                                                <button type="button"
+                                                                    onClick={() => togglePresente(al.id, true)}
+                                                                    title="Presente"
+                                                                    style={{
+                                                                        fontSize: 11, fontWeight: 600, padding: '4px 8px', borderRadius: '8px 0 0 8px', cursor: 'pointer', transition: 'all .15s',
+                                                                        background: estado === true ? '#22c55e' : '#f1f5f9',
+                                                                        color: estado === true ? '#fff' : '#64748b',
+                                                                        border: estado === true ? '1px solid #16a34a' : '1px solid #e2e8f0',
+                                                                    }}>
+                                                                    {al.nome.split(' ')[0]}
+                                                                </button>
+                                                                <button type="button"
+                                                                    onClick={() => togglePresente(al.id, false)}
+                                                                    title="Ausente"
+                                                                    style={{
+                                                                        fontSize: 11, fontWeight: 600, padding: '4px 6px', borderRadius: '0 8px 8px 0', cursor: 'pointer', transition: 'all .15s',
+                                                                        background: estado === false ? '#ef4444' : '#f1f5f9',
+                                                                        color: estado === false ? '#fff' : '#94a3b8',
+                                                                        border: estado === false ? '1px solid #dc2626' : '1px solid #e2e8f0',
+                                                                    }}>
+                                                                    ✕
+                                                                </button>
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )
+                                    })()}
+
                                         {/* Resultado da aula */}
                                         <ResultadoAulaSelector
                                             value={(novoRegistro as any).resultadoAula || ''}

@@ -126,6 +126,7 @@ export interface RegistroPosAula {
   anotacoesGerais?: string
   proximaAulaOpcao?: string
   urlEvidencia?: string
+  chamada?: { alunoId: string; presente: boolean }[]
 }
 
 export interface Plano {
@@ -321,11 +322,29 @@ export interface Estrategia {
 }
 
 // ─── ANO LETIVO / ESCOLA ──────────────────────────────────────
+
+export interface AnotacaoAluno {
+  id: string
+  data: string           // ISO date
+  texto: string
+  tipo?: string          // livre ou de lista configurável da turma
+  planoId?: string       // vínculo opcional com o plano da aula
+}
+
+export interface MarcoAluno {
+  id: string
+  data: string           // ISO date
+  descricao: string      // ex: "Tocou a peça completa sem partitura"
+}
+
 export interface AlunoDestaque {
   id: string
   nome: string
   flag: boolean          // ⚠️ atenção especial
   nota?: string          // observação rápida (1 linha)
+  instrumento?: string   // ex: "flauta", "violão", "voz"
+  anotacoes?: AnotacaoAluno[]
+  marcos?: MarcoAluno[]
 }
 
 export interface Turma {

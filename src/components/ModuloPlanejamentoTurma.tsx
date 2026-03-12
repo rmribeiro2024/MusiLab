@@ -12,7 +12,7 @@ import RichTextEditor from './RichTextEditor'
 import { stripHTML, gerarIdSeguro } from '../lib/utils'
 import { showToast } from '../lib/toast'
 import { useAtividadesContext, useAplicacoesContext, useSequenciasContext } from '../contexts'
-import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula, AlunoDestaque } from '../types'
+import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula, AlunoDestaque, AnotacaoAluno, MarcoAluno } from '../types'
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -1596,14 +1596,20 @@ function ConteudoTurma() {
     fecharForm,
   } = usePlanejamentoTurmaContext()
 
-  const { anosLetivos, alunosAddOrUpdate, alunosRemove, alunosGetByTurma } = useAnoLetivoContext()
+  const { anosLetivos, alunosAddOrUpdate, alunosRemove, alunosGetByTurma, alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco } = useAnoLetivoContext()
   const [historicoExpandido, setHistoricoExpandido] = useState(false)
   const [planejamentosExpandidos, setPlanejamentosExpandidos] = useState(false)
   const [alunosExpandidos, setAlunosExpandidos] = useState(false)
   const [novoAlunoNome, setNovoAlunoNome] = useState('')
   const [novoAlunoNota, setNovoAlunoNota] = useState('')
   const [novoAlunoFlag, setNovoAlunoFlag] = useState(false)
+  const [novoAlunoInstrumento, setNovoAlunoInstrumento] = useState('')
   const [editandoAlunoId, setEditandoAlunoId] = useState<string | null>(null)
+  // cards de aluno expandidos
+  const [alunoCardExpandido, setAlunoCardExpandido] = useState<string | null>(null)
+  // forms inline de anotação e marco por aluno
+  const [anotacaoForm, setAnotacaoForm] = useState<{ alunoId: string; texto: string; tipo: string } | null>(null)
+  const [marcoForm, setMarcoForm] = useState<{ alunoId: string; descricao: string } | null>(null)
   const [acionarBloco2, setAcionarBloco2] = useState<{ n: number; modo: Exclude<Modo, null> } | null>(null)
   const [dataAtiva, setDataAtiva] = useState<string | null>(null)
   const formBlockRef = useRef<HTMLDivElement>(null)
@@ -1701,6 +1707,25 @@ function ConteudoTurma() {
             {registroExibido.proximaAula && (
               <InfoRow icon="💡" label="Ideias / estratégias" valor={registroExibido.proximaAula} destacado />
             )}
+            {(() => {
+              const chamada = (registroExibido as any).chamada as { alunoId: string; presente: boolean }[] | undefined
+              if (!chamada || chamada.length === 0) return null
+              const presentes = chamada.filter(c => c.presente).length
+              const ausentes = chamada.filter(c => !c.presente)
+              const ts = turmaSelecionada!
+              const allAlunos = alunosGetByTurma(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
+              const nomeAluno = (id: string) => allAlunos.find(a => a.id === id)?.nome ?? id
+              return (
+                <div className="mt-1">
+                  <InfoRow icon="✋" label="Chamada" valor={`${presentes}/${chamada.length} presentes`} />
+                  {ausentes.length > 0 && (
+                    <p className="text-[11px] text-slate-400 mt-0.5 ml-6 italic">
+                      Ausentes: {ausentes.map(c => nomeAluno(c.alunoId)).join(', ')}
+                    </p>
+                  )}
+                </div>
+              )
+            })()}
           </div>
         </div>
       ) : (
@@ -1732,12 +1757,24 @@ function ConteudoTurma() {
           </button>
           {historicoExpandido && (
             <div className="divide-y divide-slate-100">
-              {registrosAnteriores.map((r, i) => (
-                <div key={r.id ?? i} className="px-4 py-3">
-                  <span className="text-xs font-medium text-slate-500">{formatarData(r.dataAula ?? r.data ?? '')}</span>
-                  {r.resumoAula && <p className="text-xs text-slate-600 line-clamp-2 mt-0.5">{r.resumoAula}</p>}
-                </div>
-              ))}
+              {registrosAnteriores.map((r, i) => {
+                const chamada = (r as any).chamada as { alunoId: string; presente: boolean }[] | undefined
+                const presentes = chamada ? chamada.filter(c => c.presente).length : null
+                const total = chamada ? chamada.length : null
+                return (
+                  <div key={r.id ?? i} className="px-4 py-3 flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-medium text-slate-500">{formatarData(r.dataAula ?? r.data ?? '')}</span>
+                      {r.resumoAula && <p className="text-xs text-slate-600 line-clamp-2 mt-0.5">{r.resumoAula}</p>}
+                    </div>
+                    {presentes !== null && total !== null && total > 0 && (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${presentes === total ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                        ✋ {presentes}/{total}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
@@ -1775,29 +1812,25 @@ function ConteudoTurma() {
         </div>
       )}
 
-      {/* ── ALUNOS EM DESTAQUE ──────────────────────────────────────────────────── */}
+      {/* ── ALUNOS ──────────────────────────────────────────────────────────────── */}
       {(() => {
-        const alunos = alunosGetByTurma(
-          turmaSelecionada.anoLetivoId,
-          turmaSelecionada.escolaId,
-          turmaSelecionada.segmentoId,
-          turmaSelecionada.turmaId
-        )
+        const ts = turmaSelecionada!
+        const alunos = alunosGetByTurma(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
         const flagged = alunos.filter(a => a.flag)
         const others = alunos.filter(a => !a.flag)
+        const hoje = new Date().toISOString().split('T')[0]
 
         function salvarAluno() {
           const nome = novoAlunoNome.trim()
           if (!nome) return
           const id = editandoAlunoId ?? gerarIdSeguro()
-          alunosAddOrUpdate(
-            turmaSelecionada!.anoLetivoId,
-            turmaSelecionada!.escolaId,
-            turmaSelecionada!.segmentoId,
-            turmaSelecionada!.turmaId,
-            { id, nome, flag: novoAlunoFlag, nota: novoAlunoNota.trim() || undefined }
-          )
-          setNovoAlunoNome(''); setNovoAlunoNota(''); setNovoAlunoFlag(false); setEditandoAlunoId(null)
+          const base = editandoAlunoId ? (alunos.find(a => a.id === id) ?? {}) : {}
+          alunosAddOrUpdate(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, {
+            ...base, id, nome, flag: novoAlunoFlag,
+            nota: novoAlunoNota.trim() || undefined,
+            instrumento: novoAlunoInstrumento.trim() || undefined,
+          } as AlunoDestaque)
+          setNovoAlunoNome(''); setNovoAlunoNota(''); setNovoAlunoFlag(false); setNovoAlunoInstrumento(''); setEditandoAlunoId(null)
         }
 
         function iniciarEdicao(al: AlunoDestaque) {
@@ -1805,7 +1838,28 @@ function ConteudoTurma() {
           setNovoAlunoNome(al.nome)
           setNovoAlunoNota(al.nota ?? '')
           setNovoAlunoFlag(al.flag)
+          setNovoAlunoInstrumento(al.instrumento ?? '')
           setAlunosExpandidos(true)
+          setAlunoCardExpandido(null)
+        }
+
+        function salvarAnotacao(alunoId: string) {
+          if (!anotacaoForm || !anotacaoForm.texto.trim()) return
+          alunoAddAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, alunoId, {
+            id: gerarIdSeguro(), data: hoje,
+            texto: anotacaoForm.texto.trim(),
+            tipo: anotacaoForm.tipo.trim() || undefined,
+          })
+          setAnotacaoForm(null)
+        }
+
+        function salvarMarco(alunoId: string) {
+          if (!marcoForm || !marcoForm.descricao.trim()) return
+          alunoAddMarco(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, alunoId, {
+            id: gerarIdSeguro(), data: hoje,
+            descricao: marcoForm.descricao.trim(),
+          })
+          setMarcoForm(null)
         }
 
         return (
@@ -1815,7 +1869,7 @@ function ConteudoTurma() {
               className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
             >
               <span className="flex items-center gap-2">
-                👥 Alunos em destaque
+                👥 Alunos
                 {flagged.length > 0 && (
                   <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">
                     ⚠️ {flagged.length}
@@ -1830,33 +1884,139 @@ function ConteudoTurma() {
 
             {alunosExpandidos && (
               <div className="px-4 pb-4 space-y-3">
-                {/* Lista de alunos */}
+
+                {/* Cards de alunos */}
                 {alunos.length > 0 && (
-                  <div className="space-y-1.5">
-                    {[...flagged, ...others].map(al => (
-                      <div key={al.id} className={`flex items-start gap-2 p-2.5 rounded-xl border text-sm ${al.flag ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'}`}>
-                        <button
-                          onClick={() => alunosAddOrUpdate(
-                            turmaSelecionada!.anoLetivoId, turmaSelecionada!.escolaId,
-                            turmaSelecionada!.segmentoId, turmaSelecionada!.turmaId,
-                            { ...al, flag: !al.flag }
+                  <div className="space-y-2">
+                    {[...flagged, ...others].map(al => {
+                      const expandido = alunoCardExpandido === al.id
+                      const ultimaAnotacao = al.anotacoes?.slice(-1)[0]
+                      const totalAnotacoes = al.anotacoes?.length ?? 0
+                      const totalMarcos = al.marcos?.length ?? 0
+                      return (
+                        <div key={al.id} className={`rounded-xl border overflow-hidden ${al.flag ? 'border-amber-200 bg-amber-50' : 'border-slate-100 bg-slate-50'}`}>
+                          {/* Cabeçalho do card */}
+                          <div className="flex items-center gap-2 px-3 py-2.5">
+                            <button
+                              onClick={() => alunosAddOrUpdate(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, { ...al, flag: !al.flag })}
+                              title={al.flag ? 'Remover flag' : 'Marcar atenção'}
+                              className="text-base shrink-0"
+                            >{al.flag ? '⚠️' : '👤'}</button>
+                            <button
+                              onClick={() => setAlunoCardExpandido(expandido ? null : al.id)}
+                              className="flex-1 min-w-0 text-left"
+                            >
+                              <div className="flex items-baseline gap-2">
+                                <span className={`text-sm font-semibold ${al.flag ? 'text-amber-800' : 'text-slate-700'}`}>{al.nome}</span>
+                                {al.instrumento && <span className="text-[10px] text-slate-400 italic">{al.instrumento}</span>}
+                              </div>
+                              {!expandido && ultimaAnotacao && (
+                                <p className="text-[11px] text-slate-500 truncate mt-0.5">{ultimaAnotacao.texto}</p>
+                              )}
+                              {!expandido && !ultimaAnotacao && al.nota && (
+                                <p className="text-[11px] text-slate-500 italic mt-0.5">{al.nota}</p>
+                              )}
+                            </button>
+                            {(totalAnotacoes > 0 || totalMarcos > 0) && (
+                              <span className="text-[10px] text-slate-400 shrink-0">
+                                {totalAnotacoes > 0 && `${totalAnotacoes}📝`} {totalMarcos > 0 && `${totalMarcos}⭐`}
+                              </span>
+                            )}
+                            <div className="flex gap-1 shrink-0">
+                              <button onClick={() => iniciarEdicao(al)} className="text-slate-400 hover:text-indigo-500 transition text-xs px-1">✏️</button>
+                              <button onClick={() => alunosRemove(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, al.id)}
+                                className="text-slate-300 hover:text-red-500 transition text-xs px-1">✕</button>
+                            </div>
+                          </div>
+
+                          {/* Conteúdo expandido */}
+                          {expandido && (
+                            <div className="border-t border-slate-200 px-3 pb-3 pt-2 space-y-3 bg-white">
+
+                              {/* Marcos pedagógicos */}
+                              <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">⭐ Marcos</span>
+                                  {marcoForm?.alunoId !== al.id && (
+                                    <button onClick={() => { setMarcoForm({ alunoId: al.id, descricao: '' }); setAnotacaoForm(null) }}
+                                      className="text-[10px] text-indigo-500 hover:text-indigo-700 font-semibold">+ Marco</button>
+                                  )}
+                                </div>
+                                {(al.marcos ?? []).length === 0 && marcoForm?.alunoId !== al.id && (
+                                  <p className="text-[11px] text-slate-400 italic">Nenhum marco registrado.</p>
+                                )}
+                                {(al.marcos ?? []).map(m => (
+                                  <div key={m.id} className="flex items-start gap-1.5 text-[11px] text-slate-600 mb-1">
+                                    <span className="text-amber-500 shrink-0">⭐</span>
+                                    <span className="flex-1">{m.descricao} <span className="text-slate-400">· {m.data.split('-').reverse().join('/')}</span></span>
+                                    <button onClick={() => alunoRemoveMarco(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, al.id, m.id)}
+                                      className="text-slate-300 hover:text-red-400 ml-1">✕</button>
+                                  </div>
+                                ))}
+                                {marcoForm?.alunoId === al.id && (
+                                  <div className="flex gap-2 mt-1">
+                                    <input autoFocus type="text" placeholder="Ex: Tocou a peça completa sem partitura"
+                                      value={marcoForm.descricao}
+                                      onChange={e => setMarcoForm({ ...marcoForm, descricao: e.target.value })}
+                                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarMarco(al.id) } if (e.key === 'Escape') setMarcoForm(null) }}
+                                      className="flex-1 px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
+                                    />
+                                    <button onClick={() => salvarMarco(al.id)} disabled={!marcoForm.descricao.trim()}
+                                      className="text-[10px] bg-indigo-500 text-white px-2.5 py-1 rounded-lg disabled:opacity-40">OK</button>
+                                    <button onClick={() => setMarcoForm(null)} className="text-[10px] text-slate-400 px-1">✕</button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Anotações */}
+                              <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">📝 Anotações</span>
+                                  {anotacaoForm?.alunoId !== al.id && (
+                                    <button onClick={() => { setAnotacaoForm({ alunoId: al.id, texto: '', tipo: '' }); setMarcoForm(null) }}
+                                      className="text-[10px] text-indigo-500 hover:text-indigo-700 font-semibold">+ Anotação</button>
+                                  )}
+                                </div>
+                                {(al.anotacoes ?? []).length === 0 && anotacaoForm?.alunoId !== al.id && (
+                                  <p className="text-[11px] text-slate-400 italic">Nenhuma anotação.</p>
+                                )}
+                                {(al.anotacoes ?? []).slice().reverse().map(an => (
+                                  <div key={an.id} className="flex items-start gap-1.5 text-[11px] text-slate-600 mb-1.5 pb-1.5 border-b border-slate-100 last:border-0">
+                                    <div className="flex-1 min-w-0">
+                                      {an.tipo && <span className="inline-block text-[9px] bg-indigo-50 text-indigo-600 font-semibold px-1.5 py-0.5 rounded-full mr-1 mb-0.5">{an.tipo}</span>}
+                                      <span>{an.texto}</span>
+                                      <span className="text-slate-400 ml-1">· {an.data.split('-').reverse().join('/')}</span>
+                                    </div>
+                                    <button onClick={() => alunoRemoveAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, al.id, an.id)}
+                                      className="text-slate-300 hover:text-red-400 shrink-0">✕</button>
+                                  </div>
+                                ))}
+                                {anotacaoForm?.alunoId === al.id && (
+                                  <div className="space-y-1.5 mt-1">
+                                    <input type="text" placeholder="Tipo (opcional, ex: dificuldade rítmica)"
+                                      value={anotacaoForm.tipo}
+                                      onChange={e => setAnotacaoForm({ ...anotacaoForm, tipo: e.target.value })}
+                                      className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
+                                    />
+                                    <div className="flex gap-2">
+                                      <input autoFocus type="text" placeholder="Anotação sobre o aluno nesta aula"
+                                        value={anotacaoForm.texto}
+                                        onChange={e => setAnotacaoForm({ ...anotacaoForm, texto: e.target.value })}
+                                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAnotacao(al.id) } if (e.key === 'Escape') setAnotacaoForm(null) }}
+                                        className="flex-1 px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
+                                      />
+                                      <button onClick={() => salvarAnotacao(al.id)} disabled={!anotacaoForm.texto.trim()}
+                                        className="text-[10px] bg-indigo-500 text-white px-2.5 py-1 rounded-lg disabled:opacity-40">OK</button>
+                                      <button onClick={() => setAnotacaoForm(null)} className="text-[10px] text-slate-400 px-1">✕</button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           )}
-                          title={al.flag ? 'Remover flag' : 'Marcar atenção'}
-                          className="text-base shrink-0 mt-0.5"
-                        >{al.flag ? '⚠️' : '👤'}</button>
-                        <div className="flex-1 min-w-0">
-                          <span className={`font-semibold ${al.flag ? 'text-amber-800' : 'text-slate-700'}`}>{al.nome}</span>
-                          {al.nota && <p className="text-[11px] text-slate-500 mt-0.5 italic">{al.nota}</p>}
                         </div>
-                        <div className="flex gap-1 shrink-0">
-                          <button onClick={() => iniciarEdicao(al)} className="text-slate-400 hover:text-indigo-500 transition text-xs px-1">✏️</button>
-                          <button onClick={() => alunosRemove(
-                            turmaSelecionada!.anoLetivoId, turmaSelecionada!.escolaId,
-                            turmaSelecionada!.segmentoId, turmaSelecionada!.turmaId, al.id
-                          )} className="text-slate-300 hover:text-red-500 transition text-xs px-1">✕</button>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
 
@@ -1865,17 +2025,27 @@ function ConteudoTurma() {
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
                     {editandoAlunoId ? 'Editando aluno' : '+ Adicionar aluno'}
                   </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Nome do aluno"
+                      value={novoAlunoNome}
+                      onChange={e => setNovoAlunoNome(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAluno() } }}
+                      className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-400 outline-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Instrumento"
+                      value={novoAlunoInstrumento}
+                      onChange={e => setNovoAlunoInstrumento(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAluno() } }}
+                      className="w-28 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-400 outline-none"
+                    />
+                  </div>
                   <input
                     type="text"
-                    placeholder="Nome do aluno"
-                    value={novoAlunoNome}
-                    onChange={e => setNovoAlunoNome(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAluno() } }}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-400 outline-none"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Observação (opcional)"
+                    placeholder="Observação rápida (opcional)"
                     value={novoAlunoNota}
                     onChange={e => setNovoAlunoNota(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAluno() } }}
@@ -1888,7 +2058,7 @@ function ConteudoTurma() {
                     </label>
                     <div className="flex gap-2">
                       {editandoAlunoId && (
-                        <button onClick={() => { setEditandoAlunoId(null); setNovoAlunoNome(''); setNovoAlunoNota(''); setNovoAlunoFlag(false) }}
+                        <button onClick={() => { setEditandoAlunoId(null); setNovoAlunoNome(''); setNovoAlunoNota(''); setNovoAlunoFlag(false); setNovoAlunoInstrumento('') }}
                           className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1">Cancelar</button>
                       )}
                       <button onClick={salvarAluno} disabled={!novoAlunoNome.trim()}
@@ -1898,6 +2068,7 @@ function ConteudoTurma() {
                     </div>
                   </div>
                 </div>
+
               </div>
             )}
           </div>
