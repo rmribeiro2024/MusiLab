@@ -196,6 +196,49 @@ export default function TelaPrincipal() {
         setSecoesForm(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
     }
 
+    // ── Helpers para detecção de tipo de recurso externo ──
+    function detectarTipoRecurso(url: string): string {
+        if (!url) return 'link'
+        if (/youtube\.com|youtu\.be/.test(url)) return 'video'
+        if (/spotify\.com\/playlist/.test(url)) return 'playlist'
+        if (/spotify\.com/.test(url)) return 'musica'
+        if (/drive\.google\.com/.test(url)) return 'link'
+        if (/\.pdf(\?|$)/i.test(url)) return 'pdf'
+        if (/\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url)) return 'imagem'
+        if (/gstatic\.com|googleusercontent\.com|imgur\.com|i\.pinimg\.com/.test(url)) return 'imagem'
+        return 'link'
+    }
+    function getYoutubeId(url: string): string | null {
+        const m = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/shorts\/))([a-zA-Z0-9_-]{11})/)
+        return m ? m[1] : null
+    }
+    function getDriveThumb(url: string): string | null {
+        const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/)
+        return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w320` : null
+    }
+    const RECURSO_TIPOS = [
+        { value: 'musica',   label: 'Música',         icone: '🎵' },
+        { value: 'video',    label: 'Vídeo',           icone: '▶️' },
+        { value: 'pdf',      label: 'PDF / Partitura', icone: '📄' },
+        { value: 'imagem',   label: 'Imagem',          icone: '🖼️' },
+        { value: 'link',     label: 'Link externo',    icone: '🔗' },
+        { value: 'playlist', label: 'Playlist',        icone: '🎶' },
+    ]
+    function getRecursoMeta(tipo: string): { label: string; icone: string; cor: string } {
+        const t = tipo === 'youtube' ? 'video' : (tipo === 'spotify' || tipo === 'drive') ? 'musica' : tipo
+        const found = RECURSO_TIPOS.find(r => r.value === t)
+        const icone = found?.icone ?? '🔗'
+        const label = found?.label ?? 'Link'
+        const cor =
+            t === 'musica'   ? 'bg-green-50 border-green-100 text-green-700' :
+            t === 'video'    ? 'bg-red-50 border-red-100 text-red-600' :
+            t === 'pdf'      ? 'bg-orange-50 border-orange-100 text-orange-600' :
+            t === 'imagem'   ? 'bg-violet-50 border-violet-100 text-violet-600' :
+            t === 'playlist' ? 'bg-teal-50 border-teal-100 text-teal-700' :
+                               'bg-slate-50 border-slate-100 text-slate-500'
+        return { label, icone, cor }
+    }
+
     // ── Detecção de alterações não salvas ──
     const planoOriginalRef = useRef<any>(null)
     useEffect(() => {
@@ -1209,24 +1252,84 @@ export default function TelaPrincipal() {
                 </div>
                 )}
 
-                {/* ════════════ ACCORDION: AVALIAÇÃO / RECURSOS ════════════ */}
-                {!modoRapido && (
+                {/* ════════════ ACCORDION: RECURSOS DA AULA ════════════ */}
                 <div className="border-b border-slate-100">
                     <button type="button" onClick={() => toggleSecaoForm('recursos')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
-                        <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Avaliação / Recursos</span>
-                            {!secoesForm.has('recursos') && planoEditando.avaliacaoObservacoes && (
-                                <p className="text-[11px] text-slate-300 mt-0.5 truncate">{planoEditando.avaliacaoObservacoes.slice(0,60)}</p>
+                        <div className="min-w-0 flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">🎬 Recursos da Aula</span>
+                            {(planoEditando.recursos || []).length > 0 && (
+                                <span className="text-[10px] bg-indigo-100 text-indigo-600 font-bold px-1.5 py-0.5 rounded-full">{(planoEditando.recursos || []).length}</span>
                             )}
                         </div>
                         <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('recursos') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     {secoesForm.has('recursos') && (
-                        <div className="px-3 sm:px-6 pb-5 space-y-5">
-                            {/* Links e Imagens */}
-                            <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🔗 Links e Imagens</label><div className="flex gap-2 mb-3 flex-col md:flex-row"><input type="text" placeholder="URL..." value={novoRecursoUrl} onChange={e => setNovoRecursoUrl(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarRecurso(); } }} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /><select value={novoRecursoTipo} onChange={e => setNovoRecursoTipo(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white"><option value="link">Link</option><option value="imagem">Imagem</option></select><button type="button" onClick={adicionarRecurso} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-4 py-2 rounded-xl text-sm font-semibold transition-colors">Add</button></div><div className="space-y-2">{(planoEditando.recursos || []).map((rec, idx) => (<div key={idx} className="flex justify-between items-center bg-white p-2 rounded-xl border border-slate-200"><div className="flex items-center gap-2 overflow-hidden"><span>{rec.tipo === 'imagem' ? '🖼️' : '🔗'}</span><span className="text-sm truncate max-w-xs text-slate-700">{rec.url}</span></div><button type="button" onClick={() => removerRecurso(idx)} className="text-red-400 hover:text-red-600 font-bold px-2">✕</button></div>))}</div></div>
-                            {/* Avaliação / Observações */}
-                            <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">📝 Avaliação / Observações</label><textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={3} /></div>
+                        <div className="px-3 sm:px-6 pb-5">
+                            {!modoRapido && (
+                                <>
+                                    <p className="text-[11px] text-slate-400 mb-3">Conteúdos digitais de apoio — músicas, vídeos, partituras, imagens, links.</p>
+                                    <div className="flex gap-2 mb-3">
+                                        <div className="relative flex-1">
+                                            <input type="text" placeholder="Cole aqui: YouTube, Spotify, PDF, link..." value={novoRecursoUrl}
+                                                onChange={e => { setNovoRecursoUrl(e.target.value); if (e.target.value) setNovoRecursoTipo(detectarTipoRecurso(e.target.value)); }}
+                                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarRecurso(); } }}
+                                                className="w-full pl-3 pr-10 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" />
+                                            {novoRecursoUrl && (
+                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base">{getRecursoMeta(detectarTipoRecurso(novoRecursoUrl)).icone}</span>
+                                            )}
+                                        </div>
+                                        <button type="button" onClick={adicionarRecurso} disabled={!novoRecursoUrl.trim()} className="border border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 px-4 py-2 rounded-xl text-sm font-semibold transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed">+ Add</button>
+                                    </div>
+                                </>
+                            )}
+                            {(planoEditando.recursos || []).length > 0 ? (
+                                <div className="space-y-1.5">
+                                    {(planoEditando.recursos || []).map((rec, idx) => {
+                                        const tipo = rec.tipo || detectarTipoRecurso(rec.url)
+                                        const { icone, label, cor } = getRecursoMeta(tipo)
+                                        const ytId = (tipo === 'video' || tipo === 'youtube') ? getYoutubeId(rec.url) : null
+                                        const driveThumb = /drive\.google\.com/.test(rec.url) ? getDriveThumb(rec.url) : null
+                                        const isImagem = tipo === 'imagem'
+                                        const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : driveThumb ?? (isImagem ? rec.url : null)
+                                        return (
+                                            <div key={idx} className={`flex items-start gap-2.5 p-2.5 rounded-xl border ${cor.split(' ').slice(0,2).join(' ')}`}>
+                                                <a href={rec.url} target="_blank" rel="noopener noreferrer" className="relative w-16 h-11 shrink-0 flex items-center justify-center rounded-lg overflow-hidden bg-white/60">
+                                                    <span className="text-xl leading-none">{icone}</span>
+                                                    {thumbUrl && <img src={thumbUrl} alt="thumb" className="absolute inset-0 w-full h-full object-cover rounded-lg shadow-sm" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
+                                                </a>
+                                                <div className="flex-1 min-w-0">
+                                                    <span className={`text-[10px] font-bold uppercase tracking-wide ${cor.split(' ').slice(2).join(' ')}`}>{label}</span>
+                                                    <a href={rec.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-400 hover:underline truncate block">{rec.url}</a>
+                                                </div>
+                                                {!modoRapido && (
+                                                    <button type="button" onClick={() => removerRecurso(idx)} className="text-slate-300 hover:text-red-500 transition shrink-0 text-xs mt-0.5">✕</button>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            ) : modoRapido ? (
+                                <p className="text-[11px] text-slate-400 italic">Nenhum recurso adicionado.</p>
+                            ) : null}
+                        </div>
+                    )}
+                </div>
+
+                {/* ════════════ ACCORDION: AVALIAÇÃO / OBSERVAÇÕES ════════════ */}
+                {!modoRapido && (
+                <div className="border-b border-slate-100">
+                    <button type="button" onClick={() => toggleSecaoForm('avaliacao')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group">
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Avaliação / Observações</span>
+                            {!secoesForm.has('avaliacao') && planoEditando.avaliacaoObservacoes && (
+                                <p className="text-[11px] text-slate-300 mt-0.5 truncate">{planoEditando.avaliacaoObservacoes.slice(0,60)}</p>
+                            )}
+                        </div>
+                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('avaliacao') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    {secoesForm.has('avaliacao') && (
+                        <div className="px-3 sm:px-6 pb-5">
+                            <textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={3} />
                         </div>
                     )}
                 </div>
