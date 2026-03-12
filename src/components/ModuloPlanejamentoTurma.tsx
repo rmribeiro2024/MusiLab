@@ -11,7 +11,7 @@ import { useCalendarioContext } from '../contexts/CalendarioContext'
 import RichTextEditor from './RichTextEditor'
 import { stripHTML, gerarIdSeguro } from '../lib/utils'
 import { showToast } from '../lib/toast'
-import { useAtividadesContext, useAplicacoesContext, useSequenciasContext } from '../contexts'
+import { useAtividadesContext, useAplicacoesContext, useSequenciasContext, useEstrategiasContext } from '../contexts'
 import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula, AlunoDestaque, AnotacaoAluno, MarcoAluno } from '../types'
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -1626,7 +1626,9 @@ function ConteudoTurma() {
     fecharForm,
   } = usePlanejamentoTurmaContext()
 
-  const { anosLetivos, alunosAddOrUpdate, alunosRemove, alunosGetByTurma, alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco } = useAnoLetivoContext()
+  const { anosLetivos, alunosAddOrUpdate, alunosRemove, alunosGetByTurma, alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco, turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao } = useAnoLetivoContext() as ReturnType<typeof useAnoLetivoContext> & { turmaGetTiposAnotacao: (a: string, b: string, c: string, d: string) => string[]; turmaAddTipoAnotacao: (a: string, b: string, c: string, d: string, tipo: string) => void; turmaRemoveTipoAnotacao: (a: string, b: string, c: string, d: string, tipo: string) => void }
+  const { planos } = usePlanosContext()
+  const { estrategias } = useEstrategiasContext()
   const [historicoExpandido, setHistoricoExpandido] = useState(false)
   const [planejamentosExpandidos, setPlanejamentosExpandidos] = useState(false)
   const [alunosExpandidos, setAlunosExpandidos] = useState(false)
@@ -1640,6 +1642,7 @@ function ConteudoTurma() {
   // forms inline de anotação e marco por aluno
   const [anotacaoForm, setAnotacaoForm] = useState<{ alunoId: string; texto: string; tipo: string } | null>(null)
   const [marcoForm, setMarcoForm] = useState<{ alunoId: string; descricao: string } | null>(null)
+  const [novoTipoAnotacao, setNovoTipoAnotacao] = useState('')
   const [acionarBloco2, setAcionarBloco2] = useState<{ n: number; modo: Exclude<Modo, null> } | null>(null)
   const [dataAtiva, setDataAtiva] = useState<string | null>(null)
   const formBlockRef = useRef<HTMLDivElement>(null)
@@ -1672,6 +1675,27 @@ function ConteudoTurma() {
       : ultimoRegistroDaTurma,
     [dataAtiva, historicoDaTurma, ultimoRegistroDaTurma]
   )
+
+  // Cobertura pedagógica: dimensões das estratégias usadas nos planos desta turma
+  const coberturaDimensoes = useMemo<{ dimensao: string; count: number }[]>(() => {
+    if (!turmaSelecionada) return []
+    const turmaIdStr = String(turmaSelecionada.turmaId)
+    const planosDistaTurma = planos.filter(p => p.turma && String(p.turma) === turmaIdStr)
+    const contagem: Record<string, number> = {}
+    for (const plano of planosDistaTurma) {
+      for (const ativ of plano.atividadesRoteiro ?? []) {
+        for (const estId of ativ.estrategiasVinculadas ?? []) {
+          const est = estrategias.find(e => String(e.id) === String(estId))
+          for (const dim of est?.dimensoes ?? []) {
+            contagem[dim] = (contagem[dim] ?? 0) + 1
+          }
+        }
+      }
+    }
+    return Object.entries(contagem)
+      .map(([dimensao, count]) => ({ dimensao, count }))
+      .sort((a, b) => b.count - a.count)
+  }, [turmaSelecionada, planos, estrategias])
 
   if (!turmaSelecionada) return null
 
@@ -2021,26 +2045,40 @@ function ConteudoTurma() {
                                       className="text-slate-300 hover:text-red-400 shrink-0">✕</button>
                                   </div>
                                 ))}
-                                {anotacaoForm?.alunoId === al.id && (
-                                  <div className="space-y-1.5 mt-1">
-                                    <input type="text" placeholder="Tipo (opcional, ex: dificuldade rítmica)"
-                                      value={anotacaoForm.tipo}
-                                      onChange={e => setAnotacaoForm({ ...anotacaoForm, tipo: e.target.value })}
-                                      className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
-                                    />
-                                    <div className="flex gap-2">
-                                      <input autoFocus type="text" placeholder="Anotação sobre o aluno nesta aula"
-                                        value={anotacaoForm.texto}
-                                        onChange={e => setAnotacaoForm({ ...anotacaoForm, texto: e.target.value })}
-                                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAnotacao(al.id) } if (e.key === 'Escape') setAnotacaoForm(null) }}
-                                        className="flex-1 px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
+                                {anotacaoForm?.alunoId === al.id && (() => {
+                                  const tiposConf = turmaGetTiposAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
+                                  return (
+                                    <div className="space-y-1.5 mt-1">
+                                      {tiposConf.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                          {tiposConf.map(tipo => (
+                                            <button key={tipo} type="button"
+                                              onClick={() => setAnotacaoForm({ ...anotacaoForm, tipo })}
+                                              className={`text-[10px] px-2 py-0.5 rounded-full border transition ${anotacaoForm.tipo === tipo ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'}`}>
+                                              {tipo}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                      <input type="text" placeholder={tiposConf.length > 0 ? 'Tipo personalizado (ou selecione acima)' : 'Tipo (opcional, ex: dificuldade rítmica)'}
+                                        value={anotacaoForm.tipo}
+                                        onChange={e => setAnotacaoForm({ ...anotacaoForm, tipo: e.target.value })}
+                                        className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
                                       />
-                                      <button onClick={() => salvarAnotacao(al.id)} disabled={!anotacaoForm.texto.trim()}
-                                        className="text-[10px] bg-indigo-500 text-white px-2.5 py-1 rounded-lg disabled:opacity-40">OK</button>
-                                      <button onClick={() => setAnotacaoForm(null)} className="text-[10px] text-slate-400 px-1">✕</button>
+                                      <div className="flex gap-2">
+                                        <input autoFocus type="text" placeholder="Anotação sobre o aluno nesta aula"
+                                          value={anotacaoForm.texto}
+                                          onChange={e => setAnotacaoForm({ ...anotacaoForm, texto: e.target.value })}
+                                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAnotacao(al.id) } if (e.key === 'Escape') setAnotacaoForm(null) }}
+                                          className="flex-1 px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
+                                        />
+                                        <button onClick={() => salvarAnotacao(al.id)} disabled={!anotacaoForm.texto.trim()}
+                                          className="text-[10px] bg-indigo-500 text-white px-2.5 py-1 rounded-lg disabled:opacity-40">OK</button>
+                                        <button onClick={() => setAnotacaoForm(null)} className="text-[10px] text-slate-400 px-1">✕</button>
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
+                                  )
+                                })()}
                               </div>
                             </div>
                           )}
@@ -2099,8 +2137,71 @@ function ConteudoTurma() {
                   </div>
                 </div>
 
+                {/* Tipos de anotação configuráveis desta turma */}
+                {(() => {
+                  const tiposConf = turmaGetTiposAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
+                  return (
+                    <div className="border-t border-slate-100 pt-3 mt-1 space-y-2">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Tipos de anotação</p>
+                      {tiposConf.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {tiposConf.map(tipo => (
+                            <span key={tipo} className="flex items-center gap-1 text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 rounded-full">
+                              {tipo}
+                              <button type="button" onClick={() => turmaRemoveTipoAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, tipo)}
+                                className="text-indigo-300 hover:text-red-400 leading-none">×</button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <input type="text" placeholder='Ex: "dominou peça", "esqueceu material"'
+                          value={novoTipoAnotacao}
+                          onChange={e => setNovoTipoAnotacao(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (novoTipoAnotacao.trim()) { turmaAddTipoAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, novoTipoAnotacao.trim()); setNovoTipoAnotacao('') } } }}
+                          className="flex-1 px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
+                        />
+                        <button type="button"
+                          onClick={() => { if (novoTipoAnotacao.trim()) { turmaAddTipoAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, novoTipoAnotacao.trim()); setNovoTipoAnotacao('') } }}
+                          disabled={!novoTipoAnotacao.trim()}
+                          className="text-[10px] bg-indigo-500 text-white px-2.5 py-1 rounded-lg disabled:opacity-40">+ Tipo</button>
+                      </div>
+                    </div>
+                  )
+                })()}
+
               </div>
             )}
+          </div>
+        )
+      })()}
+
+      {/* ── COBERTURA PEDAGÓGICA ───────────────────────────────────────────────── */}
+      {coberturaDimensoes.length > 0 && (() => {
+        const maxCount = coberturaDimensoes[0].count
+        return (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-base">📊</span>
+              <h3 className="font-semibold text-sm text-slate-700">Cobertura pedagógica</h3>
+              <span className="text-xs text-slate-400 ml-auto">este ano</span>
+            </div>
+            <div className="space-y-2">
+              {coberturaDimensoes.map(({ dimensao, count }) => (
+                <div key={dimensao} className="flex items-center gap-2">
+                  <span className="text-xs text-slate-600 w-28 shrink-0 truncate">{dimensao}</span>
+                  <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-indigo-400 h-2 rounded-full transition-all"
+                      style={{ width: `${Math.round((count / maxCount) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-slate-400 w-14 text-right shrink-0">
+                    {count} aula{count !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )
       })()}

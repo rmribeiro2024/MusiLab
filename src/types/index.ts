@@ -365,6 +365,7 @@ export interface Turma {
   nome: string
   alunos?: AlunoDestaque[]
   rubricas?: CriterioRubrica[]   // critérios configurados para esta turma
+  tiposAnotacao?: string[]       // ex: ["dominou peça", "esqueceu instrumento", "liderou grupo"]
 }
 
 export interface Segmento {

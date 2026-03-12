@@ -127,6 +127,10 @@ export interface AnoLetivoContextValue {
   // Rubricas por turma
   turmaSetRubricas: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, rubricas: import('../types').CriterioRubrica[]) => void
   turmaGetRubricas: (anoId: string, escolaId: string, segmentoId: string, turmaId: string) => import('../types').CriterioRubrica[]
+  // Tipos de anotação por turma
+  turmaGetTiposAnotacao: (anoId: string, escolaId: string, segmentoId: string, turmaId: string) => string[]
+  turmaAddTipoAnotacao: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, tipo: string) => void
+  turmaRemoveTipoAnotacao: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, tipo: string) => void
   // Faixas e escolas — funções
   salvarNovaFaixa: () => void
   salvarNovaEscola: (planoEditando?: Plano | null, setPlanoEditando?: React.Dispatch<React.SetStateAction<Plano | null>>) => void
@@ -697,6 +701,46 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     return tur?.rubricas ?? RUBRICAS_PADRAO
   }
 
+  // ── Tipos de anotação por turma ───────────────────────────────────────────
+
+  function turmaGetTiposAnotacao(anoId: string, escolaId: string, segmentoId: string, turmaId: string): string[] {
+    const ano = anosLetivos.find(a => a.id === anoId)
+    const esc = ano?.escolas.find(e => e.id === escolaId)
+    const seg = esc?.segmentos.find(s => s.id === segmentoId)
+    const tur = seg?.turmas.find(t => t.id === turmaId)
+    return tur?.tiposAnotacao ?? []
+  }
+
+  function _updateTurma(anoId: string, escolaId: string, segmentoId: string, turmaId: string, fn: (t: import('../types').Turma) => import('../types').Turma) {
+    setAnosLetivos(prev => prev.map(a => {
+      if (a.id !== anoId) return a
+      return { ...a, escolas: a.escolas.map(e => {
+        if (e.id !== escolaId) return e
+        return { ...e, segmentos: e.segmentos.map(s => {
+          if (s.id !== segmentoId) return s
+          return { ...s, turmas: s.turmas.map(t => t.id !== turmaId ? t : fn(t)) }
+        })}
+      })}
+    }))
+  }
+
+  function turmaAddTipoAnotacao(anoId: string, escolaId: string, segmentoId: string, turmaId: string, tipo: string) {
+    const t = tipo.trim()
+    if (!t) return
+    _updateTurma(anoId, escolaId, segmentoId, turmaId, turma => {
+      const atual = turma.tiposAnotacao ?? []
+      if (atual.includes(t)) return turma
+      return { ...turma, tiposAnotacao: [...atual, t] }
+    })
+  }
+
+  function turmaRemoveTipoAnotacao(anoId: string, escolaId: string, segmentoId: string, turmaId: string, tipo: string) {
+    _updateTurma(anoId, escolaId, segmentoId, turmaId, turma => ({
+      ...turma,
+      tiposAnotacao: (turma.tiposAnotacao ?? []).filter(t => t !== tipo),
+    }))
+  }
+
   // ── salvarNovaFaixa ───────────────────────────────────────────────────────
 
   function salvarNovaFaixa() {
@@ -778,6 +822,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     alunosAddOrUpdate, alunosRemove, alunosGetByTurma,
     alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco,
     turmaSetRubricas, turmaGetRubricas,
+    turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao,
     salvarNovaFaixa,
     salvarNovaEscola,
   }
