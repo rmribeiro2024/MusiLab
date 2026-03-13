@@ -242,6 +242,8 @@ export interface PlanosContextValue {
     salvarRegistroRapido: () => void
     atualizarKanbanStatus: (id: string | number, status: Plano['kanbanStatus']) => void
     criarPlanosDeSequencia: (sequencia: Sequencia, opts: { turma?: string; escola?: string; nivel?: string; dataInicio: string; diasSemana: number[] }) => number
+    salvarNotaAdaptacao: (planoId: string | number, dados: { turmaId: string; turmaNome: string; texto: string }) => void
+    removerNotaAdaptacao: (planoId: string | number, notaId: string) => void
     // backup
     baixarBackup: () => void
     restaurarBackup: (event: React.ChangeEvent<HTMLInputElement>) => void
@@ -1096,6 +1098,50 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         setPlanos(prev => prev.map(p => String(p.id) === String(id) ? { ...p, kanbanStatus: status } : p))
     }, [setPlanos])
 
+    // ── NOTAS DE ADAPTAÇÃO POR TURMA ─────────────────────────────────────────
+    // Regra: máximo uma nota por turmaId por plano (upsert).
+    const salvarNotaAdaptacao = useCallback((
+        planoId: string | number,
+        dados: { turmaId: string; turmaNome: string; texto: string }
+    ) => {
+        setPlanos(prev => prev.map(p => {
+            if (String(p.id) !== String(planoId)) return p
+            const notas = p.notasAdaptacao ?? []
+            const existente = notas.find(n => n.turmaId === dados.turmaId)
+            const agora = new Date().toISOString()
+            if (existente) {
+                // Atualiza nota existente da turma
+                return {
+                    ...p,
+                    notasAdaptacao: notas.map(n =>
+                        n.turmaId === dados.turmaId
+                            ? { ...n, texto: dados.texto, turmaNome: dados.turmaNome, atualizadaEm: agora }
+                            : n
+                    )
+                }
+            }
+            // Cria nova nota
+            const nova: import('../types').NotaAdaptacaoTurma = {
+                id: `nota-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                turmaId: dados.turmaId,
+                turmaNome: dados.turmaNome,
+                texto: dados.texto,
+                criadaEm: agora,
+                atualizadaEm: agora,
+            }
+            return { ...p, notasAdaptacao: [...notas, nova] }
+        }))
+    }, [setPlanos])
+
+    const removerNotaAdaptacao = useCallback((planoId: string | number, notaId: string) => {
+        setPlanos(prev => prev.map(p =>
+            String(p.id) !== String(planoId) ? p : {
+                ...p,
+                notasAdaptacao: (p.notasAdaptacao ?? []).filter(n => n.id !== notaId)
+            }
+        ))
+    }, [setPlanos])
+
     // ── SEQUENTIAL UNIT PLANNING (C4) ────────────────────────────────────────
     /** Gera N planos rascunho a partir dos slots de uma sequência didática.
      *  Calcula automaticamente as datas com base em dataInicio + diasSemana.
@@ -1550,6 +1596,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano,
         abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro,
         adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido, atualizarKanbanStatus, criarPlanosDeSequencia,
+        salvarNotaAdaptacao, removerNotaAdaptacao,
         baixarBackup, restaurarBackup,
         userId,
     }), [planos, planoSelecionado, modoEdicao, planoEditando, formExpandido, materiaisBloqueados, novoConceito, adicionandoConceito, novaUnidade, adicionandoUnidade, novoRecursoUrl, novoRecursoTipo, novaDataAula, dataEdicao, busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, modoVisualizacao, ordenacaoCards, limparFiltros, statusDropdownId, recursosExpandidos, modalImportarMusica, modalImportarAtividade, dragActiveIndex, dragOverIndex, escolas, segmentosPlanos, duracoesSugestao, planosFiltrados, buscaAvancada, sugerirBNCC, gerandoBNCC, sugerirObjetivosIA, gerandoObjetivos, novoPlano, editarPlano, salvarPlano, excluirPlano, fecharModal, restaurarVersao, toggleConceito, toggleFaixa, toggleUnidade, adicionarRecurso, removerRecurso, adicionarDataEdicao, removerDataEdicao, adicionarDataAulaVisualizacao, removerDataAulaVisualizacao, adicionarConceitoNovo, adicionarTagNova, removerTag, adicionarUnidadeNova, adicionarAtividadeRoteiro, removerAtividadeRoteiro, atualizarAtividadeRoteiro, toggleFavorito, handleDragStart, handleDragEnter, handleDragEnd, toggleRecursosAtiv, templatesRoteiro, modalTemplates, nomeNovoTemplate, modalConfiguracoes, musicasDetectadas, limparMusicasDetectadas, showModalMusicas, estrategiaDetectadaIA, showModalEstrategiaIA, vincularMusicaAoPlano, desvincularMusicaDoPlano, vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano, abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro, adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido, atualizarKanbanStatus, criarPlanosDeSequencia, baixarBackup, restaurarBackup, userId])

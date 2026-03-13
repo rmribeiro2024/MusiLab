@@ -723,6 +723,20 @@ export default function ModalRegistroPosAula() {
                                         )
                                     })()}
 
+                                    {/* 📌 Nota de adaptação da turma */}
+                                    {regTurmaSel && planoParaRegistro?.notasAdaptacao && (() => {
+                                        const nota = planoParaRegistro.notasAdaptacao!.find(
+                                            n => String(n.turmaId) === String(regTurmaSel)
+                                        )
+                                        if (!nota) return null
+                                        return (
+                                            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '10px 12px' }}>
+                                                <p className="text-[11px] font-bold text-amber-700 mb-1 uppercase tracking-wide">📌 Planejado para esta turma</p>
+                                                <p className="text-xs text-amber-900 whitespace-pre-wrap leading-relaxed">{nota.texto}</p>
+                                            </div>
+                                        )
+                                    })()}
+
                                     {/* Banner última aula */}
                                     {regTurmaSel && (() => {
                                         const todosRegs: any[] = []

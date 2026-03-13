@@ -11,6 +11,7 @@ import ModalAplicarEmTurmas from './modals/ModalAplicarEmTurmas'
 import ModalMusicasDetectadas from './modals/ModalMusicasDetectadas'
 import ModalEstrategiaDetectada from './modals/ModalEstrategiaDetectada'
 import type { Plano } from '../types'
+import SecaoAdaptacoesTurma from './SecaoAdaptacoesTurma'
 
 // ── LINHA PLANO (memoizado — só re-renderiza quando o próprio plano muda) ──
 interface LinhaPlanoProps {
@@ -1462,6 +1463,26 @@ export default function TelaPrincipal() {
                                     ))}
                                 </div>
                             )}
+                        </div>
+                    )
+                })()}
+
+                {/* ════════════ ADAPTAÇÕES POR TURMA ════════════ */}
+                {(() => {
+                    const turmasFlat = anosLetivos.flatMap(a =>
+                        a.escolas.flatMap(e =>
+                            e.segmentos.flatMap(s =>
+                                s.turmas.map(t => ({ id: String(t.id), nome: t.nome }))
+                            )
+                        )
+                    )
+                    return (
+                        <div className="px-3 sm:px-6 pb-4">
+                            <SecaoAdaptacoesTurma
+                                planoId={planoEditando.id}
+                                notas={planoEditando.notasAdaptacao ?? []}
+                                turmasDisponiveis={turmasFlat}
+                            />
                         </div>
                     )
                 })()}

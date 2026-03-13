@@ -175,6 +175,7 @@ export interface Plano {
   kanbanStatus?: 'rascunho' | 'pronto' | 'aplicado' | 'revisado'
   origemSequenciaId?: string   // C4: preenchido quando criado via sequential planning
   origemSlotOrdem?: number     // C4: posição do slot que originou este plano
+  notasAdaptacao?: NotaAdaptacaoTurma[]  // MVP: uma nota por turma, upsert por turmaId
 }
 
 // ─── VÍNCULO MÚSICA ↔ PLANO ──────────────────────────────────
@@ -442,6 +443,22 @@ export interface Configuracoes {
   notificacoes?: boolean
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
+}
+
+// ─── NOTA DE ADAPTAÇÃO POR TURMA ─────────────────────────────
+// Uma nota permanente por turma por plano.
+// Registra a estratégia recorrente do professor para aquela turma — distinto
+// de AplicacaoAula.adaptacaoTexto, que registra o que aconteceu numa data específica.
+export interface NotaAdaptacaoTurma {
+  id: string
+  turmaId: string
+  turmaNome: string       // snapshot — aceita inconsistência passiva se turma for renomeada
+  texto: string           // único campo obrigatório, freeform
+  criadaEm: string
+  atualizadaEm: string
+  // Reservados para Fase 2 — presentes no tipo, sem UI no MVP:
+  tempoPrevisto?: number
+  nivelRelativo?: 'simplificado' | 'igual' | 'avancado'
 }
 
 // ─── PLANEJAMENTO POR TURMA ──────────────────────────────────
