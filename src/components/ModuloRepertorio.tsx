@@ -96,8 +96,14 @@ export default function ModuloRepertorio() {
     const { ytPreviewId, setYtPreviewId } = useCalendarioContext()
 
     const [usoExpandidoId, setUsoExpandidoId] = useState<string | null>(null)
-    // Prompt 4: filtros avançados recolhíveis (padrão: fechado)
-    const [filtrosAvancadosAbertos, setFiltrosAvancadosAbertos] = useState(false)
+    // Prompt 4: filtros avançados recolhíveis (padrão: aberto, preferência persistida)
+    const [filtrosAvancadosAbertos, setFiltrosAvancadosAbertos] = useState(() =>
+        localStorage.getItem('repertorio_filtros_abertos') !== 'false'
+    )
+    const toggleFiltrosAvancados = (v: boolean) => {
+        setFiltrosAvancadosAbertos(v)
+        localStorage.setItem('repertorio_filtros_abertos', String(v))
+    }
 
     const getUsosMusica = (musicaId: string | number) => {
         const usos: { data: string; planoId: unknown; planoTitulo: string }[] = []
@@ -205,7 +211,7 @@ export default function ModuloRepertorio() {
                         <div className="flex items-center gap-3">
                             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Filtros</p>
                             <button
-                                onClick={() => setFiltrosAvancadosAbertos(v => !v)}
+                                onClick={() => toggleFiltrosAvancados(!filtrosAvancadosAbertos)}
                                 className="text-xs text-slate-500 hover:text-slate-700 font-medium border border-slate-200 rounded-full px-2 py-0.5 transition"
                             >
                                 {filtrosAvancadosAbertos ? '▲ Menos filtros' : '▼ Mais filtros'}

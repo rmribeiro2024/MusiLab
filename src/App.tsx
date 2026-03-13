@@ -59,15 +59,30 @@ function LoginScreen({ onUsarSemLogin }: { onUsarSemLogin: () => void }) {
     );
 }
 
+/** Lê a sessão do cache do Supabase no localStorage — sem rede.
+ *  Retorna a Session se válida, null se definitivamente sem sessão,
+ *  undefined se incerto (token expirado aguardando refresh). */
+function getInitialSessionState(): Session | null | undefined {
+  try {
+    const key = Object.keys(localStorage).find(k => /^sb-.+-auth-token$/.test(k))
+    if (!key) return null // sem token → tela de login imediatamente
+    const data = JSON.parse(localStorage.getItem(key) ?? 'null')
+    if (!data?.access_token || !data?.user) return null
+    // Token expirado → mostrar spinner brevemente enquanto Supabase renova
+    if (data.expires_at && data.expires_at * 1000 < Date.now()) return undefined
+    return data as unknown as Session // sessão válida → pular spinner
+  } catch { return undefined }
+}
+
 export default function App() {
-  const [session, setSession] = React.useState<Session | null | undefined>(undefined);
+  const [session, setSession] = React.useState<Session | null | undefined>(getInitialSessionState);
   const [modoLocal, setModoLocal] = React.useState(false);
 
   React.useEffect(() => {
-    // Timeout de 8s: se o Supabase não responder, mostra a tela de login
+    // Timeout reduzido para 3s (era 8s): se o Supabase não responder, mostra login
     const timeout = setTimeout(() => {
       if (session === undefined) setSession(null);
-    }, 8000);
+    }, 3000);
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(timeout);

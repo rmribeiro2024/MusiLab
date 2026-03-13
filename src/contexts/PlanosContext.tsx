@@ -10,7 +10,7 @@ import { useCalendarioContext } from './CalendarioContext'
 import { useAtividadesContext } from './AtividadesContext'
 import { useSequenciasContext } from './SequenciasContext'
 import { useEstrategiasContext } from './EstrategiasContext'
-import { dbGet, dbSet } from '../lib/db'
+import { dbGet, dbSet, dbDel } from '../lib/db'
 import { sanitizeUrl, gerarIdSeguro, validarBackup } from '../lib/utils'
 import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [offlineSync]
 import { useDebounce } from '../lib/hooks'
@@ -391,6 +391,25 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     useEffect(() => { dbSet('materiaisBloqueados', JSON.stringify(materiaisBloqueados)) }, [materiaisBloqueados])
     useEffect(() => { dbSet('templatesRoteiro', JSON.stringify(templatesRoteiro)) }, [templatesRoteiro])
 
+    // ── AUTOSAVE DE RASCUNHO (30s) ──────────────────────────────────────
+    const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    useEffect(() => {
+        if (!modoEdicao || !planoEditando) {
+            // Ao fechar o editor, cancelar timer pendente
+            if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+            return
+        }
+        // Só salvar rascunho se houver título ou ao menos uma atividade
+        const temConteudo = !!planoEditando.titulo?.trim() ||
+            (planoEditando.atividadesRoteiro || []).length > 0
+        if (!temConteudo) return
+        if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+        autosaveTimer.current = setTimeout(() => {
+            dbSet('rascunho_plano', JSON.stringify(planoEditando))
+        }, 30_000)
+        return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current) }
+    }, [planoEditando, modoEdicao])
+
     // Fechar dropdown de status ao clicar fora
     useEffect(() => {
         if (!statusDropdownId) return
@@ -466,7 +485,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     }, [planos, buscaDebounced, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, ordenacaoCards])
 
     // ── FUNÇÕES: PLANOS ───────────────────────────────────────────────────
-    const novoPlano = () => {
+    const _abrirNovoPlano = () => {
         edicaoDispatch({ type: 'NOVO_PLANO', plano: {
             id: String(Date.now()), titulo: '', tema: '', conceitos: [], tags: [],
             faixaEtaria: ['1° ano'], nivel: 'Iniciante', duracao: '',
@@ -477,6 +496,31 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             unidades: [], atividadesRoteiro: [], registrosPosAula: [],
         } as Plano })
         setViewMode('lista')
+    }
+    const novoPlano = () => {
+        try {
+            const rascunho = dbGet('rascunho_plano')
+            if (rascunho) {
+                const draft = JSON.parse(rascunho) as Plano
+                const temConteudo = !!draft.titulo?.trim() || (draft.atividadesRoteiro || []).length > 0
+                if (temConteudo) {
+                    setModalConfirm({
+                        titulo: '📝 Rascunho encontrado',
+                        conteudo: `Você tem um rascunho não salvo${draft.titulo ? ` — "${draft.titulo}"` : ''}.\n\nDeseja restaurá-lo?`,
+                        labelConfirm: 'Restaurar rascunho',
+                        labelCancelar: 'Novo plano em branco',
+                        onConfirm: () => {
+                            dbDel('rascunho_plano')
+                            edicaoDispatch({ type: 'NOVO_PLANO', plano: { ...draft, id: String(Date.now()) } })
+                            setViewMode('lista')
+                        },
+                        onCancel: () => { dbDel('rascunho_plano'); _abrirNovoPlano() },
+                    })
+                    return
+                }
+            }
+        } catch { /* fallback silencioso */ }
+        _abrirNovoPlano()
     }
 
     const editarPlano = useCallback((plano: any) => {
@@ -526,6 +570,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             setPlanos([...planos, planoParaSalvar])
             if (!userId) marcarPendente('planos', String(planoParaSalvar.id)) // [offlineSync]
         }
+        dbDel('rascunho_plano') // limpar rascunho após salvar com sucesso
         edicaoDispatch({ type: 'SET', payload: { modoEdicao: false, planoEditando: null } })
 
         // ── Registrar uso de estratégias vinculadas nas atividades do roteiro ─

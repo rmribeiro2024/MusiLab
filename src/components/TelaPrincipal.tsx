@@ -173,6 +173,15 @@ export default function TelaPrincipal() {
     // ── Dropdown Restaurar versão ──
     const [restaurarOpen, setRestaurarOpen] = useState(false)
 
+    // ── Feedback visual do botão Salvar ──
+    const [estadoSalvar, setEstadoSalvar] = useState<'idle' | 'salvando' | 'salvo'>('idle')
+    const handleSalvarPlano = () => {
+        setEstadoSalvar('salvando')
+        salvarPlano()
+        setTimeout(() => setEstadoSalvar('salvo'), 400)
+        setTimeout(() => setEstadoSalvar('idle'), 1900)
+    }
+
     // ── Modo Rápido ──
     const [modoRapido, setModoRapido] = useState(false)
 
@@ -395,7 +404,7 @@ export default function TelaPrincipal() {
                 <div className="px-3 sm:px-6 pt-5 pb-4 border-b border-slate-100 space-y-4">
                     <div>
                         <label htmlFor="plano-titulo" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Título *</label>
-                        <input id="plano-titulo" type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" />
+                        <input id="plano-titulo" type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" autoFocus={!planoEditando.titulo} />
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Duração</label>
@@ -1456,7 +1465,9 @@ export default function TelaPrincipal() {
                                 )}
                             </div>
                         ) : null}
-                        <button type="button" onClick={() => salvarPlano()} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-sm text-sm active:scale-95">💾 Salvar Plano</button>
+                        <button type="button" onClick={handleSalvarPlano} disabled={estadoSalvar !== 'idle'} className={`flex-1 py-2.5 rounded-xl font-semibold text-white transition-all shadow-sm text-sm active:scale-95 ${estadoSalvar === 'salvo' ? 'bg-emerald-500' : estadoSalvar === 'salvando' ? 'bg-indigo-400 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700'}`}>
+                            {estadoSalvar === 'salvando' ? '⏳ Salvando...' : estadoSalvar === 'salvo' ? '✓ Salvo!' : '💾 Salvar Plano'}
+                        </button>
                     </div>
                 </div>
             </div>{/* fim conteúdo */}
