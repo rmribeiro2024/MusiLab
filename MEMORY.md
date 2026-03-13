@@ -43,6 +43,37 @@
 
 ## Melhorias Implementadas
 
+### Módulo Estratégias — Fase 1 (dimensões + mielinização + modal + dashboard)
+**Data:** 2026-03-11
+**Commit:** `863ae6f`
+**Arquivos:**
+- `src/types/index.ts` — novos campos + interface `HistoricoUsoEstrategia`
+- `src/contexts/EstrategiasContext.tsx` — `filtroDimensaoEstrategia` + `registrarUsoEstrategia`
+- `src/contexts/PlanosContext.tsx` — importa `useEstrategiasContext`, chama registro ao salvar
+- `src/components/ModuloEstrategias.tsx` — formulário, cards, filtros, modal, dashboard
+
+**Novos campos na interface `Estrategia` (retrocompatíveis — campos originais preservados):**
+- `dimensoes?: string[]` — `'Musical'`, `'Condução'`, `'Cultura de Sala de Aula'`
+- `origem?: string` — referência pedagógica (Kodály, RCPPM...)
+- `variacoes?: string` — campo separado da descrição, em destaque na modal
+- `tempoEstimado?: string` — duração estimada
+- `contadorUso?: number` — incrementa a cada plano salvo que use a estratégia
+- `historicoUso?: HistoricoUsoEstrategia[]` — `{ planoId, planoTitulo, data }`
+
+**Formulário:** 3 botões visuais clicáveis para dimensões (multi-seleção, cores distintas) + campos tempo estimado + origem + variações. Campos originais categoria/função/objetivos mantidos abaixo.
+
+**Cards:** badges coloridos de dimensão + badge 🕐 tempo estimado + rodapé `Usada N×` / `Não usada ainda` + ✨ quando tem variações + botão 👁 Detalhes.
+
+**Filtros:** select "Dimensão" adicionado ao lado dos existentes (não substituiu). Busca inclui `origem` e `variacoes`.
+
+**Modal de detalhes (👁):** abre sem edição — variações em destaque, descrição HTML sanitizada, histórico de uso com datas pt-BR, botões Fechar/Editar.
+
+**Dashboard colapsável (📊 Ver painel):** grid por dimensão + top 3 mais usadas + lista nunca usadas. Cálculo no render, sem estado extra.
+
+**Contador automático:** `PlanosContext.salvarPlano` coleta `estrategiasVinculadas` de todas as atividades do roteiro → chama `registrarUsoEstrategia` (anti-duplicata por planoId).
+
+---
+
 ### 6. Campo "O que poderia ter sido melhor" no Registro Pós-Aula
 **Arquivo:** `src/components/modals/ModalRegistroPosAula.tsx`
 **O que foi feito:**
