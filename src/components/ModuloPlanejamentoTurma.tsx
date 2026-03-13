@@ -826,21 +826,19 @@ function ModalPreviewPlano({ plano, onFechar, turmaId }: { plano: import('../typ
             </div>
           )}
 
-          {/* Nota de adaptação para esta turma */}
-          {turmaId && (() => {
-            const nota = plano.notasAdaptacao?.find(n => String(n.turmaId) === String(turmaId))
-            if (!nota) return null
-            return (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
-                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">📌 Adaptação para esta turma</p>
-                <p className="text-xs text-amber-900 whitespace-pre-wrap leading-relaxed">{nota.texto}</p>
-              </div>
-            )
-          })()}
-
           {(plano.atividadesRoteiro ?? []).length > 0 && (
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Atividades</p>
+              {turmaId && (() => {
+                const nota = plano.notasAdaptacao?.find(n => String(n.turmaId) === String(turmaId))
+                if (!nota) return null
+                return (
+                  <div className="text-xs bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-1.5">
+                    <span className="font-semibold text-amber-700">Adaptação: </span>
+                    <span className="text-amber-900 whitespace-pre-wrap leading-relaxed">{nota.texto}</span>
+                  </div>
+                )
+              })()}
               <div className="space-y-1.5">
                 {(plano.atividadesRoteiro ?? []).map((a, i) => {
                   const key = String(a.id ?? a.nome)

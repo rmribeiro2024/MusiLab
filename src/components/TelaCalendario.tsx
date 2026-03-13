@@ -1328,41 +1328,65 @@ export default function TelaResumoDia() {
                 );
             })()}
 
-            {/* Modal: preview rápido do plano */}
+            {/* Modal: plano de aula completo */}
             {planoAulaPreview && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40" onClick={() => setPlanoAulaPreview(null)}>
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-3" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-start justify-between gap-2">
-                            <h3 className="font-bold text-slate-800 text-sm leading-snug">{planoAulaPreview.titulo}</h3>
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        {/* Cabeçalho */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+                            <h3 className="font-bold text-slate-800 text-sm leading-snug truncate pr-4">{planoAulaPreview.titulo}</h3>
                             <button onClick={() => setPlanoAulaPreview(null)} className="shrink-0 text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
                         </div>
-                        {planoAulaPreview.objetivoGeral && (
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Objetivo</p>
-                                <p className="text-xs text-slate-600 leading-relaxed">{stripHTML(planoAulaPreview.objetivoGeral)}</p>
-                            </div>
-                        )}
-                        {planoAulaPreview.materiais && planoAulaPreview.materiais.length > 0 && (
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Materiais</p>
-                                <p className="text-xs text-slate-600">{planoAulaPreview.materiais.join(', ')}</p>
-                            </div>
-                        )}
-                        {(() => {
-                            const nota = planoAulaPreview.notasAdaptacao?.find(n => String(n.turmaId) === previewTurmaId)
-                            if (!nota) return null
-                            return (
-                                <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
-                                    <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">📌 Adaptação para esta turma</p>
-                                    <p className="text-xs text-amber-900 whitespace-pre-wrap leading-relaxed">{nota.texto}</p>
+                        {/* Corpo rolável */}
+                        <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
+                            {planoAulaPreview.objetivoGeral && (
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Objetivo</p>
+                                    <p className="text-xs text-slate-600 leading-relaxed">{stripHTML(planoAulaPreview.objetivoGeral)}</p>
                                 </div>
-                            )
-                        })()}
-                        <button
-                            onClick={() => { setPlanoAulaPreview(null); setPreviewTurmaId(''); setAulaAcaoAtiva(null); setViewMode('lista'); }}
-                            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl">
-                            Abrir plano completo
-                        </button>
+                            )}
+                            {planoAulaPreview.materiais && planoAulaPreview.materiais.length > 0 && (
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Materiais</p>
+                                    <p className="text-xs text-slate-600">{planoAulaPreview.materiais.join(', ')}</p>
+                                </div>
+                            )}
+                            {(planoAulaPreview.atividadesRoteiro ?? []).length > 0 && (
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Atividades</p>
+                                    {(() => {
+                                        const nota = planoAulaPreview.notasAdaptacao?.find(n => String(n.turmaId) === previewTurmaId)
+                                        if (!nota) return null
+                                        return (
+                                            <div className="text-xs bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-1.5">
+                                                <span className="font-semibold text-amber-700">Adaptação: </span>
+                                                <span className="text-amber-900 whitespace-pre-wrap leading-relaxed">{nota.texto}</span>
+                                            </div>
+                                        )
+                                    })()}
+                                    <div className="space-y-1.5">
+                                        {(planoAulaPreview.atividadesRoteiro ?? []).map((a, i) => (
+                                            <div key={i} className="text-xs bg-slate-50 rounded-lg px-3 py-2">
+                                                <span className="font-medium text-slate-700">{a.nome}</span>
+                                                {a.descricao && <span className="text-slate-400"> — {stripHTML(a.descricao)}</span>}
+                                                {a.duracao && <span className="text-slate-300 ml-1">({a.duracao} min)</span>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {/* Adaptação sem atividades */}
+                            {!(planoAulaPreview.atividadesRoteiro ?? []).length && (() => {
+                                const nota = planoAulaPreview.notasAdaptacao?.find(n => String(n.turmaId) === previewTurmaId)
+                                if (!nota) return null
+                                return (
+                                    <div className="text-xs bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                        <span className="font-semibold text-amber-700">Adaptação: </span>
+                                        <span className="text-amber-900 whitespace-pre-wrap leading-relaxed">{nota.texto}</span>
+                                    </div>
+                                )
+                            })()}
+                        </div>
                     </div>
                 </div>
             )}
