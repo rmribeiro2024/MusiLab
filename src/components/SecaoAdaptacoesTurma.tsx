@@ -170,7 +170,7 @@ export default function SecaoAdaptacoesTurma({ planoId, notas, turmasDisponiveis
           />
 
           {/* Lista de checkboxes */}
-          <div className="flex flex-col gap-0.5 max-h-40 overflow-y-auto border border-violet-100 rounded-lg bg-white p-1.5">
+          <div className="flex flex-col gap-0.5 max-h-28 overflow-y-auto border border-violet-100 rounded-lg bg-white p-1.5">
             {turmasFiltradas.length === 0 && (
               <p className="text-xs text-slate-400 px-2 py-1">Nenhuma turma encontrada.</p>
             )}
@@ -206,7 +206,7 @@ export default function SecaoAdaptacoesTurma({ planoId, notas, turmasDisponiveis
           <textarea
             value={textoNota}
             onChange={e => setTextoNota(e.target.value)}
-            rows={3}
+            rows={5}
             placeholder="O que muda nessas turmas? Ex: começar com atividade corporal, usar pandeiro em vez de palmas…"
             className="text-sm border border-violet-200 rounded-lg px-3 py-2 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-300 resize-none"
           />
