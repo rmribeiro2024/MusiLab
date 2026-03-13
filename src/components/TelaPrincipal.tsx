@@ -1472,7 +1472,10 @@ export default function TelaPrincipal() {
                     const turmasFlat = anosLetivos.flatMap(a =>
                         a.escolas.flatMap(e =>
                             e.segmentos.flatMap(s =>
-                                s.turmas.map(t => ({ id: String(t.id), nome: t.nome }))
+                                s.turmas.map(t => ({
+                                    id: String(t.id),
+                                    nome: [e.nome, s.nome, t.nome].filter(Boolean).join(' › ')
+                                }))
                             )
                         )
                     )
