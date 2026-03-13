@@ -142,7 +142,7 @@ export default function ModuloAtividades() {
                         ← Voltar
                     </button>
                     <div>
-                        <h2 className="text-xl font-bold text-slate-800">{atividades.find(a=>a.id===atividadeEditando.id) ? '✏️ Editar Atividade' : '🧩 Nova Atividade'}</h2>
+                        <h2 className="text-xl font-bold text-slate-800">{atividades.find(a=>a.id===atividadeEditando.id) ? 'Editar Atividade' : '🧩 Nova Atividade'}</h2>
                         <p className="text-slate-500 text-xs mt-0.5">Atividade pedagógica reutilizável</p>
                     </div>
                 </div>
@@ -278,7 +278,7 @@ export default function ModuloAtividades() {
                                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition bg-white">
                                 <option value="">Selecione ou adicione...</option>
                                 {unidades.map(u=><option key={u} value={u}>{u}</option>)}
-                                <option value="__NOVA__">➕ Adicionar nova unidade...</option>
+                                <option value="__NOVA__">+ Adicionar nova unidade...</option>
                             </select>
                             {atividadeEditando._adicionandoUnidade && (
                                 <div className="flex gap-2 mt-2">

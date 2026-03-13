@@ -20,7 +20,7 @@
 | 9 | Mover atividade no roteiro exige N cliques no mobile | TelaPrincipal.tsx | 🟡 Baixo | ✅ `d069da5` |
 | 10 | Busca global (Ctrl+K) sem discovery visual na UI | BancoPlanos.tsx | 🟡 Baixo | ✅ já existia |
 | 11 | Empty states sem call-to-action | Múltiplos módulos | 🟡 Baixo | ✅ `d069da5` |
-| 12 | Emojis inconsistentes nos labels de botão | Interface toda | 🟡 Baixo | ⬜ pendente |
+| 12 | Emojis inconsistentes nos labels de botão | Interface toda | 🟡 Baixo | ✅ `pendente→commit` |
 
 ---
 

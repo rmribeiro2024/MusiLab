@@ -32,7 +32,7 @@ const INSTRUMENTACAO_OPCOES = ['🥁 Percussão','🎹 Piano/Teclado','🎸 Viol
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{texto}</label>
             <div className="flex gap-3">
                 {onAdd && <button type="button" onClick={onAdd} className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold transition">+ personalizar</button>}
-                {onDel && <button type="button" onClick={onDel} className="text-xs text-slate-400 hover:text-red-500 font-semibold transition">🗑️ excluir</button>}
+                {onDel && <button type="button" onClick={onDel} className="text-xs text-slate-400 hover:text-red-500 font-semibold transition">Excluir</button>}
             </div>
         </div>
     );
@@ -200,7 +200,7 @@ export default function ModuloRepertorio() {
                         })}
                         className="shrink-0 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition"
                     >
-                        ➕ Adicionar Música
+                        + Nova Música
                     </button>
                 </div>
 
@@ -464,7 +464,7 @@ export default function ModuloRepertorio() {
                                     </button>
                                 );
                             })()}
-                            <button onClick={() => setMusicaEditando(m)} className="text-xs bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-200 transition mr-1">✏️ Editar</button>
+                            <button onClick={() => setMusicaEditando(m)} className="text-xs bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-200 transition mr-1">Editar</button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); setUsoExpandidoId(usoExpandidoId === String(m.id) ? null : String(m.id)) }}
                                 className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition mr-1 ${usoExpandidoId === String(m.id) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'}`}
@@ -938,7 +938,7 @@ export default function ModuloRepertorio() {
                         }}
                         className="flex-1 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-6 py-3 rounded-xl font-bold text-sm transition shadow-sm"
                     >
-                        💾 Salvar Música
+                        Salvar Música
                     </button>
                     <button onClick={() => setMusicaEditando(null)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-3 rounded-xl font-bold text-sm transition">Cancelar</button>
                 </div>
