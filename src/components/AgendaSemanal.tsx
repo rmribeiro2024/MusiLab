@@ -415,16 +415,6 @@ function ViewLista({ semanaData, isDiaAberto, onToggleDia, painel, onTogglePaine
                             : <p className="text-xs text-slate-300 italic mt-0.5">Sem plano vinculado</p>
                           }
                         </div>
-                        {/* Olho: ver plano */}
-                        {slot.plano && (
-                          <button onClick={e => { e.stopPropagation(); onVerPlano(slot.plano!) }} title="Ver plano de aula"
-                            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 flex-shrink-0 transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                          </button>
-                        )}
                         {/* Botão + quando sem plano */}
                         {!slot.aplicacao && (
                           <button onClick={() => onAplicarPlano(slot)} title="Aplicar plano nesta turma"
@@ -432,7 +422,18 @@ function ViewLista({ semanaData, isDiaAberto, onToggleDia, painel, onTogglePaine
                             +
                           </button>
                         )}
-                        {cfg && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.badge}`}>{cfg.label}</span>}
+                        {/* Badge clicável quando tem plano */}
+                        {cfg && slot.plano
+                          ? <button onClick={e => { e.stopPropagation(); onVerPlano(slot.plano!) }}
+                              className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 hover:opacity-80 transition-opacity ${cfg.badge}`}>
+                              {cfg.label}
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
+                          : cfg && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.badge}`}>{cfg.label}</span>
+                        }
                         <svg className="w-3.5 h-3.5 text-slate-200 flex-shrink-0 cursor-pointer" onClick={() => onTogglePainel(slot)} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
@@ -463,19 +464,19 @@ function BlocoSlot({ slot, painel, onTogglePainel, onAplicarPlano, onVerPlano }:
           ? <p className="text-[10px] text-slate-400 truncate mt-0.5">{slot.plano.titulo}</p>
           : <p className="text-[10px] text-slate-400 mt-0.5 italic">Sem plano</p>
         }
-        {cfg && <div className="flex items-center gap-1 mt-1"><span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} /><span className={`text-[9px] font-bold uppercase tracking-wide ${cfg.text}`}>{cfg.label}</span></div>}
+        {cfg && slot.plano && onVerPlano
+          ? <button type="button" onClick={e => { e.stopPropagation(); onVerPlano(slot.plano!) }}
+              className={`flex items-center gap-1 mt-1 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full hover:opacity-80 transition-opacity ${cfg.badge}`}>
+              {cfg.label}
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+          : cfg && <div className="flex items-center gap-1 mt-1"><span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} /><span className={`text-[9px] font-bold uppercase tracking-wide ${cfg.text}`}>{cfg.label}</span></div>
+        }
       </button>
-      {/* Olho: ver plano — aparece no hover */}
-      {slot.plano && onVerPlano && (
-        <button onClick={e => { e.stopPropagation(); onVerPlano(slot.plano!) }} title="Ver plano de aula"
-          className="absolute top-1 right-1 w-5 h-5 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-          </svg>
-        </button>
-      )}
-      {/* Botão + quando sem plano — aparece no hover */}
+      {/* Botão + quando sem plano */}
       {!slot.aplicacao && (
         <button onClick={() => onAplicarPlano(slot)} title="Aplicar plano"
           className="absolute top-1 right-1 w-5 h-5 rounded-md border border-dashed border-indigo-300 text-indigo-400 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-600 flex items-center justify-center text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
