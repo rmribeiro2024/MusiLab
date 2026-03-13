@@ -34,7 +34,7 @@ const AccordionChip = React.forwardRef<() => void, {
                             {quickOptions.map(opt => (
                                 <button key={opt} type="button"
                                     onClick={() => onChange(value ? value + (value.endsWith('\n') ? '' : '\n') + opt : opt)}
-                                    style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                    style={{ fontSize: 12, fontWeight: 600, color: '#6366f1', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                     + {opt}
                                 </button>
                             ))}

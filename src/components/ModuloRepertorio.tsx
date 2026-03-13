@@ -464,14 +464,14 @@ export default function ModuloRepertorio() {
                                     </button>
                                 );
                             })()}
-                            <button onClick={() => setMusicaEditando(m)} className="text-xs bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-200 transition mr-1">Editar</button>
+                            <button onClick={() => setMusicaEditando(m)} className="text-sm bg-indigo-100 text-indigo-700 font-bold px-3 py-2 rounded-lg hover:bg-indigo-200 transition mr-1">Editar</button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); setUsoExpandidoId(usoExpandidoId === String(m.id) ? null : String(m.id)) }}
-                                className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition mr-1 ${usoExpandidoId === String(m.id) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'}`}
+                                className={`text-sm font-bold px-3 py-2 rounded-lg border transition mr-1 ${usoExpandidoId === String(m.id) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'}`}
                                 title="Onde foi usada">
                                 📊 Usos
                             </button>
-                            <button onClick={() => { setModalConfirm({ titulo: `Excluir "${m.titulo}"?`, conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => { setRepertorio(repertorio.filter(r => r.id !== m.id)); } }); }} className="text-xs bg-red-100 text-red-600 font-bold px-3 py-1.5 rounded-lg hover:bg-red-200 transition">🗑️</button>
+                            <button onClick={() => { setModalConfirm({ titulo: `Excluir "${m.titulo}"?`, conteudo: 'Esta ação não pode ser desfeita.', labelConfirm: 'Excluir', perigo: true, onConfirm: () => { setRepertorio(repertorio.filter(r => r.id !== m.id)); } }); }} className="text-sm bg-red-100 text-red-600 font-bold px-3 py-2 rounded-lg hover:bg-red-200 transition">🗑️</button>
                         </div>
                         {/* Seção "Onde foi usada" */}
                         {usoExpandidoId === String(m.id) && (() => {

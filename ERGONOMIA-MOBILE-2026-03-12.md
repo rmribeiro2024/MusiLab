@@ -12,14 +12,14 @@
 | A | Botões de reordenação do roteiro: 24px, gap 2px | 🔴 Crítico | TelaPrincipal.tsx:546 | ✅ `b4797bf` |
 | B | Bottom nav labels em `text-[10px]` (ilegível em movimento) | 🔴 Crítico | BancoPlanos.tsx:2763 | ✅ `b4797bf` |
 | C | Botões ✏️/🗑️ atividades: 32×24px, gap 6px | 🔴 Crítico | ModuloAtividades.tsx:462 | ✅ `b4797bf` |
-| D | Formulário de plano: scroll excessivo com seções abertas | 🟠 Médio | TelaPrincipal.tsx:415–650 | ⬜ pendente |
-| E | Botões Editar/Excluir repertório sem separação visual | 🟠 Médio | ModuloRepertorio.tsx:467 | ⬜ pendente |
-| F | Campo "Duração" sem `inputMode="numeric"` | 🟠 Médio | TelaPrincipal.tsx:418 | ⬜ pendente |
-| G | Quick options pós-aula: padding 3px×8px, fontSize 10 | 🟠 Médio | ModalRegistroPosAula.tsx:24 | ⬜ pendente |
-| H | Botões Excluir/Editar colados no painel de detalhe do plano | 🟠 Médio | BancoPlanos.tsx:2698 | ⬜ pendente |
-| I | Listas sem paginação (50+ itens, scroll longo) | 🟡 Baixo | Todos os módulos | ⬜ pendente |
-| J | `rows={4}` em textareas no formulário de atividade | 🟡 Baixo | ModuloAtividades.tsx:170 | ⬜ pendente |
-| K | Badges com `py-0.5` — interface visualmente apertada | 🟡 Baixo | TelaPrincipal.tsx:39 | ⬜ pendente |
+| D | Formulário de plano: scroll excessivo com seções abertas | 🟠 Médio | TelaPrincipal.tsx:415–650 | ✅ commit anterior |
+| E | Botões Editar/Excluir repertório sem separação visual | 🟠 Médio | ModuloRepertorio.tsx:467 | ✅ commit anterior |
+| F | Campo "Duração" sem `inputMode="numeric"` | 🟠 Médio | TelaPrincipal.tsx:418 | N/A (campo aceita texto) |
+| G | Quick options pós-aula: padding 3px×8px, fontSize 10 | 🟠 Médio | ModalRegistroPosAula.tsx:24 | ✅ commit anterior |
+| H | Botões Excluir/Editar colados no painel de detalhe do plano | 🟠 Médio | BancoPlanos.tsx:2698 | ✅ commit anterior |
+| I | Listas sem paginação (50+ itens, scroll longo) | 🟡 Baixo | Todos os módulos | ⬜ pendente (complexo) |
+| J | `rows={4}` em textareas no formulário de atividade | 🟡 Baixo | ModuloAtividades.tsx:170 | ✅ `58bb95d` |
+| K | Badges com `py-0.5` — interface visualmente apertada | 🟡 Baixo | TelaPrincipal.tsx:39 | ✅ `58bb95d` |
 
 ---
 
@@ -58,7 +58,7 @@
 
 ---
 
-### ⬜ D — Formulário de plano: scroll excessivo
+### ✅ D — Formulário de plano: scroll excessivo
 **Arquivo:** `src/components/TelaPrincipal.tsx` linhas 415–650
 **Problema:** Quando seções accordion abertas (roteiro, materiais, objetivos), scroll pode chegar a 800–1000px em mobile. Professor entre aulas não tem tempo/paciência para isso.
 **Melhoria sugerida:**
@@ -68,7 +68,7 @@
 
 ---
 
-### ⬜ E — Botões Editar/Excluir no card de música (Repertório)
+### ✅ E — Botões Editar/Excluir no card de música (Repertório)
 **Arquivo:** `src/components/ModuloRepertorio.tsx` linha ~467
 **Problema:** `px-3 py-1.5 text-xs` com gap pequeno entre Editar e botão de uso. Fácil tocar o errado.
 **Melhoria sugerida:**
@@ -90,7 +90,7 @@
 
 ---
 
-### ⬜ G — Quick options pós-aula muito pequenas
+### ✅ G — Quick options pós-aula muito pequenas
 **Arquivo:** `src/components/modals/ModalRegistroPosAula.tsx` linha ~24 (dentro de `AccordionChip`)
 **Problema:** Botões de resposta rápida (chips dentro dos accordions) com `fontSize: 10, padding: '3px 8px'`. Área de toque ~60×22px — muito baixo verticalmente.
 **Melhoria sugerida:**
@@ -99,7 +99,7 @@
 
 ---
 
-### ⬜ H — Botões Editar/Excluir colados no painel de detalhe do plano
+### ✅ H — Botões Editar/Excluir colados no painel de detalhe do plano
 **Arquivo:** `src/components/BancoPlanos.tsx` linhas ~2698–2699
 **Problema:** Dois botões lado a lado em `flex gap-2` dentro de `py-3 rounded-xl` — OK em altura, mas Excluir (vermelho) fica imediatamente ao lado de Editar sem separação visual clara.
 **Melhoria sugerida:**
@@ -118,7 +118,7 @@
 
 ---
 
-### ⬜ J — `rows={4}` em textarea do formulário de atividade
+### ✅ J — `rows={4}` em textarea do formulário de atividade
 **Arquivo:** `src/components/ModuloAtividades.tsx` linha ~170
 **Problema:** Textarea com 4 linhas visíveis ocupa ~120px em mobile, forçando scroll interno + scroll da página simultaneamente (confuso e difícil de controlar).
 **Melhoria sugerida:**
@@ -127,7 +127,7 @@
 
 ---
 
-### ⬜ K — Badges com `py-0.5` (apertadas visualmente)
+### ✅ K — Badges com `py-0.5` (apertadas visualmente)
 **Arquivo:** `src/components/TelaPrincipal.tsx` linha ~39
 **Problema:** Badges não são clicáveis, mas `py-0.5` (2px) passa sensação de interface congestionada, especialmente em mobile onde os olhos já estão cansados.
 **Melhoria sugerida:**
@@ -141,17 +141,17 @@
 ### Sprint 1 — Críticos (feitos ✅)
 - ✅ A, B, C — commit `b4797bf`
 
-### Sprint 2 — Médios (próxima sessão)
-1. **F** — `inputMode="numeric"` no campo duração (1 linha)
-2. **E** — Botões repertório: `py-1.5` → `py-2`, `text-xs` → `text-sm`
-3. **G** — Quick options pós-aula: padding `3px 8px` → `6px 10px`
-4. **H** — Separar Editar/Excluir no painel de detalhe do plano
+### Sprint 2 — Médios ✅ CONCLUÍDO
+1. ✅ **F** — N/A (campo aceita texto "50 min", inputMode não aplicável)
+2. ✅ **E** — Botões repertório: `py-1.5` → `py-2`, `text-xs` → `text-sm`
+3. ✅ **G** — Quick options pós-aula: `3px 8px` → `6px 10px`, fontSize 10→12
+4. ✅ **H** — Editar/Excluir empilhados verticalmente, Excluir de-enfatizado
 
-### Sprint 3 — Baixos / complexos
-5. **D** — Verificar quais seções do formulário ficam abertas por padrão no mobile
-6. **J** — `rows={4}` → `rows={3}` nas textareas do formulário de atividade
-7. **K** — Badges `py-0.5` → `py-1`
-8. **I** — Paginação/virtualização das listas (complexo, baixo impacto prático)
+### Sprint 3 — Baixos ✅ CONCLUÍDO
+5. ✅ **D** — Só `roteiro` aberto por padrão em mobile (`window.innerWidth < 640`)
+6. ✅ **J** — `rows={4}` → `rows={3}` — commit `58bb95d`
+7. ✅ **K** — Badges `py-0.5` → `py-1` — commit `58bb95d`
+8. ⬜ **I** — Paginação/virtualização das listas (complexo, baixo impacto prático)
 
 ---
 

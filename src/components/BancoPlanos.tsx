@@ -2694,9 +2694,9 @@ export default function BancoPlanos({ session }) {
                                     )}
 
                                     {/* Botões finais */}
-                                    <div className="flex gap-2 pt-4 border-t border-slate-100">
-                                        <button onClick={()=>editarPlano(planoSelecionado)} className="flex-1 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 py-3 rounded-xl font-semibold text-sm transition">Editar</button>
-                                        <button onClick={()=>excluirPlano(planoSelecionado.id)} className="flex-1 border border-red-200 hover:bg-red-50 text-red-500 hover:text-red-600 py-3 rounded-xl font-semibold text-sm transition">Excluir</button>
+                                    <div className="flex flex-col gap-2 pt-4 border-t border-slate-100">
+                                        <button onClick={()=>editarPlano(planoSelecionado)} className="w-full border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 py-3 rounded-xl font-semibold text-sm transition">Editar plano</button>
+                                        <button onClick={()=>excluirPlano(planoSelecionado.id)} className="w-full border border-red-200 hover:bg-red-50 text-red-400 hover:text-red-600 py-2.5 rounded-xl font-medium text-sm transition">Excluir</button>
                                     </div>
                                 </div>
                             </div>
