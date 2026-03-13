@@ -1810,9 +1810,6 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
           <div className="min-w-0">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Aula do dia</p>
             <p className="text-sm font-semibold text-slate-700 truncate">{planoDoDia.titulo}</p>
-            {planoDoDia.notasAdaptacao?.some(n => String(n.turmaId) === String(turmaSelecionada?.turmaId)) && (
-              <p className="text-[11px] text-amber-600 mt-0.5">📌 Tem adaptação para esta turma</p>
-            )}
           </div>
           <button
             type="button"
