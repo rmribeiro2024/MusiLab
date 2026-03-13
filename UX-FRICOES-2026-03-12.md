@@ -14,8 +14,8 @@
 | 3 | Filtros avançados de repertório ocultos por padrão | ModuloRepertorio.tsx | 🔴 Alto | ✅ `502278a` |
 | 4 | Sem autosave local — risco de perda de rascunho | PlanosContext.tsx | 🟠 Médio | ✅ `502278a` |
 | 5 | Botões de ação invisíveis até o hover (desktop) | TelaPrincipal.tsx, ModuloAtividades.tsx | 🟠 Médio | ✅ `d069da5` |
-| 6 | Modal pós-aula longo demais para mobile | ModalRegistroPosAula.tsx | 🟠 Médio | ⬜ pendente |
-| 7 | Três padrões diferentes de filtro nos módulos | ModuloAtividades, ModuloRepertorio, TelaPrincipal | 🟠 Médio | ⬜ pendente |
+| 6 | Modal pós-aula longo demais para mobile | ModalRegistroPosAula.tsx | 🟠 Médio | ✅ `65189be` |
+| 7 | Três padrões diferentes de filtro nos módulos | ModuloAtividades, ModuloRepertorio, TelaPrincipal | 🟠 Médio | ✅ `65189be` |
 | 8 | Sem feedback visual no botão Salvar | TelaPrincipal.tsx | 🟠 Médio | ✅ `502278a` |
 | 9 | Mover atividade no roteiro exige N cliques no mobile | TelaPrincipal.tsx | 🟡 Baixo | ✅ `d069da5` |
 | 10 | Busca global (Ctrl+K) sem discovery visual na UI | BancoPlanos.tsx | 🟡 Baixo | ✅ já existia |
@@ -183,7 +183,10 @@ className="opacity-60 group-hover:opacity-100"
 
 ---
 
-### Fricção #6 — Modal de registro pós-aula longo demais para mobile
+### ✅ Fricção #6 — Modal de registro pós-aula longo demais para mobile
+> **Implementado em `65189be`** — `ModalRegistroPosAula.tsx`: botão "Salvar registro" movido para footer sticky fora da área scrollável (entre o body e o fechamento do `!minimizado` wrapper). Botão sempre visível sem scroll, estilo mais proeminente (fundo escuro #1e293b). Conteúdo do onClick inalterado — só mudou o posicionamento.
+
+### Fricção #6 — Modal de registro pós-aula longo demais para mobile (original)
 
 **Onde ocorre:**
 - `src/components/modals/ModalRegistroPosAula.tsx`
@@ -205,7 +208,13 @@ Não remove nenhum campo — apenas reorganiza a ordem e prioridade visual.
 
 ---
 
-### Fricção #7 — Três padrões diferentes de filtro nos módulos
+### ✅ Fricção #7 — Três padrões diferentes de filtro nos módulos
+> **Implementado em `65189be`** — Padrão unificado colapsável com localStorage persistence nos 3 módulos:
+> - **ModuloAtividades**: busca + "▼ Mais filtros" toggle + view mode sempre visíveis; Tag/Conceito/Faixa colapsáveis (chave `atividades_filtros_abertos`)
+> - **TelaPrincipal**: busca + "▼ Mais filtros" toggle sempre visíveis; 8 selects + Favoritos/Limpar colapsáveis (chave `planos_filtros_abertos`); Ordenar/ViewMode sempre visíveis
+> - **ModuloRepertorio**: já tinha o padrão implementado em `502278a` (chave `repertorio_filtros_abertos`)
+
+### Fricção #7 — Três padrões diferentes de filtro nos módulos (original)
 
 **Onde ocorre:**
 - `src/components/ModuloAtividades.tsx` — barra horizontal com `<select>` nativos
