@@ -1,4 +1,5 @@
 import { dbSet } from '../lib/db'
+import { showToast } from '../lib/toast'
 import { sanitizeUrl, ytIdFromUrl } from '../lib/utils'
 import React, { useMemo, useState } from 'react'
 import { useDebounce } from '../lib/hooks'
@@ -573,7 +574,49 @@ export default function ModuloRepertorio() {
 
                     return (<>
 
-                    {/* ACCORDION 1 — Forma e Estrutura */}
+                    {/* ACCORDION 1 — Observações e Recursos (reordenado para aparecer primeiro) */}
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <button type="button" onClick={() => setAccordionAberto(accordionAberto === 'recursos' ? null : 'recursos')}
+                            className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition text-left">
+                            <div>
+                                <span className="text-sm font-semibold text-slate-700">📎 Observações e Recursos</span>
+                                <span className="text-xs text-slate-400 ml-2">Notas · Links · PDFs · Áudios</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {badgeRec > 0 && <span className="text-xs bg-indigo-100 text-indigo-600 font-bold px-2 py-0.5 rounded-full">{badgeRec}</span>}
+                                <span className={`text-slate-300 text-xs transition-transform duration-200 ${accordionAberto === 'recursos' ? 'rotate-180' : ''}`}>▼</span>
+                            </div>
+                        </button>
+                        {accordionAberto === 'recursos' && (
+                            <div className="bg-slate-50 border-t border-slate-100 px-5 py-5 space-y-4">
+                                <textarea value={musicaEditando.observacoes||''} onChange={e => setMusicaEditando({...musicaEditando, observacoes: e.target.value})}
+                                    placeholder="Anotações sobre a música..."
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 resize-none" rows={3} />
+                                <div className="flex gap-2">
+                                    <button onClick={() => { const url=prompt('Cole o link:'); if(url) setMusicaEditando({...musicaEditando, links:[...(musicaEditando.links||[]),url]}); }}
+                                        className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold transition">🔗 Link</button>
+                                    <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold text-center cursor-pointer transition">
+                                        📄 PDF
+                                        <input type="file" accept=".pdf" className="hidden" onChange={e => { const file=e.target.files[0]; if(file){ const r=new FileReader(); r.onload=()=>setMusicaEditando({...musicaEditando, pdfs:[...(musicaEditando.pdfs||[]),{nome:file.name,data:r.result as string}]}); r.readAsDataURL(file); } e.target.value=''; }} />
+                                    </label>
+                                    <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold text-center cursor-pointer transition">
+                                        🎧 Áudio
+                                        <input type="file" accept="audio/*,video/*" className="hidden" onChange={e => { const file=e.target.files[0]; if(file){ const r=new FileReader(); r.onload=()=>setMusicaEditando({...musicaEditando, audios:[...(musicaEditando.audios||[]),{nome:file.name,data:r.result as string}]}); r.readAsDataURL(file); } e.target.value=''; }} />
+                                    </label>
+                                </div>
+                                <div className="space-y-1.5">
+                                    {(musicaEditando.links||[]).map((l,i) => <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg"><a href={sanitizeUrl(l)} target="_blank" rel="noreferrer" className="flex-1 truncate text-indigo-600 hover:underline text-xs">🔗 {l}</a><button onClick={()=>setMusicaEditando({...musicaEditando,links:musicaEditando.links.filter((_,idx)=>idx!==i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button></div>)}
+                                    {(musicaEditando.pdfs||[]).map((p,i) => <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg"><a href={typeof p==='string'?p:p.data} target="_blank" className="flex-1 truncate text-slate-600 hover:underline text-xs">📄 {typeof p==='string'?p:p.nome}</a><button onClick={()=>setMusicaEditando({...musicaEditando,pdfs:musicaEditando.pdfs.filter((_,idx)=>idx!==i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button></div>)}
+                                    {(musicaEditando.audios||[]).map((a,i) => <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg"><a href={typeof a==='string'?a:a.data} target="_blank" className="flex-1 truncate text-slate-600 hover:underline text-xs">🎧 {typeof a==='string'?a:a.nome}</a><button onClick={()=>setMusicaEditando({...musicaEditando,audios:musicaEditando.audios.filter((_,idx)=>idx!==i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button></div>)}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Separador: atributos musicais opcionais */}
+                    <p className="text-xs text-slate-400 text-center pt-1 pb-0.5 tracking-wide uppercase font-semibold">Atributos musicais <span className="font-normal normal-case italic">(opcionais)</span></p>
+
+                    {/* ACCORDION 2 — Forma e Estrutura */}
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <button type="button" onClick={() => setAccordionAberto(accordionAberto === 'forma' ? null : 'forma')}
                             className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition text-left">
@@ -752,45 +795,6 @@ export default function ModuloRepertorio() {
                         )}
                     </div>
 
-                    {/* ACCORDION 4 — Observações e Recursos */}
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <button type="button" onClick={() => setAccordionAberto(accordionAberto === 'recursos' ? null : 'recursos')}
-                            className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition text-left">
-                            <div>
-                                <span className="text-sm font-semibold text-slate-700">📎 Observações e Recursos</span>
-                                <span className="text-xs text-slate-400 ml-2">Notas · Links · PDFs · Áudios</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {badgeRec > 0 && <span className="text-xs bg-indigo-100 text-indigo-600 font-bold px-2 py-0.5 rounded-full">{badgeRec}</span>}
-                                <span className={`text-slate-300 text-xs transition-transform duration-200 ${accordionAberto === 'recursos' ? 'rotate-180' : ''}`}>▼</span>
-                            </div>
-                        </button>
-                        {accordionAberto === 'recursos' && (
-                            <div className="bg-slate-50 border-t border-slate-100 px-5 py-5 space-y-4">
-                                <textarea value={musicaEditando.observacoes||''} onChange={e => setMusicaEditando({...musicaEditando, observacoes: e.target.value})}
-                                    placeholder="Anotações sobre a música..."
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 resize-none" rows={3} />
-                                <div className="flex gap-2">
-                                    <button onClick={() => { const url=prompt('Cole o link:'); if(url) setMusicaEditando({...musicaEditando, links:[...(musicaEditando.links||[]),url]}); }}
-                                        className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold transition">🔗 Link</button>
-                                    <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold text-center cursor-pointer transition">
-                                        📄 PDF
-                                        <input type="file" accept=".pdf" className="hidden" onChange={e => { const file=e.target.files[0]; if(file){ const r=new FileReader(); r.onload=()=>setMusicaEditando({...musicaEditando, pdfs:[...(musicaEditando.pdfs||[]),{nome:file.name,data:r.result as string}]}); r.readAsDataURL(file); } e.target.value=''; }} />
-                                    </label>
-                                    <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold text-center cursor-pointer transition">
-                                        🎧 Áudio
-                                        <input type="file" accept="audio/*,video/*" className="hidden" onChange={e => { const file=e.target.files[0]; if(file){ const r=new FileReader(); r.onload=()=>setMusicaEditando({...musicaEditando, audios:[...(musicaEditando.audios||[]),{nome:file.name,data:r.result as string}]}); r.readAsDataURL(file); } e.target.value=''; }} />
-                                    </label>
-                                </div>
-                                <div className="space-y-1.5">
-                                    {(musicaEditando.links||[]).map((l,i) => <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg"><a href={sanitizeUrl(l)} target="_blank" rel="noreferrer" className="flex-1 truncate text-indigo-600 hover:underline text-xs">🔗 {l}</a><button onClick={()=>setMusicaEditando({...musicaEditando,links:musicaEditando.links.filter((_,idx)=>idx!==i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button></div>)}
-                                    {(musicaEditando.pdfs||[]).map((p,i) => <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg"><a href={typeof p==='string'?p:p.data} target="_blank" className="flex-1 truncate text-slate-600 hover:underline text-xs">📄 {typeof p==='string'?p:p.nome}</a><button onClick={()=>setMusicaEditando({...musicaEditando,pdfs:musicaEditando.pdfs.filter((_,idx)=>idx!==i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button></div>)}
-                                    {(musicaEditando.audios||[]).map((a,i) => <div key={i} className="flex gap-2 items-center bg-slate-50 px-3 py-2 rounded-lg"><a href={typeof a==='string'?a:a.data} target="_blank" className="flex-1 truncate text-slate-600 hover:underline text-xs">🎧 {typeof a==='string'?a:a.nome}</a><button onClick={()=>setMusicaEditando({...musicaEditando,audios:musicaEditando.audios.filter((_,idx)=>idx!==i)})} className="text-slate-400 hover:text-red-500 font-bold">✕</button></div>)}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
                     {/* ACCORDION 5 — Vínculos */}
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <button type="button" onClick={() => setAccordionAberto(accordionAberto === 'vinculos' ? null : 'vinculos')}
@@ -900,7 +904,7 @@ export default function ModuloRepertorio() {
                     <button
                         onClick={() => {
                             if(!musicaEditando.titulo.trim()) {
-                                setModalConfirm({ conteudo: '⚠️ Título é obrigatório!', somenteOk: true, labelConfirm: 'OK' });
+                                showToast('Título é obrigatório!', 'error');
                                 return;
                             }
                             const _salvarMusica = () => {
@@ -928,9 +932,9 @@ export default function ModuloRepertorio() {
                                     }
                                     setPendingAtividadeId(null);
                                     setViewMode('planos');
-                                    setModalConfirm({ conteudo: '✅ Música salva e vinculada à atividade!', somenteOk: true, labelConfirm: 'OK' });
+                                    showToast('Música salva e vinculada à atividade!', 'success');
                                 } else {
-                                    setModalConfirm({ conteudo: '✅ Música salva!', somenteOk: true, labelConfirm: 'OK' });
+                                    showToast('Música salva!', 'success');
                                 }
                                 setMusicaEditando(null);
                             };

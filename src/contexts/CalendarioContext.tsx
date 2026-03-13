@@ -5,6 +5,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { dbGet, dbSet } from '../lib/db'
 import { useModalContext } from './ModalContext'
+import { showToast } from '../lib/toast'
 import { useAnoLetivoContext } from './AnoLetivoContext'
 import type { Plano, RegistroPosAula, GradeEditando, AulaGrade, EventoEscolar } from '../types'
 
@@ -215,11 +216,11 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
 
   function salvarGradeSemanal() {
     if (!gradeEditando || !gradeEditando.anoLetivoId || !gradeEditando.escolaId || !gradeEditando.dataInicio || !gradeEditando.dataFim) {
-      setModalConfirm({ conteudo: '⚠️ Preencha ano letivo, escola e período!', somenteOk: true, labelConfirm: 'OK' })
+      showToast('Preencha ano letivo, escola e período!', 'error')
       return
     }
     if (gradeEditando.aulas.length === 0) {
-      setModalConfirm({ conteudo: '⚠️ Adicione pelo menos uma aula!', somenteOk: true, labelConfirm: 'OK' })
+      showToast('Adicione pelo menos uma aula!', 'error')
       return
     }
     const existe = gradesSemanas.find(g => g.id === gradeEditando.id)
@@ -229,7 +230,7 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
       setGradesSemanas([...gradesSemanas, gradeEditando])
     }
     setGradeEditando(null)
-    setModalConfirm({ conteudo: '✅ Grade salva!', somenteOk: true, labelConfirm: 'OK' })
+    showToast('Grade salva!', 'success')
   }
 
   function excluirGradeSemanal(id: number | string) {

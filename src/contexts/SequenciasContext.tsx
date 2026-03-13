@@ -6,6 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, loadFromSupabase, gerarIdSeguro } from '../lib/utils'
 import { useModalContext } from './ModalContext'
+import { showToast } from '../lib/toast'
 import type { Sequencia, AnoLetivo } from '../types'
 
 // ─── INTERFACE DO CONTEXTO ────────────────────────────────────────────────────
@@ -158,15 +159,15 @@ export function SequenciasProvider({ children, userId }: SequenciasProviderProps
 
   function salvarSequencia() {
     if (!sequenciaEditando?.titulo?.trim()) {
-      setModalConfirm({ conteudo: '⚠️ Preencha o título da sequência!', somenteOk: true, labelConfirm: 'OK' })
+      showToast('Preencha o título da sequência!', 'error')
       return
     }
     if (!sequenciaEditando.escolaId) {
-      setModalConfirm({ conteudo: '⚠️ Selecione uma escola!', somenteOk: true, labelConfirm: 'OK' })
+      showToast('Selecione uma escola!', 'error')
       return
     }
     if (!sequenciaEditando.segmentos || sequenciaEditando.segmentos.length === 0) {
-      setModalConfirm({ conteudo: '⚠️ Selecione pelo menos um segmento!', somenteOk: true, labelConfirm: 'OK' })
+      showToast('Selecione pelo menos um segmento!', 'error')
       return
     }
     // Gerar slots se ainda não foram gerados

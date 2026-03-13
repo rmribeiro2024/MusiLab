@@ -424,6 +424,17 @@ export default function ModalRegistroPosAula() {
     const [erroAudio, setErroAudio] = React.useState<string | null>(null)
     const timerIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null)
     const MAX_DURACAO_AUDIO = 60
+    const [mostrarAvancados, setMostrarAvancados] = React.useState(false)
+
+    // Auto-expande campos avançados se o registro editado tiver valores neles
+    React.useEffect(() => {
+        if (!registroEditando) return
+        const r = registroEditando as any
+        if ((r.chamada?.length > 0) || (r.rubrica?.some((x: any) => x.valor > 0)) ||
+            (r.encaminhamentos?.length > 0) || r.audioNotaDeVoz || r.urlEvidencia) {
+            setMostrarAvancados(true)
+        }
+    }, [registroEditando]) // eslint-disable-line
 
     // Expande automaticamente o registro mais recente da turma clicada ao abrir no Histórico
     React.useEffect(() => {
@@ -736,135 +747,12 @@ export default function ModalRegistroPosAula() {
                                             className="flex-1 bg-transparent outline-none border-none text-right" style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }} />
                                     </div>
 
-                                    {/* Chamada rápida */}
-                                    {regTurmaSel && regAnoSel && regEscolaSel && regSegmentoSel && (() => {
-                                        const todosAlunos = alunosGetByTurma(regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel)
-                                        if (todosAlunos.length === 0) return null
-                                        const chamadaAtual: { alunoId: string; presente: boolean }[] = (novoRegistro as any).chamada || []
-                                        const getPresente = (id: string) => {
-                                            const entry = chamadaAtual.find(c => c.alunoId === id)
-                                            return entry ? entry.presente : null // null = não marcado
-                                        }
-                                        const togglePresente = (alunoId: string, presente: boolean) => {
-                                            const atual = chamadaAtual.find(c => c.alunoId === alunoId)
-                                            let nova: { alunoId: string; presente: boolean }[]
-                                            if (atual && atual.presente === presente) {
-                                                // clique duplo = desmarcar
-                                                nova = chamadaAtual.filter(c => c.alunoId !== alunoId)
-                                            } else {
-                                                nova = [...chamadaAtual.filter(c => c.alunoId !== alunoId), { alunoId, presente }]
-                                            }
-                                            setNovoRegistro({ ...novoRegistro, chamada: nova } as any)
-                                        }
-                                        const presentes = chamadaAtual.filter(c => c.presente).length
-                                        const ausentes = chamadaAtual.filter(c => !c.presente).length
-                                        const total = todosAlunos.length
-                                        return (
-                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
-                                                    <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>✋</span>
-                                                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: '#64748b', flex: 1 }}>
-                                                        Chamada
-                                                    </span>
-                                                    {(presentes > 0 || ausentes > 0) && (
-                                                        <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 8px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>
-                                                            {presentes}/{total} presentes
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div style={{ padding: '0 12px 10px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                                    {todosAlunos.map(al => {
-                                                        const estado = getPresente(al.id)
-                                                        return (
-                                                            <div key={al.id} style={{ display: 'flex', gap: 2 }}>
-                                                                <button type="button"
-                                                                    onClick={() => togglePresente(al.id, true)}
-                                                                    title="Presente"
-                                                                    style={{
-                                                                        fontSize: 11, fontWeight: 600, padding: '4px 8px', borderRadius: '8px 0 0 8px', cursor: 'pointer', transition: 'all .15s',
-                                                                        background: estado === true ? '#22c55e' : '#f1f5f9',
-                                                                        color: estado === true ? '#fff' : '#64748b',
-                                                                        border: estado === true ? '1px solid #16a34a' : '1px solid #e2e8f0',
-                                                                    }}>
-                                                                    {al.nome.split(' ')[0]}
-                                                                </button>
-                                                                <button type="button"
-                                                                    onClick={() => togglePresente(al.id, false)}
-                                                                    title="Ausente"
-                                                                    style={{
-                                                                        fontSize: 11, fontWeight: 600, padding: '4px 6px', borderRadius: '0 8px 8px 0', cursor: 'pointer', transition: 'all .15s',
-                                                                        background: estado === false ? '#ef4444' : '#f1f5f9',
-                                                                        color: estado === false ? '#fff' : '#94a3b8',
-                                                                        border: estado === false ? '1px solid #dc2626' : '1px solid #e2e8f0',
-                                                                    }}>
-                                                                    ✕
-                                                                </button>
-                                                            </div>
-                                                        )
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )
-                                    })()}
-
-                                        {/* Rubrica de avaliação */}
-                                        {regTurmaSel && regAnoSel && regEscolaSel && regSegmentoSel && (() => {
-                                            const criterios = (typeof turmaGetRubricas === 'function'
-                                                ? turmaGetRubricas(regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel)
-                                                : RUBRICAS_PADRAO) as { id: string; nome: string; escala: number }[]
-                                            const rubricaAtual: { criterioId: string; valor: number }[] = (novoRegistro as any).rubrica || []
-                                            const getValor = (id: string) => rubricaAtual.find(r => r.criterioId === id)?.valor ?? 0
-                                            const setValor = (criterioId: string, valor: number) => {
-                                                const nova = [...rubricaAtual.filter(r => r.criterioId !== criterioId), { criterioId, valor }]
-                                                setNovoRegistro({ ...novoRegistro, rubrica: nova } as any)
-                                            }
-                                            const preenchida = rubricaAtual.some(r => r.valor > 0)
-                                            return (
-                                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
-                                                        <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📊</span>
-                                                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: preenchida ? '#334155' : '#64748b', flex: 1 }}>
-                                                            Avaliação da aula
-                                                        </span>
-                                                        {preenchida && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
-                                                    </div>
-                                                    <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                                        {criterios.map(c => {
-                                                            const val = getValor(c.id)
-                                                            return (
-                                                                <div key={c.id}>
-                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                                                        <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>{c.nome}</span>
-                                                                        <span style={{ fontSize: 11, color: val > 0 ? '#6366f1' : '#94a3b8' }}>{val > 0 ? `${val}/${c.escala}` : '—'}</span>
-                                                                    </div>
-                                                                    <div style={{ display: 'flex', gap: 4 }}>
-                                                                        {Array.from({ length: c.escala }, (_, i) => i + 1).map(n => (
-                                                                            <button key={n} type="button"
-                                                                                onClick={() => setValor(c.id, val === n ? 0 : n)}
-                                                                                style={{
-                                                                                    flex: 1, height: 28, borderRadius: 6, cursor: 'pointer', transition: 'all .15s', border: 'none',
-                                                                                    background: n <= val ? '#6366f1' : '#e2e8f0',
-                                                                                    color: n <= val ? '#fff' : '#94a3b8',
-                                                                                    fontSize: 11, fontWeight: 700,
-                                                                                }}>
-                                                                                {n}
-                                                                            </button>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            )
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            )
-                                        })()}
-
-                                        {/* Resultado da aula */}
-                                        <ResultadoAulaSelector
-                                            value={(novoRegistro as any).resultadoAula || ''}
-                                            onChange={v => setNovoRegistro({ ...novoRegistro, resultadoAula: v })}
-                                            firstRef={resultadoAulaFirstRef}
-                                        />
+                                    {/* Resultado da aula */}
+                                    <ResultadoAulaSelector
+                                        value={(novoRegistro as any).resultadoAula || ''}
+                                        onChange={v => setNovoRegistro({ ...novoRegistro, resultadoAula: v })}
+                                        firstRef={resultadoAulaFirstRef}
+                                    />
 
                                     {/* Chips de anotação */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -902,41 +790,6 @@ export default function ModalRegistroPosAula() {
                                             ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length + 1] = fn }}
                                         />
 
-                                        {/* Evidência de Aula — URL */}
-                                        {(() => {
-                                            const url = (novoRegistro as any).urlEvidencia || ''
-                                            let urlValida = false
-                                            try { urlValida = url.length > 0 && !!new URL(url) } catch { urlValida = false }
-                                            return (
-                                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
-                                                        <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📎</span>
-                                                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: url ? '#334155' : '#64748b', flex: 1 }}>
-                                                            Evidência de aula
-                                                        </span>
-                                                        {url && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
-                                                    </div>
-                                                    <div style={{ padding: '0 12px 10px', display: 'flex', gap: 6 }}>
-                                                        <input
-                                                            type="url"
-                                                            value={url}
-                                                            onChange={e => setNovoRegistro({ ...novoRegistro, urlEvidencia: e.target.value })}
-                                                            placeholder="Cole um link (Google Drive, YouTube, áudio...)"
-                                                            style={{ flex: 1, padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#334155', fontFamily: 'inherit', outline: 'none', background: '#fff' }}
-                                                            onFocus={e => (e.target.style.borderColor = '#94a3b8')}
-                                                            onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
-                                                        />
-                                                        {urlValida && (
-                                                            <a href={url} target="_blank" rel="noopener noreferrer"
-                                                                style={{ padding: '8px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#1d4ed8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                                                                🔗 Abrir
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )
-                                        })()}
-
                                         {/* Ideias / estratégias */}
                                         <AccordionChip
                                             id="reg-proxima" icon="💡" label="Ideias / estratégias"
@@ -955,153 +808,327 @@ export default function ModalRegistroPosAula() {
                                             onDone={() => salvarBtnRef.current?.focus()}
                                             firstRef={proximaAulaFirstRef}
                                         />
+                                    </div>
 
-                                        {/* Encaminhamentos → próxima aula */}
-                                        {(() => {
-                                            const encaminhamentos: { id: string; texto: string; concluido: boolean }[] = (novoRegistro as any).encaminhamentos || []
-                                            const addEnc = () => {
-                                                const txt = novoEnc.trim()
-                                                if (!txt) return
-                                                const novo = [...encaminhamentos, { id: String(Date.now()), texto: txt, concluido: false }]
-                                                setNovoRegistro({ ...novoRegistro, encaminhamentos: novo } as any)
-                                                setNovoEnc('')
-                                            }
-                                            return (
-                                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
-                                                        <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📌</span>
-                                                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: encaminhamentos.length > 0 ? '#334155' : '#64748b', flex: 1 }}>
-                                                            Encaminhamentos para próxima aula
-                                                        </span>
-                                                        {encaminhamentos.length > 0 && (
-                                                            <span style={{ fontSize: 10, color: '#6366f1', fontWeight: 700, background: '#eef2ff', padding: '1px 8px', borderRadius: 99, border: '1px solid #c7d2fe', flexShrink: 0 }}>
-                                                                {encaminhamentos.length}
+                                    {/* ── Campos avançados ── */}
+                                    <button type="button" onClick={() => setMostrarAvancados(m => !m)}
+                                        style={{
+                                            width: '100%', padding: '8px 12px', background: mostrarAvancados ? '#f1f5f9' : '#f8fafc',
+                                            border: '1px dashed #cbd5e1', borderRadius: 10, fontSize: 11, fontWeight: 700,
+                                            color: '#64748b', cursor: 'pointer', textAlign: 'center', letterSpacing: '.06em',
+                                            textTransform: 'uppercase', transition: 'all .15s',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+                                        }}>
+                                        <span style={{ transition: 'transform .2s', display: 'inline-block', transform: mostrarAvancados ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                                        {mostrarAvancados ? 'Ocultar campos extras' : 'Chamada · Rubrica · Encaminhamentos · Áudio'}
+                                    </button>
+                                    {mostrarAvancados && (
+                                        <div className="space-y-3">
+                                            {/* Chamada rápida */}
+                                            {regTurmaSel && regAnoSel && regEscolaSel && regSegmentoSel && (() => {
+                                                const todosAlunos = alunosGetByTurma(regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel)
+                                                if (todosAlunos.length === 0) return null
+                                                const chamadaAtual: { alunoId: string; presente: boolean }[] = (novoRegistro as any).chamada || []
+                                                const getPresente = (id: string) => {
+                                                    const entry = chamadaAtual.find(c => c.alunoId === id)
+                                                    return entry ? entry.presente : null // null = não marcado
+                                                }
+                                                const togglePresente = (alunoId: string, presente: boolean) => {
+                                                    const atual = chamadaAtual.find(c => c.alunoId === alunoId)
+                                                    let nova: { alunoId: string; presente: boolean }[]
+                                                    if (atual && atual.presente === presente) {
+                                                        // clique duplo = desmarcar
+                                                        nova = chamadaAtual.filter(c => c.alunoId !== alunoId)
+                                                    } else {
+                                                        nova = [...chamadaAtual.filter(c => c.alunoId !== alunoId), { alunoId, presente }]
+                                                    }
+                                                    setNovoRegistro({ ...novoRegistro, chamada: nova } as any)
+                                                }
+                                                const presentes = chamadaAtual.filter(c => c.presente).length
+                                                const ausentes = chamadaAtual.filter(c => !c.presente).length
+                                                const total = todosAlunos.length
+                                                return (
+                                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
+                                                            <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>✋</span>
+                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: '#64748b', flex: 1 }}>
+                                                                Chamada
                                                             </span>
-                                                        )}
+                                                            {(presentes > 0 || ausentes > 0) && (
+                                                                <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 8px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>
+                                                                    {presentes}/{total} presentes
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ padding: '0 12px 10px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                                            {todosAlunos.map(al => {
+                                                                const estado = getPresente(al.id)
+                                                                return (
+                                                                    <div key={al.id} style={{ display: 'flex', gap: 2 }}>
+                                                                        <button type="button"
+                                                                            onClick={() => togglePresente(al.id, true)}
+                                                                            title="Presente"
+                                                                            style={{
+                                                                                fontSize: 11, fontWeight: 600, padding: '4px 8px', borderRadius: '8px 0 0 8px', cursor: 'pointer', transition: 'all .15s',
+                                                                                background: estado === true ? '#22c55e' : '#f1f5f9',
+                                                                                color: estado === true ? '#fff' : '#64748b',
+                                                                                border: estado === true ? '1px solid #16a34a' : '1px solid #e2e8f0',
+                                                                            }}>
+                                                                            {al.nome.split(' ')[0]}
+                                                                        </button>
+                                                                        <button type="button"
+                                                                            onClick={() => togglePresente(al.id, false)}
+                                                                            title="Ausente"
+                                                                            style={{
+                                                                                fontSize: 11, fontWeight: 600, padding: '4px 6px', borderRadius: '0 8px 8px 0', cursor: 'pointer', transition: 'all .15s',
+                                                                                background: estado === false ? '#ef4444' : '#f1f5f9',
+                                                                                color: estado === false ? '#fff' : '#94a3b8',
+                                                                                border: estado === false ? '1px solid #dc2626' : '1px solid #e2e8f0',
+                                                                            }}>
+                                                                            ✕
+                                                                        </button>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
                                                     </div>
-                                                    <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                                        {encaminhamentos.map((enc, idx) => (
-                                                            <div key={enc.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                                <input type="checkbox" checked={enc.concluido}
-                                                                    onChange={() => {
-                                                                        const nova = encaminhamentos.map((e, i) => i === idx ? { ...e, concluido: !e.concluido } : e)
+                                                )
+                                            })()}
+
+                                            {/* Rubrica de avaliação */}
+                                            {regTurmaSel && regAnoSel && regEscolaSel && regSegmentoSel && (() => {
+                                                const criterios = (typeof turmaGetRubricas === 'function'
+                                                    ? turmaGetRubricas(regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel)
+                                                    : RUBRICAS_PADRAO) as { id: string; nome: string; escala: number }[]
+                                                const rubricaAtual: { criterioId: string; valor: number }[] = (novoRegistro as any).rubrica || []
+                                                const getValor = (id: string) => rubricaAtual.find(r => r.criterioId === id)?.valor ?? 0
+                                                const setValor = (criterioId: string, valor: number) => {
+                                                    const nova = [...rubricaAtual.filter(r => r.criterioId !== criterioId), { criterioId, valor }]
+                                                    setNovoRegistro({ ...novoRegistro, rubrica: nova } as any)
+                                                }
+                                                const preenchida = rubricaAtual.some(r => r.valor > 0)
+                                                return (
+                                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
+                                                            <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📊</span>
+                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: preenchida ? '#334155' : '#64748b', flex: 1 }}>
+                                                                Avaliação da aula
+                                                            </span>
+                                                            {preenchida && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                        </div>
+                                                        <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                                            {criterios.map(c => {
+                                                                const val = getValor(c.id)
+                                                                return (
+                                                                    <div key={c.id}>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                                                            <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>{c.nome}</span>
+                                                                            <span style={{ fontSize: 11, color: val > 0 ? '#6366f1' : '#94a3b8' }}>{val > 0 ? `${val}/${c.escala}` : '—'}</span>
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', gap: 4 }}>
+                                                                            {Array.from({ length: c.escala }, (_, i) => i + 1).map(n => (
+                                                                                <button key={n} type="button"
+                                                                                    onClick={() => setValor(c.id, val === n ? 0 : n)}
+                                                                                    style={{
+                                                                                        flex: 1, height: 28, borderRadius: 6, cursor: 'pointer', transition: 'all .15s', border: 'none',
+                                                                                        background: n <= val ? '#6366f1' : '#e2e8f0',
+                                                                                        color: n <= val ? '#fff' : '#94a3b8',
+                                                                                        fontSize: 11, fontWeight: 700,
+                                                                                    }}>
+                                                                                    {n}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })()}
+
+                                            {/* Encaminhamentos → próxima aula */}
+                                            {(() => {
+                                                const encaminhamentos: { id: string; texto: string; concluido: boolean }[] = (novoRegistro as any).encaminhamentos || []
+                                                const addEnc = () => {
+                                                    const txt = novoEnc.trim()
+                                                    if (!txt) return
+                                                    const novo = [...encaminhamentos, { id: String(Date.now()), texto: txt, concluido: false }]
+                                                    setNovoRegistro({ ...novoRegistro, encaminhamentos: novo } as any)
+                                                    setNovoEnc('')
+                                                }
+                                                return (
+                                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
+                                                            <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📌</span>
+                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: encaminhamentos.length > 0 ? '#334155' : '#64748b', flex: 1 }}>
+                                                                Encaminhamentos para próxima aula
+                                                            </span>
+                                                            {encaminhamentos.length > 0 && (
+                                                                <span style={{ fontSize: 10, color: '#6366f1', fontWeight: 700, background: '#eef2ff', padding: '1px 8px', borderRadius: 99, border: '1px solid #c7d2fe', flexShrink: 0 }}>
+                                                                    {encaminhamentos.length}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                            {encaminhamentos.map((enc, idx) => (
+                                                                <div key={enc.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                    <input type="checkbox" checked={enc.concluido}
+                                                                        onChange={() => {
+                                                                            const nova = encaminhamentos.map((e, i) => i === idx ? { ...e, concluido: !e.concluido } : e)
+                                                                            setNovoRegistro({ ...novoRegistro, encaminhamentos: nova } as any)
+                                                                        }}
+                                                                        style={{ accentColor: '#6366f1', flexShrink: 0 }}
+                                                                    />
+                                                                    <span style={{ fontSize: 12, color: enc.concluido ? '#94a3b8' : '#334155', flex: 1, textDecoration: enc.concluido ? 'line-through' : 'none' }}>{enc.texto}</span>
+                                                                    <button type="button" onClick={() => {
+                                                                        const nova = encaminhamentos.filter((_, i) => i !== idx)
                                                                         setNovoRegistro({ ...novoRegistro, encaminhamentos: nova } as any)
-                                                                    }}
-                                                                    style={{ accentColor: '#6366f1', flexShrink: 0 }}
+                                                                    }} style={{ color: '#cbd5e1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, padding: '0 2px', flexShrink: 0 }}>✕</button>
+                                                                </div>
+                                                            ))}
+                                                            <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+                                                                <input type="text" value={novoEnc} onChange={e => setNovoEnc(e.target.value)}
+                                                                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEnc() } }}
+                                                                    placeholder="Ex: Trazer partitura do Noturno, revisar compasso 12"
+                                                                    style={{ flex: 1, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', fontFamily: 'inherit', outline: 'none' }}
+                                                                    onFocus={e => (e.target.style.borderColor = '#94a3b8')}
+                                                                    onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
                                                                 />
-                                                                <span style={{ fontSize: 12, color: enc.concluido ? '#94a3b8' : '#334155', flex: 1, textDecoration: enc.concluido ? 'line-through' : 'none' }}>{enc.texto}</span>
-                                                                <button type="button" onClick={() => {
-                                                                    const nova = encaminhamentos.filter((_, i) => i !== idx)
-                                                                    setNovoRegistro({ ...novoRegistro, encaminhamentos: nova } as any)
-                                                                }} style={{ color: '#cbd5e1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, padding: '0 2px', flexShrink: 0 }}>✕</button>
+                                                                <button type="button" onClick={addEnc} disabled={!novoEnc.trim()}
+                                                                    style={{ padding: '7px 12px', background: novoEnc.trim() ? '#6366f1' : '#e2e8f0', color: novoEnc.trim() ? '#fff' : '#94a3b8', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: novoEnc.trim() ? 'pointer' : 'default', transition: 'all .15s', flexShrink: 0 }}>
+                                                                    + Add
+                                                                </button>
                                                             </div>
-                                                        ))}
-                                                        <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
-                                                            <input type="text" value={novoEnc} onChange={e => setNovoEnc(e.target.value)}
-                                                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEnc() } }}
-                                                                placeholder="Ex: Trazer partitura do Noturno, revisar compasso 12"
-                                                                style={{ flex: 1, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', fontFamily: 'inherit', outline: 'none' }}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })()}
+
+                                            {/* ── Nota de voz (B3) ── */}
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
+                                                    <span style={{ fontSize: 14, lineHeight: 1 }}>🎙️</span>
+                                                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: audioBase64 ? '#334155' : '#64748b', flex: 1 }}>
+                                                        Nota de voz
+                                                    </span>
+                                                    {audioBase64 && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0' }}>✓ {audioDuracao}s</span>}
+                                                </div>
+                                                <div style={{ padding: '0 12px 12px' }}>
+                                                    {erroAudio && (
+                                                        <p style={{ fontSize: 11, color: '#ef4444', margin: '0 0 8px' }}>{erroAudio}</p>
+                                                    )}
+                                                    {!audioBase64 && !gravando && (
+                                                        <button type="button"
+                                                            onClick={async () => {
+                                                                setErroAudio(null)
+                                                                try {
+                                                                    await startRecording()
+                                                                    setGravando(true)
+                                                                    setTimerGravacao(0)
+                                                                    timerIntervalRef.current = setInterval(() => {
+                                                                        setTimerGravacao(t => {
+                                                                            const next = t + 1
+                                                                            if (next >= MAX_DURACAO_AUDIO) {
+                                                                                clearInterval(timerIntervalRef.current!)
+                                                                                stopRecording().then(async blob => {
+                                                                                    const b64 = await blobToBase64(blob)
+                                                                                    const mime = blob.type || 'audio/webm'
+                                                                                    const url = base64ToObjectUrl(b64, mime)
+                                                                                    setAudioBase64(b64); setAudioMime(mime); setAudioUrl(url)
+                                                                                    setAudioDuracao(MAX_DURACAO_AUDIO); setGravando(false)
+                                                                                    setNovoRegistro((prev: any) => ({ ...prev, audioNotaDeVoz: b64, audioDuracao: MAX_DURACAO_AUDIO, audioMime: mime }))
+                                                                                })
+                                                                            }
+                                                                            return next
+                                                                        })
+                                                                    }, 1000)
+                                                                } catch {
+                                                                    setErroAudio('Microfone não disponível. Verifique as permissões do navegador.')
+                                                                }
+                                                            }}
+                                                            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
+                                                            <span>⏺</span> Gravar nota de voz
+                                                        </button>
+                                                    )}
+                                                    {gravando && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                            <span style={{ fontSize: 11, fontWeight: 700, color: '#ef4444', background: '#fef2f2', padding: '4px 10px', borderRadius: 8, border: '1px solid #fecaca', letterSpacing: '.04em' }}>
+                                                                ● REC {String(Math.floor(timerGravacao / 60)).padStart(2, '0')}:{String(timerGravacao % 60).padStart(2, '0')} / {MAX_DURACAO_AUDIO}s
+                                                            </span>
+                                                            <button type="button"
+                                                                onClick={async () => {
+                                                                    clearInterval(timerIntervalRef.current!)
+                                                                    const blob = await stopRecording()
+                                                                    const b64 = await blobToBase64(blob)
+                                                                    const mime = blob.type || 'audio/webm'
+                                                                    const url = base64ToObjectUrl(b64, mime)
+                                                                    const dur = timerGravacao
+                                                                    setAudioBase64(b64); setAudioMime(mime); setAudioUrl(url); setAudioDuracao(dur); setGravando(false)
+                                                                    // Sincroniza com novoRegistro para que salvarRegistro() já encontre os dados
+                                                                    setNovoRegistro((prev: any) => ({ ...prev, audioNotaDeVoz: b64, audioDuracao: dur, audioMime: mime }))
+                                                                }}
+                                                                style={{ padding: '5px 12px', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, fontWeight: 700, color: '#dc2626', cursor: 'pointer' }}>
+                                                                ⏹ Parar
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                    {audioBase64 && audioUrl && !gravando && (
+                                                        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                                                            <audio controls src={audioUrl} style={{ width: '100%', height: 32 }} />
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                                <span style={{ fontSize: 11, color: '#94a3b8' }}>{audioDuracao}s · ~{base64SizeKb(audioBase64)} KB</span>
+                                                                <button type="button"
+                                                                    onClick={() => {
+                                                                        if (audioUrl) URL.revokeObjectURL(audioUrl)
+                                                                        setAudioBase64(null); setAudioUrl(null); setAudioDuracao(0); setAudioMime('audio/webm')
+                                                                        setNovoRegistro((prev: any) => { const { audioNotaDeVoz: _a, audioDuracao: _d, audioMime: _m, ...rest } = prev; return rest })
+                                                                    }}
+                                                                    style={{ marginLeft: 'auto', padding: '3px 9px', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 6, fontSize: 11, fontWeight: 700, color: '#dc2626', cursor: 'pointer' }}>
+                                                                    🗑 Excluir
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Evidência de Aula — URL */}
+                                            {(() => {
+                                                const url = (novoRegistro as any).urlEvidencia || ''
+                                                let urlValida = false
+                                                try { urlValida = url.length > 0 && !!new URL(url) } catch { urlValida = false }
+                                                return (
+                                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
+                                                            <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📎</span>
+                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: url ? '#334155' : '#64748b', flex: 1 }}>
+                                                                Evidência de aula
+                                                            </span>
+                                                            {url && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                        </div>
+                                                        <div style={{ padding: '0 12px 10px', display: 'flex', gap: 6 }}>
+                                                            <input
+                                                                type="url"
+                                                                value={url}
+                                                                onChange={e => setNovoRegistro({ ...novoRegistro, urlEvidencia: e.target.value })}
+                                                                placeholder="Cole um link (Google Drive, YouTube, áudio...)"
+                                                                style={{ flex: 1, padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#334155', fontFamily: 'inherit', outline: 'none', background: '#fff' }}
                                                                 onFocus={e => (e.target.style.borderColor = '#94a3b8')}
                                                                 onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
                                                             />
-                                                            <button type="button" onClick={addEnc} disabled={!novoEnc.trim()}
-                                                                style={{ padding: '7px 12px', background: novoEnc.trim() ? '#6366f1' : '#e2e8f0', color: novoEnc.trim() ? '#fff' : '#94a3b8', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: novoEnc.trim() ? 'pointer' : 'default', transition: 'all .15s', flexShrink: 0 }}>
-                                                                + Add
-                                                            </button>
+                                                            {urlValida && (
+                                                                <a href={url} target="_blank" rel="noopener noreferrer"
+                                                                    style={{ padding: '8px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#1d4ed8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                                                                    🔗 Abrir
+                                                                </a>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                </div>
-                                            )
-                                        })()}
-                                    </div>
-
-                                    {/* ── Nota de voz (B3) ── */}
-                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc', marginBottom: 4 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
-                                            <span style={{ fontSize: 14, lineHeight: 1 }}>🎙️</span>
-                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: audioBase64 ? '#334155' : '#64748b', flex: 1 }}>
-                                                Nota de voz
-                                            </span>
-                                            {audioBase64 && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0' }}>✓ {audioDuracao}s</span>}
+                                                )
+                                            })()}
                                         </div>
-                                        <div style={{ padding: '0 12px 12px' }}>
-                                            {erroAudio && (
-                                                <p style={{ fontSize: 11, color: '#ef4444', margin: '0 0 8px' }}>{erroAudio}</p>
-                                            )}
-                                            {!audioBase64 && !gravando && (
-                                                <button type="button"
-                                                    onClick={async () => {
-                                                        setErroAudio(null)
-                                                        try {
-                                                            await startRecording()
-                                                            setGravando(true)
-                                                            setTimerGravacao(0)
-                                                            timerIntervalRef.current = setInterval(() => {
-                                                                setTimerGravacao(t => {
-                                                                    const next = t + 1
-                                                                    if (next >= MAX_DURACAO_AUDIO) {
-                                                                        clearInterval(timerIntervalRef.current!)
-                                                                        stopRecording().then(async blob => {
-                                                                            const b64 = await blobToBase64(blob)
-                                                                            const mime = blob.type || 'audio/webm'
-                                                                            const url = base64ToObjectUrl(b64, mime)
-                                                                            setAudioBase64(b64); setAudioMime(mime); setAudioUrl(url)
-                                                                            setAudioDuracao(MAX_DURACAO_AUDIO); setGravando(false)
-                                                                            setNovoRegistro((prev: any) => ({ ...prev, audioNotaDeVoz: b64, audioDuracao: MAX_DURACAO_AUDIO, audioMime: mime }))
-                                                                        })
-                                                                    }
-                                                                    return next
-                                                                })
-                                                            }, 1000)
-                                                        } catch {
-                                                            setErroAudio('Microfone não disponível. Verifique as permissões do navegador.')
-                                                        }
-                                                    }}
-                                                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
-                                                    <span>⏺</span> Gravar nota de voz
-                                                </button>
-                                            )}
-                                            {gravando && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <span style={{ fontSize: 11, fontWeight: 700, color: '#ef4444', background: '#fef2f2', padding: '4px 10px', borderRadius: 8, border: '1px solid #fecaca', letterSpacing: '.04em' }}>
-                                                        ● REC {String(Math.floor(timerGravacao / 60)).padStart(2, '0')}:{String(timerGravacao % 60).padStart(2, '0')} / {MAX_DURACAO_AUDIO}s
-                                                    </span>
-                                                    <button type="button"
-                                                        onClick={async () => {
-                                                            clearInterval(timerIntervalRef.current!)
-                                                            const blob = await stopRecording()
-                                                            const b64 = await blobToBase64(blob)
-                                                            const mime = blob.type || 'audio/webm'
-                                                            const url = base64ToObjectUrl(b64, mime)
-                                                            const dur = timerGravacao
-                                                            setAudioBase64(b64); setAudioMime(mime); setAudioUrl(url); setAudioDuracao(dur); setGravando(false)
-                                                            // Sincroniza com novoRegistro para que salvarRegistro() já encontre os dados
-                                                            setNovoRegistro((prev: any) => ({ ...prev, audioNotaDeVoz: b64, audioDuracao: dur, audioMime: mime }))
-                                                        }}
-                                                        style={{ padding: '5px 12px', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, fontWeight: 700, color: '#dc2626', cursor: 'pointer' }}>
-                                                        ⏹ Parar
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {audioBase64 && audioUrl && !gravando && (
-                                                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-                                                    <audio controls src={audioUrl} style={{ width: '100%', height: 32 }} />
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{audioDuracao}s · ~{base64SizeKb(audioBase64)} KB</span>
-                                                        <button type="button"
-                                                            onClick={() => {
-                                                                if (audioUrl) URL.revokeObjectURL(audioUrl)
-                                                                setAudioBase64(null); setAudioUrl(null); setAudioDuracao(0); setAudioMime('audio/webm')
-                                                                setNovoRegistro((prev: any) => { const { audioNotaDeVoz: _a, audioDuracao: _d, audioMime: _m, ...rest } = prev; return rest })
-                                                            }}
-                                                            style={{ marginLeft: 'auto', padding: '3px 9px', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 6, fontSize: 11, fontWeight: 700, color: '#dc2626', cursor: 'pointer' }}>
-                                                            🗑 Excluir
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
+                                    )}
 
                                 </>
 

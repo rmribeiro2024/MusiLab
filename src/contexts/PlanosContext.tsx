@@ -14,6 +14,7 @@ import { dbGet, dbSet, dbDel } from '../lib/db'
 import { sanitizeUrl, gerarIdSeguro, validarBackup } from '../lib/utils'
 import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [offlineSync]
 import { useDebounce } from '../lib/hooks'
+import { showToast } from '../lib/toast'
 import { verificarFeriado } from '../lib/feriados'
 import { detectarMusicasNoPlano, type MusicaDetectada } from '../lib/detectarMusicas'
 import type { Plano, Musica, Atividade, RegistroPosAula, VinculoMusicaPlano, Sequencia } from '../types'
@@ -530,10 +531,10 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
 
     const salvarPlano = (ignorarAvisoEscola = false) => {
         if (!planoEditando.titulo || !planoEditando.titulo.trim()) {
-            setModalConfirm({ conteudo: '⚠️ Preencha o título do plano antes de salvar.', somenteOk: true, labelConfirm: 'OK' }); return
+            showToast('Preencha o título do plano antes de salvar.', 'error'); return
         }
         if (!planoEditando.objetivoGeral || !planoEditando.objetivoGeral.trim()) {
-            setModalConfirm({ conteudo: '⚠️ Preencha o objetivo geral antes de salvar.', somenteOk: true, labelConfirm: 'OK' }); return
+            showToast('Preencha o objetivo geral antes de salvar.', 'error'); return
         }
         if (!ignorarAvisoEscola && planoEditando.escola && planoEditando.escola.trim()) {
             const escolaNorm = planoEditando.escola.trim().toLowerCase()
@@ -561,10 +562,8 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         }) // [offlineSync]
         const existe = planos.find((p: any) => p.id === planoParaSalvar.id)
         if (existe) {
-            const versaoAnterior = { ...existe, _versaoSalvaEm: new Date().toISOString() }
-            const historicoAtual = existe._historicoVersoes || []
-            const novoHistorico = [versaoAnterior, ...historicoAtual].slice(0, 2)
-            setPlanos(planos.map((p: any) => p.id === planoParaSalvar.id ? { ...planoParaSalvar, _historicoVersoes: novoHistorico } : p))
+            // _historicoVersoes: depreciado — não salvar novas versões (sem UI de restauração)
+            setPlanos(planos.map((p: any) => p.id === planoParaSalvar.id ? planoParaSalvar : p))
             if (!userId) marcarPendente('planos', String(planoParaSalvar.id)) // [offlineSync]
         } else {
             setPlanos([...planos, planoParaSalvar])
@@ -685,7 +684,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                 const versaoRestaurada = { ...versao, _historicoVersoes: historicoAtual, _versaoSalvaEm: undefined }
                 delete versaoRestaurada._versaoSalvaEm
                 setPlanos(planos.map((p: any) => p.id === plano.id ? versaoRestaurada : p))
-                setModalConfirm({ conteudo: '✅ Versão restaurada!', somenteOk: true, labelConfirm: 'OK' })
+                showToast('Versão restaurada!', 'success')
             }
         })
     }
@@ -830,7 +829,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                 const atualizado = [...planoEditando.atividadesRoteiro]
                 const musicasVinculadas = atualizado[idx].musicasVinculadas || []
                 if (musicasVinculadas.find((m: any) => (typeof m === 'string' ? m : m.id) === musica.id)) {
-                    setModalConfirm({ conteudo: '⚠️ Música já vinculada a esta atividade!', somenteOk: true, labelConfirm: 'OK' }); return
+                    showToast('Música já vinculada a esta atividade!', 'error'); return
                 }
                 atualizado[idx].musicasVinculadas = [...musicasVinculadas, { id: musica.id, titulo: musica.titulo, autor: musica.autor }]
                 setPlanoEditando({ ...planoEditando, atividadesRoteiro: atualizado })
@@ -838,13 +837,13 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                 const novoRepertorio = repertorio.map((m: any) => m.id === musica.id ? musicaAtualizada : m)
                 setRepertorio(novoRepertorio); dbSet('repertorio', JSON.stringify(novoRepertorio))
                 setAtividadeVinculandoMusica(null)
-                setModalConfirm({ conteudo: '✅ Música vinculada!', somenteOk: true, labelConfirm: 'OK' }); return
+                showToast('Música vinculada!', 'success'); return
             }
         }
         if (atividadeEditando && atividadeEditando.id === atividadeVinculandoMusica) {
             const musicasVinculadas = atividadeEditando.musicasVinculadas || []
             if (musicasVinculadas.find((m: any) => (typeof m === 'string' ? m : m.id) === musica.id)) {
-                setModalConfirm({ conteudo: '⚠️ Música já vinculada a esta atividade!', somenteOk: true, labelConfirm: 'OK' }); return
+                showToast('Música já vinculada a esta atividade!', 'error'); return
             }
             setAtividadeEditando({ ...atividadeEditando, musicasVinculadas: [...musicasVinculadas, { id: musica.id, titulo: musica.titulo, autor: musica.autor }] })
             const musicaAtualizada = { ...musica, atividadesVinculadas: [...(musica.atividadesVinculadas || []), { id: atividadeEditando.id, nome: atividadeEditando.nome }] }
@@ -865,7 +864,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         const novoRepertorio = repertorio.map((m: any) => m.id === musica.id ? musicaAtualizada : m)
         setRepertorio(novoRepertorio); dbSet('repertorio', JSON.stringify(novoRepertorio))
         setModalImportarMusica(false)
-        setModalConfirm({ conteudo: '✅ Música importada!', somenteOk: true, labelConfirm: 'OK' })
+        showToast('Música importada!', 'success')
     }, [planoEditando, repertorio, setRepertorio, setModalConfirm])
 
     const importarAtividadeParaPlano = useCallback((atividade: Atividade) => {
@@ -876,7 +875,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         }
         setPlanoEditando({ ...planoEditando, atividadesRoteiro: [...(planoEditando?.atividadesRoteiro || []), novaAtividade] })
         setModalImportarAtividade(false)
-        setModalConfirm({ conteudo: '✅ Atividade importada!', somenteOk: true, labelConfirm: 'OK' })
+        showToast('Atividade importada!', 'success')
     }, [planoEditando, setModalConfirm])
 
     const adicionarAtividadeAoPlano = useCallback((atividadeId: string | number, planoId: string | number) => {
@@ -902,7 +901,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             : p
         ))
         setModalAdicionarAoPlano(null)
-        setModalConfirm({ conteudo: `✅ Atividade "${atividade.nome}" vinculada ao plano "${plano.titulo}"!`, somenteOk: true, labelConfirm: 'OK' })
+        showToast(`Atividade "${atividade.nome}" vinculada ao plano "${plano.titulo}"!`, 'success')
     }, [atividades, planos, setModalAdicionarAoPlano, setModalConfirm])
 
     // ── CROSS-DOMAIN: REGISTRO PÓS-AULA ──────────────────────────────────
@@ -920,7 +919,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
 
     const salvarRegistro = useCallback(() => {
         if (!novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.naoFuncionou && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
-            setModalConfirm({ conteudo: 'Preencha ao menos um campo!', somenteOk: true, labelConfirm: 'OK' }); return
+            showToast('Preencha ao menos um campo!', 'error'); return
         }
         const agora = new Date()
         const { dataAula, ...camposRegistro } = novoRegistro
@@ -1081,11 +1080,11 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                 setPlanos(planosAtualizados)
                 planosAtualizados.forEach((p: any, i: number) => { if (p !== planos[i]) marcarPendente('planos', String(p.id)) }) // [offlineSync]
                 let msg = '✅ '; if (totalNovos > 0) msg += `${totalNovos} novo(s)`; if (totalNovos > 0 && totalAtualizados > 0) msg += ' + '; if (totalAtualizados > 0) msg += `${totalAtualizados} atualizado(s)`; msg += '!'
-                setModalConfirm({ conteudo: msg, somenteOk: true, labelConfirm: 'OK' })
+                showToast(msg, 'success')
                 setModalRegistroRapido(false)
                 setRrTextos({}); setRrPlanosSegmento({})
             } else {
-                setModalConfirm({ conteudo: '⚠️ Preencha pelo menos uma turma e selecione um plano.', somenteOk: true, labelConfirm: 'OK' })
+                showToast('Preencha pelo menos uma turma e selecione um plano.', 'error')
             }
         }
         if (feriado) { setModalConfirm({ titulo: '⚠️ Feriado', conteudo: `Hoje é feriado: ${feriado}\n\nDeseja registrar aula mesmo assim?`, labelConfirm: 'Registrar mesmo assim', onConfirm: _executar }) }
@@ -1179,7 +1178,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                 const backup = JSON.parse(e.target!.result as string)
                 const validacao = validarBackup(backup)
                 if (!validacao.valido) {
-                    setModalConfirm({ titulo: 'Arquivo inválido', conteudo: validacao.erro || 'Este arquivo não é um backup válido do MusiLab.', somenteOk: true, labelConfirm: 'OK' })
+                    showToast(validacao.erro || 'Arquivo inválido.', 'error')
                     return
                 }
                 const resumo = `📦 Backup de ${backup.timestamp ? new Date(backup.timestamp).toLocaleString('pt-BR') : 'data desconhecida'}\n\n• ${backup.planos?.length||0} planos\n• ${backup.atividades?.length||0} atividades\n• ${backup.sequencias?.length||0} sequências\n• ${backup.repertorio?.length||0} músicas\n\n⚠️ Os dados atuais serão substituídos.`
@@ -1207,10 +1206,10 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                         if (backup.dinamicasCustomizadas) setDinamicasCustomizadas(backup.dinamicasCustomizadas)
                         if (backup.energiasCustomizadas) setEnergiasCustomizadas(backup.energiasCustomizadas)
                         if (backup.instrumentacaoCustomizada) setInstrumentacaoCustomizada(backup.instrumentacaoCustomizada)
-                        setModalConfirm({ titulo: 'Backup restaurado!', conteudo: `${backup.planos.length} planos · ${backup.repertorio?.length||0} músicas · ${backup.atividades?.length||0} atividades`, somenteOk: true, labelConfirm: 'OK' })
+                        showToast(`Backup restaurado! ${backup.planos.length} planos · ${backup.repertorio?.length||0} músicas · ${backup.atividades?.length||0} atividades`, 'success')
                     }
                 })
-            } catch { setModalConfirm({ titulo: 'Arquivo inválido', conteudo: 'Não foi possível ler o arquivo. Ele pode estar corrompido.', somenteOk: true, labelConfirm: 'OK' }) }
+            } catch { showToast('Não foi possível ler o arquivo. Ele pode estar corrompido.', 'error') }
         }
         reader.readAsText(file); event.target.value = ''
     }
@@ -1349,12 +1348,12 @@ Responda APENAS com JSON válido:
     const sugerirObjetivosIA = async () => {
         const atividades = planoEditando.atividadesRoteiro || []
         if (atividades.length === 0) {
-            setModalConfirm({ conteudo: 'Adicione pelo menos uma atividade no roteiro antes de gerar objetivos.', somenteOk: true, labelConfirm: 'OK' })
+            showToast('Adicione pelo menos uma atividade no roteiro antes de gerar objetivos.', 'error')
             return
         }
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY
         if (!apiKey) {
-            setModalConfirm({ conteudo: 'Chave VITE_GEMINI_API_KEY não encontrada no .env.', somenteOk: true, labelConfirm: 'OK' })
+            showToast('Chave VITE_GEMINI_API_KEY não encontrada no .env.', 'error')
             return
         }
         const listaAtividades = atividades.map((a, i) => {
@@ -1412,10 +1411,10 @@ Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no in
                     ? obj.especificos
                     : (prev?.objetivosEspecificos || [])
             }))
-            setModalConfirm({ conteudo: '✅ Objetivos gerados com IA!', somenteOk: true, labelConfirm: 'OK' })
+            showToast('Objetivos gerados com IA!', 'success')
         } catch (err) {
             console.error('Gemini objetivos:', err)
-            setModalConfirm({ conteudo: `❌ Erro: ${err instanceof Error ? err.message : 'Falha na conexão'}`, somenteOk: true, labelConfirm: 'OK' })
+            showToast(`Erro: ${err instanceof Error ? err.message : 'Falha na conexão'}`, 'error')
         } finally {
             setGerandoObjetivos(false)
         }
@@ -1427,7 +1426,7 @@ Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no in
     const sugerirBNCC = async () => {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY
         if (!apiKey) {
-            setModalConfirm({ conteudo: 'Chave VITE_GEMINI_API_KEY não encontrada no .env.', somenteOk: true, labelConfirm: 'OK' })
+            showToast('Chave VITE_GEMINI_API_KEY não encontrada no .env.', 'error')
             return
         }
         const atividades = (planoEditando.atividadesRoteiro || []).map(a => a.nome).filter(Boolean).join(', ')
@@ -1437,7 +1436,7 @@ Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no in
         const objetivo = planoEditando.objetivoGeral?.replace(/<[^>]*>/g, '') || ''
 
         if (!titulo && !atividades && !conceitos) {
-            setModalConfirm({ conteudo: 'Preencha pelo menos o título ou as atividades antes de sugerir habilidades BNCC.', somenteOk: true, labelConfirm: 'OK' })
+            showToast('Preencha pelo menos o título ou as atividades antes de sugerir habilidades BNCC.', 'error')
             return
         }
 
@@ -1489,10 +1488,10 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
                 const atuais = prev?.habilidadesBNCC || []
                 return { ...(prev!), habilidadesBNCC: [...new Set([...atuais, ...novas])] }
             })
-            setModalConfirm({ conteudo: `✅ ${novas.length} habilidade(s) BNCC sugeridas pela IA!`, somenteOk: true, labelConfirm: 'OK' })
+            showToast(`${novas.length} habilidade(s) BNCC sugeridas pela IA!`, 'success')
         } catch (err) {
             console.error('Gemini BNCC:', err)
-            setModalConfirm({ conteudo: `❌ Erro: ${err instanceof Error ? err.message : 'Falha na conexão'}`, somenteOk: true, labelConfirm: 'OK' })
+            showToast(`Erro: ${err instanceof Error ? err.message : 'Falha na conexão'}`, 'error')
         } finally {
             setGerandoBNCC(false)
         }

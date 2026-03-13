@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react'
 import { sanitizar } from '../lib/utils'
+import { showToast } from '../lib/toast'
 import { dbSize } from '../lib/db'
 import { useInfiniteScroll } from '../lib/hooks'
 import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [offlineSync]
@@ -580,7 +581,7 @@ export default function TelaPrincipal() {
                                                         type="button"
                                                         onClick={() => {
                                                             if(!atividade.nome?.trim()) {
-                                                                setModalConfirm({ conteudo: '⚠️ Nome obrigatório!', somenteOk: true, labelConfirm: 'OK' });
+                                                                showToast('Nome obrigatório!', 'error');
                                                                 return;
                                                             }
                                                             const existe = atividades.find(a => a.nome.toLowerCase().trim() === atividade.nome.toLowerCase().trim());
@@ -598,7 +599,7 @@ export default function TelaPrincipal() {
                                                                         unidade: planoEditando.unidades?.[0] || existe.unidade
                                                                     };
                                                                     setAtividades(atividades.map(a => a.id === existe.id ? atualizada : a));
-                                                                    setModalConfirm({ conteudo: '✅ Atividade atualizada no Banco de Atividades!', somenteOk: true, labelConfirm: 'OK' });
+                                                                    showToast('Atividade atualizada no Banco de Atividades!', 'success');
                                                                 } });
                                                             } else {
                                                                 const nova = {
@@ -615,7 +616,7 @@ export default function TelaPrincipal() {
                                                                     unidade: planoEditando.unidades?.[0] || ''
                                                                 };
                                                                 setAtividades([...atividades, nova]);
-                                                                setModalConfirm({ conteudo: '✅ Atividade salva no Banco de Atividades!', somenteOk: true, labelConfirm: 'OK' });
+                                                                showToast('Atividade salva no Banco de Atividades!', 'success');
                                                             }
                                                         }}
                                                         className="bg-green-500 text-white px-3 py-1 rounded text-sm font-bold hover:bg-green-600"
@@ -1793,7 +1794,7 @@ export default function TelaPrincipal() {
                             </button>
                             <button onClick={(e)=>{e.stopPropagation();exportarPlanoPDF(plano)}} title="PDF"
                                 className="p-1.5 rounded-lg hover:bg-orange-50 transition text-[10px] font-bold text-orange-500 shrink-0">PDF</button>
-                            <button onClick={(e)=>{e.stopPropagation(); const copia=carimbарTimestamp({...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}); setPlanos(prev=>[...prev, copia]); if (!userId) marcarPendente('planos', String(copia.id)); setModalConfirm({ conteudo: '✅ Plano duplicado!', somenteOk: true, labelConfirm: 'OK' });}}
+                            <button onClick={(e)=>{e.stopPropagation(); const copia=carimbарTimestamp({...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}); setPlanos(prev=>[...prev, copia]); if (!userId) marcarPendente('planos', String(copia.id)); showToast('Plano duplicado!', 'success');}}
                                 title="Duplicar" className="p-1.5 rounded-lg hover:bg-teal-50 transition shrink-0">
                                 <svg className="w-3.5 h-3.5 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                             </button>

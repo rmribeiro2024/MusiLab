@@ -2,13 +2,12 @@ import React from 'react'
 import { useAtividadesContext } from '../../contexts'
 import { useRepertorioContext } from '../../contexts'
 import { usePlanosContext } from '../../contexts'
-import { useModalContext } from '../../contexts'
+import { showToast } from '../../lib/toast'
 
 export default function ModalNovaMusicaInline() {
     const { modalNovaMusicaInline, setModalNovaMusicaInline, novaMusicaInline, setNovaMusicaInline, pendingAtividadeId, setPendingAtividadeId, setAtividadeVinculandoMusica } = useAtividadesContext()
     const { setRepertorio } = useRepertorioContext()
     const { planoEditando, setPlanoEditando } = usePlanosContext()
-    const { setModalConfirm } = useModalContext()
 
     if (!modalNovaMusicaInline) return null
 
@@ -68,7 +67,7 @@ export default function ModalNovaMusicaInline() {
                     </button>
                     <button onClick={()=>{
                         const titulo = novaMusicaInline.titulo.trim();
-                        if (!titulo) { setModalConfirm({ conteudo: '⚠️ Título é obrigatório!', somenteOk: true, labelConfirm: 'OK' }); return; }
+                        if (!titulo) { showToast('Título é obrigatório!', 'error'); return; }
                         // Cria a música
                         const novaMusica = {
                             id: Date.now(),
@@ -100,7 +99,7 @@ export default function ModalNovaMusicaInline() {
                         setPendingAtividadeId(null);
                         setModalNovaMusicaInline(false);
                         setAtividadeVinculandoMusica(null);
-                        setModalConfirm({ conteudo: `✅ Música "${titulo}" salva e vinculada! Complete os detalhes depois em Repertório Inteligente.`, somenteOk: true, labelConfirm: 'OK' });
+                        showToast(`Música "${titulo}" salva e vinculada!`, 'success');
                     }} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold">
                         🎵 Salvar e Vincular
                     </button>

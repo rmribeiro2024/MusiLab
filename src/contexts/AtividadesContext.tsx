@@ -6,6 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, loadFromSupabase, gerarIdSeguro } from '../lib/utils'
 import { useModalContext } from './ModalContext'
+import { showToast } from '../lib/toast'
 import type { Atividade } from '../types'
 
 // ─── INTERFACE DO CONTEXTO ────────────────────────────────────────────────────
@@ -161,7 +162,7 @@ export function AtividadesProvider({ children, userId }: AtividadesProviderProps
 
   function salvarAtividade() {
     if (!atividadeEditando?.nome?.trim()) {
-      setModalConfirm({ conteudo: '⚠️ Preencha o nome da atividade!', somenteOk: true, labelConfirm: 'OK' })
+      showToast('Preencha o nome da atividade!', 'error')
       return
     }
     const existe = atividades.find(a => a.id === atividadeEditando.id)
@@ -171,7 +172,7 @@ export function AtividadesProvider({ children, userId }: AtividadesProviderProps
       setAtividades([...atividades, atividadeEditando])
     }
     setAtividadeEditando(null)
-    setModalConfirm({ conteudo: '✅ Atividade salva!', somenteOk: true, labelConfirm: 'OK' })
+    showToast('Atividade salva!', 'success')
   }
 
   function excluirAtividade(id: string | number) {

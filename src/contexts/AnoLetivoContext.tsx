@@ -7,6 +7,7 @@ import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, syncConfiguracoes, loadFromSupabase, loadConfiguracoes, gerarIdSeguro } from '../lib/utils'
 import { mergeOffline, marcarPendente, carimbарTimestamp } from '../lib/offlineSync'
 import { useModalContext } from './ModalContext'
+import { showToast } from '../lib/toast'
 import type { AnoLetivo, EventoEscolar, PlanejamentoAnualItem, PeriodoAnual, Plano } from '../types'
 
 // ─── VALORES INICIAIS (mantidos localmente para evitar importações circulares) ─
@@ -127,7 +128,8 @@ export interface AnoLetivoContextValue {
   // Rubricas por turma
   turmaSetRubricas: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, rubricas: import('../types').CriterioRubrica[]) => void
   turmaGetRubricas: (anoId: string, escolaId: string, segmentoId: string, turmaId: string) => import('../types').CriterioRubrica[]
-  // Tipos de anotação por turma
+  // Tipos de anotação globais
+  tiposAnotacaoGlobais: string[]
   turmaGetTiposAnotacao: (anoId: string, escolaId: string, segmentoId: string, turmaId: string) => string[]
   turmaAddTipoAnotacao: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, tipo: string) => void
   turmaRemoveTipoAnotacao: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, tipo: string) => void
@@ -236,6 +238,24 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
       return saved ? JSON.parse(saved) : []
     } catch { return [] }
   })
+  const [tiposAnotacaoGlobais, setTiposAnotacaoGlobais] = useState<string[]>(() => {
+    try {
+      const saved = dbGet('tiposAnotacaoGlobais')
+      if (saved) return JSON.parse(saved)
+      // Migrar de dados por-turma existentes (roda uma única vez)
+      const anosRaw = dbGet('anosLetivos')
+      if (!anosRaw) return []
+      const anos = JSON.parse(anosRaw) as AnoLetivo[]
+      const tipos = new Set<string>()
+      for (const ano of anos)
+        for (const esc of ano.escolas ?? [])
+          for (const seg of esc.segmentos ?? [])
+            for (const tur of seg.turmas ?? [])
+              for (const t of (tur as { tiposAnotacao?: string[] }).tiposAnotacao ?? [])
+                tipos.add(t)
+      return Array.from(tipos)
+    } catch { return [] }
+  })
 
   // ── Gestão de turmas ──────────────────────────────────────────────────────
   const [modalTurmas, setModalTurmas] = useState(false)
@@ -290,6 +310,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
           if (c.unidades) setUnidades(c.unidades as string[])
           if (c.faixas) setFaixas(c.faixas as string[])
           if (c.tagsGlobais) setTagsGlobais(c.tagsGlobais as string[])
+          if (c.tiposAnotacaoGlobais) setTiposAnotacaoGlobais(c.tiposAnotacaoGlobais as string[])
         }
       })
       .catch(e => console.error('[AnoLetivoContext] Erro ao carregar do Supabase:', e))
@@ -314,6 +335,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
   useEffect(() => { dbSet('unidadesPersonalizadas', JSON.stringify(unidades)) }, [unidades])
   useEffect(() => { dbSet('faixasEtarias', JSON.stringify(faixas)) }, [faixas])
   useEffect(() => { dbSet('tagsGlobais', JSON.stringify(tagsGlobais)) }, [tagsGlobais])
+  useEffect(() => { dbSet('tiposAnotacaoGlobais', JSON.stringify(tiposAnotacaoGlobais)) }, [tiposAnotacaoGlobais])
 
   // ── Sync para Supabase (debounce 2s) — dados principais ──────────────────
   const _prevAnosLetivos = useRef<AnoLetivo[] | null>(null)
@@ -363,10 +385,10 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
   useEffect(() => {
     if (!userId || !carregado) return
     syncDelay('cfg-ano', () =>
-      syncConfiguracoes({ conceitos, unidades, faixas, tagsGlobais }, userId)
+      syncConfiguracoes({ conceitos, unidades, faixas, tagsGlobais, tiposAnotacaoGlobais }, userId)
         .catch(e => console.error('[AnoLetivoContext] Erro ao sincronizar cfg:', e))
     )
-  }, [conceitos, unidades, faixas, tagsGlobais, userId, carregado])
+  }, [conceitos, unidades, faixas, tagsGlobais, tiposAnotacaoGlobais, userId, carregado])
 
   useEffect(() => {
     return () => { Object.values(_syncTimeout.current).forEach(id => clearTimeout(id)) }
@@ -383,7 +405,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
 
   function criarAnoLetivoPainel() {
     if (!formNovoAno.nome.trim()) {
-      setModalConfirm({ conteudo: '⚠️ Defina um nome para o ano letivo!', somenteOk: true, labelConfirm: 'OK' })
+      showToast('Defina um nome para o ano letivo!', 'error')
       return
     }
     const novo = {
@@ -417,7 +439,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
 
   function adicionarPeriodoNoAno(anoId: string | number) {
     if (!formNovoPeriodo.nome.trim()) {
-      setModalConfirm({ conteudo: '⚠️ Defina um nome para o período!', somenteOk: true, labelConfirm: 'OK' })
+      showToast('Defina um nome para o período!', 'error')
       return
     }
     const periodo = { id: gerarIdSeguro(), ...formNovoPeriodo, reflexao: '', _criadoEm: new Date().toISOString() }
@@ -476,10 +498,10 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
 
   function salvarEvento() {
     if (!eventoEditando?.nome.trim()) {
-      setModalConfirm({ conteudo: '⚠️ Preencha o nome do evento!', somenteOk: true, labelConfirm: 'OK' }); return
+      showToast('Preencha o nome do evento!', 'error'); return
     }
     if (!eventoEditando.data) {
-      setModalConfirm({ conteudo: '⚠️ Preencha a data!', somenteOk: true, labelConfirm: 'OK' }); return
+      showToast('Preencha a data!', 'error'); return
     }
     const existe = eventosEscolares.find(e => e.id === eventoEditando.id)
     if (existe) {
@@ -488,7 +510,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
       setEventosEscolares([...eventosEscolares, eventoEditando])
     }
     setEventoEditando(null)
-    setModalConfirm({ conteudo: '✅ Evento salvo!', somenteOk: true, labelConfirm: 'OK' })
+    showToast('Evento salvo!', 'success')
   }
 
   function excluirEvento(id: string | number) {
@@ -502,7 +524,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
   function gtAddAno() {
     const ano = gtAnoNovo.trim()
     if (!ano) return
-    if (anosLetivos.find(a => a.ano === ano)) { setModalConfirm({ conteudo: 'Ano letivo já existe!', somenteOk: true, labelConfirm: 'OK' }); return }
+    if (anosLetivos.find(a => a.ano === ano)) { showToast('Ano letivo já existe!', 'error'); return }
     setAnosLetivos([...anosLetivos, { id: String(Date.now()), nome: ano, ano, status: 'ativo', escolas: [] }])
     setGtAnoNovo('')
   }
@@ -523,7 +545,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     if (!nome || !gtAnoSel) return
     setAnosLetivos(anosLetivos.map(a => {
       if (a.id !== gtAnoSel) return a
-      if (a.escolas.find(e => e.nome === nome)) { setModalConfirm({ conteudo: 'Escola já existe neste ano!', somenteOk: true, labelConfirm: 'OK' }); return a }
+      if (a.escolas.find(e => e.nome === nome)) { showToast('Escola já existe neste ano!', 'error'); return a }
       return { ...a, escolas: [...a.escolas, { id: String(Date.now()), nome, segmentos: [] }] }
     }))
     setGtEscolaNome('')
@@ -543,7 +565,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
       if (a.id !== gtAnoSel) return a
       return { ...a, escolas: a.escolas.map(e => {
         if (e.id !== gtEscolaSel) return e
-        if (e.segmentos.find(s => s.nome === nome)) { setModalConfirm({ conteudo: 'Segmento já existe!', somenteOk: true, labelConfirm: 'OK' }); return e }
+        if (e.segmentos.find(s => s.nome === nome)) { showToast('Segmento já existe!', 'error'); return e }
         return { ...e, segmentos: [...e.segmentos, { id: String(Date.now()), nome, turmas: [] }] }
       })}
     }))
@@ -570,7 +592,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
         if (e.id !== gtEscolaSel) return e
         return { ...e, segmentos: e.segmentos.map(s => {
           if (s.id !== gtSegmentoSel) return s
-          if (s.turmas.find(t => t.nome === nome)) { setModalConfirm({ conteudo: 'Turma já existe!', somenteOk: true, labelConfirm: 'OK' }); return s }
+          if (s.turmas.find(t => t.nome === nome)) { showToast('Turma já existe!', 'error'); return s }
           return { ...s, turmas: [...s.turmas, { id: String(Date.now()), nome }] }
         })}
       })}
@@ -700,14 +722,11 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     return tur?.rubricas ?? RUBRICAS_PADRAO
   }
 
-  // ── Tipos de anotação por turma ───────────────────────────────────────────
+  // ── Tipos de anotação globais (S5: simplificação — antes por-turma) ────────
 
-  function turmaGetTiposAnotacao(anoId: string, escolaId: string, segmentoId: string, turmaId: string): string[] {
-    const ano = anosLetivos.find(a => String(a.id) === String(anoId))
-    const esc = ano?.escolas.find(e => String(e.id) === String(escolaId))
-    const seg = esc?.segmentos.find(s => String(s.id) === String(segmentoId))
-    const tur = seg?.turmas.find(t => String(t.id) === String(turmaId))
-    return tur?.tiposAnotacao ?? []
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  function turmaGetTiposAnotacao(_anoId: string, _escolaId: string, _segmentoId: string, _turmaId: string): string[] {
+    return tiposAnotacaoGlobais
   }
 
   function _updateTurma(anoId: string, escolaId: string, segmentoId: string, turmaId: string, fn: (t: import('../types').Turma) => import('../types').Turma) {
@@ -723,29 +742,24 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     }))
   }
 
-  function turmaAddTipoAnotacao(anoId: string, escolaId: string, segmentoId: string, turmaId: string, tipo: string) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  function turmaAddTipoAnotacao(_anoId: string, _escolaId: string, _segmentoId: string, _turmaId: string, tipo: string) {
     const t = tipo.trim()
     if (!t) return
-    _updateTurma(anoId, escolaId, segmentoId, turmaId, turma => {
-      const atual = turma.tiposAnotacao ?? []
-      if (atual.includes(t)) return turma
-      return { ...turma, tiposAnotacao: [...atual, t] }
-    })
+    setTiposAnotacaoGlobais(prev => prev.includes(t) ? prev : [...prev, t])
   }
 
-  function turmaRemoveTipoAnotacao(anoId: string, escolaId: string, segmentoId: string, turmaId: string, tipo: string) {
-    _updateTurma(anoId, escolaId, segmentoId, turmaId, turma => ({
-      ...turma,
-      tiposAnotacao: (turma.tiposAnotacao ?? []).filter(t => t !== tipo),
-    }))
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  function turmaRemoveTipoAnotacao(_anoId: string, _escolaId: string, _segmentoId: string, _turmaId: string, tipo: string) {
+    setTiposAnotacaoGlobais(prev => prev.filter(t => t !== tipo))
   }
 
   // ── salvarNovaFaixa ───────────────────────────────────────────────────────
 
   function salvarNovaFaixa() {
     const nome = novaFaixaNome.trim()
-    if (!nome) { setModalConfirm({ conteudo: 'Digite o nome da faixa etária!', somenteOk: true, labelConfirm: 'OK' }); return }
-    if (faixas.includes(nome)) { setModalConfirm({ conteudo: 'Essa faixa já existe!', somenteOk: true, labelConfirm: 'OK' }); return }
+    if (!nome) { showToast('Digite o nome da faixa etária!', 'error'); return }
+    if (faixas.includes(nome)) { showToast('Essa faixa já existe!', 'error'); return }
     setFaixas([...faixas, nome])
     setNovaFaixaNome('')
     setModalNovaFaixa(false)
@@ -758,7 +772,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     setPlanoEditando?: React.Dispatch<React.SetStateAction<Plano | null>>
   ) {
     const nome = novaEscolaNome.trim()
-    if (!nome) { setModalConfirm({ conteudo: 'Digite o nome da escola!', somenteOk: true, labelConfirm: 'OK' }); return }
+    if (!nome) { showToast('Digite o nome da escola!', 'error'); return }
     const anoId = novaEscolaAnoId || anosLetivos.find(a => a.status === 'ativo')?.id || anosLetivos[0]?.id
     if (anoId) {
       const ano = anosLetivos.find(a => a.id === anoId)
@@ -821,6 +835,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     alunosAddOrUpdate, alunosRemove, alunosGetByTurma,
     alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco,
     turmaSetRubricas, turmaGetRubricas,
+    tiposAnotacaoGlobais,
     turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao,
     salvarNovaFaixa,
     salvarNovaEscola,

@@ -6,6 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, loadFromSupabase, gerarIdSeguro } from '../lib/utils'
 import { useModalContext } from './ModalContext'
+import { showToast } from '../lib/toast'
 import type { Estrategia, HistoricoUsoEstrategia } from '../types'
 
 // ─── VALORES PADRÃO ───────────────────────────────────────────────────────────
@@ -171,7 +172,7 @@ export function EstrategiasProvider({ children, userId }: EstrategiasProviderPro
 
   function salvarEstrategia() {
     if (!estrategiaEditando?.nome?.trim()) {
-      setModalConfirm({ conteudo: '⚠️ Preencha o nome da estratégia!', somenteOk: true, labelConfirm: 'OK' })
+      showToast('Preencha o nome da estratégia!', 'error')
       return
     }
     const agora = new Date().toISOString()

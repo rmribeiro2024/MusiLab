@@ -7,6 +7,24 @@ import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, loadFromSupabase } from '../lib/utils'
 import type { Musica } from '../types'
 
+// ─── MIGRAÇÃO: campos legados singular → plural ──────────────────────────────
+// Converte campos legados (estilo, tonalidade, etc.) para o formato array.
+// Roda uma única vez no carregamento — idempotente se já migrado.
+function migrarMusica(m: Musica): Musica {
+  return {
+    ...m,
+    estilos:      m.estilos?.length      ? m.estilos      : m.estilo      ? [m.estilo]      : [],
+    tonalidades:  m.tonalidades?.length  ? m.tonalidades  : m.tonalidade  ? [m.tonalidade]  : [],
+    escalas:      m.escalas?.length      ? m.escalas      : m.escala      ? [m.escala]      : [],
+    compassos:    m.compassos?.length    ? m.compassos    : m.compasso    ? [m.compasso]    : [],
+    andamentos:   m.andamentos?.length   ? m.andamentos   : m.andamento   ? [m.andamento]   : [],
+    estruturas:   m.estruturas?.length   ? m.estruturas   : m.estrutura   ? [m.estrutura]   : [],
+    energias:     m.energias?.length     ? m.energias     : m.energia     ? [m.energia]     : [],
+    dinamicas:    m.dinamicas?.length    ? m.dinamicas    : m.dinamica    ? [m.dinamica]    : [],
+  }
+}
+function migrarRepertorio(lista: Musica[]): Musica[] { return lista.map(migrarMusica) }
+
 // ─── INTERFACE DO CONTEXTO ────────────────────────────────────────────────────
 
 export interface RepertorioContextValue {
@@ -118,7 +136,7 @@ export function RepertorioProvider({ children, userId }: RepertorioProviderProps
   const [repertorio, setRepertorio] = useState<Musica[]>(() => {
     try {
       const saved = dbGet('repertorio')
-      return saved ? JSON.parse(saved) : []
+      return saved ? migrarRepertorio(JSON.parse(saved)) : []
     } catch { return [] }
   })
   const [buscaRepertorio, setBuscaRepertorio] = useState('')
@@ -141,7 +159,7 @@ export function RepertorioProvider({ children, userId }: RepertorioProviderProps
     if (!userId) { setCarregado(true); return }
     loadFromSupabase('repertorio', userId)
       .then(data => {
-        if (data !== null && data.length > 0) setRepertorio(data as Musica[])
+        if (data !== null && data.length > 0) setRepertorio(migrarRepertorio(data as Musica[]))
       })
       .catch(e => console.error('[RepertorioContext] Erro ao carregar do Supabase:', e))
       .finally(() => setCarregado(true))

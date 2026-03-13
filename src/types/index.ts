@@ -170,6 +170,7 @@ export interface Plano {
   createdAt?: string
   updatedAt?: string
   _ultimaEdicao?: string
+  /** @deprecated Sem UI de restauração exposta — não salvar novas versões. Campo preservado para leitura de dados antigos. */
   _historicoVersoes?: Array<Plano & { _versaoSalvaEm: string }>
   kanbanStatus?: 'rascunho' | 'pronto' | 'aplicado' | 'revisado'
   origemSequenciaId?: string   // C4: preenchido quando criado via sequential planning

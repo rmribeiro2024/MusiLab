@@ -2,6 +2,7 @@ import React from 'react'
 import { useAnoLetivoContext } from '../../contexts'
 import { usePlanosContext } from '../../contexts'
 import { useModalContext } from '../../contexts'
+import { showToast } from '../../lib/toast'
 
 export default function ModalNovaFaixa() {
     const {
@@ -40,7 +41,7 @@ export default function ModalNovaFaixa() {
                                     const novo = e.target.value.trim();
                                     if (!novo) { e.target.value = f; return; }
                                     if (novo === f) return;
-                                    if (faixas.includes(novo)) { setModalConfirm({ conteudo: 'Já existe uma faixa com esse nome!', somenteOk: true, labelConfirm: 'OK' }); e.target.value = f; return; }
+                                    if (faixas.includes(novo)) { showToast('Já existe uma faixa com esse nome!', 'error'); e.target.value = f; return; }
                                     setFaixas(faixas.map(x => x === f ? novo : x));
                                     setPlanos(planos.map(p => ({
                                         ...p,

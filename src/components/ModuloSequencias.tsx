@@ -1,4 +1,5 @@
 import React, { useRef } from 'react'
+import { showToast } from '../lib/toast'
 import { useSequenciasContext, useAnoLetivoContext, useAtividadesContext, usePlanosContext, useModalContext } from '../contexts'
 import { exportarSequenciaPDF } from '../utils/pdf'
 
@@ -356,7 +357,7 @@ export default function ModuloSequencias() {
                             ✏️ Editar
                         </button>
                         <button
-                            onClick={() => { setSequencias([...sequencias]); setModalConfirm({ conteudo: '✅ Alterações salvas!', somenteOk: true, labelConfirm: 'OK' }) }}
+                            onClick={() => { setSequencias([...sequencias]); showToast('Alterações salvas!', 'success') }}
                             className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-semibold text-sm transition"
                         >
                             💾 Salvar
@@ -748,7 +749,7 @@ export default function ModuloSequencias() {
                                     dataInicio: planDataInicio, diasSemana: planDiasSemana,
                                 })
                                 setSeqParaPlanejar(null)
-                                setModalConfirm({ conteudo: `✅ ${qtd} plano${qtd !== 1 ? 's' : ''} criado${qtd !== 1 ? 's' : ''} como rascunho na aba Planos!`, somenteOk: true, labelConfirm: 'OK' })
+                                showToast(`${qtd} plano${qtd !== 1 ? 's' : ''} criado${qtd !== 1 ? 's' : ''} como rascunho na aba Planos!`, 'success')
                             }}
                             style={{ width: '100%', padding: '11px', borderRadius: 10, background: planDiasSemana.length === 0 || !planDataInicio ? '#e2e8f0' : '#6366f1', color: planDiasSemana.length === 0 || !planDataInicio ? '#94a3b8' : '#fff', border: 'none', fontSize: 14, fontWeight: 700, cursor: planDiasSemana.length === 0 || !planDataInicio ? 'default' : 'pointer', transition: 'all .15s' }}>
                             Criar {seqParaPlanejar.slots.length} planos rascunho

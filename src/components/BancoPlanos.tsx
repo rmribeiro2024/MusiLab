@@ -992,7 +992,7 @@ export default function BancoPlanos({ session }) {
                         const backup = JSON.parse(e.target!.result as string);
                         const validacao = validarBackup(backup);
                         if (!validacao.valido) {
-                            setModalConfirm({ titulo: 'Arquivo inválido', conteudo: validacao.erro || 'Este arquivo não é um backup válido do MusiLab.', somenteOk: true, labelConfirm: 'OK' });
+                            showToast(validacao.erro || 'Arquivo inválido.', 'error');
                             return;
                         }
                         const resumo = `📦 Backup de ${backup.timestamp ? new Date(backup.timestamp).toLocaleString('pt-BR') : 'data desconhecida'}\n\n• ${backup.planos?.length||0} planos\n• ${backup.atividades?.length||0} atividades\n• ${backup.sequencias?.length||0} sequências\n• ${backup.repertorio?.length||0} músicas\n\n⚠️ Os dados atuais serão substituídos.`;
@@ -1024,10 +1024,10 @@ export default function BancoPlanos({ session }) {
                                 if(backup.energiasCustomizadas) setEnergiasCustomizadas(backup.energiasCustomizadas);
                                 if(backup.instrumentacaoCustomizada) setInstrumentacaoCustomizada(backup.instrumentacaoCustomizada);
                                 if(backup.aplicacoes) setAplicacoes(backup.aplicacoes);
-                                setModalConfirm({ titulo: 'Backup restaurado!', conteudo: `${backup.planos.length} planos · ${backup.repertorio?.length||0} músicas · ${backup.atividades?.length||0} atividades`, somenteOk: true, labelConfirm: 'OK' });
+                                showToast(`Backup restaurado! ${backup.planos.length} planos · ${backup.repertorio?.length||0} músicas · ${backup.atividades?.length||0} atividades`, 'success');
                             }
                         });
-                    } catch { setModalConfirm({ titulo: 'Arquivo inválido', conteudo: 'Não foi possível ler o arquivo. Ele pode estar corrompido.', somenteOk: true, labelConfirm: 'OK' }); }
+                    } catch { showToast('Não foi possível ler o arquivo. Ele pode estar corrompido.', 'error'); }
                 }; reader.readAsText(file); event.target.value = '';
             };
 
@@ -1120,7 +1120,7 @@ export default function BancoPlanos({ session }) {
                     recursos: recursosUnicos
                 });
                 
-                setModalConfirm({ conteudo: `✅ Atividade "${atividade.nome}" vinculada ao plano!\n\nDados exportados:\n• Nome e descrição → Setlist\n• Tags → Tags do plano\n• Materiais → Materiais do plano\n• Links/Imagens → Recursos do plano`, somenteOk: true, labelConfirm: 'OK' });
+                showToast(`Atividade "${atividade.nome}" vinculada ao plano!`, 'success');
             };
             
             // adicionarDataEdicao, removerDataEdicao — via usePlanosContext()
@@ -1140,7 +1140,7 @@ export default function BancoPlanos({ session }) {
                         const musicasVinculadas = atualizado[atividadeIndex].musicasVinculadas || [];
                         
                         if(musicasVinculadas.find(m => (typeof m === 'string' ? m : m.id) === musica.id)) {
-                            setModalConfirm({ conteudo: '⚠️ Música já vinculada a esta atividade!', somenteOk: true, labelConfirm: 'OK' });
+                            showToast('Música já vinculada a esta atividade!', 'error');
                             return;
                         }
 
@@ -1159,7 +1159,7 @@ export default function BancoPlanos({ session }) {
                         dbSet('repertorio', JSON.stringify(novoRepertorio));
                         
                         setAtividadeVinculandoMusica(null);
-                        setModalConfirm({ conteudo: '✅ Música vinculada!', somenteOk: true, labelConfirm: 'OK' });
+                        showToast('Música vinculada!', 'success');
                         return;
                     }
                 }
@@ -1169,7 +1169,7 @@ export default function BancoPlanos({ session }) {
                     const musicasVinculadas = atividadeEditando.musicasVinculadas || [];
                     
                     if(musicasVinculadas.find(m => (typeof m === 'string' ? m : m.id) === musica.id)) {
-                        setModalConfirm({ conteudo: '⚠️ Música já vinculada a esta atividade!', somenteOk: true, labelConfirm: 'OK' });
+                        showToast('Música já vinculada a esta atividade!', 'error');
                         return;
                     }
 
@@ -1224,7 +1224,7 @@ export default function BancoPlanos({ session }) {
                 dbSet('repertorio', JSON.stringify(novoRepertorio));
                 
                 setModalImportarMusica(false);
-                setModalConfirm({ conteudo: '✅ Música importada!', somenteOk: true, labelConfirm: 'OK' });
+                showToast('Música importada!', 'success');
             };
             
             const importarAtividadeParaPlano = (atividade) => {
@@ -1245,7 +1245,7 @@ export default function BancoPlanos({ session }) {
                 });
                 
                 setModalImportarAtividade(false);
-                setModalConfirm({ conteudo: '✅ Atividade importada!', somenteOk: true, labelConfirm: 'OK' });
+                showToast('Atividade importada!', 'success');
             };
             
             // toggleRecursosAtiv — via usePlanosContext()
@@ -1270,7 +1270,7 @@ export default function BancoPlanos({ session }) {
 
             const salvarRegistro = () => {
                 if (!novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.naoFuncionou && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
-                    setModalConfirm({ conteudo: 'Preencha ao menos um campo!', somenteOk: true, labelConfirm: 'OK' }); return;
+                    showToast('Preencha ao menos um campo!', 'error'); return;
                 }
                 const agora = new Date();
                 const { dataAula, ...camposRegistro } = novoRegistro;
@@ -1422,11 +1422,11 @@ export default function BancoPlanos({ session }) {
 
             const salvarEvento = () => {
                 if (!eventoEditando.nome.trim()) {
-                    setModalConfirm({ conteudo: '⚠️ Preencha o nome do evento!', somenteOk: true, labelConfirm: 'OK' });
+                    showToast('Preencha o nome do evento!', 'error');
                     return;
                 }
                 if (!eventoEditando.data) {
-                    setModalConfirm({ conteudo: '⚠️ Preencha a data!', somenteOk: true, labelConfirm: 'OK' });
+                    showToast('Preencha a data!', 'error');
                     return;
                 }
                 
@@ -1437,7 +1437,7 @@ export default function BancoPlanos({ session }) {
                     setEventosEscolares([...eventosEscolares, eventoEditando]);
                 }
                 setEventoEditando(null);
-                setModalConfirm({ conteudo: '✅ Evento salvo!', somenteOk: true, labelConfirm: 'OK' });
+                showToast('Evento salvo!', 'success');
             };
 
             const excluirEvento = (id) => {
@@ -1547,7 +1547,7 @@ export default function BancoPlanos({ session }) {
                 }));
                 
                 setModalAdicionarAoPlano(null);
-                setModalConfirm({ conteudo: `✅ Atividade "${atividade.nome}" vinculada ao plano "${plano.titulo}"!\n\n📦 Dados exportados:\n• Nome + Descrição → Setlist\n• Conceitos → Conceitos do plano\n• Tags → Tags do plano\n• Materiais → Materiais do plano\n• Links/Imagens → Recursos do plano\n• Unidade → Unidades do plano`, somenteOk: true, labelConfirm: 'OK' });
+                showToast(`Atividade "${atividade.nome}" vinculada ao plano "${plano.titulo}"!`, 'success');
             };
 
             // Funções auxiliares para tags
@@ -1560,7 +1560,7 @@ export default function BancoPlanos({ session }) {
             const gtAddAno = () => {
                 const ano = gtAnoNovo.trim();
                 if (!ano) return;
-                if (anosLetivos.find(a => a.ano === ano)) { setModalConfirm({ conteudo: 'Ano letivo já existe!', somenteOk: true, labelConfirm: 'OK' }); return; }
+                if (anosLetivos.find(a => a.ano === ano)) { showToast('Ano letivo já existe!', 'error'); return; }
                 setAnosLetivos([...anosLetivos, { id: String(Date.now()), nome: ano, ano, status: 'ativo', escolas: [] }]);
                 setGtAnoNovo('');
             };
@@ -1578,7 +1578,7 @@ export default function BancoPlanos({ session }) {
                 if (!nome || !gtAnoSel) return;
                 setAnosLetivos(anosLetivos.map(a => {
                     if (a.id != gtAnoSel) return a;
-                    if (a.escolas.find(e => e.nome === nome)) { setModalConfirm({ conteudo: 'Escola já existe neste ano!', somenteOk: true, labelConfirm: 'OK' }); return a; }
+                    if (a.escolas.find(e => e.nome === nome)) { showToast('Escola já existe neste ano!', 'error'); return a; }
                     return { ...a, escolas: [...a.escolas, { id: String(Date.now()), nome, segmentos: [] }] };
                 }));
                 setGtEscolaNome('');
@@ -1596,7 +1596,7 @@ export default function BancoPlanos({ session }) {
                     if (a.id != gtAnoSel) return a;
                     return { ...a, escolas: a.escolas.map(e => {
                         if (e.id != gtEscolaSel) return e;
-                        if (e.segmentos.find(s => s.nome === nome)) { setModalConfirm({ conteudo: 'Segmento já existe!', somenteOk: true, labelConfirm: 'OK' }); return e; }
+                        if (e.segmentos.find(s => s.nome === nome)) { showToast('Segmento já existe!', 'error'); return e; }
                         return { ...e, segmentos: [...e.segmentos, { id: String(Date.now()), nome, turmas: [] }] };
                     })};
                 }));
@@ -1621,7 +1621,7 @@ export default function BancoPlanos({ session }) {
                         if (e.id != gtEscolaSel) return e;
                         return { ...e, segmentos: e.segmentos.map(s => {
                             if (s.id != gtSegmentoSel) return s;
-                            if (s.turmas.find(t => t.nome === nome)) { setModalConfirm({ conteudo: 'Turma já existe!', somenteOk: true, labelConfirm: 'OK' }); return s; }
+                            if (s.turmas.find(t => t.nome === nome)) { showToast('Turma já existe!', 'error'); return s; }
                             return { ...s, turmas: [...s.turmas, { id: String(Date.now()), nome }] };
                         })};
                     })};
@@ -1647,8 +1647,8 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             const salvarNovaFaixa = () => {
                 const nome = novaFaixaNome.trim();
-                if (!nome) { setModalConfirm({ conteudo: 'Digite o nome da faixa etária!', somenteOk: true, labelConfirm: 'OK' }); return; }
-                if (faixas.includes(nome)) { setModalConfirm({ conteudo: 'Essa faixa já existe!', somenteOk: true, labelConfirm: 'OK' }); return; }
+                if (!nome) { showToast('Digite o nome da faixa etária!', 'error'); return; }
+                if (faixas.includes(nome)) { showToast('Essa faixa já existe!', 'error'); return; }
                 setFaixas([...faixas, nome]);
                 setNovaFaixaNome('');
                 setModalNovaFaixa(false);
@@ -1666,7 +1666,7 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             const salvarNovaEscola = () => {
                 const nome = novaEscolaNome.trim();
-                if (!nome) { setModalConfirm({ conteudo: 'Digite o nome da escola!', somenteOk: true, labelConfirm: 'OK' }); return; }
+                if (!nome) { showToast('Digite o nome da escola!', 'error'); return; }
                 
                 // Determinar ano letivo alvo
                 const anoId = novaEscolaAnoId || (anosLetivos.find(a => a.status === 'ativo')?.id) || (anosLetivos[0]?.id);
@@ -1693,7 +1693,7 @@ export default function BancoPlanos({ session }) {
                 setNovaEscolaNome('');
                 setNovaEscolaAnoId('');
                 setModalNovaEscola(false);
-                setModalConfirm({ conteudo: `✅ Escola "${nome}" cadastrada com sucesso!`, somenteOk: true, labelConfirm: 'OK' });
+                showToast(`Escola "${nome}" cadastrada!`, 'success');
             };
 
             // --- FUNÇÕES GESTÃO DE GRADE SEMANAL ---
@@ -1834,10 +1834,10 @@ export default function BancoPlanos({ session }) {
                     if (totalAtualizados > 0) msg += `${totalAtualizados} atualizado(s)`;
                     msg += '!';
                     
-                    setModalConfirm({ conteudo: msg, somenteOk: true, labelConfirm: 'OK' });
+                    showToast(msg, 'success');
                     setModalRegistroRapido(false);
                 } else {
-                    setModalConfirm({ conteudo: '⚠️ Preencha pelo menos uma turma e selecione um plano.', somenteOk: true, labelConfirm: 'OK' });
+                    showToast('Preencha pelo menos uma turma e selecione um plano.', 'error');
                 }
                 }; // fim _executar
                 if (feriado) {
