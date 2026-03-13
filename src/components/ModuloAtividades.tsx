@@ -35,7 +35,7 @@ const CardAtividade = React.memo(({ ativ, setAtividadeEditando, excluirAtividade
             <div className="p-4 flex flex-col flex-1">
                 <div className="flex items-start justify-between gap-2 mb-2">
                     <h3 className="font-bold text-gray-800 leading-tight line-clamp-2">{ativ.nome}</h3>
-                    <div className="flex gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1 shrink-0 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity">
                         <button onClick={()=>setAtividadeEditando(ativ)} className="text-slate-400 hover:text-blue-600 p-2 sm:p-1 rounded transition" title="Editar">✏️</button>
                         <button onClick={()=>excluirAtividade(ativ.id)} className="text-slate-400 hover:text-red-500 p-2 sm:p-1 rounded transition" title="Excluir">🗑️</button>
                     </div>

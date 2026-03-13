@@ -52,7 +52,7 @@ const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPl
                     {plano.origemSequenciaId && <span className="text-[10px] font-semibold text-sky-700 bg-sky-50 border border-sky-100 px-1.5 py-0.5 rounded-md">📚 Seq. #{plano.origemSlotOrdem ?? '?'}</span>}
                 </div>
             </div>
-            <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+            <div className="flex gap-1 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity duration-150">
                 <button onClick={(e)=>abrirModalRegistro(plano,e)} title="Registro Pós-Aula" aria-label="Registro pós-aula" className="p-2 rounded-xl text-amber-500 hover:bg-amber-50 transition-colors text-sm">📝</button>
                 <button onClick={(e)=>{e.stopPropagation();editarPlano(plano);}} title="Editar" aria-label="Editar plano" className="p-2 rounded-xl text-blue-500 hover:bg-blue-50 transition-colors text-sm">✏️</button>
                 <button onClick={()=>setPlanoSelecionado(plano)} title="Ver completo" className="p-2 rounded-xl text-indigo-500 hover:bg-indigo-50 transition-colors text-sm">👁</button>
@@ -73,6 +73,7 @@ export default function TelaPrincipal() {
     const {
         abrirModalRegistro,
         baixarBackup,
+        novoPlano,
         userId,
         setModalTemplates,
         adicionandoConceito,
@@ -534,6 +535,11 @@ export default function TelaPrincipal() {
                                                     {/* Botões ↑↓ de reordenação — fallback mobile para drag */}
                                                     <div className="flex sm:hidden gap-0.5">
                                                         <button type="button"
+                                                            onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===0) return; arr.unshift(arr.splice(index,1)[0]); setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
+                                                            disabled={index===0}
+                                                            title="Mover para o início"
+                                                            className="p-1.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded transition text-xs">⇈</button>
+                                                        <button type="button"
                                                             onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===0) return; [arr[index-1],arr[index]]=[arr[index],arr[index-1]]; setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
                                                             disabled={index===0}
                                                             className="p-1.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded transition">↑</button>
@@ -541,6 +547,11 @@ export default function TelaPrincipal() {
                                                             onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===arr.length-1) return; [arr[index],arr[index+1]]=[arr[index+1],arr[index]]; setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
                                                             disabled={index===(planoEditando.atividadesRoteiro||[]).length-1}
                                                             className="p-1.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded transition">↓</button>
+                                                        <button type="button"
+                                                            onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===arr.length-1) return; arr.push(arr.splice(index,1)[0]); setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
+                                                            disabled={index===(planoEditando.atividadesRoteiro||[]).length-1}
+                                                            title="Mover para o final"
+                                                            className="p-1.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded transition text-xs">⇊</button>
                                                     </div>
                                                     <span className="font-bold text-indigo-700">Atividade {index + 1}</span>
                                                 </div>
@@ -1781,7 +1792,24 @@ export default function TelaPrincipal() {
         {/* ── MODO LISTA (COMPACTO) ── */}
         {modoVisualizacao === 'compacto' && (
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                {planosFiltrados.length === 0 && <p className="text-center text-gray-400 py-10">Nenhum plano encontrado.</p>}
+                {planosFiltrados.length === 0 && (
+                    <div className="text-center py-16">
+                        <div className="text-5xl mb-3">📋</div>
+                        <p className="text-slate-500 font-medium mb-1">
+                            {busca || filtroConceito !== 'Todos' || filtroFaixa !== 'Todos' || filtroEscola !== 'Todas' || filtroStatus !== 'Todos'
+                                ? 'Nenhum plano encontrado com esses filtros.'
+                                : 'Nenhum plano de aula ainda.'}
+                        </p>
+                        <p className="text-slate-400 text-sm mb-4">
+                            {busca || filtroConceito !== 'Todos' || filtroFaixa !== 'Todos' || filtroEscola !== 'Todas' || filtroStatus !== 'Todos'
+                                ? 'Tente ajustar os filtros ou criar um novo plano.'
+                                : 'Comece criando seu primeiro plano de aula.'}
+                        </p>
+                        <button onClick={novoPlano} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold transition text-sm">
+                            + Novo Plano de Aula
+                        </button>
+                    </div>
+                )}
                 {planosFiltrados.map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} toggleFavorito={toggleFavorito} setPlanoSelecionado={setPlanoSelecionado} abrirModalRegistro={abrirModalRegistro} editarPlano={editarPlano} />)}
             </div>
         )}

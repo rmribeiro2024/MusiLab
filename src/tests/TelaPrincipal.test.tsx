@@ -147,7 +147,7 @@ describe('TelaPrincipal', () => {
     it('não entra no modo edição quando modoEdicao=false', () => {
         render(<TelaPrincipal />)
         // botão "Novo Plano" deve existir (não em modo edição)
-        const botaoNovo = screen.queryByText(/novo plano/i)
+        screen.queryAllByText(/novo plano/i)
         // O botão pode ter texto diferente — apenas verifica que não há formulário de edição
         expect(screen.queryByText(/editar plano/i)).not.toBeInTheDocument()
     })
@@ -190,7 +190,7 @@ describe('TelaPrincipal — modo edição', () => {
 describe('TelaPrincipal — LinhaPlano (subcomponente)', () => {
     it('renderiza lista vazia no modo compacto', () => {
         render(<TelaPrincipal />)
-        // No modo compacto com 0 planos, mostra "Nenhum plano encontrado."
-        expect(screen.getByText('Nenhum plano encontrado.')).toBeInTheDocument()
+        // No modo compacto com 0 planos, mostra mensagem de lista vazia
+        expect(screen.getByText(/nenhum plano/i)).toBeInTheDocument()
     })
 })

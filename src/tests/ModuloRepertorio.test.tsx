@@ -133,8 +133,8 @@ describe('ModuloRepertorio', () => {
 
     it('botão nova música está presente', () => {
         render(<ModuloRepertorio />)
-        const botao = screen.getByRole('button', { name: /nova música|adicionar|nova/i })
-        expect(botao).toBeInTheDocument()
+        const botoes = screen.getAllByRole('button', { name: /nova música|adicionar|nova/i })
+        expect(botoes.length).toBeGreaterThan(0)
     })
 })
 

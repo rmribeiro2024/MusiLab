@@ -334,6 +334,27 @@ export default function ModuloRepertorio() {
                 {/* Lista de músicas */}
                 <div className="space-y-2">
                     <p className="text-xs font-semibold text-slate-400 uppercase">{musicasFiltradas.length} música(s) encontrada(s)</p>
+                    {musicasFiltradas.length === 0 && (
+                        <div className="text-center py-14">
+                            <div className="text-5xl mb-3">🎼</div>
+                            <p className="text-slate-500 font-medium mb-1">
+                                {buscaRepertorio || filtroOrigem !== 'Todas' || filtroEstilo !== 'Todos' || filtroTonalidade !== 'Todas'
+                                    ? 'Nenhuma música encontrada com esses filtros.'
+                                    : 'Nenhuma música no repertório ainda.'}
+                            </p>
+                            <p className="text-slate-400 text-sm mb-4">
+                                {buscaRepertorio || filtroOrigem !== 'Todas' || filtroEstilo !== 'Todos' || filtroTonalidade !== 'Todas'
+                                    ? 'Tente ajustar os filtros ou adicione uma nova música.'
+                                    : 'Comece adicionando músicas ao seu repertório.'}
+                            </p>
+                            <button
+                                onClick={() => setMusicaEditando({ id: Date.now(), titulo: '', autor: '', origem: 'Popular', tonalidades: [], compassos: [], estilos: [], andamentos: [], escalas: [], estruturas: [], dinamicas: [], energias: [], instrumentacao: [], tags: [], observacoes: '' })}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold transition text-sm"
+                            >
+                                + Adicionar Música
+                            </button>
+                        </div>
+                    )}
                     {musicasFiltradas.map(m => (
                         <React.Fragment key={m.id}>
                         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-indigo-300 hover:shadow-md transition flex items-center justify-between">
