@@ -554,8 +554,12 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                 }); return
             }
         }
+        // Preservar notasAdaptacao do estado atual — são salvas diretamente em planos
+        // via salvarNotaAdaptacao, não refletem em planoEditando (snapshot do form)
+        const planoNoState = planos.find((p: any) => String(p.id) === String(planoEditando.id))
         const planoParaSalvar = carimbарTimestamp({ // [offlineSync]
             ...planoEditando,
+            notasAdaptacao: planoNoState?.notasAdaptacao ?? planoEditando.notasAdaptacao ?? [],
             objetivosEspecificos: planoEditando.objetivosEspecificos.filter((i: string) => i.trim() !== ''),
             habilidadesBNCC: (planoEditando.habilidadesBNCC || []).filter((i: string) => i.trim() !== ''),
             materiais: planoEditando.materiais.filter((i: string) => i.trim() !== ''),
