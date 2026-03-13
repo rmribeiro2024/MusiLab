@@ -2,7 +2,7 @@
 // Estado e lógica de anos letivos, planejamento anual, currículo e turmas.
 // Extraído de BancoPlanos.tsx — Parte 6 da refatoração de contextos.
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, syncConfiguracoes, loadFromSupabase, loadConfiguracoes, gerarIdSeguro } from '../lib/utils'
 import { mergeOffline, marcarPendente, carimbарTimestamp } from '../lib/offlineSync'
@@ -792,7 +792,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
   }
 
   // ── VALUE ──────────────────────────────────────────────────────────────────
-  const value: AnoLetivoContextValue = {
+  const value = useMemo<AnoLetivoContextValue>(() => ({
     anosLetivos, setAnosLetivos,
     eventosEscolares, setEventosEscolares,
     planejamentoAnual, setPlanejamentoAnual,
@@ -839,7 +839,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao,
     salvarNovaFaixa,
     salvarNovaEscola,
-  }
+  }), [anosLetivos, eventosEscolares, planejamentoAnual, anoPlanoAtivoId, mostrandoFormNovoAno, formNovoAno, periodoExpId, periodoEditForm, adicionandoPeriodoAno, formNovoPeriodo, conceitos, unidades, faixas, tagsGlobais, modalTurmas, anoLetivoSelecionadoModal, gtAnoNovo, gtAnoSel, gtEscolaNome, gtEscolaSel, gtSegmentoNome, gtSegmentoSel, gtTurmaNome, mostrarArquivados, modalNovaEscola, novaEscolaNome, novaEscolaAnoId, modalNovaFaixa, novaFaixaNome, criarAnoLetivoPainel, excluirAnoPlano, adicionarPeriodoNoAno, salvarEdicaoPeriodo, excluirPeriodoDoAno, adicionarMetaNoAno, excluirMetaDoAno, eventoEditando, modalEventos, novoEvento, salvarEvento, excluirEvento, gtAddAno, gtRemoveAno, gtMudarStatusAno, gtAddEscola, gtRemoveEscola, gtAddSegmento, gtRemoveSegmento, gtAddTurma, gtRemoveTurma, alunosAddOrUpdate, alunosRemove, alunosGetByTurma, alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco, turmaSetRubricas, turmaGetRubricas, tiposAnotacaoGlobais, turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao, salvarNovaFaixa, salvarNovaEscola])
 
   return (
     <AnoLetivoContext.Provider value={value}>

@@ -106,28 +106,12 @@ export default function ModuloRepertorio() {
         localStorage.setItem('repertorio_filtros_abertos', String(v))
     }
 
-    const getUsosMusica = (musicaId: string | number) => {
-        const usos: { data: string; planoId: unknown; planoTitulo: string }[] = []
-        planos.forEach(p => {
-            const temMusica = (p.atividadesRoteiro || []).some(atv =>
-                (atv.musicasVinculadas || []).some(mv => String(mv.id) === String(musicaId))
-            )
-            if (!temMusica) return
-            const datas = (p.historicoDatas || []).length > 0
-                ? p.historicoDatas
-                : (p.registrosPosAula || []).map(r => r.data).filter(Boolean)
-            if (datas.length === 0) {
-                usos.push({ data: '', planoId: p.id, planoTitulo: p.titulo })
-            } else {
-                [...new Set(datas)].forEach(d => usos.push({ data: d, planoId: p.id, planoTitulo: p.titulo }))
-            }
-        })
-        return usos.sort((a, b) => b.data.localeCompare(a.data))
-    }
-
-    // Prompt 3: mapa de uso por música calculado uma vez de todos os planos
+    // Índice completo: calculado uma vez para todos os planos.
+    // Armazena tanto o resumo (total/ultima) quanto os usos detalhados,
+    // evitando que getUsosMusica varra 200 planos a cada abertura de painel.
     const usosMusicaMap = useMemo(() => {
-        const map: Record<string, { total: number; ultima: string }> = {}
+        type EntradaUso = { total: number; ultima: string; usos: { data: string; planoId: unknown; planoTitulo: string }[] }
+        const map: Record<string, EntradaUso> = {}
         planos.forEach(p => {
             (p.atividadesRoteiro || []).forEach(atv => {
                 (atv.musicasVinculadas || []).forEach(mv => {
@@ -135,17 +119,31 @@ export default function ModuloRepertorio() {
                     const datas = (p.historicoDatas || []).length > 0
                         ? p.historicoDatas
                         : (p.registrosPosAula || []).map((r: {data?: string}) => r.data).filter(Boolean)
-                    if (!map[key]) map[key] = { total: 0, ultima: '' }
-                    map[key].total += datas.length > 0 ? datas.length : 1
-                    if (datas.length > 0) {
-                        const maxData = [...datas].sort().pop() as string || ''
+                    if (!map[key]) map[key] = { total: 0, ultima: '', usos: [] }
+                    if (datas.length === 0) {
+                        map[key].usos.push({ data: '', planoId: p.id, planoTitulo: p.titulo })
+                        map[key].total += 1
+                    } else {
+                        const datasUnicas = [...new Set(datas)]
+                        datasUnicas.forEach(d => map[key].usos.push({ data: d, planoId: p.id, planoTitulo: p.titulo }))
+                        map[key].total += datasUnicas.length
+                        const maxData = [...datasUnicas].sort().pop() as string || ''
                         if (maxData > map[key].ultima) map[key].ultima = maxData
                     }
                 })
             })
         })
+        // Ordenar usos por data descendente uma vez só (em vez de a cada getUsosMusica)
+        for (const key in map) {
+            map[key].usos.sort((a, b) => b.data.localeCompare(a.data))
+        }
         return map
     }, [planos])
+
+    // Lookup O(1) — usa o índice já calculado no useMemo acima
+    const getUsosMusica = React.useCallback((musicaId: string | number) => {
+        return usosMusicaMap[String(musicaId)]?.usos ?? []
+    }, [usosMusicaMap])
 
     // Filtrar músicas (useMemo + debounce na busca)
     const buscaRepertorioDebounced = useDebounce(buscaRepertorio, 300)

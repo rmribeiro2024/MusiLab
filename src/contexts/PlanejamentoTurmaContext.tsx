@@ -272,7 +272,7 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
 
   // ─── Value ────────────────────────────────────────────────────────────────
 
-  const value: PlanejamentoTurmaContextValue = {
+  const value = useMemo<PlanejamentoTurmaContextValue>(() => ({
     planejamentos,
     turmaSelecionada,
     planejamentoEditando,
@@ -287,7 +287,7 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
     excluirPlanejamento,
     fecharForm,
     buildDadosParaBanco,
-  }
+  }), [planejamentos, turmaSelecionada, planejamentoEditando, formAberto, ultimoRegistroDaTurma, historicoDaTurma, planejamentosDaTurma, selecionarTurma, novoPlanejamento, editarPlanejamento, salvarPlanejamento, excluirPlanejamento, fecharForm, buildDadosParaBanco])
 
   return (
     <PlanejamentoTurmaContext.Provider value={value}>

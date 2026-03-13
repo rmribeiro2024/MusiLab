@@ -2,7 +2,7 @@
 // Estado e lógica de calendário, grade semanal e registro pós-aula.
 // Extraído de BancoPlanos.tsx — Parte 7 da refatoração de contextos.
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { dbGet, dbSet } from '../lib/db'
 import { useModalContext } from './ModalContext'
 import { showToast } from '../lib/toast'
@@ -313,7 +313,7 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
   }
 
   // ── Value ──────────────────────────────────────────────────────────────────
-  const value: CalendarioContextValue = {
+  const value = useMemo<CalendarioContextValue>(() => ({
     dataCalendario, setDataCalendario,
     semanaResumo, setSemanaResumo,
     modoResumo, setModoResumo,
@@ -357,7 +357,7 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
     ocultarFeriados, setOcultarFeriados,
     obterTurmasDoDia,
     verificarEvento,
-  }
+  }), [dataCalendario, semanaResumo, modoResumo, dataDia, diasExpandidos, gradesSemanas, modalGradeSemanal, gradeEditando, periodoDias, dataInicioCustom, dataFimCustom, modalRegistroRapido, rrData, rrAnoSel, rrEscolaSel, rrPlanosSegmento, rrTextos, modalRegistro, planoParaRegistro, novoRegistro, verRegistros, registroEditando, regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel, filtroRegAno, filtroRegEscola, filtroRegSegmento, filtroRegTurma, filtroRegData, buscaRegistros, ytPreviewId, novaGradeSemanal, salvarGradeSemanal, excluirGradeSemanal, adicionarAulaGrade, removerAulaGrade, duplicarAulaGrade, atualizarAulaGrade, ocultarFeriados, obterTurmasDoDia, verificarEvento])
 
   return <CalendarioContext.Provider value={value}>{children}</CalendarioContext.Provider>
 }

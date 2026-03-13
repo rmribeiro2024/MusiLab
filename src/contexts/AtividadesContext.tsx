@@ -2,7 +2,7 @@
 // Estado e lógica do módulo de Atividades Pedagógicas, extraído de BancoPlanos.tsx.
 // Gerencia: 14 useState + funções CRUD + sync IndexedDB/Supabase.
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, loadFromSupabase, gerarIdSeguro } from '../lib/utils'
 import { useModalContext } from './ModalContext'
@@ -202,7 +202,7 @@ export function AtividadesProvider({ children, userId }: AtividadesProviderProps
   }
 
   // ── VALUE ──────────────────────────────────────────────────────────────────
-  const value: AtividadesContextValue = {
+  const value = useMemo<AtividadesContextValue>(() => ({
     atividades, setAtividades,
     atividadeEditando, setAtividadeEditando,
     novoRecursoUrlAtiv, setNovoRecursoUrlAtiv,
@@ -219,7 +219,7 @@ export function AtividadesProvider({ children, userId }: AtividadesProviderProps
     novaMusicaInline, setNovaMusicaInline,
     novaAtividade, salvarAtividade, excluirAtividade,
     adicionarRecursoAtiv, removerRecursoAtiv,
-  }
+  }), [atividades, atividadeEditando, novoRecursoUrlAtiv, novoRecursoTipoAtiv, filtroTagAtividade, filtroFaixaAtividade, filtroConceitoAtividade, buscaAtividade, modalAdicionarAoPlano, modoVisAtividades, atividadeVinculandoMusica, pendingAtividadeId, modalNovaMusicaInline, novaMusicaInline, novaAtividade, salvarAtividade, excluirAtividade, adicionarRecursoAtiv, removerRecursoAtiv])
 
   return (
     <AtividadesContext.Provider value={value}>

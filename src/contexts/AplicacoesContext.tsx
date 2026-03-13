@@ -173,7 +173,7 @@ export function AplicacoesProvider({ children, userId }: AplicacoesProviderProps
 
   // ── Provider value ────────────────────────────────────────────────────────
 
-  const value: AplicacoesContextValue = {
+  const value = useMemo<AplicacoesContextValue>(() => ({
     aplicacoes,
     setAplicacoes,
     aplicacoesPorData,
@@ -183,7 +183,7 @@ export function AplicacoesProvider({ children, userId }: AplicacoesProviderProps
     excluirAplicacao,
     getAplicacoesDoDia,
     getAplicacoesDaSemana,
-  }
+  }), [aplicacoes, aplicacoesPorData, criarAplicacoes, atualizarStatusAplicacao, salvarAdaptacao, excluirAplicacao, getAplicacoesDoDia, getAplicacoesDaSemana])
 
   return (
     <AplicacoesContext.Provider value={value}>

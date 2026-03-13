@@ -2,7 +2,7 @@
 // Estado do módulo de Histórico Musical, extraído de BancoPlanos.tsx.
 // Gerencia: 5 estados de filtro/modal do ModuloHistoricoMusical.
 
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useMemo } from 'react'
 import type { Musica } from '../types'
 
 // ─── INTERFACE DO CONTEXTO ────────────────────────────────────────────────────
@@ -43,13 +43,13 @@ export function HistoricoProvider({ children }: HistoricoProviderProps) {
   const [hmFiltroBusca, setHmFiltroBusca] = useState('')
   const [hmModalMusica, setHmModalMusica] = useState<Musica | null>(null)
 
-  const value: HistoricoContextValue = {
+  const value = useMemo<HistoricoContextValue>(() => ({
     hmFiltroTurma, setHmFiltroTurma,
     hmFiltroInicio, setHmFiltroInicio,
     hmFiltroFim, setHmFiltroFim,
     hmFiltroBusca, setHmFiltroBusca,
     hmModalMusica, setHmModalMusica,
-  }
+  }), [hmFiltroTurma, hmFiltroInicio, hmFiltroFim, hmFiltroBusca, hmModalMusica])
 
   return (
     <HistoricoContext.Provider value={value}>

@@ -3,7 +3,7 @@
 // Permite que qualquer Provider de domínio (EstrategiasContext, etc.) chame
 // setModalConfirm sem depender de BancoPlanosContext.
 
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useMemo } from 'react'
 import type { ModalConfirmState } from '../types'
 
 // ─── INTERFACE ────────────────────────────────────────────────────────────────
@@ -28,8 +28,10 @@ export function useModalContext(): ModalContextValue {
 export function ModalProvider({ children }: { children: React.ReactNode }) {
   const [modalConfirm, setModalConfirm] = useState<ModalConfirmState | null>(null)
 
+  const value = useMemo(() => ({ modalConfirm, setModalConfirm }), [modalConfirm])
+
   return (
-    <ModalContext.Provider value={{ modalConfirm, setModalConfirm }}>
+    <ModalContext.Provider value={value}>
       {children}
     </ModalContext.Provider>
   )

@@ -1498,7 +1498,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
     }
 
     // ── CONTEXT VALUE ─────────────────────────────────────────────────────
-    const value: PlanosContextValue = {
+    const value = useMemo<PlanosContextValue>(() => ({
         planos, setPlanos,
         planoSelecionado, setPlanoSelecionado,
         modoEdicao, setModoEdicao,
@@ -1552,7 +1552,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido, atualizarKanbanStatus, criarPlanosDeSequencia,
         baixarBackup, restaurarBackup,
         userId,
-    }
+    }), [planos, planoSelecionado, modoEdicao, planoEditando, formExpandido, materiaisBloqueados, novoConceito, adicionandoConceito, novaUnidade, adicionandoUnidade, novoRecursoUrl, novoRecursoTipo, novaDataAula, dataEdicao, busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, modoVisualizacao, ordenacaoCards, limparFiltros, statusDropdownId, recursosExpandidos, modalImportarMusica, modalImportarAtividade, dragActiveIndex, dragOverIndex, escolas, segmentosPlanos, duracoesSugestao, planosFiltrados, buscaAvancada, sugerirBNCC, gerandoBNCC, sugerirObjetivosIA, gerandoObjetivos, novoPlano, editarPlano, salvarPlano, excluirPlano, fecharModal, restaurarVersao, toggleConceito, toggleFaixa, toggleUnidade, adicionarRecurso, removerRecurso, adicionarDataEdicao, removerDataEdicao, adicionarDataAulaVisualizacao, removerDataAulaVisualizacao, adicionarConceitoNovo, adicionarTagNova, removerTag, adicionarUnidadeNova, adicionarAtividadeRoteiro, removerAtividadeRoteiro, atualizarAtividadeRoteiro, toggleFavorito, handleDragStart, handleDragEnter, handleDragEnd, toggleRecursosAtiv, templatesRoteiro, modalTemplates, nomeNovoTemplate, modalConfiguracoes, musicasDetectadas, limparMusicasDetectadas, showModalMusicas, estrategiaDetectadaIA, showModalEstrategiaIA, vincularMusicaAoPlano, desvincularMusicaDoPlano, vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano, abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro, adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido, atualizarKanbanStatus, criarPlanosDeSequencia, baixarBackup, restaurarBackup, userId])
 
     return <PlanosContext.Provider value={value}>{children}</PlanosContext.Provider>
 }

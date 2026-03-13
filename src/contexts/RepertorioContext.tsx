@@ -2,7 +2,7 @@
 // Estado e lógica do módulo de Repertório Musical, extraído de BancoPlanos.tsx.
 // Gerencia: 25 estados, sync IndexedDB/Supabase, opções musicais customizadas.
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, loadFromSupabase } from '../lib/utils'
 import type { Musica } from '../types'
@@ -198,7 +198,7 @@ export function RepertorioProvider({ children, userId }: RepertorioProviderProps
   }, [])
 
   // ── VALUE ──────────────────────────────────────────────────────────────────
-  const value: RepertorioContextValue = {
+  const value = useMemo<RepertorioContextValue>(() => ({
     viewMode, setViewMode,
     musicaEditando, setMusicaEditando,
     buscaEstilo, setBuscaEstilo,
@@ -224,7 +224,7 @@ export function RepertorioProvider({ children, userId }: RepertorioProviderProps
     filtroEnergia, setFiltroEnergia,
     filtroInstrumentacao, setFiltroInstrumentacao,
     filtroDinamica, setFiltroDinamica,
-  }
+  }), [viewMode, musicaEditando, buscaEstilo, accordionAberto, editandoElemento, compassosCustomizados, tonalidadesCustomizadas, andamentosCustomizados, escalasCustomizadas, estruturasCustomizadas, dinamicasCustomizadas, energiasCustomizadas, instrumentacaoCustomizada, repertorio, buscaRepertorio, filtroOrigem, filtroEstilo, filtroTonalidade, filtroEscala, filtroCompasso, filtroAndamento, filtroEstrutura, filtroEnergia, filtroInstrumentacao, filtroDinamica])
 
   return (
     <RepertorioContext.Provider value={value}>

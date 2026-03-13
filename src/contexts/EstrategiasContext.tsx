@@ -2,7 +2,7 @@
 // Estado e lógica do módulo de Estratégias Pedagógicas, extraído de BancoPlanos.tsx.
 // Gerencia: 12 useState, sync IndexedDB/Supabase, 5 funções CRUD.
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, loadFromSupabase, gerarIdSeguro } from '../lib/utils'
 import { useModalContext } from './ModalContext'
@@ -229,7 +229,7 @@ export function EstrategiasProvider({ children, userId }: EstrategiasProviderPro
 
   // ── VALUE ─────────────────────────────────────────────────────────────────
 
-  const value: EstrategiasContextValue = {
+  const value = useMemo<EstrategiasContextValue>(() => ({
     estrategias, setEstrategias,
     estrategiaEditando, setEstrategiaEditando,
     buscaEstrategia, setBuscaEstrategia,
@@ -246,7 +246,7 @@ export function EstrategiasProvider({ children, userId }: EstrategiasProviderPro
     novoObjetivoEstr, setNovoObjetivoEstr,
     novaEstrategia, salvarEstrategia, excluirEstrategia,
     arquivarEstrategia, restaurarEstrategia, registrarUsoEstrategia,
-  }
+  }), [estrategias, estrategiaEditando, buscaEstrategia, filtroCategoriaEstrategia, filtroFuncaoEstrategia, filtroObjetivoEstrategia, mostrarArquivadasEstrategia, filtroDimensaoEstrategia, categoriasEstrategia, funcoesEstrategia, objetivosEstrategia, novaCategoriaEstr, novaFuncaoEstr, novoObjetivoEstr, novaEstrategia, salvarEstrategia, excluirEstrategia, arquivarEstrategia, restaurarEstrategia, registrarUsoEstrategia])
 
   return (
     <EstrategiasContext.Provider value={value}>

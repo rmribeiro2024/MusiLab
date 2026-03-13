@@ -2,7 +2,7 @@
 // Estado e lógica do módulo de Sequências Didáticas, extraído de BancoPlanos.tsx.
 // Gerencia: 9 useState + funções CRUD + sync IndexedDB/Supabase.
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, loadFromSupabase, gerarIdSeguro } from '../lib/utils'
 import { useModalContext } from './ModalContext'
@@ -255,7 +255,7 @@ export function SequenciasProvider({ children, userId }: SequenciasProviderProps
   }
 
   // ── VALUE ──────────────────────────────────────────────────────────────────
-  const value: SequenciasContextValue = {
+  const value = useMemo<SequenciasContextValue>(() => ({
     sequencias, setSequencias,
     sequenciaEditando, setSequenciaEditando,
     sequenciaDetalhe, setSequenciaDetalhe,
@@ -268,7 +268,7 @@ export function SequenciasProvider({ children, userId }: SequenciasProviderProps
     novaSequencia, salvarSequencia, excluirSequencia,
     vincularPlanoAoSlot, atualizarRascunhoSlot, desvincularPlano,
     gerarSlots,
-  }
+  }), [sequencias, sequenciaEditando, sequenciaDetalhe, filtroEscolaSequencias, filtroUnidadeSequencias, filtroPeriodoSequencias, buscaProfundaSequencias, modalVincularPlano, buscaPlanoVinculo, novaSequencia, salvarSequencia, excluirSequencia, vincularPlanoAoSlot, atualizarRascunhoSlot, desvincularPlano, gerarSlots])
 
   return (
     <SequenciasContext.Provider value={value}>
