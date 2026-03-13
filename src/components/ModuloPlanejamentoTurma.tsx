@@ -1644,6 +1644,7 @@ function ConteudoTurma() {
   const { planos } = usePlanosContext()
   const { estrategias } = useEstrategiasContext()
   const [historicoExpandido, setHistoricoExpandido] = useState(false)
+  const [registroExpandido, setRegistroExpandido] = useState(false)
   const [planejamentosExpandidos, setPlanejamentosExpandidos] = useState(false)
   const [alunosExpandidos, setAlunosExpandidos] = useState(false)
   const [novoAlunoNome, setNovoAlunoNome] = useState('')
@@ -1741,60 +1742,74 @@ function ConteudoTurma() {
 
       {/* ── BLOCO 1: Registro pós-aula ─────────────────────────────────────────── */}
       {registroExibido ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-slate-700">
-              {dataAtiva ? 'Registro selecionado' : 'Último registro'}
-            </h3>
-            <span className="text-xs text-slate-400">
-              {formatarData(registroExibido.dataAula ?? registroExibido.data ?? '')}
-            </span>
-          </div>
-          <div className="space-y-2">
-            {registroExibido.resultadoAula && (
-              <InfoRow icon="📊" label="Resultado da aula" valor={labelResultado(registroExibido.resultadoAula)} />
-            )}
-            {registroExibido.resumoAula && (
-              <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
-            )}
-            {registroExibido.funcionouBem && (
-              <InfoRow icon="✅" label="O que funcionou bem" valor={registroExibido.funcionouBem} />
-            )}
-            {registroExibido.naoFuncionou && (
-              <InfoRow icon="⚠️" label="O que não funcionou" valor={registroExibido.naoFuncionou} />
-            )}
-            {registroExibido.poderiaMelhorar && (
-              <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
-            )}
-            {registroExibido.comportamento && (
-              <InfoRow icon="👥" label="Comportamento da turma" valor={registroExibido.comportamento} />
-            )}
-            {registroExibido.anotacoesGerais && (
-              <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
-            )}
-            {registroExibido.proximaAula && (
-              <InfoRow icon="💡" label="Ideias / estratégias" valor={registroExibido.proximaAula} destacado />
-            )}
-            {(() => {
-              const chamada = (registroExibido as any).chamada as { alunoId: string; presente: boolean }[] | undefined
-              if (!chamada || chamada.length === 0) return null
-              const presentes = chamada.filter(c => c.presente).length
-              const ausentes = chamada.filter(c => !c.presente)
-              const ts = turmaSelecionada!
-              const allAlunos = alunosGetByTurma(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
-              const nomeAluno = (id: string) => allAlunos.find(a => a.id === id)?.nome ?? id
-              return (
-                <div className="mt-1">
-                  <InfoRow icon="✋" label="Chamada" valor={`${presentes}/${chamada.length} presentes`} />
-                  {ausentes.length > 0 && (
-                    <p className="text-[11px] text-slate-400 mt-0.5 ml-6 italic">
-                      Ausentes: {ausentes.map(c => nomeAluno(c.alunoId)).join(', ')}
-                    </p>
-                  )}
-                </div>
-              )
-            })()}
-          </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setRegistroExpandido(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <h3 className="text-sm font-semibold text-slate-700">
+                {dataAtiva ? 'Registro selecionado' : 'Último registro'}
+              </h3>
+              <span className="text-xs text-slate-400">
+                {formatarData(registroExibido.dataAula ?? registroExibido.data ?? '')}
+              </span>
+              {!registroExpandido && registroExibido.resultadoAula && (
+                <span className="text-xs text-slate-400 truncate hidden sm:inline">
+                  · {labelResultado(registroExibido.resultadoAula)}
+                </span>
+              )}
+            </div>
+            <span className="text-slate-400 text-xs ml-2 shrink-0">{registroExpandido ? '▲' : '▼'}</span>
+          </button>
+          {registroExpandido && (
+            <div className="px-4 pb-4 space-y-2 border-t border-slate-100 pt-3">
+              {registroExibido.resultadoAula && (
+                <InfoRow icon="📊" label="Resultado da aula" valor={labelResultado(registroExibido.resultadoAula)} />
+              )}
+              {registroExibido.resumoAula && (
+                <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
+              )}
+              {registroExibido.funcionouBem && (
+                <InfoRow icon="✅" label="O que funcionou bem" valor={registroExibido.funcionouBem} />
+              )}
+              {registroExibido.naoFuncionou && (
+                <InfoRow icon="⚠️" label="O que não funcionou" valor={registroExibido.naoFuncionou} />
+              )}
+              {registroExibido.poderiaMelhorar && (
+                <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
+              )}
+              {registroExibido.comportamento && (
+                <InfoRow icon="👥" label="Comportamento da turma" valor={registroExibido.comportamento} />
+              )}
+              {registroExibido.anotacoesGerais && (
+                <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
+              )}
+              {registroExibido.proximaAula && (
+                <InfoRow icon="💡" label="Ideias / estratégias" valor={registroExibido.proximaAula} destacado />
+              )}
+              {(() => {
+                const chamada = (registroExibido as any).chamada as { alunoId: string; presente: boolean }[] | undefined
+                if (!chamada || chamada.length === 0) return null
+                const presentes = chamada.filter(c => c.presente).length
+                const ausentes = chamada.filter(c => !c.presente)
+                const ts = turmaSelecionada!
+                const allAlunos = alunosGetByTurma(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
+                const nomeAluno = (id: string) => allAlunos.find(a => a.id === id)?.nome ?? id
+                return (
+                  <div className="mt-1">
+                    <InfoRow icon="✋" label="Chamada" valor={`${presentes}/${chamada.length} presentes`} />
+                    {ausentes.length > 0 && (
+                      <p className="text-[11px] text-slate-400 mt-0.5 ml-6 italic">
+                        Ausentes: {ausentes.map(c => nomeAluno(c.alunoId)).join(', ')}
+                      </p>
+                    )}
+                  </div>
+                )
+              })()}
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-4 text-center">
