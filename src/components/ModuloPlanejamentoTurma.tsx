@@ -432,7 +432,7 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
       )}
 
       {/* Modal preview do plano */}
-      {planoPreview && <ModalPreviewPlano plano={planoPreview} onFechar={() => setPlanoPreview(null)} />}
+      {planoPreview && <ModalPreviewPlano plano={planoPreview} onFechar={() => setPlanoPreview(null)} turmaId={String(turmaSelecionada?.turmaId ?? '')} />}
     </div>
   )
 }
@@ -775,7 +775,7 @@ function PainelImportarBanco({
 
 // ─── MODAL PREVIEW DO PLANO ───────────────────────────────────────────────────
 
-function ModalPreviewPlano({ plano, onFechar }: { plano: import('../types').Plano; onFechar: () => void }) {
+function ModalPreviewPlano({ plano, onFechar, turmaId }: { plano: import('../types').Plano; onFechar: () => void; turmaId?: string }) {
   const { setAtividades } = useAtividadesContext()
   const [exportados, setExportados] = useState<Set<string>>(new Set())
 
@@ -825,6 +825,18 @@ function ModalPreviewPlano({ plano, onFechar }: { plano: import('../types').Plan
               <p className="text-sm text-slate-600">{stripHTML(plano.objetivoGeral)}</p>
             </div>
           )}
+
+          {/* Nota de adaptação para esta turma */}
+          {turmaId && (() => {
+            const nota = plano.notasAdaptacao?.find(n => String(n.turmaId) === String(turmaId))
+            if (!nota) return null
+            return (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">📌 Adaptação para esta turma</p>
+                <p className="text-xs text-amber-900 whitespace-pre-wrap leading-relaxed">{nota.texto}</p>
+              </div>
+            )
+          })()}
 
           {(plano.atividadesRoteiro ?? []).length > 0 && (
             <div>
@@ -1516,7 +1528,7 @@ function FormPlanejamentoInline({
       )}
 
       {/* Modal preview de plano */}
-      {planoPreview && <ModalPreviewPlano plano={planoPreview} onFechar={() => setPlanoPreview(null)} />}
+      {planoPreview && <ModalPreviewPlano plano={planoPreview} onFechar={() => setPlanoPreview(null)} turmaId={String(turmaSelecionada?.turmaId ?? '')} />}
     </form>
   )
 }
