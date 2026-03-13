@@ -13,13 +13,13 @@
 | 2 | Foco não vai para o título ao criar plano | TelaPrincipal.tsx | 🔴 Alto | ✅ `502278a` |
 | 3 | Filtros avançados de repertório ocultos por padrão | ModuloRepertorio.tsx | 🔴 Alto | ✅ `502278a` |
 | 4 | Sem autosave local — risco de perda de rascunho | PlanosContext.tsx | 🟠 Médio | ✅ `502278a` |
-| 5 | Botões de ação invisíveis até o hover (desktop) | TelaPrincipal.tsx, ModuloAtividades.tsx | 🟠 Médio | ⬜ pendente |
+| 5 | Botões de ação invisíveis até o hover (desktop) | TelaPrincipal.tsx, ModuloAtividades.tsx | 🟠 Médio | ✅ `d069da5` |
 | 6 | Modal pós-aula longo demais para mobile | ModalRegistroPosAula.tsx | 🟠 Médio | ⬜ pendente |
 | 7 | Três padrões diferentes de filtro nos módulos | ModuloAtividades, ModuloRepertorio, TelaPrincipal | 🟠 Médio | ⬜ pendente |
 | 8 | Sem feedback visual no botão Salvar | TelaPrincipal.tsx | 🟠 Médio | ✅ `502278a` |
-| 9 | Mover atividade no roteiro exige N cliques no mobile | TelaPrincipal.tsx | 🟡 Baixo | ⬜ pendente |
-| 10 | Busca global (Ctrl+K) sem discovery visual na UI | BancoPlanos.tsx | 🟡 Baixo | ⬜ pendente |
-| 11 | Empty states sem call-to-action | Múltiplos módulos | 🟡 Baixo | ⬜ pendente |
+| 9 | Mover atividade no roteiro exige N cliques no mobile | TelaPrincipal.tsx | 🟡 Baixo | ✅ `d069da5` |
+| 10 | Busca global (Ctrl+K) sem discovery visual na UI | BancoPlanos.tsx | 🟡 Baixo | ✅ já existia |
+| 11 | Empty states sem call-to-action | Múltiplos módulos | 🟡 Baixo | ✅ `d069da5` |
 | 12 | Emojis inconsistentes nos labels de botão | Interface toda | 🟡 Baixo | ⬜ pendente |
 
 ---
@@ -155,7 +155,8 @@ Não precisa de sync com Supabase — só IndexedDB local. Sem nenhum estado vis
 
 ---
 
-### Fricção #5 — Botões de ação invisíveis até o hover (desktop)
+### ✅ Fricção #5 — Botões de ação invisíveis até o hover (desktop)
+> **Implementado em `d069da5`** — `TelaPrincipal.tsx` + `ModuloAtividades.tsx`: `opacity-60 group-hover:opacity-100` em vez de `opacity-0`. Botões visíveis o tempo todo, ficam totalmente opacos no hover.
 
 **Onde ocorre:**
 - `src/components/TelaPrincipal.tsx` — lista de planos
@@ -262,7 +263,8 @@ const handleSalvar = async () => {
 
 ---
 
-### Fricção #9 — Reordenar atividades no roteiro exige muitos cliques no mobile
+### ✅ Fricção #9 — Reordenar atividades no roteiro exige muitos cliques no mobile
+> **Implementado em `d069da5`** — `TelaPrincipal.tsx`: botões ⇈ (mover para início) e ⇊ (mover para final) adicionados ao controle mobile de reordenação, junto com os ↑↓ existentes. `arr.unshift(arr.splice(index,1)[0])` e `arr.push(arr.splice(index,1)[0])` para mover em 1 clique.
 
 **Onde ocorre:**
 - `src/components/TelaPrincipal.tsx` — seção "Roteiro de Atividades"
@@ -283,7 +285,8 @@ Adicionar "Mover para o início" e "Mover para o final" no menu de cada atividad
 
 ---
 
-### Fricção #10 — Busca global (Ctrl+K) sem discovery visual
+### ✅ Fricção #10 — Busca global (Ctrl+K) sem discovery visual
+> **Já existia** — `BancoPlanos.tsx` linha 2372: botão `🔍 Busca Ctrl+K` no header, sempre visível abaixo do nome do usuário. Nenhuma alteração necessária.
 
 **Onde ocorre:**
 - `src/components/BancoPlanos.tsx` — atalho `Ctrl+K` implementado
@@ -307,7 +310,8 @@ O atalho de teclado continua funcionando. Adiciona apenas discovery para usuári
 
 ---
 
-### Fricção #11 — Empty states sem call-to-action
+### ✅ Fricção #11 — Empty states sem call-to-action
+> **Implementado em `d069da5`** — `TelaPrincipal.tsx`: empty state com emoji 📋, texto adaptado (sem filtros vs. com filtros ativos) e botão "+ Novo Plano de Aula". `ModuloRepertorio.tsx`: empty state com emoji 🎼, texto adaptado e botão "+ Adicionar Música". `ModuloAtividades.tsx`: já tinha CTA (sem alteração).
 
 **Onde ocorre:**
 - `src/components/ModuloAtividades.tsx` — "Nenhuma atividade encontrada"
