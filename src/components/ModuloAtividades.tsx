@@ -457,10 +457,10 @@ export default function ModuloAtividades() {
                                             }
                                         </div>
                                     </div>
-                                    <div className="flex gap-1.5 shrink-0">
-                                        <button onClick={()=>setModalAdicionarAoPlano(ativ)} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-lg text-xs font-bold transition">+ Plano</button>
-                                        <button onClick={()=>setAtividadeEditando(ativ)} className="bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-blue-700 px-2 py-1.5 rounded-lg text-xs transition">✏️</button>
-                                        <button onClick={()=>excluirAtividade(ativ.id)} className="bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 px-2 py-1.5 rounded-lg text-xs transition">🗑️</button>
+                                    <div className="flex gap-2 shrink-0">
+                                        <button onClick={()=>setModalAdicionarAoPlano(ativ)} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-3 py-2 rounded-lg text-xs font-bold transition">+ Plano</button>
+                                        <button onClick={()=>setAtividadeEditando(ativ)} className="bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-blue-700 px-3 py-2 rounded-lg text-sm transition">✏️</button>
+                                        <button onClick={()=>excluirAtividade(ativ.id)} className="bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 px-3 py-2 rounded-lg text-sm transition">🗑️</button>
                                     </div>
                                 </div>
                             ))}

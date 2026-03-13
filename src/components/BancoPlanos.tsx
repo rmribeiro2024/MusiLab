@@ -2757,10 +2757,10 @@ export default function BancoPlanos({ session }) {
                             const isActive = maisActive || (t.mode !== 'mais' && viewMode === t.mode);
                             return (
                                 <button key={t.mode} onClick={t.action}
-                                    className={`flex flex-col items-center gap-0.5 px-4 py-2 transition active:scale-95
+                                    className={`flex flex-col items-center gap-1 px-4 py-2.5 transition active:scale-95
                                         ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}>
                                     <span className="text-xl leading-none">{t.icon}</span>
-                                    <span className="text-[10px] font-medium">{t.label}</span>
+                                    <span className="text-xs font-medium">{t.label}</span>
                                 </button>
                             );
                         })}

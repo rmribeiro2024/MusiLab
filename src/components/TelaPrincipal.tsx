@@ -543,25 +543,25 @@ export default function TelaPrincipal() {
                                                         onPointerDown={() => { dragFromHandle.current = true; }}
                                                     >⠿</span>
                                                     {/* Botões ↑↓ de reordenação — fallback mobile para drag */}
-                                                    <div className="flex sm:hidden gap-0.5">
+                                                    <div className="flex sm:hidden gap-1">
                                                         <button type="button"
                                                             onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===0) return; arr.unshift(arr.splice(index,1)[0]); setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
                                                             disabled={index===0}
                                                             title="Mover para o início"
-                                                            className="p-1.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded transition text-xs">⇈</button>
+                                                            className="p-2.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded-lg transition text-sm leading-none">⇈</button>
                                                         <button type="button"
                                                             onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===0) return; [arr[index-1],arr[index]]=[arr[index],arr[index-1]]; setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
                                                             disabled={index===0}
-                                                            className="p-1.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded transition">↑</button>
+                                                            className="p-2.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded-lg transition text-sm leading-none">↑</button>
                                                         <button type="button"
                                                             onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===arr.length-1) return; [arr[index],arr[index+1]]=[arr[index+1],arr[index]]; setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
                                                             disabled={index===(planoEditando.atividadesRoteiro||[]).length-1}
-                                                            className="p-1.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded transition">↓</button>
+                                                            className="p-2.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded-lg transition text-sm leading-none">↓</button>
                                                         <button type="button"
                                                             onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===arr.length-1) return; arr.push(arr.splice(index,1)[0]); setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
                                                             disabled={index===(planoEditando.atividadesRoteiro||[]).length-1}
                                                             title="Mover para o final"
-                                                            className="p-1.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded transition text-xs">⇊</button>
+                                                            className="p-2.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded-lg transition text-sm leading-none">⇊</button>
                                                     </div>
                                                     <span className="font-bold text-indigo-700">Atividade {index + 1}</span>
                                                 </div>
