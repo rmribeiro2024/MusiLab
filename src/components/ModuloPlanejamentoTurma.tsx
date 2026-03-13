@@ -460,13 +460,11 @@ function stepDay(d: Date, delta: number): Date {
   return next
 }
 
-function SeletorDiaTurma() {
+function SeletorDiaTurma({ currentDate, setCurrentDate }: { currentDate: Date; setCurrentDate: (d: Date | ((prev: Date) => Date)) => void }) {
   const { selecionarTurma, turmaSelecionada, planejamentos } = usePlanejamentoTurmaContext()
   const { anosLetivos } = useAnoLetivoContext()
   const { obterTurmasDoDia } = useCalendarioContext()
   const { aplicacoesPorData } = useAplicacoesContext()
-
-  const [currentDate, setCurrentDate] = useState<Date>(() => nearestWeekday(new Date()))
   const [maisAberto, setMaisAberto] = useState(false)
 
   const dateStr = toDateStr(currentDate)
@@ -1627,7 +1625,7 @@ function CardPlanejamento({ planejamento }: { planejamento: import('../types').P
 
 // ─── CONTEÚDO DA TURMA ────────────────────────────────────────────────────────
 
-function ConteudoTurma() {
+function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   const {
     turmaSelecionada,
     ultimoRegistroDaTurma,
@@ -1666,16 +1664,18 @@ function ConteudoTurma() {
   useEffect(() => { setDataAtiva(null) }, [turmaSelecionada?.turmaId])
 
   // Plano agendado para o dia selecionado nesta turma
+  // Prioridade: timeline click (dataAtiva) > data do calendário lateral (calendarDateStr)
   const planoDoDia = useMemo(() => {
-    if (!dataAtiva || !turmaSelecionada) return null
+    const data = dataAtiva || calendarDateStr
+    if (!data || !turmaSelecionada) return null
     const ap = aplicacoes.find(a =>
-      a.data === dataAtiva &&
+      a.data === data &&
       String(a.turmaId) === String(turmaSelecionada.turmaId) &&
       String(a.segmentoId) === String(turmaSelecionada.segmentoId)
     )
     if (!ap?.planoId) return null
     return planos.find(p => String(p.id) === String(ap.planoId)) ?? null
-  }, [dataAtiva, turmaSelecionada, aplicacoes, planos])
+  }, [dataAtiva, calendarDateStr, turmaSelecionada, aplicacoes, planos])
 
   // Nome da turma para exibição na timeline
   const turmaNome = useMemo(() => {
@@ -1830,7 +1830,7 @@ function ConteudoTurma() {
       )}
 
       {/* ── AULA DO DIA ────────────────────────────────────────────────────────── */}
-      {dataAtiva && planoDoDia && (
+      {(dataAtiva || calendarDateStr) && planoDoDia && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Aula do dia</p>
@@ -2279,16 +2279,17 @@ function ConteudoTurma() {
 
 export default function ModuloPlanejamentoTurma() {
   const { turmaSelecionada } = usePlanejamentoTurmaContext()
+  const [currentDate, setCurrentDate] = useState<Date>(() => nearestWeekday(new Date()))
 
   return (
     <div className="flex gap-4 items-start">
       {/* Painel lateral — seletor de dia + turma */}
-      <SeletorDiaTurma />
+      <SeletorDiaTurma currentDate={currentDate} setCurrentDate={setCurrentDate} />
 
       {/* Painel direito — conteúdo de planejamento */}
       <div className="flex-1 min-w-0 space-y-3">
         {!turmaSelecionada && <EstadoVazio />}
-        {turmaSelecionada && <ConteudoTurma />}
+        {turmaSelecionada && <ConteudoTurma calendarDateStr={toDateStr(currentDate)} />}
       </div>
     </div>
   )
