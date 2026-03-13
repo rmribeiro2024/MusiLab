@@ -328,20 +328,10 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
       {itemAtivo && (
         <div className="mt-4 border-t border-slate-100 pt-3 space-y-2.5">
 
-          {/* Data + status */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-700">{formatarData(itemAtivo.dataStr)}</span>
-            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-              itemAtivo.status === 'realizada' ? 'bg-emerald-50 text-emerald-700' :
-              itemAtivo.status === 'planejada' ? 'bg-indigo-50 text-indigo-700' :
-              'bg-slate-100 text-slate-500'
-            }`}>
-              {itemAtivo.status === 'realizada' ? '● Realizada' :
-               itemAtivo.status === 'planejada' ? '● Planejada' : '○ Sem plano'}
-            </span>
-          </div>
+          {/* Data */}
+          <span className="text-sm font-semibold text-slate-700">{formatarData(itemAtivo.dataStr)}</span>
 
-          {/* Plano vinculado — clicável */}
+          {/* Realizada ou Planejada: plano clicável */}
           {itemAtivo.planoTitulo && itemAtivo.planoId && (
             <button
               type="button"
@@ -351,55 +341,26 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
               }}
               className="w-full flex items-center justify-between gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2.5 transition-colors group"
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-sm shrink-0">📄</span>
-                <span className="text-xs text-slate-700 font-medium truncate">{itemAtivo.planoTitulo}</span>
-              </div>
-              <span className="text-[11px] font-semibold text-indigo-500 group-hover:text-indigo-700 shrink-0 transition-colors">
-                Ver plano →
-              </span>
+              <span className="text-xs text-slate-700 font-medium truncate">{itemAtivo.planoTitulo}</span>
+              <span className="text-[11px] font-semibold text-indigo-500 group-hover:text-indigo-700 shrink-0 transition-colors">Ver →</span>
             </button>
           )}
 
-          {/* Sem plano → 3 ações */}
+          {/* Sem plano: 3 ações */}
           {itemAtivo.status === 'sem-plano' && (
-            <div className="bg-slate-50 rounded-xl p-3">
-              <p className="text-[11px] font-semibold text-slate-500 mb-2">Planejar aula desta turma</p>
-              <div className="flex flex-col gap-1.5">
-                <button type="button" onClick={() => onAcionar('adaptar')}
-                  className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100 transition-colors">
-                  🔄 Adaptar última aula
-                </button>
-                <button type="button" onClick={() => onAcionar('importar')}
-                  className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
-                  🏛 Importar do banco
-                </button>
-                <button type="button" onClick={() => onAcionar('criar')}
-                  className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
-                  ✏️ Criar nova aula
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Planejada → 3 ações */}
-          {itemAtivo.status === 'planejada' && (
-            <div className="bg-indigo-50 rounded-xl p-3">
-              <p className="text-[11px] font-semibold text-indigo-600 mb-2">Adicionar planejamento para esta aula</p>
-              <div className="flex flex-col gap-1.5">
-                <button type="button" onClick={() => onAcionar('adaptar')}
-                  className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-blue-700 hover:bg-blue-50 border border-blue-100 transition-colors">
-                  🔄 Adaptar última aula
-                </button>
-                <button type="button" onClick={() => onAcionar('importar')}
-                  className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
-                  🏛 Importar do banco
-                </button>
-                <button type="button" onClick={() => onAcionar('criar')}
-                  className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
-                  ✏️ Criar nova aula
-                </button>
-              </div>
+            <div className="flex flex-col gap-1.5">
+              <button type="button" onClick={() => onAcionar('adaptar')}
+                className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100 transition-colors">
+                🔄 Adaptar última aula
+              </button>
+              <button type="button" onClick={() => onAcionar('importar')}
+                className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
+                🏛 Importar do banco
+              </button>
+              <button type="button" onClick={() => onAcionar('criar')}
+                className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
+                ✏️ Criar nova aula
+              </button>
             </div>
           )}
 
