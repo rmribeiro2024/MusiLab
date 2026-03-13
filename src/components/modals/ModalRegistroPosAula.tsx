@@ -1103,54 +1103,6 @@ export default function ModalRegistroPosAula() {
                                         </div>
                                     </div>
 
-                                    {/* Botão salvar */}
-                                    <button ref={salvarBtnRef} onClick={() => {
-                                        const algumCampo = !!(novoRegistro.resumoAula || novoRegistro.funcionouBem || novoRegistro.naoFuncionou || novoRegistro.proximaAula || novoRegistro.comportamento)
-                                        // Capturar antes do reset
-                                        const dadosParaIA = { ...novoRegistro }
-                                        const tituloPlano = planoParaRegistro?.titulo || ''
-                                        // Limpar UI de áudio (novoRegistro já tem os dados sincronizados via stopRecording)
-                                        if (audioUrl) URL.revokeObjectURL(audioUrl)
-                                        setAudioBase64(null); setAudioUrl(null); setAudioDuracao(0)
-                                        salvarRegistro()
-                                        // IA: gerar sugestão para próxima aula (só em novos registros com conteúdo)
-                                        if (algumCampo && !registroEditando) {
-                                            const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-                                            if (apiKey) {
-                                                setSugestaoIA(null)
-                                                setLoadingIA(true)
-                                                const prompt = `Você é um assistente pedagógico para professor de música.\nPlano de aula: "${tituloPlano}"\nResumo da aula: "${dadosParaIA.resumoAula || ''}"\nO que funcionou: "${dadosParaIA.funcionouBem || ''}"\nO que não funcionou: "${dadosParaIA.naoFuncionou || ''}"\nPróxima aula (professor): "${dadosParaIA.proximaAula || ''}"\nComportamento: "${dadosParaIA.comportamento || ''}"\n\nCom base neste registro, sugira em 2-3 frases objetivas o que priorizar na próxima aula e uma estratégia específica. Responda em português, de forma direta e prática.`
-                                                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                                                })
-                                                    .then(r => r.json())
-                                                    .then(d => setSugestaoIA(d.candidates?.[0]?.content?.parts?.[0]?.text || null))
-                                                    .catch(() => setSugestaoIA(null))
-                                                    .finally(() => setLoadingIA(false))
-                                            }
-                                        }
-                                        // Ao salvar novo registro, marca aplicacao vinculada como realizada
-                                        if (algumCampo && !registroEditando) {
-                                            const ap = aplicacoes.find(a =>
-                                                a.turmaId === regTurmaSel &&
-                                                a.anoLetivoId === regAnoSel &&
-                                                a.data === (novoRegistro.dataAula || new Date().toISOString().split('T')[0]) &&
-                                                String(a.planoId) === String(planoParaRegistro?.id)
-                                            )
-                                            if (ap && ap.status !== 'realizada') atualizarStatusAplicacao(ap.id, 'realizada')
-                                        }
-                                    }}
-                                        style={{ width: '100%', padding: '12px', background: '#f8fafc', color: '#334155', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'all .15s' }}
-                                        onMouseOver={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8' }}
-                                        onMouseOut={e  => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0' }}
-                                        onFocus={e  => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.borderColor = '#475569'; e.currentTarget.style.outline = 'none' }}
-                                        onBlur={e   => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0' }}
-                                    >
-                                        <span style={{ color: '#22c55e', fontSize: 15, fontWeight: 800 }}>✓</span>
-                                        {registroEditando ? 'Salvar alterações' : 'Salvar registro'}
-                                    </button>
                                 </>
 
                             ) : (
@@ -1509,6 +1461,55 @@ export default function ModalRegistroPosAula() {
                                 </>
                             )}
                         </div>
+
+                        {/* ── Sticky save footer (Novo registro) ── */}
+                        {!verRegistros && (
+                            <div style={{ padding: '10px 16px', borderTop: '1px solid #e2e8f0', background: '#fff', flexShrink: 0 }}>
+                                <button ref={salvarBtnRef} onClick={() => {
+                                    const algumCampo = !!(novoRegistro.resumoAula || novoRegistro.funcionouBem || novoRegistro.naoFuncionou || novoRegistro.proximaAula || novoRegistro.comportamento)
+                                    const dadosParaIA = { ...novoRegistro }
+                                    const tituloPlano = planoParaRegistro?.titulo || ''
+                                    if (audioUrl) URL.revokeObjectURL(audioUrl)
+                                    setAudioBase64(null); setAudioUrl(null); setAudioDuracao(0)
+                                    salvarRegistro()
+                                    if (algumCampo && !registroEditando) {
+                                        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+                                        if (apiKey) {
+                                            setSugestaoIA(null)
+                                            setLoadingIA(true)
+                                            const prompt = `Você é um assistente pedagógico para professor de música.\nPlano de aula: "${tituloPlano}"\nResumo da aula: "${dadosParaIA.resumoAula || ''}"\nO que funcionou: "${dadosParaIA.funcionouBem || ''}"\nO que não funcionou: "${dadosParaIA.naoFuncionou || ''}"\nPróxima aula (professor): "${dadosParaIA.proximaAula || ''}"\nComportamento: "${dadosParaIA.comportamento || ''}"\n\nCom base neste registro, sugira em 2-3 frases objetivas o que priorizar na próxima aula e uma estratégia específica. Responda em português, de forma direta e prática.`
+                                            fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                                            })
+                                                .then(r => r.json())
+                                                .then(d => setSugestaoIA(d.candidates?.[0]?.content?.parts?.[0]?.text || null))
+                                                .catch(() => setSugestaoIA(null))
+                                                .finally(() => setLoadingIA(false))
+                                        }
+                                    }
+                                    if (algumCampo && !registroEditando) {
+                                        const ap = aplicacoes.find(a =>
+                                            a.turmaId === regTurmaSel &&
+                                            a.anoLetivoId === regAnoSel &&
+                                            a.data === (novoRegistro.dataAula || new Date().toISOString().split('T')[0]) &&
+                                            String(a.planoId) === String(planoParaRegistro?.id)
+                                        )
+                                        if (ap && ap.status !== 'realizada') atualizarStatusAplicacao(ap.id, 'realizada')
+                                    }
+                                }}
+                                    style={{ width: '100%', padding: '12px', background: '#1e293b', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'all .15s' }}
+                                    onMouseOver={e => { e.currentTarget.style.background = '#334155' }}
+                                    onMouseOut={e  => { e.currentTarget.style.background = '#1e293b' }}
+                                    onFocus={e  => { e.currentTarget.style.background = '#334155'; e.currentTarget.style.outline = 'none' }}
+                                    onBlur={e   => { e.currentTarget.style.background = '#1e293b' }}
+                                >
+                                    <span style={{ fontSize: 15 }}>✓</span>
+                                    {registroEditando ? 'Salvar alterações' : 'Salvar registro'}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

@@ -186,6 +186,10 @@ export default function TelaPrincipal() {
     // ── Modo Rápido ──
     const [modoRapido, setModoRapido] = useState(false)
 
+    // ── Filtros colapsáveis (padrão: aberto, preferência persistida) ──
+    const [filtrosPlanos, setFiltrosPlanos] = useState(() => localStorage.getItem('planos_filtros_abertos') !== 'false')
+    const toggleFiltrosPlanos = (v: boolean) => { setFiltrosPlanos(v); localStorage.setItem('planos_filtros_abertos', String(v)) }
+
     // ── Painel contexto da turma ──
     const [contextoAberto, setContextoAberto] = useState(true)
 
@@ -1606,8 +1610,16 @@ export default function TelaPrincipal() {
 
         {/* FILTROS */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-5">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                <div className="md:col-span-6"><input type="text" inputMode="search" placeholder="🔍 Buscar por título, objetivo, conceito..." value={busca} onChange={(e)=>setBusca(e.target.value)} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" /></div>
+            {/* Linha 1: sempre visível */}
+            <div className="flex gap-3 items-center">
+                <input type="text" inputMode="search" placeholder="🔍 Buscar por título, objetivo, conceito..." value={busca} onChange={(e)=>setBusca(e.target.value)} className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" />
+                <button onClick={()=>toggleFiltrosPlanos(!filtrosPlanos)}
+                    className="px-3 py-2.5 text-sm font-semibold text-slate-500 border border-slate-200 rounded-xl hover:bg-slate-50 transition whitespace-nowrap">
+                    {filtrosPlanos ? '▲ Menos filtros' : '▼ Mais filtros'}
+                </button>
+            </div>
+            {/* Linha 2+: filtros avançados colapsáveis */}
+            {filtrosPlanos && <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mt-4 pt-4 border-t border-slate-100">
                 <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Escola</label><select value={filtroEscola} onChange={(e)=>setFiltroEscola(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">{escolas.map(e=><option key={e} value={e}>{e}</option>)}</select></div>
                 <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nível</label><select value={filtroNivel} onChange={(e)=>setFiltroNivel(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">{niveis.map(n=><option key={n} value={n}>{n}</option>)}</select></div>
                 <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Segmento</label><select value={filtroSegmento} onChange={(e)=>setFiltroSegmento(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">{segmentosPlanos.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
@@ -1636,44 +1648,42 @@ export default function TelaPrincipal() {
                         <option value="Concluído">Concluído</option>
                     </select>
                 </div>
-                <div className="md:col-span-6 flex justify-between items-center flex-wrap gap-2">
-                    <div className="flex gap-2 flex-wrap">
-                        <button onClick={()=>setFiltroFavorito(!filtroFavorito)} className={`px-4 py-2 rounded-xl text-sm font-semibold border transition ${filtroFavorito ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-200 hover:text-amber-600'}`}>
-                            {filtroFavorito ? '★ Favoritos' : '☆ Favoritos'}
+                <div className="md:col-span-6 flex gap-2 flex-wrap">
+                    <button onClick={()=>setFiltroFavorito(!filtroFavorito)} className={`px-4 py-2 rounded-xl text-sm font-semibold border transition ${filtroFavorito ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-200 hover:text-amber-600'}`}>
+                        {filtroFavorito ? '★ Favoritos' : '☆ Favoritos'}
+                    </button>
+                    <button onClick={()=>{setBusca("");setFiltroEscola("Todas");setFiltroNivel("Todos");setFiltroConceito("Todos");setFiltroFaixa("Todos");setFiltroFavorito(false);setFiltroStatus("Todos");setFiltroTag("Todas");}} className="px-4 py-2 rounded-xl text-sm text-slate-400 hover:text-slate-600 hover:bg-slate-50 border border-slate-200 transition">Limpar filtros</button>
+                </div>
+            </div>}
+            {/* Ordenação + Seletor de modo — sempre visíveis */}
+            <div className="flex justify-end gap-2 items-center flex-wrap mt-3">
+                <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-3 py-1.5">
+                    <span className="text-xs text-slate-400 font-semibold">Ordenar:</span>
+                    {[
+                        {id:'recente',   label:'Recente'},
+                        {id:'az',        label:'A–Z'},
+                        {id:'status',    label:'Status'},
+                        {id:'favoritos', label:'★'},
+                    ].map(o=>(
+                        <button key={o.id} onClick={()=>setOrdenacaoCards(o.id)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${ordenacaoCards===o.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>
+                            {o.label}
                         </button>
-                        <button onClick={()=>{setBusca("");setFiltroEscola("Todas");setFiltroNivel("Todos");setFiltroConceito("Todos");setFiltroFaixa("Todos");setFiltroFavorito(false);setFiltroStatus("Todos");setFiltroTag("Todas");}} className="px-4 py-2 rounded-xl text-sm text-slate-400 hover:text-slate-600 hover:bg-slate-50 border border-slate-200 transition">Limpar filtros</button>
-                    </div>
-                    {/* Ordenação + Seletor de modo */}
-                    <div className="flex gap-2 items-center flex-wrap">
-                        <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-3 py-1.5">
-                            <span className="text-xs text-slate-400 font-semibold">Ordenar:</span>
-                            {[
-                                {id:'recente',   label:'Recente'},
-                                {id:'az',        label:'A–Z'},
-                                {id:'status',    label:'Status'},
-                                {id:'favoritos', label:'★'},
-                            ].map(o=>(
-                                <button key={o.id} onClick={()=>setOrdenacaoCards(o.id)}
-                                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${ordenacaoCards===o.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>
-                                    {o.label}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
-                            {[
-                                { id:'grade',    label:'⊞', title:'Grade' },
-                                { id:'compacto', label:'☰', title:'Lista' },
-                                { id:'kanban',   label:'⠿', title:'Kanban' },
-                                { id:'periodo',  label:'📆', title:'Por Período' },
-                                { id:'segmento', label:'👥', title:'Por Segmento' },
-                            ].map(m=>(
-                                <button key={m.id} onClick={()=>setModoVisualizacao(m.id)} title={m.title}
-                                    className={`px-3 py-1.5 rounded-lg text-sm font-bold transition ${modoVisualizacao===m.id ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-400 hover:text-slate-700'}`}>
-                                    {m.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    ))}
+                </div>
+                <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
+                    {[
+                        { id:'grade',    label:'⊞', title:'Grade' },
+                        { id:'compacto', label:'☰', title:'Lista' },
+                        { id:'kanban',   label:'⠿', title:'Kanban' },
+                        { id:'periodo',  label:'📆', title:'Por Período' },
+                        { id:'segmento', label:'👥', title:'Por Segmento' },
+                    ].map(m=>(
+                        <button key={m.id} onClick={()=>setModoVisualizacao(m.id)} title={m.title}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-bold transition ${modoVisualizacao===m.id ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-400 hover:text-slate-700'}`}>
+                            {m.label}
+                        </button>
+                    ))}
                 </div>
             </div>
         </div>

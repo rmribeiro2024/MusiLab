@@ -113,6 +113,8 @@ export default function ModuloAtividades() {
     const { conceitos, faixas, setConceitos, tagsGlobais, setTagsGlobais, unidades, setUnidades } = useAnoLetivoContext()
     const { setModalConfirm } = useModalContext()
     const todasAsTags = useMemo(() => [...new Set(atividades.flatMap(a => a.tags || []))], [atividades])
+    const [filtrosAbertos, setFiltrosAbertos] = useState(() => localStorage.getItem('atividades_filtros_abertos') !== 'false')
+    const toggleFiltros = (v: boolean) => { setFiltrosAbertos(v); localStorage.setItem('atividades_filtros_abertos', String(v)) }
 
     const atividadesFiltradas = useMemo(() => atividades.filter(a => {
         const termoBusca = buscaAtividade.toLowerCase();
@@ -359,40 +361,17 @@ export default function ModuloAtividades() {
 
             {/* ── FILTROS ── */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-5">
-                <div className="flex flex-wrap gap-3 items-end">
+                {/* Linha 1: sempre visível */}
+                <div className="flex flex-wrap gap-3 items-center">
                     <div className="flex-1 min-w-[200px]">
-                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Buscar</label>
-                        <input type="text" placeholder="Nome, descrição, tag..."
+                        <input type="text" placeholder="🔍 Buscar nome, descrição, tag..."
                             value={buscaAtividade} onChange={e=>setBuscaAtividade(e.target.value)}
                             className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" />
                     </div>
-                    <div className="min-w-[140px]">
-                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tag</label>
-                        <select value={filtroTagAtividade} onChange={e=>setFiltroTagAtividade(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">
-                            <option>Todas</option>
-                            {todasAsTags.map(t=><option key={t}>#{t}</option>)}
-                        </select>
-                    </div>
-                    <div className="min-w-[140px]">
-                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Conceito</label>
-                        <select value={filtroConceitoAtividade} onChange={e=>setFiltroConceitoAtividade(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">
-                            <option>Todos</option>
-                            {conceitos.map(c=><option key={c}>{c}</option>)}
-                        </select>
-                    </div>
-                    <div className="min-w-[140px]">
-                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Faixa Etária</label>
-                        <select value={filtroFaixaAtividade} onChange={e=>setFiltroFaixaAtividade(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">
-                            {faixas.map(f=><option key={f}>{f}</option>)}
-                        </select>
-                    </div>
-                    <div className="flex items-end gap-2">
-                        <button onClick={()=>{setBuscaAtividade('');setFiltroTagAtividade('Todas');setFiltroFaixaAtividade('Todas');setFiltroConceitoAtividade('Todos');}}
-                            className="px-4 py-2 text-sm border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition">
-                            Limpar
+                    <div className="flex items-center gap-2">
+                        <button onClick={()=>toggleFiltros(!filtrosAbertos)}
+                            className="px-3 py-2 text-sm font-semibold text-slate-500 border border-slate-200 rounded-xl hover:bg-slate-50 transition whitespace-nowrap">
+                            {filtrosAbertos ? '▲ Menos filtros' : '▼ Mais filtros'}
                         </button>
                         <div className="flex bg-slate-100 rounded-xl p-1 gap-0.5">
                             {[{id:'grade',label:'⊞',title:'Grade'},{id:'lista',label:'☰',title:'Lista'},{id:'segmento',label:'👥',title:'Por Segmento'}].map(m=>(
@@ -404,6 +383,38 @@ export default function ModuloAtividades() {
                         </div>
                     </div>
                 </div>
+                {/* Linha 2: filtros avançados colapsáveis */}
+                {filtrosAbertos && (
+                    <div className="flex flex-wrap gap-3 items-end mt-3 pt-3 border-t border-slate-100">
+                        <div className="min-w-[140px]">
+                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tag</label>
+                            <select value={filtroTagAtividade} onChange={e=>setFiltroTagAtividade(e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">
+                                <option>Todas</option>
+                                {todasAsTags.map(t=><option key={t}>#{t}</option>)}
+                            </select>
+                        </div>
+                        <div className="min-w-[140px]">
+                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Conceito</label>
+                            <select value={filtroConceitoAtividade} onChange={e=>setFiltroConceitoAtividade(e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">
+                                <option>Todos</option>
+                                {conceitos.map(c=><option key={c}>{c}</option>)}
+                            </select>
+                        </div>
+                        <div className="min-w-[140px]">
+                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Faixa Etária</label>
+                            <select value={filtroFaixaAtividade} onChange={e=>setFiltroFaixaAtividade(e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">
+                                {faixas.map(f=><option key={f}>{f}</option>)}
+                            </select>
+                        </div>
+                        <button onClick={()=>{setBuscaAtividade('');setFiltroTagAtividade('Todas');setFiltroFaixaAtividade('Todas');setFiltroConceitoAtividade('Todos');}}
+                            className="px-4 py-2 text-sm border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition self-end">
+                            Limpar
+                        </button>
+                    </div>
+                )}
                 {atividadesFiltradas.length !== atividades.length && (
                     <p className="text-xs text-indigo-600 mt-2 font-medium">
                         Mostrando {atividadesFiltradas.length} de {atividades.length} atividades
