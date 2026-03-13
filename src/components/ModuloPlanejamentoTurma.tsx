@@ -245,39 +245,15 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
         </>}
       </div>
 
-      {/* Timeline: agrupada por sequência ou plana */}
-      <div className={temAgrupamento ? 'space-y-4' : ''}>
-        {grupos.map((grupo) => (
-          <div key={grupo.titulo ?? '__none__'}>
-
-            {/* Cabeçalho da sequência */}
-            {grupo.titulo && (
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
-                  {grupo.titulo}
-                </span>
-                <div className="flex-1 h-px bg-slate-100" />
-                <span className="text-[9px] text-slate-400 whitespace-nowrap shrink-0">
-                  {grupo.items.filter(i => i.status === 'realizada').length} realizad{grupo.items.filter(i => i.status === 'realizada').length !== 1 ? 'as' : 'a'}
-                  {grupo.items.filter(i => i.status === 'planejada').length > 0 && ` · ${grupo.items.filter(i => i.status === 'planejada').length} planejad${grupo.items.filter(i => i.status === 'planejada').length !== 1 ? 'as' : 'a'}`}
-                </span>
-              </div>
-            )}
-            {!grupo.titulo && temAgrupamento && (
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest whitespace-nowrap">
-                  Sem sequência
-                </span>
-                <div className="flex-1 h-px bg-slate-100" />
-              </div>
-            )}
-
+      {/* Timeline: barra única com todos os itens */}
+      <div>
+        <div key="__all__">
             {/* Dots row */}
             <div className="relative px-3">
               <div className="absolute top-[29px] left-5 right-5 h-0.5 bg-slate-100 rounded-full pointer-events-none" />
               <div className="relative flex items-start overflow-x-auto scrollbar-hide pb-1"
-                style={{ gap: grupo.items.length > 6 ? '0' : undefined, justifyContent: grupo.items.length <= 8 ? 'space-between' : undefined }}>
-                {grupo.items.map((item) => {
+                style={{ gap: itensVisiveis.length > 6 ? '0' : undefined, justifyContent: itensVisiveis.length <= 8 ? 'space-between' : undefined }}>
+                {itensVisiveis.map((item) => {
                   const isAtivo = dataAtiva === item.dataStr
                   const [, mm, dd] = item.dataStr.split('-')
                   const mesAbr = MESES_TIMELINE[parseInt(mm) - 1]
@@ -332,7 +308,6 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
               </div>
             </div>
           </div>
-        ))}
       </div>
 
       {/* Legenda */}
