@@ -167,7 +167,7 @@ export default function ModuloAtividades() {
                             <textarea value={atividadeEditando.descricao}
                                 onChange={e=>setAtividadeEditando({...atividadeEditando,descricao:e.target.value})}
                                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-amber-400 outline-none transition resize-none"
-                                rows={4} placeholder="Como fazer a atividade..."/>
+                                rows={3} placeholder="Como fazer a atividade..."/>
                             {(atividadeEditando.musicasVinculadas||[]).length > 0 && (
                                 <div className="mt-2 space-y-1">
                                     {atividadeEditando.musicasVinculadas.map((musica,mi) => (

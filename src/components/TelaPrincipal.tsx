@@ -36,8 +36,8 @@ const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPl
             <button onClick={(e)=>{e.stopPropagation();toggleFavorito(plano,e);}} aria-label={plano.destaque ? 'Remover dos favoritos' : 'Marcar como favorito'} className="text-base shrink-0 opacity-50 hover:opacity-100 transition-opacity">{plano.destaque?'⭐':'☆'}</button>
             <div className="flex-1 min-w-0 cursor-pointer" onClick={()=>setPlanoSelecionado(plano)}>
                 <div className="flex items-center gap-2 flex-wrap">
-                    {plano.numeroAula && <span className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full shrink-0">#{plano.numeroAula}</span>}
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${sc.badge}`}>{status}</span>
+                    {plano.numeroAula && <span className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-1 rounded-full shrink-0">#{plano.numeroAula}</span>}
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-full shrink-0 ${sc.badge}`}>{status}</span>
                     <span className="font-semibold text-slate-800 text-sm truncate">{plano.titulo}</span>
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -205,8 +205,11 @@ export default function TelaPrincipal() {
     const dragFromHandle = useRef(false)
 
     // ── ACCORDION do formulário de plano ──
+    // Mobile (< 640px): só roteiro aberto por padrão — evita scroll longo entre aulas
     const [secoesForm, setSecoesForm] = useState<Set<string>>(
-        () => new Set(['faixaEtaria', 'roteiro', 'materiais', 'objetivos', 'classificacao', 'bncc', 'recursos'])
+        () => window.innerWidth < 640
+            ? new Set(['roteiro'])
+            : new Set(['faixaEtaria', 'roteiro', 'materiais', 'objetivos', 'classificacao', 'bncc', 'recursos'])
     )
     function toggleSecaoForm(id: string) {
         setSecoesForm(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
