@@ -20,6 +20,7 @@ export default function SecaoAdaptacoesTurma({ planoId, notas, turmasDisponiveis
   const [turmaSelecionada, setTurmaSelecionada] = useState('')
   const [textoNota, setTextoNota] = useState('')
   const [editandoNota, setEditandoNota] = useState<NotaAdaptacaoTurma | null>(null)
+  const [salvouRecente, setSalvouRecente] = useState(false)
 
   // Quando a turma muda no dropdown: pré-preenche se já existe nota
   useEffect(() => {
@@ -67,7 +68,12 @@ export default function SecaoAdaptacoesTurma({ planoId, notas, turmasDisponiveis
       turmaNome: turma?.nome ?? turmaSelecionada,
       texto: textoNota.trim(),
     })
-    fecharForm()
+    // Mantém o form aberto para adicionar outra turma; apenas reseta os campos
+    setTurmaSelecionada('')
+    setTextoNota('')
+    setEditandoNota(null)
+    setSalvouRecente(true)
+    setTimeout(() => setSalvouRecente(false), 1500)
   }
 
   function remover(notaId: string) {
@@ -173,13 +179,16 @@ export default function SecaoAdaptacoesTurma({ planoId, notas, turmasDisponiveis
           />
 
           {/* Ações */}
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end items-center">
+            {salvouRecente && (
+              <span className="text-xs text-emerald-600 font-medium">✓ Salvo</span>
+            )}
             <button
               type="button"
               onClick={fecharForm}
               className="text-xs text-slate-500 hover:text-slate-700 px-3 py-1.5"
             >
-              Cancelar
+              {!turmaSelecionada && !textoNota ? 'Fechar' : 'Cancelar'}
             </button>
             <button
               type="button"
