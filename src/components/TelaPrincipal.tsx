@@ -257,9 +257,15 @@ export default function TelaPrincipal() {
 
     // ── Detecção de alterações não salvas ──
     const planoOriginalRef = useRef<any>(null)
+    const tituloInputRef = useRef<HTMLInputElement>(null)
     useEffect(() => {
         if (modoEdicao && planoEditando) {
             planoOriginalRef.current = JSON.parse(JSON.stringify(planoEditando))
+            // Foca no título apenas para novos planos (sem título)
+            if (!planoEditando.titulo) {
+                const t = setTimeout(() => tituloInputRef.current?.focus(), 50)
+                return () => clearTimeout(t)
+            }
         } else {
             planoOriginalRef.current = null
         }
@@ -409,7 +415,7 @@ export default function TelaPrincipal() {
                 <div className="px-3 sm:px-6 pt-5 pb-4 border-b border-slate-100 space-y-4">
                     <div>
                         <label htmlFor="plano-titulo" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Título *</label>
-                        <input id="plano-titulo" type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" autoFocus={!planoEditando.titulo} />
+                        <input id="plano-titulo" ref={tituloInputRef} type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" />
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Duração</label>
