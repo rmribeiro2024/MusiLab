@@ -706,6 +706,7 @@ export default function TelaResumoDia() {
     const { aplicacoesPorData } = useAplicacoesContext()
     const [aulaAcaoAtiva, setAulaAcaoAtiva] = useState<AulaGrade | null>(null)
     const [planoAulaPreview, setPlanoAulaPreview] = useState<Plano | null>(null)
+    const [previewTurmaId, setPreviewTurmaId] = useState<string>('')
 
     const diasSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -1127,7 +1128,12 @@ export default function TelaResumoDia() {
                                                                         <span className="text-gray-700">{t.turNome}</span>
                                                                     </div>
                                                                     {t.plano
-                                                                        ? <p className="text-[11px] text-gray-500 mt-0.5">{t.plano.titulo}</p>
+                                                                        ? <p className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-1">
+                                                                            {t.plano.titulo}
+                                                                            {t.plano.notasAdaptacao?.some(n => String(n.turmaId) === String(t.aula.turmaId)) && (
+                                                                                <span className="text-amber-500" title="Tem nota de adaptação para esta turma">📌</span>
+                                                                            )}
+                                                                          </p>
                                                                         : <p className="text-[11px] text-gray-300 italic mt-0.5">Sem plano</p>}
                                                                 </div>
                                                                 <span className={`shrink-0 text-[10px] font-semibold ${statusLbl(t.status)}`}>
@@ -1140,7 +1146,7 @@ export default function TelaResumoDia() {
                                                             <div className="mx-2 mb-1.5 mt-0.5 flex flex-col gap-1">
                                                                 {t.plano && (
                                                                     <button
-                                                                        onClick={e => { e.stopPropagation(); setPlanoAulaPreview(t.plano!); }}
+                                                                        onClick={e => { e.stopPropagation(); setPlanoAulaPreview(t.plano!); setPreviewTurmaId(String(t.aula.turmaId)); }}
                                                                         className="w-full text-left px-3 py-2 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-xs text-indigo-700 font-medium">
                                                                         📄 Ver plano de aula
                                                                     </button>
@@ -1342,8 +1348,18 @@ export default function TelaResumoDia() {
                                 <p className="text-xs text-slate-600">{planoAulaPreview.materiais.join(', ')}</p>
                             </div>
                         )}
+                        {(() => {
+                            const nota = planoAulaPreview.notasAdaptacao?.find(n => String(n.turmaId) === previewTurmaId)
+                            if (!nota) return null
+                            return (
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+                                    <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">📌 Adaptação para esta turma</p>
+                                    <p className="text-xs text-amber-900 whitespace-pre-wrap leading-relaxed">{nota.texto}</p>
+                                </div>
+                            )
+                        })()}
                         <button
-                            onClick={() => { setPlanoAulaPreview(null); setAulaAcaoAtiva(null); setViewMode('lista'); }}
+                            onClick={() => { setPlanoAulaPreview(null); setPreviewTurmaId(''); setAulaAcaoAtiva(null); setViewMode('lista'); }}
                             className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl">
                             Abrir plano completo
                         </button>
