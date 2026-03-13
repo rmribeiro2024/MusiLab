@@ -9,6 +9,7 @@ import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import { usePlanosContext } from '../contexts/PlanosContext'
+import { useRepertorioContext } from '../contexts/RepertorioContext'
 import type { AplicacaoAula, AulaGrade, AnoLetivo, Plano } from '../types'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -87,7 +88,8 @@ export default function AgendaSemanal() {
   const { obterTurmasDoDia } = useCalendarioContext()
   const { anosLetivos } = useAnoLetivoContext()
   const { aplicacoes } = useAplicacoesContext()
-  const { planos } = usePlanosContext()
+  const { planos, setPlanoSelecionado } = usePlanosContext()
+  const { setViewMode: setViewModeGlobal } = useRepertorioContext()
 
   const hoje = useMemo(() => getSegunda(new Date()), [])
   const [semana, setSemana] = useState<Date>(hoje)
@@ -165,6 +167,10 @@ export default function AgendaSemanal() {
   function togglePainel(slot: SlotInfo) {
     const mesmo = painelKey?.aulaGradeId === slot.aulaGrade.id && painelKey?.dataStr === slot.dataStr
     setPainelKey(mesmo ? null : { aulaGradeId: slot.aulaGrade.id, dataStr: slot.dataStr })
+  }
+  function verPlano(plano: Plano) {
+    setPlanoSelecionado(plano)
+    setViewModeGlobal('lista')
   }
 
   return (
@@ -245,9 +251,9 @@ export default function AgendaSemanal() {
           <p className="text-xs mt-1 text-center max-w-xs text-slate-300">Configure a grade semanal em Configurações → Grade Semanal.</p>
         </div>
       ) : viewMode === 'grade' ? (
-        <ViewGrade semanaData={semanaData} diasSemana={diasSemana} horarios={horarios} painel={painel} onTogglePainel={togglePainel} onClosePanel={() => setPainelKey(null)} onAplicarPlano={setSelecionandoSlot} />
+        <ViewGrade semanaData={semanaData} diasSemana={diasSemana} horarios={horarios} painel={painel} onTogglePainel={togglePainel} onClosePanel={() => setPainelKey(null)} onAplicarPlano={setSelecionandoSlot} onVerPlano={verPlano} />
       ) : (
-        <ViewLista semanaData={semanaData} isDiaAberto={isDiaAberto} onToggleDia={toggleDia} painel={painel} onTogglePainel={togglePainel} onClosePanel={() => setPainelKey(null)} onAplicarPlano={setSelecionandoSlot} />
+        <ViewLista semanaData={semanaData} isDiaAberto={isDiaAberto} onToggleDia={toggleDia} painel={painel} onTogglePainel={togglePainel} onClosePanel={() => setPainelKey(null)} onAplicarPlano={setSelecionandoSlot} onVerPlano={verPlano} />
       )}
 
       {/* ── MODAL SELETOR DE PLANO (melhoria 2) ── */}
@@ -272,9 +278,10 @@ interface ViewGradeProps {
   onTogglePainel: (s: SlotInfo) => void
   onClosePanel: () => void
   onAplicarPlano: (s: SlotInfo) => void
+  onVerPlano: (p: Plano) => void
 }
 
-function ViewGrade({ semanaData, diasSemana, horarios, painel, onTogglePainel, onClosePanel, onAplicarPlano }: ViewGradeProps) {
+function ViewGrade({ semanaData, diasSemana, horarios, painel, onTogglePainel, onClosePanel, onAplicarPlano, onVerPlano }: ViewGradeProps) {
   const temSemHorario = semanaData.some(d => d.slots.some(s => !s.aulaGrade.horario))
   const borderColor = '#dde3ea'
 
@@ -308,7 +315,7 @@ function ViewGrade({ semanaData, diasSemana, horarios, painel, onTogglePainel, o
                 const slots = dia.slots.filter(s => s.aulaGrade.horario === horario)
                 return (
                   <div key={diaInfo.dataStr} className="border-r last:border-r-0 p-1.5 flex flex-col gap-1" style={{ borderColor, minHeight: 72 }}>
-                    {slots.map(slot => <BlocoSlot key={slot.aulaGrade.id} slot={slot} painel={painel} onTogglePainel={onTogglePainel} onAplicarPlano={onAplicarPlano} />)}
+                    {slots.map(slot => <BlocoSlot key={slot.aulaGrade.id} slot={slot} painel={painel} onTogglePainel={onTogglePainel} onAplicarPlano={onAplicarPlano} onVerPlano={onVerPlano} />)}
                   </div>
                 )
               })}
@@ -326,7 +333,7 @@ function ViewGrade({ semanaData, diasSemana, horarios, painel, onTogglePainel, o
                 return (
                   <div key={diaInfo.dataStr} className="border-r last:border-r-0 p-1.5 flex flex-col gap-1" style={{ borderColor }}>
                     {dia.slots.filter(s => !s.aulaGrade.horario).map(slot =>
-                      <BlocoSlot key={slot.aulaGrade.id} slot={slot} painel={painel} onTogglePainel={onTogglePainel} onAplicarPlano={onAplicarPlano} />
+                      <BlocoSlot key={slot.aulaGrade.id} slot={slot} painel={painel} onTogglePainel={onTogglePainel} onAplicarPlano={onAplicarPlano} onVerPlano={onVerPlano} />
                     )}
                   </div>
                 )
@@ -350,9 +357,10 @@ interface ViewListaProps {
   onTogglePainel: (s: SlotInfo) => void
   onClosePanel: () => void
   onAplicarPlano: (s: SlotInfo) => void
+  onVerPlano: (p: Plano) => void
 }
 
-function ViewLista({ semanaData, isDiaAberto, onToggleDia, painel, onTogglePainel, onClosePanel, onAplicarPlano }: ViewListaProps) {
+function ViewLista({ semanaData, isDiaAberto, onToggleDia, painel, onTogglePainel, onClosePanel, onAplicarPlano, onVerPlano }: ViewListaProps) {
   return (
     <div className="flex gap-4 items-start">
       <div className="flex-1 min-w-0 flex flex-col gap-2">
@@ -407,6 +415,16 @@ function ViewLista({ semanaData, isDiaAberto, onToggleDia, painel, onTogglePaine
                             : <p className="text-xs text-slate-300 italic mt-0.5">Sem plano vinculado</p>
                           }
                         </div>
+                        {/* Olho: ver plano */}
+                        {slot.plano && (
+                          <button onClick={e => { e.stopPropagation(); onVerPlano(slot.plano!) }} title="Ver plano de aula"
+                            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 flex-shrink-0 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                        )}
                         {/* Botão + quando sem plano */}
                         {!slot.aplicacao && (
                           <button onClick={() => onAplicarPlano(slot)} title="Aplicar plano nesta turma"
@@ -434,7 +452,7 @@ function ViewLista({ semanaData, isDiaAberto, onToggleDia, painel, onTogglePaine
 
 // ── Bloco de slot (compartilhado pela grade) ──────────────────────────────────
 
-function BlocoSlot({ slot, painel, onTogglePainel, onAplicarPlano }: { slot: SlotInfo; painel: SlotInfo | null; onTogglePainel: (s: SlotInfo) => void; onAplicarPlano: (s: SlotInfo) => void }) {
+function BlocoSlot({ slot, painel, onTogglePainel, onAplicarPlano, onVerPlano }: { slot: SlotInfo; painel: SlotInfo | null; onTogglePainel: (s: SlotInfo) => void; onAplicarPlano: (s: SlotInfo) => void; onVerPlano?: (p: Plano) => void }) {
   const cfg = slot.aplicacao ? (STATUS_CFG[slot.aplicacao.status] ?? STATUS_CFG.planejada) : null
   const isSelected = painel?.aulaGrade.id === slot.aulaGrade.id && painel?.dataStr === slot.dataStr
   return (
@@ -447,6 +465,16 @@ function BlocoSlot({ slot, painel, onTogglePainel, onAplicarPlano }: { slot: Slo
         }
         {cfg && <div className="flex items-center gap-1 mt-1"><span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} /><span className={`text-[9px] font-bold uppercase tracking-wide ${cfg.text}`}>{cfg.label}</span></div>}
       </button>
+      {/* Olho: ver plano — aparece no hover */}
+      {slot.plano && onVerPlano && (
+        <button onClick={e => { e.stopPropagation(); onVerPlano(slot.plano!) }} title="Ver plano de aula"
+          className="absolute top-1 right-1 w-5 h-5 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+        </button>
+      )}
       {/* Botão + quando sem plano — aparece no hover */}
       {!slot.aplicacao && (
         <button onClick={() => onAplicarPlano(slot)} title="Aplicar plano"
