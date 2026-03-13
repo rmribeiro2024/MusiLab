@@ -582,7 +582,7 @@ export default function ModuloEstrategias() {
             {detalhesEstrategia && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
                     onClick={()=>setDetalhesEstrategia(null)}>
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"/>
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={()=>setDetalhesEstrategia(null)}/>
                     <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[90dvh] flex flex-col overflow-hidden"
                         onClick={e=>e.stopPropagation()}>
                         {/* Barra roxa */}

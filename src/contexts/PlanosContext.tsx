@@ -491,14 +491,6 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         if (!planoEditando.objetivoGeral || !planoEditando.objetivoGeral.trim()) {
             setModalConfirm({ conteudo: '⚠️ Preencha o objetivo geral antes de salvar.', somenteOk: true, labelConfirm: 'OK' }); return
         }
-        if (!ignorarAvisoEscola && (!planoEditando.escola || !planoEditando.escola.trim())) {
-            setModalConfirm({
-                titulo: '🏫 Escola não preenchida',
-                conteudo: 'Sem escola definida, o Histórico Musical por turma não funcionará de forma precisa. Salvar assim mesmo?',
-                labelConfirm: 'Salvar assim mesmo', labelCancelar: 'Voltar e preencher',
-                onConfirm: () => salvarPlano(true),
-            }); return
-        }
         if (!ignorarAvisoEscola && planoEditando.escola && planoEditando.escola.trim()) {
             const escolaNorm = planoEditando.escola.trim().toLowerCase()
             const semTurmas = anosLetivos.some((a: any) => a.escolas.some((e: any) => {
@@ -901,6 +893,38 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             if (planoSelecionado && planoSelecionado.id === atualizado.id) setPlanoSelecionado(atualizado)
             setPlanoParaRegistro(atualizado)
         } else {
+            // Verificar duplicata: mesmo data + turma
+            const dataAlvo = dataAula || agora.toISOString().split('T')[0]
+            const duplicata = (planoParaRegistro!.registrosPosAula || []).find((r: any) =>
+                r.data === dataAlvo &&
+                String(r.turma) === String(regTurmaSel) &&
+                String(r.segmento || r.serie || '') === String(regSegmentoSel)
+            )
+            if (duplicata) {
+                setModalConfirm({
+                    titulo: '⚠️ Registro duplicado',
+                    conteudo: `Já existe um registro de pós-aula para esta turma em ${dataAlvo}. Deseja substituir o registro existente?`,
+                    labelConfirm: 'Substituir',
+                    labelCancelar: 'Cancelar',
+                    onConfirm: () => {
+                        // Substitui o registro existente
+                        const registroSubstituto: RegistroPosAula = {
+                            ...duplicata,
+                            dataRegistro: agora.toISOString().split('T')[0], hora: agora.toTimeString().slice(0, 5),
+                            ...camposRegistro
+                        }
+                        const atualizado = carimbарTimestamp({ ...planoParaRegistro!, registrosPosAula: planoParaRegistro!.registrosPosAula.map((r: any) => r.id === duplicata.id ? registroSubstituto : r) })
+                        setPlanos(planos.map((p: any) => p.id === atualizado.id ? atualizado : p))
+                        marcarPendente('planos', String(atualizado.id))
+                        if (planoSelecionado && planoSelecionado.id === atualizado.id) setPlanoSelecionado(atualizado)
+                        setPlanoParaRegistro(atualizado)
+                        setRegistroEditando(null); setVerRegistros(true)
+                        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' })
+                        setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('')
+                    }
+                })
+                return
+            }
             const registro: RegistroPosAula = {
                 id: Date.now(), data: dataAula || agora.toISOString().split('T')[0],
                 dataRegistro: agora.toISOString().split('T')[0], hora: agora.toTimeString().slice(0, 5),
@@ -937,7 +961,11 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             comportamento: reg.comportamento || '', poderiaMelhorar: reg.poderiaMelhorar || '',
             resultadoAula: reg.resultadoAula || '', anotacoesGerais: reg.anotacoesGerais || '',
             proximaAulaOpcao: reg.proximaAulaOpcao || '',
-            urlEvidencia: (reg as any).urlEvidencia || ''
+            urlEvidencia: (reg as any).urlEvidencia || '',
+            // campos novos (B1, B2, A2) — incluídos na edição para não perdê-los ao salvar
+            ...(reg.chamada        ? { chamada: reg.chamada }               : {}),
+            ...(reg.encaminhamentos ? { encaminhamentos: reg.encaminhamentos } : {}),
+            ...(reg.rubrica        ? { rubrica: reg.rubrica }               : {}),
         })
         setRegAnoSel(String(reg.anoLetivo || '')); setRegEscolaSel(String(reg.escola || ''))
         setRegSegmentoSel(String(reg.segmento || reg.serie || '')); setRegTurmaSel(String(reg.turma || ''))
@@ -1297,13 +1325,16 @@ Faixa etária: ${faixa || 'não informada'}
 Atividades:
 ${listaAtividades}
 
+Gere também um objetivo geral (1 frase ampla descrevendo a intenção principal da aula) além dos objetivos específicos (2-3 frases mensuráveis).
+Retorne no formato JSON: {"objetivoGeral": "...", "objetivosEspecificos": ["...", "..."]}
+
 Responda APENAS no formato JSON:
 {
-  "geral": "objetivo geral em uma frase curta",
-  "especificos": ["objetivo 1", "objetivo 2", "objetivo 3"]
+  "geral": "objetivo geral — 1 frase ampla descrevendo a intenção principal da aula",
+  "especificos": ["objetivo específico mensurável 1", "objetivo específico mensurável 2", "objetivo específico mensurável 3"]
 }
 
-Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no infinitivo, e ser práticos.`
+Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no infinitivo, e ser práticos. O campo "geral" é obrigatório.`
 
         setGerandoObjetivos(true)
         try {

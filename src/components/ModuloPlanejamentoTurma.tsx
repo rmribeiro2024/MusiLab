@@ -1501,7 +1501,7 @@ function FormPlanejamentoInline({
           {/* Data prevista — no final, campo secundário */}
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-1">Data prevista</label>
-            <input type="date" value={dataPrevista} onChange={e => setDataPrevista(e.target.value)} className={inputClass} />
+            <input type="date" value={dataPrevista} onChange={e => setDataPrevista(e.target.value)} className={inputClass} min={new Date().toISOString().split('T')[0]} />
           </div>
 
           {/* Botão salvar */}
@@ -1604,7 +1604,9 @@ function CardPlanejamento({ planejamento }: { planejamento: import('../types').P
 
           <div className="flex gap-3 pt-1 flex-wrap">
             <button onClick={() => editarPlanejamento(planejamento)} className="text-xs text-blue-600 hover:text-blue-800 font-medium">Editar</button>
-            <button onClick={handlePromover} className="text-xs text-emerald-600 hover:text-emerald-800 font-medium border border-emerald-200 px-2 py-0.5 rounded-lg hover:bg-emerald-50 transition-colors">Promover para banco →</button>
+            {!(planejamento.planosRelacionadosIds && planejamento.planosRelacionadosIds.length > 0) && (
+                <button onClick={handlePromover} className="text-xs text-emerald-600 hover:text-emerald-800 font-medium border border-emerald-200 px-2 py-0.5 rounded-lg hover:bg-emerald-50 transition-colors">Promover para banco →</button>
+            )}
             <button onClick={() => excluirPlanejamento(planejamento.id)} className="text-xs text-red-500 hover:text-red-700 font-medium">Excluir</button>
           </div>
         </div>

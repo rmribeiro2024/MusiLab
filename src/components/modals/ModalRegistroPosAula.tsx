@@ -55,7 +55,7 @@ const AccordionChip = React.forwardRef<() => void, {
 
 // ── BEHAVIOR CHIP — comportamento com tags clicáveis + campo livre ──
 const BEHAVIOR_TAGS = [
-    { id: 'bom',      label: 'Bom comportamento geral' },
+    { id: 'bom',      label: '✓ Boa aula' },
     { id: 'focada',   label: 'Focada e participativa' },
     { id: 'dispersa', label: 'Muito dispersa / difícil conduzir' },
     { id: 'apatica',  label: 'Apática / pouco engajamento' },
@@ -372,7 +372,14 @@ export default function ModalRegistroPosAula() {
             const [anoId, escId, segId, turId] = chave.split('|')
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { dataEdicao: _de, ...camposReg } = reg
-            return { ...camposReg, id: Date.now() + idx + 1, anoLetivo: anoId, escola: escId, segmento: segId, turma: turId, dataRegistro: new Date().toISOString().split('T')[0] }
+            const { chamada: _chamada, audioNotaDeVoz: _audio, audioDuracao: _dur, audioMime: _mime, ...camposParaCopiar } = camposReg
+            return {
+                ...camposParaCopiar,
+                id: Date.now() + idx + 1,
+                anoLetivo: anoId, escola: escId, segmento: segId, turma: turId,
+                dataRegistro: new Date().toISOString().split('T')[0],
+                ...(copiarOutroDia ? { data: copiarOutroDia } : {}),
+            }
         })
         const atualizado = { ...planoParaRegistro, registrosPosAula: [...(planoParaRegistro.registrosPosAula || []), ...novos] }
         setPlanos((prev: any[]) => prev.map((p: any) => p.id === atualizado.id ? atualizado : p))

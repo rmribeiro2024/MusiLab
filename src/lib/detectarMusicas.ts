@@ -10,7 +10,8 @@ function normalizar(texto: string): string {
         .toLowerCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
         .replace(/<[^>]*>/g, ' ')                          // remove HTML
-        .replace(/[^a-z0-9\s]/g, ' ')                     // remove pontuação
+        .replace(/\([^)]*\)/g, ' ')                        // remove conteúdo entre parênteses (ex: indicações, dinâmicas)
+        .replace(/[^a-z0-9\s]/g, ' ')                     // remove pontuação restante
         .replace(/\s+/g, ' ')
         .trim()
 }

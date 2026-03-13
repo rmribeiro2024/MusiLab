@@ -33,7 +33,15 @@ async function chamarGemini(prompt: string): Promise<string> {
     return json?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 }
 
+function truncar(texto: string, max = 2000): string {
+    if (!texto) return ''
+    return texto.length > max ? texto.slice(0, max) + '…' : texto
+}
+
 function buildPromptMensal(data: RelatorioMensalData, inicio: string, fim: string): string {
+    const conceitos = truncar(data.conceitos.slice(0,5).map(c=>`${JSON.stringify(c.label)}(${c.count}x)`).join(', '))
+    const repertorio = truncar(data.repertorio.slice(0,5).map(r=>`${JSON.stringify(r.label)}(${r.count}x)`).join(', '))
+    const planos = truncar(data.planosUsados.slice(0,3).map(p=>`${JSON.stringify(p.label)}(${p.count}x)`).join(', '))
     return `Você é um assistente pedagógico especializado em educação musical.
 Com base nos dados abaixo, escreva uma síntese pedagógica concisa (máximo 4 parágrafos) sobre o período letivo.
 Destaque padrões, conquistas e possíveis pontos de atenção. Seja direto e útil para o professor.
@@ -42,27 +50,30 @@ Período: ${formatarData(inicio)} a ${formatarData(fim)}
 Aulas realizadas: ${data.totalAulas}
 Turmas atendidas: ${data.totalTurmas}
 Registros pós-aula: ${data.totalRegistros}
-Conceitos mais trabalhados: ${data.conceitos.slice(0,5).map(c=>`${c.label}(${c.count}x)`).join(', ')}
-Repertório mais usado: ${data.repertorio.slice(0,5).map(r=>`${r.label}(${r.count}x)`).join(', ')}
-Planos mais aplicados: ${data.planosUsados.slice(0,3).map(p=>`${p.label}(${p.count}x)`).join(', ')}
+Conceitos mais trabalhados: ${conceitos}
+Repertório mais usado: ${repertorio}
+Planos mais aplicados: ${planos}
 
 Responda em português. Não use markdown, apenas texto simples.`
 }
 
 function buildPromptTurma(data: RelatorioTurmaData, inicio: string, fim: string): string {
-    const obsLinhas = data.registrosResumidos.slice(-5).map(r =>
-        [r.funcionouBem && `Funcionou: ${r.funcionouBem}`, r.naoFuncionou && `Não funcionou: ${r.naoFuncionou}`].filter(Boolean).join(' | ')
-    ).filter(Boolean).join('\n')
+    const obsLinhas = truncar(data.registrosResumidos.slice(-5).map(r =>
+        [r.funcionouBem && `Funcionou: ${truncar(r.funcionouBem, 200)}`, r.naoFuncionou && `Não funcionou: ${truncar(r.naoFuncionou, 200)}`].filter(Boolean).join(' | ')
+    ).filter(Boolean).join('\n'))
+    const conceitos = truncar(data.conceitos.slice(0,5).map(c=>`${JSON.stringify(c.label)}(${c.count}x)`).join(', '))
+    const repertorio = truncar(data.repertorio.slice(0,5).map(r=>`${JSON.stringify(r.label)}(${r.count}x)`).join(', '))
+    const planos = truncar(data.planos.slice(0,3).map(p=>`${JSON.stringify(p.label)}(${p.count}x)`).join(', '))
     return `Você é um assistente pedagógico especializado em educação musical.
 Com base nos dados abaixo, escreva uma síntese pedagógica concisa (máximo 4 parágrafos) sobre a evolução desta turma.
 Inclua: síntese da evolução, o que funcionou bem, dificuldades recorrentes e próximos encaminhamentos sugeridos.
 
-Turma: ${data.turmaNome}
+Turma: ${JSON.stringify(data.turmaNome)}
 Período: ${formatarData(inicio)} a ${formatarData(fim)}
 Aulas realizadas: ${data.totalAulas}
-Conceitos trabalhados: ${data.conceitos.slice(0,5).map(c=>`${c.label}(${c.count}x)`).join(', ')}
-Repertório usado: ${data.repertorio.slice(0,5).map(r=>`${r.label}(${r.count}x)`).join(', ')}
-Planos aplicados: ${data.planos.slice(0,3).map(p=>`${p.label}(${p.count}x)`).join(', ')}
+Conceitos trabalhados: ${conceitos}
+Repertório usado: ${repertorio}
+Planos aplicados: ${planos}
 ${obsLinhas ? `\nObservações dos últimos registros:\n${obsLinhas}` : ''}
 
 Responda em português. Não use markdown, apenas texto simples.`
@@ -129,7 +140,7 @@ export default function ModuloRelatorios() {
             setSinteseIA(await chamarGemini(prompt))
         } catch (e) {
             const msg = e instanceof Error ? e.message : String(e)
-            setErroIA(`Não foi possível gerar a síntese. ${msg}`)
+            setErroIA(`Não foi possível gerar a síntese. Tente reduzir o período selecionado ou tente novamente. (${msg})`)
         } finally {
             setGerandoIA(false)
         }

@@ -4,6 +4,19 @@ import { sanitizar, gerarIdSeguro, stripHTML } from '../lib/utils'
 import { useAtividadesContext, useAnoLetivoContext, useModalContext, useRepertorioContext, usePlanosContext } from '../contexts'
 import type { Atividade } from '../types'
 
+/** Converte HTML para texto legível preservando estrutura de listas */
+function htmlParaTextoLegivel(html: string): string {
+    if (!html) return ''
+    return html
+        .replace(/<li[^>]*>/gi, '• ')
+        .replace(/<\/li>/gi, ' ')
+        .replace(/<br\s*\/?>/gi, ' ')
+        .replace(/<\/p>/gi, ' ')
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/\s+/g, ' ').trim()
+}
+
 interface CardAtividadeProps {
   ativ: Atividade
   setAtividadeEditando: (a: Atividade) => void
@@ -27,7 +40,7 @@ const CardAtividade = React.memo(({ ativ, setAtividadeEditando, excluirAtividade
                         <button onClick={()=>excluirAtividade(ativ.id)} className="text-slate-400 hover:text-red-500 p-2 sm:p-1 rounded transition" title="Excluir">🗑️</button>
                     </div>
                 </div>
-                {ativ.descricao && <p className="text-sm text-slate-500 line-clamp-2 mb-2">{stripHTML(ativ.descricao)}</p>}
+                {ativ.descricao && <p className="text-sm text-slate-500 line-clamp-2 mb-2">{htmlParaTextoLegivel(ativ.descricao)}</p>}
                 {ativ.origemAula && (
                     <button
                         onClick={() => { setBusca(ativ.origemAula.planoTitulo); setViewMode('lista') }}
