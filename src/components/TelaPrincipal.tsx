@@ -1479,11 +1479,14 @@ export default function TelaPrincipal() {
                             )
                         )
                     )
+                    // Ler notas do estado atual em planos (não de planoEditando que é snapshot)
+                    const planoAtual = planos.find(p => String(p.id) === String(planoEditando.id))
+                    const notasAtuais = planoAtual?.notasAdaptacao ?? planoEditando.notasAdaptacao ?? []
                     return (
                         <div className="px-3 sm:px-6 pb-4">
                             <SecaoAdaptacoesTurma
                                 planoId={planoEditando.id}
-                                notas={planoEditando.notasAdaptacao ?? []}
+                                notas={notasAtuais}
                                 turmasDisponiveis={turmasFlat}
                             />
                         </div>
