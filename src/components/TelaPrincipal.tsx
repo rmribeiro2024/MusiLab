@@ -1623,26 +1623,26 @@ export default function TelaPrincipal() {
 
         {/* ── INDICADORES ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-            <div className="bg-[#ffffff] dark:bg-[#1F2937] rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
+            <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
                 <div className="text-2xl font-extrabold tracking-[-0.03em] text-[#5B5FEA] dark:text-[#818cf8] leading-none mb-[5px]">{totalPlanos}</div>
                 <div className="text-[11.5px] font-medium text-slate-500 dark:text-[#9CA3AF]">Planos de Aula</div>
             </div>
-            <div className="bg-[#ffffff] dark:bg-[#1F2937] rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
+            <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
                 <div className="text-2xl font-extrabold tracking-[-0.03em] text-amber-500 leading-none mb-[5px]">{totalRegistros}</div>
                 <div className="text-[11.5px] font-medium text-slate-500 dark:text-[#9CA3AF]">Registros Pós-Aula</div>
             </div>
-            <div className="bg-[#ffffff] dark:bg-[#1F2937] rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
+            <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
                 <div className="text-2xl font-extrabold tracking-[-0.03em] text-[#10b981] leading-none mb-[5px]">{proximaAula ? new Date(proximaAula.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : '—'}</div>
                 <div className="text-[11.5px] font-medium text-slate-500 dark:text-[#9CA3AF]">Próxima Aula</div>
             </div>
-            <div className="bg-[#ffffff] dark:bg-[#1F2937] rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
+            <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
                 <div className="text-2xl font-extrabold tracking-[-0.03em] text-slate-800 dark:text-[#E5E7EB] leading-none mb-[5px]">{totalRepertorio}</div>
                 <div className="text-[11.5px] font-medium text-slate-500 dark:text-[#9CA3AF]">Músicas no Repertório</div>
             </div>
         </div>
 
         {/* ── SEARCH BAR ── */}
-        <div className="flex items-center gap-[10px] bg-[#ffffff] dark:bg-[#1F2937] border-[1.5px] border-[#E6EAF0] dark:border-[#374151] rounded-[9px] px-[14px] py-[9px] mb-[18px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-[border-color] duration-[120ms] hover:border-[#5B5FEA]/40 dark:hover:border-[#818cf8]/40 cursor-text">
+        <div className="v2-card flex items-center gap-[10px] border-[1.5px] border-[#E6EAF0] dark:border-[#374151] rounded-[9px] px-[14px] py-[9px] mb-[18px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-[border-color] duration-[120ms] hover:border-[#5B5FEA]/40 dark:hover:border-[#818cf8]/40 cursor-text">
             <span className="text-[13px] text-slate-400 dark:text-[#6b7280] flex-none select-none">🔍</span>
             <input type="text" inputMode="search" value={busca} onChange={e=>setBusca(e.target.value)}
                 placeholder="Buscar por título, objetivo, conceito..."
@@ -1691,7 +1691,7 @@ export default function TelaPrincipal() {
 
         {/* Filtros avançados — colapsáveis */}
         {filtrosPlanos && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 mb-4 p-4 bg-[#ffffff] dark:bg-[#1F2937] border border-[#E6EAF0] dark:border-[#374151] rounded-xl">
+            <div className="v2-card grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 mb-4 p-4 border border-[#E6EAF0] dark:border-[#374151] rounded-xl">
                 <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Escola</label><select value={filtroEscola} onChange={e=>setFiltroEscola(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none">{escolas.map(e=><option key={e} value={e}>{e}</option>)}</select></div>
                 <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Nível</label><select value={filtroNivel} onChange={e=>setFiltroNivel(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none">{niveis.map(n=><option key={n} value={n}>{n}</option>)}</select></div>
                 <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Segmento</label><select value={filtroSegmento} onChange={e=>setFiltroSegmento(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none">{segmentosPlanos.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
@@ -1742,7 +1742,7 @@ export default function TelaPrincipal() {
                     return (
                     <div key={plano.id}
                         style={{borderLeft:`3px solid ${leftBorder}`}}
-                        className="bg-[#ffffff] dark:bg-[#1F2937] rounded-xl border border-[#E6EAF0] dark:border-[#374151] card-hover flex flex-col overflow-hidden cursor-pointer"
+                        className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] card-hover flex flex-col overflow-hidden cursor-pointer"
                         onClick={()=>setPlanoSelecionado(plano)}>
                         <div className="p-[18px] flex-1">
                             {/* Status dot + label UPPERCASE + favorito */}
@@ -1754,7 +1754,7 @@ export default function TelaPrincipal() {
                                         <span style={{color:dotColor}} className="text-[11px] font-bold uppercase tracking-[0.01em]">{status}</span>
                                     </button>
                                     {statusDropdownId === plano.id && (
-                                        <div className="absolute top-full left-0 mt-1 bg-[#ffffff] dark:bg-[#1F2937] border border-[#E6EAF0] dark:border-[#374151] rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px]"
+                                        <div className="v2-card absolute top-full left-0 mt-1 border border-[#E6EAF0] dark:border-[#374151] rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px]"
                                              onClick={e=>e.stopPropagation()}>
                                             {(['A Fazer','Em Andamento','Concluído'] as const).map(s => (
                                                 <button key={s}

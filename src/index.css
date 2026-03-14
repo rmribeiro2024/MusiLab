@@ -50,6 +50,24 @@
 .dark .hover\:bg-gray-100:hover { background: #374151 !important; }
 .dark .hover\:bg-slate-50:hover { background: #273344 !important; }
 
+/* ── CSS CUSTOM PROPERTIES — v2 palette (garante dark mode sem conflito de especificidade) ── */
+:root {
+    --v2-card: #ffffff;
+    --v2-head: #ffffff;
+    --v2-side: #F1F4F8;
+    --v2-bg:   #F6F8FB;
+}
+.dark {
+    --v2-card: #1F2937;
+    --v2-head: #1E2A4A;
+    --v2-side: #111827;
+    --v2-bg:   #0F172A;
+}
+.v2-card { background-color: var(--v2-card) !important; }
+.v2-head { background-color: var(--v2-head) !important; }
+.v2-side { background-color: var(--v2-side) !important; }
+.v2-bg   { background-color: var(--v2-bg)   !important; }
+
 /* ── CARD HOVER — efeito suave v2 ── */
 .card-hover {
     transition: box-shadow 120ms ease, transform 120ms ease;

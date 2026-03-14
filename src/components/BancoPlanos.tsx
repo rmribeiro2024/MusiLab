@@ -2487,7 +2487,7 @@ export default function BancoPlanos({ session }) {
 
                     {/* ══════════ HEADER — barra única 48px ══════════ */}
                     {/* bg-[#ffffff] (não bg-white) para evitar override CSS do dark mode */}
-                    <div className="bg-[#ffffff] dark:bg-[#1E2A4A] border-b border-[#E6EAF0] dark:border-[#2d3f6a] h-12 flex items-center flex-none safe-pt">
+                    <div className="v2-head border-b border-[#E6EAF0] dark:border-[#2d3f6a] h-12 flex items-center flex-none safe-pt">
                         <div className="w-full px-[18px] flex items-center gap-5 h-12">
 
                             {/* Logo */}
@@ -2577,47 +2577,7 @@ export default function BancoPlanos({ session }) {
                                     <strong style={{color: darkMode ? '#E5E7EB' : '#0f172a',fontWeight:600}}>
                                         {new Date().toLocaleDateString('pt-BR', {weekday:'short', day:'numeric', month:'short'})}
                                     </strong>
-                                    {(() => {
-                                        const hoje = new Date();
-                                        const hojeStr = hoje.toISOString().split('T')[0];
-                                        const aulasHoje = planos.filter(p =>
-                                            p.historicoDatas?.includes(hojeStr) ||
-                                            (p.registrosPosAula||[]).some(r => r.data === hojeStr)
-                                        );
-                                        if (aulasHoje.length > 0) return <span style={{color: darkMode ? '#34d399' : '#059669',fontWeight:500}}>· {aulasHoje.length} aula{aulasHoje.length > 1 ? 's' : ''}</span>
-                                        const ev = eventosEscolares.filter(e => new Date(e.data+'T23:59:59') >= new Date()).sort((a,b)=>new Date(a.data).getTime()-new Date(b.data).getTime())[0]
-                                        if (ev) return <span style={{color: darkMode ? '#6b7280' : '#94a3b8',maxWidth:'110px',overflow:'hidden',textOverflow:'ellipsis'}}>· {ev.nome}</span>
-                                        return null
-                                    })()}
                                 </div>
-
-                                {/* Busca */}
-                                <button onClick={() => setShowBuscaGlobal(true)} title="Busca global (Ctrl+K)"
-                                    style={{padding:'6px',color: darkMode ? '#9CA3AF' : '#94a3b8',background:'transparent',border:'none',cursor:'pointer',borderRadius:'6px',fontSize:'14px',lineHeight:1,transition:'color 120ms ease'}}
-                                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = darkMode ? '#f1f5f9' : '#5B5FEA' }}
-                                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = darkMode ? '#9CA3AF' : '#94a3b8' }}
-                                >🔍</button>
-
-                                {/* Theme toggle */}
-                                <span style={{display:'flex',alignItems:'center',background: darkMode ? 'rgba(255,255,255,0.07)' : 'rgba(15,23,42,0.05)',borderRadius:'8px',padding:'3px',gap:'1px'}}>
-                                    {(['light','dark','system'] as const).map(t => (
-                                        <button key={t} onClick={() => setThemeMode(t)}
-                                            title={t === 'light' ? 'Modo claro' : t === 'dark' ? 'Modo escuro' : 'Seguir sistema'}
-                                            style={{fontSize:'11px',padding:'4px 6px',borderRadius:'5px',border:'none',cursor:'pointer',fontFamily:'inherit',transition:'all 120ms ease',
-                                                background: themeMode === t ? (darkMode ? 'rgba(255,255,255,0.2)' : '#ffffff') : 'transparent',
-                                                color: themeMode === t ? (darkMode ? '#ffffff' : '#374151') : (darkMode ? '#6b7280' : '#94a3b8'),
-                                                boxShadow: themeMode === t ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-                                            }}
-                                        >{t === 'light' ? '☀️' : t === 'dark' ? '🌙' : '🖥️'}</button>
-                                    ))}
-                                </span>
-
-                                {/* Logout */}
-                                <button onClick={fazerLogout} title={`Sair (${userName})`}
-                                    style={{padding:'6px',color: darkMode ? '#9CA3AF' : '#94a3b8',background:'transparent',border:'none',cursor:'pointer',borderRadius:'6px',fontSize:'12px',lineHeight:1,transition:'color 120ms ease'}}
-                                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ef4444' }}
-                                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = darkMode ? '#9CA3AF' : '#94a3b8' }}
-                                >⎋</button>
 
                             </div>
                         </div>
