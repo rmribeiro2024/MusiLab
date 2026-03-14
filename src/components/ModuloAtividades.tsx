@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro, stripHTML } from '../lib/utils'
 import { useAtividadesContext, useAnoLetivoContext, useModalContext, useRepertorioContext, usePlanosContext } from '../contexts'
 import type { Atividade } from '../types'
+import { exportarAtividadePDF, gerarLinkCompartilhavel } from '../utils/pdf'
 
 /** Converte HTML para texto legível preservando estrutura de listas */
 function htmlParaTextoLegivel(html: string): string {
@@ -36,6 +37,19 @@ const CardAtividade = React.memo(({ ativ, setAtividadeEditando, excluirAtividade
                 <div className="flex items-start justify-between gap-2 mb-2">
                     <h3 className="font-bold text-gray-800 leading-tight line-clamp-2">{ativ.nome}</h3>
                     <div className="flex gap-1 shrink-0 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity">
+                        <button
+                            onClick={() => exportarAtividadePDF(ativ)}
+                            className="text-slate-400 hover:text-indigo-600 p-2 sm:p-1 rounded transition"
+                            title="Exportar PDF">📄</button>
+                        <button
+                            onClick={() => {
+                                const link = gerarLinkCompartilhavel('atividade', ativ as Record<string, unknown>)
+                                navigator.clipboard.writeText(link).then(() =>
+                                    window.dispatchEvent(new CustomEvent('musilab:toast', { detail: { msg: '🔗 Link copiado!', type: 'success' } }))
+                                )
+                            }}
+                            className="text-slate-400 hover:text-emerald-600 p-2 sm:p-1 rounded transition"
+                            title="Copiar link compartilhável">🔗</button>
                         <button onClick={()=>setAtividadeEditando(ativ)} className="text-slate-400 hover:text-blue-600 p-2 sm:p-1 rounded transition" title="Editar">✏️</button>
                         <button onClick={()=>excluirAtividade(ativ.id)} className="text-slate-400 hover:text-red-500 p-2 sm:p-1 rounded transition" title="Excluir">🗑️</button>
                     </div>

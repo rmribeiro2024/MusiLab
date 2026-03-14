@@ -424,7 +424,7 @@ export default function ModuloRepertorio() {
                                                 <p className="text-xs font-bold text-gray-700 mb-2">Aulas vinculadas:</p>
                                                 <div className="space-y-1">
                                                     {(m.planosVinculados||[]).map(planoId => {
-                                                        const plano = planos.find(p => p.id === planoId);
+                                                        const plano = planos.find(p => String(p.id) === String(planoId));
                                                         if(!plano) return null;
                                                         return (
                                                             <button 
@@ -502,7 +502,7 @@ export default function ModuloRepertorio() {
                                     ) : (
                                         <div className="space-y-1.5 max-h-48 overflow-y-auto">
                                             {usos.slice(0, 10).map((uso, i) => {
-                                                const planoRef = planos.find(p => p.id === uso.planoId)
+                                                const planoRef = planos.find(p => String(p.id) === String(uso.planoId))
                                                 return (
                                                     <button key={i}
                                                         onClick={() => { if (planoRef) { setUsoExpandidoId(null); setPlanoSelecionado(planoRef) } }}

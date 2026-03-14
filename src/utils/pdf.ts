@@ -434,3 +434,159 @@ export async function exportarSequenciaPDF(sequencia, anosLetivos = []) {
 
     doc.save(`Sequencia - ${sequencia.titulo}.pdf`);
 }
+
+// ── ATIVIDADE ──
+export async function exportarAtividadePDF(ativ) {
+    const { jsPDF } = await import('jspdf')
+    const doc = new jsPDF();
+    const FONTE_PDF = await carregarFontePDF(doc);
+
+    const W = 210, H = 297;
+    const mL = 22, mR = 22, mB = 28;
+    const cW = W - mL - mR;
+    const ACCENT = [55, 65, 81];
+    const DARK   = [17, 24, 39];
+    const LABEL  = [100, 110, 125];
+    const RULE   = [220, 224, 230];
+
+    const htmlToText = (html) => {
+        if (!html) return '';
+        return html
+            .replace(/<\/p>\s*<p>/gi, '\n').replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n')
+            .replace(/<br\s*\/?>/gi, '\n').replace(/<\/li>/gi, '\n').replace(/<li[^>]*>/gi, '- ')
+            .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '').replace(/<[^>]*>/g, '')
+            .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
+            .replace(/\n{3,}/g, '\n\n').trim();
+    };
+
+    let y = 0;
+
+    const chk = (space) => { if (y + space > H - mB) { doc.addPage(); y = 22; } };
+    const rule = (before?, after?) => {
+        y += (before || 4);
+        doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
+        doc.line(mL, y, W - mR, y);
+        y += (after || 4);
+    };
+    const sectionTitle = (label) => {
+        chk(16); rule(6, 0); y += 6;
+        doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(8.5); doc.setTextColor(...LABEL);
+        doc.text(label.toUpperCase(), mL, y);
+        y += 6; doc.setFont(FONTE_PDF, "normal"); doc.setTextColor(...DARK);
+    };
+    const para = (text, indent?, size?, bold?) => {
+        if (!text || !String(text).trim()) return;
+        doc.setFontSize(size || 11); doc.setFont(FONTE_PDF, bold ? "bold" : "normal");
+        doc.setTextColor(...DARK);
+        const lines = doc.splitTextToSize(String(text), cW - (indent || 0));
+        lines.forEach(line => {
+            chk(7); doc.text(line, mL + (indent || 0), y); y += 6.2;
+        });
+    };
+
+    // ── Cabeçalho ──
+    doc.setFillColor(248, 250, 252);
+    doc.rect(0, 0, W, 42, 'F');
+    y = 18;
+    doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(7); doc.setTextColor(...LABEL);
+    doc.text("ATIVIDADE MUSICAL", mL, y); y += 7;
+    doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(18); doc.setTextColor(...ACCENT);
+    const titleLines = doc.splitTextToSize(ativ.nome || 'Sem título', cW);
+    titleLines.forEach(l => { doc.text(l, mL, y); y += 9; });
+
+    // meta tags (duração, faixa etária, categoria)
+    y = Math.max(y, 34);
+    const metas = [
+        ativ.duracao ? `⏱ ${ativ.duracao}` : null,
+        ...(ativ.faixaEtaria || []).map(f => `👥 ${f}`),
+        ativ.categoria ? `📂 ${ativ.categoria}` : null,
+    ].filter(Boolean);
+    if (metas.length) {
+        doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(9); doc.setTextColor(...LABEL);
+        doc.text(metas.join('   ·   '), mL, y); y += 6;
+    }
+    y = 46;
+
+    // ── Descrição ──
+    if (ativ.descricao) {
+        sectionTitle('Descrição');
+        para(htmlToText(ativ.descricao));
+    }
+
+    // ── Conceitos ──
+    if ((ativ.conceitos || []).length) {
+        sectionTitle('Conceitos trabalhados');
+        para((ativ.conceitos || []).map(c => `• ${c}`).join('\n'));
+    }
+
+    // ── Materiais ──
+    if ((ativ.materiais || []).length) {
+        sectionTitle('Materiais necessários');
+        (ativ.materiais || []).forEach(m => { if (m?.trim()) para(`• ${m}`); });
+    }
+
+    // ── Músicas vinculadas ──
+    if ((ativ.musicasVinculadas || []).length) {
+        sectionTitle('Músicas vinculadas');
+        (ativ.musicasVinculadas || []).forEach(m => {
+            const nome = typeof m === 'string' ? m : (m.titulo || '');
+            const autor = typeof m === 'object' ? m.autor || '' : '';
+            para(`• ${nome}${autor ? ' — ' + autor : ''}`);
+        });
+    }
+
+    // ── Observações ──
+    if (ativ.observacao) {
+        sectionTitle('Observações');
+        para(htmlToText(ativ.observacao));
+    }
+
+    // ── Tags ──
+    if ((ativ.tags || []).length) {
+        sectionTitle('Tags');
+        para((ativ.tags || []).map(t => `#${t}`).join('  '));
+    }
+
+    // ── Recursos ──
+    if ((ativ.recursos || []).length) {
+        sectionTitle('Recursos');
+        (ativ.recursos || []).forEach(r => {
+            const url = typeof r === 'string' ? r : (r.url || '');
+            const titulo = typeof r === 'object' ? r.titulo || '' : '';
+            para(`• ${titulo ? titulo + ': ' : ''}${url}`, 0, 9);
+        });
+    }
+
+    // ── Rodapé ──
+    const totalPages = doc.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
+        doc.line(mL, H - 14, W - mR, H - 14);
+        doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(8.5); doc.setTextColor(...LABEL);
+        doc.text("MusiLab - Atividade Musical", mL, H - 9);
+        doc.text(p + ' / ' + totalPages, W - mR, H - 9, { align: 'right' });
+    }
+
+    doc.save(`Atividade - ${(ativ.nome || 'sem-titulo').replace(/[^a-z0-9\s\-]/gi, '')}.pdf`);
+}
+
+// ── LINK COMPARTILHÁVEL (atividade ou plano) ──
+export function gerarLinkCompartilhavel(tipo: 'atividade' | 'plano', dados: Record<string, unknown>): string {
+    const base = window.location.origin + window.location.pathname.replace(/\/$/, '')
+    try {
+        const encoded = btoa(encodeURIComponent(JSON.stringify({ tipo, dados })))
+        return `${base}#share=${encoded}`
+    } catch {
+        return base
+    }
+}
+
+export function decodificarLinkCompartilhavel(hash: string): { tipo: string; dados: Record<string, unknown> } | null {
+    try {
+        const encoded = hash.startsWith('#share=') ? hash.slice(7) : hash
+        return JSON.parse(decodeURIComponent(atob(encoded)))
+    } catch {
+        return null
+    }
+}

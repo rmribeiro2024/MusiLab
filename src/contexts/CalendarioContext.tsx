@@ -51,6 +51,20 @@ export interface CalendarioContextValue {
   setRrPlanosSegmento: React.Dispatch<React.SetStateAction<Record<string, unknown>>>
   rrTextos: Record<string, string>
   setRrTextos: React.Dispatch<React.SetStateAction<Record<string, string>>>
+  rrResultados: Record<string, string>
+  setRrResultados: React.Dispatch<React.SetStateAction<Record<string, string>>>
+  rrRubricas: Record<string, { criterioId: string; valor: number }[]>
+  setRrRubricas: React.Dispatch<React.SetStateAction<Record<string, { criterioId: string; valor: number }[]>>>
+  rrEncaminhamentos: Record<string, { id: string; texto: string; concluido: boolean }[]>
+  setRrEncaminhamentos: React.Dispatch<React.SetStateAction<Record<string, { id: string; texto: string; concluido: boolean }[]>>>
+  // Turma específica para registro rápido (vazio = mostrar todas do dia)
+  rrTurmaId: string
+  setRrTurmaId: React.Dispatch<React.SetStateAction<string>>
+  rrSegmentoId: string
+  setRrSegmentoId: React.Dispatch<React.SetStateAction<string>>
+  // Áudio por turma (base64 para salvar)
+  rrAudios: Record<string, { base64: string; mime: string; duracao: number }>
+  setRrAudios: React.Dispatch<React.SetStateAction<Record<string, { base64: string; mime: string; duracao: number }>>>
   // Registro pós-aula
   modalRegistro: boolean
   setModalRegistro: React.Dispatch<React.SetStateAction<boolean>>
@@ -161,6 +175,12 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
   const [rrEscolaSel, setRrEscolaSel] = useState('')
   const [rrPlanosSegmento, setRrPlanosSegmento] = useState<Record<string, unknown>>({})
   const [rrTextos, setRrTextos] = useState<Record<string, string>>({})
+  const [rrResultados, setRrResultados] = useState<Record<string, string>>({})
+  const [rrRubricas, setRrRubricas] = useState<Record<string, { criterioId: string; valor: number }[]>>({})
+  const [rrEncaminhamentos, setRrEncaminhamentos] = useState<Record<string, { id: string; texto: string; concluido: boolean }[]>>({})
+  const [rrTurmaId, setRrTurmaId] = useState('')
+  const [rrSegmentoId, setRrSegmentoId] = useState('')
+  const [rrAudios, setRrAudios] = useState<Record<string, { base64: string; mime: string; duracao: number }>>({})
 
   // ── Registro pós-aula ──────────────────────────────────────────────────────
   const [modalRegistro, setModalRegistro] = useState(false)
@@ -331,6 +351,12 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
     rrEscolaSel, setRrEscolaSel,
     rrPlanosSegmento, setRrPlanosSegmento,
     rrTextos, setRrTextos,
+    rrResultados, setRrResultados,
+    rrRubricas, setRrRubricas,
+    rrEncaminhamentos, setRrEncaminhamentos,
+    rrTurmaId, setRrTurmaId,
+    rrSegmentoId, setRrSegmentoId,
+    rrAudios, setRrAudios,
     modalRegistro, setModalRegistro,
     planoParaRegistro, setPlanoParaRegistro,
     novoRegistro, setNovoRegistro,
@@ -357,7 +383,7 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
     ocultarFeriados, setOcultarFeriados,
     obterTurmasDoDia,
     verificarEvento,
-  }), [dataCalendario, semanaResumo, modoResumo, dataDia, diasExpandidos, gradesSemanas, modalGradeSemanal, gradeEditando, periodoDias, dataInicioCustom, dataFimCustom, modalRegistroRapido, rrData, rrAnoSel, rrEscolaSel, rrPlanosSegmento, rrTextos, modalRegistro, planoParaRegistro, novoRegistro, verRegistros, registroEditando, regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel, filtroRegAno, filtroRegEscola, filtroRegSegmento, filtroRegTurma, filtroRegData, buscaRegistros, ytPreviewId, novaGradeSemanal, salvarGradeSemanal, excluirGradeSemanal, adicionarAulaGrade, removerAulaGrade, duplicarAulaGrade, atualizarAulaGrade, ocultarFeriados, obterTurmasDoDia, verificarEvento])
+  }), [dataCalendario, semanaResumo, modoResumo, dataDia, diasExpandidos, gradesSemanas, modalGradeSemanal, gradeEditando, periodoDias, dataInicioCustom, dataFimCustom, modalRegistroRapido, rrData, rrAnoSel, rrEscolaSel, rrPlanosSegmento, rrTextos, rrResultados, rrRubricas, rrEncaminhamentos, rrTurmaId, rrSegmentoId, modalRegistro, planoParaRegistro, novoRegistro, verRegistros, registroEditando, regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel, filtroRegAno, filtroRegEscola, filtroRegSegmento, filtroRegTurma, filtroRegData, buscaRegistros, ytPreviewId, novaGradeSemanal, salvarGradeSemanal, excluirGradeSemanal, adicionarAulaGrade, removerAulaGrade, duplicarAulaGrade, atualizarAulaGrade, ocultarFeriados, obterTurmasDoDia, verificarEvento])
 
   return <CalendarioContext.Provider value={value}>{children}</CalendarioContext.Provider>
 }

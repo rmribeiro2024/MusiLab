@@ -523,6 +523,8 @@ export function TelaCalendario() {
         verificarEvento,
         setModalRegistroRapido,
         setRrData, setRrAnoSel, setRrEscolaSel, setRrPlanosSegmento, setRrTextos,
+        setRrResultados, setRrRubricas, setRrEncaminhamentos,
+        setRrTurmaId, setRrSegmentoId,
         obterTurmasDoDia,
     } = useCalendarioContext()
 
@@ -587,7 +589,7 @@ export function TelaCalendario() {
                                 setRrAnoSel(anoAtivo?.id||'');
                                 setRrEscolaSel('');
                             }
-                            setRrTextos({}); setRrPlanosSegmento({});
+                            setRrTextos({}); setRrPlanosSegmento({}); setRrResultados({}); setRrRubricas({}); setRrEncaminhamentos({}); setRrTurmaId(''); setRrSegmentoId('');
                             setModalRegistroRapido(true);
                         }}
                         className="hidden sm:block opacity-0 group-hover:opacity-100 bg-amber-400 hover:bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded transition"
@@ -702,9 +704,11 @@ export default function TelaResumoDia() {
     const { planos, sugerirPlanoParaTurma, setPlanoSelecionado } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
     const { setViewMode } = useRepertorioContext()
-    const { setModalGradeSemanal, dataDia, diasExpandidos, modoResumo, semanaResumo, obterTurmasDoDia, setDataDia, setDiasExpandidos, setModalRegistroRapido, setModoResumo, setRrAnoSel, setRrData, setRrEscolaSel, setRrPlanosSegmento, setRrTextos, setSemanaResumo } = useCalendarioContext()
+    const { setModalGradeSemanal, dataDia, diasExpandidos, modoResumo, semanaResumo, obterTurmasDoDia, setDataDia, setDiasExpandidos, setModalRegistroRapido, setModoResumo, setRrAnoSel, setRrData, setRrEscolaSel, setRrPlanosSegmento, setRrTextos, setRrResultados, setRrRubricas, setRrEncaminhamentos, setRrTurmaId, setRrSegmentoId, setSemanaResumo } = useCalendarioContext()
     const { aplicacoesPorData } = useAplicacoesContext()
     const [aulaAcaoAtiva, setAulaAcaoAtiva] = useState<AulaGrade | null>(null)
+    const [extraMateriais, setExtraMateriais] = useState<Record<string, string[]>>({})
+    const [inputMaterial, setInputMaterial] = useState('')
 
     const diasSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -861,7 +865,7 @@ export default function TelaResumoDia() {
                             setRrPlanosSegmento({});
                         }
 
-                        setRrTextos({});
+                        setRrTextos({}); setRrPlanosSegmento({}); setRrResultados({}); setRrRubricas({}); setRrEncaminhamentos({}); setRrTurmaId(''); setRrSegmentoId('');
                         setModalRegistroRapido(true);
                     }}
                     className="bg-green-500 hover:bg-green-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-sm">
@@ -1136,8 +1140,9 @@ export default function TelaResumoDia() {
                                                                                 setRrData(dataDia);
                                                                                 setRrAnoSel(t.aula.anoLetivoId);
                                                                                 setRrEscolaSel(t.aula.escolaId);
-                                                                                setRrTextos({});
-                                                                                setRrPlanosSegmento({});
+                                                                                setRrTextos({}); setRrPlanosSegmento({}); setRrResultados({}); setRrRubricas({}); setRrEncaminhamentos({});
+                                                                                setRrTurmaId(String(t.aula.turmaId));
+                                                                                setRrSegmentoId(String(t.aula.segmentoId));
                                                                                 setModalRegistroRapido(true);
                                                                                 setAulaAcaoAtiva(null);
                                                                             }}
@@ -1167,8 +1172,9 @@ export default function TelaResumoDia() {
                                                                         setRrData(dataDia);
                                                                         setRrAnoSel(t.aula.anoLetivoId);
                                                                         setRrEscolaSel(t.aula.escolaId);
-                                                                        setRrTextos({});
-                                                                        setRrPlanosSegmento({});
+                                                                        setRrTextos({}); setRrPlanosSegmento({}); setRrResultados({}); setRrRubricas({}); setRrEncaminhamentos({});
+                                                                        setRrTurmaId(String(t.aula.turmaId));
+                                                                        setRrSegmentoId(String(t.aula.segmentoId));
                                                                         setModalRegistroRapido(true);
                                                                         setAulaAcaoAtiva(null);
                                                                     }}
@@ -1189,19 +1195,64 @@ export default function TelaResumoDia() {
                                     ))}
 
                                     {/* Materiais necessários */}
-                                    {materiaisList.length > 0 && (
-                                        <div className="bg-white rounded-lg border border-purple-200 p-3">
-                                            <p className="text-xs font-bold text-purple-900 mb-2">🎵 Materiais necessários hoje</p>
-                                            <ul className="space-y-0.5">
-                                                {materiaisList.map(m => (
-                                                    <li key={m} className="text-xs text-gray-600 flex items-center gap-1.5">
-                                                        <span className="w-1 h-1 rounded-full bg-purple-400 shrink-0" />
-                                                        {m}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const dataDiaStr = toStr(dataDia as unknown as Date)
+                                        const extras = extraMateriais[dataDiaStr] || []
+                                        const todosMateriaisList = [...materiaisList, ...extras.filter(e => !materiaisList.includes(e.toLowerCase()))]
+                                        const adicionarMaterial = () => {
+                                            const val = inputMaterial.trim()
+                                            if (!val) return
+                                            setExtraMateriais(prev => {
+                                                const atuais = prev[dataDiaStr] || []
+                                                if (atuais.map(x => x.toLowerCase()).includes(val.toLowerCase())) return prev
+                                                return { ...prev, [dataDiaStr]: [...atuais, val] }
+                                            })
+                                            setInputMaterial('')
+                                        }
+                                        const removerExtra = (item: string) => {
+                                            setExtraMateriais(prev => ({
+                                                ...prev,
+                                                [dataDiaStr]: (prev[dataDiaStr] || []).filter(x => x !== item)
+                                            }))
+                                        }
+                                        return (
+                                            <div className="bg-white rounded-lg border border-purple-200 p-3">
+                                                <p className="text-xs font-bold text-purple-900 mb-2">🎵 Materiais necessários hoje</p>
+                                                {todosMateriaisList.length > 0 && (
+                                                    <ul className="space-y-0.5 mb-2">
+                                                        {materiaisList.map(m => (
+                                                            <li key={m} className="text-xs text-gray-600 flex items-center gap-1.5">
+                                                                <span className="w-1 h-1 rounded-full bg-purple-400 shrink-0" />
+                                                                {m}
+                                                            </li>
+                                                        ))}
+                                                        {extras.filter(e => !materiaisList.includes(e.toLowerCase())).map(m => (
+                                                            <li key={m} className="text-xs text-gray-600 flex items-center gap-1.5">
+                                                                <span className="w-1 h-1 rounded-full bg-indigo-400 shrink-0" />
+                                                                <span className="flex-1">{m}</span>
+                                                                <button onClick={() => removerExtra(m)} className="text-gray-300 hover:text-red-400 font-bold leading-none">×</button>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                                <div className="flex gap-1 mt-1.5">
+                                                    <input
+                                                        type="text"
+                                                        value={inputMaterial}
+                                                        onChange={e => setInputMaterial(e.target.value)}
+                                                        onKeyDown={e => { if (e.key === 'Enter') adicionarMaterial() }}
+                                                        placeholder="Adicionar material…"
+                                                        className="flex-1 text-xs border border-purple-100 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-purple-300 placeholder:text-gray-300 bg-purple-50/50"
+                                                    />
+                                                    <button
+                                                        onClick={adicionarMaterial}
+                                                        className="text-xs px-2 py-1 rounded-lg text-purple-400 hover:text-purple-700 hover:bg-purple-100 transition">
+                                                        ＋
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )
+                                    })()}
                                 </div>
                             );
                         })()}
@@ -1289,7 +1340,7 @@ export default function TelaResumoDia() {
                                                             const primeira = turmasDoDia[0];
                                                             setRrAnoSel(primeira?.anoLetivoId||'');
                                                             setRrEscolaSel(primeira?.escolaId||'');
-                                                            setRrTextos({}); setRrPlanosSegmento({});
+                                                            setRrTextos({}); setRrPlanosSegmento({}); setRrResultados({}); setRrRubricas({}); setRrEncaminhamentos({}); setRrTurmaId(''); setRrSegmentoId('');
                                                             setModalRegistroRapido(true);
                                                         }} className="text-xs bg-amber-400 hover:bg-amber-500 text-white font-bold px-2.5 py-1 rounded-lg">
                                                             📝 Registrar

@@ -18,7 +18,7 @@ import {
 } from '../lib/utils'
 import { showToast } from '../lib/toast'
 import { mergeOffline, totalPendentes, useVoltouOnline } from '../lib/offlineSync'
-import type { GradeEditando } from '../types'
+import type { GradeEditando, RegistroPosAula } from '../types'
 // Módulos carregados sob demanda — Vite cria um chunk por arquivo
 const ModuloPlanejamentoTurma = lazy(() => import('./ModuloPlanejamentoTurma'))
 const ModuloAnoLetivo        = lazy(() => import('./ModuloAnoLetivo'))
@@ -37,7 +37,7 @@ import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtivid
 import ErrorBoundary from './ErrorBoundary'
 import { lerLS } from '../utils/helpers'
 import { dbGet, dbSet, dbDel, dbSetRaw, dbGetRaw } from '../lib/db'
-import { exportarPlanoPDF, exportarSequenciaPDF } from '../utils/pdf'
+import { exportarPlanoPDF, exportarSequenciaPDF, exportarAtividadePDF, decodificarLinkCompartilhavel } from '../utils/pdf'
 import ModalConfirm from './modals/ModalConfirm'
 import ModalNovaEscola from './modals/ModalNovaEscola'
 import ModalNovaFaixa from './modals/ModalNovaFaixa'
@@ -284,6 +284,7 @@ export default function BancoPlanos({ session }) {
                 rrEscolaSel, setRrEscolaSel,
                 rrPlanosSegmento, setRrPlanosSegmento,
                 rrTextos, setRrTextos,
+                rrResultados, rrRubricas, rrEncaminhamentos,
                 modalRegistro, setModalRegistro,
                 planoParaRegistro, setPlanoParaRegistro,
                 novoRegistro, setNovoRegistro,
@@ -439,6 +440,7 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             const [statusSalvamento, setStatusSalvamento] = useState('');
             const [darkMode, setDarkMode] = useState(() => dbGet('darkMode') === 'true');
+            const [modalCompartilhado, setModalCompartilhado] = useState<{ tipo: string; dados: Record<string, unknown> } | null>(null);
 
             // ============================================================
             // MÓDULO: DRAG AND DROP — migrado para PlanosContext (Parte 8)
@@ -451,6 +453,19 @@ export default function BancoPlanos({ session }) {
                 if (darkMode) { document.documentElement.classList.add('dark'); }
                 else { document.documentElement.classList.remove('dark'); }
             }, [darkMode]);
+
+            // Detectar link compartilhável na URL (#share=...)
+            useEffect(() => {
+                const hash = window.location.hash
+                if (!hash.startsWith('#share=')) return
+                const decoded = decodificarLinkCompartilhavel(hash)
+                if (decoded) {
+                    setModalCompartilhado(decoded)
+                    // Limpa o hash sem recarregar
+                    history.replaceState(null, '', window.location.pathname + window.location.search)
+                }
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+            }, []);
             // ============================================================
             // MÓDULO: BUSCA E FILTROS — migrado para PlanosContext (Parte 8)
             // ============================================================
@@ -1755,89 +1770,107 @@ export default function BancoPlanos({ session }) {
                 const agora = new Date();
                 let totalNovos = 0;
                 let totalAtualizados = 0;
-                
+
+                // Coletar todas as turmaIds que têm algum dado preenchido
+                const turmasComDados = new Set([
+                    ...Object.keys(rrTextos).filter(id => rrTextos[id]?.trim()),
+                    ...Object.keys(rrResultados).filter(id => rrResultados[id]),
+                    ...Object.keys(rrRubricas).filter(id => (rrRubricas[id] || []).length > 0),
+                    ...Object.keys(rrEncaminhamentos).filter(id => (rrEncaminhamentos[id] || []).length > 0),
+                ]);
+
+                const ano = anosLetivos.find(a => a.id == rrAnoSel);
+                const esc = ano?.escolas.find(e => e.id == rrEscolaSel);
+
                 // Processar cada turma preenchida
                 const planosAtualizados = planos.map(plano => {
                     let planoModificado = false;
-                    const novosRegistros = [];
-                    
-                    Object.keys(rrTextos).forEach(turmaId => {
-                        const texto = rrTextos[turmaId]?.trim();
-                        if (!texto) return;
-                        
+                    const novosRegistros: RegistroPosAula[] = [];
+
+                    turmasComDados.forEach(turmaId => {
                         // Encontrar segmento da turma
-                        const ano = anosLetivos.find(a => a.id == rrAnoSel);
-                        const esc = ano?.escolas.find(e => e.id == rrEscolaSel);
-                        let segmentoId = null;
+                        let segmentoId: string | number | null = null;
                         for (const seg of esc?.segmentos || []) {
                             if (seg.turmas.find(t => t.id == turmaId)) {
                                 segmentoId = seg.id;
                                 break;
                             }
                         }
-                        
-                        const planoId = rrPlanosSegmento[segmentoId];
-                        if (planoId != plano.id) return; // Não é deste plano
-                        
+
+                        const planoId = rrPlanosSegmento[String(segmentoId)];
+                        if (!planoId || planoId != plano.id) return;
+
                         // Verificar se já existe registro desta data/turma neste plano
-                        const registroExistente = (plano.registrosPosAula || []).find(r => 
-                            r.data === rrData && 
-                            r.turma == turmaId
+                        const registroExistente = (plano.registrosPosAula || []).find(r =>
+                            r.data === rrData && r.turma == turmaId
                         );
-                        
+
+                        const resultado = rrResultados[turmaId] || '';
+                        const rubrica = rrRubricas[turmaId] || [];
+                        const encaminhamentos = (rrEncaminhamentos[turmaId] || []).map(e => ({ ...e }));
+                        const texto = rrTextos[turmaId]?.trim() || '';
+
                         if (registroExistente) {
-                            // ATUALIZAR registro existente - adiciona texto ao resumo
-                            const resumoAtual = registroExistente.resumoAula || '';
-                            const separador = resumoAtual ? '\n' : '';
-                            registroExistente.resumoAula = resumoAtual + separador + texto;
+                            // Atualizar campos do registro existente
+                            if (resultado) registroExistente.resultadoAula = resultado;
+                            if (rubrica.length > 0) registroExistente.rubrica = rubrica;
+                            if (encaminhamentos.length > 0) {
+                                registroExistente.encaminhamentos = [
+                                    ...(registroExistente.encaminhamentos || []),
+                                    ...encaminhamentos,
+                                ];
+                            }
+                            if (texto) {
+                                const resumoAtual = registroExistente.resumoAula || '';
+                                registroExistente.resumoAula = resumoAtual ? resumoAtual + '\n' + texto : texto;
+                            }
                             registroExistente.dataEdicao = agora.toISOString().split('T')[0];
                             planoModificado = true;
                             totalAtualizados++;
                         } else {
-                            // CRIAR novo registro
-                            const novoRegistro = {
+                            // Criar novo registro
+                            novosRegistros.push({
                                 id: gerarIdSeguro(),
                                 data: rrData,
                                 dataRegistro: agora.toISOString().split('T')[0],
-                                hora: agora.toTimeString().slice(0,5),
+                                hora: agora.toTimeString().slice(0, 5),
                                 anoLetivo: rrAnoSel,
                                 escola: rrEscolaSel,
-                                segmento: segmentoId,
+                                segmento: String(segmentoId ?? ''),
                                 turma: turmaId,
                                 resumoAula: texto,
+                                resultadoAula: resultado,
+                                rubrica: rubrica.length > 0 ? rubrica : undefined,
+                                encaminhamentos: encaminhamentos.length > 0 ? encaminhamentos : undefined,
                                 funcionouBem: '',
                                 naoFuncionou: '',
                                 proximaAula: '',
-                                comportamento: ''
-                            };
-                            novosRegistros.push(novoRegistro);
+                                comportamento: '',
+                            });
                             planoModificado = true;
                             totalNovos++;
                         }
                     });
-                    
+
                     if (planoModificado) {
                         return {
                             ...plano,
-                            registrosPosAula: [...(plano.registrosPosAula || []), ...novosRegistros]
+                            registrosPosAula: [...(plano.registrosPosAula || []), ...novosRegistros],
                         };
                     }
                     return plano;
                 });
-                
+
                 if (totalNovos > 0 || totalAtualizados > 0) {
                     setPlanos(planosAtualizados);
-                    
                     let msg = '✅ ';
-                    if (totalNovos > 0) msg += `${totalNovos} novo(s)`;
+                    if (totalNovos > 0) msg += `${totalNovos} registro${totalNovos > 1 ? 's' : ''} salvo${totalNovos > 1 ? 's' : ''}`;
                     if (totalNovos > 0 && totalAtualizados > 0) msg += ' + ';
-                    if (totalAtualizados > 0) msg += `${totalAtualizados} atualizado(s)`;
-                    msg += '!';
-                    
+                    if (totalAtualizados > 0) msg += `${totalAtualizados} atualizado${totalAtualizados > 1 ? 's' : ''}`;
                     showToast(msg, 'success');
                     setModalRegistroRapido(false);
                 } else {
-                    showToast('Preencha pelo menos uma turma e selecione um plano.', 'error');
+                    showToast('Preencha pelo menos um campo e vincule um plano.', 'error');
                 }
                 }; // fim _executar
                 if (feriado) {
@@ -2806,6 +2839,73 @@ export default function BancoPlanos({ session }) {
 
                     {/* ── MODAL DE CONFIRMAÇÃO GLOBAL ── */}
                     <ModalConfirm />
+
+                    {/* ── MODAL: CONTEÚDO COMPARTILHADO ── */}
+                    {modalCompartilhado && (() => {
+                        const { tipo, dados } = modalCompartilhado
+                        const isPlano = tipo === 'plano'
+                        const isAtividade = tipo === 'atividade'
+                        const titulo = (dados.titulo || dados.nome || 'Conteúdo compartilhado') as string
+                        return (
+                            <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden" style={{maxHeight:'85vh'}}>
+                                    {/* Cabeçalho */}
+                                    <div className="px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100 flex items-start gap-3">
+                                        <span className="text-2xl">{isPlano ? '📋' : isAtividade ? '🎁' : '📄'}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide mb-0.5">
+                                                {isPlano ? 'Plano de Aula compartilhado' : isAtividade ? 'Atividade compartilhada' : 'Conteúdo compartilhado'} · somente leitura
+                                            </p>
+                                            <p className="font-bold text-slate-800 truncate">{titulo}</p>
+                                        </div>
+                                        <button onClick={() => setModalCompartilhado(null)} className="text-slate-400 hover:text-slate-700 text-xl leading-none shrink-0">×</button>
+                                    </div>
+                                    {/* Corpo */}
+                                    <div className="overflow-y-auto p-5 space-y-3 text-sm text-slate-700">
+                                        {isPlano && (
+                                            <>
+                                                {dados.objetivo && <div><p className="text-[10px] font-bold uppercase text-slate-400 mb-1">Objetivo</p><p>{dados.objetivo as string}</p></div>}
+                                                {dados.escola && <p className="text-xs text-slate-400">🏫 {dados.escola as string}{dados.turma ? ` · ${dados.turma as string}` : ''}</p>}
+                                                {(dados.conceitos as string[])?.length > 0 && <div><p className="text-[10px] font-bold uppercase text-slate-400 mb-1">Conceitos</p><p className="text-xs">{(dados.conceitos as string[]).join(' · ')}</p></div>}
+                                                {(dados.materiais as string[])?.length > 0 && <div><p className="text-[10px] font-bold uppercase text-slate-400 mb-1">Materiais</p><ul className="list-disc list-inside text-xs space-y-0.5">{(dados.materiais as string[]).map((m,i)=><li key={i}>{m}</li>)}</ul></div>}
+                                            </>
+                                        )}
+                                        {isAtividade && (
+                                            <>
+                                                {dados.descricao && <div><p className="text-[10px] font-bold uppercase text-slate-400 mb-1">Descrição</p><p className="text-xs">{String(dados.descricao).replace(/<[^>]*>/g,'')}</p></div>}
+                                                {dados.duracao && <p className="text-xs">⏱ {dados.duracao as string}</p>}
+                                                {(dados.faixaEtaria as string[])?.length > 0 && <p className="text-xs">👥 {(dados.faixaEtaria as string[]).join(' · ')}</p>}
+                                                {(dados.materiais as string[])?.length > 0 && <div><p className="text-[10px] font-bold uppercase text-slate-400 mb-1">Materiais</p><ul className="list-disc list-inside text-xs space-y-0.5">{(dados.materiais as string[]).map((m,i)=><li key={i}>{m}</li>)}</ul></div>}
+                                                {(dados.conceitos as string[])?.length > 0 && <div><p className="text-[10px] font-bold uppercase text-slate-400 mb-1">Conceitos</p><p className="text-xs">{(dados.conceitos as string[]).join(' · ')}</p></div>}
+                                                {dados.observacao && <div><p className="text-[10px] font-bold uppercase text-slate-400 mb-1">Observações</p><p className="text-xs">{String(dados.observacao).replace(/<[^>]*>/g,'')}</p></div>}
+                                            </>
+                                        )}
+                                    </div>
+                                    {/* Rodapé */}
+                                    <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex gap-2 justify-end">
+                                        {isAtividade && (
+                                            <button
+                                                onClick={() => exportarAtividadePDF(dados)}
+                                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition">
+                                                📄 Exportar PDF
+                                            </button>
+                                        )}
+                                        {isPlano && (
+                                            <button
+                                                onClick={() => exportarPlanoPDF(dados)}
+                                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-100 text-orange-700 hover:bg-orange-200 transition">
+                                                📄 Exportar PDF
+                                            </button>
+                                        )}
+                                        <button onClick={() => setModalCompartilhado(null)}
+                                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 text-slate-600 hover:bg-slate-300 transition">
+                                            Fechar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    })()}
                 </div>
                 </BancoPlanosContext.Provider>
             );

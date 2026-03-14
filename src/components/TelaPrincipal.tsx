@@ -6,7 +6,7 @@ import { useInfiniteScroll } from '../lib/hooks'
 import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [offlineSync]
 import { usePlanosContext, useAnoLetivoContext, useAtividadesContext, useRepertorioContext, useModalContext, useCalendarioContext, useEstrategiasContext } from '../contexts'
 import RichTextEditor from './RichTextEditor'
-import { exportarPlanoPDF } from '../utils/pdf'
+import { exportarPlanoPDF, gerarLinkCompartilhavel } from '../utils/pdf'
 import ModalAplicarEmTurmas from './modals/ModalAplicarEmTurmas'
 import ModalMusicasDetectadas from './modals/ModalMusicasDetectadas'
 import ModalEstrategiaDetectada from './modals/ModalEstrategiaDetectada'
@@ -1819,8 +1819,12 @@ export default function TelaPrincipal() {
                                 className="p-1.5 rounded-lg hover:bg-indigo-50 transition shrink-0">
                                 <svg className="w-3.5 h-3.5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828 8 17l1.172-3.828z"/></svg>
                             </button>
-                            <button onClick={(e)=>{e.stopPropagation();exportarPlanoPDF(plano)}} title="PDF"
+                            <button onClick={(e)=>{e.stopPropagation();exportarPlanoPDF(plano)}} title="Exportar PDF"
                                 className="p-1.5 rounded-lg hover:bg-orange-50 transition text-[10px] font-bold text-orange-500 shrink-0">PDF</button>
+                            <button onClick={(e)=>{e.stopPropagation(); const link=gerarLinkCompartilhavel('plano', plano as unknown as Record<string, unknown>); navigator.clipboard.writeText(link).then(()=>window.dispatchEvent(new CustomEvent('musilab:toast', { detail: { msg: '🔗 Link copiado!', type: 'success' } })))}} title="Copiar link compartilhável"
+                                className="p-1.5 rounded-lg hover:bg-emerald-50 transition shrink-0">
+                                <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                            </button>
                             <button onClick={(e)=>{e.stopPropagation(); const copia=carimbарTimestamp({...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}); setPlanos(prev=>[...prev, copia]); if (!userId) marcarPendente('planos', String(copia.id)); showToast('Plano duplicado!', 'success');}}
                                 title="Duplicar" className="p-1.5 rounded-lg hover:bg-teal-50 transition shrink-0">
                                 <svg className="w-3.5 h-3.5 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
