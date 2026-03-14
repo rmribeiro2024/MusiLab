@@ -1023,7 +1023,7 @@ export default function TelaResumoDia() {
                                 return (
                                     <div className="px-4 py-3 border-t border-gray-100">
                                         <p className="text-xs text-gray-400 italic text-center">
-                                            Nenhuma aula agendada para este dia.
+                                            {ehHoje ? 'Nenhuma aula agendada para hoje.' : 'Nenhuma aula agendada para este dia.'}
                                         </p>
                                     </div>
                                 );
