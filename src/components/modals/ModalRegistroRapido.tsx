@@ -1,203 +1,403 @@
-import React from 'react'
+// ModalRegistroRapido.tsx
+// Registro pós-aula focado: resultado + rubrica + encaminhamentos + nota de voz
+// Abre já focado na turma clicada (rrTurmaId) — as demais ficam colapsadas
+
+import React, { useState, useRef } from 'react'
 import { useCalendarioContext } from '../../contexts'
 import { useAnoLetivoContext } from '../../contexts'
 import { usePlanosContext } from '../../contexts'
 import { useBancoPlanos } from '../BancoPlanosContext'
+import { startRecording, stopRecording, blobToBase64, base64ToObjectUrl } from '../../lib/audioRecorder'
+
+type Resultado = 'funcionou' | 'parcial' | 'nao_funcionou' | ''
+
+const RESULTADO_CFG: { value: Resultado; label: string; emoji: string; bg: string; border: string; text: string }[] = [
+  { value: 'funcionou',     label: 'Funcionou',     emoji: '✓', bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-700' },
+  { value: 'parcial',       label: 'Parcial',        emoji: '〜', bg: 'bg-amber-50',   border: 'border-amber-300',   text: 'text-amber-700'   },
+  { value: 'nao_funcionou', label: 'Não funcionou',  emoji: '✗', bg: 'bg-red-50',     border: 'border-red-300',     text: 'text-red-700'     },
+]
+
+const MAX_AUDIO = 60 // segundos
 
 export default function ModalRegistroRapido() {
     const {
         modalRegistroRapido, setModalRegistroRapido,
-        rrData, setRrData,
-        rrAnoSel, setRrAnoSel,
-        rrEscolaSel, setRrEscolaSel,
+        rrData, rrAnoSel, rrEscolaSel,
         rrPlanosSegmento, setRrPlanosSegmento,
-        rrTextos, setRrTextos,
+        rrResultados, setRrResultados,
+        rrRubricas, setRrRubricas,
+        rrEncaminhamentos, setRrEncaminhamentos,
+        rrAudios, setRrAudios,
+        rrTurmaId,
         obterTurmasDoDia,
+        setModalRegistro, setPlanoParaRegistro,
+        setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel,
+        setVerRegistros, setRegistroEditando, setNovoRegistro,
+        setFiltroRegAno, setFiltroRegEscola, setFiltroRegSegmento, setFiltroRegTurma, setFiltroRegData,
     } = useCalendarioContext()
-    const { anosLetivos } = useAnoLetivoContext()
+    const { anosLetivos, turmaGetRubricas } = useAnoLetivoContext()
     const { planos } = usePlanosContext()
     const { sugerirPlanoParaTurma, salvarRegistroRapido } = useBancoPlanos()
 
+    // Estado local
+    const [inputEnc, setInputEnc] = useState<Record<string, string>>({})
+    // Turmas expandidas: por padrão só a turma clicada
+    const [expandidas, setExpandidas] = useState<Record<string, boolean>>({})
+    // Áudio por turma
+    const [gravando, setGravando] = useState<Record<string, boolean>>({})
+    const [timer, setTimer] = useState<Record<string, number>>({})
+    const [erroAudio, setErroAudio] = useState<Record<string, string | null>>({})
+    const timerRefs = useRef<Record<string, ReturnType<typeof setInterval>>>({})
+
+    // Inicializa expansão quando modal abre: só a turma clicada
+    React.useEffect(() => {
+        if (modalRegistroRapido && rrTurmaId) {
+            setExpandidas({ [rrTurmaId]: true })
+        } else if (modalRegistroRapido) {
+            setExpandidas({})
+        }
+        setErroAudio({})
+    }, [modalRegistroRapido, rrTurmaId])
+
     if (!modalRegistroRapido) return null
 
+    const turmasDoDia = obterTurmasDoDia(rrData)
+        .filter(a =>
+            (!rrAnoSel   || String(a.anoLetivoId) === String(rrAnoSel)) &&
+            (!rrEscolaSel || String(a.escolaId)    === String(rrEscolaSel))
+        )
+        .sort((a, b) => (a.horario || '').localeCompare(b.horario || ''))
+
+    const ano = anosLetivos.find(a => String(a.id) === String(rrAnoSel))
+    const esc = ano?.escolas.find(e => String(e.id) === String(rrEscolaSel))
+    const nomeEscola = esc?.nome || ''
+
+    const [y, m, d] = rrData.split('-')
+    const dataFmt = `${d}/${m}/${y}`
+    const diasSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+    const diaSemana = diasSemana[new Date(rrData + 'T12:00:00').getDay()] || ''
+
+    function getNomeTurma(aula: typeof turmasDoDia[0]): string {
+        const seg = esc?.segmentos.find(s => String(s.id) === String(aula.segmentoId))
+        const tur = seg?.turmas.find(t => String(t.id) === String(aula.turmaId))
+        return [seg?.nome, tur?.nome].filter(Boolean).join(' › ') || String(aula.turmaId)
+    }
+
+    function getPlanoDoSlot(aula: typeof turmasDoDia[0]) {
+        const segId = String(aula.segmentoId)
+        let planoId = rrPlanosSegmento[segId]
+        if (!planoId) {
+            planoId = sugerirPlanoParaTurma(String(rrAnoSel), String(rrEscolaSel), segId, String(aula.turmaId)) ?? undefined
+            if (planoId) setRrPlanosSegmento(prev => ({ ...prev, [segId]: planoId }))
+        }
+        return planoId ? planos.find(p => String(p.id) === String(planoId)) : null
+    }
+
+    function toggleExpandida(turmaId: string) {
+        setExpandidas(prev => ({ ...prev, [turmaId]: !prev[turmaId] }))
+    }
+
+    function setResultado(turmaId: string, valor: Resultado) {
+        setRrResultados(prev => ({ ...prev, [turmaId]: valor }))
+    }
+    function setRubricaValor(turmaId: string, criterioId: string, valor: number) {
+        setRrRubricas(prev => {
+            const atual = prev[turmaId] || []
+            return { ...prev, [turmaId]: [...atual.filter(r => r.criterioId !== criterioId), { criterioId, valor }] }
+        })
+    }
+    function getRubricaValor(turmaId: string, criterioId: string): number {
+        return rrRubricas[turmaId]?.find(r => r.criterioId === criterioId)?.valor ?? 0
+    }
+    function addEncaminhamento(turmaId: string) {
+        const txt = (inputEnc[turmaId] || '').trim()
+        if (!txt) return
+        setRrEncaminhamentos(prev => ({
+            ...prev,
+            [turmaId]: [...(prev[turmaId] || []), { id: Date.now().toString(), texto: txt, concluido: false }]
+        }))
+        setInputEnc(prev => ({ ...prev, [turmaId]: '' }))
+    }
+    function removeEncaminhamento(turmaId: string, id: string) {
+        setRrEncaminhamentos(prev => ({ ...prev, [turmaId]: (prev[turmaId] || []).filter(e => e.id !== id) }))
+    }
+
+    // ── Áudio ──
+    async function iniciarGravacao(turmaId: string) {
+        setErroAudio(prev => ({ ...prev, [turmaId]: null }))
+        try {
+            await startRecording()
+            setGravando(prev => ({ ...prev, [turmaId]: true }))
+            setTimer(prev => ({ ...prev, [turmaId]: 0 }))
+            timerRefs.current[turmaId] = setInterval(() => {
+                setTimer(prev => {
+                    const next = (prev[turmaId] || 0) + 1
+                    if (next >= MAX_AUDIO) {
+                        clearInterval(timerRefs.current[turmaId])
+                        pararGravacao(turmaId, next)
+                    }
+                    return { ...prev, [turmaId]: next }
+                })
+            }, 1000)
+        } catch {
+            setErroAudio(prev => ({ ...prev, [turmaId]: 'Microfone indisponível. Verifique as permissões.' }))
+        }
+    }
+    async function pararGravacao(turmaId: string, durSeg?: number) {
+        clearInterval(timerRefs.current[turmaId])
+        const blob = await stopRecording()
+        const b64 = await blobToBase64(blob)
+        const mime = blob.type || 'audio/webm'
+        const dur = durSeg ?? (timer[turmaId] || 0)
+        setRrAudios(prev => ({ ...prev, [turmaId]: { base64: b64, mime, duracao: dur } }))
+        setGravando(prev => ({ ...prev, [turmaId]: false }))
+    }
+    function removerAudio(turmaId: string) {
+        setRrAudios(prev => { const n = { ...prev }; delete n[turmaId]; return n })
+    }
+
+    function abrirRegistroCompleto(aula: typeof turmasDoDia[0]) {
+        const plano = getPlanoDoSlot(aula)
+        if (!plano) return
+        setPlanoParaRegistro(plano)
+        setRegAnoSel(String(aula.anoLetivoId ?? ''))
+        setRegEscolaSel(String(aula.escolaId ?? ''))
+        setRegSegmentoSel(String(aula.segmentoId))
+        setRegTurmaSel(String(aula.turmaId))
+        setVerRegistros(false)
+        setFiltroRegAno(''); setFiltroRegEscola(''); setFiltroRegSegmento('')
+        setFiltroRegTurma(''); setFiltroRegData('')
+        setRegistroEditando(null)
+        setNovoRegistro({ dataAula: rrData, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: rrResultados[String(aula.turmaId)] || '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' })
+        setModalRegistro(true)
+        setModalRegistroRapido(false)
+    }
+
+    const temAlgumDado = turmasDoDia.some(a => {
+        const tid = String(a.turmaId)
+        return rrResultados[tid] || (rrRubricas[tid] || []).length > 0 || (rrEncaminhamentos[tid] || []).length > 0 || rrAudios[tid]
+    })
+
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50" onClick={()=>setModalRegistroRapido(false)}>
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
-                {/* Header */}
-                <div className="bg-green-600 text-white p-4 flex justify-between items-center sticky top-0 z-10">
-                    <h2 className="text-lg font-bold">⚡ Registro Rápido</h2>
-                    <button onClick={()=>setModalRegistroRapido(false)} className="text-white text-xl font-bold">✕</button>
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50" onClick={() => setModalRegistroRapido(false)}>
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[92dvh] flex flex-col" onClick={e => e.stopPropagation()}>
+
+                {/* ── Header ── */}
+                <div className="bg-emerald-600 text-white px-5 py-4 flex items-center justify-between shrink-0 rounded-t-2xl sm:rounded-t-2xl">
+                    <div>
+                        <h2 className="text-base font-bold flex items-center gap-2">⚡ Registro Rápido</h2>
+                        <p className="text-xs text-emerald-100 mt-0.5">{diaSemana}, {dataFmt}{nomeEscola ? ` · ${nomeEscola}` : ''} · {turmasDoDia.length} turma{turmasDoDia.length !== 1 ? 's' : ''}</p>
+                    </div>
+                    <button onClick={() => setModalRegistroRapido(false)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 transition text-lg font-bold">✕</button>
                 </div>
 
-                <div className="p-4 space-y-4">
-                    {/* Data e Ano Letivo */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">📅 Data da Aula</label>
-                            <input type="date" value={rrData} onChange={e=>setRrData(e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">📆 Ano Letivo</label>
-                            <select value={rrAnoSel} onChange={e=>{setRrAnoSel(e.target.value);setRrEscolaSel('');setRrPlanosSegmento({});setRrTextos({});}}
-                                className="w-full px-3 py-2 border-2 rounded-lg bg-white">
-                                <option value="">Selecione...</option>
-                                {anosLetivos.filter(a => a.status !== 'arquivado').map(a=><option key={a.id} value={a.id}>{a.ano}</option>)}
-                            </select>
-                        </div>
-                    </div>
+                {/* ── Barra de ações (sticky) ── */}
+                <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-3 shrink-0 bg-white">
+                    <button
+                        onClick={salvarRegistroRapido}
+                        disabled={!temAlgumDado}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition">
+                        💾 Salvar registros
+                    </button>
+                    <p className="text-xs text-slate-400 flex-1">Preencha ao menos um campo por turma</p>
+                </div>
 
-                    {/* Escola */}
-                    {rrAnoSel && (
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">🏫 Escola</label>
-                            <select value={rrEscolaSel} onChange={e=>{setRrEscolaSel(e.target.value);setRrPlanosSegmento({});setRrTextos({});}}
-                                className="w-full px-3 py-2 border-2 rounded-lg bg-white">
-                                <option value="">Selecione...</option>
-                                {anosLetivos.find(a=>a.id==rrAnoSel)?.escolas.map(e=><option key={e.id} value={e.id}>{e.nome}</option>)}
-                            </select>
+                {/* ── Lista de turmas ── */}
+                <div className="overflow-y-auto flex-1 p-4 space-y-3">
+                    {turmasDoDia.length === 0 ? (
+                        <div className="text-center py-16 text-slate-400">
+                            <p className="text-4xl mb-3">📅</p>
+                            <p className="text-sm font-semibold">Nenhuma turma agendada para hoje</p>
+                            <p className="text-xs mt-1 text-slate-300">Configure a grade semanal em Configurações.</p>
                         </div>
-                    )}
-
-                    {/* Turmas agrupadas por Segmento */}
-                    {rrAnoSel && rrEscolaSel && (() => {
-                        const ano = anosLetivos.find(a=>a.id==rrAnoSel);
-                        const esc = ano?.escolas.find(e=>e.id==rrEscolaSel);
-                        const dataFormatada = new Date(rrData+'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
-
-                        if (!esc || esc.segmentos.length === 0) {
-                            return <p className="text-sm text-gray-400 italic text-center py-4">Nenhum segmento cadastrado nesta escola.</p>;
-                        }
+                    ) : turmasDoDia.map(aula => {
+                        const turmaId = String(aula.turmaId)
+                        const nomeTurma = getNomeTurma(aula)
+                        const plano = getPlanoDoSlot(aula)
+                        const rubricas = turmaGetRubricas(String(rrAnoSel), String(rrEscolaSel), String(aula.segmentoId), turmaId)
+                        const resultado = (rrResultados[turmaId] || '') as Resultado
+                        const encList = rrEncaminhamentos[turmaId] || []
+                        const isExpanded = !!expandidas[turmaId]
+                        const temDados = !!(rrResultados[turmaId] || (rrRubricas[turmaId] || []).length > 0 || encList.length > 0 || rrAudios[turmaId])
+                        const audioInfo = rrAudios[turmaId]
+                        const estaGravando = !!gravando[turmaId]
+                        const timerSec = timer[turmaId] || 0
 
                         return (
-                            <div className="space-y-4">
-                                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3">
-                                    <p className="text-sm font-bold text-indigo-800">{esc.nome} – {dataFormatada}</p>
-                                </div>
-
-                                {esc.segmentos.map(seg => {
-                                    if (!seg.turmas || seg.turmas.length === 0) return null;
-
-                                    // Sugestão automática de plano (só na primeira vez)
-                                    if (!rrPlanosSegmento[seg.id]) {
-                                        const sugerido = sugerirPlanoParaTurma(rrAnoSel, rrEscolaSel, seg.id, seg.turmas[0]?.id);
-                                        if (sugerido) {
-                                            setRrPlanosSegmento({...rrPlanosSegmento, [seg.id]: sugerido});
+                            <div key={aula.id} className={`bg-white border rounded-2xl overflow-hidden shadow-sm transition-all ${isExpanded ? 'border-emerald-300' : 'border-slate-200'}`}>
+                                {/* Card header — sempre visível, clicável para expandir */}
+                                <button
+                                    type="button"
+                                    onClick={() => toggleExpandida(turmaId)}
+                                    className={`w-full px-4 py-3 flex items-center justify-between gap-2 text-left transition ${isExpanded ? 'bg-emerald-50' : 'bg-slate-50 hover:bg-slate-100'}`}>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            {aula.horario && <span className="text-[11px] font-bold text-slate-400 tabular-nums shrink-0">{aula.horario}</span>}
+                                            <p className="text-sm font-bold text-slate-800 truncate">{nomeTurma}</p>
+                                            {temDados && <span className="shrink-0 w-2 h-2 rounded-full bg-emerald-400" title="Tem dados preenchidos" />}
+                                        </div>
+                                        {plano
+                                            ? <p className="text-xs text-slate-400 mt-0.5 truncate text-left">📚 {plano.titulo}</p>
+                                            : <p className="text-xs text-slate-300 italic mt-0.5 text-left">Sem plano vinculado</p>
                                         }
-                                    }
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        {plano && !isExpanded && (
+                                            <button
+                                                type="button"
+                                                onClick={e => { e.stopPropagation(); abrirRegistroCompleto(aula) }}
+                                                className="text-xs text-indigo-500 hover:text-indigo-700 font-semibold hover:underline transition whitespace-nowrap">
+                                                Completo →
+                                            </button>
+                                        )}
+                                        <svg className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </div>
+                                </button>
 
-                                    return (
-                                        <div key={seg.id} className="border-2 border-gray-200 rounded-xl p-4 bg-white">
-                                            {/* Header do Segmento */}
-                                            <h3 className="font-bold text-gray-800 mb-3">👥 {seg.nome}</h3>
+                                {/* Corpo — só visível quando expandido */}
+                                {isExpanded && (
+                                    <div className="px-4 py-4 space-y-5">
 
-                                            {/* Seleção de Plano */}
-                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                                                <label className="block text-xs font-bold text-blue-800 mb-2">📚 Plano de Aula</label>
-                                                <div className="flex gap-2">
-                                                    <select
-                                                        value={String(rrPlanosSegmento[seg.id] || '')}
-                                                        onChange={e=>setRrPlanosSegmento({...rrPlanosSegmento, [seg.id]: e.target.value})}
-                                                        className="flex-1 px-3 py-2 border rounded-lg text-sm bg-white">
-                                                        <option value="">Sem plano vinculado</option>
-                                                        {planos.map(p=><option key={p.id} value={p.id}>{p.titulo}</option>)}
-                                                    </select>
-                                                    <button
-                                                        type="button"
-                                                        onClick={()=>{
-                                                            const planoId = rrPlanosSegmento[seg.id];
-                                                            if(!planoId) return;
-                                                            const novos = {...rrPlanosSegmento};
-                                                            seg.turmas.forEach(t=>{ novos[seg.id] = planoId; });
-                                                            setRrPlanosSegmento(novos);
-                                                        }}
-                                                        className="shrink-0 bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold">
-                                                        Aplicar
-                                                    </button>
-                                                </div>
+                                        {/* Link registro completo */}
+                                        {plano && (
+                                            <div className="flex justify-end">
+                                                <button onClick={() => abrirRegistroCompleto(aula)}
+                                                    className="text-xs text-indigo-500 hover:text-indigo-700 font-semibold hover:underline transition">
+                                                    Registro completo →
+                                                </button>
                                             </div>
+                                        )}
 
-                                            {/* Turmas */}
-                                            <div className="space-y-2">
-                                                {(() => {
-                                                    // Ordenar turmas pela grade semanal (se disponível)
-                                                    const turmasDoDia = obterTurmasDoDia(rrData).filter(a =>
-                                                        a.anoLetivoId == rrAnoSel &&
-                                                        a.escolaId == rrEscolaSel &&
-                                                        a.segmentoId == seg.id
-                                                    ).sort((a,b) => a.horario.localeCompare(b.horario));
-
-                                                    // Se há turmas na grade, ordena por ela; senão, ordem padrão
-                                                    let turmasOrdenadas = seg.turmas;
-                                                    if (turmasDoDia.length > 0) {
-                                                        const ordemIds = turmasDoDia.map(a => a.turmaId);
-                                                        turmasOrdenadas = [
-                                                            ...seg.turmas.filter(t => ordemIds.includes(t.id)).sort((a,b) =>
-                                                                ordemIds.indexOf(a.id) - ordemIds.indexOf(b.id)
-                                                            ),
-                                                            ...seg.turmas.filter(t => !ordemIds.includes(t.id))
-                                                        ];
-                                                    }
-
-                                                    return turmasOrdenadas.map(turma => {
-                                                        // Verificar se já existe registro desta turma neste dia
-                                                        const planoId = rrPlanosSegmento[seg.id];
-                                                        const plano = planos.find(p => p.id == planoId);
-                                                        const jaTemRegistro = plano?.registrosPosAula?.some(r =>
-                                                            r.data === rrData && r.turma == turma.id
-                                                        );
-
-                                                        // Buscar horário da grade (se houver)
-                                                        const aulaGrade = turmasDoDia.find(a => a.turmaId == turma.id);
-
-                                                        return (
-                                                            <div key={turma.id} className="flex items-center gap-2">
-                                                                <div className="flex items-center gap-1.5 shrink-0">
-                                                                    {aulaGrade && (
-                                                                        <span className="text-xs font-mono font-bold text-purple-700 shrink-0">
-                                                                            {aulaGrade.horario}
-                                                                        </span>
-                                                                    )}
-                                                                    <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center">
-                                                                        Turma {turma.nome}
-                                                                    </span>
-                                                                    {jaTemRegistro && (
-                                                                        <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold" title="Já tem registro neste dia">
-                                                                            +
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <input
-                                                                    type="text"
-                                                                    value={rrTextos[turma.id] || ''}
-                                                                    onChange={e=>setRrTextos({...rrTextos, [turma.id]: e.target.value})}
-                                                                    placeholder={jaTemRegistro ? "Adicionar ao registro existente..." : "O que foi feito nesta turma..."}
-                                                                    className={`flex-1 px-3 py-2 border-2 rounded-lg text-sm ${jaTemRegistro ? 'border-blue-300 bg-blue-50' : 'border-gray-200'}`}
-                                                                />
-                                                            </div>
-                                                        );
-                                                    });
-                                                })()}
+                                        {/* Resultado da aula */}
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Como foi a aula?</p>
+                                            <div className="flex gap-2">
+                                                {RESULTADO_CFG.map(r => (
+                                                    <button
+                                                        key={r.value}
+                                                        type="button"
+                                                        onClick={() => setResultado(turmaId, resultado === r.value ? '' : r.value)}
+                                                        className={`flex-1 py-2 text-xs font-bold rounded-xl border-2 transition-all ${resultado === r.value ? `${r.bg} ${r.border} ${r.text}` : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}>
+                                                        {r.emoji} {r.label}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
-                                    );
-                                })}
+
+                                        {/* Nota de Voz — linha compacta */}
+                                        <div className="flex items-center gap-2 min-h-[28px]">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">🎙 Voz</span>
+                                            {erroAudio[turmaId] && (
+                                                <span className="text-[10px] text-red-400 truncate">{erroAudio[turmaId]}</span>
+                                            )}
+                                            {!audioInfo && !estaGravando && (
+                                                <button type="button" onClick={() => iniciarGravacao(turmaId)}
+                                                    className="text-[11px] text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-2 py-1 rounded-lg transition font-semibold">
+                                                    ⏺ Gravar
+                                                </button>
+                                            )}
+                                            {estaGravando && (
+                                                <>
+                                                    <span className="text-[11px] font-bold text-red-500 tabular-nums">
+                                                        ● {String(Math.floor(timerSec/60)).padStart(2,'0')}:{String(timerSec%60).padStart(2,'0')}
+                                                    </span>
+                                                    <button type="button" onClick={() => pararGravacao(turmaId)}
+                                                        className="text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-2 py-1 rounded-lg transition">
+                                                        ⏹ Parar
+                                                    </button>
+                                                </>
+                                            )}
+                                            {audioInfo && !estaGravando && (
+                                                <>
+                                                    <audio src={base64ToObjectUrl(audioInfo.base64, audioInfo.mime)}
+                                                        controls className="h-7 flex-1" style={{ minWidth: 0 }} />
+                                                    <button type="button" onClick={() => removerAudio(turmaId)}
+                                                        className="text-slate-300 hover:text-red-400 transition font-bold text-sm shrink-0 leading-none">✕</button>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        {/* Rubrica */}
+                                        {rubricas.length > 0 && (
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">📊 Avaliação da aula</p>
+                                                <div className="space-y-2.5">
+                                                    {rubricas.map(criterio => {
+                                                        const val = getRubricaValor(turmaId, String(criterio.id))
+                                                        return (
+                                                            <div key={criterio.id} className="flex items-center gap-3">
+                                                                <span className="text-xs text-slate-600 w-36 shrink-0">{criterio.nome}</span>
+                                                                <div className="flex gap-1 flex-1">
+                                                                    {Array.from({ length: criterio.escala }, (_, i) => i + 1).map(n => (
+                                                                        <button
+                                                                            key={n}
+                                                                            type="button"
+                                                                            onClick={() => setRubricaValor(turmaId, String(criterio.id), val === n ? 0 : n)}
+                                                                            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${val === n ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
+                                                                            {n}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                                {val > 0 && <span className="text-[11px] font-bold text-indigo-500 w-8 text-right shrink-0">{val}/{criterio.escala}</span>}
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Encaminhamentos */}
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">📌 Encaminhamentos para próxima aula</p>
+                                            <div className="flex gap-2 mb-2">
+                                                <input
+                                                    type="text"
+                                                    value={inputEnc[turmaId] || ''}
+                                                    onChange={e => setInputEnc(prev => ({ ...prev, [turmaId]: e.target.value }))}
+                                                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEncaminhamento(turmaId) } }}
+                                                    placeholder="Ex: Trazer partitura do Noturno, revisar compasso 12"
+                                                    className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-indigo-400"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => addEncaminhamento(turmaId)}
+                                                    className="px-3 py-2 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-200 transition shrink-0">
+                                                    + Add
+                                                </button>
+                                            </div>
+                                            {encList.length > 0 && (
+                                                <ul className="space-y-1">
+                                                    {encList.map(enc => (
+                                                        <li key={enc.id} className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-1.5">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                                                            <span className="flex-1">{enc.texto}</span>
+                                                            <button onClick={() => removeEncaminhamento(turmaId, enc.id)} className="text-slate-300 hover:text-red-400 transition shrink-0 font-bold">✕</button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        );
-                    })()}
+                        )
+                    })}
                 </div>
 
-                {/* Footer */}
-                {rrAnoSel && rrEscolaSel && (
-                    <div className="p-4 bg-gray-50 flex gap-3 sticky bottom-0 border-t">
-                        <button onClick={()=>setModalRegistroRapido(false)} className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-xl font-bold">
-                            Cancelar
-                        </button>
-                        <button onClick={salvarRegistroRapido} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold">
-                            💾 Salvar Registros
-                        </button>
-                    </div>
-                )}
+                {/* ── Footer ── */}
+                <div className="px-5 py-4 border-t border-slate-100 flex gap-3 shrink-0">
+                    <button onClick={() => setModalRegistroRapido(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-200 transition">
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={salvarRegistroRapido}
+                        disabled={!temAlgumDado}
+                        className="flex-1 py-2.5 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition">
+                        💾 Salvar registros
+                    </button>
+                </div>
             </div>
         </div>
     )

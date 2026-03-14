@@ -761,7 +761,7 @@ export default function ModalRegistroPosAula() {
                                     <div className="flex items-center gap-2" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 12px' }}>
                                         <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Data da aula</span>
                                         <input type="date" autoFocus value={novoRegistro.dataAula} onChange={e => setNovoRegistro({ ...novoRegistro, dataAula: e.target.value })}
-                                            className="flex-1 bg-transparent outline-none border-none text-right" style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }} />
+                                            className="flex-1 bg-transparent outline-none border-none text-right min-w-0" style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }} />
                                     </div>
 
                                     {/* Resultado da aula */}
@@ -1008,7 +1008,7 @@ export default function ModalRegistroPosAula() {
                                                                 <input type="text" value={novoEnc} onChange={e => setNovoEnc(e.target.value)}
                                                                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEnc() } }}
                                                                     placeholder="Ex: Trazer partitura do Noturno, revisar compasso 12"
-                                                                    style={{ flex: 1, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', fontFamily: 'inherit', outline: 'none' }}
+                                                                    style={{ flex: 1, minWidth: 0, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', fontFamily: 'inherit', outline: 'none' }}
                                                                     onFocus={e => (e.target.style.borderColor = '#94a3b8')}
                                                                     onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
                                                                 />

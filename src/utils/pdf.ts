@@ -497,16 +497,16 @@ export async function exportarAtividadePDF(ativ) {
     const titleLines = doc.splitTextToSize(ativ.nome || 'Sem título', cW);
     titleLines.forEach(l => { doc.text(l, mL, y); y += 9; });
 
-    // meta tags (duração, faixa etária, categoria)
+    // meta tags (duração, faixa etária, categoria) — sem emojis (jsPDF não suporta)
     y = Math.max(y, 34);
     const metas = [
-        ativ.duracao ? `⏱ ${ativ.duracao}` : null,
-        ...(ativ.faixaEtaria || []).map(f => `👥 ${f}`),
-        ativ.categoria ? `📂 ${ativ.categoria}` : null,
+        ativ.duracao || null,
+        ...(ativ.faixaEtaria || []),
+        ativ.categoria || null,
     ].filter(Boolean);
     if (metas.length) {
         doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(9); doc.setTextColor(...LABEL);
-        doc.text(metas.join('   ·   '), mL, y); y += 6;
+        doc.text(metas.join('  |  '), mL, y); y += 6;
     }
     y = 46;
 
