@@ -1196,7 +1196,8 @@ export default function TelaResumoDia() {
 
                                     {/* Materiais necessários */}
                                     {(() => {
-                                        const dataDiaStr = toStr(dataDia as unknown as Date)
+                                        // dataDia é string "YYYY-MM-DD" — usar diretamente
+                                        const dataDiaStr: string = dataDia
                                         const extras = extraMateriais[dataDiaStr] || []
                                         const todosMateriaisList = [...materiaisList, ...extras.filter(e => !materiaisList.includes(e.toLowerCase()))]
                                         const adicionarMaterial = () => {

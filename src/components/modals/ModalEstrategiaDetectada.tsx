@@ -20,8 +20,8 @@ const LABELS: Record<string, { titulo: string; descricao: string; dimensoes: str
 }
 
 export default function ModalEstrategiaDetectada() {
-    const { estrategiaDetectadaIA, showModalEstrategiaIA, setShowModalEstrategiaIA } = usePlanosContext()
-    const { setEstrategias } = useEstrategiasContext()
+    const { estrategiaDetectadaIA, showModalEstrategiaIA, setShowModalEstrategiaIA, planos } = usePlanosContext()
+    const { estrategias, setEstrategias, registrarUsoEstrategia } = useEstrategiasContext()
 
     const [nome, setNome] = useState('')
     const [salvando, setSalvando] = useState(false)
@@ -46,17 +46,43 @@ export default function ModalEstrategiaDetectada() {
     function salvarComoEstrategia() {
         if (!nome.trim()) return
         setSalvando(true)
-        const novaEstrategia = {
-            id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            nome: nome.trim(),
-            descricao: meta.descricao,
-            dimensoes: meta.dimensoes,
-            categoria: meta.titulo,
-            ativo: true,
-            contadorUso: 1,
-            _criadoEm: new Date().toISOString(),
+
+        const nomeTrim = nome.trim()
+        const nomeNorm = nomeTrim.toLowerCase()
+        const agora = new Date().toISOString()
+
+        // Achar título do plano vinculado
+        const planoId = estrategiaDetectadaIA!.planoId
+        const planoTitulo = (planos as any[]).find(p => String(p.id) === String(planoId))?.titulo || 'Plano detectado'
+
+        const novoHistorico: { planoId: string | number; planoTitulo: string; data: string } = {
+            planoId,
+            planoTitulo,
+            data: agora,
         }
-        setEstrategias(prev => [...prev, novaEstrategia])
+
+        // Verifica se já existe estratégia com nome igual (case-insensitive)
+        const existente = estrategias.find(e => e.nome.trim().toLowerCase() === nomeNorm)
+
+        if (existente) {
+            // Registrar uso na estratégia existente (sem criar duplicata)
+            registrarUsoEstrategia(existente.id, planoId, planoTitulo)
+        } else {
+            // Criar nova estratégia com historicoUso já populado
+            const novaEstrategia = {
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                nome: nomeTrim,
+                descricao: meta.descricao,
+                dimensoes: meta.dimensoes,
+                categoria: meta.titulo,
+                ativo: true,
+                contadorUso: 1,
+                historicoUso: [novoHistorico],
+                _criadoEm: agora,
+            }
+            setEstrategias(prev => [...prev, novaEstrategia])
+        }
+
         setSalvando(false)
         setSalvo(true)
         setTimeout(fechar, 1800)

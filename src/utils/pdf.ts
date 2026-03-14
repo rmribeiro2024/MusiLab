@@ -126,7 +126,8 @@ export async function exportarPlanoPDF(plano) {
         plano.numeroAula ? 'Aula ' + plano.numeroAula : null,
         plano.nivel,
         plano.duracao || null,
-        (plano.faixaEtaria||[]).join(', ') || null,
+        // Deduplicar faixaEtaria normalizando espaços e símbolos de grau (° / º)
+        [...new Set((plano.faixaEtaria||[]).map(s => String(s).trim().replace(/[°º]/g, 'º')))].join(', ') || null,
     ].filter(Boolean).join('  |  ');
     if (meta) {
         y += 1;
@@ -144,7 +145,8 @@ export async function exportarPlanoPDF(plano) {
     if (bncc.length > 0) {
         sectionTitle("Habilidades BNCC");
         bncc.forEach(h => {
-            const ls = doc.splitTextToSize(h.trim(), cW);
+            // cW - 2: folga extra para evitar overflow na margem direita
+            const ls = doc.splitTextToSize(h.trim(), cW - 2);
             doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
             ls.forEach(l => { chk(LS); doc.text(l, mL, y); y += LS; });
         });
@@ -169,7 +171,8 @@ export async function exportarPlanoPDF(plano) {
             objEsp.forEach(o => {
                 o.split('\n').filter(l => l.trim()).forEach(linha => {
                     const txt = (linha.startsWith('-') ? '' : '- ') + linha.trim();
-                    const ls = doc.splitTextToSize(txt, cW - 5);
+                    // cW - 11: desconta indentação (4mm 1ª linha / 7mm cont.) + 2mm folga margem
+                    const ls = doc.splitTextToSize(txt, cW - 11);
                     doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
                     ls.forEach((l, i) => { chk(LS); doc.text(l, mL + (i > 0 ? 7 : 4), y); y += LS; });
                 });
