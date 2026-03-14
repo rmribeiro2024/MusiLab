@@ -14,31 +14,66 @@
 .rich-editor-area ol { list-style: decimal; padding-left: 1.5rem; margin: 0.25rem 0; }
 .rich-editor-area li { margin: 0.15rem 0; }
 
-/* ── MODO ESCURO ── */
-.dark body { background: #0f172a; color: #e2e8f0; }
-.dark .bg-slate-50, .dark .bg-white { background: #1e293b !important; }
-.dark .bg-gray-50 { background: #1e293b !important; }
-.dark .bg-gray-100 { background: #273344 !important; }
-.dark .bg-gray-200 { background: #334155 !important; }
-.dark .text-gray-900, .dark .text-gray-800, .dark .text-gray-700 { color: #e2e8f0 !important; }
-.dark .text-gray-600, .dark .text-gray-500 { color: #94a3b8 !important; }
-.dark .border-gray-200, .dark .border-gray-100 { border-color: #334155 !important; }
+/* ── MODO ESCURO — v2 palette ── */
+.dark body { background: #0F172A; color: #E5E7EB; }
+/* Shell surfaces */
+.dark .bg-slate-50  { background: #1F2937 !important; }
+.dark .bg-slate-100 { background: #1F2937 !important; }
+.dark .bg-white     { background: #1F2937 !important; }
+.dark .bg-gray-50   { background: #1F2937 !important; }
+.dark .bg-gray-100  { background: #273344 !important; }
+.dark .bg-gray-200  { background: #374151 !important; }
+/* Text */
+.dark .text-gray-900, .dark .text-gray-800, .dark .text-gray-700 { color: #E5E7EB !important; }
+.dark .text-gray-600, .dark .text-gray-500 { color: #9CA3AF !important; }
+.dark .text-slate-900, .dark .text-slate-800, .dark .text-slate-700 { color: #E5E7EB !important; }
+.dark .text-slate-600, .dark .text-slate-500 { color: #9CA3AF !important; }
+.dark .text-slate-400 { color: #6b7280 !important; }
+/* Borders */
+.dark .border-gray-200, .dark .border-gray-100 { border-color: #374151 !important; }
+.dark .border-slate-200, .dark .border-slate-100 { border-color: #374151 !important; }
+/* Shadows */
 .dark .shadow, .dark .shadow-md, .dark .shadow-lg, .dark .shadow-xl, .dark .shadow-2xl { box-shadow: 0 4px 24px rgba(0,0,0,0.5) !important; }
-.dark input, .dark textarea, .dark select { background: #273344 !important; color: #e2e8f0 !important; border-color: #475569 !important; }
-.dark .bg-indigo-50 { background: #1e1b4b !important; }
-.dark .bg-blue-50 { background: #172554 !important; }
-.dark .bg-green-50 { background: #052e16 !important; }
-.dark .bg-orange-50 { background: #431407 !important; }
-.dark .bg-purple-50 { background: #2e1065 !important; }
-.dark .bg-amber-50 { background: #451a03 !important; }
-.dark .hover\:bg-gray-50:hover { background: #273344 !important; }
-.dark .hover\:bg-gray-100:hover { background: #334155 !important; }
+/* Inputs */
+.dark input, .dark textarea, .dark select { background: #273344 !important; color: #E5E7EB !important; border-color: #4B5563 !important; }
+/* Color tints */
+.dark .bg-indigo-50  { background: #1e1b4b !important; }
+.dark .bg-blue-50    { background: #172554 !important; }
+.dark .bg-green-50   { background: #052e16 !important; }
+.dark .bg-orange-50  { background: #431407 !important; }
+.dark .bg-purple-50  { background: #2e1065 !important; }
+.dark .bg-amber-50   { background: #451a03 !important; }
+.dark .bg-red-50     { background: #450a0a !important; }
+.dark .bg-emerald-50 { background: #052e16 !important; }
+/* Hover */
+.dark .hover\:bg-gray-50:hover  { background: #273344 !important; }
+.dark .hover\:bg-gray-100:hover { background: #374151 !important; }
+.dark .hover\:bg-slate-50:hover { background: #273344 !important; }
+
+/* ── CARD HOVER — efeito suave v2 ── */
+.card-hover {
+    transition: box-shadow 120ms ease, transform 120ms ease;
+}
+.card-hover:hover {
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+.dark .card-hover:hover {
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+}
 
 /* ── DRAG & DROP ── */
 .drag-handle { cursor: grab; }
 .drag-handle:active { cursor: grabbing; }
 .dragging { opacity: 0.4; }
-.drag-over { border-top: 2px solid #6366f1 !important; }
+.drag-over { border-top: 2px solid #5B5FEA !important; }
+
+/* ── DARK MODE — superfícies elevadas (para módulos internos) ── */
+/* Cards dentro do main devem usar surface #1F2937, não #1e293b antigo */
+.dark .bg-slate-50  { background: #1F2937 !important; }
+.dark .border-slate-100, .dark .border-slate-50 { border-color: #374151 !important; }
+/* Garante que o fundo do app (não cards) use #0F172A */
+.dark .bg-\[\#F6F8FB\] { background: #0F172A !important; }
 
 /* ── MOBILE: FIX iOS SAFARI ── */
 

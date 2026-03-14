@@ -443,6 +443,10 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             const [statusSalvamento, setStatusSalvamento] = useState('');
             const [darkMode, setDarkMode] = useState(() => dbGet('darkMode') === 'true');
+            type ThemeMode = 'light' | 'dark' | 'system'
+            const [themeMode, setThemeMode] = useState<ThemeMode>(() =>
+                (localStorage.getItem('musilab_theme') as ThemeMode) || 'light'
+            )
             const [modalCompartilhado, setModalCompartilhado] = useState<{ tipo: string; dados: Record<string, unknown> } | null>(null);
             // Seções colapsáveis na visualização do plano
             const [bnccExpanded, setBnccExpanded] = useState(false);
@@ -457,10 +461,21 @@ export default function BancoPlanos({ session }) {
             // dragOverIndex, setDragOverIndex — via usePlanosContext()
             // handleDragStart, handleDragEnter, handleDragEnd — via usePlanosContext()
             useEffect(() => {
-                dbSet('darkMode', String(darkMode));
-                if (darkMode) { document.documentElement.classList.add('dark'); }
-                else { document.documentElement.classList.remove('dark'); }
-            }, [darkMode]);
+                localStorage.setItem('musilab_theme', themeMode)
+                const applyDark = (dark: boolean) => {
+                    document.documentElement.classList.toggle('dark', dark)
+                    setDarkMode(dark)
+                    dbSet('darkMode', String(dark))
+                }
+                if (themeMode === 'light') { applyDark(false); return }
+                if (themeMode === 'dark')  { applyDark(true);  return }
+                // system
+                const mq = window.matchMedia('(prefers-color-scheme: dark)')
+                applyDark(mq.matches)
+                const handler = (e: MediaQueryListEvent) => applyDark(e.matches)
+                mq.addEventListener('change', handler)
+                return () => mq.removeEventListener('change', handler)
+            }, [themeMode]);
 
             // Detectar link compartilhável na URL (#share=...)
             useEffect(() => {
@@ -2468,129 +2483,135 @@ export default function BancoPlanos({ session }) {
             };
             return (
                 <BancoPlanosContext.Provider value={ctx as any}>
-                <div className="min-h-screen bg-slate-50 flex flex-col">
+                <div className="min-h-screen bg-[#F6F8FB] dark:bg-[#0F172A] flex flex-col">
 
-                    {/* ══════════ HEADER ══════════ */}
-                    <div className="bg-blue-950 text-white shadow-lg safe-pt">
-                        <div className="max-w-7xl mx-auto px-4 pt-4 pb-0">
+                    {/* ══════════ HEADER — barra única 48px ══════════ */}
+                    <div className="bg-white dark:bg-[#1E2A4A] border-b border-[#E6EAF0] dark:border-[#2d3f6a] h-12 flex items-center flex-none safe-pt">
+                        <div className="w-full px-4 flex items-center gap-3 h-12">
 
-                            {/* Linha superior: logo + widget hoje */}
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-2xl">🎵</span>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <h1 className="text-2xl font-bold tracking-tight text-white leading-tight">MusiLab</h1>
-                                            {/* Indicador de salvamento */}
-                                            <div role="status" aria-live="polite" aria-atomic="true">
-                                            {statusSalvamento === 'salvando' && (
-                                                <span className="flex items-center gap-1 text-xs text-amber-300 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-full animate-pulse">
-                                                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                                                    </svg>
-                                                    Salvando…
-                                                </span>
-                                            )}
-                                            {statusSalvamento === 'salvo' && (
-                                                <span className="flex items-center gap-1 text-xs text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                                                    ✓ Salvo na nuvem
-                                                </span>
-                                            )}
-                                            {statusSalvamento === 'erro' && (
-                                                <button
-                                                    onClick={baixarBackup}
-                                                    className="flex items-center gap-1 text-xs text-red-300 bg-red-500/20 border border-red-500/40 px-2 py-0.5 rounded-full hover:bg-red-500/30 transition cursor-pointer"
-                                                    title="Clique para baixar backup de segurança agora!"
-                                                >
-                                                    ⚠ Erro nuvem — ⬇ baixar backup
-                                                </button>
-                                            )}
-                                            </div>
-                                        </div>
-                                        <p className="text-slate-300 text-sm mt-0.5 flex items-center gap-2 flex-wrap">
-                                            Planejamento Musical · {userName}
-                                            <button
-                                                onClick={() => setShowBuscaGlobal(true)}
-                                                className="flex items-center gap-1 text-slate-400 hover:text-white bg-blue-800/50 hover:bg-blue-700/60 border border-blue-700/40 hover:border-blue-600/60 px-2 py-0.5 rounded-lg text-xs transition"
-                                                title="Busca global (Ctrl+K)"
-                                            >
-                                                🔍 Busca <kbd className="text-slate-500 font-mono text-[10px]">Ctrl+K</kbd>
-                                            </button>
-                                            <span className="text-slate-500 text-xs" title="Atalhos: N = Nova aula | Esc = Fechar | Ctrl+S = Salvar | Ctrl+K = Busca global">⌨ atalhos</span>
-                                            <button onClick={fazerLogout} className="text-slate-400 hover:text-red-400 transition text-xs">⎋ sair</button>
-                                            <button onClick={()=>setDarkMode(!darkMode)} className="text-slate-400 hover:text-yellow-300 transition text-xs ml-1" title="Alternar modo escuro">
-                                                {darkMode ? '☀️' : '🌙'}
-                                            </button>
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Widget "hoje" compacto — oculto em mobile (visível sm+) */}
-                                <div className="hidden sm:block bg-blue-900 border border-blue-800 rounded-xl px-4 py-2.5 text-sm min-w-[260px]">
-                                    <div className="font-medium text-slate-300 text-xs mb-1.5">
-                                        📅 {new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})}
-                                    </div>
-                                    {(() => {
-                                        const hoje = new Date();
-                                        const hojeStr = hoje.toISOString().split('T')[0];
-                                        // #6: combina historicoDatas + registrosPosAula de hoje
-                                        const aulasHojeHist = planos.filter(p => p.historicoDatas?.includes(hojeStr));
-                                        const aulasHojeReg  = planos.filter(p =>
-                                            !(p.historicoDatas?.includes(hojeStr)) &&
-                                            (p.registrosPosAula||[]).some(r => r.data === hojeStr)
-                                        );
-                                        const aulasHoje = [...aulasHojeHist, ...aulasHojeReg];
-                                        const feriadoHoje = [...(feriadosNacionais.fixos||[]), ...(feriadosNacionais.moveis?.[hoje.getFullYear()]||[])].find(f => {
-                                            return new Date(hoje.getFullYear(), f.mes-1, f.dia).toDateString() === hoje.toDateString();
-                                        });
-                                        if(feriadoHoje) return <div className="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded">🎉 {feriadoHoje.nome}</div>;
-                                        const proximoEvento = eventosEscolares.filter(e => new Date(e.data+'T23:59:59') >= new Date()).sort((a,b)=>new Date(a.data).getTime()-new Date(b.data).getTime())[0];
-                                        return (
-                                            <>
-                                                {aulasHoje.length > 0 && (
-                                                    <div className="text-xs bg-emerald-500/15 text-emerald-300 px-2 py-1 rounded mb-1">
-                                                        🎓 <span className="font-semibold">{aulasHoje.length} aula(s) hoje</span>
-                                                        <span className="text-slate-400 ml-1">— {aulasHoje.map(p=>p.turma||'?').join(', ')}</span>
-                                                    </div>
-                                                )}
-                                                {proximoEvento ? (
-                                                    <div className="text-xs text-slate-400">
-                                                        📌 <span className="text-slate-200 font-medium">{proximoEvento.nome}</span>
-                                                        <span className="ml-1">em {Math.ceil((new Date(proximoEvento.data+'T00:00:00').getTime()-new Date().getTime())/(1000*60*60*24))} dias</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="text-xs text-slate-500 italic">Nenhum evento próximo</div>
-                                                )}
-                                            </>
-                                        );
-                                    })()}
-                                </div>
+                            {/* Logo */}
+                            <div className="flex items-center gap-2 flex-none mr-1">
+                                <span className="text-lg leading-none">🎵</span>
+                                <span className="text-[15px] font-bold tracking-tight text-slate-900 dark:text-white leading-none">MusiLab</span>
                             </div>
 
-                            {/* ══ NAVBAR: Linha 1 — Grupos ══ */}
-                            <div className="flex items-center gap-0.5 px-1 pt-1 overflow-x-auto scrollbar-hide">
+                            {/* Status badge — inline ao lado do logo */}
+                            <div role="status" aria-live="polite" aria-atomic="true" className="flex-none">
+                                {statusSalvamento === 'salvando' && (
+                                    <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30 px-2 py-0.5 rounded-full animate-pulse">
+                                        <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                        </svg>
+                                        Salvando…
+                                    </span>
+                                )}
+                                {statusSalvamento === 'salvo' && (
+                                    <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/30 px-2 py-0.5 rounded-full">
+                                        ✓ Salvo
+                                    </span>
+                                )}
+                                {statusSalvamento === 'erro' && (
+                                    <button
+                                        onClick={baixarBackup}
+                                        className="flex items-center gap-1 text-xs text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/40 px-2 py-0.5 rounded-full hover:bg-red-100 dark:hover:bg-red-500/30 transition cursor-pointer"
+                                        title="Clique para baixar backup de segurança agora!"
+                                    >
+                                        ⚠ Erro — ⬇ backup
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Nav grupos — apenas desktop (mobile usa bottom nav) */}
+                            <nav className="hidden sm:flex items-center gap-0.5 flex-1 overflow-x-auto scrollbar-hide">
                                 {NAV_GROUPS.map(group => {
                                     const isGroupActive = activeGroupId === group.id
                                     return (
                                         <button key={group.id}
                                             onClick={() => { const first = group.items[0]; first.action() }}
-                                            className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-all
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-semibold whitespace-nowrap transition-all duration-[120ms]
                                                 ${isGroupActive
-                                                    ? 'bg-white/20 text-white'
-                                                    : 'text-blue-300 hover:text-white hover:bg-white/10'}`}>
+                                                    ? 'bg-[#5B5FEA]/10 dark:bg-white/15 text-[#5B5FEA] dark:text-white'
+                                                    : 'text-slate-500 dark:text-[#9CA3AF] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10'}`}>
                                             <span className="text-sm leading-none">{group.icon}</span>
-                                            <span className="hidden sm:inline">{group.label}</span>
-                                            <span className="sm:hidden">{group.short}</span>
+                                            <span>{group.label}</span>
                                         </button>
                                     )
                                 })}
-                            </div>
+                            </nav>
 
+                            {/* Spacer mobile */}
+                            <div className="flex-1 sm:hidden" />
+
+                            {/* Ações direita */}
+                            <div className="flex items-center gap-1.5 flex-none">
+
+                                {/* Date chip — desktop */}
+                                <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-slate-100 dark:bg-white/[0.07] border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs text-slate-500 dark:text-[#9CA3AF] whitespace-nowrap">
+                                    <span>📅</span>
+                                    <span className="text-slate-700 dark:text-[#E5E7EB] font-medium">
+                                        {new Date().toLocaleDateString('pt-BR', {weekday:'short', day:'numeric', month:'short'})}
+                                    </span>
+                                    {(() => {
+                                        const hoje = new Date();
+                                        const hojeStr = hoje.toISOString().split('T')[0];
+                                        const aulasHoje = planos.filter(p =>
+                                            p.historicoDatas?.includes(hojeStr) ||
+                                            (p.registrosPosAula||[]).some(r => r.data === hojeStr)
+                                        );
+                                        if (aulasHoje.length > 0) return (
+                                            <span className="ml-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                                                · {aulasHoje.length} aula{aulasHoje.length > 1 ? 's' : ''}
+                                            </span>
+                                        )
+                                        const proximoEvento = eventosEscolares
+                                            .filter(e => new Date(e.data+'T23:59:59') >= new Date())
+                                            .sort((a,b) => new Date(a.data).getTime() - new Date(b.data).getTime())[0];
+                                        if (proximoEvento) return (
+                                            <span className="ml-1 text-slate-400 dark:text-[#6b7280] max-w-[120px] truncate">
+                                                · {proximoEvento.nome}
+                                            </span>
+                                        )
+                                        return null
+                                    })()}
+                                </div>
+
+                                {/* Busca */}
+                                <button
+                                    onClick={() => setShowBuscaGlobal(true)}
+                                    title="Busca global (Ctrl+K)"
+                                    className="p-1.5 text-slate-400 dark:text-[#9CA3AF] hover:text-[#5B5FEA] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition duration-[120ms]"
+                                >
+                                    🔍
+                                </button>
+
+                                {/* Theme toggle */}
+                                <span className="flex items-center bg-slate-100 dark:bg-white/[0.07] rounded-lg p-0.5 gap-0">
+                                    {(['light','dark','system'] as const).map(t => (
+                                        <button key={t} onClick={() => setThemeMode(t)}
+                                            className={`text-[11px] px-1.5 py-1 rounded-[5px] transition duration-[120ms]
+                                                ${themeMode === t
+                                                    ? 'bg-white dark:bg-white/20 shadow-sm text-slate-700 dark:text-white'
+                                                    : 'text-slate-400 dark:text-[#6b7280] hover:text-slate-700 dark:hover:text-white'}`}
+                                            title={t === 'light' ? 'Modo claro' : t === 'dark' ? 'Modo escuro' : 'Seguir sistema'}
+                                        >
+                                            {t === 'light' ? '☀️' : t === 'dark' ? '🌙' : '🖥️'}
+                                        </button>
+                                    ))}
+                                </span>
+
+                                {/* Logout */}
+                                <button
+                                    onClick={fazerLogout}
+                                    title={`Sair (${userName})`}
+                                    className="p-1.5 text-slate-400 dark:text-[#9CA3AF] hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition duration-[120ms] text-xs"
+                                >
+                                    ⎋
+                                </button>
+
+                            </div>
                         </div>
                     </div>
-                    {/* Faixa sutil de separação */}
-                    <div className="h-px bg-slate-200 flex-none"/>
 
                     {/* ══ BODY: Sidebar + Área de conteúdo ══ */}
                     <div className="flex flex-1 overflow-hidden">
@@ -2604,25 +2625,26 @@ export default function BancoPlanos({ session }) {
                                 activeMode={viewMode}
                                 mobileOpen={mobileSidebarOpen}
                                 onMobileClose={() => setMobileSidebarOpen(false)}
+                                sectionLabel={NAV_GROUPS.find(g => g.id === activeGroupId)?.label}
                             />
                         )}
 
                         {/* ── Área de conteúdo principal (scrola internamente) ── */}
-                        <main className="flex-1 overflow-y-auto">
+                        <main className="flex-1 overflow-y-auto bg-[#F6F8FB] dark:bg-[#0F172A]">
 
                             {/* Botão ☰ Seções — só no mobile, só quando há sidebar */}
                             {activeGroupItems.length >= 2 && (
-                                <div className="sm:hidden flex items-center gap-2 px-4 pt-4 pb-3 border-b border-slate-100 bg-white">
+                                <div className="sm:hidden flex items-center gap-2 px-4 pt-4 pb-3 border-b border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937]">
                                     <button
                                         type="button"
                                         onClick={() => setMobileSidebarOpen(true)}
-                                        className="text-slate-500 hover:text-slate-700 text-sm flex items-center gap-1.5 font-medium"
+                                        className="text-slate-500 dark:text-[#9CA3AF] hover:text-slate-700 dark:hover:text-white text-sm flex items-center gap-1.5 font-medium transition"
                                     >
                                         <span>☰</span>
                                         <span>Seções</span>
                                     </button>
-                                    <span className="text-slate-300">›</span>
-                                    <span className="text-sm font-semibold text-slate-700">
+                                    <span className="text-slate-300 dark:text-[#4B5563]">›</span>
+                                    <span className="text-sm font-semibold text-slate-700 dark:text-[#E5E7EB]">
                                         {activeGroupItems.find(i => i.mode === viewMode)?.label ?? ''}
                                     </span>
                                 </div>
