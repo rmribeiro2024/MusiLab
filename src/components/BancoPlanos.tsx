@@ -734,7 +734,7 @@ export default function BancoPlanos({ session }) {
                     items: [
                         { label: 'Painel da Turma', short: 'Painel', icon: '👥', mode: 'turmas',          action: () => setViewMode('turmas') },
                         { label: 'Histórico',        short: 'Hist.',  icon: '📋', mode: 'historicoMusical', action: () => setViewMode('historicoMusical') },
-                        { label: 'Continuidade',     short: 'Cont.',  icon: '↩️', mode: 'continuidade_enc', action: () => setViewMode('historicoMusical') },
+                        { label: 'Continuidade',     short: 'Cont.',  icon: '↩️', mode: 'continuidade_enc', action: () => { setViewMode('historicoMusical'); } },
                     ]
                 },
                 {
@@ -2623,12 +2623,12 @@ export default function BancoPlanos({ session }) {
                         {/* ═══════════ VIEW SEQUÊNCIAS DIDÁTICAS ═══════════ */}
                         {viewMode === 'sequencias' && <ErrorBoundary modulo="Sequências"><Suspense fallback={<CarregandoModulo />}><ModuloSequencias /></Suspense></ErrorBoundary>}
                         {viewMode === 'lista' && <ErrorBoundary modulo="Banco de Aulas"><Suspense fallback={<CarregandoModulo />}><TelaPrincipal /></Suspense></ErrorBoundary>}
-                    </div>
-
-                    {/* MODAL VER COMPLETO */}
 
                         {/* REPERTÓRIO INTELIGENTE */}
                         {viewMode === 'repertorio' && <ErrorBoundary modulo="Repertório"><Suspense fallback={<CarregandoModulo />}><ModuloRepertorio /></Suspense></ErrorBoundary>}
+                    </div>
+
+                    {/* MODAL VER COMPLETO */}
 
                     {/* Espaçador para o bottom nav mobile */}
                     <div className="h-16 sm:hidden" />

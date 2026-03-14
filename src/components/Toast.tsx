@@ -6,6 +6,7 @@ interface ToastItem {
     msg: string
     type: ToastType
     duration: number
+    onUndo?: () => void
 }
 
 let _nextId = 0
@@ -24,9 +25,9 @@ export default function Toast() {
 
     useEffect(() => {
         const handler = (e: Event) => {
-            const { msg, type, duration } = (e as CustomEvent<{ msg: string; type: ToastType; duration: number }>).detail
+            const { msg, type, duration, onUndo } = (e as CustomEvent<{ msg: string; type: ToastType; duration: number; onUndo?: () => void }>).detail
             const id = _nextId++
-            setToasts(prev => [...prev.slice(-2), { id, msg, type, duration }])
+            setToasts(prev => [...prev.slice(-2), { id, msg, type, duration, onUndo }])
             setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration)
         }
         window.addEventListener('musilab:toast', handler)
@@ -46,10 +47,21 @@ export default function Toast() {
                 <div
                     key={t.id}
                     role="alert"
-                    className={`flex items-start gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium pointer-events-auto ${COLORS[t.type]}`}
+                    className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium pointer-events-auto ${COLORS[t.type]}`}
                 >
                     <span className="shrink-0">{ICONS[t.type]}</span>
-                    <span>{t.msg}</span>
+                    <span className="flex-1">{t.msg}</span>
+                    {t.onUndo && (
+                        <button
+                            onClick={() => {
+                                t.onUndo!()
+                                setToasts(prev => prev.filter(x => x.id !== t.id))
+                            }}
+                            className="shrink-0 ml-1 px-2 py-0.5 rounded-lg bg-white/20 hover:bg-white/30 text-xs font-bold transition-colors"
+                        >
+                            Desfazer
+                        </button>
+                    )}
                 </div>
             ))}
         </div>
