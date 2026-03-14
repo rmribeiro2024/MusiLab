@@ -218,7 +218,7 @@ export default function BancoPlanos({ session }) {
                 modalVincularPlano, setModalVincularPlano,
                 buscaPlanoVinculo, setBuscaPlanoVinculo,
                 novaSequencia: _novaSequencia, salvarSequencia, excluirSequencia,
-                vincularPlanoAoSlot, atualizarRascunhoSlot, desvincularPlano,
+                vincularPlanoAoSlot, desvincularPlano,
                 gerarSlots,
             } = useSequenciasContext();
             // novaSequencia precisa de anosLetivos — wrapper definido após anosLetivos
@@ -1894,7 +1894,6 @@ export default function BancoPlanos({ session }) {
         atividades,
         atualizarAtividadeRoteiro,
         atualizarAulaGrade,
-        atualizarRascunhoSlot,
         autoBackupAtivo: !!autoBackupHandle,
         configurarAutoBackup,
         desativarAutoBackup,
@@ -2432,9 +2431,9 @@ export default function BancoPlanos({ session }) {
                                 {/* GRUPO 1: Trabalho diário */}
                                 <div className="flex items-end gap-0.5 sm:gap-1 mr-2 sm:mr-3">
                                     {[
+                                        { label:'Hoje',       short:'Hoje',    icon:'☀️', mode:'resumoDia',       action:()=>setViewMode('resumoDia') },
                                         { label:'Planos', short:'Planos', icon:'📚', mode:'lista', action:()=>{setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null);} },
                                         { label:'Nova Aula',  short:'Nova',    icon:'➕', mode:'nova',            action: novoPlano, accent: true },
-                                        { label:'Hoje',       short:'Hoje',    icon:'☀️', mode:'resumoDia',       action:()=>setViewMode('resumoDia') },
                                         { label:'Calendário', short:'Cal.',    icon:'📅', mode:'calendario',      action:()=>setViewMode('calendario') },
                                         { label:'Caderno da Turma', short:'Caderno', icon:'👥', mode:'turmas', action:()=>setViewMode('turmas') },
                                         { label:'Relatórios', short:'Rel.',    icon:'📋', mode:'relatorios',      action:()=>setViewMode('relatorios') },

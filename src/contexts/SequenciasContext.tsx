@@ -38,7 +38,6 @@ export interface SequenciasContextValue {
   salvarSequencia: () => void
   excluirSequencia: (id: string | number) => void
   vincularPlanoAoSlot: (planoId: string | number) => void
-  atualizarRascunhoSlot: (sequenciaId: string | number, slotIndex: number, campo: string, valor: unknown) => void
   desvincularPlano: (sequenciaId: string | number, slotIndex: number) => void
   gerarSlots: (numero: number) => unknown[]
 }
@@ -128,7 +127,6 @@ export function SequenciasProvider({ children, userId }: SequenciasProviderProps
         id: Date.now() + i,
         ordem: i + 1,
         planoVinculado: null,
-        rascunho: { titulo: '', setlist: [], materiais: [] }
       })
     }
     return slots
@@ -202,7 +200,6 @@ export function SequenciasProvider({ children, userId }: SequenciasProviderProps
         novosSlots[slotIndex] = {
           ...novosSlots[slotIndex],
           planoVinculado: String(planoId),
-          rascunho: { titulo: '', setlist: [], materiais: [] }
         }
         return { ...seq, slots: novosSlots }
       }
@@ -216,25 +213,6 @@ export function SequenciasProvider({ children, userId }: SequenciasProviderProps
     setBuscaPlanoVinculo('')
   }
 
-  function atualizarRascunhoSlot(sequenciaId: string | number, slotIndex: number, campo: string, valor: unknown) {
-    const novasSequencias = sequencias.map(seq => {
-      if (seq.id === sequenciaId) {
-        const novosSlots = [...seq.slots]
-        novosSlots[slotIndex] = {
-          ...novosSlots[slotIndex],
-          planoVinculado: null,
-          rascunho: { ...novosSlots[slotIndex].rascunho, [campo]: valor }
-        }
-        return { ...seq, slots: novosSlots }
-      }
-      return seq
-    })
-    setSequencias(novasSequencias)
-    if (sequenciaDetalhe && sequenciaDetalhe.id === sequenciaId) {
-      setSequenciaDetalhe(novasSequencias.find(s => s.id === sequenciaId) || null)
-    }
-  }
-
   function desvincularPlano(sequenciaId: string | number, slotIndex: number) {
     const novasSequencias = sequencias.map(seq => {
       if (seq.id === sequenciaId) {
@@ -242,7 +220,6 @@ export function SequenciasProvider({ children, userId }: SequenciasProviderProps
         novosSlots[slotIndex] = {
           ...novosSlots[slotIndex],
           planoVinculado: null,
-          rascunho: { titulo: '', setlist: [], materiais: [] }
         }
         return { ...seq, slots: novosSlots }
       }
@@ -266,9 +243,9 @@ export function SequenciasProvider({ children, userId }: SequenciasProviderProps
     modalVincularPlano, setModalVincularPlano,
     buscaPlanoVinculo, setBuscaPlanoVinculo,
     novaSequencia, salvarSequencia, excluirSequencia,
-    vincularPlanoAoSlot, atualizarRascunhoSlot, desvincularPlano,
+    vincularPlanoAoSlot, desvincularPlano,
     gerarSlots,
-  }), [sequencias, sequenciaEditando, sequenciaDetalhe, filtroEscolaSequencias, filtroUnidadeSequencias, filtroPeriodoSequencias, buscaProfundaSequencias, modalVincularPlano, buscaPlanoVinculo, novaSequencia, salvarSequencia, excluirSequencia, vincularPlanoAoSlot, atualizarRascunhoSlot, desvincularPlano, gerarSlots])
+  }), [sequencias, sequenciaEditando, sequenciaDetalhe, filtroEscolaSequencias, filtroUnidadeSequencias, filtroPeriodoSequencias, buscaProfundaSequencias, modalVincularPlano, buscaPlanoVinculo, novaSequencia, salvarSequencia, excluirSequencia, vincularPlanoAoSlot, desvincularPlano, gerarSlots])
 
   return (
     <SequenciasContext.Provider value={value}>

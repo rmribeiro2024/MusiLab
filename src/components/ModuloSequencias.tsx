@@ -724,10 +724,10 @@ export default function ModuloSequencias() {
                                     dataInicio: planDataInicio, diasSemana: planDiasSemana,
                                 })
                                 setSeqParaPlanejar(null)
-                                showToast(`${qtd} plano${qtd !== 1 ? 's' : ''} criado${qtd !== 1 ? 's' : ''} como rascunho na aba Planos!`, 'success')
+                                showToast(`${qtd} plano${qtd !== 1 ? 's' : ''} criado${qtd !== 1 ? 's' : ''} na aba Planos!`, 'success')
                             }}
                             style={{ width: '100%', padding: '11px', borderRadius: 10, background: planDiasSemana.length === 0 || !planDataInicio ? '#e2e8f0' : '#6366f1', color: planDiasSemana.length === 0 || !planDataInicio ? '#94a3b8' : '#fff', border: 'none', fontSize: 14, fontWeight: 700, cursor: planDiasSemana.length === 0 || !planDataInicio ? 'default' : 'pointer', transition: 'all .15s' }}>
-                            Criar {seqParaPlanejar.slots.length} planos rascunho
+                            Criar {seqParaPlanejar.slots.length} planos
                         </button>
                     </div>
                 </div>

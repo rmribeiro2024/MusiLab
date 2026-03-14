@@ -271,12 +271,6 @@ export interface SlotSequencia {
   id: string | number
   ordem: number
   planoVinculado?: string | null
-  rascunho?: {
-    titulo?: string
-    setlist?: string[]
-    observacoes?: string
-    materiais?: string[]
-  } | null
 }
 
 export interface Sequencia {
@@ -592,7 +586,6 @@ export interface BancoPlanosContextValue {
   novaSequencia: () => void
   excluirSequencia: (id: string) => void
   salvarSequencia: () => void
-  atualizarRascunhoSlot: (sequenciaId: string, slotIndex: number, campo: string, valor: unknown) => void
   desvincularPlano: (sequenciaId: string, slotIndex: number) => void
   vincularPlanoAoSlot: (planoId: string | number) => void
 

@@ -29,7 +29,6 @@ export default function ModalInserirEmSequencia({ plano, onClose }: Props) {
       novosSlots[slotIndex] = {
         ...novosSlots[slotIndex],
         planoVinculado: String(plano.id),
-        rascunho: { titulo: '', setlist: [], materiais: [] }
       }
       return { ...seq, slots: novosSlots }
     }))

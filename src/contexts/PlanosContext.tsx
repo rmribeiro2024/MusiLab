@@ -1175,7 +1175,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         const novos: Plano[] = sequencia.slots.map((slot, i) => ({
             id: base + i,
             titulo: `${sequencia.titulo} — Aula ${slot.ordem ?? i + 1}`,
-            tema: slot.rascunho?.observacoes || '',
+            tema: '',
             nivel,
             duracao: '50',
             escola,
@@ -1188,7 +1188,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             tags: [],
             unidades: [],
             faixaEtaria: [],
-            materiais: slot.rascunho?.materiais || [],
+            materiais: [],
             habilidadesBNCC: [],
             recursos: [],
             atividadesRoteiro: [],
