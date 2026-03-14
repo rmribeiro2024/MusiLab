@@ -43,7 +43,7 @@ export default function ModuloEstrategias() {
         setObjetivosEstrategia,
     } = useEstrategiasContext()
 
-    const { planos } = usePlanosContext()
+    const { planos, setPlanoSelecionado } = usePlanosContext()
 
     // Estado local: modal de detalhes
     const [detalhesEstrategia, setDetalhesEstrategia] = useState<import('../types').Estrategia | null>(null)
@@ -677,14 +677,25 @@ export default function ModuloEstrategias() {
                             <div>
                                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Histórico de uso</p>
                                 <ul className="space-y-1">
-                                    {(detalhesEstrategia.historicoUso||[]).map((h,i)=>(
-                                        <li key={i} className="flex items-center justify-between gap-2 py-1 border-b border-slate-100 last:border-0">
-                                            <span className="text-xs text-slate-600 truncate">{h.planoTitulo}</span>
-                                            <span className="text-[11px] text-slate-400 shrink-0">
-                                                {new Date(h.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}
-                                            </span>
-                                        </li>
-                                    ))}
+                                    {(detalhesEstrategia.historicoUso||[]).map((h,i)=>{
+                                        const planoHist = (planos as any[]).find(p => String(p.id) === String(h.planoId))
+                                        return (
+                                            <li key={i} className="flex items-center justify-between gap-2 py-1 border-b border-slate-100 last:border-0">
+                                                {planoHist ? (
+                                                    <button
+                                                        onClick={()=>{ setDetalhesEstrategia(null); setPlanoSelecionado(planoHist) }}
+                                                        className="text-xs text-violet-600 hover:text-violet-800 hover:underline truncate text-left">
+                                                        {h.planoTitulo}
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-xs text-slate-600 truncate">{h.planoTitulo}</span>
+                                                )}
+                                                <span className="text-[11px] text-slate-400 shrink-0">
+                                                    {new Date(h.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}
+                                                </span>
+                                            </li>
+                                        )
+                                    })}
                                 </ul>
                             </div>
                             )}
