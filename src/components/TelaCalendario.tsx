@@ -1001,7 +1001,15 @@ export default function TelaResumoDia() {
                             </div>
                             {regsNoDia.length > 0
                                 ? <span className="text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">{regsNoDia.length} turma{regsNoDia.length>1?'s':''}</span>
-                                : <span className="text-xs text-gray-400">sem registros</span>
+                                : <button
+                                    onClick={() => setModalGradeSemanal(true)}
+                                    title="Configurar grade de horários"
+                                    className="text-gray-300 hover:text-indigo-400 transition-colors p-0.5 rounded"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                                    </svg>
+                                  </button>
                             }
                         </div>
 
@@ -1012,12 +1020,9 @@ export default function TelaResumoDia() {
 
                             if (turmasDoDia.length === 0) {
                                 return (
-                                    <div className="px-4 py-3 bg-purple-50 border-t border-purple-100">
-                                        <p className="text-xs text-purple-600 text-center">
-                                            📅 Nenhuma turma cadastrada na Grade Semanal para este dia.
-                                            <button onClick={()=>setModalGradeSemanal(true)} className="underline ml-1 font-bold hover:text-purple-800">
-                                                Cadastrar grade
-                                            </button>
+                                    <div className="px-4 py-3 border-t border-gray-100">
+                                        <p className="text-xs text-gray-400 italic text-center">
+                                            Nenhuma aula agendada para este dia.
                                         </p>
                                     </div>
                                 );
