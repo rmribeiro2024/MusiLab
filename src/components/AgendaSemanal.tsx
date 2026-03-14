@@ -496,7 +496,7 @@ function BlocoSlot({ slot, painel, onTogglePainel, onAplicarPlano, onVerPlano, o
           : <p className="text-[10px] text-slate-400 mt-0.5 italic">Sem plano</p>
         }
         {/* Badge + 📋 na extrema direita */}
-        <div className="flex items-center justify-between mt-1">
+        <div className="flex items-center gap-1.5 mt-1">
           {cfg && slot.plano && onVerPlano
             ? <button type="button" onClick={e => { e.stopPropagation(); onVerPlano(slot.plano!) }}
                 title={isRealizada ? 'Ver plano de aula' : undefined}
@@ -511,7 +511,7 @@ function BlocoSlot({ slot, painel, onTogglePainel, onAplicarPlano, onVerPlano, o
           }
           {slot.aplicacao && slot.plano && onAbrirRegistro && (
             <button type="button" onClick={e => { e.stopPropagation(); onAbrirRegistro(slot) }} title="Registrar pós-aula"
-              className="text-[11px] leading-none hover:scale-110 transition-transform ml-auto">
+              className="text-[11px] leading-none hover:scale-110 transition-transform">
               📋
             </button>
           )}
