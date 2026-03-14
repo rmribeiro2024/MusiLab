@@ -889,7 +889,14 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         const atividade = atividades.find((a: any) => a.id === atividadeId)
         const plano = planos.find((p: any) => p.id === planoId)
         if (!atividade || !plano) return
-        const novaAtivRoteiro = { id: Date.now(), nome: atividade.nome, duracao: atividade.duracao || '', descricao: atividade.descricao || '' }
+        const novaAtivRoteiro = {
+            id: Date.now(),
+            nome: atividade.nome,
+            duracao: atividade.duracao || '',
+            descricao: atividade.descricao || '',
+            musicasVinculadas: atividade.musicasVinculadas ? [...atividade.musicasVinculadas] : [],
+            origemAtividadeId: atividade.id,
+        }
         const conceitosMesclados = [...new Set([...(plano.conceitos || []), ...(atividade.conceitos || [])])]
         const tagsMescladas = [...new Set([...(plano.tags || []), ...(atividade.tags || [])])]
         const materiaisMesclados = [...new Set([...(plano.materiais || []), ...(atividade.materiais || [])])]
