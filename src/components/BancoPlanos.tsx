@@ -2643,12 +2643,12 @@ export default function BancoPlanos({ session }) {
                                         </div>
                                     )}
 
-                                    {/* Detalhes + Conceitos + Materiais — colapsável */}
-                                    {(planoSelecionado.duracao || planoSelecionado.tema || (planoSelecionado.conceitos||[]).length > 0 || planoSelecionado.materiais.length > 0) && (
+                                    {/* Detalhes + Conceitos + Materiais + Links — colapsável */}
+                                    {(planoSelecionado.duracao || planoSelecionado.tema || (planoSelecionado.conceitos||[]).length > 0 || planoSelecionado.materiais.length > 0 || (planoSelecionado.recursos||[]).length > 0) && (
                                         <div>
                                             <button onClick={()=>setDetalhesExpanded(v=>!v)}
                                                 className="flex items-center gap-2 w-full text-left">
-                                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Detalhes, Conceitos &amp; Materiais</p>
+                                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Detalhes, Conceitos, Materiais &amp; Links</p>
                                                 <svg className={`w-3.5 h-3.5 text-slate-400 ml-auto transition-transform ${detalhesExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                                             </button>
                                             {detalhesExpanded && (
@@ -2664,6 +2664,22 @@ export default function BancoPlanos({ session }) {
                                                     </div>
                                                     {planoSelecionado.materiais.length > 0 && (
                                                         <div className="flex flex-wrap gap-1.5">{planoSelecionado.materiais.map((m,i)=><span key={i} className="text-xs bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full">📦 {m}</span>)}</div>
+                                                    )}
+                                                    {(planoSelecionado.recursos||[]).length > 0 && (
+                                                        <div className="space-y-1.5">
+                                                            {(planoSelecionado.recursos||[]).map((rec, i) => {
+                                                                const url = typeof rec === 'string' ? rec : rec.url
+                                                                const titulo = typeof rec === 'string' ? url : (rec.titulo || url)
+                                                                const tipo = typeof rec === 'string' ? 'link' : (rec.tipo || 'link')
+                                                                return (
+                                                                    <a key={i} href={sanitizeUrl(url)} target="_blank" rel="noreferrer"
+                                                                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline truncate">
+                                                                        <span className="shrink-0">{tipo === 'imagem' ? '🖼️' : tipo === 'audio' ? '🎵' : '🔗'}</span>
+                                                                        <span className="truncate">{titulo}</span>
+                                                                    </a>
+                                                                )
+                                                            })}
+                                                        </div>
                                                     )}
                                                 </div>
                                             )}
