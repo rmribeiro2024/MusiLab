@@ -658,6 +658,15 @@ function PainelPlano({ slot, onClose, modo = 'preview', onAbrirRegistro }: { slo
           </>
         )}
 
+        {/* Mover para próxima semana: visível em ambos os modos (não realizada) */}
+        {aplicacao && aplicacao.status !== 'realizada' && modo === 'preview' && (
+          <button
+            onClick={() => { moverParaProximaSemana(aplicacao.id); onClose() }}
+            className="w-full py-2 text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-100 transition">
+            📅 Mover para próxima semana
+          </button>
+        )}
+
         {/* Sempre: objetivos + roteiro */}
         {plano ? (
           <>
