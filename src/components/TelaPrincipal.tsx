@@ -1614,34 +1614,22 @@ export default function TelaPrincipal() {
 
         {/* ── MÚSICAS DETECTADAS NO PLANO ── */}
         {/* ── INDICADORES ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5 flex items-center gap-3">
-                <span className="text-2xl font-bold text-slate-800">{totalPlanos}</span>
-                <div>
-                    <p className="text-xs font-semibold text-slate-500">Planos de Aula</p>
-                    <p className="text-[10px] text-slate-400">{porStatus['Concluído']} concluídos · {porStatus['Em Andamento']} em andamento</p>
-                </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+            <div className="bg-[#ffffff] dark:bg-[#1F2937] rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
+                <div className="text-2xl font-extrabold tracking-[-0.03em] text-[#5B5FEA] dark:text-[#818cf8] leading-none mb-[5px]">{totalPlanos}</div>
+                <div className="text-[11.5px] font-medium text-slate-500 dark:text-[#9CA3AF]">Planos de Aula</div>
             </div>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5 flex items-center gap-3">
-                <span className="text-2xl font-bold text-amber-600">{totalRegistros}</span>
-                <div>
-                    <p className="text-xs font-semibold text-slate-500">Registros Pós-Aula</p>
-                    <p className="text-[10px] text-slate-400">{ultimoRegistro ? `Último: ${new Date(ultimoRegistro.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}` : 'Nenhum ainda'}</p>
-                </div>
+            <div className="bg-[#ffffff] dark:bg-[#1F2937] rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
+                <div className="text-2xl font-extrabold tracking-[-0.03em] text-amber-500 leading-none mb-[5px]">{totalRegistros}</div>
+                <div className="text-[11.5px] font-medium text-slate-500 dark:text-[#9CA3AF]">Registros Pós-Aula</div>
             </div>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5 flex items-center gap-3">
-                <span className="text-2xl font-bold text-indigo-700">{proximaAula ? new Date(proximaAula.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : '—'}</span>
-                <div>
-                    <p className="text-xs font-semibold text-slate-500">Próxima Aula</p>
-                    <p className="text-[10px] text-slate-400 truncate max-w-[100px]">{proximaAula ? proximaAula.plano.titulo : 'Nenhuma agendada'}</p>
-                </div>
+            <div className="bg-[#ffffff] dark:bg-[#1F2937] rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
+                <div className="text-2xl font-extrabold tracking-[-0.03em] text-[#10b981] leading-none mb-[5px]">{proximaAula ? new Date(proximaAula.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : '—'}</div>
+                <div className="text-[11.5px] font-medium text-slate-500 dark:text-[#9CA3AF]">Próxima Aula</div>
             </div>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5 flex items-center gap-3">
-                <span className="text-2xl font-bold text-purple-600">{totalRepertorio}</span>
-                <div>
-                    <p className="text-xs font-semibold text-slate-500">Repertório</p>
-                    <p className="text-[10px] text-slate-400">{totalRepertorio === 1 ? 'música cadastrada' : 'músicas cadastradas'}</p>
-                </div>
+            <div className="bg-[#ffffff] dark:bg-[#1F2937] rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
+                <div className="text-2xl font-extrabold tracking-[-0.03em] text-slate-800 dark:text-[#E5E7EB] leading-none mb-[5px]">{totalRepertorio}</div>
+                <div className="text-[11.5px] font-medium text-slate-500 dark:text-[#9CA3AF]">Músicas no Repertório</div>
             </div>
         </div>
 
@@ -1738,7 +1726,7 @@ export default function TelaPrincipal() {
                     const txtClass   = status === 'Concluído' ? 'text-emerald-700' : status === 'Em Andamento' ? 'text-indigo-600' : 'text-slate-500';
                     return (
                     <div key={plano.id} style={{borderLeft:`3px solid ${borderColor}`}}
-                        className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200 flex flex-col overflow-hidden group">
+                        className="bg-[#ffffff] dark:bg-[#1F2937] rounded-xl border border-[#E6EAF0] dark:border-[#374151] card-hover flex flex-col overflow-hidden group cursor-pointer">
                         <div className="px-4 pt-4 pb-3 flex-1">
                             <div className="flex items-start justify-between gap-2 mb-3">
                                 {/* Status dot + label clicável com dropdown */}

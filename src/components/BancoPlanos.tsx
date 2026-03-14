@@ -2660,7 +2660,7 @@ export default function BancoPlanos({ session }) {
                                 </div>
                             )}
 
-                            <div className="max-w-7xl mx-auto px-4 py-6 pb-20 sm:pb-6">
+                            <div className="max-w-7xl mx-auto px-4 sm:px-7 py-6 sm:py-7 pb-20 sm:pb-7">
                                 {viewMode==='resumoDia' && <ErrorBoundary modulo="Resumo do Dia"><Suspense fallback={<CarregandoModulo />}><TelaResumoDia /></Suspense></ErrorBoundary>}
                                 {viewMode==='calendario' && <ErrorBoundary modulo="Calendário"><Suspense fallback={<CarregandoModulo />}><TelaCalendario /></Suspense></ErrorBoundary>}
                                 {viewMode==='agendaSemanal' && <ErrorBoundary modulo="Agenda Semanal"><Suspense fallback={<CarregandoModulo />}><AgendaSemanal /></Suspense></ErrorBoundary>}
