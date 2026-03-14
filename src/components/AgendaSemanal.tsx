@@ -495,8 +495,8 @@ function BlocoSlot({ slot, painel, onTogglePainel, onAplicarPlano, onVerPlano, o
           ? <p className="text-[10px] text-slate-400 truncate mt-0.5">{slot.plano.titulo}</p>
           : <p className="text-[10px] text-slate-400 mt-0.5 italic">Sem plano</p>
         }
-        {/* Badge + lápis discreto ao lado */}
-        <div className="flex items-center gap-1.5 mt-1">
+        {/* Badge + 📋 na extrema direita */}
+        <div className="flex items-center justify-between mt-1">
           {cfg && slot.plano && onVerPlano
             ? <button type="button" onClick={e => { e.stopPropagation(); onVerPlano(slot.plano!) }}
                 className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full hover:opacity-80 transition-opacity ${cfg.badge}`}>
@@ -506,12 +506,11 @@ function BlocoSlot({ slot, painel, onTogglePainel, onAplicarPlano, onVerPlano, o
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
               </button>
-            : cfg && <><span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} /><span className={`text-[9px] font-bold uppercase tracking-wide ${cfg.text}`}>{cfg.label}</span></>
+            : cfg && <div className="flex items-center gap-1"><span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} /><span className={`text-[9px] font-bold uppercase tracking-wide ${cfg.text}`}>{cfg.label}</span></div>
           }
-          {/* 📋 ao lado do badge — mesmo ícone da lista */}
           {slot.aplicacao && slot.plano && onAbrirRegistro && (
             <button type="button" onClick={e => { e.stopPropagation(); onAbrirRegistro(slot) }} title="Registro pós-aula"
-              className="text-[11px] leading-none hover:scale-110 transition-transform">
+              className="text-[11px] leading-none hover:scale-110 transition-transform ml-auto">
               📋
             </button>
           )}
