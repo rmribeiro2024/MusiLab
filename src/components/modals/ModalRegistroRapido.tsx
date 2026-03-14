@@ -270,52 +270,66 @@ export default function ModalRegistroRapido() {
                                             </div>
                                         )}
 
-                                        {/* Resultado da aula */}
+                                        {/* Como foi + Voz — única linha */}
                                         <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Como foi a aula?</p>
-                                            <div className="flex gap-2">
+                                            <div className="flex items-center gap-1.5">
                                                 {RESULTADO_CFG.map(r => (
                                                     <button
                                                         key={r.value}
                                                         type="button"
                                                         onClick={() => setResultado(turmaId, resultado === r.value ? '' : r.value)}
-                                                        className={`flex-1 py-2 text-xs font-bold rounded-xl border-2 transition-all ${resultado === r.value ? `${r.bg} ${r.border} ${r.text}` : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}>
+                                                        className={`flex-1 py-1.5 text-xs font-bold rounded-xl border-2 transition-all ${resultado === r.value ? `${r.bg} ${r.border} ${r.text}` : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}>
                                                         {r.emoji} {r.label}
                                                     </button>
                                                 ))}
-                                            </div>
-                                        </div>
 
-                                        {/* Nota de Voz — linha compacta */}
-                                        <div className="flex items-center gap-2 min-h-[28px]">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">🎙 Voz</span>
-                                            {erroAudio[turmaId] && (
-                                                <span className="text-[10px] text-red-400 truncate">{erroAudio[turmaId]}</span>
-                                            )}
-                                            {!audioInfo && !estaGravando && (
-                                                <button type="button" onClick={() => iniciarGravacao(turmaId)}
-                                                    className="text-[11px] text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-2 py-1 rounded-lg transition font-semibold">
-                                                    ⏺ Gravar
-                                                </button>
-                                            )}
-                                            {estaGravando && (
-                                                <>
-                                                    <span className="text-[11px] font-bold text-red-500 tabular-nums">
-                                                        ● {String(Math.floor(timerSec/60)).padStart(2,'0')}:{String(timerSec%60).padStart(2,'0')}
-                                                    </span>
-                                                    <button type="button" onClick={() => pararGravacao(turmaId)}
-                                                        className="text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-2 py-1 rounded-lg transition">
-                                                        ⏹ Parar
+                                                {/* divisor */}
+                                                <div className="w-px h-5 bg-slate-200 shrink-0 mx-0.5" />
+
+                                                {/* Mic — idle */}
+                                                {!audioInfo && !estaGravando && (
+                                                    <button type="button" onClick={() => iniciarGravacao(turmaId)}
+                                                        title="Gravar nota de voz"
+                                                        className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl border-2 border-slate-200 bg-white text-slate-400 hover:border-violet-400 hover:text-violet-500 hover:bg-violet-50 transition-all">
+                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                                            <path d="M12 15a3 3 0 003-3V6a3 3 0 00-6 0v6a3 3 0 003 3z"/>
+                                                            <path fillRule="evenodd" d="M5 10a1 1 0 012 0 5 5 0 0010 0 1 1 0 112 0 7 7 0 01-6 6.93V19h2a1 1 0 110 2H9a1 1 0 110-2h2v-2.07A7 7 0 015 10z" clipRule="evenodd"/>
+                                                        </svg>
                                                     </button>
-                                                </>
-                                            )}
-                                            {audioInfo && !estaGravando && (
-                                                <>
-                                                    <audio src={base64ToObjectUrl(audioInfo.base64, audioInfo.mime)}
-                                                        controls className="h-7 flex-1" style={{ minWidth: 0 }} />
+                                                )}
+
+                                                {/* Mic — gravando */}
+                                                {estaGravando && (
+                                                    <button type="button" onClick={() => pararGravacao(turmaId)}
+                                                        title="Parar gravação"
+                                                        className="shrink-0 flex items-center gap-1 px-2 h-8 rounded-xl border-2 border-red-300 bg-red-50 text-red-600 text-[10px] font-bold tabular-nums transition-all hover:bg-red-100">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                                                        {String(Math.floor(timerSec/60)).padStart(2,'0')}:{String(timerSec%60).padStart(2,'0')}
+                                                    </button>
+                                                )}
+
+                                                {/* Mic — com áudio gravado */}
+                                                {audioInfo && !estaGravando && (
                                                     <button type="button" onClick={() => removerAudio(turmaId)}
-                                                        className="text-slate-300 hover:text-red-400 transition font-bold text-sm shrink-0 leading-none">✕</button>
-                                                </>
+                                                        title={`Áudio de ${audioInfo.duracao}s · toque para remover`}
+                                                        className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl border-2 border-emerald-300 bg-emerald-50 text-emerald-600 hover:border-red-300 hover:bg-red-50 hover:text-red-500 transition-all">
+                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                                            <path d="M12 15a3 3 0 003-3V6a3 3 0 00-6 0v6a3 3 0 003 3z"/>
+                                                            <path fillRule="evenodd" d="M5 10a1 1 0 012 0 5 5 0 0010 0 1 1 0 112 0 7 7 0 01-6 6.93V19h2a1 1 0 110 2H9a1 1 0 110-2h2v-2.07A7 7 0 015 10z" clipRule="evenodd"/>
+                                                        </svg>
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Player — só quando há áudio */}
+                                            {audioInfo && !estaGravando && (
+                                                <audio src={base64ToObjectUrl(audioInfo.base64, audioInfo.mime)}
+                                                    controls className="w-full mt-2" style={{ height: 28, minWidth: 0 }} />
+                                            )}
+
+                                            {/* Erro de microfone */}
+                                            {erroAudio[turmaId] && (
+                                                <p className="text-[10px] text-red-400 mt-1">{erroAudio[turmaId]}</p>
                                             )}
                                         </div>
 
