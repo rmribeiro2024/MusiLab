@@ -2486,55 +2486,55 @@ export default function BancoPlanos({ session }) {
                 <div className="min-h-screen bg-[#F6F8FB] dark:bg-[#0F172A] flex flex-col">
 
                     {/* ══════════ HEADER — barra única 48px ══════════ */}
-                    <div className="bg-white dark:bg-[#1E2A4A] border-b border-[#E6EAF0] dark:border-[#2d3f6a] h-12 flex items-center flex-none safe-pt">
-                        <div className="w-full px-4 flex items-center gap-3 h-12">
+                    {/* bg-[#ffffff] (não bg-white) para evitar override CSS do dark mode */}
+                    <div className="bg-[#ffffff] dark:bg-[#1E2A4A] border-b border-[#E6EAF0] dark:border-[#2d3f6a] h-12 flex items-center flex-none safe-pt">
+                        <div className="w-full px-[18px] flex items-center gap-5 h-12">
 
                             {/* Logo */}
-                            <div className="flex items-center gap-2 flex-none mr-1">
-                                <span className="text-lg leading-none">🎵</span>
-                                <span className="text-[15px] font-bold tracking-tight text-slate-900 dark:text-white leading-none">MusiLab</span>
-                            </div>
-
-                            {/* Status badge — inline ao lado do logo */}
-                            <div role="status" aria-live="polite" aria-atomic="true" className="flex-none">
-                                {statusSalvamento === 'salvando' && (
-                                    <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30 px-2 py-0.5 rounded-full animate-pulse">
-                                        <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                                        </svg>
-                                        Salvando…
-                                    </span>
-                                )}
-                                {statusSalvamento === 'salvo' && (
-                                    <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/30 px-2 py-0.5 rounded-full">
-                                        ✓ Salvo
-                                    </span>
-                                )}
-                                {statusSalvamento === 'erro' && (
-                                    <button
-                                        onClick={baixarBackup}
-                                        className="flex items-center gap-1 text-xs text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/40 px-2 py-0.5 rounded-full hover:bg-red-100 dark:hover:bg-red-500/30 transition cursor-pointer"
-                                        title="Clique para baixar backup de segurança agora!"
-                                    >
-                                        ⚠ Erro — ⬇ backup
-                                    </button>
-                                )}
+                            <div className="flex items-center gap-[7px] flex-none">
+                                <span className="text-[17px] leading-none">🎵</span>
+                                <span className="text-[15px] font-bold tracking-[-0.03em] text-[#0f172a] dark:text-[#f1f5f9] leading-none">MusiLab</span>
                             </div>
 
                             {/* Nav grupos — apenas desktop (mobile usa bottom nav) */}
-                            <nav className="hidden sm:flex items-center gap-0.5 flex-1 overflow-x-auto scrollbar-hide">
+                            <nav className="hidden sm:flex items-center flex-1 overflow-x-auto scrollbar-hide">
                                 {NAV_GROUPS.map(group => {
                                     const isGroupActive = activeGroupId === group.id
                                     return (
                                         <button key={group.id}
                                             onClick={() => { const first = group.items[0]; first.action() }}
-                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-semibold whitespace-nowrap transition-all duration-[120ms]
-                                                ${isGroupActive
-                                                    ? 'bg-[#5B5FEA]/10 dark:bg-white/15 text-[#5B5FEA] dark:text-white'
-                                                    : 'text-slate-500 dark:text-[#9CA3AF] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10'}`}>
-                                            <span className="text-sm leading-none">{group.icon}</span>
-                                            <span>{group.label}</span>
+                                            style={{
+                                                padding: '4px 11px',
+                                                borderRadius: '6px',
+                                                fontSize: '13px',
+                                                fontWeight: isGroupActive ? 600 : 500,
+                                                letterSpacing: '-0.01em',
+                                                whiteSpace: 'nowrap' as const,
+                                                cursor: 'pointer',
+                                                border: 'none',
+                                                fontFamily: 'inherit',
+                                                transition: 'background 120ms ease, color 120ms ease',
+                                                background: isGroupActive
+                                                    ? (darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.05)')
+                                                    : 'transparent',
+                                                color: isGroupActive
+                                                    ? (darkMode ? '#f1f5f9' : '#0f172a')
+                                                    : (darkMode ? '#9CA3AF' : '#64748b'),
+                                            }}
+                                            onMouseEnter={e => {
+                                                if (!isGroupActive) {
+                                                    (e.currentTarget as HTMLButtonElement).style.background = darkMode ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.03)'
+                                                    ;(e.currentTarget as HTMLButtonElement).style.color = darkMode ? '#f1f5f9' : '#0f172a'
+                                                }
+                                            }}
+                                            onMouseLeave={e => {
+                                                if (!isGroupActive) {
+                                                    (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+                                                    ;(e.currentTarget as HTMLButtonElement).style.color = darkMode ? '#9CA3AF' : '#64748b'
+                                                }
+                                            }}
+                                        >
+                                            {group.label}
                                         </button>
                                     )
                                 })}
@@ -2544,14 +2544,39 @@ export default function BancoPlanos({ session }) {
                             <div className="flex-1 sm:hidden" />
 
                             {/* Ações direita */}
-                            <div className="flex items-center gap-1.5 flex-none">
+                            <div className="flex items-center gap-[7px] flex-none">
+
+                                {/* Status salvamento */}
+                                <div role="status" aria-live="polite" aria-atomic="true" className="flex-none">
+                                    {statusSalvamento === 'salvando' && (
+                                        <span style={{display:'flex',alignItems:'center',gap:'5px',padding:'3px 9px',borderRadius:'20px',fontSize:'11px',fontWeight:600,background:'rgba(245,158,11,0.12)',color: darkMode ? '#fbbf24' : '#d97706',border:'1px solid rgba(245,158,11,0.25)',letterSpacing:'0.01em',animation:'pulse 2s infinite'}}>
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{animation:'spin 1s linear infinite'}}>
+                                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
+                                                <path fill="currentColor" d="M4 12a8 8 0 018-8v8z" opacity="0.75"/>
+                                            </svg>
+                                            Salvando…
+                                        </span>
+                                    )}
+                                    {statusSalvamento === 'salvo' && (
+                                        <span style={{display:'flex',alignItems:'center',gap:'5px',padding:'3px 9px',borderRadius:'20px',fontSize:'11px',fontWeight:600,background: darkMode ? 'rgba(52,211,153,0.1)' : 'rgba(16,185,129,0.09)',color: darkMode ? '#34d399' : '#059669',border:`1px solid ${darkMode ? 'rgba(52,211,153,0.22)' : 'rgba(16,185,129,0.2)'}`,letterSpacing:'0.01em'}}>
+                                            <span style={{width:'5px',height:'5px',background:'currentColor',borderRadius:'50%',flexShrink:0}} />
+                                            Salvo
+                                        </span>
+                                    )}
+                                    {statusSalvamento === 'erro' && (
+                                        <button onClick={baixarBackup} title="Clique para baixar backup!" style={{display:'flex',alignItems:'center',gap:'5px',padding:'3px 9px',borderRadius:'20px',fontSize:'11px',fontWeight:600,background: darkMode ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.08)',color: darkMode ? '#f87171' : '#dc2626',border:`1px solid ${darkMode ? 'rgba(239,68,68,0.3)' : 'rgba(239,68,68,0.2)'}`,cursor:'pointer',letterSpacing:'0.01em'}}>
+                                            <span style={{width:'5px',height:'5px',background:'currentColor',borderRadius:'50%',flexShrink:0}} />
+                                            Erro — backup
+                                        </button>
+                                    )}
+                                </div>
 
                                 {/* Date chip — desktop */}
-                                <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-slate-100 dark:bg-white/[0.07] border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs text-slate-500 dark:text-[#9CA3AF] whitespace-nowrap">
+                                <div className="hidden sm:flex items-center gap-[5px] whitespace-nowrap" style={{padding:'4px 10px',background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(15,23,42,0.04)',border:`1px solid ${darkMode ? '#374151' : '#E6EAF0'}`,borderRadius:'7px',fontSize:'12px',color: darkMode ? '#9CA3AF' : '#64748b',letterSpacing:'-0.01em',transition:'all 200ms ease'}}>
                                     <span>📅</span>
-                                    <span className="text-slate-700 dark:text-[#E5E7EB] font-medium">
+                                    <strong style={{color: darkMode ? '#E5E7EB' : '#0f172a',fontWeight:600}}>
                                         {new Date().toLocaleDateString('pt-BR', {weekday:'short', day:'numeric', month:'short'})}
-                                    </span>
+                                    </strong>
                                     {(() => {
                                         const hoje = new Date();
                                         const hojeStr = hoje.toISOString().split('T')[0];
@@ -2559,55 +2584,40 @@ export default function BancoPlanos({ session }) {
                                             p.historicoDatas?.includes(hojeStr) ||
                                             (p.registrosPosAula||[]).some(r => r.data === hojeStr)
                                         );
-                                        if (aulasHoje.length > 0) return (
-                                            <span className="ml-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                                                · {aulasHoje.length} aula{aulasHoje.length > 1 ? 's' : ''}
-                                            </span>
-                                        )
-                                        const proximoEvento = eventosEscolares
-                                            .filter(e => new Date(e.data+'T23:59:59') >= new Date())
-                                            .sort((a,b) => new Date(a.data).getTime() - new Date(b.data).getTime())[0];
-                                        if (proximoEvento) return (
-                                            <span className="ml-1 text-slate-400 dark:text-[#6b7280] max-w-[120px] truncate">
-                                                · {proximoEvento.nome}
-                                            </span>
-                                        )
+                                        if (aulasHoje.length > 0) return <span style={{color: darkMode ? '#34d399' : '#059669',fontWeight:500}}>· {aulasHoje.length} aula{aulasHoje.length > 1 ? 's' : ''}</span>
+                                        const ev = eventosEscolares.filter(e => new Date(e.data+'T23:59:59') >= new Date()).sort((a,b)=>new Date(a.data).getTime()-new Date(b.data).getTime())[0]
+                                        if (ev) return <span style={{color: darkMode ? '#6b7280' : '#94a3b8',maxWidth:'110px',overflow:'hidden',textOverflow:'ellipsis'}}>· {ev.nome}</span>
                                         return null
                                     })()}
                                 </div>
 
                                 {/* Busca */}
-                                <button
-                                    onClick={() => setShowBuscaGlobal(true)}
-                                    title="Busca global (Ctrl+K)"
-                                    className="p-1.5 text-slate-400 dark:text-[#9CA3AF] hover:text-[#5B5FEA] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition duration-[120ms]"
-                                >
-                                    🔍
-                                </button>
+                                <button onClick={() => setShowBuscaGlobal(true)} title="Busca global (Ctrl+K)"
+                                    style={{padding:'6px',color: darkMode ? '#9CA3AF' : '#94a3b8',background:'transparent',border:'none',cursor:'pointer',borderRadius:'6px',fontSize:'14px',lineHeight:1,transition:'color 120ms ease'}}
+                                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = darkMode ? '#f1f5f9' : '#5B5FEA' }}
+                                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = darkMode ? '#9CA3AF' : '#94a3b8' }}
+                                >🔍</button>
 
                                 {/* Theme toggle */}
-                                <span className="flex items-center bg-slate-100 dark:bg-white/[0.07] rounded-lg p-0.5 gap-0">
+                                <span style={{display:'flex',alignItems:'center',background: darkMode ? 'rgba(255,255,255,0.07)' : 'rgba(15,23,42,0.05)',borderRadius:'8px',padding:'3px',gap:'1px'}}>
                                     {(['light','dark','system'] as const).map(t => (
                                         <button key={t} onClick={() => setThemeMode(t)}
-                                            className={`text-[11px] px-1.5 py-1 rounded-[5px] transition duration-[120ms]
-                                                ${themeMode === t
-                                                    ? 'bg-white dark:bg-white/20 shadow-sm text-slate-700 dark:text-white'
-                                                    : 'text-slate-400 dark:text-[#6b7280] hover:text-slate-700 dark:hover:text-white'}`}
                                             title={t === 'light' ? 'Modo claro' : t === 'dark' ? 'Modo escuro' : 'Seguir sistema'}
-                                        >
-                                            {t === 'light' ? '☀️' : t === 'dark' ? '🌙' : '🖥️'}
-                                        </button>
+                                            style={{fontSize:'11px',padding:'4px 6px',borderRadius:'5px',border:'none',cursor:'pointer',fontFamily:'inherit',transition:'all 120ms ease',
+                                                background: themeMode === t ? (darkMode ? 'rgba(255,255,255,0.2)' : '#ffffff') : 'transparent',
+                                                color: themeMode === t ? (darkMode ? '#ffffff' : '#374151') : (darkMode ? '#6b7280' : '#94a3b8'),
+                                                boxShadow: themeMode === t ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                                            }}
+                                        >{t === 'light' ? '☀️' : t === 'dark' ? '🌙' : '🖥️'}</button>
                                     ))}
                                 </span>
 
                                 {/* Logout */}
-                                <button
-                                    onClick={fazerLogout}
-                                    title={`Sair (${userName})`}
-                                    className="p-1.5 text-slate-400 dark:text-[#9CA3AF] hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition duration-[120ms] text-xs"
-                                >
-                                    ⎋
-                                </button>
+                                <button onClick={fazerLogout} title={`Sair (${userName})`}
+                                    style={{padding:'6px',color: darkMode ? '#9CA3AF' : '#94a3b8',background:'transparent',border:'none',cursor:'pointer',borderRadius:'6px',fontSize:'12px',lineHeight:1,transition:'color 120ms ease'}}
+                                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ef4444' }}
+                                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = darkMode ? '#9CA3AF' : '#94a3b8' }}
+                                >⎋</button>
 
                             </div>
                         </div>
