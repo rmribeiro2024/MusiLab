@@ -35,7 +35,7 @@ export default function ModalRegistroRapido() {
         setVerRegistros, setRegistroEditando, setNovoRegistro,
         setFiltroRegAno, setFiltroRegEscola, setFiltroRegSegmento, setFiltroRegTurma, setFiltroRegData,
     } = useCalendarioContext()
-    const { anosLetivos, turmaGetRubricas } = useAnoLetivoContext()
+    const { anosLetivos, turmaGetRubricas, turmaSetRubricas } = useAnoLetivoContext() as any
     const { planos } = usePlanosContext()
     const { sugerirPlanoParaTurma, salvarRegistroRapido } = useBancoPlanos()
 
@@ -48,6 +48,10 @@ export default function ModalRegistroRapido() {
     const [timer, setTimer] = useState<Record<string, number>>({})
     const [erroAudio, setErroAudio] = useState<Record<string, string | null>>({})
     const timerRefs = useRef<Record<string, ReturnType<typeof setInterval>>>({})
+    // Editor de rubrica
+    type CriterioRascunho = { id: string; nome: string; escala: number }
+    const [editandoRubricas, setEditandoRubricas] = useState<string | null>(null)
+    const [rascunhoRubricas, setRascunhoRubricas] = useState<Record<string, CriterioRascunho[]>>({})
 
     // Inicializa expansão quando modal abre: só a turma clicada
     React.useEffect(() => {
@@ -334,33 +338,113 @@ export default function ModalRegistroRapido() {
                                         </div>
 
                                         {/* Rubrica */}
-                                        {rubricas.length > 0 && (
-                                            <div>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">📊 Avaliação da aula</p>
-                                                <div className="space-y-2.5">
-                                                    {rubricas.map(criterio => {
-                                                        const val = getRubricaValor(turmaId, String(criterio.id))
-                                                        return (
-                                                            <div key={criterio.id} className="flex items-center gap-3">
-                                                                <span className="text-xs text-slate-600 w-36 shrink-0">{criterio.nome}</span>
-                                                                <div className="flex gap-1 flex-1">
-                                                                    {Array.from({ length: criterio.escala }, (_, i) => i + 1).map(n => (
-                                                                        <button
-                                                                            key={n}
-                                                                            type="button"
-                                                                            onClick={() => setRubricaValor(turmaId, String(criterio.id), val === n ? 0 : n)}
-                                                                            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${val === n ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
-                                                                            {n}
-                                                                        </button>
-                                                                    ))}
+                                        {(() => {
+                                            const editando = editandoRubricas === turmaId
+                                            const rascunho = rascunhoRubricas[turmaId] || []
+
+                                            const abrirEditor = () => {
+                                                setRascunhoRubricas(prev => ({ ...prev, [turmaId]: rubricas.map((c: any) => ({ id: String(c.id), nome: c.nome, escala: c.escala })) }))
+                                                setEditandoRubricas(turmaId)
+                                            }
+                                            const fecharEditor = () => setEditandoRubricas(null)
+                                            const salvarRubricas = () => {
+                                                if (typeof turmaSetRubricas === 'function') {
+                                                    turmaSetRubricas(String(rrAnoSel), String(rrEscolaSel), String(aula.segmentoId), turmaId, rascunho.filter(c => c.nome.trim()))
+                                                }
+                                                fecharEditor()
+                                            }
+                                            const updateCriterio = (id: string, field: 'nome' | 'escala', val: string | number) =>
+                                                setRascunhoRubricas(prev => ({ ...prev, [turmaId]: (prev[turmaId] || []).map(c => c.id === id ? { ...c, [field]: val } : c) }))
+                                            const removeCriterio = (id: string) =>
+                                                setRascunhoRubricas(prev => ({ ...prev, [turmaId]: (prev[turmaId] || []).filter(c => c.id !== id) }))
+                                            const addCriterio = () =>
+                                                setRascunhoRubricas(prev => ({ ...prev, [turmaId]: [...(prev[turmaId] || []), { id: `new-${Date.now()}`, nome: '', escala: 5 }] }))
+
+                                            return (
+                                                <div>
+                                                    {/* Header com gear */}
+                                                    <div className="flex items-center gap-2 mb-2.5">
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex-1">📊 Avaliação da aula</p>
+                                                        {!editando && (
+                                                            <button type="button" onClick={abrirEditor}
+                                                                title="Configurar critérios"
+                                                                className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition-all">
+                                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                                </svg>
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Editor inline */}
+                                                    {editando ? (
+                                                        <div className="border border-indigo-200 rounded-xl bg-indigo-50/40 p-3 space-y-2">
+                                                            {rascunho.map((c, idx) => (
+                                                                <div key={c.id} className="flex items-center gap-2">
+                                                                    <span className="text-[10px] text-slate-400 font-bold w-4 text-right shrink-0">{idx + 1}.</span>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={c.nome}
+                                                                        onChange={e => updateCriterio(c.id, 'nome', e.target.value)}
+                                                                        placeholder="Nome do critério"
+                                                                        className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-indigo-400"
+                                                                    />
+                                                                    <select
+                                                                        value={c.escala}
+                                                                        onChange={e => updateCriterio(c.id, 'escala', Number(e.target.value))}
+                                                                        className="w-14 px-1 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-indigo-400 shrink-0 text-center">
+                                                                        {[3, 4, 5, 7, 10].map(n => <option key={n} value={n}>{n} pts</option>)}
+                                                                    </select>
+                                                                    <button type="button" onClick={() => removeCriterio(c.id)}
+                                                                        className="text-slate-300 hover:text-red-400 transition font-bold text-sm shrink-0 leading-none">✕</button>
                                                                 </div>
-                                                                {val > 0 && <span className="text-[11px] font-bold text-indigo-500 w-8 text-right shrink-0">{val}/{criterio.escala}</span>}
+                                                            ))}
+                                                            <button type="button" onClick={addCriterio}
+                                                                className="w-full py-1.5 text-[11px] font-semibold text-indigo-500 hover:text-indigo-700 border border-dashed border-indigo-300 rounded-lg hover:bg-indigo-50 transition">
+                                                                + Adicionar critério
+                                                            </button>
+                                                            <div className="flex gap-2 pt-1">
+                                                                <button type="button" onClick={fecharEditor}
+                                                                    className="flex-1 py-1.5 text-xs font-semibold text-slate-500 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition">
+                                                                    Cancelar
+                                                                </button>
+                                                                <button type="button" onClick={salvarRubricas}
+                                                                    className="flex-1 py-1.5 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+                                                                    Salvar
+                                                                </button>
                                                             </div>
-                                                        )
-                                                    })}
+                                                        </div>
+                                                    ) : rubricas.length > 0 ? (
+                                                        <div className="space-y-2.5">
+                                                            {rubricas.map((criterio: any) => {
+                                                                const val = getRubricaValor(turmaId, String(criterio.id))
+                                                                return (
+                                                                    <div key={criterio.id} className="flex items-center gap-3">
+                                                                        <span className="text-xs text-slate-600 w-36 shrink-0">{criterio.nome}</span>
+                                                                        <div className="flex gap-1 flex-1">
+                                                                            {Array.from({ length: criterio.escala }, (_, i) => i + 1).map(n => (
+                                                                                <button key={n} type="button"
+                                                                                    onClick={() => setRubricaValor(turmaId, String(criterio.id), val === n ? 0 : n)}
+                                                                                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${val === n ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
+                                                                                    {n}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                        {val > 0 && <span className="text-[11px] font-bold text-indigo-500 w-8 text-right shrink-0">{val}/{criterio.escala}</span>}
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    ) : (
+                                                        <button type="button" onClick={abrirEditor}
+                                                            className="w-full py-2 text-[11px] font-semibold text-slate-400 hover:text-indigo-600 border border-dashed border-slate-200 hover:border-indigo-300 rounded-xl hover:bg-indigo-50/30 transition">
+                                                            + Configurar avaliação da aula
+                                                        </button>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        )}
+                                            )
+                                        })()}
 
                                         {/* Encaminhamentos */}
                                         <div>
