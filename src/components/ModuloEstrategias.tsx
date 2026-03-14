@@ -631,14 +631,34 @@ export default function ModuloEstrategias() {
                                     <p className="text-sm text-violet-900 whitespace-pre-line">{detalhesEstrategia.variacoes}</p>
                                 </div>
                             )}
-                            {/* Descrição */}
-                            {detalhesEstrategia.descricao && (
-                                <div>
-                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Descrição</p>
-                                    <div className="text-sm text-slate-700 prose prose-sm max-w-none"
-                                        dangerouslySetInnerHTML={{ __html: sanitizar(detalhesEstrategia.descricao) }}/>
-                                </div>
-                            )}
+                            {/* Descrição — conteúdo real da atividade (do histórico mais recente) */}
+                            {(() => {
+                                const cat = (detalhesEstrategia.categoria || '').toLowerCase()
+                                const kwVocal = ['vocalize', 'vocalise', 'vocalizo', 'aquecimento vocal', 'corposolfa']
+                                const kwCorp  = ['aquecimento', 'relaxamento', 'corporal', 'massagem', 'despertar', 'sensorial']
+                                const kws = cat.includes('vocal') ? kwVocal : kwCorp
+                                // Usar o uso mais recente para extrair a descrição da atividade
+                                const usoRecente = [...(detalhesEstrategia.historicoUso||[])].sort((a,b)=>b.data.localeCompare(a.data))[0]
+                                const planoRecente = usoRecente ? (planos as any[]).find(p => String(p.id) === String(usoRecente.planoId)) : null
+                                const atividades: any[] = planoRecente?.atividadesRoteiro || []
+                                const atMatch = atividades.find(a => {
+                                    const txt = [a.nome, stripHTML(a.descricao || '')].join(' ').toLowerCase()
+                                    return kws.some(k => txt.includes(k))
+                                }) || atividades[0]
+                                const atDesc = atMatch ? stripHTML(atMatch.descricao || '').trim() : ''
+                                const atNome = atMatch?.nome || ''
+                                const descFallback = detalhesEstrategia.descricao || ''
+                                if (!atDesc && !descFallback) return null
+                                return (
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Descrição</p>
+                                        {atNome && <p className="text-xs font-semibold text-violet-600 mb-1">{atNome}</p>}
+                                        <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
+                                            {atDesc || descFallback}
+                                        </p>
+                                    </div>
+                                )
+                            })()}
                             {/* Objetivos */}
                             {(detalhesEstrategia.objetivos||[]).length > 0 && (
                                 <div>
@@ -652,47 +672,22 @@ export default function ModuloEstrategias() {
                                     </ul>
                                 </div>
                             )}
-                            {/* Histórico de uso */}
+                            {/* Histórico de uso — discreto */}
+                            {(detalhesEstrategia.historicoUso||[]).length > 0 && (
                             <div>
-                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Histórico de Uso</p>
-                                {(detalhesEstrategia.historicoUso||[]).length === 0 ? (
-                                    <p className="text-sm text-slate-400 italic">Ainda não foi usada em nenhum plano.</p>
-                                ) : (
-                                    <ul className="space-y-2">
-                                        {(detalhesEstrategia.historicoUso||[]).map((h,i)=>{
-                                            const plano = (planos as any[]).find(p => String(p.id) === String(h.planoId))
-                                            // Palavras-chave para localizar a atividade relevante no roteiro
-                                            const cat = (detalhesEstrategia.categoria || '').toLowerCase()
-                                            const kwVocal = ['vocalize', 'vocalise', 'vocalizo', 'aquecimento vocal', 'corposolfa']
-                                            const kwCorp  = ['aquecimento', 'relaxamento', 'corporal', 'massagem', 'despertar', 'sensorial']
-                                            const kws = cat.includes('vocal') ? kwVocal : kwCorp
-                                            const atividades: any[] = plano?.atividadesRoteiro || []
-                                            const atMatch = atividades.find(a => {
-                                                const txt = [a.nome, stripHTML(a.descricao || '')].join(' ').toLowerCase()
-                                                return kws.some(k => txt.includes(k))
-                                            }) || atividades[0]
-                                            const atDesc = atMatch ? stripHTML(atMatch.descricao || '').trim() : ''
-                                            const atNome = atMatch?.nome || ''
-                                            return (
-                                                <li key={i} className="bg-slate-50 rounded-lg px-3 py-2.5 flex flex-col gap-1">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <span className="text-slate-700 font-semibold text-sm leading-tight">{h.planoTitulo}</span>
-                                                        <span className="text-slate-400 text-[11px] shrink-0 mt-0.5">
-                                                            {new Date(h.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}
-                                                        </span>
-                                                    </div>
-                                                    {atNome && (
-                                                        <p className="text-[11px] font-semibold text-violet-600 leading-tight">{atNome}</p>
-                                                    )}
-                                                    {atDesc && (
-                                                        <p className="text-[11px] text-slate-500 leading-snug line-clamp-3 whitespace-pre-line">{atDesc}</p>
-                                                    )}
-                                                </li>
-                                            )
-                                        })}
-                                    </ul>
-                                )}
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Histórico de uso</p>
+                                <ul className="space-y-1">
+                                    {(detalhesEstrategia.historicoUso||[]).map((h,i)=>(
+                                        <li key={i} className="flex items-center justify-between gap-2 py-1 border-b border-slate-100 last:border-0">
+                                            <span className="text-xs text-slate-600 truncate">{h.planoTitulo}</span>
+                                            <span className="text-[11px] text-slate-400 shrink-0">
+                                                {new Date(h.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
+                            )}
                         </div>
                         {/* Footer */}
                         <div className="px-6 py-4 border-t border-slate-100 flex gap-3 shrink-0">
