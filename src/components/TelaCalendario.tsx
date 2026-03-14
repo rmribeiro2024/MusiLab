@@ -770,13 +770,13 @@ export default function TelaResumoDia() {
                                 const s = e.segmentos.find(s => s.id == (reg.segmento || reg.serie));
                                 if (s) {
                                     const t = s.turmas.find(t => t.id == reg.turma);
-                                    labelTurma = [a.ano, e.nome, s.nome, t?.nome].filter(Boolean).join(' › ');
+                                    labelTurma = [a.ano, e.nome, s.nome, t?.nome].filter(Boolean).filter((v, i, arr) => i === 0 || v !== arr[i - 1]).join(' › ');
                                     break;
                                 }
                             }
                         }
                     } else {
-                        labelTurma = [ano?.ano, esc?.nome, seg?.nome, tur?.nome].filter(Boolean).join(' › ');
+                        labelTurma = [ano?.ano, esc?.nome, seg?.nome, tur?.nome].filter(Boolean).filter((v, i, arr) => i === 0 || v !== arr[i - 1]).join(' › ');
                     }
 
                     return (
@@ -1111,11 +1111,10 @@ export default function TelaResumoDia() {
                                             <div className="space-y-0.5">
                                                 {porEscola[escolaNome].map(t => (
                                                     <div key={t.aula.id}>
-                                                        <button
+                                                        <div
                                                             onClick={() => setAulaAcaoAtiva(prev => prev?.id === t.aula.id ? null : t.aula)}
-                                                            className="w-full text-left"
+                                                            className={`flex items-start gap-2 px-2.5 py-2 rounded-lg text-xs transition cursor-pointer ${aulaAcaoAtiva?.id === t.aula.id ? 'bg-indigo-50 ring-1 ring-indigo-300' : 'hover:bg-gray-50'}`}
                                                         >
-                                                            <div className={`flex items-start gap-2 px-2.5 py-2 rounded-lg text-xs transition ${aulaAcaoAtiva?.id === t.aula.id ? 'bg-indigo-50 ring-1 ring-indigo-300' : 'hover:bg-gray-50'}`}>
                                                                 <span className={`shrink-0 w-2.5 h-2.5 rounded-full mt-0.5 ${dotCls(t.status)}`} />
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -1134,11 +1133,29 @@ export default function TelaResumoDia() {
                                                                           </p>
                                                                         : <p className="text-[11px] text-gray-300 italic mt-0.5">Sem plano</p>}
                                                                 </div>
-                                                                <span className={`shrink-0 text-[10px] font-semibold ${statusLbl(t.status)}`}>
-                                                                    {t.status === 'realizada' ? 'realizada' : t.status === 'planejada' ? 'planejada' : 'sem plano'}
-                                                                </span>
-                                                            </div>
-                                                        </button>
+                                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                                    {t.status !== 'realizada' && (
+                                                                        <button
+                                                                            onClick={e => {
+                                                                                e.stopPropagation();
+                                                                                setRrData(dataDia);
+                                                                                setRrAnoSel(t.aula.anoLetivoId);
+                                                                                setRrEscolaSel(t.aula.escolaId);
+                                                                                setRrTextos({});
+                                                                                setRrPlanosSegmento({});
+                                                                                setModalRegistroRapido(true);
+                                                                                setAulaAcaoAtiva(null);
+                                                                            }}
+                                                                            className="text-green-700 bg-green-50 border border-green-200 rounded-md px-1.5 py-0.5 text-[10px] font-bold hover:bg-green-100 transition"
+                                                                            title="Registrar pós-aula">
+                                                                            📝
+                                                                        </button>
+                                                                    )}
+                                                                    <span className={`text-[10px] font-semibold ${statusLbl(t.status)}`}>
+                                                                        {t.status === 'realizada' ? 'realizada' : t.status === 'planejada' ? 'planejada' : 'sem plano'}
+                                                                    </span>
+                                                                </div>
+                                                        </div>
                                                         {/* Painel de ações rápidas */}
                                                         {aulaAcaoAtiva?.id === t.aula.id && (
                                                             <div className="mx-2 mb-1.5 mt-0.5 flex flex-col gap-1">

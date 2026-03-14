@@ -33,7 +33,7 @@ const AccordionChip = React.forwardRef<() => void, {
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
                             {quickOptions.map(opt => (
                                 <button key={opt} type="button"
-                                    onClick={() => onChange(value ? value + (value.endsWith('\n') ? '' : '\n') + opt : opt)}
+                                    onClick={() => { if (!value.includes(opt)) onChange(value ? value + (value.endsWith('\n') ? '' : '\n') + opt : opt) }}
                                     style={{ fontSize: 12, fontWeight: 600, color: '#6366f1', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                     + {opt}
                                 </button>
@@ -55,7 +55,7 @@ const AccordionChip = React.forwardRef<() => void, {
 
 // ── BEHAVIOR CHIP — comportamento com tags clicáveis + campo livre ──
 const BEHAVIOR_TAGS = [
-    { id: 'bom',      label: '✓ Boa aula' },
+    { id: 'bom',      label: '✓ Bom no geral' },
     { id: 'focada',   label: 'Focada e participativa' },
     { id: 'dispersa', label: 'Muito dispersa / difícil conduzir' },
     { id: 'apatica',  label: 'Apática / pouco engajamento' },
@@ -409,6 +409,8 @@ export default function ModalRegistroPosAula() {
     const [size, setSize] = React.useState({ w: 512, h: 600 })
     // Registros expandidos no histórico
     const [expandedRegs, setExpandedRegs] = React.useState<Set<any>>(new Set())
+    // Filtro de período no histórico
+    const [filtroRegPeriodo, setFiltroRegPeriodo] = React.useState<'' | 'hoje' | 'semana'>('')
     // Copiar registro para outras turmas
     const [copiandoRegId, setCopiandoRegId] = React.useState<any>(null)
     const [turmasCopiar, setTurmasCopiar] = React.useState<Set<string>>(new Set())
@@ -547,8 +549,9 @@ export default function ModalRegistroPosAula() {
 
     if (!modalRegistro || !planoParaRegistro) return null
 
-    const modalStyle: React.CSSProperties = maximizado
-        ? { position: 'fixed', inset: 0, width: '100vw', height: '100vh', borderRadius: 0, zIndex: 50, display: 'flex', flexDirection: 'column' }
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
+    const modalStyle: React.CSSProperties = (maximizado || isMobile)
+        ? { position: 'fixed', inset: 0, width: '100vw', height: '100dvh', borderRadius: 0, zIndex: 50, display: 'flex', flexDirection: 'column' }
         : minimizado
         ? { position: 'fixed', bottom: 16, right: 16, width: 300, zIndex: 50, borderRadius: 16 }
         : { position: 'fixed', left: pos?.x ?? Math.round(window.innerWidth / 2 - 256), top: pos?.y ?? Math.round(window.innerHeight / 2 - 300), width: size.w, height: size.h, zIndex: 50, borderRadius: 16, display: 'flex', flexDirection: 'column' }
@@ -1303,6 +1306,31 @@ export default function ModalRegistroPosAula() {
                                         )
                                     })()}
 
+                                    {/* Filtro de período */}
+                                    {planoParaRegistro.registrosPosAula?.length > 0 && (() => {
+                                        const hoje2 = new Date().toISOString().split('T')[0]
+                                        const seg2 = (() => { const h = new Date(); const d = h.getDay(); const diff = d === 0 ? -6 : 1 - d; const s = new Date(h); s.setDate(h.getDate() + diff); return s.toISOString().split('T')[0] })()
+                                        const fim2 = (() => { const s = new Date(seg2 + 'T00:00:00'); s.setDate(s.getDate() + 6); return s.toISOString().split('T')[0] })()
+                                        const periodoPillStyle = (ativo: boolean): React.CSSProperties => ({
+                                            padding: '4px 10px', borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                                            background: ativo ? '#1e293b' : '#f1f5f9',
+                                            color: ativo ? '#fff' : '#64748b',
+                                            border: 'none',
+                                        })
+                                        const counts = {
+                                            hoje: (planoParaRegistro.registrosPosAula || []).filter((r: any) => r.data === hoje2).length,
+                                            semana: (planoParaRegistro.registrosPosAula || []).filter((r: any) => r.data >= seg2 && r.data <= fim2).length,
+                                        }
+                                        return (
+                                            <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                                                <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', marginRight: 2 }}>Período</span>
+                                                <button type="button" onClick={() => setFiltroRegPeriodo('')} style={periodoPillStyle(filtroRegPeriodo === '')}>Todos</button>
+                                                <button type="button" onClick={() => setFiltroRegPeriodo('hoje')} style={periodoPillStyle(filtroRegPeriodo === 'hoje')}>Hoje {counts.hoje > 0 ? `(${counts.hoje})` : ''}</button>
+                                                <button type="button" onClick={() => setFiltroRegPeriodo('semana')} style={periodoPillStyle(filtroRegPeriodo === 'semana')}>Esta semana {counts.semana > 0 ? `(${counts.semana})` : ''}</button>
+                                            </div>
+                                        )
+                                    })()}
+
                                     {/* Busca */}
                                     {planoParaRegistro.registrosPosAula?.length > 0 && (
                                         <div style={{ position: 'relative' }}>
@@ -1319,6 +1347,9 @@ export default function ModalRegistroPosAula() {
 
                                     {/* Lista de registros — cards colapsáveis */}
                                     {(() => {
+                                        const hojeStr2 = new Date().toISOString().split('T')[0]
+                                        const seg2 = (() => { const h = new Date(); const d = h.getDay(); const diff = d === 0 ? -6 : 1 - d; const s = new Date(h); s.setDate(h.getDate() + diff); return s.toISOString().split('T')[0] })()
+                                        const fim2 = (() => { const s = new Date(seg2 + 'T00:00:00'); s.setDate(s.getDate() + 6); return s.toISOString().split('T')[0] })()
                                         const regs = (planoParaRegistro.registrosPosAula || []).filter(r => {
                                             if (filtroRegTurma) {
                                                 if (r.turma != filtroRegTurma) return false
@@ -1329,6 +1360,8 @@ export default function ModalRegistroPosAula() {
                                                 if (filtroRegEscola   && r.escola    != filtroRegEscola) return false
                                                 if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
                                             }
+                                            if (filtroRegPeriodo === 'hoje' && r.data !== hojeStr2) return false
+                                            if (filtroRegPeriodo === 'semana' && (r.data < seg2 || r.data > fim2)) return false
                                             if (buscaRegistros.trim()) {
                                                 const q = buscaRegistros.toLowerCase()
                                                 const campos = [r.resumoAula, r.funcionouBem, r.naoFuncionou, r.poderiaMelhorar, r.proximaAula, r.comportamento, r.anotacoesGerais]
