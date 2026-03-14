@@ -9,7 +9,7 @@ function stripHTML(html: string): string {
 
 export default function ModuloSequencias() {
     const {
-        atualizarRascunhoSlot, buscaPlanoVinculo, buscaProfundaSequencias, desvincularPlano,
+        buscaPlanoVinculo, buscaProfundaSequencias, desvincularPlano,
         excluirSequencia, filtroEscolaSequencias, filtroPeriodoSequencias, filtroUnidadeSequencias,
         modalVincularPlano, novaSequencia, salvarSequencia, sequenciaDetalhe, sequenciaEditando,
         sequencias, setBuscaPlanoVinculo, setBuscaProfundaSequencias, setFiltroEscolaSequencias,
@@ -309,7 +309,7 @@ export default function ModuloSequencias() {
             const emTitulo = s.titulo?.toLowerCase().includes(busca)
             const emSlots = (s.slots || []).some(slot => {
                 const plano = planos.find(p => p.id == slot.planoVinculado)
-                return plano?.titulo?.toLowerCase().includes(busca) || slot.rascunho?.titulo?.toLowerCase().includes(busca)
+                return plano?.titulo?.toLowerCase().includes(busca)
             })
             if (!emTitulo && !emSlots) return false
         }
@@ -439,40 +439,15 @@ export default function ModuloSequencias() {
                                             </div>
                                         )}
                                     </div>
-                                ) : slot.rascunho?.titulo ? (
-                                    <div className="space-y-2">
-                                        <input
-                                            type="text"
-                                            value={slot.rascunho.titulo}
-                                            onChange={e => atualizarRascunhoSlot(seq.id, index, 'titulo', e.target.value)}
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg font-semibold text-slate-800 text-sm focus:outline-none focus:border-slate-400"
-                                            placeholder="Título..."
-                                        />
-                                        <textarea
-                                            value={slot.rascunho.setlist?.join('\n') || ''}
-                                            onChange={e => atualizarRascunhoSlot(seq.id, index, 'setlist', e.target.value.split('\n'))}
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-slate-400"
-                                            rows={3}
-                                            placeholder="Roteiro (uma atividade por linha)..."
-                                        />
-                                    </div>
                                 ) : (
                                     <div className="text-center py-4">
                                         <p className="text-slate-400 text-sm mb-3">Slot vazio</p>
-                                        <div className="flex gap-2 justify-center">
-                                            <button
-                                                onClick={() => setModalVincularPlano({ sequenciaId: seq.id, slotIndex: index })}
-                                                className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-sm font-semibold transition"
-                                            >
-                                                🔗 Vincular Plano
-                                            </button>
-                                            <button
-                                                onClick={() => atualizarRascunhoSlot(seq.id, index, 'titulo', 'Nova Aula')}
-                                                className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-sm font-semibold transition"
-                                            >
-                                                ✏️ Rascunho
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={() => setModalVincularPlano({ sequenciaId: seq.id, slotIndex: index })}
+                                            className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-sm font-semibold transition"
+                                        >
+                                            🔗 Vincular Plano
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -565,7 +540,7 @@ export default function ModuloSequencias() {
                         {sequenciasFiltradas.map(s => {
                             const info = obterInfoSequencia(s)
                             const total = s.slots?.length || 0
-                            const preenchidos = s.slots?.filter(sl => sl.planoVinculado || sl.rascunho?.titulo).length || 0
+                            const preenchidos = s.slots?.filter(sl => sl.planoVinculado).length || 0
                             const pct = total > 0 ? (preenchidos / total) * 100 : 0
                             return (
                                 <div

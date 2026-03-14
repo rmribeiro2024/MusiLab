@@ -421,10 +421,6 @@ export async function exportarSequenciaPDF(sequencia, anosLetivos = []) {
                     });
                 }
             }
-        } else if (slot.rascunho?.titulo) {
-            doc.setFont(FONTE_PDF, "normal");
-            doc.text(slot.rascunho.titulo, 20, y);
-            y += 6;
         } else {
             doc.setFont(FONTE_PDF, "italic");
             doc.setTextColor(150);

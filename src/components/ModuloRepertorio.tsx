@@ -112,24 +112,39 @@ export default function ModuloRepertorio() {
     const usosMusicaMap = useMemo(() => {
         type EntradaUso = { total: number; ultima: string; usos: { data: string; planoId: unknown; planoTitulo: string }[] }
         const map: Record<string, EntradaUso> = {}
+
+        function registrar(key: string, p: typeof planos[number]) {
+            if (!key || key === 'undefined') return
+            const datas = (p.historicoDatas || []).length > 0
+                ? p.historicoDatas
+                : (p.registrosPosAula || []).map((r: {data?: string}) => r.data).filter(Boolean)
+            if (!map[key]) map[key] = { total: 0, ultima: '', usos: [] }
+            // Evitar duplicata: verifica se já existe entry para este plano
+            const jaExiste = map[key].usos.some(u => String(u.planoId) === String(p.id))
+            if (jaExiste) return
+            if (datas.length === 0) {
+                map[key].usos.push({ data: '', planoId: p.id, planoTitulo: p.titulo })
+                map[key].total += 1
+            } else {
+                const datasUnicas = [...new Set(datas)]
+                datasUnicas.forEach(d => map[key].usos.push({ data: d, planoId: p.id, planoTitulo: p.titulo }))
+                map[key].total += datasUnicas.length
+                const maxData = [...datasUnicas].sort().pop() as string || ''
+                if (maxData > map[key].ultima) map[key].ultima = maxData
+            }
+        }
+
         planos.forEach(p => {
-            (p.atividadesRoteiro || []).forEach(atv => {
-                (atv.musicasVinculadas || []).forEach(mv => {
-                    const key = String(mv.id)
-                    const datas = (p.historicoDatas || []).length > 0
-                        ? p.historicoDatas
-                        : (p.registrosPosAula || []).map((r: {data?: string}) => r.data).filter(Boolean)
-                    if (!map[key]) map[key] = { total: 0, ultima: '', usos: [] }
-                    if (datas.length === 0) {
-                        map[key].usos.push({ data: '', planoId: p.id, planoTitulo: p.titulo })
-                        map[key].total += 1
-                    } else {
-                        const datasUnicas = [...new Set(datas)]
-                        datasUnicas.forEach(d => map[key].usos.push({ data: d, planoId: p.id, planoTitulo: p.titulo }))
-                        map[key].total += datasUnicas.length
-                        const maxData = [...datasUnicas].sort().pop() as string || ''
-                        if (maxData > map[key].ultima) map[key].ultima = maxData
-                    }
+            // 1. Via musicasVinculadasPlano (vínculo explícito plano ↔ repertório)
+            ;(p.musicasVinculadasPlano || []).forEach(v => {
+                registrar(String(v.musicaId), p)
+            })
+            // 2. Via atividades: musicaId (singular) e musicasVinculadas (array)
+            ;(p.atividadesRoteiro || []).forEach(atv => {
+                if (atv.musicaId) registrar(String(atv.musicaId), p)
+                ;(atv.musicasVinculadas || []).forEach(mv => {
+                    const key = mv.id != null ? String(mv.id) : ''
+                    registrar(key, p)
                 })
             })
         })

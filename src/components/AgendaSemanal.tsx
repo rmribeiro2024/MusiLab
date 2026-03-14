@@ -408,8 +408,8 @@ function ViewLista({ semanaData, isDiaAberto, onToggleDia, painel, onTogglePaine
                         className={`flex items-center gap-3 px-5 py-3 border-b border-slate-50 last:border-b-0 transition-colors ${isSelected ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg ? cfg.dot : 'border-2 border-dashed border-slate-300 bg-transparent'}`} />
                         <span className="text-[11px] font-semibold text-slate-500 tabular-nums w-10 flex-shrink-0">{slot.aulaGrade.horario || '—'}</span>
-                        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onTogglePainel(slot)}>
-                          <p className={`text-sm font-semibold truncate ${cfg ? cfg.text : 'text-slate-600'}`}>{slot.nomeTurma}</p>
+                        <div className="flex-1 min-w-0 cursor-pointer group/row" onClick={() => onTogglePainel(slot)}>
+                          <p className={`text-sm truncate transition-all ${cfg ? cfg.text : 'text-slate-600'} group-hover/row:font-semibold`}>{slot.nomeTurma}</p>
                           {slot.plano
                             ? <p className="text-xs text-slate-400 truncate mt-0.5">{slot.plano.titulo}</p>
                             : <p className="text-xs text-slate-300 italic mt-0.5">Sem plano vinculado</p>
@@ -422,18 +422,15 @@ function ViewLista({ semanaData, isDiaAberto, onToggleDia, painel, onTogglePaine
                             +
                           </button>
                         )}
-                        {/* Badge clicável quando tem plano */}
-                        {cfg && slot.plano
-                          ? <button onClick={e => { e.stopPropagation(); onVerPlano(slot.plano!) }}
-                              className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 hover:opacity-80 transition-opacity ${cfg.badge}`}>
-                              {cfg.label}
-                              <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                          : cfg && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.badge}`}>{cfg.label}</span>
-                        }
+                        {/* Ícone 📋 Registro pós-aula */}
+                        {slot.aplicacao && (
+                          <button onClick={e => { e.stopPropagation(); onTogglePainel(slot) }} title="Registro pós-aula"
+                            className="text-slate-300 hover:text-indigo-500 flex-shrink-0 transition-colors text-base leading-none">
+                            📋
+                          </button>
+                        )}
+                        {/* Badge de status */}
+                        {cfg && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.badge}`}>{cfg.label}</span>}
                         <svg className="w-3.5 h-3.5 text-slate-200 flex-shrink-0 cursor-pointer" onClick={() => onTogglePainel(slot)} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
@@ -562,6 +559,7 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
     setFiltroRegAno, setFiltroRegEscola, setFiltroRegSegmento, setFiltroRegTurma, setFiltroRegData,
   } = useCalendarioContext()
   const { editarPlano } = usePlanosContext()
+  const { moverParaProximaSemana } = useAplicacoesContext()
   const cfg = aplicacao ? (STATUS_CFG[aplicacao.status] ?? STATUS_CFG.planejada) : null
   const atividades = plano?.atividadesRoteiro ?? []
 
@@ -641,6 +639,14 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
                 📝 {aplicacao.status === 'realizada' ? 'Ver / editar registro' : 'Registrar pós-aula'}
               </button>
             )}
+            {/* Mover para próxima semana */}
+            {aplicacao && aplicacao.status !== 'realizada' && (
+              <button
+                onClick={() => { moverParaProximaSemana(aplicacao.id); onClose() }}
+                className="w-full py-2 text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-100 transition">
+                📅 Mover para próxima semana
+              </button>
+            )}
 
             {plano.objetivoGeral && (
               <div>
@@ -649,34 +655,18 @@ function PainelPlano({ slot, onClose }: { slot: SlotInfo; onClose: () => void })
               </div>
             )}
 
-            {(plano.nivel || (plano.faixaEtaria ?? []).length > 0 || plano.duracao) && (
-              <div className="flex flex-wrap gap-1.5">
-                {plano.nivel && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{plano.nivel}</span>}
-                {plano.duracao && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">⏱ {plano.duracao}</span>}
-                {(plano.faixaEtaria ?? []).slice(0, 2).map(f => <span key={f} className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{f}</span>)}
-              </div>
-            )}
-
             {atividades.length > 0 && (
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Roteiro · {atividades.length} atividade{atividades.length !== 1 ? 's' : ''}</p>
                 <div className="space-y-1.5">
-                  {atividades.slice(0, 6).map((a, i) => (
+                  {atividades.map((a, i) => (
                     <div key={a.id ?? i} className="flex items-start gap-2 text-xs text-slate-600">
                       <span className="w-4 h-4 rounded-full bg-slate-100 text-slate-400 text-[9px] flex items-center justify-center shrink-0 mt-0.5 font-bold">{i + 1}</span>
-                      <span className="flex-1 truncate">{a.nome || '(sem nome)'}</span>
+                      <span className="flex-1">{a.nome || '(sem nome)'}</span>
                       {a.duracao && <span className="text-slate-300 shrink-0 tabular-nums">{a.duracao}</span>}
                     </div>
                   ))}
-                  {atividades.length > 6 && <p className="text-[10px] text-slate-300 pl-6">+{atividades.length - 6} mais…</p>}
                 </div>
-              </div>
-            )}
-
-            {aplicacao?.adaptacaoTexto && (
-              <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
-                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wide mb-1">Adaptações desta turma</p>
-                <p className="text-xs text-amber-700 leading-relaxed">{stripHTML(aplicacao.adaptacaoTexto).slice(0, 150)}{stripHTML(aplicacao.adaptacaoTexto).length > 150 ? '…' : ''}</p>
               </div>
             )}
           </>

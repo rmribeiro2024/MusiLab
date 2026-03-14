@@ -21,6 +21,7 @@ export interface AplicacoesContextValue {
   atualizarStatusAplicacao: (id: string, status: AplicacaoAula['status']) => void
   salvarAdaptacao: (id: string, adaptacaoTexto: string) => void
   excluirAplicacao: (id: string) => void
+  moverParaProximaSemana: (id: string) => void
   // Queries
   getAplicacoesDoDia: (data: string) => AplicacaoAula[]
   getAplicacoesDaSemana: (inicio: string, fim: string) => AplicacaoAula[]
@@ -160,6 +161,20 @@ export function AplicacoesProvider({ children, userId }: AplicacoesProviderProps
     })
   }
 
+  function moverParaProximaSemana(id: string) {
+    const agora = new Date().toISOString()
+    setAplicacoes(prev => prev.map(a => {
+      if (a.id !== id) return a
+      const dataAtual = new Date(a.data + 'T12:00:00')
+      dataAtual.setDate(dataAtual.getDate() + 7)
+      const novaData = dataAtual.toISOString().split('T')[0]
+      return { ...a, data: novaData, status: 'planejada' as const, _updatedAt: agora }
+    }))
+    window.dispatchEvent(new CustomEvent('musilab:toast', {
+      detail: { msg: '📅 Aula movida para a próxima semana.', type: 'success' }
+    }))
+  }
+
   // ── Queries ───────────────────────────────────────────────────────────────
 
   function getAplicacoesDoDia(data: string): AplicacaoAula[] {
@@ -181,9 +196,10 @@ export function AplicacoesProvider({ children, userId }: AplicacoesProviderProps
     atualizarStatusAplicacao,
     salvarAdaptacao,
     excluirAplicacao,
+    moverParaProximaSemana,
     getAplicacoesDoDia,
     getAplicacoesDaSemana,
-  }), [aplicacoes, aplicacoesPorData, criarAplicacoes, atualizarStatusAplicacao, salvarAdaptacao, excluirAplicacao, getAplicacoesDoDia, getAplicacoesDaSemana])
+  }), [aplicacoes, aplicacoesPorData, criarAplicacoes, atualizarStatusAplicacao, salvarAdaptacao, excluirAplicacao, moverParaProximaSemana, getAplicacoesDoDia, getAplicacoesDaSemana])
 
   return (
     <AplicacoesContext.Provider value={value}>

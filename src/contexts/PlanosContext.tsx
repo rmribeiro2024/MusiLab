@@ -585,7 +585,8 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             ;(ativ.estrategiasVinculadas || []).forEach((nome: string) => nomesEstrategias.add(nome))
         })
         nomesEstrategias.forEach(nome => {
-            const estr = estrategias.find(e => e.nome === nome)
+            const nomeNorm = nome.trim().toLowerCase()
+            const estr = estrategias.find(e => e.nome.trim().toLowerCase() === nomeNorm)
             if (estr) registrarUsoEstrategia(estr.id, planoParaSalvar.id, planoParaSalvar.titulo || 'Plano sem título')
         })
 

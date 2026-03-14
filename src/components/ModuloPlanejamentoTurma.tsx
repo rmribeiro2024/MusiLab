@@ -1600,29 +1600,26 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   // Resetar seleção ao trocar de turma
   useEffect(() => { setDataAtiva(null) }, [turmaSelecionada?.turmaId])
 
-  // Plano agendado para o dia selecionado nesta turma
-  // Prioridade: timeline click (dataAtiva) > data do calendário lateral (calendarDateStr)
-  const planoDoDia = useMemo(() => {
-    const data = dataAtiva || calendarDateStr
-    if (!data || !turmaSelecionada) return null
+  // Plano do calendário lateral — fixo na data selecionada, não muda ao clicar na timeline
+  const planoDoCalendario = useMemo(() => {
+    if (!calendarDateStr || !turmaSelecionada) return null
     const ap = aplicacoes.find(a =>
-      a.data === data &&
+      a.data === calendarDateStr &&
       String(a.turmaId) === String(turmaSelecionada.turmaId) &&
       String(a.segmentoId) === String(turmaSelecionada.segmentoId)
     )
     if (!ap?.planoId) return null
     return planos.find(p => String(p.id) === String(ap.planoId)) ?? null
-  }, [dataAtiva, calendarDateStr, turmaSelecionada, aplicacoes, planos])
+  }, [calendarDateStr, turmaSelecionada, aplicacoes, planos])
 
-  // Há aula na grade para o dia selecionado (mesmo sem plano aplicado)?
+  // Há aula na grade para a data do calendário (mesmo sem plano aplicado)?
   const temAulaNoDia = useMemo(() => {
-    const data = dataAtiva || calendarDateStr
-    if (!data || !turmaSelecionada) return false
-    return obterTurmasDoDia(data).some(a =>
+    if (!calendarDateStr || !turmaSelecionada) return false
+    return obterTurmasDoDia(calendarDateStr).some(a =>
       // eslint-disable-next-line eqeqeq
       a.turmaId == turmaSelecionada.turmaId && a.segmentoId == turmaSelecionada.segmentoId
     )
-  }, [dataAtiva, calendarDateStr, turmaSelecionada, obterTurmasDoDia])
+  }, [calendarDateStr, turmaSelecionada, obterTurmasDoDia])
 
   // Nome da turma para exibição na timeline
   const turmaNome = useMemo(() => {
@@ -1658,8 +1655,8 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
     const contagem: Record<string, number> = {}
     for (const plano of planosDistaTurma) {
       for (const ativ of plano.atividadesRoteiro ?? []) {
-        for (const estId of ativ.estrategiasVinculadas ?? []) {
-          const est = estrategias.find(e => String(e.id) === String(estId))
+        for (const estNome of ativ.estrategiasVinculadas ?? []) {
+          const est = estrategias.find(e => e.nome === estNome || String(e.id) === String(estNome))
           for (const dim of est?.dimensoes ?? []) {
             contagem[dim] = (contagem[dim] ?? 0) + 1
           }
@@ -1700,7 +1697,12 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
       />
 
       {/* ── BLOCO 1: Registro pós-aula ─────────────────────────────────────────── */}
-      {registroExibido ? (
+      {/* Ordem: se data da aula == data do último registro → aula atual primeiro */}
+      {(() => {
+        const registroDate = registroExibido?.dataAula ?? registroExibido?.data ?? ''
+        const aulaIgualRegistro = !!calendarDateStr && !!registroDate && calendarDateStr === registroDate
+
+        const blocoRegistro = registroExibido ? (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <button
             type="button"
@@ -1770,35 +1772,36 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             </div>
           )}
         </div>
-      ) : (
-        <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-4 text-center">
-          <p className="text-sm text-slate-400">Nenhum registro pós-aula encontrado para esta turma.</p>
-        </div>
-      )}
+        ) : null
 
-      {/* ── AULA DO DIA ────────────────────────────────────────────────────────── */}
-      {temAulaNoDia && (
-        planoDoDia ? (
-          <button
-            type="button"
-            onClick={() => { setPlanoSelecionado(planoDoDia); setViewModeGlobal('lista') }}
-            className="w-full bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors text-left"
-          >
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Aula do dia</p>
-              <p className="text-sm font-semibold text-slate-700 truncate">{planoDoDia.titulo}</p>
+        const blocoAulaAtual = temAulaNoDia ? (
+          planoDoCalendario ? (
+            <button
+              key="aula-atual"
+              type="button"
+              onClick={() => { setPlanoSelecionado(planoDoCalendario); setViewModeGlobal('lista') }}
+              className="w-full bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors text-left"
+            >
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Aula atual</p>
+                <p className="text-sm font-semibold text-slate-700 truncate">{planoDoCalendario.titulo}</p>
+              </div>
+              <svg className="w-4 h-4 text-slate-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ) : (
+            <div key="aula-atual" className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Aula atual</p>
+              <p className="text-sm text-slate-400 italic">Sem plano</p>
             </div>
-            <svg className="w-4 h-4 text-slate-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Aula do dia</p>
-            <p className="text-sm text-slate-400 italic">Sem plano</p>
-          </div>
-        )
-      )}
+          )
+        ) : null
+
+        return aulaIgualRegistro
+          ? <>{blocoAulaAtual}{blocoRegistro}</>
+          : <>{blocoRegistro}{blocoAulaAtual}</>
+      })()}
 
       {/* ── BLOCO 2: Próximo Passo Sugerido ───────────────────────────────────── */}
       {registroExibido?.proximaAulaOpcao && (
