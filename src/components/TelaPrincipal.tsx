@@ -1612,7 +1612,15 @@ export default function TelaPrincipal() {
             </div>
         )}
 
-        {/* ── MÚSICAS DETECTADAS NO PLANO ── */}
+        {/* ── PAGE HEADER ── */}
+        <div className="mb-5">
+            <h1 className="text-[20px] font-bold tracking-[-0.025em] text-slate-900 dark:text-[#E5E7EB] mb-[3px]">Planos de Aula</h1>
+            <p className="text-[13px] text-slate-500 dark:text-[#9CA3AF] tracking-[-0.005em]">
+                {totalPlanos} plano{totalPlanos !== 1 ? 's' : ''} · {porStatus['Em Andamento']} em edição
+                {proximaAula ? ` · próxima aula em ${Math.max(0, Math.ceil((new Date(proximaAula.data+'T12:00:00').getTime() - Date.now()) / 86400000))} dias` : ''}
+            </p>
+        </div>
+
         {/* ── INDICADORES ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
             <div className="bg-[#ffffff] dark:bg-[#1F2937] rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
@@ -1633,79 +1641,83 @@ export default function TelaPrincipal() {
             </div>
         </div>
 
-        {/* FILTROS */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-5">
-            {/* Linha 1: sempre visível */}
-            <div className="flex gap-3 items-center">
-                <input type="text" inputMode="search" placeholder="🔍 Buscar por título, objetivo, conceito..." value={busca} onChange={(e)=>setBusca(e.target.value)} className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" />
-                <button onClick={()=>toggleFiltrosPlanos(!filtrosPlanos)}
-                    className="px-3 py-2.5 text-sm font-semibold text-slate-500 border border-slate-200 rounded-xl hover:bg-slate-50 transition whitespace-nowrap">
-                    {filtrosPlanos ? '▲ Menos filtros' : '▼ Mais filtros'}
+        {/* ── SEARCH BAR ── */}
+        <div className="flex items-center gap-[10px] bg-[#ffffff] dark:bg-[#1F2937] border-[1.5px] border-[#E6EAF0] dark:border-[#374151] rounded-[9px] px-[14px] py-[9px] mb-[18px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-[border-color] duration-[120ms] hover:border-[#5B5FEA]/40 dark:hover:border-[#818cf8]/40 cursor-text">
+            <span className="text-[13px] text-slate-400 dark:text-[#6b7280] flex-none select-none">🔍</span>
+            <input type="text" inputMode="search" value={busca} onChange={e=>setBusca(e.target.value)}
+                placeholder="Buscar por título, objetivo, conceito..."
+                className="flex-1 border-none outline-none text-[13.5px] tracking-[-0.01em] text-slate-800 dark:text-[#E5E7EB] bg-transparent placeholder:text-slate-400 dark:placeholder:text-[#6b7280]" />
+            <span className="text-[10.5px] font-semibold text-slate-400 dark:text-[#6b7280] bg-[#F1F4F8] dark:bg-[#273344] border border-[#E6EAF0] dark:border-[#374151] rounded-[5px] px-[7px] py-[2px] flex-none tracking-[0.01em]">Ctrl K</span>
+        </div>
+
+        {/* ── FILTER CHIPS ── */}
+        <div className="flex gap-[6px] flex-wrap mb-[18px]">
+            {(['Todos','A Fazer','Em Andamento','Concluído'] as const).map(s => (
+                <button key={s} onClick={()=>setFiltroStatus(s)}
+                    className={`px-[11px] py-[4px] rounded-full text-[12px] font-medium border-[1.5px] transition-all duration-[120ms] tracking-[-0.01em]
+                        ${filtroStatus === s
+                            ? 'bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 border-[#5B5FEA]/30 dark:border-[#818cf8]/30 text-[#5B5FEA] dark:text-[#818cf8] font-semibold'
+                            : 'bg-[#ffffff] dark:bg-[#1F2937] border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:border-[#5B5FEA]/50 hover:text-[#5B5FEA] dark:hover:border-[#818cf8]/50 dark:hover:text-[#818cf8]'}`}>
+                    {s}
                 </button>
+            ))}
+            {faixas.slice(1).map(faixa => (
+                <button key={faixa} onClick={()=>setFiltroFaixa(filtroFaixa===faixa?'Todos':faixa)}
+                    className={`px-[11px] py-[4px] rounded-full text-[12px] font-medium border-[1.5px] transition-all duration-[120ms] tracking-[-0.01em]
+                        ${filtroFaixa === faixa
+                            ? 'bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 border-[#5B5FEA]/30 dark:border-[#818cf8]/30 text-[#5B5FEA] dark:text-[#818cf8] font-semibold'
+                            : 'bg-[#ffffff] dark:bg-[#1F2937] border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:border-[#5B5FEA]/50 hover:text-[#5B5FEA] dark:hover:border-[#818cf8]/50 dark:hover:text-[#818cf8]'}`}>
+                    {faixa}
+                </button>
+            ))}
+            <button onClick={()=>setFiltroFavorito(!filtroFavorito)}
+                className={`px-[11px] py-[4px] rounded-full text-[12px] font-medium border-[1.5px] transition-all duration-[120ms]
+                    ${filtroFavorito
+                        ? 'bg-amber-50 dark:bg-amber-500/15 border-amber-300/60 dark:border-amber-400/30 text-amber-600 dark:text-amber-400 font-semibold'
+                        : 'bg-[#ffffff] dark:bg-[#1F2937] border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:border-amber-300/60 hover:text-amber-600'}`}>
+                {filtroFavorito ? '★ Favoritos' : '☆ Favoritos'}
+            </button>
+            <button onClick={()=>toggleFiltrosPlanos(!filtrosPlanos)}
+                className="px-[11px] py-[4px] rounded-full text-[12px] font-medium border-[1.5px] border-[#E6EAF0] dark:border-[#374151] bg-[#ffffff] dark:bg-[#1F2937] text-slate-400 dark:text-[#6b7280] hover:border-[#5B5FEA]/50 hover:text-[#5B5FEA] transition-all duration-[120ms]">
+                {filtrosPlanos ? '▲ menos' : '▼ mais filtros'}
+            </button>
+            {(busca||filtroStatus!=='Todos'||filtroFaixa!=='Todos'||filtroFavorito) && (
+                <button onClick={()=>{setBusca("");setFiltroEscola("Todas");setFiltroNivel("Todos");setFiltroConceito("Todos");setFiltroFaixa("Todos");setFiltroFavorito(false);setFiltroStatus("Todos");setFiltroTag("Todas");setFiltroSegmento("Todos");setFiltroUnidade("Todos");}}
+                    className="px-[11px] py-[4px] rounded-full text-[12px] border-[1.5px] border-red-200 dark:border-red-500/30 text-red-400 dark:text-red-400 hover:text-red-600 bg-[#ffffff] dark:bg-[#1F2937] transition-all duration-[120ms]">
+                    ✕ limpar
+                </button>
+            )}
+        </div>
+
+        {/* Filtros avançados — colapsáveis */}
+        {filtrosPlanos && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 mb-4 p-4 bg-[#ffffff] dark:bg-[#1F2937] border border-[#E6EAF0] dark:border-[#374151] rounded-xl">
+                <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Escola</label><select value={filtroEscola} onChange={e=>setFiltroEscola(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none">{escolas.map(e=><option key={e} value={e}>{e}</option>)}</select></div>
+                <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Nível</label><select value={filtroNivel} onChange={e=>setFiltroNivel(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none">{niveis.map(n=><option key={n} value={n}>{n}</option>)}</select></div>
+                <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Segmento</label><select value={filtroSegmento} onChange={e=>setFiltroSegmento(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none">{segmentosPlanos.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
+                <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Conceito</label><select value={filtroConceito} onChange={e=>setFiltroConceito(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none"><option value="Todos">Todos</option>{conceitos.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+                <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Unidade</label><select value={filtroUnidade} onChange={e=>setFiltroUnidade(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none"><option value="Todos">Todos</option>{unidades.map(u=><option key={u} value={u}>{u}</option>)}</select></div>
+                <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Tag</label><select value={filtroTag} onChange={e=>setFiltroTag(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none"><option value="Todas">Todas</option>{tagsGlobais.map(t=><option key={t} value={t}>#{t}</option>)}</select></div>
             </div>
-            {/* Linha 2+: filtros avançados colapsáveis */}
-            {filtrosPlanos && <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mt-4 pt-4 border-t border-slate-100">
-                <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Escola</label><select value={filtroEscola} onChange={(e)=>setFiltroEscola(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">{escolas.map(e=><option key={e} value={e}>{e}</option>)}</select></div>
-                <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nível</label><select value={filtroNivel} onChange={(e)=>setFiltroNivel(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">{niveis.map(n=><option key={n} value={n}>{n}</option>)}</select></div>
-                <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Segmento</label><select value={filtroSegmento} onChange={(e)=>setFiltroSegmento(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">{segmentosPlanos.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
-                <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Faixa Etária</label><select value={filtroFaixa} onChange={(e)=>setFiltroFaixa(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">{faixas.map(f=><option key={f} value={f}>{f}</option>)}</select></div>
-                <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Conceito</label>
-                    <select value={filtroConceito} onChange={(e)=>setFiltroConceito(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white"><option value="Todos">Todos</option>{conceitos.map(c=><option key={c} value={c}>{c}</option>)}</select>
-                </div>
-                <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Unidade</label>
-                    <select value={filtroUnidade} onChange={(e)=>setFiltroUnidade(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white"><option value="Todos">Todos</option>{unidades.map(u=><option key={u} value={u}>{u}</option>)}</select>
-                </div>
-                <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tag</label>
-                    <select value={filtroTag} onChange={(e)=>setFiltroTag(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">
-                        <option value="Todas">Todas</option>
-                        {tagsGlobais.map(t=><option key={t} value={t}>#{t}</option>)}
-                    </select>
-                </div>
-                <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Status</label>
-                    <select value={filtroStatus} onChange={(e)=>setFiltroStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">
-                        <option value="Todos">Todos</option>
-                        <option value="A Fazer">A Fazer</option>
-                        <option value="Em Andamento">Em Andamento</option>
-                        <option value="Concluído">Concluído</option>
-                    </select>
-                </div>
-                <div className="md:col-span-6 flex gap-2 flex-wrap">
-                    <button onClick={()=>setFiltroFavorito(!filtroFavorito)} className={`px-4 py-2 rounded-xl text-sm font-semibold border transition ${filtroFavorito ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-200 hover:text-amber-600'}`}>
-                        {filtroFavorito ? '★ Favoritos' : '☆ Favoritos'}
-                    </button>
-                    <button onClick={()=>{setBusca("");setFiltroEscola("Todas");setFiltroNivel("Todos");setFiltroConceito("Todos");setFiltroFaixa("Todos");setFiltroFavorito(false);setFiltroStatus("Todos");setFiltroTag("Todas");}} className="px-4 py-2 rounded-xl text-sm text-slate-400 hover:text-slate-600 hover:bg-slate-50 border border-slate-200 transition">Limpar filtros</button>
-                </div>
-            </div>}
-            {/* Ordenação + Seletor de modo — sempre visíveis */}
-            <div className="flex justify-end gap-2 items-center flex-wrap mt-3">
-                <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-3 py-1.5">
-                    <span className="text-xs text-slate-400 font-semibold">Ordenar:</span>
-                    {[
-                        {id:'recente',   label:'Recente'},
-                        {id:'az',        label:'A–Z'},
-                        {id:'status',    label:'Status'},
-                        {id:'favoritos', label:'★'},
-                    ].map(o=>(
+        )}
+
+        {/* ── Contagem + Ordenar + Modo de visualização ── */}
+        <div className="flex items-center justify-between mb-3">
+            <p className="text-[12px] text-slate-400 dark:text-[#6b7280] px-[2px]">{planosFiltrados.length} plano{planosFiltrados.length!==1?'s':''}</p>
+            <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-[#F1F4F8] dark:bg-[#273344] rounded-lg px-2.5 py-1.5">
+                    <span className="text-[11px] text-slate-400 dark:text-[#6b7280] font-semibold mr-0.5">Ordenar:</span>
+                    {([{id:'recente',label:'Recente'},{id:'az',label:'A–Z'},{id:'status',label:'Status'},{id:'favoritos',label:'★'}] as const).map(o=>(
                         <button key={o.id} onClick={()=>setOrdenacaoCards(o.id)}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${ordenacaoCards===o.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>
+                            className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all duration-[120ms] ${ordenacaoCards===o.id ? 'bg-[#5B5FEA] dark:bg-[#818cf8] text-white' : 'text-slate-400 dark:text-[#6b7280] hover:text-slate-700 dark:hover:text-[#9CA3AF]'}`}>
                             {o.label}
                         </button>
                     ))}
                 </div>
-                <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
-                    {[
-                        { id:'grade',    label:'⊞', title:'Grade' },
-                        { id:'compacto', label:'☰', title:'Lista' },
-                        { id:'kanban',   label:'⠿', title:'Kanban' },
-                        { id:'periodo',  label:'📆', title:'Por Período' },
-                        { id:'segmento', label:'👥', title:'Por Segmento' },
-                    ].map(m=>(
+                <div className="flex bg-[#F1F4F8] dark:bg-[#273344] rounded-lg p-1 gap-0.5">
+                    {([{id:'grade',label:'⊞',title:'Grade'},{id:'compacto',label:'☰',title:'Lista'},{id:'kanban',label:'⠿',title:'Kanban'},{id:'periodo',label:'📆',title:'Por Período'},{id:'segmento',label:'👥',title:'Por Segmento'}] as const).map(m=>(
                         <button key={m.id} onClick={()=>setModoVisualizacao(m.id)} title={m.title}
-                            className={`px-3 py-1.5 rounded-lg text-sm font-bold transition ${modoVisualizacao===m.id ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-400 hover:text-slate-700'}`}>
+                            className={`px-2.5 py-1 rounded text-[13px] font-bold transition-all duration-[120ms] ${modoVisualizacao===m.id ? 'bg-[#ffffff] dark:bg-[#1F2937] text-[#5B5FEA] dark:text-[#818cf8] shadow-sm' : 'text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF]'}`}>
                             {m.label}
                         </button>
                     ))}
@@ -1713,114 +1725,87 @@ export default function TelaPrincipal() {
             </div>
         </div>
 
-        {/* Contagem */}
-        <p className="text-xs text-gray-400 mb-3 px-1">{planosFiltrados.length} plano{planosFiltrados.length!==1?'s':''}</p>
-
         {/* ── MODO GRADE ── */}
         {modoVisualizacao === 'grade' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[16px]">
+                {planosFiltrados.length === 0 && (
+                    <div className="col-span-3 text-center py-16">
+                        <div className="text-5xl mb-3">📋</div>
+                        <p className="text-slate-500 dark:text-[#9CA3AF] font-medium mb-1">{busca||filtroStatus!=='Todos'||filtroFaixa!=='Todos'?'Nenhum plano encontrado com esses filtros.':'Nenhum plano de aula ainda.'}</p>
+                        <button onClick={novoPlano} className="mt-4 bg-[#5B5FEA] hover:bg-[#4f53d4] text-white px-5 py-2.5 rounded-xl font-bold transition text-sm">+ Novo Plano de Aula</button>
+                    </div>
+                )}
                 {planosFiltrados.map(plano => {
                     const status = plano.statusPlanejamento || 'A Fazer';
-                    const borderColor = status === 'Concluído' ? '#10b981' : status === 'Em Andamento' ? '#6366f1' : '#cbd5e1';
-                    const dotClass   = status === 'Concluído' ? 'bg-emerald-500' : status === 'Em Andamento' ? 'bg-indigo-500' : 'bg-slate-400';
-                    const txtClass   = status === 'Concluído' ? 'text-emerald-700' : status === 'Em Andamento' ? 'text-indigo-600' : 'text-slate-500';
+                    const dotColor = status === 'Concluído' ? '#10b981' : status === 'Em Andamento' ? '#5B5FEA' : '#94a3b8';
+                    const leftBorder = status === 'Concluído' ? '#10b981' : status === 'Em Andamento' ? '#5B5FEA' : '#cbd5e1';
                     return (
-                    <div key={plano.id} style={{borderLeft:`3px solid ${borderColor}`}}
-                        className="bg-[#ffffff] dark:bg-[#1F2937] rounded-xl border border-[#E6EAF0] dark:border-[#374151] card-hover flex flex-col overflow-hidden group cursor-pointer">
-                        <div className="px-4 pt-4 pb-3 flex-1">
-                            <div className="flex items-start justify-between gap-2 mb-3">
-                                {/* Status dot + label clicável com dropdown */}
+                    <div key={plano.id}
+                        style={{borderLeft:`3px solid ${leftBorder}`}}
+                        className="bg-[#ffffff] dark:bg-[#1F2937] rounded-xl border border-[#E6EAF0] dark:border-[#374151] card-hover flex flex-col overflow-hidden cursor-pointer"
+                        onClick={()=>setPlanoSelecionado(plano)}>
+                        <div className="p-[18px] flex-1">
+                            {/* Status dot + label UPPERCASE + favorito */}
+                            <div className="flex items-center justify-between mb-[9px]">
                                 <div className="relative">
-                                    <button onClick={(e)=>{e.stopPropagation(); setStatusDropdownId(statusDropdownId===plano.id ? null : plano.id);}}
-                                        title="Clique para alterar o status"
-                                        className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition">
-                                        <span className={`w-1.5 h-1.5 rounded-full ${dotClass} shrink-0`}></span>
-                                        <span className={`text-xs font-semibold ${txtClass}`}>{status}</span>
+                                    <button onClick={e=>{e.stopPropagation();setStatusDropdownId(statusDropdownId===plano.id?null:plano.id);}}
+                                        className="flex items-center gap-[5px] hover:opacity-70 transition">
+                                        <span style={{width:6,height:6,borderRadius:'50%',background:dotColor,flexShrink:0,display:'inline-block'}} />
+                                        <span style={{color:dotColor}} className="text-[11px] font-bold uppercase tracking-[0.01em]">{status}</span>
                                     </button>
                                     {statusDropdownId === plano.id && (
-                                        <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px]"
+                                        <div className="absolute top-full left-0 mt-1 bg-[#ffffff] dark:bg-[#1F2937] border border-[#E6EAF0] dark:border-[#374151] rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px]"
                                              onClick={e=>e.stopPropagation()}>
-                                            {['A Fazer','Em Andamento','Concluído'].map(s => {
-                                                const cores = {'A Fazer':'hover:bg-slate-50 text-slate-600','Em Andamento':'hover:bg-blue-50 text-blue-700','Concluído':'hover:bg-emerald-50 text-emerald-700'};
-                                                return (
-                                                    <button key={s}
-                                                        onClick={()=>{ setPlanos(planos.map(p=>p.id===plano.id?{...p,statusPlanejamento:s}:p)); setStatusDropdownId(null); }}
-                                                        className={`w-full text-left px-4 py-2.5 text-xs font-bold flex items-center gap-2 ${cores[s]} ${status===s?'opacity-50 cursor-default':''}`}>
-                                                        {s} {status===s && <span className="ml-auto text-slate-300">✓</span>}
-                                                    </button>
-                                                );
-                                            })}
+                                            {(['A Fazer','Em Andamento','Concluído'] as const).map(s => (
+                                                <button key={s}
+                                                    onClick={()=>{setPlanos(planos.map(p=>p.id===plano.id?{...p,statusPlanejamento:s}:p));setStatusDropdownId(null);}}
+                                                    className={`w-full text-left px-4 py-2.5 text-xs font-bold flex items-center gap-2 transition hover:bg-[#F6F8FB] dark:hover:bg-white/5 text-slate-700 dark:text-[#E5E7EB] ${status===s?'opacity-50 cursor-default':''}`}>
+                                                    {s}{status===s&&<span className="ml-auto text-slate-300">✓</span>}
+                                                </button>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
-                                <button onClick={(e)=>toggleFavorito(plano,e)} className={`text-base shrink-0 hover:scale-110 transition ${plano.destaque ? 'text-amber-400' : 'text-slate-200 hover:text-amber-300'}`}>
-                                    {plano.destaque ? '★' : '☆'}
+                                <button onClick={e=>{e.stopPropagation();toggleFavorito(plano,e);}} className={`text-[15px] shrink-0 hover:scale-110 transition leading-none ${plano.destaque?'text-amber-400':'text-slate-300 dark:text-[#4B5563] hover:text-amber-300'}`}>
+                                    {plano.destaque?'★':'☆'}
                                 </button>
                             </div>
 
-                            <h3 className="font-bold text-slate-800 text-sm leading-snug mb-2">{plano.titulo}</h3>
+                            {/* Título */}
+                            <h3 className="font-bold text-slate-900 dark:text-[#E5E7EB] text-[15px] leading-snug tracking-[-0.01em] mb-2">{plano.titulo}</h3>
 
-                            {/* Meta: escola · faixa · unidade — linha única */}
-                            <div className="flex items-center gap-1.5 flex-wrap text-xs text-slate-400 mb-2">
-                                {plano.escola && <span className="font-semibold text-slate-600 uppercase text-[11px]">{plano.escola}</span>}
-                                {plano.escola && ((plano.faixaEtaria||[])[0]||(plano.unidades||[])[0]) && <span className="text-slate-300">·</span>}
-                                {(plano.faixaEtaria||[])[0] && <span>{(plano.faixaEtaria||[])[0]}</span>}
-                                {(plano.faixaEtaria||[])[0] && (plano.unidades||[])[0] && <span className="text-slate-300">·</span>}
-                                {(plano.unidades||[])[0] && <span>{(plano.unidades||[])[0]}</span>}
-                            </div>
-                            {/* Segmentos — chips auto-catalogados */}
-                            {(plano.segmentos||[]).length > 0 && (
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                    {(plano.segmentos||[]).map(s=>(
-                                        <span key={s} className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-md">{s}</span>
-                                    ))}
-                                </div>
-                            )}
+                            {/* Meta */}
+                            <p className="text-[13px] text-slate-500 dark:text-[#9CA3AF] mb-[9px] leading-none">
+                                {[(plano.faixaEtaria||[])[0],(plano.unidades||[])[0]].filter(Boolean).join(' · ') || '\u00A0'}
+                            </p>
 
-                            {/* Conceitos — outlined, sem fundo colorido */}
+                            {/* Tags (conceitos) — indigo pill */}
                             {(plano.conceitos||[]).length > 0 && (
                                 <div className="flex flex-wrap gap-1">
-                                    {(plano.conceitos||[]).slice(0,3).map(c=>(
-                                        <span key={c} className="text-xs text-slate-500 border border-slate-200 px-2 py-0.5 rounded-md">{c}</span>
+                                    {(plano.conceitos||[]).slice(0,2).map(c=>(
+                                        <span key={c} className="text-[11px] font-semibold text-[#5B5FEA] dark:text-[#818cf8] bg-[#5B5FEA]/[0.08] dark:bg-[#5B5FEA]/[0.16] px-[8px] py-[3px] rounded-full">{c}</span>
                                     ))}
-                                    {(plano.conceitos||[]).length > 3 && <span className="text-xs text-slate-400">+{(plano.conceitos||[]).length-3}</span>}
+                                    {(plano.conceitos||[]).length > 2 && <span className="text-[11px] text-slate-400 dark:text-[#6b7280]">+{(plano.conceitos||[]).length-2}</span>}
                                 </div>
                             )}
                         </div>
 
-                        {/* Rodapé — SVG coloridos, sempre visíveis */}
-                        <div className="border-t border-slate-100 px-3 py-2 flex items-center gap-0.5">
-                            <button onClick={(e)=>{e.stopPropagation();setPlanoSelecionado(plano)}}
-                                className="flex-1 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-50 py-1.5 rounded-lg transition">
+                        {/* Rodapé */}
+                        <div className="border-t border-[#E6EAF0] dark:border-[#374151] px-[14px] py-[10px] flex items-center">
+                            <button onClick={e=>{e.stopPropagation();setPlanoSelecionado(plano);}}
+                                className="flex-1 text-[13px] font-semibold text-[#5B5FEA] dark:text-[#818cf8] hover:underline text-left transition">
                                 Ver plano
                             </button>
-                            <div className="w-px h-4 bg-slate-200 mx-1 shrink-0"></div>
-                            <button onClick={(e)=>{e.stopPropagation();setPlanoParaAplicar(plano)}} title="Aplicar em outras turmas"
-                                className="p-1.5 rounded-lg hover:bg-blue-50 transition shrink-0">
-                                <svg className="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                            </button>
-                            <button onClick={(e)=>abrirModalRegistro(plano,e)} title="Registro pós-aula"
-                                className="p-1.5 rounded-lg hover:bg-violet-50 transition shrink-0">
-                                <svg className="w-3.5 h-3.5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/><path d="M17.586 3.414a2 2 0 112.828 2.828L12 14.828l-4 1 1-4 8.586-8.414z"/></svg>
-                            </button>
-                            <button onClick={(e)=>{e.stopPropagation();editarPlano(plano)}} title="Editar"
-                                className="p-1.5 rounded-lg hover:bg-indigo-50 transition shrink-0">
-                                <svg className="w-3.5 h-3.5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828 8 17l1.172-3.828z"/></svg>
-                            </button>
-                            <button onClick={(e)=>{e.stopPropagation();exportarPlanoPDF(plano)}} title="Exportar PDF"
-                                className="p-1.5 rounded-lg hover:bg-orange-50 transition text-[10px] font-bold text-orange-500 shrink-0">PDF</button>
-                            <button onClick={(e)=>{e.stopPropagation(); const link=gerarLinkCompartilhavel('plano', plano as unknown as Record<string, unknown>); navigator.clipboard.writeText(link).then(()=>window.dispatchEvent(new CustomEvent('musilab:toast', { detail: { msg: '🔗 Link copiado!', type: 'success' } })))}} title="Copiar link compartilhável"
-                                className="p-1.5 rounded-lg hover:bg-emerald-50 transition shrink-0">
-                                <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                            </button>
-                            <button onClick={(e)=>{e.stopPropagation(); const copia=carimbарTimestamp({...plano, id:Date.now(), titulo:'[Cópia] '+plano.titulo, statusPlanejamento:'A Fazer', historicoDatas:[], registrosPosAula:[], destaque:false}); setPlanos(prev=>[...prev, copia]); if (!userId) marcarPendente('planos', String(copia.id)); showToast('Plano duplicado!', 'success');}}
-                                title="Duplicar" className="p-1.5 rounded-lg hover:bg-teal-50 transition shrink-0">
-                                <svg className="w-3.5 h-3.5 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                            </button>
-                            <button onClick={(e)=>{e.stopPropagation();excluirPlano(plano.id)}} title="Excluir"
-                                className="p-1.5 rounded-lg hover:bg-red-50 transition shrink-0">
-                                <svg className="w-3.5 h-3.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
-                            </button>
+                            <div className="flex items-center">
+                                <button onClick={e=>{e.stopPropagation();setPlanoParaAplicar(plano);}} title="Agendar"
+                                    className="p-[6px] text-slate-400 dark:text-[#6b7280] hover:text-[#5B5FEA] dark:hover:text-[#818cf8] rounded-lg transition-all duration-[120ms] text-[14px] leading-none">📅</button>
+                                <button onClick={e=>{e.stopPropagation();editarPlano(plano);}} title="Editar"
+                                    className="p-[6px] text-slate-400 dark:text-[#6b7280] hover:text-[#5B5FEA] dark:hover:text-[#818cf8] rounded-lg transition-all duration-[120ms] text-[14px] leading-none">✏️</button>
+                                <button onClick={e=>{e.stopPropagation();exportarPlanoPDF(plano);}} title="PDF"
+                                    className="p-[6px] text-slate-400 dark:text-[#6b7280] hover:text-[#5B5FEA] dark:hover:text-[#818cf8] rounded-lg transition-all duration-[120ms] text-[14px] leading-none">📄</button>
+                                <button onClick={e=>{e.stopPropagation();excluirPlano(plano.id);}} title="Excluir"
+                                    className="p-[6px] text-slate-400 dark:text-[#6b7280] hover:text-red-400 rounded-lg transition-all duration-[120ms] text-[14px] leading-none">🗑</button>
+                            </div>
                         </div>
                     </div>
                     );
