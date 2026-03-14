@@ -1308,6 +1308,9 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         if (matchAquecimento || matchVocalizes) {
             const tipo = matchAquecimento ? 'aquecimento_corporal' : 'vocalizes'
             const nomeSugerido = matchAquecimento ? 'Aquecimento e Relaxamento Corporal' : 'Vocalizes / Aquecimento Vocal'
+            // Se a estratégia já existe no banco, não exibir modal novamente
+            const jaExiste = estrategias.some(e => e.nome.trim().toLowerCase() === nomeSugerido.toLowerCase())
+            if (jaExiste) return
             setEstrategiaDetectadaIA({ tipo, nomeSugerido, planoId: plano.id })
             setShowModalEstrategiaIA(true)
             return

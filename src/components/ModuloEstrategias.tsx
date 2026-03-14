@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
-import { useEstrategiasContext } from '../contexts'
+import { useEstrategiasContext, usePlanosContext } from '../contexts'
 import { useModalContext } from '../contexts'
 import RichTextEditor from './RichTextEditor'
 
@@ -41,6 +41,8 @@ export default function ModuloEstrategias() {
         setNovoObjetivoEstr,
         setObjetivosEstrategia,
     } = useEstrategiasContext()
+
+    const { planos } = usePlanosContext()
 
     // Estado local: modal de detalhes
     const [detalhesEstrategia, setDetalhesEstrategia] = useState<import('../types').Estrategia | null>(null)
@@ -655,15 +657,31 @@ export default function ModuloEstrategias() {
                                 {(detalhesEstrategia.historicoUso||[]).length === 0 ? (
                                     <p className="text-sm text-slate-400 italic">Ainda não foi usada em nenhum plano.</p>
                                 ) : (
-                                    <ul className="space-y-1.5">
-                                        {(detalhesEstrategia.historicoUso||[]).map((h,i)=>(
-                                            <li key={i} className="flex items-center justify-between text-sm bg-slate-50 rounded-lg px-3 py-2">
-                                                <span className="text-slate-700 font-medium truncate flex-1">{h.planoTitulo}</span>
-                                                <span className="text-slate-400 text-xs ml-2 shrink-0">
-                                                    {new Date(h.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}
-                                                </span>
-                                            </li>
-                                        ))}
+                                    <ul className="space-y-2">
+                                        {(detalhesEstrategia.historicoUso||[]).map((h,i)=>{
+                                            const plano = (planos as any[]).find(p => String(p.id) === String(h.planoId))
+                                            const escola = plano?.escola || ''
+                                            const turma = plano?.turma || ''
+                                            const objetivo = plano?.objetivoGeral || ''
+                                            return (
+                                                <li key={i} className="bg-slate-50 rounded-lg px-3 py-2.5 flex flex-col gap-0.5">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <span className="text-slate-700 font-semibold text-sm leading-tight">{h.planoTitulo}</span>
+                                                        <span className="text-slate-400 text-[11px] shrink-0 mt-0.5">
+                                                            {new Date(h.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}
+                                                        </span>
+                                                    </div>
+                                                    {(escola || turma) && (
+                                                        <p className="text-[11px] text-slate-500 leading-tight">
+                                                            {[escola, turma].filter(Boolean).join(' · ')}
+                                                        </p>
+                                                    )}
+                                                    {objetivo && (
+                                                        <p className="text-[11px] text-slate-400 italic leading-tight line-clamp-2">{objetivo}</p>
+                                                    )}
+                                                </li>
+                                            )
+                                        })}
                                     </ul>
                                 )}
                             </div>
