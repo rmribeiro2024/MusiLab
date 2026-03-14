@@ -45,6 +45,7 @@ import ModalTemplatesRoteiro from './modals/ModalTemplatesRoteiro'
 import ModalNovaMusicaInline from './modals/ModalNovaMusicaInline'
 import ModalRegistroRapido from './modals/ModalRegistroRapido'
 import ModalContextoNovaAula from './modals/ModalContextoNovaAula'
+import ModuleSidebar from './ModuleSidebar'
 import ModalConfiguracoes from './modals/ModalConfiguracoes'
 import ModalAdicionarAoPlano from './modals/ModalAdicionarAoPlano'
 import ModalRegistroPosAula from './modals/ModalRegistroPosAula'
@@ -681,6 +682,19 @@ export default function BancoPlanos({ session }) {
             // ── Modal de contexto para Nova Aula ──────────────────────────
             const [showModalContextoNovaAula, setShowModalContextoNovaAula] = useState(false)
 
+            // ── Sidebar lateral ──────────────────────────────────────────
+            const [sidebarCollapsed, setSidebarCollapsed] = useState(
+                () => localStorage.getItem('sidebar_collapsed') === 'true'
+            )
+            const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+            const toggleSidebar = () => {
+                setSidebarCollapsed(prev => {
+                    const next = !prev
+                    localStorage.setItem('sidebar_collapsed', String(next))
+                    return next
+                })
+            }
+
             // Listener: após save, auto-aplica slots pré-selecionados
             React.useEffect(() => {
                 const handler = (e: Event) => {
@@ -734,7 +748,7 @@ export default function BancoPlanos({ session }) {
                     items: [
                         { label: 'Painel da Turma', short: 'Painel', icon: '👥', mode: 'turmas',          action: () => setViewMode('turmas') },
                         { label: 'Histórico',        short: 'Hist.',  icon: '📋', mode: 'historicoMusical', action: () => setViewMode('historicoMusical') },
-                        { label: 'Continuidade',     short: 'Cont.',  icon: '↩️', mode: 'continuidade_enc', action: () => { setViewMode('historicoMusical'); } },
+                        { label: 'Encaminhamentos',  short: 'Enc.',   icon: '↩️', mode: 'continuidade_enc', action: () => { setViewMode('historicoMusical'); } },
                     ]
                 },
                 {
@@ -760,6 +774,7 @@ export default function BancoPlanos({ session }) {
                     ]
                 },
             ]
+            const activeGroupItems = NAV_GROUPS.find(g => g.id === activeGroupId)?.items ?? []
             const voltouOnline = useVoltouOnline();
             useEffect(() => {
                 // Sem userId (modo local): carrega dados do IndexedDB diretamente
@@ -1984,6 +1999,8 @@ export default function BancoPlanos({ session }) {
                 setModalNovaFaixa, setModalNovaEscola, setModalTemplates, setModalGradeSemanal,
                 setModalEventos, setStatusDropdownId, setShowBuscaGlobal,
                 showModalContextoNovaAula, setShowModalContextoNovaAula,
+                sidebarCollapsed, setSidebarCollapsed,
+                mobileSidebarOpen, setMobileSidebarOpen,
             };
 
             // ============================================================
@@ -2451,7 +2468,7 @@ export default function BancoPlanos({ session }) {
             };
             return (
                 <BancoPlanosContext.Provider value={ctx as any}>
-                <div className="min-h-screen bg-slate-50">
+                <div className="min-h-screen bg-slate-50 flex flex-col">
 
                     {/* ══════════ HEADER ══════════ */}
                     <div className="bg-blue-950 text-white shadow-lg safe-pt">
@@ -2570,68 +2587,83 @@ export default function BancoPlanos({ session }) {
                                 })}
                             </div>
 
-                            {/* ══ NAVBAR: Linha 2 — Sub-itens do grupo ativo ══ */}
-                            <div className="flex items-end gap-0.5 sm:gap-1 overflow-x-auto pb-0 scrollbar-hide">
-                                {(NAV_GROUPS.find(g => g.id === activeGroupId)?.items ?? []).map(item => {
-                                    const isActive = viewMode === item.mode
-                                    return (
-                                        <button key={item.label} onClick={item.action}
-                                            className={`relative flex items-center gap-1 px-2 sm:px-3 py-2 rounded-t-xl text-xs font-semibold whitespace-nowrap transition-all
-                                                ${item.accent
-                                                    ? 'bg-emerald-500 hover:bg-emerald-400 text-white'
-                                                    : isActive
-                                                        ? 'bg-white text-slate-800 shadow-sm'
-                                                        : 'bg-blue-900/70 hover:bg-blue-800/80 text-blue-200 hover:text-white border border-blue-700/50'}`}>
-                                            <span>{item.icon}</span>
-                                            <span className="hidden sm:inline">{item.label}</span>
-                                            <span className="sm:hidden">{item.short}</span>
-                                            {isActive && !item.accent && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-indigo-500 rounded-full"/>}
-                                        </button>
-                                    )
-                                })}
-                            </div>
-
                         </div>
                     </div>
                     {/* Faixa sutil de separação */}
-                    <div className="h-px bg-slate-200"/>
+                    <div className="h-px bg-slate-200 flex-none"/>
 
+                    {/* ══ BODY: Sidebar + Área de conteúdo ══ */}
+                    <div className="flex flex-1 overflow-hidden">
 
-                    <div className="max-w-7xl mx-auto px-4 py-6">
-                        {viewMode==='resumoDia' && <ErrorBoundary modulo="Resumo do Dia"><Suspense fallback={<CarregandoModulo />}><TelaResumoDia /></Suspense></ErrorBoundary>}
-                        {viewMode==='calendario' && <ErrorBoundary modulo="Calendário"><Suspense fallback={<CarregandoModulo />}><TelaCalendario /></Suspense></ErrorBoundary>}
-                        {viewMode==='agendaSemanal' && <ErrorBoundary modulo="Agenda Semanal"><Suspense fallback={<CarregandoModulo />}><AgendaSemanal /></Suspense></ErrorBoundary>}
+                        {/* ── Sidebar lateral (só se módulo tem 2+ sub-itens) ── */}
+                        {activeGroupItems.length >= 2 && (
+                            <ModuleSidebar
+                                items={activeGroupItems}
+                                collapsed={sidebarCollapsed}
+                                onToggle={toggleSidebar}
+                                activeMode={viewMode}
+                                mobileOpen={mobileSidebarOpen}
+                                onMobileClose={() => setMobileSidebarOpen(false)}
+                            />
+                        )}
 
-                        {/* ══════════════ PLANEJAMENTO POR TURMA ══════════════ */}
-                        {viewMode === 'turmas' && <ErrorBoundary modulo="Caderno da Turma"><Suspense fallback={<CarregandoModulo />}><ModuloPlanejamentoTurma /></Suspense></ErrorBoundary>}
+                        {/* ── Área de conteúdo principal (scrola internamente) ── */}
+                        <main className="flex-1 overflow-y-auto">
 
-                        {/* ══════════════ RELATÓRIOS ══════════════ */}
-                        {viewMode === 'relatorios' && <ErrorBoundary modulo="Relatórios"><Suspense fallback={<CarregandoModulo />}><ModuloRelatorios /></Suspense></ErrorBoundary>}
+                            {/* Botão ☰ Seções — só no mobile, só quando há sidebar */}
+                            {activeGroupItems.length >= 2 && (
+                                <div className="sm:hidden flex items-center gap-2 px-4 pt-4 pb-3 border-b border-slate-100 bg-white">
+                                    <button
+                                        type="button"
+                                        onClick={() => setMobileSidebarOpen(true)}
+                                        className="text-slate-500 hover:text-slate-700 text-sm flex items-center gap-1.5 font-medium"
+                                    >
+                                        <span>☰</span>
+                                        <span>Seções</span>
+                                    </button>
+                                    <span className="text-slate-300">›</span>
+                                    <span className="text-sm font-semibold text-slate-700">
+                                        {activeGroupItems.find(i => i.mode === viewMode)?.label ?? ''}
+                                    </span>
+                                </div>
+                            )}
 
-                        {/* ══════════════ HISTÓRICO MUSICAL DA TURMA ══════════════ */}
-                        {viewMode === 'historicoMusical' && <ErrorBoundary modulo="Histórico Musical"><Suspense fallback={<CarregandoModulo />}><ModuloHistoricoMusical /></Suspense></ErrorBoundary>}
+                            <div className="max-w-7xl mx-auto px-4 py-6 pb-20 sm:pb-6">
+                                {viewMode==='resumoDia' && <ErrorBoundary modulo="Resumo do Dia"><Suspense fallback={<CarregandoModulo />}><TelaResumoDia /></Suspense></ErrorBoundary>}
+                                {viewMode==='calendario' && <ErrorBoundary modulo="Calendário"><Suspense fallback={<CarregandoModulo />}><TelaCalendario /></Suspense></ErrorBoundary>}
+                                {viewMode==='agendaSemanal' && <ErrorBoundary modulo="Agenda Semanal"><Suspense fallback={<CarregandoModulo />}><AgendaSemanal /></Suspense></ErrorBoundary>}
 
-                        {/* ══════════════ MEU ANO LETIVO ══════════════ */}
-                        {viewMode === 'anoLetivo' && <ErrorBoundary modulo="Meu Ano Letivo"><Suspense fallback={<CarregandoModulo />}><ModuloAnoLetivo /></Suspense></ErrorBoundary>}
+                                {/* ══════════════ PLANEJAMENTO POR TURMA ══════════════ */}
+                                {viewMode === 'turmas' && <ErrorBoundary modulo="Caderno da Turma"><Suspense fallback={<CarregandoModulo />}><ModuloPlanejamentoTurma /></Suspense></ErrorBoundary>}
 
-                        {/* ══════════════ ESTRATÉGIAS PEDAGÓGICAS ══════════════ */}
-                        {viewMode === 'estrategias' && <ErrorBoundary modulo="Estratégias"><Suspense fallback={<CarregandoModulo />}><ModuloEstrategias /></Suspense></ErrorBoundary>}
+                                {/* ══════════════ RELATÓRIOS ══════════════ */}
+                                {viewMode === 'relatorios' && <ErrorBoundary modulo="Relatórios"><Suspense fallback={<CarregandoModulo />}><ModuloRelatorios /></Suspense></ErrorBoundary>}
 
-                        {/* ══════════════ BANCO DE ATIVIDADES ══════════════ */}
-                        {viewMode === 'atividades' && <ErrorBoundary modulo="Atividades"><Suspense fallback={<CarregandoModulo />}><ModuloAtividades /></Suspense></ErrorBoundary>}
+                                {/* ══════════════ HISTÓRICO MUSICAL DA TURMA ══════════════ */}
+                                {viewMode === 'historicoMusical' && <ErrorBoundary modulo="Histórico Musical"><Suspense fallback={<CarregandoModulo />}><ModuloHistoricoMusical /></Suspense></ErrorBoundary>}
 
-                        {/* ═══════════ VIEW SEQUÊNCIAS DIDÁTICAS ═══════════ */}
-                        {viewMode === 'sequencias' && <ErrorBoundary modulo="Sequências"><Suspense fallback={<CarregandoModulo />}><ModuloSequencias /></Suspense></ErrorBoundary>}
-                        {viewMode === 'lista' && <ErrorBoundary modulo="Banco de Aulas"><Suspense fallback={<CarregandoModulo />}><TelaPrincipal /></Suspense></ErrorBoundary>}
+                                {/* ══════════════ MEU ANO LETIVO ══════════════ */}
+                                {viewMode === 'anoLetivo' && <ErrorBoundary modulo="Meu Ano Letivo"><Suspense fallback={<CarregandoModulo />}><ModuloAnoLetivo /></Suspense></ErrorBoundary>}
 
-                        {/* REPERTÓRIO INTELIGENTE */}
-                        {viewMode === 'repertorio' && <ErrorBoundary modulo="Repertório"><Suspense fallback={<CarregandoModulo />}><ModuloRepertorio /></Suspense></ErrorBoundary>}
+                                {/* ══════════════ ESTRATÉGIAS PEDAGÓGICAS ══════════════ */}
+                                {viewMode === 'estrategias' && <ErrorBoundary modulo="Estratégias"><Suspense fallback={<CarregandoModulo />}><ModuloEstrategias /></Suspense></ErrorBoundary>}
+
+                                {/* ══════════════ BANCO DE ATIVIDADES ══════════════ */}
+                                {viewMode === 'atividades' && <ErrorBoundary modulo="Atividades"><Suspense fallback={<CarregandoModulo />}><ModuloAtividades /></Suspense></ErrorBoundary>}
+
+                                {/* ═══════════ VIEW SEQUÊNCIAS DIDÁTICAS ═══════════ */}
+                                {viewMode === 'sequencias' && <ErrorBoundary modulo="Sequências"><Suspense fallback={<CarregandoModulo />}><ModuloSequencias /></Suspense></ErrorBoundary>}
+                                {viewMode === 'lista' && <ErrorBoundary modulo="Banco de Aulas"><Suspense fallback={<CarregandoModulo />}><TelaPrincipal /></Suspense></ErrorBoundary>}
+
+                                {/* REPERTÓRIO INTELIGENTE */}
+                                {viewMode === 'repertorio' && <ErrorBoundary modulo="Repertório"><Suspense fallback={<CarregandoModulo />}><ModuloRepertorio /></Suspense></ErrorBoundary>}
+                            </div>
+
+                        </main>
                     </div>
+                    {/* ══ FIM DO BODY ══ */}
 
                     {/* MODAL VER COMPLETO */}
-
-                    {/* Espaçador para o bottom nav mobile */}
-                    <div className="h-16 sm:hidden" />
 
                     {planoSelecionado && !modoEdicao && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={fecharModal}>
