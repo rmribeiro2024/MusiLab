@@ -511,7 +511,7 @@ function BlocoSlot({ slot, painel, onTogglePainel, onAplicarPlano, onVerPlano, o
       {/* Botão 📋 Registro pós-aula (hover, quando há aplicação e plano) */}
       {slot.aplicacao && slot.plano && onAbrirRegistro && (
         <button onClick={e => { e.stopPropagation(); onAbrirRegistro(slot) }} title="Registro pós-aula"
-          className="absolute top-1 right-1 text-[13px] opacity-0 group-hover:opacity-100 transition-opacity leading-none hover:scale-110">
+          className="absolute top-1 right-1 text-[12px] leading-none hover:scale-110 transition-transform">
           📋
         </button>
       )}
