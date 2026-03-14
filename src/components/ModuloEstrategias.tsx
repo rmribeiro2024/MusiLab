@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
 import { useEstrategiasContext, usePlanosContext } from '../contexts'
 import { useModalContext } from '../contexts'
+import { stripHTML } from '../lib/utils'
 import RichTextEditor from './RichTextEditor'
 
 export default function ModuloEstrategias() {
@@ -660,24 +661,31 @@ export default function ModuloEstrategias() {
                                     <ul className="space-y-2">
                                         {(detalhesEstrategia.historicoUso||[]).map((h,i)=>{
                                             const plano = (planos as any[]).find(p => String(p.id) === String(h.planoId))
-                                            const escola = plano?.escola || ''
-                                            const turma = plano?.turma || ''
-                                            const objetivo = plano?.objetivoGeral || ''
+                                            // Palavras-chave para localizar a atividade relevante no roteiro
+                                            const cat = (detalhesEstrategia.categoria || '').toLowerCase()
+                                            const kwVocal = ['vocalize', 'vocalise', 'vocalizo', 'aquecimento vocal', 'corposolfa']
+                                            const kwCorp  = ['aquecimento', 'relaxamento', 'corporal', 'massagem', 'despertar', 'sensorial']
+                                            const kws = cat.includes('vocal') ? kwVocal : kwCorp
+                                            const atividades: any[] = plano?.atividadesRoteiro || []
+                                            const atMatch = atividades.find(a => {
+                                                const txt = [a.nome, stripHTML(a.descricao || '')].join(' ').toLowerCase()
+                                                return kws.some(k => txt.includes(k))
+                                            }) || atividades[0]
+                                            const atDesc = atMatch ? stripHTML(atMatch.descricao || '').trim() : ''
+                                            const atNome = atMatch?.nome || ''
                                             return (
-                                                <li key={i} className="bg-slate-50 rounded-lg px-3 py-2.5 flex flex-col gap-0.5">
+                                                <li key={i} className="bg-slate-50 rounded-lg px-3 py-2.5 flex flex-col gap-1">
                                                     <div className="flex items-start justify-between gap-2">
                                                         <span className="text-slate-700 font-semibold text-sm leading-tight">{h.planoTitulo}</span>
                                                         <span className="text-slate-400 text-[11px] shrink-0 mt-0.5">
                                                             {new Date(h.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}
                                                         </span>
                                                     </div>
-                                                    {(escola || turma) && (
-                                                        <p className="text-[11px] text-slate-500 leading-tight">
-                                                            {[escola, turma].filter(Boolean).join(' · ')}
-                                                        </p>
+                                                    {atNome && (
+                                                        <p className="text-[11px] font-semibold text-violet-600 leading-tight">{atNome}</p>
                                                     )}
-                                                    {objetivo && (
-                                                        <p className="text-[11px] text-slate-400 italic leading-tight line-clamp-2">{objetivo}</p>
+                                                    {atDesc && (
+                                                        <p className="text-[11px] text-slate-500 leading-snug line-clamp-3 whitespace-pre-line">{atDesc}</p>
                                                     )}
                                                 </li>
                                             )
