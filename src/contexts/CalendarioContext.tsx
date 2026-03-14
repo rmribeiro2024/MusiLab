@@ -133,7 +133,7 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
     const seg = new Date(hoje); seg.setDate(hoje.getDate() + diff); seg.setHours(0, 0, 0, 0)
     return seg
   })
-  const [modoResumo, setModoResumo] = useState('semana')
+  const [modoResumo, setModoResumo] = useState('dia')
   const [dataDia, setDataDia] = useState(() => new Date().toISOString().split('T')[0])
   const [diasExpandidos, setDiasExpandidos] = useState<Record<string, boolean>>(() => ({
     [new Date().toISOString().split('T')[0]]: true

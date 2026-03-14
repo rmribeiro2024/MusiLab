@@ -1884,7 +1884,7 @@ export default function TelaPrincipal() {
             const grupos = {};
             planosFiltrados.forEach(plano => {
                 const datas = plano.historicoDatas || [];
-                const ref = datas.length > 0 ? datas[datas.length - 1] : new Date(plano.id).toISOString().slice(0,10);
+                const ref = datas.length > 0 ? datas[datas.length - 1] : new Date().toISOString().slice(0,10);
                 const dataRef = new Date(ref + 'T12:00:00');
                 if (dataRef < dataInicio || dataRef > dataFim) return; // fora do período
                 const [ano, mes] = ref.split('-');
