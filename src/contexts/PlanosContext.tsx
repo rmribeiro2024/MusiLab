@@ -17,7 +17,7 @@ import { useDebounce } from '../lib/hooks'
 import { showToast } from '../lib/toast'
 import { verificarFeriado } from '../lib/feriados'
 import { detectarMusicasNoPlano, type MusicaDetectada } from '../lib/detectarMusicas'
-import type { Plano, Musica, Atividade, RegistroPosAula, VinculoMusicaPlano, Sequencia } from '../types'
+import type { Plano, Musica, Atividade, RegistroPosAula, VinculoMusicaPlano, Sequencia, AplicacaoAulaSlot } from '../types'
 
 // ── bancoBNCC ── base de habilidades BNCC (copiada de BancoPlanos.tsx)
 export const bancoBNCC = [
@@ -188,6 +188,8 @@ export interface PlanosContextValue {
     novoPlano: () => void
     editarPlano: (plano: Plano) => void
     salvarPlano: (ignorarAvisoEscola?: boolean) => void
+    novaAulaSlots: AplicacaoAulaSlot[] | null
+    setNovaAulaSlots: (s: AplicacaoAulaSlot[] | null) => void
     excluirPlano: (id: string | number) => void
     fecharModal: () => void
     restaurarVersao: (plano: Plano, versao: Plano & { _versaoSalvaEm: string }) => void
@@ -316,6 +318,8 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         const parsed = saved ? JSON.parse(saved) : []
         return parsed.map(normalizePlano)
     })
+    // Slots pré-selecionados para auto-aplicar após salvar nova aula
+    const [novaAulaSlots, setNovaAulaSlots] = useState<AplicacaoAulaSlot[] | null>(null)
     // useReducer: edição do plano (planoSelecionado + modoEdicao + planoEditando + formExpandido)
     const [edicao, edicaoDispatch] = useReducer(edicaoReducer, EDICAO_INITIAL)
     const { planoSelecionado, modoEdicao, planoEditando, formExpandido } = edicao
@@ -576,6 +580,13 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             if (!userId) marcarPendente('planos', String(planoParaSalvar.id)) // [offlineSync]
         }
         dbDel('rascunho_plano') // limpar rascunho após salvar com sucesso
+        // Auto-agendar se o professor pré-selecionou turma(s) no modal de contexto
+        if (novaAulaSlots && novaAulaSlots.length > 0) {
+            window.dispatchEvent(new CustomEvent('musilab:agendar-nova-aula', {
+                detail: { planoId: String(planoParaSalvar.id), slots: novaAulaSlots }
+            }))
+            setNovaAulaSlots(null)
+        }
         edicaoDispatch({ type: 'SET', payload: { modoEdicao: false, planoEditando: null } })
 
         // ── Registrar uso de estratégias vinculadas nas atividades do roteiro ─
@@ -1596,6 +1607,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         escolas, segmentosPlanos, duracoesSugestao, planosFiltrados,
         normalizePlano, buscaAvancada, sugerirBNCC, gerandoBNCC, sugerirObjetivosIA, gerandoObjetivos,
         novoPlano, editarPlano, salvarPlano, excluirPlano, fecharModal, restaurarVersao,
+        novaAulaSlots, setNovaAulaSlots,
         toggleConceito, toggleFaixa, toggleUnidade,
         adicionarRecurso, removerRecurso,
         adicionarDataEdicao, removerDataEdicao, adicionarDataAulaVisualizacao, removerDataAulaVisualizacao,

@@ -44,6 +44,7 @@ import ModalNovaFaixa from './modals/ModalNovaFaixa'
 import ModalTemplatesRoteiro from './modals/ModalTemplatesRoteiro'
 import ModalNovaMusicaInline from './modals/ModalNovaMusicaInline'
 import ModalRegistroRapido from './modals/ModalRegistroRapido'
+import ModalContextoNovaAula from './modals/ModalContextoNovaAula'
 import ModalConfiguracoes from './modals/ModalConfiguracoes'
 import ModalAdicionarAoPlano from './modals/ModalAdicionarAoPlano'
 import ModalRegistroPosAula from './modals/ModalRegistroPosAula'
@@ -341,6 +342,7 @@ export default function BancoPlanos({ session }) {
                 buscaAvancada,
                 sugerirBNCC,
                 novoPlano, editarPlano, salvarPlano, excluirPlano, fecharModal, restaurarVersao,
+                novaAulaSlots, setNovaAulaSlots,
                 toggleConceito, toggleFaixa, toggleUnidade,
                 adicionarRecurso, removerRecurso,
                 adicionarDataEdicao, removerDataEdicao, adicionarDataAulaVisualizacao, removerDataAulaVisualizacao,
@@ -538,9 +540,11 @@ export default function BancoPlanos({ session }) {
                         if (emInput) return;
                         const algumModalAberto = s.modalRegistro || s.modalRegistroRapido || s.modalConfiguracoes ||
                             s.modalNovaFaixa || s.modalNovaEscola || s.modalTemplates || s.modalGradeSemanal ||
-                            s.modalEventos || s.modoEdicao || s.planoSelecionado;
+                            s.modalEventos || s.modoEdicao || s.planoSelecionado || s.showModalContextoNovaAula;
                         if (algumModalAberto) return;
-                        if (s.viewMode === 'lista') { e.preventDefault(); s.novoPlano(); }
+                        if (s.viewMode === 'lista' || s.viewMode === 'resumoDia' || s.viewMode === 'agendaSemanal') {
+                            e.preventDefault(); s.setShowModalContextoNovaAula(true)
+                        }
                         return;
                     }
                 };
@@ -674,6 +678,26 @@ export default function BancoPlanos({ session }) {
             const [dadosCarregados, setDadosCarregados] = useState(false);
             // maisAberto removido — nav mobile agora usa 6 grupos diretos
 
+            // ── Modal de contexto para Nova Aula ──────────────────────────
+            const [showModalContextoNovaAula, setShowModalContextoNovaAula] = useState(false)
+
+            // Listener: após save, auto-aplica slots pré-selecionados
+            React.useEffect(() => {
+                const handler = (e: Event) => {
+                    const ev = e as CustomEvent<{ planoId: string; slots: any[] }>
+                    criarAplicacoes(ev.detail.planoId, ev.detail.slots)
+                }
+                window.addEventListener('musilab:agendar-nova-aula', handler)
+                return () => window.removeEventListener('musilab:agendar-nova-aula', handler)
+            }, [criarAplicacoes])
+
+            // preData para o modal: pré-seleciona data baseado na view atual
+            const preDataModal = viewMode === 'resumoDia'
+                ? new Date().toISOString().slice(0, 10)
+                : viewMode === 'agendaSemanal'
+                    ? (dataDia ?? new Date().toISOString().slice(0, 10))
+                    : undefined
+
             // Mapa viewMode → grupo para detectar grupo ativo
             const VIEWMODE_TO_GROUP: Record<string, string> = {
                 resumoDia: 'agenda', agendaSemanal: 'agenda', calendario: 'agenda',
@@ -701,7 +725,7 @@ export default function BancoPlanos({ session }) {
                     id: 'planejamento', label: 'Planejamento', short: 'Planos', icon: '📚', defaultMode: 'lista',
                     items: [
                         { label: 'Planos',    short: 'Planos', icon: '📚', mode: 'lista',      action: () => { setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null); } },
-                        { label: 'Nova Aula', short: 'Nova',   icon: '➕', mode: 'nova',       action: novoPlano, accent: true },
+                        { label: 'Nova Aula', short: 'Nova',   icon: '➕', mode: 'nova',       action: () => setShowModalContextoNovaAula(true), accent: true },
                         { label: 'Sequências', short: 'Seq.',  icon: '🔗', mode: 'sequencias', action: () => setViewMode('sequencias') },
                     ]
                 },
@@ -1959,6 +1983,7 @@ export default function BancoPlanos({ session }) {
                 setModalConfirm, setModalRegistro, setModalRegistroRapido, setModalConfiguracoes,
                 setModalNovaFaixa, setModalNovaEscola, setModalTemplates, setModalGradeSemanal,
                 setModalEventos, setStatusDropdownId, setShowBuscaGlobal,
+                showModalContextoNovaAula, setShowModalContextoNovaAula,
             };
 
             // ============================================================
@@ -2835,6 +2860,20 @@ export default function BancoPlanos({ session }) {
                     <ModalGradeSemanal />
                     <ModalAdicionarAoPlano />
                     <ModalRegistroRapido />
+                    <ModalContextoNovaAula
+                        isOpen={showModalContextoNovaAula}
+                        preData={preDataModal}
+                        onConfirmar={(slots) => {
+                            setNovaAulaSlots(slots)
+                            novoPlano()
+                            setShowModalContextoNovaAula(false)
+                        }}
+                        onSemProgramar={() => {
+                            novoPlano()
+                            setShowModalContextoNovaAula(false)
+                        }}
+                        onFechar={() => setShowModalContextoNovaAula(false)}
+                    />
                     <ModalNovaMusicaInline />
                     <ModalTemplatesRoteiro />
                     <ModalNovaFaixa />

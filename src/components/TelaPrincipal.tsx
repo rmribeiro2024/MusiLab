@@ -1807,7 +1807,7 @@ export default function TelaPrincipal() {
                                 Ver plano
                             </button>
                             <div className="w-px h-4 bg-slate-200 mx-1 shrink-0"></div>
-                            <button onClick={(e)=>{e.stopPropagation();setPlanoParaAplicar(plano)}} title="Aplicar em turmas"
+                            <button onClick={(e)=>{e.stopPropagation();setPlanoParaAplicar(plano)}} title="Aplicar em outras turmas"
                                 className="p-1.5 rounded-lg hover:bg-blue-50 transition shrink-0">
                                 <svg className="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                             </button>

@@ -10,7 +10,8 @@ import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
-import type { AplicacaoAula, AulaGrade, AnoLetivo, Plano } from '../types'
+import { showToast } from '../lib/toast'
+import type { AplicacaoAula, AplicacaoAulaSlot, AulaGrade, AnoLetivo, Plano } from '../types'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -93,8 +94,8 @@ export default function AgendaSemanal() {
     setFiltroRegAno, setFiltroRegEscola, setFiltroRegSegmento, setFiltroRegTurma, setFiltroRegData,
   } = useCalendarioContext()
   const { anosLetivos } = useAnoLetivoContext()
-  const { aplicacoes } = useAplicacoesContext()
-  const { planos, setPlanoSelecionado } = usePlanosContext()
+  const { aplicacoes, setAplicacoes, moverParaProximaSemana } = useAplicacoesContext()
+  const { planos, setPlanoSelecionado, novoPlano, setNovaAulaSlots } = usePlanosContext()
   const { setViewMode: setViewModeGlobal } = useRepertorioContext()
 
   const hoje = useMemo(() => getSegunda(new Date()), [])
@@ -200,6 +201,36 @@ export default function AgendaSemanal() {
     setPlanoSelecionado(plano)
     setViewModeGlobal('lista')
   }
+  function moverSlot(slot: SlotInfo) {
+    if (!slot.aplicacao) return
+    const idAp = slot.aplicacao.id
+    const dataOriginal = slot.dataStr
+    moverParaProximaSemana(idAp)
+    const [y, m, d] = dataOriginal.split('-').map(Number)
+    const proxima = new Date(y, m - 1, d + 7)
+    const dataFmt = `${String(proxima.getDate()).padStart(2, '0')}/${String(proxima.getMonth() + 1).padStart(2, '0')}`
+    showToast(
+      `📅 ${slot.nomeTurma} movida para ${dataFmt}`,
+      'success',
+      5000,
+      () => setAplicacoes(prev => prev.map(a =>
+        a.id === idAp ? { ...a, data: dataOriginal, status: 'planejada' as const } : a
+      ))
+    )
+  }
+
+  function novaAulaNoSlot(slot: SlotInfo) {
+    const s: AplicacaoAulaSlot = {
+      anoLetivoId: slot.aulaGrade.anoLetivoId ?? '',
+      escolaId: slot.aulaGrade.escolaId ?? '',
+      segmentoId: slot.aulaGrade.segmentoId,
+      turmaId: slot.aulaGrade.turmaId,
+      data: slot.dataStr,
+      horario: slot.aulaGrade.horario,
+    }
+    setNovaAulaSlots([s])
+    novoPlano()
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -279,9 +310,9 @@ export default function AgendaSemanal() {
           <p className="text-xs mt-1 text-center max-w-xs text-slate-300">Configure a grade semanal em Configurações → Grade Semanal.</p>
         </div>
       ) : viewMode === 'grade' ? (
-        <ViewGrade semanaData={semanaData} diasSemana={diasSemana} horarios={horarios} painel={painel} panelMode={panelMode} onTogglePainel={togglePainel} onClosePanel={() => setPainelKey(null)} onAplicarPlano={setSelecionandoSlot} onVerPlano={verPlano} onAbrirRegistro={abrirRegistroSlot} />
+        <ViewGrade semanaData={semanaData} diasSemana={diasSemana} horarios={horarios} painel={painel} panelMode={panelMode} onTogglePainel={togglePainel} onClosePanel={() => setPainelKey(null)} onAplicarPlano={setSelecionandoSlot} onVerPlano={verPlano} onAbrirRegistro={abrirRegistroSlot} onMover={moverSlot} onNovaAula={novaAulaNoSlot} />
       ) : (
-        <ViewLista semanaData={semanaData} isDiaAberto={isDiaAberto} onToggleDia={toggleDia} painel={painel} panelMode={panelMode} onTogglePainel={togglePainel} onClosePanel={() => setPainelKey(null)} onAplicarPlano={setSelecionandoSlot} onVerPlano={verPlano} onAbrirRegistro={abrirRegistroSlot} />
+        <ViewLista semanaData={semanaData} isDiaAberto={isDiaAberto} onToggleDia={toggleDia} painel={painel} panelMode={panelMode} onTogglePainel={togglePainel} onClosePanel={() => setPainelKey(null)} onAplicarPlano={setSelecionandoSlot} onVerPlano={verPlano} onAbrirRegistro={abrirRegistroSlot} onMover={moverSlot} onNovaAula={novaAulaNoSlot} />
       )}
 
       {/* ── MODAL SELETOR DE PLANO (melhoria 2) ── */}
@@ -309,9 +340,11 @@ interface ViewGradeProps {
   onAplicarPlano: (s: SlotInfo) => void
   onVerPlano: (p: Plano) => void
   onAbrirRegistro: (s: SlotInfo) => void
+  onMover: (s: SlotInfo) => void
+  onNovaAula: (s: SlotInfo) => void
 }
 
-function ViewGrade({ semanaData, diasSemana, horarios, painel, panelMode, onTogglePainel, onClosePanel, onAplicarPlano, onVerPlano, onAbrirRegistro }: ViewGradeProps) {
+function ViewGrade({ semanaData, diasSemana, horarios, painel, panelMode, onTogglePainel, onClosePanel, onAplicarPlano, onVerPlano, onAbrirRegistro, onMover, onNovaAula }: ViewGradeProps) {
   const temSemHorario = semanaData.some(d => d.slots.some(s => !s.aulaGrade.horario))
   const borderColor = '#dde3ea'
 
@@ -345,7 +378,7 @@ function ViewGrade({ semanaData, diasSemana, horarios, painel, panelMode, onTogg
                 const slots = dia.slots.filter(s => s.aulaGrade.horario === horario)
                 return (
                   <div key={diaInfo.dataStr} className="border-r last:border-r-0 p-1.5 flex flex-col gap-1" style={{ borderColor, minHeight: 72 }}>
-                    {slots.map(slot => <BlocoSlot key={slot.aulaGrade.id} slot={slot} painel={painel} onTogglePainel={onTogglePainel} onAplicarPlano={onAplicarPlano} onVerPlano={onVerPlano} onAbrirRegistro={onAbrirRegistro} />)}
+                    {slots.map(slot => <BlocoSlot key={slot.aulaGrade.id} slot={slot} painel={painel} onTogglePainel={onTogglePainel} onAplicarPlano={onAplicarPlano} onVerPlano={onVerPlano} onAbrirRegistro={onAbrirRegistro} onMover={onMover} onNovaAula={onNovaAula} />)}
                   </div>
                 )
               })}
@@ -363,7 +396,7 @@ function ViewGrade({ semanaData, diasSemana, horarios, painel, panelMode, onTogg
                 return (
                   <div key={diaInfo.dataStr} className="border-r last:border-r-0 p-1.5 flex flex-col gap-1" style={{ borderColor }}>
                     {dia.slots.filter(s => !s.aulaGrade.horario).map(slot =>
-                      <BlocoSlot key={slot.aulaGrade.id} slot={slot} painel={painel} onTogglePainel={onTogglePainel} onAplicarPlano={onAplicarPlano} onVerPlano={onVerPlano} onAbrirRegistro={onAbrirRegistro} />
+                      <BlocoSlot key={slot.aulaGrade.id} slot={slot} painel={painel} onTogglePainel={onTogglePainel} onAplicarPlano={onAplicarPlano} onVerPlano={onVerPlano} onAbrirRegistro={onAbrirRegistro} onMover={onMover} onNovaAula={onNovaAula} />
                     )}
                   </div>
                 )
@@ -390,9 +423,11 @@ interface ViewListaProps {
   onAplicarPlano: (s: SlotInfo) => void
   onAbrirRegistro: (s: SlotInfo) => void
   onVerPlano: (p: Plano) => void
+  onMover: (s: SlotInfo) => void
+  onNovaAula: (s: SlotInfo) => void
 }
 
-function ViewLista({ semanaData, isDiaAberto, onToggleDia, painel, panelMode, onTogglePainel, onClosePanel, onAplicarPlano, onVerPlano, onAbrirRegistro }: ViewListaProps) {
+function ViewLista({ semanaData, isDiaAberto, onToggleDia, painel, panelMode, onTogglePainel, onClosePanel, onAplicarPlano, onVerPlano, onAbrirRegistro, onMover, onNovaAula }: ViewListaProps) {
   return (
     <div className="flex gap-4 items-start">
       <div className="flex-1 min-w-0 flex flex-col gap-2">
@@ -448,17 +483,28 @@ function ViewLista({ semanaData, isDiaAberto, onToggleDia, painel, panelMode, on
                           }
                         </div>
                         {/* Botão + quando sem plano */}
-                        {!slot.aplicacao && (
-                          <button onClick={() => onAplicarPlano(slot)} title="Aplicar plano nesta turma"
+                        {!slot.aplicacao && (<>
+                          <button onClick={() => onAplicarPlano(slot)} title="Aplicar plano existente"
                             className="w-7 h-7 flex items-center justify-center rounded-lg border-2 border-dashed border-indigo-300 text-indigo-400 hover:border-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 flex-shrink-0 transition font-bold text-sm">
                             +
                           </button>
-                        )}
+                          <button onClick={() => onNovaAula(slot)} title="Nova Aula para esta turma"
+                            className="flex items-center gap-0.5 px-2 h-7 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 flex-shrink-0 transition text-[10px] font-bold">
+                            ✏ Nova
+                          </button>
+                        </>)}
                         {/* Ícone 📋 Registro pós-aula */}
                         {slot.aplicacao && slot.plano && (
                           <button onClick={e => { e.stopPropagation(); onAbrirRegistro(slot) }} title="Registro pós-aula"
                             className="text-slate-300 hover:text-indigo-500 flex-shrink-0 transition-colors text-base leading-none">
                             📋
+                          </button>
+                        )}
+                        {/* Ícone 📅 Mover para próxima semana */}
+                        {slot.aplicacao && slot.aplicacao.status !== 'realizada' && (
+                          <button onClick={e => { e.stopPropagation(); onMover(slot) }} title="Mover para próxima semana"
+                            className="text-slate-300 hover:text-indigo-500 flex-shrink-0 transition-colors text-base leading-none">
+                            📅
                           </button>
                         )}
                         {/* Badge de status */}
@@ -482,7 +528,7 @@ function ViewLista({ semanaData, isDiaAberto, onToggleDia, painel, panelMode, on
 
 // ── Bloco de slot (compartilhado pela grade) ──────────────────────────────────
 
-function BlocoSlot({ slot, painel, onTogglePainel, onAplicarPlano, onVerPlano, onAbrirRegistro }: { slot: SlotInfo; painel: SlotInfo | null; onTogglePainel: (s: SlotInfo) => void; onAplicarPlano: (s: SlotInfo) => void; onVerPlano?: (p: Plano) => void; onAbrirRegistro?: (s: SlotInfo) => void }) {
+function BlocoSlot({ slot, painel, onTogglePainel, onAplicarPlano, onVerPlano, onAbrirRegistro, onMover, onNovaAula }: { slot: SlotInfo; painel: SlotInfo | null; onTogglePainel: (s: SlotInfo) => void; onAplicarPlano: (s: SlotInfo) => void; onVerPlano?: (p: Plano) => void; onAbrirRegistro?: (s: SlotInfo) => void; onMover?: (s: SlotInfo) => void; onNovaAula?: (s: SlotInfo) => void }) {
   const cfg = slot.aplicacao ? (STATUS_CFG[slot.aplicacao.status] ?? STATUS_CFG.planejada) : null
   const isSelected = painel?.aulaGrade.id === slot.aulaGrade.id && painel?.dataStr === slot.dataStr
   const isRealizada = slot.aplicacao?.status === 'realizada'
@@ -515,14 +561,28 @@ function BlocoSlot({ slot, painel, onTogglePainel, onAplicarPlano, onVerPlano, o
               📋
             </button>
           )}
+          {slot.aplicacao && slot.aplicacao.status !== 'realizada' && onMover && (
+            <button type="button" onClick={e => { e.stopPropagation(); onMover(slot) }} title="Mover para próxima semana"
+              className="text-[11px] leading-none hover:scale-110 transition-transform">
+              📅
+            </button>
+          )}
         </div>
       </button>
-      {/* Botão + quando sem plano */}
+      {/* Botões quando sem plano */}
       {!slot.aplicacao && (
-        <button onClick={() => onAplicarPlano(slot)} title="Aplicar plano"
-          className="absolute top-1 right-1 w-5 h-5 rounded-md border border-dashed border-indigo-300 text-indigo-400 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-600 flex items-center justify-center text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-          +
-        </button>
+        <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          {onNovaAula && (
+            <button onClick={() => onNovaAula(slot)} title="Nova Aula"
+              className="h-5 px-1.5 rounded-md border border-emerald-300 text-emerald-600 hover:bg-emerald-50 flex items-center justify-center text-[9px] font-bold">
+              ✏
+            </button>
+          )}
+          <button onClick={() => onAplicarPlano(slot)} title="Aplicar plano existente"
+            className="w-5 h-5 rounded-md border border-dashed border-indigo-300 text-indigo-400 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-600 flex items-center justify-center text-[11px] font-bold">
+            +
+          </button>
+        </div>
       )}
     </div>
   )
@@ -594,10 +654,10 @@ function SeletorPlano({ slot, planos, onClose }: { slot: SlotInfo; planos: Plano
 
 // ── Painel lateral ────────────────────────────────────────────────────────────
 
-function PainelPlano({ slot, onClose, modo = 'preview', onAbrirRegistro }: { slot: SlotInfo; onClose: () => void; modo?: 'preview' | 'full'; onAbrirRegistro?: (s: SlotInfo) => void }) {
+function PainelPlano({ slot, onClose, onAbrirRegistro }: { slot: SlotInfo; onClose: () => void; modo?: 'preview' | 'full'; onAbrirRegistro?: (s: SlotInfo) => void }) {
   const { aplicacao, plano, nomeTurma } = slot
   const { editarPlano } = usePlanosContext()
-  const { moverParaProximaSemana } = useAplicacoesContext()
+  const { setAplicacoes, moverParaProximaSemana } = useAplicacoesContext()
   const cfg = aplicacao ? (STATUS_CFG[aplicacao.status] ?? STATUS_CFG.planejada) : null
   const atividades = plano?.atividadesRoteiro ?? []
 
@@ -626,48 +686,53 @@ function PainelPlano({ slot, onClose, modo = 'preview', onAbrirRegistro }: { slo
       {/* Corpo */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
 
-        {/* Modo FULL: mostra data, status e botões de ação */}
-        {modo === 'full' && (
-          <>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                {formatarData(slot.dataStr)}
-                {slot.aulaGrade.horario && <span className="text-slate-300">· {slot.aulaGrade.horario}</span>}
-              </div>
-              {cfg
-                ? <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
-                : <span className="text-[11px] text-slate-300 italic">Sem agendamento</span>
-              }
-            </div>
-            {aplicacao && plano && onAbrirRegistro && (
-              <button onClick={() => { onAbrirRegistro(slot); onClose() }}
-                className="w-full py-2 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl hover:bg-indigo-100 transition">
-                📝 {aplicacao.status === 'realizada' ? 'Ver / editar registro' : 'Registrar pós-aula'}
-              </button>
-            )}
-            {aplicacao && aplicacao.status !== 'realizada' && (
-              <button
-                onClick={() => { moverParaProximaSemana(aplicacao.id); onClose() }}
-                className="w-full py-2 text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-100 transition">
-                📅 Mover para próxima semana
-              </button>
-            )}
-          </>
-        )}
+        {/* Data + status — sempre visível */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {formatarData(slot.dataStr)}
+            {slot.aulaGrade.horario && <span className="text-slate-300 ml-1">· {slot.aulaGrade.horario}</span>}
+          </div>
+          {cfg
+            ? <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
+            : <span className="text-[11px] text-slate-300 italic">Sem agendamento</span>
+          }
+        </div>
 
-        {/* Mover para próxima semana: visível em ambos os modos (não realizada) */}
-        {aplicacao && aplicacao.status !== 'realizada' && modo === 'preview' && (
+        {/* Botões de ação — sempre visíveis */}
+        {aplicacao && plano && onAbrirRegistro && (
+          <button onClick={() => { onAbrirRegistro(slot); onClose() }}
+            className="w-full py-2 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl hover:bg-indigo-100 transition">
+            📝 {aplicacao.status === 'realizada' ? 'Ver / editar registro' : 'Registrar pós-aula'}
+          </button>
+        )}
+        {aplicacao && aplicacao.status !== 'realizada' && (
           <button
-            onClick={() => { moverParaProximaSemana(aplicacao.id); onClose() }}
+            onClick={() => {
+              const idAp = aplicacao.id
+              const dataOriginal = slot.dataStr
+              moverParaProximaSemana(idAp)
+              const [y, m, d] = dataOriginal.split('-').map(Number)
+              const proxima = new Date(y, m - 1, d + 7)
+              const dataFmt = `${String(proxima.getDate()).padStart(2, '0')}/${String(proxima.getMonth() + 1).padStart(2, '0')}`
+              showToast(
+                `📅 ${nomeTurma} movida para ${dataFmt}`,
+                'success',
+                5000,
+                () => setAplicacoes(prev => prev.map(a =>
+                  a.id === idAp ? { ...a, data: dataOriginal, status: 'planejada' as const } : a
+                ))
+              )
+              onClose()
+            }}
             className="w-full py-2 text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-100 transition">
             📅 Mover para próxima semana
           </button>
         )}
 
-        {/* Sempre: objetivos + roteiro */}
+        {/* Objetivos + roteiro */}
         {plano ? (
           <>
             {plano.objetivoGeral && (
