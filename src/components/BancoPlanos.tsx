@@ -672,7 +672,70 @@ export default function BancoPlanos({ session }) {
             // MÓDULO: CARREGAMENTO DE DADOS
             // ============================================================
             const [dadosCarregados, setDadosCarregados] = useState(false);
-            const [maisAberto, setMaisAberto] = useState(false);
+            // maisAberto removido — nav mobile agora usa 6 grupos diretos
+
+            // Mapa viewMode → grupo para detectar grupo ativo
+            const VIEWMODE_TO_GROUP: Record<string, string> = {
+                resumoDia: 'agenda', agendaSemanal: 'agenda', calendario: 'agenda',
+                lista: 'planejamento', sequencias: 'planejamento',
+                turmas: 'turmas', historicoMusical: 'turmas',
+                repertorio: 'biblioteca', atividades: 'biblioteca', estrategias: 'biblioteca',
+                relatorios: 'relatorios',
+                anoLetivo: 'configuracoes',
+            }
+            const activeGroupId = VIEWMODE_TO_GROUP[viewMode] ?? 'agenda'
+
+            // Definição dos grupos de navegação
+            type NavSubItem = { label: string; short: string; icon: string; mode: string; accent?: boolean; action: () => void }
+            type NavGroup = { id: string; label: string; short: string; icon: string; defaultMode: string; items: NavSubItem[] }
+            const NAV_GROUPS: NavGroup[] = [
+                {
+                    id: 'agenda', label: 'Agenda', short: 'Agenda', icon: '📅', defaultMode: 'resumoDia',
+                    items: [
+                        { label: 'Hoje',       short: 'Hoje', icon: '☀️', mode: 'resumoDia',     action: () => setViewMode('resumoDia') },
+                        { label: 'Semana',     short: 'Sem.', icon: '📆', mode: 'agendaSemanal', action: () => setViewMode('agendaSemanal') },
+                        { label: 'Calendário', short: 'Cal.', icon: '📅', mode: 'calendario',    action: () => setViewMode('calendario') },
+                    ]
+                },
+                {
+                    id: 'planejamento', label: 'Planejamento', short: 'Planos', icon: '📚', defaultMode: 'lista',
+                    items: [
+                        { label: 'Planos',    short: 'Planos', icon: '📚', mode: 'lista',      action: () => { setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null); } },
+                        { label: 'Nova Aula', short: 'Nova',   icon: '➕', mode: 'nova',       action: novoPlano, accent: true },
+                        { label: 'Sequências', short: 'Seq.',  icon: '🔗', mode: 'sequencias', action: () => setViewMode('sequencias') },
+                    ]
+                },
+                {
+                    id: 'turmas', label: 'Turmas', short: 'Turmas', icon: '👥', defaultMode: 'turmas',
+                    items: [
+                        { label: 'Painel da Turma', short: 'Painel', icon: '👥', mode: 'turmas',          action: () => setViewMode('turmas') },
+                        { label: 'Histórico',        short: 'Hist.',  icon: '📋', mode: 'historicoMusical', action: () => setViewMode('historicoMusical') },
+                        { label: 'Continuidade',     short: 'Cont.',  icon: '↩️', mode: 'continuidade_enc', action: () => setViewMode('historicoMusical') },
+                    ]
+                },
+                {
+                    id: 'biblioteca', label: 'Biblioteca', short: 'Biblio', icon: '🎼', defaultMode: 'repertorio',
+                    items: [
+                        { label: 'Repertório',  short: 'Rep.',  icon: '🎼', mode: 'repertorio',  action: () => setViewMode('repertorio') },
+                        { label: 'Atividades',  short: 'Atv.',  icon: '🎁', mode: 'atividades',  action: () => setViewMode('atividades') },
+                        { label: 'Estratégias', short: 'Estr.', icon: '🧩', mode: 'estrategias', action: () => setViewMode('estrategias') },
+                    ]
+                },
+                {
+                    id: 'relatorios', label: 'Relatórios', short: 'Rel.', icon: '📋', defaultMode: 'relatorios',
+                    items: [
+                        { label: 'Relatórios', short: 'Rel.', icon: '📋', mode: 'relatorios', action: () => setViewMode('relatorios') },
+                    ]
+                },
+                {
+                    id: 'configuracoes', label: 'Configurações', short: 'Config', icon: '⚙️', defaultMode: 'anoLetivo',
+                    items: [
+                        { label: 'Estrutura Escolar',   short: 'Escola', icon: '🗓️', mode: 'anoLetivo',      action: () => setViewMode('anoLetivo') },
+                        { label: 'Grade Semanal',        short: 'Grade',  icon: '📆', mode: 'modal_grade',    action: () => setModalGradeSemanal(true) },
+                        { label: 'Backup / Restauração', short: 'Backup', icon: '💾', mode: 'modal_config',   action: () => setModalConfiguracoes(true) },
+                    ]
+                },
+            ]
             const voltouOnline = useVoltouOnline();
             useEffect(() => {
                 // Sem userId (modo local): carrega dados do IndexedDB diretamente
@@ -2463,76 +2526,44 @@ export default function BancoPlanos({ session }) {
                                 </div>
                             </div>
 
-                            {/* ══ NAVBAR em dois grupos ══ */}
+                            {/* ══ NAVBAR: Linha 1 — Grupos ══ */}
+                            <div className="flex items-center gap-0.5 px-1 pt-1 overflow-x-auto scrollbar-hide">
+                                {NAV_GROUPS.map(group => {
+                                    const isGroupActive = activeGroupId === group.id
+                                    return (
+                                        <button key={group.id}
+                                            onClick={() => { const first = group.items[0]; first.action() }}
+                                            className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-all
+                                                ${isGroupActive
+                                                    ? 'bg-white/20 text-white'
+                                                    : 'text-blue-300 hover:text-white hover:bg-white/10'}`}>
+                                            <span className="text-sm leading-none">{group.icon}</span>
+                                            <span className="hidden sm:inline">{group.label}</span>
+                                            <span className="sm:hidden">{group.short}</span>
+                                        </button>
+                                    )
+                                })}
+                            </div>
+
+                            {/* ══ NAVBAR: Linha 2 — Sub-itens do grupo ativo ══ */}
                             <div className="flex items-end gap-0.5 sm:gap-1 overflow-x-auto pb-0 scrollbar-hide">
-
-                                {/* GRUPO 1: Trabalho diário */}
-                                <div className="flex items-end gap-0.5 sm:gap-1 mr-2 sm:mr-3">
-                                    {[
-                                        { label:'Hoje',       short:'Hoje',    icon:'☀️', mode:'resumoDia',       action:()=>setViewMode('resumoDia') },
-                                        { label:'Planos', short:'Planos', icon:'📚', mode:'lista', action:()=>{setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null);} },
-                                        { label:'Nova Aula',  short:'Nova',    icon:'➕', mode:'nova',            action: novoPlano, accent: true },
-                                        { label:'Calendário', short:'Cal.',    icon:'📅', mode:'calendario',      action:()=>setViewMode('calendario') },
-                                        { label:'Caderno da Turma', short:'Caderno', icon:'👥', mode:'turmas', action:()=>setViewMode('turmas') },
-                                        { label:'Relatórios', short:'Rel.',    icon:'📋', mode:'relatorios',      action:()=>setViewMode('relatorios') },
-                                    ].map(({label, short, icon, mode, action, accent}) => {
-                                        const isActive = viewMode === mode;
-                                        return (
-                                            <button key={label} onClick={action}
-                                                className={`relative flex items-center gap-1 px-2 sm:px-3 py-2 rounded-t-xl text-xs font-semibold whitespace-nowrap transition-all
-                                                    ${accent
-                                                        ? 'bg-emerald-500 hover:bg-emerald-400 text-white'
-                                                        : isActive
-                                                            ? 'bg-white text-slate-800 shadow-sm'
-                                                            : 'bg-blue-900/70 hover:bg-blue-800/80 text-blue-200 hover:text-white border border-blue-700/50'}`}>
-                                                <span>{icon}</span>
-                                                <span className="hidden sm:inline">{label}</span>
-                                                <span className="sm:hidden">{short}</span>
-                                                {isActive && !accent && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-indigo-500 rounded-full"/>}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* Divisor */}
-                                <div className="self-center h-5 w-px bg-blue-700/60 mx-1 mb-1"/>
-
-                                {/* GRUPO 2: Biblioteca */}
-                                <div className="flex items-end gap-0.5 sm:gap-1">
-                                    {[
-                                        { label:'Semana',      short:'Sem.',  icon:'📆', mode:'agendaSemanal' },
-                                        { label:'Estrutura Escolar', short:'Escola', icon:'🗓️', mode:'anoLetivo' },
-                                        { label:'Repertório',  short:'Rep.',  icon:'🎼', mode:'repertorio' },
-                                        { label:'Estratégias', short:'Estr.', icon:'🧩', mode:'estrategias' },
-                                        { label:'Atividades',  short:'Atv.',  icon:'🎁', mode:'atividades' },
-                                        { label:'Sequências',  short:'Seq.',  icon:'📚', mode:'sequencias' },
-                                    ].map(({label, short, icon, mode}) => {
-                                        const isActive = viewMode === mode;
-                                        return (
-                                            <button key={label} onClick={()=>setViewMode(mode)}
-                                                className={`relative flex items-center gap-1 px-2 sm:px-3 py-2 rounded-t-xl text-xs font-semibold whitespace-nowrap transition-all
-                                                    ${isActive
+                                {(NAV_GROUPS.find(g => g.id === activeGroupId)?.items ?? []).map(item => {
+                                    const isActive = viewMode === item.mode
+                                    return (
+                                        <button key={item.label} onClick={item.action}
+                                            className={`relative flex items-center gap-1 px-2 sm:px-3 py-2 rounded-t-xl text-xs font-semibold whitespace-nowrap transition-all
+                                                ${item.accent
+                                                    ? 'bg-emerald-500 hover:bg-emerald-400 text-white'
+                                                    : isActive
                                                         ? 'bg-white text-slate-800 shadow-sm'
                                                         : 'bg-blue-900/70 hover:bg-blue-800/80 text-blue-200 hover:text-white border border-blue-700/50'}`}>
-                                                <span>{icon}</span>
-                                                <span className="hidden sm:inline">{label}</span>
-                                                <span className="sm:hidden">{short}</span>
-                                                {isActive && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-violet-500 rounded-full"/>}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* Espaçador */}
-                                <div className="flex-1"/>
-
-                                {/* ⚙️ Configurações */}
-                                <div className="flex items-end">
-                                    <button onClick={()=>setModalConfiguracoes(true)}
-                                        className="flex items-center gap-1 px-3 py-2 rounded-t-xl text-xs font-medium bg-blue-900/40 hover:bg-blue-800/60 text-blue-300/80 hover:text-white transition-all">
-                                        ⚙️ Config
-                                    </button>
-                                </div>
+                                            <span>{item.icon}</span>
+                                            <span className="hidden sm:inline">{item.label}</span>
+                                            <span className="sm:hidden">{item.short}</span>
+                                            {isActive && !item.accent && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-indigo-500 rounded-full"/>}
+                                        </button>
+                                    )
+                                })}
                             </div>
 
                         </div>
@@ -2777,49 +2808,20 @@ export default function BancoPlanos({ session }) {
 
 
                     {/* ── BOTTOM NAVIGATION — apenas mobile ── */}
-                    {maisAberto && (
-                        <div className="fixed inset-0 z-[39]" onClick={() => setMaisAberto(false)} />
-                    )}
-                    {maisAberto && (
-                        <div className="fixed bottom-16 left-0 right-0 sm:hidden bg-white border border-slate-200 rounded-t-2xl shadow-xl z-40 p-4 grid grid-cols-3 gap-2">
-                            {[
-                                { mode: 'resumoDia',       icon: '☀️',  label: 'Hoje' },
-                                { mode: 'agendaSemanal',   icon: '📆',  label: 'Semana' },
-                                { mode: 'anoLetivo',        icon: '🗓️',  label: 'Estrutura' },
-                                { mode: 'turmas',           icon: '👥',  label: 'Turmas' },
-                                { mode: 'estrategias',      icon: '🧩',  label: 'Estratégias' },
-                                { mode: 'atividades',       icon: '🎁',  label: 'Atividades' },
-                                { mode: 'sequencias',       icon: '📚',  label: 'Sequências' },
-                            ].map(t => (
-                                <button key={t.mode}
-                                    onClick={() => { setViewMode(t.mode); setMaisAberto(false); }}
-                                    className={`flex flex-col items-center gap-1 py-3 rounded-xl text-xs font-semibold transition active:scale-95
-                                        ${viewMode === t.mode ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}>
-                                    <span className="text-xl">{t.icon}</span>
-                                    <span>{t.label}</span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    {/* ══ MOBILE BOTTOM NAV — 6 grupos ══ */}
                     <nav className="fixed bottom-0 left-0 right-0 sm:hidden bg-white border-t border-slate-200 flex justify-around items-center z-40"
                          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        {[
-                            { mode: 'lista',      icon: '📚', label: 'Planos', action: () => { setViewMode('lista'); setMaisAberto(false); setModoEdicao(false); setPlanoEditando(null); } },
-                            { mode: 'calendario', icon: '📅', label: 'Agenda',  action: () => { setViewMode('calendario'); setMaisAberto(false); } },
-                            { mode: 'nova',       icon: '➕', label: 'Nova',    action: novoPlano },
-                            { mode: 'repertorio', icon: '🎼', label: 'Músicas', action: () => { setViewMode('repertorio'); setMaisAberto(false); } },
-                            { mode: 'mais',       icon: '⋯',  label: 'Mais',    action: () => setMaisAberto(a => !a) },
-                        ].map(t => {
-                            const maisActive = t.mode === 'mais' && maisAberto;
-                            const isActive = maisActive || (t.mode !== 'mais' && viewMode === t.mode);
+                        {NAV_GROUPS.map(group => {
+                            const isActive = activeGroupId === group.id
                             return (
-                                <button key={t.mode} onClick={t.action}
-                                    className={`flex flex-col items-center gap-1 px-4 py-2.5 transition active:scale-95
+                                <button key={group.id}
+                                    onClick={() => { const first = group.items[0]; first.action() }}
+                                    className={`flex flex-col items-center gap-0.5 px-1 py-2 transition active:scale-95 min-w-0 flex-1
                                         ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}>
-                                    <span className="text-xl leading-none">{t.icon}</span>
-                                    <span className="text-xs font-medium">{t.label}</span>
+                                    <span className="text-lg leading-none">{group.icon}</span>
+                                    <span className="text-[10px] font-medium">{group.short}</span>
                                 </button>
-                            );
+                            )
                         })}
                     </nav>
 
