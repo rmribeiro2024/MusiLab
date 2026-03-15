@@ -2493,7 +2493,7 @@ export default function BancoPlanos({ session }) {
                             {/* Logo */}
                             <div className="flex items-center gap-[7px] flex-none">
                                 <span className="text-[17px] leading-none">🎵</span>
-                                <span className="text-[15px] font-bold tracking-[-0.03em] text-[#0f172a] dark:text-[#f1f5f9] leading-none">MusiLab</span>
+                                <span className="text-[16px] font-bold tracking-[-0.03em] text-[#0f172a] dark:text-[#f1f5f9] leading-none">MusiLab</span>
                             </div>
 
                             {/* Nav grupos — apenas desktop (mobile usa bottom nav) */}
@@ -2506,7 +2506,7 @@ export default function BancoPlanos({ session }) {
                                             style={{
                                                 padding: '4px 11px',
                                                 borderRadius: '6px',
-                                                fontSize: '13px',
+                                                fontSize: '14px',
                                                 fontWeight: isGroupActive ? 600 : 500,
                                                 letterSpacing: '-0.01em',
                                                 whiteSpace: 'nowrap' as const,
@@ -2572,7 +2572,7 @@ export default function BancoPlanos({ session }) {
                                 </div>
 
                                 {/* Date chip — desktop */}
-                                <div className="hidden sm:flex items-center gap-[5px] whitespace-nowrap" style={{padding:'4px 10px',background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(15,23,42,0.04)',border:`1px solid ${darkMode ? '#374151' : '#E6EAF0'}`,borderRadius:'7px',fontSize:'12px',color: darkMode ? '#9CA3AF' : '#64748b',letterSpacing:'-0.01em',transition:'all 200ms ease'}}>
+                                <div className="hidden sm:flex items-center gap-[5px] whitespace-nowrap" style={{padding:'4px 10px',background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(15,23,42,0.04)',border:`1px solid ${darkMode ? '#374151' : '#E6EAF0'}`,borderRadius:'7px',fontSize:'13px',color: darkMode ? '#9CA3AF' : '#64748b',letterSpacing:'-0.01em',transition:'all 200ms ease'}}>
                                     <span>📅</span>
                                     <strong style={{color: darkMode ? '#E5E7EB' : '#0f172a',fontWeight:600}}>
                                         {new Date().toLocaleDateString('pt-BR', {weekday:'short', day:'numeric', month:'short'})}

@@ -49,7 +49,7 @@ function SidebarItem({ item, isActive, collapsed, onMobileClose }: {
             )}
             <span className="text-[15px] leading-none shrink-0">{item.icon}</span>
             {!collapsed && (
-                <span className="text-[13px] tracking-[-0.01em] truncate">{item.label}</span>
+                <span className="text-[14px] tracking-[-0.01em] truncate">{item.label}</span>
             )}
         </button>
     )
@@ -74,7 +74,7 @@ export default function ModuleSidebar({
                 {/* Section label */}
                 {!collapsed && sectionLabel && (
                     <div className="px-4 pt-4 pb-1">
-                        <span className="text-[10px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#4b5563]">
+                        <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#4b5563]">
                             {sectionLabel}
                         </span>
                     </div>
