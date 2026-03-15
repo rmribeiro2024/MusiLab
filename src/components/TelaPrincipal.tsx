@@ -1727,9 +1727,9 @@ export default function TelaPrincipal() {
 
         {/* ── MODO GRADE ── */}
         {modoVisualizacao === 'grade' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[16px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[14px]">
                 {planosFiltrados.length === 0 && (
-                    <div className="col-span-3 text-center py-16">
+                    <div className="col-span-4 text-center py-16">
                         <div className="text-5xl mb-3">📋</div>
                         <p className="text-slate-500 dark:text-[#9CA3AF] font-medium mb-1">{busca||filtroStatus!=='Todos'||filtroFaixa!=='Todos'?'Nenhum plano encontrado com esses filtros.':'Nenhum plano de aula ainda.'}</p>
                         <button onClick={novoPlano} className="mt-4 bg-[#5B5FEA] hover:bg-[#4f53d4] text-white px-5 py-2.5 rounded-xl font-bold transition text-sm">+ Novo Plano de Aula</button>
