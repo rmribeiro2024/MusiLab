@@ -1614,8 +1614,8 @@ export default function TelaPrincipal() {
 
         {/* ── PAGE HEADER ── */}
         <div className="mb-5">
-            <h1 className="text-[20px] font-bold tracking-[-0.025em] text-slate-900 dark:text-[#E5E7EB] mb-[3px]">Planos de Aula</h1>
-            <p className="text-[13px] text-slate-500 dark:text-[#9CA3AF] tracking-[-0.005em]">
+            <h1 className="text-[22px] font-bold tracking-[-0.025em] text-slate-900 dark:text-[#E5E7EB] mb-[3px]">Planos de Aula</h1>
+            <p className="text-[13.5px] text-slate-500 dark:text-[#9CA3AF] tracking-[-0.005em]">
                 {totalPlanos} plano{totalPlanos !== 1 ? 's' : ''} · {porStatus['Em Andamento']} em edição
                 {proximaAula ? ` · próxima aula em ${Math.max(0, Math.ceil((new Date(proximaAula.data+'T12:00:00').getTime() - Date.now()) / 86400000))} dias` : ''}
             </p>
@@ -1625,19 +1625,19 @@ export default function TelaPrincipal() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
             <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
                 <div className="text-2xl font-extrabold tracking-[-0.03em] text-[#5B5FEA] dark:text-[#818cf8] leading-none mb-[5px]">{totalPlanos}</div>
-                <div className="text-[11.5px] font-medium text-slate-500 dark:text-[#9CA3AF]">Planos de Aula</div>
+                <div className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF]">Planos de Aula</div>
             </div>
             <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
                 <div className="text-2xl font-extrabold tracking-[-0.03em] text-amber-500 leading-none mb-[5px]">{totalRegistros}</div>
-                <div className="text-[11.5px] font-medium text-slate-500 dark:text-[#9CA3AF]">Registros Pós-Aula</div>
+                <div className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF]">Registros Pós-Aula</div>
             </div>
             <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
                 <div className="text-2xl font-extrabold tracking-[-0.03em] text-[#10b981] leading-none mb-[5px]">{proximaAula ? new Date(proximaAula.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : '—'}</div>
-                <div className="text-[11.5px] font-medium text-slate-500 dark:text-[#9CA3AF]">Próxima Aula</div>
+                <div className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF]">Próxima Aula</div>
             </div>
             <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
                 <div className="text-2xl font-extrabold tracking-[-0.03em] text-slate-800 dark:text-[#E5E7EB] leading-none mb-[5px]">{totalRepertorio}</div>
-                <div className="text-[11.5px] font-medium text-slate-500 dark:text-[#9CA3AF]">Músicas no Repertório</div>
+                <div className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF]">Músicas no Repertório</div>
             </div>
         </div>
 
@@ -1646,7 +1646,7 @@ export default function TelaPrincipal() {
             <span className="text-[13px] text-slate-400 dark:text-[#6b7280] flex-none select-none">🔍</span>
             <input type="text" inputMode="search" value={busca} onChange={e=>setBusca(e.target.value)}
                 placeholder="Buscar por título, objetivo, conceito..."
-                className="flex-1 border-none outline-none text-[13.5px] tracking-[-0.01em] text-slate-800 dark:text-[#E5E7EB] bg-transparent placeholder:text-slate-400 dark:placeholder:text-[#6b7280]" />
+                className="flex-1 border-none outline-none text-[14px] tracking-[-0.01em] text-slate-800 dark:text-[#E5E7EB] bg-transparent placeholder:text-slate-400 dark:placeholder:text-[#6b7280]" />
             <span className="text-[10.5px] font-semibold text-slate-400 dark:text-[#6b7280] bg-[#F1F4F8] dark:bg-[#273344] border border-[#E6EAF0] dark:border-[#374151] rounded-[5px] px-[7px] py-[2px] flex-none tracking-[0.01em]">Ctrl K</span>
         </div>
 
