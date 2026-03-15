@@ -31,6 +31,10 @@ export interface PlanejamentoTurmaContextValue {
   historicoDaTurma: RegistroPosAula[]
   planejamentosDaTurma: PlanejamentoTurma[]
 
+  // Navegação cross-módulo (VisaoSemana → AulaPorTurma)
+  dataNavegacao: Date | null
+  setDataNavegacao: (d: Date | null) => void
+
   // Ações de seleção de turma
   selecionarTurma: (turma: TurmaSelecionada) => void
 
@@ -116,6 +120,7 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
   const [turmaSelecionada, setTurmaSelecionada] = useState<TurmaSelecionada | null>(null)
   const [planejamentoEditando, setPlanejamentoEditando] = useState<PlanejamentoTurma | null>(null)
   const [formAberto, setFormAberto] = useState(false)
+  const [dataNavegacao, setDataNavegacao] = useState<Date | null>(null)
   const [carregado, setCarregado] = useState(false)
 
   // ── Carregar do Supabase quando userId disponível ────────────────────────
@@ -277,6 +282,8 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
     turmaSelecionada,
     planejamentoEditando,
     formAberto,
+    dataNavegacao,
+    setDataNavegacao,
     ultimoRegistroDaTurma,
     historicoDaTurma,
     planejamentosDaTurma,
@@ -287,7 +294,7 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
     excluirPlanejamento,
     fecharForm,
     buildDadosParaBanco,
-  }), [planejamentos, turmaSelecionada, planejamentoEditando, formAberto, ultimoRegistroDaTurma, historicoDaTurma, planejamentosDaTurma, selecionarTurma, novoPlanejamento, editarPlanejamento, salvarPlanejamento, excluirPlanejamento, fecharForm, buildDadosParaBanco])
+  }), [planejamentos, turmaSelecionada, planejamentoEditando, formAberto, dataNavegacao, ultimoRegistroDaTurma, historicoDaTurma, planejamentosDaTurma, selecionarTurma, novoPlanejamento, editarPlanejamento, salvarPlanejamento, excluirPlanejamento, fecharForm, buildDadosParaBanco])
 
   return (
     <PlanejamentoTurmaContext.Provider value={value}>

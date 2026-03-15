@@ -6,6 +6,8 @@ import React, { useState, useMemo } from 'react'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { usePlanosContext } from '../contexts/PlanosContext'
+import { useRepertorioContext } from '../contexts/RepertorioContext'
+import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContext'
 import type { AnoLetivo, RegistroPosAula } from '../types'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -147,6 +149,8 @@ export default function VisaoSemana() {
   const { obterTurmasDoDia } = useCalendarioContext()
   const { anosLetivos } = useAnoLetivoContext()
   const { planos } = usePlanosContext()
+  const { setViewMode } = useRepertorioContext()
+  const { selecionarTurma, setDataNavegacao } = usePlanejamentoTurmaContext()
 
   // Estado local de navegação — não interfere com AgendaSemanal
   const [semanaInicio, setSemanaInicio] = useState<Date>(() => getSemanaAtualInicio())
@@ -319,6 +323,16 @@ export default function VisaoSemana() {
                       <div
                         key={`${aula.turmaId}-${aula.horario}-${i}`}
                         style={cardStyle}
+                        onClick={!past ? () => {
+                          selecionarTurma({
+                            anoLetivoId: String(aula.anoLetivoId ?? ''),
+                            escolaId:    String(aula.escolaId ?? ''),
+                            segmentoId:  String(aula.segmentoId),
+                            turmaId:     String(aula.turmaId),
+                          })
+                          setDataNavegacao(date)
+                          setViewMode('porTurmas')
+                        } : undefined}
                         className={`v2-card rounded-[8px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] ${
                           !past
                             ? 'cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:-translate-y-px transition-all duration-150'
