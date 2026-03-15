@@ -92,28 +92,30 @@ function inferStatus(r: RegistroPosAula): StatusEfetivo {
   return null
 }
 
+// Sugestão: texto neutro uniforme para todos os status
 const STATUS_CFG: Record<NonNullable<StatusEfetivo>, {
   emoji: string
   label: string
   acao: string
   textClass: string
-  borderClass: string   // borda suave ~45% opacidade
 }> = {
-  // Incompleta = neutro (estado padrão, sem alarme visual)
-  incompleta: { emoji: '↩', label: 'Incompleta',         acao: 'Retomar de onde parou',   textClass: 'text-[#6B7280] dark:text-[#9CA3AF]',   borderClass: 'border-[#6B7280]/45 dark:border-[#9CA3AF]/30'  },
-  // Estados excepcionais = com cor
-  concluida:  { emoji: '✓', label: 'Concluída',          acao: 'Criar nova aula',          textClass: 'text-[#16a34a] dark:text-[#4ade80]',   borderClass: 'border-[#16a34a]/45 dark:border-[#4ade80]/45'  },
-  revisao:    { emoji: '↻', label: 'Necessário revisar', acao: 'depois avançar',            textClass: 'text-[#2563eb] dark:text-[#60a5fa]',   borderClass: 'border-[#2563eb]/45 dark:border-[#60a5fa]/45'  },
-  nao_houve:  { emoji: '✗', label: 'Não houve',          acao: 'Reaplicar aula anterior',   textClass: 'text-[#64748b] dark:text-[#94a3b8]',   borderClass: 'border-[#64748b]/45 dark:border-[#94a3b8]/40'  },
+  incompleta: { emoji: '↩', label: 'Incompleta',  acao: 'retomar',           textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
+  concluida:  { emoji: '✓', label: 'Concluída',   acao: 'criar nova aula',   textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
+  revisao:    { emoji: '↻', label: 'Revisão',     acao: 'revisar e avançar', textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
+  nao_houve:  { emoji: '✗', label: 'Não houve',   acao: 'reaplicar',         textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
 }
 
-/** Retorna a classe Tailwind de borda esquerda com base no status da última aula */
-function getStatusBorderClass(registro: RegistroPosAula | null): string {
-  if (!registro) return 'border-[#374151]/60 dark:border-[#374151]/60'
-  const status = inferStatus(registro)
-  if (!status) return 'border-[#374151]/60 dark:border-[#374151]/60'
-  return STATUS_CFG[status].borderClass
-}
+// Paleta de cores por escola — aplicada no nome da escola (tons suaves)
+const ESCOLA_COLORS: { light: string; dark: string }[] = [
+  { light: '#7c83d4', dark: '#bfc3f5' },  // indigo suave
+  { light: '#3b8fc2', dark: '#9dd5f0' },  // sky suave
+  { light: '#2a9c70', dark: '#8edbbf' },  // emerald suave
+  { light: '#b8860e', dark: '#e6be6a' },  // amber suave
+  { light: '#c0527a', dark: '#f0a8c3' },  // pink suave
+  { light: '#7a5bbf', dark: '#c8b4f0' },  // violet suave
+  { light: '#c94040', dark: '#f0a8a8' },  // red suave
+  { light: '#1a9090', dark: '#7dd8d8' },  // teal suave
+]
 
 // ─── Sub-componente: seção "Última aula" ─────────────────────────────────────
 
@@ -122,18 +124,18 @@ function UltimaAulaSection({ registro }: { registro: RegistroPosAula | null }) {
   const cfg = status ? STATUS_CFG[status] : null
 
   return (
-    <div className="px-[10px] pb-[8px]">
-      <div className="h-px bg-[#E6EAF0] dark:bg-[#3D4F68] mb-[6px]" />
+    <div className="px-[10px] pt-[5px] pb-[8px] border-t border-[#E6EAF0] dark:border-[#2D3748]">
       {cfg ? (
-        <div className="flex items-center gap-[4px] flex-wrap">
-          <span className={`text-[10.5px] font-semibold ${cfg.textClass}`}>
-            {cfg.emoji} {cfg.label}
+        <div className="flex items-center gap-[5px]">
+          <span className="text-[9px] font-semibold uppercase tracking-[.6px] text-[#94A3B8] dark:text-[#8E99A8] shrink-0">
+            Sugestão:
           </span>
-          <span className="text-[9px] text-slate-300 dark:text-[#4B5563]">·</span>
-          <span className="text-[10px] text-slate-400 dark:text-[#6B7280]">{cfg.acao}</span>
+          <span className="text-[10.5px] font-medium text-[#6B7280] dark:text-[#9CA3AF]">
+            {cfg.emoji} {cfg.acao}
+          </span>
         </div>
       ) : (
-        <span className="text-[10px] text-slate-300 dark:text-[#4B5563]">— sem registro</span>
+        <span className="text-[10px] text-slate-400 dark:text-[#6B7280]">sem último registro</span>
       )}
     </div>
   )
@@ -172,6 +174,22 @@ export default function VisaoSemana() {
         .sort((a, b) => (a.horario ?? '').localeCompare(b.horario ?? '')),
     }))
   , [diasDaSemana, obterTurmasDoDia])
+
+  // ── Mapa escolaId → par de cores { light, dark } ─────────────────────────
+  const escolaColorMap = useMemo(() => {
+    const map: Record<string, { light: string; dark: string }> = {}
+    let idx = 0
+    anosLetivos.forEach(ano => {
+      ano.escolas.forEach(esc => {
+        const key = String(esc.id)
+        if (!map[key]) {
+          map[key] = ESCOLA_COLORS[idx % ESCOLA_COLORS.length]
+          idx++
+        }
+      })
+    })
+    return map
+  }, [anosLetivos])
 
   // ── Mapa turmaId → último registro pós-aula ──────────────────────────────
   const ultimoRegistroMap = useMemo(() => {
@@ -292,12 +310,16 @@ export default function VisaoSemana() {
                     const turmaNome  = getNomeTurma(aula.anoLetivoId, aula.escolaId, aula.segmentoId, aula.turmaId, anosLetivos)
                     const escolaNome = getNomeEscola(aula.anoLetivoId, aula.escolaId, anosLetivos)
                     const ultimoReg  = ultimoRegistroMap[String(aula.turmaId)] ?? null
-                    const borderClass = getStatusBorderClass(ultimoReg)
+                    const escolaCor  = aula.escolaId ? (escolaColorMap[String(aula.escolaId)] ?? null) : null
+                    const cardStyle  = escolaCor
+                      ? { '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties
+                      : undefined
 
                     return (
                       <div
                         key={`${aula.turmaId}-${aula.horario}-${i}`}
-                        className={`v2-card border-0 border-l-[4px] ${borderClass} rounded-[8px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] ${
+                        style={cardStyle}
+                        className={`v2-card rounded-[8px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] ${
                           !past
                             ? 'cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:-translate-y-px transition-all duration-150'
                             : 'cursor-default'
@@ -314,7 +336,7 @@ export default function VisaoSemana() {
                             {turmaNome}
                           </div>
                           {escolaNome && (
-                            <div className="text-[10px] text-slate-400 dark:text-[#9CA3AF] mt-[3px] truncate">
+                            <div className="escola-label text-[10px] font-medium mt-[3px] truncate">
                               {escolaNome}
                             </div>
                           )}

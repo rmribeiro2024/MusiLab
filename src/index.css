@@ -91,6 +91,10 @@ input, textarea, select {
     box-shadow: 0 6px 18px rgba(0,0,0,0.35);
 }
 
+/* ── ESCOLA COLOR LABEL — cor dinâmica por escola via CSS var ── */
+.escola-label { color: var(--escola-l, #6B7280); }
+.dark .escola-label { color: var(--escola-d, #9CA3AF); }
+
 /* ── DRAG & DROP ── */
 .drag-handle { cursor: grab; }
 .drag-handle:active { cursor: grabbing; }
