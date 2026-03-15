@@ -1737,11 +1737,9 @@ export default function TelaPrincipal() {
                 )}
                 {planosFiltrados.map(plano => {
                     const status = plano.statusPlanejamento || 'A Fazer';
-                    const dotColor = status === 'Concluído' ? '#10b981' : status === 'Em Andamento' ? '#5B5FEA' : '#94a3b8';
-                    const leftBorder = status === 'Concluído' ? '#10b981' : status === 'Em Andamento' ? '#5B5FEA' : '#cbd5e1';
+                    const dotColor = status === 'Concluído' ? '#10b981' : status === 'Em Andamento' ? '#5B5FEA' : '#f59e0b';
                     return (
                     <div key={plano.id}
-                        style={{borderLeft:`3px solid ${leftBorder}`}}
                         className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] card-hover flex flex-col overflow-hidden cursor-pointer"
                         onClick={()=>setPlanoSelecionado(plano)}>
                         <div className="p-[18px] flex-1">
@@ -1772,10 +1770,10 @@ export default function TelaPrincipal() {
                             </div>
 
                             {/* Título */}
-                            <h3 className="font-bold text-slate-900 dark:text-[#E5E7EB] text-[15px] leading-snug tracking-[-0.01em] mb-2">{plano.titulo}</h3>
+                            <h3 className="font-semibold text-slate-900 dark:text-[#E5E7EB] text-[14px] leading-[1.35] tracking-[-0.01em] mb-[5px]">{plano.titulo}</h3>
 
                             {/* Meta */}
-                            <p className="text-[13px] text-slate-500 dark:text-[#9CA3AF] mb-[9px] leading-none">
+                            <p className="text-[12px] text-slate-500 dark:text-[#9CA3AF] mb-[9px] leading-none">
                                 {[(plano.faixaEtaria||[])[0],(plano.unidades||[])[0]].filter(Boolean).join(' · ') || '\u00A0'}
                             </p>
 
