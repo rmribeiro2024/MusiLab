@@ -1651,7 +1651,7 @@ export default function TelaPrincipal() {
                 {busca ? (
                     <button onClick={()=>setBusca('')} className="text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] text-[13px] flex-none transition">✕</button>
                 ) : (
-                    <span className="text-[10.5px] font-semibold text-slate-400 dark:text-[#6b7280] border border-[#E6EAF0] dark:border-[#374151] rounded-[5px] px-[7px] py-[2px] flex-none tracking-[0.01em] select-none">Ctrl K</span>
+                    <span className="text-[11px] font-medium text-slate-300 dark:text-[#4b5563] flex-none select-none tracking-[0.01em]">Ctrl K</span>
                 )}
             </div>
             <button onClick={()=>toggleFiltrosPlanos(!filtrosPlanos)}
