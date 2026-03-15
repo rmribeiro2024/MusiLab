@@ -1687,7 +1687,7 @@ export default function TelaPrincipal() {
         )}
 
         {/* ── Contagem + Ordenar + Modo de visualização ── */}
-        <div className="v2-card flex items-center justify-between border border-[#E6EAF0] dark:border-[#374151] rounded-[9px] px-[14px] py-[8px] mb-3">
+        <div className="flex items-center justify-between mb-3">
             <p className="text-[12px] text-slate-400 dark:text-[#6b7280]">{planosFiltrados.length} plano{planosFiltrados.length!==1?'s':''}</p>
             <div className="flex items-center gap-[2px]">
                 <span className="text-[11px] text-slate-400 dark:text-[#6b7280] font-medium px-[4px] select-none">Ordenar</span>
@@ -1697,7 +1697,7 @@ export default function TelaPrincipal() {
                         {o.label}
                     </button>
                 ))}
-                <span className="w-px h-[14px] bg-[#E6EAF0] dark:bg-[#374151] mx-[6px] flex-none" />
+                <span className="w-px h-[14px] bg-[#D1D5DB] dark:bg-[#4B5563] mx-[6px] flex-none" />
                 {([{id:'grade',label:'⊞',title:'Grade'},{id:'compacto',label:'☰',title:'Lista'},{id:'kanban',label:'⠿',title:'Kanban'},{id:'periodo',label:'📆',title:'Por Período'},{id:'segmento',label:'👥',title:'Por Segmento'}] as const).map(m=>(
                     <button key={m.id} onClick={()=>setModoVisualizacao(m.id)} title={m.title}
                         className={`px-[7px] py-[3px] rounded-[5px] text-[13px] transition-all duration-[120ms] ${modoVisualizacao===m.id ? 'bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 text-[#5B5FEA] dark:text-[#818cf8]' : 'text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF]'}`}>
