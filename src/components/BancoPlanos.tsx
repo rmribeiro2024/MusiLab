@@ -57,6 +57,7 @@ import ModalImportarMusica from './modals/ModalImportarMusica'
 import ModalGradeSemanal from './modals/ModalGradeSemanal'
 import ModalBuscaGlobal from './modals/ModalBuscaGlobal'
 import VisaoSemana from './VisaoSemana'
+import ModuloPorTurmas from './ModuloPorTurmas'
 
 // Fallback exibido enquanto o chunk do módulo está sendo baixado
 const CarregandoModulo = () => (
@@ -731,7 +732,7 @@ export default function BancoPlanos({ session }) {
             // Mapa viewMode → grupo para detectar grupo ativo
             const VIEWMODE_TO_GROUP: Record<string, string> = {
                 resumoDia: 'agenda', agendaSemanal: 'agenda', calendario: 'agenda',
-                lista: 'planejamento', sequencias: 'planejamento', visaoSemana: 'planejamento',
+                lista: 'planejamento', sequencias: 'planejamento', visaoSemana: 'planejamento', porTurmas: 'planejamento',
                 turmas: 'turmas', historicoMusical: 'turmas',
                 repertorio: 'biblioteca', atividades: 'biblioteca', estrategias: 'biblioteca',
                 relatorios: 'relatorios',
@@ -757,6 +758,7 @@ export default function BancoPlanos({ session }) {
                         { label: 'Visão da Semana', short: 'Semana', icon: '📅', mode: 'visaoSemana', action: () => setViewMode('visaoSemana') },
                         { label: 'Planos',    short: 'Planos', icon: '📚', mode: 'lista',      action: () => { setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null); } },
                         { label: 'Nova Aula', short: 'Nova',   icon: '➕', mode: 'nova',       action: () => setShowModalContextoNovaAula(true), accent: true },
+                        { label: 'Por Turmas', short: 'Turmas', icon: '👥', mode: 'porTurmas', action: () => setViewMode('porTurmas') },
                         { label: 'Sequências', short: 'Seq.',  icon: '🔗', mode: 'sequencias', action: () => setViewMode('sequencias') },
                     ]
                 },
@@ -2657,6 +2659,9 @@ export default function BancoPlanos({ session }) {
 
                                 {/* ═══════════ VISÃO DA SEMANA ═══════════ */}
                                 {viewMode === 'visaoSemana' && <VisaoSemana />}
+
+                                {/* ═══════════ POR TURMAS ═══════════ */}
+                                {viewMode === 'porTurmas' && <ModuloPorTurmas />}
 
                                 {/* ═══════════ VIEW SEQUÊNCIAS DIDÁTICAS ═══════════ */}
                                 {viewMode === 'sequencias' && <ErrorBoundary modulo="Sequências"><Suspense fallback={<CarregandoModulo />}><ModuloSequencias /></Suspense></ErrorBoundary>}

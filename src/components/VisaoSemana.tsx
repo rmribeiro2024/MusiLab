@@ -100,7 +100,7 @@ const STATUS_CFG: Record<NonNullable<StatusEfetivo>, {
   textClass: string
 }> = {
   incompleta: { emoji: '↩', label: 'Incompleta',  acao: 'retomar',           textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
-  concluida:  { emoji: '✓', label: 'Concluída',   acao: 'criar nova aula',   textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
+  concluida:  { emoji: '✓', label: 'Concluída',   acao: 'avançar · nova aula', textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
   revisao:    { emoji: '↻', label: 'Revisão',     acao: 'revisar e avançar', textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
   nao_houve:  { emoji: '✗', label: 'Não houve',   acao: 'reaplicar',         textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
 }
