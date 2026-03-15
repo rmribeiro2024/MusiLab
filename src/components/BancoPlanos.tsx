@@ -756,10 +756,10 @@ export default function BancoPlanos({ session }) {
                     id: 'planejamento', label: 'Planejamento', short: 'Planos', icon: '📚', defaultMode: 'visaoSemana',
                     items: [
                         { label: 'Visão da Semana', short: 'Semana', icon: '📅', mode: 'visaoSemana', action: () => setViewMode('visaoSemana') },
-                        { label: 'Planos',    short: 'Planos', icon: '📚', mode: 'lista',      action: () => { setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null); } },
-                        { label: 'Nova Aula', short: 'Nova',   icon: '➕', mode: 'nova',       action: () => setShowModalContextoNovaAula(true), accent: true },
-                        { label: 'Por Turmas', short: 'Turmas', icon: '👥', mode: 'porTurmas', action: () => setViewMode('porTurmas') },
-                        { label: 'Sequências', short: 'Seq.',  icon: '🔗', mode: 'sequencias', action: () => setViewMode('sequencias') },
+                        { label: 'Banco de Aulas', short: 'Banco', icon: '📚', mode: 'lista',      action: () => { setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null); } },
+                        { label: 'Nova Aula',      short: 'Nova',  icon: '➕', mode: 'nova',       action: () => setShowModalContextoNovaAula(true), accent: true },
+                        { label: 'Aula por Turma', short: 'Turma', icon: '👥', mode: 'porTurmas', action: () => setViewMode('porTurmas') },
+                        { label: 'Sequência de Aulas', short: 'Seq.', icon: '🔗', mode: 'sequencias', action: () => setViewMode('sequencias') },
                     ]
                 },
                 {
