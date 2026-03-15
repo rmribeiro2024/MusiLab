@@ -95,20 +95,23 @@ function inferStatus(r: RegistroPosAula): StatusEfetivo {
 const STATUS_CFG: Record<NonNullable<StatusEfetivo>, {
   emoji: string
   label: string
+  acao: string
   textClass: string
-  borderClass: string
+  borderClass: string   // borda suave ~45% opacidade
 }> = {
-  concluida:  { emoji: '✓', label: 'Concluída',          textClass: 'text-[#16a34a] dark:text-[#4ade80]',  borderClass: 'border-[#16a34a] dark:border-[#4ade80]'  },
-  revisao:    { emoji: '↻', label: 'Necessário revisar', textClass: 'text-[#2563eb] dark:text-[#60a5fa]',  borderClass: 'border-[#2563eb] dark:border-[#60a5fa]'  },
-  incompleta: { emoji: '↩', label: 'Incompleta',         textClass: 'text-[#b45309] dark:text-[#fbbf24]',  borderClass: 'border-[#b45309] dark:border-[#fbbf24]'  },
-  nao_houve:  { emoji: '✗', label: 'Não houve',          textClass: 'text-[#64748b] dark:text-[#94a3b8]',  borderClass: 'border-[#64748b] dark:border-[#94a3b8]'  },
+  // Incompleta = neutro (estado padrão, sem alarme visual)
+  incompleta: { emoji: '↩', label: 'Incompleta',         acao: 'Retomar de onde parou',   textClass: 'text-[#6B7280] dark:text-[#9CA3AF]',   borderClass: 'border-[#6B7280]/45 dark:border-[#9CA3AF]/30'  },
+  // Estados excepcionais = com cor
+  concluida:  { emoji: '✓', label: 'Concluída',          acao: 'Criar nova aula',          textClass: 'text-[#16a34a] dark:text-[#4ade80]',   borderClass: 'border-[#16a34a]/45 dark:border-[#4ade80]/45'  },
+  revisao:    { emoji: '↻', label: 'Necessário revisar', acao: 'depois avançar',            textClass: 'text-[#2563eb] dark:text-[#60a5fa]',   borderClass: 'border-[#2563eb]/45 dark:border-[#60a5fa]/45'  },
+  nao_houve:  { emoji: '✗', label: 'Não houve',          acao: 'Reaplicar aula anterior',   textClass: 'text-[#64748b] dark:text-[#94a3b8]',   borderClass: 'border-[#64748b]/45 dark:border-[#94a3b8]/40'  },
 }
 
 /** Retorna a classe Tailwind de borda esquerda com base no status da última aula */
 function getStatusBorderClass(registro: RegistroPosAula | null): string {
-  if (!registro) return 'border-[#E2E8F0] dark:border-[#374151]'
+  if (!registro) return 'border-[#374151]/60 dark:border-[#374151]/60'
   const status = inferStatus(registro)
-  if (!status) return 'border-[#E2E8F0] dark:border-[#374151]'
+  if (!status) return 'border-[#374151]/60 dark:border-[#374151]/60'
   return STATUS_CFG[status].borderClass
 }
 
@@ -116,14 +119,19 @@ function getStatusBorderClass(registro: RegistroPosAula | null): string {
 
 function UltimaAulaSection({ registro }: { registro: RegistroPosAula | null }) {
   const status = registro ? inferStatus(registro) : null
+  const cfg = status ? STATUS_CFG[status] : null
 
   return (
     <div className="px-[10px] pb-[8px]">
       <div className="h-px bg-[#E6EAF0] dark:bg-[#3D4F68] mb-[6px]" />
-      {status ? (
-        <span className={`text-[10.5px] font-semibold ${STATUS_CFG[status].textClass}`}>
-          {STATUS_CFG[status].emoji} {STATUS_CFG[status].label}
-        </span>
+      {cfg ? (
+        <div className="flex items-center gap-[4px] flex-wrap">
+          <span className={`text-[10.5px] font-semibold ${cfg.textClass}`}>
+            {cfg.emoji} {cfg.label}
+          </span>
+          <span className="text-[9px] text-slate-300 dark:text-[#4B5563]">·</span>
+          <span className="text-[10px] text-slate-400 dark:text-[#6B7280]">{cfg.acao}</span>
+        </div>
       ) : (
         <span className="text-[10px] text-slate-300 dark:text-[#4B5563]">— sem registro</span>
       )}
