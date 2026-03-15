@@ -497,7 +497,6 @@ export default function ModalRegistroPosAula() {
 
     // ── Campos de anotação ──
     const camposConfig = [
-        { id: 'reg-resumo',        icon: '📋', label: 'O que foi realizado',           field: 'resumoAula',      placeholder: 'Ex: Ritmo corporal + início da música X' },
         { id: 'reg-funcionou',     icon: '✅', label: 'O que funcionou bem',           field: 'funcionouBem',    placeholder: 'Ex: A atividade rítmica em grupo engajou muito...' },
         { id: 'reg-nao-funcionou', icon: '⚠️', label: 'O que não funcionou',           field: 'naoFuncionou',    placeholder: 'Ex: Tempo insuficiente para a etapa de criação...' },
         { id: 'reg-melhorar',      icon: '🔧', label: 'O que poderia ter sido melhor', field: 'poderiaMelhorar', placeholder: 'Ex: Explicar o exercício antes de iniciar...' },
@@ -718,11 +717,9 @@ export default function ModalRegistroPosAula() {
                                             return (
                                                 <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
                                                     value={valor} filled={valor.trim().length > 0}
-                                                    defaultOpen={field === 'resumoAula'}
                                                     onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v })}
                                                     onTabNext={() => { const next = chipOpenRefs.current[idx + 1]; if (next) next(); else salvarBtnRef.current?.focus() }}
                                                     ref={(fn: (() => void) | null) => { chipOpenRefs.current[idx] = fn }}
-                                                    quickOptions={field === 'resumoAula' ? ['Plano de aula completo'] : undefined}
                                                 />
                                             )
                                         })}
@@ -739,12 +736,13 @@ export default function ModalRegistroPosAula() {
                                         {/* Anotações gerais */}
                                         <AccordionChip
                                             id="reg-anotacoes" icon="📝" label="Anotações gerais"
-                                            placeholder="Ex: Aluno Pedro faltou, combinar reposição. Lembrar material para semana que vem..."
+                                            placeholder="Ex: Trabalhamos ritmo corporal + intro música X. Aluno Pedro faltou..."
                                             value={(novoRegistro as any).anotacoesGerais || ''}
                                             filled={!!((novoRegistro as any).anotacoesGerais?.trim())}
                                             onChange={v => setNovoRegistro({ ...novoRegistro, anotacoesGerais: v })}
                                             onTabNext={() => { const next = chipOpenRefs.current[camposConfig.length + 2]; if (next) next(); else salvarBtnRef.current?.focus() }}
                                             ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length + 1] = fn }}
+                                            quickOptions={['Plano de aula completo']}
                                         />
 
                                         {/* Ideias / estratégias */}
