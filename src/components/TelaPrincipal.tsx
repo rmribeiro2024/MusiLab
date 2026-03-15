@@ -1641,50 +1641,32 @@ export default function TelaPrincipal() {
             </div>
         </div>
 
-        {/* ── SEARCH BAR ── */}
-        <div className="v2-card flex items-center gap-[10px] border-[1.5px] border-[#E6EAF0] dark:border-[#374151] rounded-[9px] px-[14px] py-[9px] mb-[18px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-[border-color] duration-[120ms] hover:border-[#5B5FEA]/40 dark:hover:border-[#818cf8]/40 cursor-text">
-            <span className="text-[13px] text-slate-400 dark:text-[#6b7280] flex-none select-none">🔍</span>
-            <input type="text" inputMode="search" value={busca} onChange={e=>setBusca(e.target.value)}
-                placeholder="Buscar por título, objetivo, conceito..."
-                className="flex-1 border-none outline-none text-[14px] tracking-[-0.01em] text-slate-800 dark:text-[#E5E7EB] bg-transparent placeholder:text-slate-400 dark:placeholder:text-[#6b7280]" />
-            <span className="text-[10.5px] font-semibold text-slate-400 dark:text-[#6b7280] bg-[#F1F4F8] dark:bg-[#273344] border border-[#E6EAF0] dark:border-[#374151] rounded-[5px] px-[7px] py-[2px] flex-none tracking-[0.01em]">Ctrl K</span>
-        </div>
-
-        {/* ── FILTER CHIPS ── */}
-        <div className="flex gap-[6px] flex-wrap mb-[18px]">
-            {(['Todos','A Fazer','Em Andamento','Concluído'] as const).map(s => (
-                <button key={s} onClick={()=>setFiltroStatus(s)}
-                    className={`px-[11px] py-[4px] rounded-full text-[12px] font-medium border-[1.5px] transition-all duration-[120ms] tracking-[-0.01em]
-                        ${filtroStatus === s
-                            ? 'bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 border-[#5B5FEA]/30 dark:border-[#818cf8]/30 text-[#5B5FEA] dark:text-[#818cf8] font-semibold'
-                            : 'bg-[#ffffff] dark:bg-[#1F2937] border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:border-[#5B5FEA]/50 hover:text-[#5B5FEA] dark:hover:border-[#818cf8]/50 dark:hover:text-[#818cf8]'}`}>
-                    {s}
-                </button>
-            ))}
-            {faixas.slice(1).map(faixa => (
-                <button key={faixa} onClick={()=>setFiltroFaixa(filtroFaixa===faixa?'Todos':faixa)}
-                    className={`px-[11px] py-[4px] rounded-full text-[12px] font-medium border-[1.5px] transition-all duration-[120ms] tracking-[-0.01em]
-                        ${filtroFaixa === faixa
-                            ? 'bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 border-[#5B5FEA]/30 dark:border-[#818cf8]/30 text-[#5B5FEA] dark:text-[#818cf8] font-semibold'
-                            : 'bg-[#ffffff] dark:bg-[#1F2937] border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:border-[#5B5FEA]/50 hover:text-[#5B5FEA] dark:hover:border-[#818cf8]/50 dark:hover:text-[#818cf8]'}`}>
-                    {faixa}
-                </button>
-            ))}
-            <button onClick={()=>setFiltroFavorito(!filtroFavorito)}
-                className={`px-[11px] py-[4px] rounded-full text-[12px] font-medium border-[1.5px] transition-all duration-[120ms]
-                    ${filtroFavorito
-                        ? 'bg-amber-50 dark:bg-amber-500/15 border-amber-300/60 dark:border-amber-400/30 text-amber-600 dark:text-amber-400 font-semibold'
-                        : 'bg-[#ffffff] dark:bg-[#1F2937] border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:border-amber-300/60 hover:text-amber-600'}`}>
-                {filtroFavorito ? '★ Favoritos' : '☆ Favoritos'}
-            </button>
+        {/* ── SEARCH BAR + FILTROS BTN ── */}
+        <div className="flex items-center gap-[8px] mb-[14px]">
+            <div className="v2-card flex-1 flex items-center gap-[10px] border-[1.5px] border-[#E6EAF0] dark:border-[#374151] rounded-[9px] px-[14px] py-[9px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-[border-color] duration-[120ms] hover:border-[#5B5FEA]/40 dark:hover:border-[#818cf8]/40 cursor-text">
+                <span className="text-[13px] text-slate-400 dark:text-[#6b7280] flex-none select-none">🔍</span>
+                <input type="text" inputMode="search" value={busca} onChange={e=>setBusca(e.target.value)}
+                    placeholder="Buscar por título, objetivo, conceito..."
+                    className="flex-1 border-none outline-none text-[14px] tracking-[-0.01em] text-slate-800 dark:text-[#E5E7EB] bg-transparent placeholder:text-slate-400 dark:placeholder:text-[#6b7280]" />
+                {busca && (
+                    <button onClick={()=>setBusca('')} className="text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] text-[13px] flex-none transition">✕</button>
+                )}
+            </div>
             <button onClick={()=>toggleFiltrosPlanos(!filtrosPlanos)}
-                className="px-[11px] py-[4px] rounded-full text-[12px] font-medium border-[1.5px] border-[#E6EAF0] dark:border-[#374151] bg-[#ffffff] dark:bg-[#1F2937] text-slate-400 dark:text-[#6b7280] hover:border-[#5B5FEA]/50 hover:text-[#5B5FEA] transition-all duration-[120ms]">
-                {filtrosPlanos ? '▲ menos' : '▼ mais filtros'}
+                className={`flex items-center gap-[5px] px-[12px] py-[8px] rounded-[9px] text-[12.5px] font-medium border-[1.5px] transition-all duration-[120ms] whitespace-nowrap flex-none
+                    ${filtrosPlanos
+                        ? 'bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 border-[#5B5FEA]/30 dark:border-[#818cf8]/30 text-[#5B5FEA] dark:text-[#818cf8]'
+                        : 'v2-card border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:border-[#5B5FEA]/40 hover:text-[#5B5FEA] dark:hover:text-[#818cf8]'}`}>
+                <span>{filtrosPlanos ? '▲' : '▼'}</span>
+                <span>Filtros</span>
+                {(filtroStatus!=='Todos'||filtroFaixa!=='Todos'||filtroFavorito||filtroEscola!=='Todas'||filtroNivel!=='Todos'||filtroConceito!=='Todos') && (
+                    <span className="w-[6px] h-[6px] rounded-full bg-[#5B5FEA] dark:bg-[#818cf8] flex-none" />
+                )}
             </button>
-            {(busca||filtroStatus!=='Todos'||filtroFaixa!=='Todos'||filtroFavorito) && (
+            {(busca||filtroStatus!=='Todos'||filtroFaixa!=='Todos'||filtroFavorito||filtroEscola!=='Todas'||filtroNivel!=='Todos'||filtroConceito!=='Todos') && (
                 <button onClick={()=>{setBusca("");setFiltroEscola("Todas");setFiltroNivel("Todos");setFiltroConceito("Todos");setFiltroFaixa("Todos");setFiltroFavorito(false);setFiltroStatus("Todos");setFiltroTag("Todas");setFiltroSegmento("Todos");setFiltroUnidade("Todos");}}
-                    className="px-[11px] py-[4px] rounded-full text-[12px] border-[1.5px] border-red-200 dark:border-red-500/30 text-red-400 dark:text-red-400 hover:text-red-600 bg-[#ffffff] dark:bg-[#1F2937] transition-all duration-[120ms]">
-                    ✕ limpar
+                    className="px-[10px] py-[8px] rounded-[9px] text-[12px] border-[1.5px] border-red-200 dark:border-red-500/30 text-red-400 hover:text-red-600 v2-card transition-all duration-[120ms] flex-none">
+                    ✕
                 </button>
             )}
         </div>
