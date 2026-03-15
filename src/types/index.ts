@@ -122,9 +122,10 @@ export interface RegistroPosAula {
   dataRegistro?: string
   hora?: string
   poderiaMelhorar?: string
-  resultadoAula?: string
+  resultadoAula?: string       // legado — usar statusAula em novos registros
+  proximaAulaOpcao?: string    // legado — usar statusAula em novos registros
+  statusAula?: 'concluida' | 'revisao' | 'incompleta' | 'nao_houve' | 'parcial'  // campo unificado (v2) — 'parcial' mantido p/ compat. legado
   anotacoesGerais?: string
-  proximaAulaOpcao?: string
   urlEvidencia?: string
   chamada?: { alunoId: string; presente: boolean }[]
   encaminhamentos?: { id: string; texto: string; concluido: boolean }[]

@@ -56,6 +56,7 @@ import ModalImportarAtividade from './modals/ModalImportarAtividade'
 import ModalImportarMusica from './modals/ModalImportarMusica'
 import ModalGradeSemanal from './modals/ModalGradeSemanal'
 import ModalBuscaGlobal from './modals/ModalBuscaGlobal'
+import VisaoSemana from './VisaoSemana'
 
 // Fallback exibido enquanto o chunk do módulo está sendo baixado
 const CarregandoModulo = () => (
@@ -730,7 +731,7 @@ export default function BancoPlanos({ session }) {
             // Mapa viewMode → grupo para detectar grupo ativo
             const VIEWMODE_TO_GROUP: Record<string, string> = {
                 resumoDia: 'agenda', agendaSemanal: 'agenda', calendario: 'agenda',
-                lista: 'planejamento', sequencias: 'planejamento',
+                lista: 'planejamento', sequencias: 'planejamento', visaoSemana: 'planejamento',
                 turmas: 'turmas', historicoMusical: 'turmas',
                 repertorio: 'biblioteca', atividades: 'biblioteca', estrategias: 'biblioteca',
                 relatorios: 'relatorios',
@@ -751,8 +752,9 @@ export default function BancoPlanos({ session }) {
                     ]
                 },
                 {
-                    id: 'planejamento', label: 'Planejamento', short: 'Planos', icon: '📚', defaultMode: 'lista',
+                    id: 'planejamento', label: 'Planejamento', short: 'Planos', icon: '📚', defaultMode: 'visaoSemana',
                     items: [
+                        { label: 'Visão da Semana', short: 'Semana', icon: '📅', mode: 'visaoSemana', action: () => setViewMode('visaoSemana') },
                         { label: 'Planos',    short: 'Planos', icon: '📚', mode: 'lista',      action: () => { setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null); } },
                         { label: 'Nova Aula', short: 'Nova',   icon: '➕', mode: 'nova',       action: () => setShowModalContextoNovaAula(true), accent: true },
                         { label: 'Sequências', short: 'Seq.',  icon: '🔗', mode: 'sequencias', action: () => setViewMode('sequencias') },
@@ -1929,12 +1931,13 @@ export default function BancoPlanos({ session }) {
 
                         const resultado = rrResultados[turmaId] || '';
                         const rubrica = rrRubricas[turmaId] || [];
+
                         const encaminhamentos = (rrEncaminhamentos[turmaId] || []).map(e => ({ ...e }));
                         const texto = rrTextos[turmaId]?.trim() || '';
 
                         if (registroExistente) {
                             // Atualizar campos do registro existente
-                            if (resultado) registroExistente.resultadoAula = resultado;
+                            if (resultado) (registroExistente as any).statusAula = resultado;
                             if (rubrica.length > 0) registroExistente.rubrica = rubrica;
                             if (encaminhamentos.length > 0) {
                                 registroExistente.encaminhamentos = [
@@ -1961,7 +1964,7 @@ export default function BancoPlanos({ session }) {
                                 segmento: String(segmentoId ?? ''),
                                 turma: turmaId,
                                 resumoAula: texto,
-                                resultadoAula: resultado,
+                                statusAula: resultado as any,
                                 rubrica: rubrica.length > 0 ? rubrica : undefined,
                                 encaminhamentos: encaminhamentos.length > 0 ? encaminhamentos : undefined,
                                 funcionouBem: '',
@@ -2651,6 +2654,9 @@ export default function BancoPlanos({ session }) {
 
                                 {/* ══════════════ BANCO DE ATIVIDADES ══════════════ */}
                                 {viewMode === 'atividades' && <ErrorBoundary modulo="Atividades"><Suspense fallback={<CarregandoModulo />}><ModuloAtividades /></Suspense></ErrorBoundary>}
+
+                                {/* ═══════════ VISÃO DA SEMANA ═══════════ */}
+                                {viewMode === 'visaoSemana' && <VisaoSemana />}
 
                                 {/* ═══════════ VIEW SEQUÊNCIAS DIDÁTICAS ═══════════ */}
                                 {viewMode === 'sequencias' && <ErrorBoundary modulo="Sequências"><Suspense fallback={<CarregandoModulo />}><ModuloSequencias /></Suspense></ErrorBoundary>}
