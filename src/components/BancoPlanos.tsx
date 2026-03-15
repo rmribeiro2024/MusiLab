@@ -2581,11 +2581,11 @@ export default function BancoPlanos({ session }) {
 
                                 {/* Theme toggle — single cycling button */}
                                 <button
-                                    onClick={() => setThemeMode(m => m === 'light' ? 'dark' : m === 'dark' ? 'system' : 'light')}
-                                    title={themeMode === 'light' ? 'Modo claro (clique para escuro)' : themeMode === 'dark' ? 'Modo escuro (clique para sistema)' : 'Modo sistema (clique para claro)'}
+                                    onClick={() => setThemeMode(m => m === 'light' ? 'dark' : 'light')}
+                                    title={darkMode ? 'Modo escuro (clique para claro)' : 'Modo claro (clique para escuro)'}
                                     style={{display:'flex',alignItems:'center',justifyContent:'center',width:'28px',height:'28px',borderRadius:'7px',border:`1px solid ${darkMode ? '#374151' : '#E6EAF0'}`,background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(15,23,42,0.04)',cursor:'pointer',fontSize:'14px',transition:'all 200ms ease',flexShrink:0}}
                                 >
-                                    {themeMode === 'light' ? '☀️' : themeMode === 'dark' ? '🌙' : '🖥️'}
+                                    {darkMode ? '🌙' : '☀️'}
                                 </button>
 
                             </div>

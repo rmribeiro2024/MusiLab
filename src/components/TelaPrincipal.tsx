@@ -68,7 +68,7 @@ export default function TelaPrincipal() {
     const { atividades, setAtividades, setAtividadeVinculandoMusica } = useAtividadesContext()
     const { repertorio } = useRepertorioContext()
     const { setModalConfirm } = useModalContext()
-    const { periodoDias, setPeriodoDias, dataInicioCustom, setDataInicioCustom, dataFimCustom, setDataFimCustom } = useCalendarioContext()
+    const { periodoDias, setPeriodoDias, dataInicioCustom, setDataInicioCustom, dataFimCustom, setDataFimCustom, gradesSemanas } = useCalendarioContext()
     const { estrategias } = useEstrategiasContext()
 
     // Itens de planos: via PlanosContext
@@ -1553,6 +1553,22 @@ export default function TelaPrincipal() {
         });
     });
 
+    // Próxima aula pela Grade Semanal (fonte primária)
+    const _diasNomes = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+    let proximaDataGrade: string | null = null;
+    for (let i = 1; i <= 90 && !proximaDataGrade; i++) {
+        const d = new Date(hoje); d.setDate(d.getDate() + i);
+        const dataStr = d.toISOString().split('T')[0];
+        const diaNome = _diasNomes[d.getDay()];
+        const temAula = gradesSemanas.some(grade => {
+            if (dataStr < grade.dataInicio || dataStr > grade.dataFim) return false;
+            return grade.aulas.some(a => a.diaSemana === diaNome && a.turmaId);
+        });
+        if (temAula) proximaDataGrade = dataStr;
+    }
+    // Usa grade semanal se disponível, senão fallback para historicoDatas
+    const proximaDataCard = proximaDataGrade ?? proximaAula?.data ?? null;
+
     // Próximo registro pelo Registro Pós-Aula
     let proximoRegistroData = null;
     planos.forEach(p => {
@@ -1614,29 +1630,27 @@ export default function TelaPrincipal() {
 
         {/* ── PAGE HEADER ── */}
         <div className="mb-5">
-            <h1 className="text-[22px] font-bold tracking-[-0.025em] text-slate-900 dark:text-[#E5E7EB] mb-[3px]">Planos de Aula</h1>
-            <p className="text-[13.5px] text-slate-500 dark:text-[#9CA3AF] tracking-[-0.005em]">
-                {totalPlanos} plano{totalPlanos !== 1 ? 's' : ''} · {porStatus['Em Andamento']} em edição
-                {proximaAula ? ` · próxima aula em ${Math.max(0, Math.ceil((new Date(proximaAula.data+'T12:00:00').getTime() - Date.now()) / 86400000))} dias` : ''}
-            </p>
+            <h1 className="text-[22px] font-bold tracking-[-0.025em] text-slate-900 dark:text-[#E5E7EB]">Planos de Aula</h1>
         </div>
 
         {/* ── INDICADORES ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
             <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
                 <div className="text-2xl font-extrabold tracking-[-0.03em] text-[#5B5FEA] dark:text-[#818cf8] leading-none mb-[5px]">{totalPlanos}</div>
                 <div className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF]">Planos de Aula</div>
             </div>
             <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
-                <div className="text-2xl font-extrabold tracking-[-0.03em] text-amber-500 leading-none mb-[5px]">{totalRegistros}</div>
+                <div className="text-2xl font-extrabold tracking-[-0.03em] text-slate-700 dark:text-[#D1D5DB] leading-none mb-[5px]">{totalRegistros}</div>
                 <div className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF]">Registros Pós-Aula</div>
             </div>
             <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
-                <div className="text-2xl font-extrabold tracking-[-0.03em] text-[#10b981] leading-none mb-[5px]">{proximaAula ? new Date(proximaAula.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : '—'}</div>
+                <div className="text-2xl font-extrabold tracking-[-0.03em] text-slate-700 dark:text-[#D1D5DB] leading-none mb-[5px]">
+                    {proximaDataCard ? new Date(proximaDataCard+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : '—'}
+                </div>
                 <div className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF]">Próxima Aula</div>
             </div>
             <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] shadow-sm px-4 py-3.5 card-hover">
-                <div className="text-2xl font-extrabold tracking-[-0.03em] text-slate-800 dark:text-[#E5E7EB] leading-none mb-[5px]">{totalRepertorio}</div>
+                <div className="text-2xl font-extrabold tracking-[-0.03em] text-slate-700 dark:text-[#D1D5DB] leading-none mb-[5px]">{totalRepertorio}</div>
                 <div className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF]">Músicas no Repertório</div>
             </div>
         </div>
@@ -1688,11 +1702,6 @@ export default function TelaPrincipal() {
 
         {/* ── Contagem + Ordenar + Modo de visualização ── */}
         <div className="flex items-center justify-between mb-3">
-            {planosFiltrados.length < planos.length ? (
-                <p className="text-[12px] text-[#5B5FEA] dark:text-[#818cf8] font-medium">
-                    {planosFiltrados.length} de {planos.length} planos
-                </p>
-            ) : <span />}
             <div className="flex items-center gap-[2px]">
                 <span className="text-[11px] text-slate-400 dark:text-[#6b7280] font-medium px-[4px] select-none">Ordenar</span>
                 {([{id:'recente',label:'Recente'},{id:'az',label:'A–Z'},{id:'status',label:'Status'},{id:'favoritos',label:'★'}] as const).map(o=>(
@@ -1702,13 +1711,24 @@ export default function TelaPrincipal() {
                     </button>
                 ))}
                 <span className="w-px h-[14px] bg-[#D1D5DB] dark:bg-[#4B5563] mx-[6px] flex-none" />
-                {([{id:'grade',label:'⊞',title:'Grade'},{id:'compacto',label:'☰',title:'Lista'},{id:'kanban',label:'⠿',title:'Kanban'},{id:'periodo',label:'📆',title:'Por Período'},{id:'segmento',label:'👥',title:'Por Segmento'}] as const).map(m=>(
+                {([
+                    {id:'grade',   icon:'fa-table-cells-large', title:'Grade'},
+                    {id:'compacto',icon:'fa-list',              title:'Lista'},
+                    {id:'kanban',  icon:'fa-table-columns',     title:'Kanban'},
+                    {id:'periodo', icon:'fa-calendar-week',     title:'Por Período'},
+                    {id:'segmento',icon:'fa-users',             title:'Por Segmento'},
+                ] as const).map(m=>(
                     <button key={m.id} onClick={()=>setModoVisualizacao(m.id)} title={m.title}
-                        className={`px-[7px] py-[3px] rounded-[5px] text-[13px] transition-all duration-[120ms] ${modoVisualizacao===m.id ? 'bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 text-[#5B5FEA] dark:text-[#818cf8]' : 'text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF]'}`}>
-                        {m.label}
+                        className={`px-[7px] py-[4px] rounded-[5px] transition-all duration-[120ms] ${modoVisualizacao===m.id ? 'bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 text-[#5B5FEA] dark:text-[#818cf8]' : 'text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF]'}`}>
+                        <i className={`fas ${m.icon} text-[13px]`} />
                     </button>
                 ))}
             </div>
+            {planosFiltrados.length < planos.length && (
+                <p className="text-[12px] text-slate-400 dark:text-[#6b7280] font-medium">
+                    {planosFiltrados.length} de {planos.length} planos
+                </p>
+            )}
         </div>
 
         {/* ── MODO GRADE ── */}
@@ -1728,10 +1748,16 @@ export default function TelaPrincipal() {
                     <div key={plano.id}
                         className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] card-hover flex flex-col overflow-hidden cursor-pointer"
                         onClick={()=>setPlanoSelecionado(plano)}>
-                        <div className="p-[18px] flex-1">
-                            {/* Status dot + label UPPERCASE + favorito */}
-                            <div className="flex items-center justify-between mb-[9px]">
-                                <div className="relative">
+                        <div className="p-[18px] flex-1 relative">
+                            {/* Estrela — absoluta topo direito, não ocupa linha */}
+                            <button onClick={e=>{e.stopPropagation();toggleFavorito(plano,e);}} title="Favorito"
+                                className={`absolute top-[14px] right-[14px] text-[15px] hover:scale-110 transition leading-none ${plano.destaque?'text-amber-400':'text-slate-200/80 dark:text-slate-500/80 hover:text-amber-300'}`}>
+                                {plano.destaque?'★':'☆'}
+                            </button>
+
+                            {/* Status dot + label — só se não for Concluído */}
+                            {status !== 'Concluído' && (
+                                <div className="relative mb-[9px]">
                                     <button onClick={e=>{e.stopPropagation();setStatusDropdownId(statusDropdownId===plano.id?null:plano.id);}}
                                         className="flex items-center gap-[5px] hover:opacity-70 transition">
                                         <span style={{width:6,height:6,borderRadius:'50%',background:dotColor,flexShrink:0,display:'inline-block'}} />
@@ -1750,46 +1776,50 @@ export default function TelaPrincipal() {
                                         </div>
                                     )}
                                 </div>
-                                <button onClick={e=>{e.stopPropagation();toggleFavorito(plano,e);}} className={`text-[15px] shrink-0 hover:scale-110 transition leading-none ${plano.destaque?'text-amber-400':'text-slate-300 dark:text-[#4B5563] hover:text-amber-300'}`}>
-                                    {plano.destaque?'★':'☆'}
-                                </button>
-                            </div>
+                            )}
 
-                            {/* Título */}
-                            <h3 className="font-semibold text-slate-900 dark:text-[#E5E7EB] text-[14px] leading-[1.35] tracking-[-0.01em] mb-[5px]">{plano.titulo}</h3>
+                            {/* Título — máx 2 linhas, normaliza ALL CAPS */}
+                            <h3 className="font-semibold text-slate-900 dark:text-[#E5E7EB] text-[14px] leading-[1.35] tracking-[-0.01em] mb-[6px] line-clamp-2 pr-[24px]">
+                                {plano.titulo === plano.titulo.toUpperCase()
+                                    ? plano.titulo.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+                                    : plano.titulo}
+                            </h3>
 
-                            {/* Meta */}
-                            <p className="text-[12px] text-slate-500 dark:text-[#9CA3AF] mb-[9px] leading-none">
-                                {[(plano.faixaEtaria||[])[0],(plano.unidades||[])[0]].filter(Boolean).join(' · ') || '\u00A0'}
-                            </p>
+                            {/* Meta — só renderiza se houver info */}
+                            {[(plano.faixaEtaria||[])[0],(plano.unidades||[])[0]].filter(Boolean).length > 0 && (
+                                <p className="text-[12px] text-slate-500 dark:text-[#9CA3AF] mb-[8px] leading-[1.4]">
+                                    {[(plano.faixaEtaria||[])[0],(plano.unidades||[])[0]].filter(Boolean).join(' · ')}
+                                </p>
+                            )}
 
-                            {/* Tags (conceitos) — indigo pill */}
+                            {/* Tags (conceitos) — texto simples, alinhado com meta */}
                             {(plano.conceitos||[]).length > 0 && (
-                                <div className="flex flex-wrap gap-1">
-                                    {(plano.conceitos||[]).slice(0,2).map(c=>(
-                                        <span key={c} className="text-[11px] font-semibold text-[#5B5FEA] dark:text-[#818cf8] bg-[#5B5FEA]/[0.08] dark:bg-[#5B5FEA]/[0.16] px-[8px] py-[3px] rounded-full">{c}</span>
-                                    ))}
-                                    {(plano.conceitos||[]).length > 2 && <span className="text-[11px] text-slate-400 dark:text-[#6b7280]">+{(plano.conceitos||[]).length-2}</span>}
-                                </div>
+                                <p className="text-[12px] text-slate-500 dark:text-[#9CA3AF] leading-[1.4]">
+                                    {(plano.conceitos||[]).slice(0,2).join(' · ')}
+                                    {(plano.conceitos||[]).length > 2 && <span className="text-slate-400 dark:text-[#6b7280]"> +{(plano.conceitos||[]).length-2}</span>}
+                                </p>
                             )}
                         </div>
 
-                        {/* Rodapé */}
-                        <div className="border-t border-[#E6EAF0] dark:border-[#374151] px-[14px] py-[10px] flex items-center">
-                            <button onClick={e=>{e.stopPropagation();setPlanoSelecionado(plano);}}
-                                className="flex-1 text-[13px] font-semibold text-[#5B5FEA] dark:text-[#818cf8] hover:underline text-left transition">
-                                Ver plano
+                        {/* Rodapé — ações à direita */}
+                        <div className="border-t border-slate-100 dark:border-slate-700/50 px-[10px] py-[5px] flex justify-end items-center"
+                             onClick={e=>e.stopPropagation()}>
+                            <button onClick={e=>{e.stopPropagation();setPlanoParaAplicar(plano);}} title="Agendar"
+                                className="p-[7px] text-indigo-300/70 dark:text-indigo-400/50 hover:text-indigo-500 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 rounded-md transition-colors duration-[120ms]">
+                                <i className="fas fa-calendar text-[14px]" />
                             </button>
-                            <div className="flex items-center">
-                                <button onClick={e=>{e.stopPropagation();setPlanoParaAplicar(plano);}} title="Agendar"
-                                    className="p-[6px] text-slate-400 dark:text-[#6b7280] hover:text-[#5B5FEA] dark:hover:text-[#818cf8] rounded-lg transition-all duration-[120ms] text-[14px] leading-none">📅</button>
-                                <button onClick={e=>{e.stopPropagation();editarPlano(plano);}} title="Editar"
-                                    className="p-[6px] text-slate-400 dark:text-[#6b7280] hover:text-[#5B5FEA] dark:hover:text-[#818cf8] rounded-lg transition-all duration-[120ms] text-[14px] leading-none">✏️</button>
-                                <button onClick={e=>{e.stopPropagation();exportarPlanoPDF(plano);}} title="PDF"
-                                    className="p-[6px] text-slate-400 dark:text-[#6b7280] hover:text-[#5B5FEA] dark:hover:text-[#818cf8] rounded-lg transition-all duration-[120ms] text-[14px] leading-none">📄</button>
-                                <button onClick={e=>{e.stopPropagation();excluirPlano(plano.id);}} title="Excluir"
-                                    className="p-[6px] text-slate-400 dark:text-[#6b7280] hover:text-red-400 rounded-lg transition-all duration-[120ms] text-[14px] leading-none">🗑</button>
-                            </div>
+                            <button onClick={e=>{e.stopPropagation();editarPlano(plano);}} title="Editar"
+                                className="p-[7px] text-amber-300/70 dark:text-amber-400/50 hover:text-amber-500 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/20 rounded-md transition-colors duration-[120ms]">
+                                <i className="fas fa-pencil text-[14px]" />
+                            </button>
+                            <button onClick={e=>{e.stopPropagation();exportarPlanoPDF(plano);}} title="Exportar PDF"
+                                className="p-[7px] text-emerald-400/70 dark:text-emerald-400/50 hover:text-emerald-600 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-md transition-colors duration-[120ms]">
+                                <span className="text-[11px] font-bold tracking-wide">PDF</span>
+                            </button>
+                            <button onClick={e=>{e.stopPropagation();excluirPlano(plano.id);}} title="Excluir"
+                                className="p-[7px] text-slate-300 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 rounded-md transition-colors duration-[120ms]">
+                                <i className="fas fa-trash-can text-[14px]" />
+                            </button>
                         </div>
                     </div>
                     );
