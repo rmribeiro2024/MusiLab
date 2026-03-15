@@ -81,7 +81,7 @@ function BlocoAplicacao({ aplicacao, planoTitulo, nomeTurma, onClick }: BlocoPro
 
 function SlotVazio({ nomeTurma }: { nomeTurma: string }) {
     return (
-        <div className="border border-dashed border-slate-200 rounded-lg p-2 text-[10px] text-slate-300 truncate mb-1">
+        <div className="border border-dashed border-[#E6EAF0] dark:border-[#374151] rounded-lg p-2 text-[10px] text-slate-300 dark:text-slate-500 truncate mb-1">
             {nomeTurma}
         </div>
     )
@@ -129,7 +129,7 @@ function PainelDetalhesAplicacao({ aplicacaoId, onClose }: PainelProps) {
             onClick={onClose}
         >
             <div
-                className="bg-white w-full sm:max-w-lg sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[92dvh] sm:max-h-[88vh] flex flex-col overflow-hidden"
+                className="v2-card w-full sm:max-w-lg sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[92dvh] sm:max-h-[88vh] flex flex-col overflow-hidden"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
@@ -160,8 +160,8 @@ function PainelDetalhesAplicacao({ aplicacaoId, onClose }: PainelProps) {
                                     onClick={() => setStatus(opt.v)}
                                     className={`flex-1 py-2 rounded-xl border text-xs font-semibold transition
                                         ${status === opt.v
-                                            ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
-                                            : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                                            ? 'border-[#5B5FEA] bg-indigo-50 text-indigo-700'
+                                            : 'border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:border-slate-300 dark:hover:border-slate-500'}`}
                                 >
                                     {opt.label}
                                 </button>
@@ -218,7 +218,7 @@ function PainelDetalhesAplicacao({ aplicacaoId, onClose }: PainelProps) {
                             onChange={e => setAdaptacao(e.target.value)}
                             rows={4}
                             placeholder="Ex: Pular a atividade 2, focar mais no ritmo, reduzir duração da parte 3..."
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 resize-none focus:border-indigo-400 outline-none"
+                            className="w-full px-3 py-2 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm text-slate-700 dark:text-[#E5E7EB] resize-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none bg-white dark:bg-[#111827]"
                         />
                     </div>
                 </div>
@@ -227,7 +227,7 @@ function PainelDetalhesAplicacao({ aplicacaoId, onClose }: PainelProps) {
                 <div className="px-5 py-4 border-t border-slate-100 flex gap-2 shrink-0">
                     <button
                         onClick={onClose}
-                        className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                        className="flex-1 py-2.5 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm font-semibold text-slate-600 dark:text-[#9CA3AF] hover:bg-slate-50 dark:hover:bg-white/5 transition"
                     >
                         Cancelar
                     </button>
@@ -291,7 +291,7 @@ function ResumoDoDia({ data }: ResumoDoDiaProps) {
     const dataFormatada = data.split('-').reverse().join('/')
 
     return (
-        <div className="bg-indigo-50 border border-indigo-100 rounded-2xl overflow-hidden mb-3">
+        <div className="bg-[#5B5FEA]/8 dark:bg-[#5B5FEA]/15 border border-[#5B5FEA]/20 dark:border-[#5B5FEA]/30 rounded-2xl overflow-hidden mb-3">
             {/* Cabeçalho */}
             <button
                 onClick={() => setAberto(v => !v)}
@@ -318,7 +318,7 @@ function ResumoDoDia({ data }: ResumoDoDiaProps) {
                     {/* Planos do dia */}
                     <div className="space-y-2">
                         {porPlano.map(({ plano, aplicacoes: aps }, i) => (
-                            <div key={i} className="bg-white rounded-xl border border-indigo-100 p-3">
+                            <div key={i} className="v2-card rounded-xl border border-[#5B5FEA]/15 dark:border-[#5B5FEA]/25 p-3">
                                 <p className="text-xs font-bold text-slate-700 mb-1">
                                     {plano?.titulo || '(plano removido)'}
                                 </p>
@@ -347,7 +347,7 @@ function ResumoDoDia({ data }: ResumoDoDiaProps) {
                             </p>
                             <div className="flex flex-wrap gap-1.5">
                                 {materiaisDoDia.map(m => (
-                                    <span key={m} className="text-xs bg-white border border-indigo-200 text-indigo-700 px-2 py-0.5 rounded-full">
+                                    <span key={m} className="text-xs v2-card border border-[#5B5FEA]/25 dark:border-[#5B5FEA]/35 text-[#5B5FEA] dark:text-[#818cf8] px-2 py-0.5 rounded-full">
                                         {m}
                                     </span>
                                 ))}
@@ -604,7 +604,7 @@ export function TelaCalendario() {
     }
 
     return (
-        <div className="bg-white rounded-2xl shadow-xl p-3 sm:p-6">
+        <div className="v2-card rounded-2xl shadow-xl p-3 sm:p-6">
             {/* Tabs Mês / Semana */}
             <div className="flex items-center justify-between mb-3 sm:mb-5 gap-3 flex-wrap">
                 <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
@@ -627,7 +627,7 @@ export function TelaCalendario() {
                 {/* Controles do Mês */}
                 {tabCal === 'mes' && (
                     <div className="flex flex-wrap gap-1 sm:gap-2">
-                        <h2 className="text-base sm:text-xl font-bold text-gray-800 self-center mr-1">{nomes[mes]} {ano}</h2>
+                        <h2 className="text-base sm:text-xl font-bold text-slate-900 dark:text-[#E5E7EB] self-center mr-1">{nomes[mes]} {ano}</h2>
                         <button onClick={()=>setDataCalendario(new Date(ano,mes-1,1))} className="px-3 py-1 bg-gray-200 rounded text-sm">◀</button>
                         <button onClick={()=>setDataCalendario(new Date())} className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-sm">Hoje</button>
                         <button onClick={()=>setDataCalendario(new Date(ano,mes+1,1))} className="px-3 py-1 bg-gray-200 rounded text-sm">▶</button>
@@ -794,7 +794,7 @@ export default function TelaResumoDia() {
                                 {reg.dataRegistro && reg.dataRegistro !== reg.data && <span className="text-xs text-gray-300 italic">reg. depois</span>}
                             </div>
                             {reg.resumoAula
-                                ? <p className="text-sm font-medium text-gray-800 leading-snug">{reg.resumoAula}</p>
+                                ? <p className="text-sm font-medium text-slate-800 dark:text-[#E5E7EB] leading-snug">{reg.resumoAula}</p>
                                 : <p className="text-xs text-gray-400 italic">Sem resumo registrado</p>
                             }
                             {(reg.funcionouBem || reg.naoFuncionou || reg.proximaAula || reg.comportamento) && (
@@ -912,7 +912,7 @@ export default function TelaResumoDia() {
                 }
 
                 return (
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+                    <div className="v2-card rounded-2xl shadow-sm border border-[#E6EAF0] dark:border-[#374151] p-4">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-semibold text-slate-600">
                                 📅 {anoAtivo.nome ?? anoAtivo.ano} — Semana {semanaAtual} de {totalSemanas}
@@ -940,7 +940,7 @@ export default function TelaResumoDia() {
             })()}
 
             {/* ── BARRA DE CONTROLES ── */}
-            <div className="bg-white rounded-2xl shadow-lg p-3 space-y-3">
+            <div className="v2-card rounded-2xl shadow-lg p-3 space-y-3">
 
                 {/* Linha 1: Hoje | seletor de data | toggle modo */}
                 <div className="flex items-center gap-2">
@@ -953,7 +953,7 @@ export default function TelaResumoDia() {
                         type="date"
                         value={dataDia}
                         onChange={e => { setDataDia(e.target.value); setModoResumo('dia'); }}
-                        className="flex-1 border-2 border-gray-200 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 bg-white outline-none focus:border-indigo-400"
+                        className="flex-1 border-2 border-[#E6EAF0] dark:border-[#374151] rounded-xl px-3 py-2 text-sm font-medium text-slate-700 dark:text-[#E5E7EB] bg-white dark:bg-[#111827] outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8]"
                     />
                     <div className="flex shrink-0 bg-gray-100 rounded-xl p-1 gap-1">
                         <button
@@ -974,7 +974,7 @@ export default function TelaResumoDia() {
                     <div className="flex items-center gap-2">
                         <button onClick={semanaAnterior} className="w-9 h-9 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-xl font-bold text-gray-600">◀</button>
                         <div className="flex-1 text-center">
-                            <p className="font-bold text-gray-800 text-sm">{labelSemana}</p>
+                            <p className="font-bold text-slate-800 dark:text-[#E5E7EB] text-sm">{labelSemana}</p>
                             <p className="text-xs text-gray-400">{totalSemana === 0 ? 'Nenhum registro' : `${totalSemana} registro${totalSemana>1?'s':''}`}</p>
                         </div>
                         <button onClick={proximaSemana} className="w-9 h-9 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-xl font-bold text-gray-600">▶</button>
@@ -993,7 +993,7 @@ export default function TelaResumoDia() {
                 const ehHoje = dataDia === hojeStr;
                 const labelDia = `${nomeDia}, ${String(dia.getDate()).padStart(2,'0')}/${String(dia.getMonth()+1).padStart(2,'0')}/${dia.getFullYear()}`;
                 return (
-                    <div className={`bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 ${ehHoje ? 'border-amber-400' : regsNoDia.length > 0 ? 'border-indigo-400' : 'border-gray-200'}`}>
+                    <div className={`v2-card rounded-2xl shadow-sm overflow-hidden border-l-4 ${ehHoje ? 'border-amber-400' : regsNoDia.length > 0 ? 'border-[#5B5FEA]' : 'border-[#E6EAF0] dark:border-[#374151]'}`}>
                         <div className={`px-4 py-3 flex justify-between items-center ${ehHoje ? 'bg-amber-50' : regsNoDia.length > 0 ? 'bg-indigo-50' : 'bg-gray-50'}`}>
                             <div className="flex items-center gap-2">
                                 {ehHoje && <span className="bg-amber-400 text-white text-xs font-bold px-2 py-0.5 rounded-full">Hoje</span>}
@@ -1111,7 +1111,7 @@ export default function TelaResumoDia() {
 
                                     {/* Lista por escola */}
                                     {Object.keys(porEscola).sort().map(escolaNome => (
-                                        <div key={escolaNome} className="bg-white rounded-lg border border-purple-200 p-2">
+                                        <div key={escolaNome} className="v2-card rounded-lg border border-purple-200 dark:border-purple-800/50 p-2">
                                             <p className="text-xs font-bold text-purple-900 mb-2">🏫 {escolaNome}</p>
                                             <div className="space-y-0.5">
                                                 {porEscola[escolaNome].map(t => (
@@ -1223,7 +1223,7 @@ export default function TelaResumoDia() {
                                             }))
                                         }
                                         return (
-                                            <div className="bg-white rounded-lg border border-purple-200 p-3">
+                                            <div className="v2-card rounded-lg border border-purple-200 dark:border-purple-800/50 p-3">
                                                 <p className="text-xs font-bold text-purple-900 mb-2">🎵 Materiais necessários hoje</p>
                                                 {todosMateriaisList.length > 0 && (
                                                     <ul className="space-y-0.5 mb-2">
@@ -1315,7 +1315,7 @@ export default function TelaResumoDia() {
                                 totalDadas > 0 ? 'bg-blue-50' : 'bg-gray-50';
 
                             return (
-                                <div key={dataStr} className={`bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 ${borderCol}`}>
+                                <div key={dataStr} className={`v2-card rounded-2xl shadow-sm overflow-hidden border-l-4 ${borderCol}`}>
                                     {/* Cabeçalho */}
                                     <button onClick={()=>toggleDia(dataStr)}
                                         className={`w-full px-4 py-3 flex justify-between items-center text-left ${bgHeader}`}>
@@ -1339,7 +1339,7 @@ export default function TelaResumoDia() {
                                         <div>
                                             {/* Grade do dia — turmas com status */}
                                             {turmasComStatus.length > 0 && (
-                                                <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 space-y-1.5">
+                                                <div className="px-4 py-3 bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-[#374151] space-y-1.5">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <p className="text-xs font-bold text-slate-500 uppercase">Turmas do dia</p>
                                                         <button onClick={()=>{

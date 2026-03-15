@@ -65,30 +65,30 @@ export default function ModuloSequencias() {
                 <div className="flex items-center gap-3 mb-6">
                     <button
                         onClick={() => setSequenciaEditando(null)}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-semibold text-sm transition"
+                        className="bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-600 dark:text-[#9CA3AF] px-4 py-2 rounded-xl font-semibold text-sm transition"
                     >
                         ← Voltar
                     </button>
                     <div>
-                        <h2 className="text-xl font-bold text-slate-800">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-[#E5E7EB]">
                             {isEdicao ? 'Editar Sequência' : 'Nova Sequência'}
                         </h2>
-                        <p className="text-slate-500 text-xs mt-0.5">Sequência didática de aulas</p>
+                        <p className="text-slate-500 dark:text-[#9CA3AF] text-xs mt-0.5">Sequência didática de aulas</p>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="h-1.5 bg-gradient-to-r from-slate-400 to-slate-600" />
+                <div className="v2-card rounded-xl shadow-sm border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
+                    <div className="h-[3px] bg-[#5B5FEA]/30 dark:bg-[#818cf8]/30" />
                     <div className="p-6 space-y-5">
 
                         {/* Título */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Título *</label>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-1.5">Título *</label>
                             <input
                                 type="text"
                                 value={sequenciaEditando.titulo}
                                 onChange={e => setSequenciaEditando({ ...sequenciaEditando, titulo: e.target.value })}
-                                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 text-sm"
+                                className="w-full px-4 py-2.5 border border-[#E6EAF0] dark:border-[#374151] rounded-xl focus:outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8] text-sm bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"
                                 placeholder="Ex: Projeto Folclore, Música Brasileira..."
                                 autoFocus
                             />
@@ -96,11 +96,11 @@ export default function ModuloSequencias() {
 
                         {/* Ano Letivo */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Ano Letivo *</label>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-1.5">Ano Letivo *</label>
                             <select
                                 value={sequenciaEditando.anoLetivoId}
                                 onChange={e => setSequenciaEditando({ ...sequenciaEditando, anoLetivoId: e.target.value, escolaId: '', segmentos: [] })}
-                                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none focus:border-slate-400"
+                                className="w-full px-4 py-2.5 border border-[#E6EAF0] dark:border-[#374151] rounded-xl bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] text-sm focus:outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8]"
                             >
                                 <option value="">Selecione...</option>
                                 {anosLetivos.map(ano => (
@@ -112,11 +112,11 @@ export default function ModuloSequencias() {
                         {/* Escola */}
                         {sequenciaEditando.anoLetivoId && (
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Escola *</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-1.5">Escola *</label>
                                 <select
                                     value={sequenciaEditando.escolaId}
                                     onChange={e => setSequenciaEditando({ ...sequenciaEditando, escolaId: e.target.value, segmentos: [] })}
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none focus:border-slate-400"
+                                    className="w-full px-4 py-2.5 border border-[#E6EAF0] dark:border-[#374151] rounded-xl bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] text-sm focus:outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8]"
                                 >
                                     <option value="">Selecione...</option>
                                     {anosLetivos.find(a => a.id == sequenciaEditando.anoLetivoId)?.escolas?.map(escola => (
@@ -138,7 +138,7 @@ export default function ModuloSequencias() {
                             }
                             return (
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-2">
                                         Segmentos * <span className="font-normal normal-case">(um ou mais)</span>
                                     </label>
                                     <div className="flex flex-wrap gap-2">
@@ -149,8 +149,8 @@ export default function ModuloSequencias() {
                                                 onClick={() => toggleSegmento(seg.id)}
                                                 className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition border ${
                                                     (sequenciaEditando.segmentos || []).includes(seg.id)
-                                                        ? 'bg-slate-800 text-white border-slate-800'
-                                                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                                                        ? 'bg-[#5B5FEA] text-white border-[#5B5FEA]'
+                                                        : 'bg-white dark:bg-[#111827] text-slate-600 dark:text-[#9CA3AF] border-[#E6EAF0] dark:border-[#374151] hover:border-slate-400 dark:hover:border-slate-500'
                                                 }`}
                                             >
                                                 {seg.nome}
@@ -177,13 +177,13 @@ export default function ModuloSequencias() {
                             })
                             return (
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-1.5">
                                         Turma <span className="font-normal normal-case">(opcional)</span>
                                     </label>
                                     <select
                                         value={sequenciaEditando.turmaEspecifica || ''}
                                         onChange={e => setSequenciaEditando({ ...sequenciaEditando, turmaEspecifica: e.target.value })}
-                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none focus:border-slate-400"
+                                        className="w-full px-4 py-2.5 border border-[#E6EAF0] dark:border-[#374151] rounded-xl bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] text-sm focus:outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8]"
                                     >
                                         <option value="">Todas as turmas</option>
                                         {turmasDisponiveis.map(t => (
@@ -196,11 +196,11 @@ export default function ModuloSequencias() {
 
                         {/* Unidade */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Unidade Pedagógica</label>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-1.5">Unidade Pedagógica</label>
                             <select
                                 value={sequenciaEditando.unidadePredominante || ''}
                                 onChange={e => setSequenciaEditando({ ...sequenciaEditando, unidadePredominante: e.target.value })}
-                                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none focus:border-slate-400"
+                                className="w-full px-4 py-2.5 border border-[#E6EAF0] dark:border-[#374151] rounded-xl bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] text-sm focus:outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8]"
                             >
                                 <option value="">Selecione...</option>
                                 {unidades.map(u => (
@@ -211,7 +211,7 @@ export default function ModuloSequencias() {
 
                         {/* Duração */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Duração</label>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-1.5">Duração</label>
                             <select
                                 value={sequenciaEditando.duracao}
                                 onChange={e => {
@@ -221,7 +221,7 @@ export default function ModuloSequencias() {
                                     else if (d === 'semestral') num = 20
                                     setSequenciaEditando({ ...sequenciaEditando, duracao: d, numeroSlots: num })
                                 }}
-                                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none focus:border-slate-400"
+                                className="w-full px-4 py-2.5 border border-[#E6EAF0] dark:border-[#374151] rounded-xl bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] text-sm focus:outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8]"
                             >
                                 <option value="mensal">Mensal (4 aulas)</option>
                                 <option value="bimestral">Bimestral (8 aulas)</option>
@@ -232,7 +232,7 @@ export default function ModuloSequencias() {
 
                         {sequenciaEditando.duracao === 'manual' && (
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Número de Aulas</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-1.5">Número de Aulas</label>
                                 <input
                                     type="number"
                                     inputMode="numeric"
@@ -240,7 +240,7 @@ export default function ModuloSequencias() {
                                     max="50"
                                     value={sequenciaEditando.numeroSlots}
                                     onChange={e => setSequenciaEditando({ ...sequenciaEditando, numeroSlots: Number(e.target.value) })}
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-400"
+                                    className="w-full px-4 py-2.5 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"
                                 />
                             </div>
                         )}
@@ -248,21 +248,21 @@ export default function ModuloSequencias() {
                         {/* Datas */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Data Início</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-1.5">Data Início</label>
                                 <input
                                     type="date"
                                     value={sequenciaEditando.dataInicio || ''}
                                     onChange={e => setSequenciaEditando({ ...sequenciaEditando, dataInicio: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-400"
+                                    className="w-full px-4 py-2.5 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Data Fim</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-1.5">Data Fim</label>
                                 <input
                                     type="date"
                                     value={sequenciaEditando.dataFim || ''}
                                     onChange={e => setSequenciaEditando({ ...sequenciaEditando, dataFim: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-400"
+                                    className="w-full px-4 py-2.5 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"
                                 />
                             </div>
                         </div>
@@ -271,13 +271,13 @@ export default function ModuloSequencias() {
                         <div className="flex gap-3 pt-2">
                             <button
                                 onClick={() => setSequenciaEditando(null)}
-                                className="flex-1 border border-slate-200 hover:bg-slate-50 text-slate-500 py-3 rounded-xl font-semibold text-sm transition"
+                                className="flex-1 border border-[#E6EAF0] dark:border-[#374151] hover:bg-slate-50 dark:hover:bg-white/5 text-slate-500 dark:text-[#9CA3AF] py-3 rounded-xl font-semibold text-sm transition"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={salvarSequencia}
-                                className="flex-1 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 py-3 rounded-xl font-semibold text-sm transition"
+                                className="flex-1 bg-[#5B5FEA] hover:bg-[#4f53d4] text-white py-3 rounded-xl font-semibold text-sm transition"
                             >
                                 Salvar
                             </button>
@@ -330,14 +330,14 @@ export default function ModuloSequencias() {
                 <div className="mb-6 flex items-center gap-4">
                     <button
                         onClick={() => setSequenciaDetalhe(null)}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-semibold text-sm transition"
+                        className="bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-600 dark:text-[#9CA3AF] px-4 py-2 rounded-xl font-semibold text-sm transition"
                     >
                         ← Voltar
                     </button>
                     <div className="flex-1 min-w-0">
-                        <h2 className="text-xl font-bold text-slate-800 truncate">{seq.titulo}</h2>
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-[#E5E7EB] truncate">{seq.titulo}</h2>
                         {infoSeq && (
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-slate-500 dark:text-[#9CA3AF]">
                                 {infoSeq.escola} · {infoSeq.segmentos.join(', ')}
                                 {infoSeq.turmaEspecifica && <span> · Turma {infoSeq.turmaEspecifica}</span>}
                             </p>
@@ -346,25 +346,25 @@ export default function ModuloSequencias() {
                     <div className="flex gap-2 shrink-0">
                         <button
                             onClick={() => { setSeqParaPlanejar(seq); setPlanDataInicio(new Date().toISOString().split('T')[0]); setPlanDiasSemana([1]); setPlanEscola(''); setPlanNivel('') }}
-                            className="border border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg font-semibold text-sm transition"
+                            className="border border-[#5B5FEA]/40 dark:border-[#5B5FEA]/50 hover:border-[#5B5FEA] hover:bg-[#5B5FEA]/8 dark:hover:bg-[#5B5FEA]/15 text-[#5B5FEA] dark:text-[#818cf8] px-4 py-2 rounded-lg font-semibold text-sm transition"
                         >
-                            📅 Planejar
+                            <i className="fas fa-calendar-days mr-1.5" /> Planejar
                         </button>
                         <button
                             onClick={() => setSequenciaEditando(seq)}
-                            className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-semibold text-sm transition"
+                            className="border border-[#E6EAF0] dark:border-[#374151] hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-[#D1D5DB] px-4 py-2 rounded-lg font-semibold text-sm transition"
                         >
-                            ✏️ Editar
+                            <i className="fas fa-pencil mr-1.5" />Editar
                         </button>
                         <button
                             onClick={() => { setSequencias([...sequencias]); showToast('Alterações salvas!', 'success') }}
-                            className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-semibold text-sm transition"
+                            className="border border-[#E6EAF0] dark:border-[#374151] hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-[#D1D5DB] px-4 py-2 rounded-lg font-semibold text-sm transition"
                         >
                             💾 Salvar
                         </button>
                         <button
                             onClick={() => exportarSequenciaPDF(seq)}
-                            className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-semibold text-sm transition"
+                            className="border border-[#E6EAF0] dark:border-[#374151] hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-[#D1D5DB] px-4 py-2 rounded-lg font-semibold text-sm transition"
                         >
                             📄 PDF
                         </button>
@@ -376,9 +376,9 @@ export default function ModuloSequencias() {
                                 perigo: true,
                                 onConfirm: () => { excluirSequencia(seq.id); setSequenciaDetalhe(null) }
                             })}
-                            className="border border-red-200 hover:border-red-300 hover:bg-red-50 text-red-500 px-4 py-2 rounded-lg font-semibold text-sm transition"
+                            className="border border-red-200 dark:border-red-800/50 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 px-4 py-2 rounded-lg font-semibold text-sm transition"
                         >
-                            🗑️ Excluir
+                            <i className="fas fa-trash-can mr-1.5" />Excluir
                         </button>
                     </div>
                 </div>
@@ -399,12 +399,12 @@ export default function ModuloSequencias() {
                                         dragSlotIdx.current = null
                                     }
                                 }}
-                                className="border border-slate-200 rounded-xl p-4 bg-white cursor-grab active:cursor-grabbing hover:border-slate-300 transition"
+                                className="v2-card border border-[#E6EAF0] dark:border-[#374151] rounded-xl p-4 cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-500 transition"
                             >
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center gap-2">
                                         <span className="text-slate-300 select-none">⠿</span>
-                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Aula {slot.ordem}</span>
+                                        <span className="text-xs font-semibold text-slate-400 dark:text-[#6b7280] uppercase tracking-wide">Aula {slot.ordem}</span>
                                     </div>
                                     {planoVinc && (
                                         <button onClick={() => desvincularPlano(seq.id, index)} className="text-xs text-slate-400 hover:text-red-500 transition">
@@ -415,16 +415,16 @@ export default function ModuloSequencias() {
 
                                 {planoVinc ? (
                                     <div>
-                                        <h4 className="font-semibold text-slate-800 mb-2">{planoVinc.titulo}</h4>
+                                        <h4 className="font-semibold text-slate-800 dark:text-[#E5E7EB] mb-2">{planoVinc.titulo}</h4>
                                         {planoVinc.objetivoGeral && (
-                                            <div className="bg-slate-50 rounded-lg p-3 mb-2 border border-slate-200">
-                                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Objetivo</p>
+                                            <div className="bg-slate-50 dark:bg-white/5 rounded-lg p-3 mb-2 border border-[#E6EAF0] dark:border-[#374151]">
+                                                <p className="text-xs font-semibold text-slate-400 dark:text-[#6b7280] uppercase tracking-wide mb-1">Objetivo</p>
                                                 <p className="text-sm text-slate-600 line-clamp-2">{stripHTML(planoVinc.objetivoGeral)}</p>
                                             </div>
                                         )}
                                         {planoVinc.atividadesRoteiro?.length > 0 && (
-                                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Roteiro</p>
+                                            <div className="bg-slate-50 dark:bg-white/5 rounded-lg p-3 border border-[#E6EAF0] dark:border-[#374151]">
+                                                <p className="text-xs font-semibold text-slate-400 dark:text-[#6b7280] uppercase tracking-wide mb-2">Roteiro</p>
                                                 <ul className="text-sm text-slate-600 space-y-1">
                                                     {planoVinc.atividadesRoteiro.map(ativ => (
                                                         <li key={ativ.id} className="flex items-start gap-2">
@@ -444,9 +444,9 @@ export default function ModuloSequencias() {
                                         <p className="text-slate-400 text-sm mb-3">Slot vazio</p>
                                         <button
                                             onClick={() => setModalVincularPlano({ sequenciaId: seq.id, slotIndex: index })}
-                                            className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-sm font-semibold transition"
+                                            className="border border-[#5B5FEA]/30 dark:border-[#5B5FEA]/40 hover:border-[#5B5FEA] hover:bg-[#5B5FEA]/8 dark:hover:bg-[#5B5FEA]/15 text-[#5B5FEA] dark:text-[#818cf8] px-3 py-1.5 rounded-lg text-sm font-semibold transition"
                                         >
-                                            🔗 Vincular Plano
+                                            <i className="fas fa-link mr-1.5" />Vincular Plano
                                         </button>
                                     </div>
                                 )}
@@ -463,10 +463,10 @@ export default function ModuloSequencias() {
             <>
                 <div className="mb-6">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-slate-800">Sequências</h2>
+                        <h2 className="text-[22px] font-bold tracking-[-0.025em] text-slate-900 dark:text-[#E5E7EB]">Sequências</h2>
                         <button
                             onClick={() => novaSequencia(anosLetivos)}
-                            className="shrink-0 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition"
+                            className="shrink-0 bg-[#5B5FEA] hover:bg-[#4f53d4] text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition"
                         >
                             + Nova Sequência
                         </button>
@@ -477,31 +477,31 @@ export default function ModuloSequencias() {
                             type="text"
                             value={buscaProfundaSequencias}
                             onChange={e => setBuscaProfundaSequencias(e.target.value)}
-                            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm mb-4 focus:outline-none focus:border-slate-400"
+                            className="w-full px-4 py-2.5 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm mb-4 focus:outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"
                             placeholder="Buscar nas aulas (título, atividades)..."
                         />
                     )}
 
                     {sequencias.length > 0 && (
-                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                        <div className="v2-card border border-[#E6EAF0] dark:border-[#374151] p-4 rounded-xl">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Escola</label>
-                                    <select value={filtroEscolaSequencias} onChange={e => setFiltroEscolaSequencias(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm">
+                                    <label className="block text-xs font-semibold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-1">Escola</label>
+                                    <select value={filtroEscolaSequencias} onChange={e => setFiltroEscolaSequencias(e.target.value)} className="w-full px-3 py-2 border border-[#E6EAF0] dark:border-[#374151] rounded-lg bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] text-sm">
                                         <option value="Todas">Todas</option>
                                         {escolasComSequencias.map(e => <option key={e} value={e}>{e}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Unidade</label>
-                                    <select value={filtroUnidadeSequencias} onChange={e => setFiltroUnidadeSequencias(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm">
+                                    <label className="block text-xs font-semibold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-1">Unidade</label>
+                                    <select value={filtroUnidadeSequencias} onChange={e => setFiltroUnidadeSequencias(e.target.value)} className="w-full px-3 py-2 border border-[#E6EAF0] dark:border-[#374151] rounded-lg bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] text-sm">
                                         <option value="Todas">Todas</option>
                                         {unidadesComSequencias.map(u => <option key={u} value={u}>{u}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Período</label>
-                                    <select value={filtroPeriodoSequencias} onChange={e => setFiltroPeriodoSequencias(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm">
+                                    <label className="block text-xs font-semibold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-1">Período</label>
+                                    <select value={filtroPeriodoSequencias} onChange={e => setFiltroPeriodoSequencias(e.target.value)} className="w-full px-3 py-2 border border-[#E6EAF0] dark:border-[#374151] rounded-lg bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] text-sm">
                                         <option value="Todos">Todos</option>
                                         <option value="1trim">1° Trimestre</option>
                                         <option value="2trim">2° Trimestre</option>
@@ -530,7 +530,7 @@ export default function ModuloSequencias() {
                         <p className="text-slate-400 mb-4">Nenhuma sequência encontrada</p>
                         <button
                             onClick={() => novaSequencia(anosLetivos)}
-                            className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 px-5 py-2.5 rounded-xl font-bold text-sm transition"
+                            className="bg-[#5B5FEA] hover:bg-[#4f53d4] text-white px-5 py-2.5 rounded-xl font-bold text-sm transition"
                         >
                             + Criar Primeira Sequência
                         </button>
@@ -546,12 +546,12 @@ export default function ModuloSequencias() {
                                 <div
                                     key={s.id}
                                     onClick={() => setSequenciaDetalhe(s)}
-                                    className="bg-white rounded-xl p-5 border border-slate-200 hover:border-slate-300 hover:shadow-sm transition cursor-pointer active:scale-[0.98]"
+                                    className="v2-card rounded-xl p-5 border border-[#E6EAF0] dark:border-[#374151] hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-sm transition cursor-pointer active:scale-[0.98]"
                                 >
                                     <div className="flex justify-between items-start mb-1">
-                                        <h3 className="font-semibold text-slate-800 leading-snug">{s.titulo}</h3>
+                                        <h3 className="font-semibold text-slate-800 dark:text-[#E5E7EB] leading-snug">{s.titulo}</h3>
                                         {s.unidadePredominante && (
-                                            <span className="ml-2 shrink-0 bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-xs">{s.unidadePredominante}</span>
+                                            <span className="ml-2 shrink-0 bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-[#9CA3AF] px-2 py-0.5 rounded text-xs">{s.unidadePredominante}</span>
                                         )}
                                     </div>
                                     {info && (
@@ -572,22 +572,22 @@ export default function ModuloSequencias() {
                                             <span>{preenchidos}/{total} aulas</span>
                                             <span>{Math.round(pct)}%</span>
                                         </div>
-                                        <div className="w-full bg-slate-100 rounded-full h-1.5">
-                                            <div className="bg-slate-400 h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                                        <div className="w-full bg-slate-100 dark:bg-white/10 rounded-full h-1.5">
+                                            <div className="bg-[#5B5FEA] dark:bg-[#818cf8] h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
                                         </div>
                                     </div>
                                     <div className="flex gap-2 justify-end">
                                         <button
                                             onClick={e => { e.stopPropagation(); setSequenciaEditando(s) }}
-                                            className="border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-500 px-3 py-1 rounded-lg text-xs font-semibold transition"
+                                            className="border border-[#E6EAF0] dark:border-[#374151] hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-500 dark:text-[#9CA3AF] px-3 py-1 rounded-lg text-xs font-semibold transition"
                                         >
-                                            ✏️ Editar
+                                            <i className="fas fa-pencil mr-1" />Editar
                                         </button>
                                         <button
                                             onClick={e => { e.stopPropagation(); setModalConfirm({ titulo: 'Excluir sequência?', conteudo: `"${s.titulo}" será removida permanentemente.`, labelConfirm: 'Excluir', perigo: true, onConfirm: () => excluirSequencia(s.id) }) }}
-                                            className="border border-slate-200 hover:border-red-200 hover:bg-red-50 text-slate-400 hover:text-red-500 px-3 py-1 rounded-lg text-xs font-semibold transition"
+                                            className="border border-[#E6EAF0] dark:border-[#374151] hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 dark:text-[#6b7280] hover:text-red-500 dark:hover:text-red-400 px-3 py-1 rounded-lg text-xs font-semibold transition"
                                         >
-                                            🗑️
+                                            <i className="fas fa-trash-can" />
                                         </button>
                                     </div>
                                 </div>
@@ -601,13 +601,13 @@ export default function ModuloSequencias() {
             {/* Modal vincular plano (picker — mantido como modal) */}
             {modalVincularPlano && (
                 <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50" onClick={() => { setModalVincularPlano(null); setBuscaPlanoVinculo('') }}>
-                    <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[80vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-lg font-bold text-slate-800 mb-4">Vincular Plano</h2>
+                    <div className="v2-card rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[80vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-[#E5E7EB] mb-4">Vincular Plano</h2>
                         <input
                             type="text"
                             value={buscaPlanoVinculo}
                             onChange={e => setBuscaPlanoVinculo(e.target.value)}
-                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg mb-4 text-sm focus:outline-none focus:border-slate-400"
+                            className="w-full px-4 py-2.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg mb-4 text-sm focus:outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"
                             placeholder="Buscar plano..."
                         />
                         <div className="space-y-2">
@@ -618,10 +618,10 @@ export default function ModuloSequencias() {
                                     <div
                                         key={p.id}
                                         onClick={() => vincularPlanoAoSlot(p.id)}
-                                        className="border border-slate-200 rounded-lg p-3 hover:border-slate-300 hover:bg-slate-50 cursor-pointer transition"
+                                        className="border border-[#E6EAF0] dark:border-[#374151] rounded-lg p-3 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer transition"
                                     >
-                                        <h4 className="font-semibold text-slate-800 text-sm">{p.titulo}</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">{p.escola} · {p.faixaEtaria?.join(', ')}</p>
+                                        <h4 className="font-semibold text-slate-800 dark:text-[#E5E7EB] text-sm">{p.titulo}</h4>
+                                        <p className="text-xs text-slate-500 dark:text-[#9CA3AF] mt-0.5">{p.escola} · {p.faixaEtaria?.join(', ')}</p>
                                         {p.atividadesRoteiro?.length > 0 && (
                                             <p className="text-xs text-slate-400 mt-1">{p.atividadesRoteiro.length} atividade(s)</p>
                                         )}
@@ -654,9 +654,9 @@ export default function ModuloSequencias() {
             }
             const preview = proximasDatas(planDataInicio, seqParaPlanejar.slots.length, planDiasSemana)
             return (
-                <div style={{ position: 'fixed', inset: 0, background: '#0007', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+                <div className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center p-4"
                     onClick={() => setSeqParaPlanejar(null)}>
-                    <div style={{ background: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 440, maxHeight: '90dvh', overflowY: 'auto' }}
+                    <div className="v2-card rounded-2xl p-6 w-full max-w-[440px] max-h-[90dvh] overflow-y-auto"
                         onClick={e => e.stopPropagation()}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                             <div>

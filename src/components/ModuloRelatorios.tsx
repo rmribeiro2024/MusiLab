@@ -168,26 +168,26 @@ export default function ModuloRelatorios() {
 
             {/* Cabeçalho */}
             <div className="mb-8">
-                <h1 className="text-2xl font-bold text-slate-800">📋 Relatórios</h1>
-                <p className="text-sm text-slate-500 mt-1">Gere relatórios pedagógicos a partir dos seus dados.</p>
+                <h1 className="text-[22px] font-bold tracking-[-0.025em] text-slate-900 dark:text-[#E5E7EB]">Relatórios</h1>
+                <p className="text-sm text-slate-500 dark:text-[#9CA3AF] mt-1">Gere relatórios pedagógicos a partir dos seus dados.</p>
             </div>
 
             {/* Tipo */}
             <div className="mb-6">
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Tipo de relatório</label>
+                <label className="block text-xs font-semibold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide mb-3">Tipo de relatório</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {tipos.map(t => (
                         <button key={t.value} type="button"
                             onClick={() => { setTipoSelecionado(t.value); resetRelatorio() }}
                             className={`flex items-start gap-3 p-4 rounded-2xl border text-left transition-all ${
                                 tipoSelecionado === t.value
-                                    ? 'border-indigo-400 bg-indigo-50 shadow-sm'
-                                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                    ? 'border border-[#5B5FEA] bg-[#5B5FEA]/8 dark:bg-[#5B5FEA]/15 shadow-sm'
+                                    : 'border border-[#E6EAF0] dark:border-[#374151] v2-card hover:border-slate-300 dark:hover:border-slate-500'
                             }`}>
                             <span className="text-2xl shrink-0">{t.icone}</span>
                             <div>
-                                <p className={`text-sm font-semibold ${tipoSelecionado === t.value ? 'text-indigo-700' : 'text-slate-700'}`}>{t.label}</p>
-                                <p className="text-xs text-slate-400 mt-0.5">{t.descricao}</p>
+                                <p className={'text-sm font-semibold ' + (tipoSelecionado === t.value ? 'text-[#5B5FEA] dark:text-[#818cf8]' : 'text-slate-700 dark:text-[#E5E7EB]')}>{t.label}</p>
+                                <p className="text-xs text-slate-400 dark:text-[#6b7280] mt-0.5">{t.descricao}</p>
                             </div>
                         </button>
                     ))}
@@ -196,16 +196,16 @@ export default function ModuloRelatorios() {
 
             {/* Filtros */}
             {tipoSelecionado && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6 space-y-4">
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Filtros</label>
+                <div className="v2-card border border-[#E6EAF0] dark:border-[#374151] rounded-xl p-5 mb-6 space-y-4">
+                    <label className="block text-xs font-semibold text-slate-500 dark:text-[#9CA3AF] uppercase tracking-wide">Filtros</label>
 
                     <CampoFiltro label="Período" obrigatorio>
                         <div className="flex gap-2 items-center">
                             <input type="date" value={periodoInicio} onChange={e => { setPeriodoInicio(e.target.value); resetRelatorio() }}
-                                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" />
+                                className="flex-1 px-3 py-2 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]" />
                             <span className="text-slate-400 text-xs shrink-0">até</span>
                             <input type="date" value={periodoFim} onChange={e => { setPeriodoFim(e.target.value); resetRelatorio() }}
-                                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" />
+                                className="flex-1 px-3 py-2 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]" />
                         </div>
                     </CampoFiltro>
 
@@ -235,7 +235,7 @@ export default function ModuloRelatorios() {
                     )}
 
                     <button type="button" onClick={() => setRelatorioPronto(true)} disabled={!podeGerar}
-                        className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                        className="w-full py-2.5 bg-[#5B5FEA] hover:bg-[#4f53d4] text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                         Gerar relatório
                     </button>
                 </div>
@@ -245,11 +245,11 @@ export default function ModuloRelatorios() {
             {temRelatorio && (
                 <div className="flex gap-2 mb-5">
                     <button type="button" onClick={handleGerarIA} disabled={gerandoIA}
-                        className="flex items-center gap-2 px-4 py-2 bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-700 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50">
+                        className="flex items-center gap-2 px-4 py-2 bg-[#5B5FEA]/8 dark:bg-[#5B5FEA]/15 hover:bg-[#5B5FEA]/15 dark:hover:bg-[#5B5FEA]/20 border border-[#5B5FEA]/25 text-[#5B5FEA] dark:text-[#818cf8] rounded-xl text-sm font-semibold transition-colors disabled:opacity-50">
                         {gerandoIA ? '⏳ Gerando síntese...' : '✨ Síntese pedagógica com IA'}
                     </button>
                     <button type="button" onClick={handleExportarPDF}
-                        className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold transition-colors">
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 border border-[#E6EAF0] dark:border-[#374151] text-slate-600 dark:text-[#9CA3AF] rounded-xl text-sm font-semibold transition-colors">
                         ⬇ Exportar PDF
                     </button>
                     <button type="button" onClick={resetRelatorio} className="ml-auto text-xs text-slate-400 hover:text-slate-600 underline">
@@ -260,14 +260,14 @@ export default function ModuloRelatorios() {
 
             {/* Síntese IA */}
             {(sinteseIA || erroIA) && (
-                <div className={`rounded-2xl border p-5 mb-5 ${erroIA ? 'bg-red-50 border-red-200' : 'bg-violet-50 border-violet-200'}`}>
+                <div className={`rounded-xl border p-5 mb-5 ${erroIA ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/50' : 'bg-[#5B5FEA]/8 dark:bg-[#5B5FEA]/15 border-[#5B5FEA]/25'}`}>
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-bold text-violet-600 uppercase tracking-wide">✨ Síntese pedagógica</span>
-                        <span className="text-[10px] text-violet-400 bg-violet-100 px-2 py-0.5 rounded-full">sugerida por IA — não é dado absoluto</span>
+                        <span className="text-xs font-bold text-[#5B5FEA] dark:text-[#818cf8] uppercase tracking-wide">✨ Síntese pedagógica</span>
+                        <span className="text-[10px] text-[#5B5FEA] dark:text-[#818cf8] bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 px-2 py-0.5 rounded-full">sugerida por IA — não é dado absoluto</span>
                     </div>
                     {erroIA
                         ? <p className="text-sm text-red-600">{erroIA}</p>
-                        : <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{sinteseIA}</p>
+                        : <p className="text-sm text-slate-700 dark:text-[#D1D5DB] leading-relaxed whitespace-pre-line">{sinteseIA}</p>
                     }
                 </div>
             )}
@@ -323,12 +323,12 @@ function RelatorioTurmaView({ data, inicio, fim }: { data: RelatorioTurmaData; i
         <div className="space-y-4">
             <RelatorioCabecalho titulo="Relatório por Turma" inicio={inicio} fim={fim} />
 
-            <div className="bg-gradient-to-r from-indigo-50 to-white border border-indigo-100 rounded-2xl p-5">
-                <p className="text-[11px] font-bold text-indigo-400 uppercase tracking-wide mb-1">Turma</p>
-                <p className="text-xl font-bold text-slate-800">{data.turmaNome}</p>
+            <div className="v2-card border border-[#5B5FEA]/20 dark:border-[#5B5FEA]/30 rounded-xl p-5">
+                <p className="text-[11px] font-bold text-[#5B5FEA] dark:text-[#818cf8] uppercase tracking-wide mb-1">Turma</p>
+                <p className="text-xl font-bold text-slate-800 dark:text-[#E5E7EB]">{data.turmaNome}</p>
                 <p className="text-sm text-slate-500 mt-0.5">{formatarData(inicio)} → {formatarData(fim)}</p>
                 <div className="mt-3 flex items-baseline gap-1.5">
-                    <span className="text-4xl font-bold text-indigo-600">{data.totalAulas}</span>
+                    <span className="text-4xl font-bold text-[#5B5FEA] dark:text-[#818cf8]">{data.totalAulas}</span>
                     <span className="text-sm text-slate-500">aula{data.totalAulas !== 1 ? 's' : ''} realizada{data.totalAulas !== 1 ? 's' : ''}</span>
                 </div>
             </div>
@@ -340,7 +340,7 @@ function RelatorioTurmaView({ data, inicio, fim }: { data: RelatorioTurmaData; i
                             {data.linhaDoTempo.map((aula, i) => (
                                 <div key={i} className="flex items-center gap-3 py-2.5">
                                     <span className="text-xs font-mono text-slate-400 shrink-0 w-20">{formatarData(aula.data)}</span>
-                                    <span className="flex-1 text-sm text-slate-700 truncate">{aula.planoTitulo}</span>
+                                    <span className="flex-1 text-sm text-slate-700 dark:text-[#D1D5DB] truncate">{aula.planoTitulo}</span>
                                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">✓</span>
                                 </div>
                             ))}
@@ -391,16 +391,16 @@ function PainelTendenciaView({ data }: { data: PainelTendenciaData }) {
 
     return (
         <div className="space-y-4">
-            <div className="pb-1 border-b border-slate-100">
-                <h2 className="text-lg font-bold text-slate-800">📈 Tendência da Turma</h2>
+            <div className="pb-1 border-b border-[#E6EAF0] dark:border-[#374151]">
+                <h2 className="text-lg font-bold text-slate-800 dark:text-[#E5E7EB]">Tendência da Turma</h2>
                 <p className="text-xs text-slate-400">{data.turmaNome} · {formatarData(data.periodoInicio)} → {formatarData(data.periodoFim)}</p>
             </div>
 
-            <div className="bg-gradient-to-r from-indigo-50 to-white border border-indigo-100 rounded-2xl p-5">
-                <p className="text-[11px] font-bold text-indigo-400 uppercase tracking-wide mb-1">Turma</p>
-                <p className="text-xl font-bold text-slate-800">{data.turmaNome}</p>
+            <div className="v2-card border border-[#5B5FEA]/20 dark:border-[#5B5FEA]/30 rounded-xl p-5">
+                <p className="text-[11px] font-bold text-[#5B5FEA] dark:text-[#818cf8] uppercase tracking-wide mb-1">Turma</p>
+                <p className="text-xl font-bold text-slate-800 dark:text-[#E5E7EB]">{data.turmaNome}</p>
                 <div className="mt-2 flex items-baseline gap-1.5">
-                    <span className="text-4xl font-bold text-indigo-600">{data.totalRegistros}</span>
+                    <span className="text-4xl font-bold text-[#5B5FEA] dark:text-[#818cf8]">{data.totalRegistros}</span>
                     <span className="text-sm text-slate-500">registro{data.totalRegistros !== 1 ? 's' : ''} analisado{data.totalRegistros !== 1 ? 's' : ''}</span>
                 </div>
             </div>
@@ -497,7 +497,7 @@ function CampoFiltro({ label, obrigatorio, opcional, children }: { label: string
     return (
         <div>
             <div className="flex items-center gap-1.5 mb-1.5">
-                <label className="block text-xs text-slate-500">{label}</label>
+                <label className="block text-xs text-slate-500 dark:text-[#9CA3AF]">{label}</label>
                 {obrigatorio && <span className="text-[10px] text-red-400 font-semibold">obrigatório</span>}
                 {opcional    && <span className="text-[10px] text-slate-300">opcional</span>}
             </div>
@@ -509,7 +509,7 @@ function CampoFiltro({ label, obrigatorio, opcional, children }: { label: string
 function SelectFiltro({ value, onChange, placeholder, opcoes }: { value: string; onChange: (v: string) => void; placeholder: string; opcoes: { id: string; label: string }[] }) {
     return (
         <select value={value} onChange={e => onChange(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none bg-white">
+            className="w-full px-3 py-2 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]">
             <option value="">{placeholder}</option>
             {opcoes.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
         </select>
@@ -520,8 +520,8 @@ function SelectFiltro({ value, onChange, placeholder, opcoes }: { value: string;
 
 function RelatorioCabecalho({ titulo, inicio, fim }: { titulo: string; inicio: string; fim: string }) {
     return (
-        <div className="pb-1 border-b border-slate-100">
-            <h2 className="text-lg font-bold text-slate-800">{titulo}</h2>
+        <div className="pb-1 border-b border-[#E6EAF0] dark:border-[#374151]">
+            <h2 className="text-lg font-bold text-slate-800 dark:text-[#E5E7EB]">{titulo}</h2>
             <p className="text-xs text-slate-400">{formatarData(inicio)} → {formatarData(fim)}</p>
         </div>
     )
@@ -529,7 +529,7 @@ function RelatorioCabecalho({ titulo, inicio, fim }: { titulo: string; inicio: s
 
 function CardMetrica({ label, value, icone, cor, bg }: { label: string; value: number; icone: string; cor: string; bg: string }) {
     return (
-        <div className={`border rounded-2xl p-4 text-center ${bg}`}>
+        <div className={`border rounded-xl p-4 text-center ${bg}`}>
             <div className="text-xl mb-1">{icone}</div>
             <div className={`text-3xl font-bold ${cor}`}>{value}</div>
             <div className="text-[11px] text-slate-500 mt-1 font-medium">{label}</div>
@@ -539,8 +539,8 @@ function CardMetrica({ label, value, icone, cor, bg }: { label: string; value: n
 
 function Section({ titulo, children }: { titulo: string; children: React.ReactNode }) {
     return (
-        <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-4">{titulo}</h3>
+        <div className="v2-card border border-[#E6EAF0] dark:border-[#374151] rounded-xl p-5">
+            <h3 className="text-xs font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-wide mb-4">{titulo}</h3>
             {children}
         </div>
     )
@@ -554,7 +554,7 @@ function ListaOrdenada({ items, sufixo, cor = 'bg-indigo-400' }: { items: ItemCo
                 <div key={i} className="flex items-center gap-3">
                     <span className="text-xs font-bold text-slate-300 w-5 shrink-0 text-right">{i + 1}</span>
                     <span className="text-sm text-slate-700 w-44 shrink-0 truncate">{item.label}</span>
-                    <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div className="flex-1 bg-slate-100 dark:bg-white/10 rounded-full h-2 overflow-hidden">
                         <div className={`${cor} h-2 rounded-full transition-all`} style={{ width: `${Math.round((item.count / max) * 100)}%` }} />
                     </div>
                     <span className="text-xs font-semibold text-slate-500 shrink-0 w-20 text-right">{item.count} {item.count === 1 ? sufixo : sufixo + 's'}</span>
@@ -568,9 +568,9 @@ function TagCloud({ items }: { items: ItemContagem[] }) {
     return (
         <div className="flex flex-wrap gap-2">
             {items.map((c, i) => (
-                <span key={i} className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm">
+                <span key={i} className="flex items-center gap-1.5 bg-[#5B5FEA]/8 dark:bg-[#5B5FEA]/15 border border-[#5B5FEA]/20 text-[#5B5FEA] dark:text-[#818cf8] px-3 py-1 rounded-full text-sm">
                     {c.label}
-                    <span className="bg-indigo-200 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{c.count}×</span>
+                    <span className="bg-[#5B5FEA]/20 dark:bg-[#5B5FEA]/30 text-[#5B5FEA] dark:text-[#818cf8] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{c.count}×</span>
                 </span>
             ))}
         </div>
@@ -578,5 +578,5 @@ function TagCloud({ items }: { items: ItemContagem[] }) {
 }
 
 function EmptyState({ texto }: { texto: string }) {
-    return <div className="text-center py-8 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-slate-200">{texto}</div>
+    return <div className="text-center py-8 text-slate-400 dark:text-[#9CA3AF] text-sm bg-slate-50 dark:bg-white/5 rounded-xl border border-[#E6EAF0] dark:border-[#374151]">{texto}</div>
 }
