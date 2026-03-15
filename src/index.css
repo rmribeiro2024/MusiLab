@@ -5,10 +5,13 @@
 /* ── FONTE INTER (igual ao preview) ── */
 body { font-family: 'Inter', system-ui, sans-serif; }
 
-/* ── INPUTS TRANSPARENTES — remove fundo padrão do browser ── */
-input, textarea, select { background: transparent !important; }
-.dark { color-scheme: dark; }
-.dark input, .dark textarea, .dark select { background: transparent !important; color-scheme: dark; }
+/* ── INPUTS — fundo igual ao card container, invisível contra o fundo ── */
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+input, textarea, select {
+    background-color: var(--v2-card) !important;
+    color-scheme: inherit;
+}
 
 /* ── EDITOR RICH TEXT ── */
 .modal-enter { opacity: 0; transform: scale(0.95); }

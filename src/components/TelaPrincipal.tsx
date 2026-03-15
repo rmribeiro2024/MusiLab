@@ -1647,7 +1647,7 @@ export default function TelaPrincipal() {
                 <span className="text-[13px] text-slate-400 dark:text-[#6b7280] flex-none select-none">🔍</span>
                 <input type="text" inputMode="search" value={busca} onChange={e=>setBusca(e.target.value)}
                     placeholder="Buscar por título, objetivo, conceito..."
-                    style={{backgroundColor:'transparent',colorScheme:'inherit'}}
+                    style={{backgroundColor:'var(--v2-card)',colorScheme:'inherit'}}
                     className="flex-1 border-none outline-none text-[14px] tracking-[-0.01em] text-slate-800 dark:text-[#E5E7EB] placeholder:text-slate-400 dark:placeholder:text-[#6b7280]" />
                 {busca ? (
                     <button onClick={()=>setBusca('')} className="text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] text-[13px] flex-none transition">✕</button>
