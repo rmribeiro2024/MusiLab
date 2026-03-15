@@ -1688,7 +1688,11 @@ export default function TelaPrincipal() {
 
         {/* ── Contagem + Ordenar + Modo de visualização ── */}
         <div className="flex items-center justify-between mb-3">
-            <p className="text-[12px] text-slate-400 dark:text-[#6b7280]">{planosFiltrados.length} plano{planosFiltrados.length!==1?'s':''}</p>
+            {planosFiltrados.length < planos.length ? (
+                <p className="text-[12px] text-[#5B5FEA] dark:text-[#818cf8] font-medium">
+                    {planosFiltrados.length} de {planos.length} planos
+                </p>
+            ) : <span />}
             <div className="flex items-center gap-[2px]">
                 <span className="text-[11px] text-slate-400 dark:text-[#6b7280] font-medium px-[4px] select-none">Ordenar</span>
                 {([{id:'recente',label:'Recente'},{id:'az',label:'A–Z'},{id:'status',label:'Status'},{id:'favoritos',label:'★'}] as const).map(o=>(
