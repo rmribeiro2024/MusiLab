@@ -63,14 +63,14 @@ export default function ModuloEstrategias() {
                         ← Voltar
                     </button>
                     <div>
-                        <h2 className="text-xl font-bold text-slate-800">{estrategiaEditando._criadoEm && estrategias.find(e=>e.id===estrategiaEditando.id) ? '✏️ Editar Estratégia' : '🧩 Nova Estratégia'}</h2>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-[#E5E7EB]">{estrategiaEditando._criadoEm && estrategias.find(e=>e.id===estrategiaEditando.id) ? 'Editar Estratégia' : 'Nova Estratégia'}</h2>
                         <p className="text-slate-500 text-xs mt-0.5">Procedimento pedagógico reutilizável</p>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    {/* Barra topo roxa */}
-                    <div className="h-1.5 bg-gradient-to-r from-violet-500 to-purple-500"/>
+                <div className="v2-card rounded-xl shadow-sm border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
+                    {/* Barra topo accent */}
+                    <div className="h-[3px] bg-[#5B5FEA]/30 dark:bg-[#818cf8]/30"/>
                     <div className="p-6 space-y-5">
 
                         {/* Nome */}
@@ -79,7 +79,7 @@ export default function ModuloEstrategias() {
                             <input type="text" placeholder="Ex: Ostinato rítmico em grupo"
                                 value={estrategiaEditando.nome}
                                 onChange={e=>setEstrategiaEditando({...estrategiaEditando, nome:e.target.value})}
-                                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-violet-400 outline-none transition"/>
+                                className="w-full px-4 py-3 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none transition bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"/>
                         </div>
 
                         {/* Dimensões Pedagógicas */}
@@ -97,9 +97,9 @@ export default function ModuloEstrategias() {
                                     const sel = (estrategiaEditando.dimensoes || []).includes(label)
                                     const base = 'px-4 py-2 rounded-xl border-2 text-sm font-semibold transition-all'
                                     const style =
-                                        cor === 'violet' ? (sel ? `${base} bg-violet-100 border-violet-400 text-violet-800` : `${base} bg-white border-slate-200 text-slate-500 hover:border-violet-300`) :
-                                        cor === 'blue'   ? (sel ? `${base} bg-blue-100 border-blue-400 text-blue-800`       : `${base} bg-white border-slate-200 text-slate-500 hover:border-blue-300`)   :
-                                                           (sel ? `${base} bg-green-100 border-green-400 text-green-800`    : `${base} bg-white border-slate-200 text-slate-500 hover:border-green-300`)
+                                        cor === 'violet' ? (sel ? `${base} bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 border-[#5B5FEA] text-[#5B5FEA] dark:text-[#818cf8]` : `${base} bg-white dark:bg-[#111827] border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:border-[#5B5FEA]/50`) :
+                                        cor === 'blue'   ? (sel ? `${base} bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 border-[#5B5FEA] text-[#5B5FEA] dark:text-[#818cf8]` : `${base} bg-white dark:bg-[#111827] border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:border-[#5B5FEA]/50`) :
+                                                           (sel ? `${base} bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 border-[#5B5FEA] text-[#5B5FEA] dark:text-[#818cf8]` : `${base} bg-white dark:bg-[#111827] border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:border-[#5B5FEA]/50`)
                                     return (
                                         <button key={label} type="button" className={style}
                                             onClick={() => {
@@ -125,7 +125,7 @@ export default function ModuloEstrategias() {
                                 <input type="text" placeholder="Ex: 5 min, 10-15 min"
                                     value={estrategiaEditando.tempoEstimado || ''}
                                     onChange={e=>setEstrategiaEditando({...estrategiaEditando, tempoEstimado:e.target.value})}
-                                    className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm focus:border-violet-400 outline-none transition"/>
+                                    className="w-full px-3 py-3 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none transition bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"/>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
@@ -134,7 +134,7 @@ export default function ModuloEstrategias() {
                                 <input type="text" placeholder="Ex: Kodály, RCPPM, própria"
                                     value={estrategiaEditando.origem || ''}
                                     onChange={e=>setEstrategiaEditando({...estrategiaEditando, origem:e.target.value})}
-                                    className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm focus:border-violet-400 outline-none transition"/>
+                                    className="w-full px-3 py-3 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none transition bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"/>
                             </div>
                         </div>
 
@@ -147,7 +147,7 @@ export default function ModuloEstrategias() {
                                 value={estrategiaEditando.variacoes || ''}
                                 onChange={e=>setEstrategiaEditando({...estrategiaEditando, variacoes:e.target.value})}
                                 rows={3}
-                                className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm focus:border-violet-400 outline-none transition resize-none"/>
+                                className="w-full px-3 py-3 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none transition resize-none bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"/>
                         </div>
 
                         {/* Categoria + Função lado a lado */}
@@ -157,7 +157,7 @@ export default function ModuloEstrategias() {
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Categoria</label>
                                 <select value={estrategiaEditando.categoria}
                                     onChange={e=>setEstrategiaEditando({...estrategiaEditando, categoria:e.target.value})}
-                                    className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm focus:border-violet-400 outline-none bg-white">
+                                    className="w-full px-3 py-3 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]">
                                     <option value="">Selecionar...</option>
                                     {categoriasEstrategia.map(c=><option key={c}>{c}</option>)}
                                 </select>
@@ -167,10 +167,10 @@ export default function ModuloEstrategias() {
                                         value={novaCategoriaEstr}
                                         onChange={e=>setNovaCategoriaEstr(e.target.value)}
                                         onKeyDown={e=>{ if(e.key==='Enter'&&novaCategoriaEstr.trim()){ setCategoriasEstrategia([...categoriasEstrategia, novaCategoriaEstr.trim()]); setEstrategiaEditando({...estrategiaEditando, categoria:novaCategoriaEstr.trim()}); setNovaCategoriaEstr(''); }}}
-                                        className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 rounded-lg text-xs outline-none focus:border-violet-400"/>
+                                        className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-xs outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"/>
                                     {novaCategoriaEstr.trim() && (
                                         <button onClick={()=>{ setCategoriasEstrategia([...categoriasEstrategia, novaCategoriaEstr.trim()]); setEstrategiaEditando({...estrategiaEditando, categoria:novaCategoriaEstr.trim()}); setNovaCategoriaEstr(''); }}
-                                            className="bg-violet-500 text-white px-2 py-1 rounded-lg text-xs font-bold">✓</button>
+                                            className="bg-[#5B5FEA] text-white px-2 py-1 rounded-lg text-xs font-bold">✓</button>
                                     )}
                                 </div>
                             </div>
@@ -180,7 +180,7 @@ export default function ModuloEstrategias() {
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Função na Aula</label>
                                 <select value={estrategiaEditando.funcao}
                                     onChange={e=>setEstrategiaEditando({...estrategiaEditando, funcao:e.target.value})}
-                                    className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm focus:border-violet-400 outline-none bg-white">
+                                    className="w-full px-3 py-3 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]">
                                     <option value="">Selecionar...</option>
                                     {funcoesEstrategia.map(f=><option key={f}>{f}</option>)}
                                 </select>
@@ -190,10 +190,10 @@ export default function ModuloEstrategias() {
                                         value={novaFuncaoEstr}
                                         onChange={e=>setNovaFuncaoEstr(e.target.value)}
                                         onKeyDown={e=>{ if(e.key==='Enter'&&novaFuncaoEstr.trim()){ setFuncoesEstrategia([...funcoesEstrategia, novaFuncaoEstr.trim()]); setEstrategiaEditando({...estrategiaEditando, funcao:novaFuncaoEstr.trim()}); setNovaFuncaoEstr(''); }}}
-                                        className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 rounded-lg text-xs outline-none focus:border-violet-400"/>
+                                        className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-xs outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"/>
                                     {novaFuncaoEstr.trim() && (
                                         <button onClick={()=>{ setFuncoesEstrategia([...funcoesEstrategia, novaFuncaoEstr.trim()]); setEstrategiaEditando({...estrategiaEditando, funcao:novaFuncaoEstr.trim()}); setNovaFuncaoEstr(''); }}
-                                            className="bg-violet-500 text-white px-2 py-1 rounded-lg text-xs font-bold">✓</button>
+                                            className="bg-[#5B5FEA] text-white px-2 py-1 rounded-lg text-xs font-bold">✓</button>
                                     )}
                                 </div>
                             </div>
@@ -206,13 +206,13 @@ export default function ModuloEstrategias() {
                                 {objetivosEstrategia.map(obj=>{
                                     const sel = (estrategiaEditando.objetivos||[]).includes(obj);
                                     return (
-                                        <label key={obj} className={`flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition ${sel ? 'bg-violet-50 border border-violet-200' : 'hover:bg-slate-50 border border-transparent'}`}>
+                                        <label key={obj} className={`flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition ${sel ? 'bg-[#5B5FEA]/8 dark:bg-[#5B5FEA]/15 border border-[#5B5FEA]/25 dark:border-[#5B5FEA]/35' : 'hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent'}`}>
                                             <input type="checkbox" checked={sel}
                                                 onChange={()=>{
                                                     const atual = estrategiaEditando.objetivos||[];
                                                     setEstrategiaEditando({...estrategiaEditando, objetivos: sel ? atual.filter(o=>o!==obj) : [...atual, obj]});
                                                 }}
-                                                className="rounded text-violet-600 accent-violet-600"/>
+                                                className="rounded accent-[#5B5FEA]"/>
                                             <span className="text-sm text-slate-700">{obj}</span>
                                         </label>
                                     );
@@ -224,10 +224,10 @@ export default function ModuloEstrategias() {
                                     value={novoObjetivoEstr}
                                     onChange={e=>setNovoObjetivoEstr(e.target.value)}
                                     onKeyDown={e=>{ if(e.key==='Enter'&&novoObjetivoEstr.trim()){ const novo=novoObjetivoEstr.trim(); setObjetivosEstrategia([...objetivosEstrategia, novo]); setEstrategiaEditando({...estrategiaEditando, objetivos:[...(estrategiaEditando.objetivos||[]), novo]}); setNovoObjetivoEstr(''); }}}
-                                    className="flex-1 px-3 py-2 border border-dashed border-slate-300 rounded-xl text-sm outline-none focus:border-violet-400"/>
+                                    className="flex-1 px-3 py-2 border border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-sm outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"/>
                                 {novoObjetivoEstr.trim() && (
                                     <button onClick={()=>{ const novo=novoObjetivoEstr.trim(); setObjetivosEstrategia([...objetivosEstrategia, novo]); setEstrategiaEditando({...estrategiaEditando, objetivos:[...(estrategiaEditando.objetivos||[]), novo]}); setNovoObjetivoEstr(''); }}
-                                        className="bg-violet-500 text-white px-3 py-2 rounded-xl text-sm font-bold">✓</button>
+                                        className="bg-[#5B5FEA] text-white px-3 py-2 rounded-xl text-sm font-bold">✓</button>
                                 )}
                             </div>
                         </div>
@@ -235,7 +235,7 @@ export default function ModuloEstrategias() {
                         {/* Descrição (Rich Text) */}
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Descrição</label>
-                            <div className="border border-slate-200 rounded-xl overflow-hidden focus-within:border-violet-400 transition">
+                            <div className="border border-[#E6EAF0] dark:border-[#374151] rounded-xl overflow-hidden focus-within:border-[#5B5FEA] dark:focus-within:border-[#818cf8] transition">
                                 <RichTextEditor
                                     value={estrategiaEditando.descricao||''}
                                     onChange={v=>setEstrategiaEditando({...estrategiaEditando, descricao:v})}
@@ -250,7 +250,7 @@ export default function ModuloEstrategias() {
                             <input type="text" placeholder="Ex: 6-10 anos, Infantil, EF1..."
                                 value={estrategiaEditando.faixaEtaria||''}
                                 onChange={e=>setEstrategiaEditando({...estrategiaEditando, faixaEtaria:e.target.value})}
-                                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:border-violet-400 outline-none transition"/>
+                                className="w-full px-4 py-3 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none transition bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"/>
                         </div>
 
                         {/* Botões */}
@@ -260,8 +260,8 @@ export default function ModuloEstrategias() {
                                 Cancelar
                             </button>
                             <button onClick={salvarEstrategia}
-                                className="flex-1 bg-violet-600 hover:bg-violet-700 text-white py-3 rounded-xl font-bold text-sm shadow-sm transition">
-                                💾 Salvar Estratégia
+                                className="flex-1 bg-[#5B5FEA] hover:bg-[#4f53d4] text-white py-3 rounded-xl font-bold text-sm shadow-sm transition">
+                                Salvar Estratégia
                             </button>
                         </div>
                     </div>
@@ -303,11 +303,11 @@ export default function ModuloEstrategias() {
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">🧩 Estratégias Pedagógicas</h2>
+                    <h2 className="text-[22px] font-bold tracking-[-0.025em] text-slate-900 dark:text-[#E5E7EB]">Estratégias Pedagógicas</h2>
                     <p className="text-slate-500 text-sm mt-0.5">{ativasTotal.length} estratégia{ativasTotal.length !== 1 ? 's' : ''} ativa{ativasTotal.length !== 1 ? 's' : ''}</p>
                 </div>
                 <button onClick={novaEstrategia}
-                    className="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition flex items-center gap-2">
+                    className="bg-[#5B5FEA] hover:bg-[#4f53d4] text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition flex items-center gap-2">
                     + Nova Estratégia
                 </button>
             </div>
@@ -317,17 +317,17 @@ export default function ModuloEstrategias() {
                 return (
                     <div className="mb-5">
                         <button onClick={()=>setDashAberto(o=>!o)}
-                            className="text-sm text-violet-600 hover:text-violet-800 font-medium flex items-center gap-1.5 mb-2">
+                            className="text-sm text-[#5B5FEA] dark:text-[#818cf8] hover:text-[#4f53d4] font-medium flex items-center gap-1.5 mb-2">
                             <span>{dashAberto ? '▲' : '▼'}</span>
                             <span>📊 {dashAberto ? 'Ocultar painel' : 'Ver painel'}</span>
                         </button>
                         {dashAberto && (
-                            <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-5">
+                            <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] p-5 space-y-5">
                                 {/* Grid de contadores */}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     {[
-                                        { label: 'Ativas', value: ativasTotal.length, bg: 'bg-violet-50', text: 'text-violet-700' },
-                                        { label: 'Musical', value: countDim('Musical'), bg: 'bg-violet-50', text: 'text-violet-600' },
+                                        { label: 'Ativas', value: ativasTotal.length, bg: 'bg-[#5B5FEA]/8 dark:bg-[#5B5FEA]/15', text: 'text-[#5B5FEA] dark:text-[#818cf8]' },
+                                        { label: 'Musical', value: countDim('Musical'), bg: 'bg-[#5B5FEA]/8 dark:bg-[#5B5FEA]/15', text: 'text-[#5B5FEA] dark:text-[#818cf8]' },
                                         { label: 'Condução', value: countDim('Condução'), bg: 'bg-blue-50', text: 'text-blue-600' },
                                         { label: 'Cultura', value: countDim('Cultura de Sala de Aula'), bg: 'bg-green-50', text: 'text-green-600' },
                                     ].map(c => (
@@ -373,18 +373,18 @@ export default function ModuloEstrategias() {
             })()}
 
             {/* Filtros */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-5">
+            <div className="v2-card rounded-xl shadow-sm border border-[#E6EAF0] dark:border-[#374151] p-4 mb-5">
                 <div className="flex flex-wrap gap-3 items-end">
                     <div className="flex-1 min-w-[200px]">
                         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Buscar</label>
                         <input type="text" placeholder="Nome, categoria, origem, variação..."
                             value={buscaEstrategia} onChange={e=>setBuscaEstrategia(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-violet-400 outline-none"/>
+                            className="w-full px-3 py-2 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]"/>
                     </div>
                     <div className="min-w-[160px]">
                         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Dimensão</label>
                         <select value={filtroDimensaoEstrategia} onChange={e=>setFiltroDimensaoEstrategia(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-violet-400 outline-none bg-white">
+                            className="w-full px-3 py-2 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]">
                             <option>Todas</option>
                             <option>Musical</option>
                             <option>Condução</option>
@@ -394,7 +394,7 @@ export default function ModuloEstrategias() {
                     <div className="min-w-[150px]">
                         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Categoria</label>
                         <select value={filtroCategoriaEstrategia} onChange={e=>setFiltroCategoriaEstrategia(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-violet-400 outline-none bg-white">
+                            className="w-full px-3 py-2 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]">
                             <option>Todas</option>
                             {categoriasEstrategia.map(c=><option key={c}>{c}</option>)}
                         </select>
@@ -402,7 +402,7 @@ export default function ModuloEstrategias() {
                     <div className="min-w-[150px]">
                         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Função</label>
                         <select value={filtroFuncaoEstrategia} onChange={e=>setFiltroFuncaoEstrategia(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-violet-400 outline-none bg-white">
+                            className="w-full px-3 py-2 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]">
                             <option>Todas</option>
                             {funcoesEstrategia.map(f=><option key={f}>{f}</option>)}
                         </select>
@@ -410,7 +410,7 @@ export default function ModuloEstrategias() {
                     <div className="min-w-[200px]">
                         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Objetivo</label>
                         <select value={filtroObjetivoEstrategia} onChange={e=>setFiltroObjetivoEstrategia(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-violet-400 outline-none bg-white">
+                            className="w-full px-3 py-2 border border-[#E6EAF0] dark:border-[#374151] rounded-xl text-sm focus:border-[#5B5FEA] dark:focus:border-[#818cf8] outline-none bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB]">
                             <option>Todos</option>
                             {objetivosEstrategia.map(o=><option key={o}>{o}</option>)}
                         </select>
@@ -424,7 +424,7 @@ export default function ModuloEstrategias() {
                 </div>
                 <div className="mt-3 pt-3 border-t border-slate-100">
                     <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-500 select-none">
-                        <input type="checkbox" checked={mostrarArquivadasEstrategia} onChange={e=>setMostrarArquivadasEstrategia(e.target.checked)} className="accent-violet-500"/>
+                        <input type="checkbox" checked={mostrarArquivadasEstrategia} onChange={e=>setMostrarArquivadasEstrategia(e.target.checked)} className="accent-[#5B5FEA]"/>
                         Mostrar estratégias arquivadas
                         {estrategias.filter(e=>e.ativo===false).length > 0 && (
                             <span className="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded-full">{estrategias.filter(e=>e.ativo===false).length} arquivada{estrategias.filter(e=>e.ativo===false).length!==1?'s':''}</span>
@@ -435,9 +435,9 @@ export default function ModuloEstrategias() {
 
             {/* Estado vazio */}
             {estrategiasFiltradas.length === 0 && (
-                <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
+                <div className="text-center py-16 v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151]">
                     <div className="text-5xl mb-3">🧩</div>
-                    <h3 className="text-lg font-bold text-slate-700 mb-1">
+                    <h3 className="text-lg font-bold text-slate-700 dark:text-[#E5E7EB] mb-1">
                         {buscaEstrategia || filtroCategoriaEstrategia !== 'Todas' || filtroFuncaoEstrategia !== 'Todas' || filtroObjetivoEstrategia !== 'Todos' || filtroDimensaoEstrategia !== 'Todas'
                             ? 'Nenhuma estratégia encontrada'
                             : 'Nenhuma estratégia ainda'}
@@ -449,7 +449,7 @@ export default function ModuloEstrategias() {
                     </p>
                     {!(buscaEstrategia || filtroCategoriaEstrategia !== 'Todas' || filtroFuncaoEstrategia !== 'Todas' || filtroObjetivoEstrategia !== 'Todos' || filtroDimensaoEstrategia !== 'Todas') && (
                         <button onClick={novaEstrategia}
-                            className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-3 rounded-xl font-bold transition">
+                            className="bg-[#5B5FEA] hover:bg-[#4f53d4] text-white px-6 py-3 rounded-xl font-bold transition">
                             + Criar primeira estratégia
                         </button>
                     )}
@@ -460,60 +460,64 @@ export default function ModuloEstrategias() {
             {ativas.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
                     {ativas.map(e => (
-                        <div key={e.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-all duration-200 flex flex-col overflow-hidden group">
-                            {/* Barra roxa topo */}
-                            <div className="h-1.5 bg-gradient-to-r from-violet-500 to-purple-400 rounded-t-2xl"/>
+                        <div key={e.id} className="v2-card rounded-xl shadow-sm border border-[#E6EAF0] dark:border-[#374151] hover:shadow-md hover:border-slate-300 dark:hover:border-slate-500 transition-all duration-200 flex flex-col overflow-hidden group">
+                            {/* Barra topo accent */}
+                            <div className="h-[3px] bg-[#5B5FEA]/30 dark:bg-[#818cf8]/30 rounded-t-xl"/>
                             <div className="p-4 flex flex-col flex-1">
                                 {/* Header */}
                                 <div className="flex items-start justify-between gap-2 mb-2">
-                                    <h3 className="font-bold text-slate-800 leading-tight line-clamp-2 text-sm">{e.nome}</h3>
+                                    <h3 className="font-bold text-slate-800 dark:text-[#E5E7EB] leading-tight line-clamp-2 text-sm">{e.nome}</h3>
                                     <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button onClick={()=>setDetalhesEstrategia(e)}
-                                            className="text-slate-400 hover:text-violet-600 p-1 rounded transition" title="Ver detalhes">👁</button>
+                                            className="text-slate-400 hover:text-[#5B5FEA] dark:hover:text-[#818cf8] p-1 rounded transition" title="Ver detalhes">
+                                            <i className="fas fa-eye text-[12px]"/>
+                                        </button>
                                         <button onClick={()=>setEstrategiaEditando({...e})}
-                                            className="text-slate-400 hover:text-blue-600 p-1 rounded transition" title="Editar">✏️</button>
+                                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded transition" title="Editar">
+                                            <i className="fas fa-pencil text-[12px]"/>
+                                        </button>
                                         <button onClick={()=>{ setModalConfirm({ titulo:'Arquivar estratégia?', conteudo:'A estratégia será ocultada, mas o histórico será preservado.', labelConfirm:'Arquivar', labelCancelar:'Cancelar', onConfirm:()=>arquivarEstrategia(e.id) }); }}
-                                            className="text-slate-400 hover:text-amber-500 p-1 rounded transition" title="Arquivar">📦</button>
+                                            className="text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 p-1 rounded transition" title="Arquivar">
+                                            <i className="fas fa-box-archive text-[12px]"/>
+                                        </button>
                                         <button onClick={()=>excluirEstrategia(e.id)}
-                                            className="text-slate-400 hover:text-red-500 p-1 rounded transition" title="Excluir">🗑️</button>
+                                            className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 p-1 rounded transition" title="Excluir">
+                                            <i className="fas fa-trash-can text-[12px]"/>
+                                        </button>
                                     </div>
                                 </div>
 
-                                {/* Badges de dimensões pedagógicas (novos) */}
+                                {/* Badges de dimensões pedagógicas */}
                                 {(e.dimensoes||[]).length > 0 && (
                                     <div className="flex flex-wrap gap-1 mb-2">
                                         {(e.dimensoes||[]).map(d => (
-                                            <span key={d} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                                                d === 'Musical'               ? 'bg-violet-50 text-violet-700 border-violet-200' :
-                                                d === 'Condução'              ? 'bg-blue-50 text-blue-700 border-blue-200'       :
-                                                                                'bg-green-50 text-green-700 border-green-200'
-                                            }`} title={d}>
+                                            <span key={d} className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-[#5B5FEA]/8 dark:bg-[#5B5FEA]/15 text-[#5B5FEA] dark:text-[#818cf8] border-[#5B5FEA]/25" title={d}>
                                                 {d === 'Cultura de Sala de Aula' ? 'Cultura' : d}
                                             </span>
                                         ))}
                                     </div>
                                 )}
 
-                                {/* Badges originais: categoria, função, faixa etária */}
+                                {/* Badges: categoria, função, faixa etária */}
                                 <div className="flex flex-wrap gap-1.5 mb-2">
                                     {e.categoria && (
-                                        <span className="text-xs bg-violet-50 text-violet-700 border border-violet-100 px-2 py-0.5 rounded-full font-medium">
+                                        <span className="text-xs bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-[#9CA3AF] px-2 py-0.5 rounded-full font-medium">
                                             {e.categoria}
                                         </span>
                                     )}
                                     {e.funcao && (
-                                        <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full font-medium">
-                                            ⏱ {e.funcao}
+                                        <span className="text-xs bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-[#9CA3AF] px-2 py-0.5 rounded-full font-medium">
+                                            {e.funcao}
                                         </span>
                                     )}
                                     {e.faixaEtaria && (
-                                        <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
-                                            👥 {e.faixaEtaria}
+                                        <span className="text-xs bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-[#9CA3AF] px-2 py-0.5 rounded-full">
+                                            {e.faixaEtaria}
                                         </span>
                                     )}
                                     {e.tempoEstimado && (
-                                        <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
-                                            🕐 {e.tempoEstimado}
+                                        <span className="text-xs bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-[#9CA3AF] px-2 py-0.5 rounded-full">
+                                            {e.tempoEstimado}
                                         </span>
                                     )}
                                 </div>
@@ -522,7 +526,7 @@ export default function ModuloEstrategias() {
                                 {(e.objetivos||[]).length > 0 && (
                                     <div className="flex flex-wrap gap-1 mb-2">
                                         {(e.objetivos||[]).slice(0,2).map(o=>(
-                                            <span key={o} className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full">🎯 {o}</span>
+                                            <span key={o} className="text-xs bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/40 px-2 py-0.5 rounded-full">{o}</span>
                                         ))}
                                         {(e.objetivos||[]).length > 2 && (
                                             <span className="text-xs text-slate-400">+{(e.objetivos||[]).length - 2}</span>
@@ -532,17 +536,17 @@ export default function ModuloEstrategias() {
 
                                 {/* Descrição resumida */}
                                 {e.descricao && (
-                                    <p className="text-xs text-slate-400 line-clamp-2 mt-1">
+                                    <p className="text-xs text-slate-400 dark:text-[#6b7280] line-clamp-2 mt-1">
                                         {e.descricao.replace(/<[^>]+>/g,'').substring(0,100)}
                                     </p>
                                 )}
 
-                                {/* Rodapé: contador + variações */}
-                                <div className="mt-auto pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                                    <span className={`text-[11px] font-medium ${(e.contadorUso||0) > 0 ? 'text-violet-600' : 'text-slate-400'}`}>
+                                {/* Rodapé: contador */}
+                                <div className="mt-auto pt-2 border-t border-slate-100 dark:border-white/10 flex items-center justify-between gap-2">
+                                    <span className={`text-[11px] font-medium ${(e.contadorUso||0) > 0 ? 'text-[#5B5FEA] dark:text-[#818cf8]' : 'text-slate-400 dark:text-[#6b7280]'}`}>
                                         {(e.contadorUso||0) > 0 ? `Usada ${e.contadorUso}×` : 'Não usada ainda'}
                                     </span>
-                                    {e.variacoes && <span className="text-sm" title="Possui variações registradas">✨</span>}
+                                    {e.variacoes && <i className="fas fa-star-half-stroke text-[11px] text-slate-300 dark:text-slate-600" title="Possui variações registradas"/>}
                                 </div>
                             </div>
                         </div>
@@ -559,21 +563,25 @@ export default function ModuloEstrategias() {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {arquivadas.map(e => (
-                            <div key={e.id} className="bg-slate-50 rounded-2xl border border-slate-200 flex flex-col overflow-hidden opacity-70 hover:opacity-90 transition">
-                                <div className="h-1.5 bg-slate-300 rounded-t-2xl"/>
+                            <div key={e.id} className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] flex flex-col overflow-hidden opacity-70 hover:opacity-90 transition">
+                                <div className="h-[3px] bg-slate-300 dark:bg-slate-600 rounded-t-xl"/>
                                 <div className="p-4 flex flex-col flex-1">
                                     <div className="flex items-start justify-between gap-2 mb-2">
-                                        <h3 className="font-semibold text-slate-600 text-sm leading-tight line-clamp-2">{e.nome}</h3>
+                                        <h3 className="font-semibold text-slate-600 dark:text-[#9CA3AF] text-sm leading-tight line-clamp-2">{e.nome}</h3>
                                         <div className="flex gap-0.5 shrink-0">
                                             <button onClick={()=>restaurarEstrategia(e.id)}
-                                                className="text-slate-400 hover:text-emerald-600 p-1 rounded transition text-xs" title="Restaurar">♻️</button>
+                                                className="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 p-1 rounded transition" title="Restaurar">
+                                                <i className="fas fa-rotate-left text-[12px]"/>
+                                            </button>
                                             <button onClick={()=>excluirEstrategia(e.id)}
-                                                className="text-slate-400 hover:text-red-500 p-1 rounded transition" title="Excluir">🗑️</button>
+                                                className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 p-1 rounded transition" title="Excluir">
+                                                <i className="fas fa-trash-can text-[12px]"/>
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="flex flex-wrap gap-1.5">
-                                        {e.categoria && <span className="text-xs bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">{e.categoria}</span>}
-                                        {e.funcao && <span className="text-xs bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">{e.funcao}</span>}
+                                        {e.categoria && <span className="text-xs bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-[#9CA3AF] px-2 py-0.5 rounded-full">{e.categoria}</span>}
+                                        {e.funcao && <span className="text-xs bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-[#9CA3AF] px-2 py-0.5 rounded-full">{e.funcao}</span>}
                                     </div>
                                 </div>
                             </div>
@@ -586,24 +594,20 @@ export default function ModuloEstrategias() {
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
                     onClick={()=>setDetalhesEstrategia(null)}>
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={()=>setDetalhesEstrategia(null)}/>
-                    <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[90dvh] flex flex-col overflow-hidden"
+                    <div className="relative v2-card rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[90dvh] flex flex-col overflow-hidden"
                         onClick={e=>e.stopPropagation()}>
-                        {/* Barra roxa */}
-                        <div className="h-1.5 bg-gradient-to-r from-violet-500 to-purple-500 shrink-0"/>
+                        {/* Barra accent */}
+                        <div className="h-[3px] bg-[#5B5FEA]/30 dark:bg-[#818cf8]/30 shrink-0"/>
                         {/* Header */}
-                        <div className="px-6 pt-5 pb-3 shrink-0 border-b border-slate-100">
+                        <div className="px-6 pt-5 pb-3 shrink-0 border-b border-[#E6EAF0] dark:border-[#374151]">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1">
-                                    <h2 className="text-lg font-bold text-slate-800 leading-tight">{detalhesEstrategia.nome}</h2>
+                                    <h2 className="text-lg font-bold text-slate-800 dark:text-[#E5E7EB] leading-tight">{detalhesEstrategia.nome}</h2>
                                     {/* Dimensões */}
                                     {(detalhesEstrategia.dimensoes||[]).length > 0 && (
                                         <div className="flex flex-wrap gap-1.5 mt-2">
                                             {(detalhesEstrategia.dimensoes||[]).map(d=>(
-                                                <span key={d} className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-                                                    d==='Musical'  ? 'bg-violet-100 text-violet-700' :
-                                                    d==='Condução' ? 'bg-blue-100 text-blue-700'     :
-                                                                     'bg-green-100 text-green-700'
-                                                }`}>{d}</span>
+                                                <span key={d} className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 text-[#5B5FEA] dark:text-[#818cf8]">{d}</span>
                                             ))}
                                         </div>
                                     )}
@@ -617,7 +621,7 @@ export default function ModuloEstrategias() {
                                 {detalhesEstrategia.origem && <span>📚 {detalhesEstrategia.origem}</span>}
                                 {detalhesEstrategia.categoria && <span>🏷 {detalhesEstrategia.categoria}</span>}
                                 {detalhesEstrategia.funcao && <span>⏱ {detalhesEstrategia.funcao}</span>}
-                                <span className={`font-semibold ${(detalhesEstrategia.contadorUso||0)>0?'text-violet-600':'text-slate-400'}`}>
+                                <span className={`font-semibold ${(detalhesEstrategia.contadorUso||0)>0?'text-[#5B5FEA] dark:text-[#818cf8]':'text-slate-400'}`}>
                                     {(detalhesEstrategia.contadorUso||0)>0 ? `Usada ${detalhesEstrategia.contadorUso}×` : 'Não usada ainda'}
                                 </span>
                             </div>
@@ -626,9 +630,9 @@ export default function ModuloEstrategias() {
                         <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1">
                             {/* Variações */}
                             {detalhesEstrategia.variacoes && (
-                                <div className="bg-violet-50 border border-violet-200 rounded-xl p-4">
-                                    <p className="text-xs font-bold text-violet-700 uppercase tracking-wide mb-1.5">✨ Variações Conhecidas</p>
-                                    <p className="text-sm text-violet-900 whitespace-pre-line">{detalhesEstrategia.variacoes}</p>
+                                <div className="bg-[#5B5FEA]/8 dark:bg-[#5B5FEA]/15 border border-[#5B5FEA]/25 dark:border-[#5B5FEA]/35 rounded-xl p-4">
+                                    <p className="text-xs font-bold text-[#5B5FEA] dark:text-[#818cf8] uppercase tracking-wide mb-1.5">Variações Conhecidas</p>
+                                    <p className="text-sm text-slate-700 dark:text-[#E5E7EB] whitespace-pre-line">{detalhesEstrategia.variacoes}</p>
                                 </div>
                             )}
                             {/* Descrição — conteúdo real da atividade (do histórico mais recente) */}
@@ -652,8 +656,8 @@ export default function ModuloEstrategias() {
                                 return (
                                     <div>
                                         <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Descrição</p>
-                                        {atNome && <p className="text-xs font-semibold text-violet-600 mb-1">{atNome}</p>}
-                                        <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
+                                        {atNome && <p className="text-xs font-semibold text-[#5B5FEA] dark:text-[#818cf8] mb-1">{atNome}</p>}
+                                        <p className="text-sm text-slate-700 dark:text-[#E5E7EB] whitespace-pre-line leading-relaxed">
                                             {atDesc || descFallback}
                                         </p>
                                     </div>
@@ -665,8 +669,8 @@ export default function ModuloEstrategias() {
                                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Objetivos Pedagógicos</p>
                                     <ul className="space-y-1">
                                         {(detalhesEstrategia.objetivos||[]).map(o=>(
-                                            <li key={o} className="text-sm text-slate-700 flex items-start gap-1.5">
-                                                <span className="text-emerald-500 mt-0.5">🎯</span>{o}
+                                            <li key={o} className="text-sm text-slate-700 dark:text-[#E5E7EB] flex items-start gap-1.5">
+                                                <i className="fas fa-bullseye text-emerald-500 dark:text-emerald-400 mt-0.5 text-[11px]"/>{o}
                                             </li>
                                         ))}
                                     </ul>
@@ -684,7 +688,7 @@ export default function ModuloEstrategias() {
                                                 {planoHist ? (
                                                     <button
                                                         onClick={()=>{ setDetalhesEstrategia(null); setPlanoSelecionado(planoHist) }}
-                                                        className="text-xs text-violet-600 hover:text-violet-800 hover:underline truncate text-left">
+                                                        className="text-xs text-[#5B5FEA] dark:text-[#818cf8] hover:underline truncate text-left">
                                                         {h.planoTitulo}
                                                     </button>
                                                 ) : (
@@ -701,14 +705,14 @@ export default function ModuloEstrategias() {
                             )}
                         </div>
                         {/* Footer */}
-                        <div className="px-6 py-4 border-t border-slate-100 flex gap-3 shrink-0">
+                        <div className="px-6 py-4 border-t border-[#E6EAF0] dark:border-[#374151] flex gap-3 shrink-0">
                             <button onClick={()=>setDetalhesEstrategia(null)}
-                                className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition">
+                                className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-[#E5E7EB] font-semibold text-sm transition">
                                 Fechar
                             </button>
                             <button onClick={()=>{ setEstrategiaEditando({...detalhesEstrategia}); setDetalhesEstrategia(null) }}
-                                className="flex-1 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm transition">
-                                ✏️ Editar
+                                className="flex-1 py-2.5 rounded-xl bg-[#5B5FEA] hover:bg-[#4f53d4] text-white font-bold text-sm transition flex items-center justify-center gap-1.5">
+                                <i className="fas fa-pencil text-[12px]"/> Editar
                             </button>
                         </div>
                     </div>
