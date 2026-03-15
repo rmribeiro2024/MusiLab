@@ -1687,10 +1687,9 @@ export default function TelaPrincipal() {
         )}
 
         {/* ── Contagem + Ordenar + Modo de visualização ── */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="v2-card flex items-center justify-between border border-[#E6EAF0] dark:border-[#374151] rounded-[9px] px-[14px] py-[8px] mb-3">
             <p className="text-[12px] text-slate-400 dark:text-[#6b7280]">{planosFiltrados.length} plano{planosFiltrados.length!==1?'s':''}</p>
-            <div className="flex items-center bg-[#F1F4F8] dark:bg-[#273344] rounded-[8px] px-[6px] py-[4px] gap-[2px]">
-                {/* Ordenar */}
+            <div className="flex items-center gap-[2px]">
                 <span className="text-[11px] text-slate-400 dark:text-[#6b7280] font-medium px-[4px] select-none">Ordenar</span>
                 {([{id:'recente',label:'Recente'},{id:'az',label:'A–Z'},{id:'status',label:'Status'},{id:'favoritos',label:'★'}] as const).map(o=>(
                     <button key={o.id} onClick={()=>setOrdenacaoCards(o.id)}
@@ -1698,12 +1697,10 @@ export default function TelaPrincipal() {
                         {o.label}
                     </button>
                 ))}
-                {/* Divisor */}
-                <span className="w-px h-[14px] bg-slate-300 dark:bg-[#374151] mx-[4px] flex-none" />
-                {/* Vista */}
+                <span className="w-px h-[14px] bg-[#E6EAF0] dark:bg-[#374151] mx-[6px] flex-none" />
                 {([{id:'grade',label:'⊞',title:'Grade'},{id:'compacto',label:'☰',title:'Lista'},{id:'kanban',label:'⠿',title:'Kanban'},{id:'periodo',label:'📆',title:'Por Período'},{id:'segmento',label:'👥',title:'Por Segmento'}] as const).map(m=>(
                     <button key={m.id} onClick={()=>setModoVisualizacao(m.id)} title={m.title}
-                        className={`px-[7px] py-[3px] rounded-[5px] text-[13px] transition-all duration-[120ms] ${modoVisualizacao===m.id ? 'bg-[#ffffff] dark:bg-[#1F2937] text-[#5B5FEA] dark:text-[#818cf8] shadow-sm' : 'text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF]'}`}>
+                        className={`px-[7px] py-[3px] rounded-[5px] text-[13px] transition-all duration-[120ms] ${modoVisualizacao===m.id ? 'bg-[#5B5FEA]/10 dark:bg-[#5B5FEA]/20 text-[#5B5FEA] dark:text-[#818cf8]' : 'text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF]'}`}>
                         {m.label}
                     </button>
                 ))}
