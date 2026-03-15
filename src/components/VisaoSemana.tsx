@@ -99,13 +99,13 @@ const STATUS_CFG: Record<NonNullable<StatusEfetivo>, {
   emoji: string
   label: string
   acao: string
-  colorLight: string
-  colorDark: string
+  dotClass: string
+  textClass: string
 }> = {
-  concluida:  { emoji: '✓', label: 'Concluída',          acao: 'Criar nova aula',        colorLight: '#16a34a', colorDark: '#4ade80' },
-  revisao:    { emoji: '↻', label: 'Necessário revisar', acao: 'depois avançar',          colorLight: '#2563eb', colorDark: '#60a5fa' },
-  incompleta: { emoji: '↩', label: 'Incompleta',         acao: 'Retomar de onde parou',  colorLight: '#b45309', colorDark: '#fbbf24' },
-  nao_houve:  { emoji: '✗', label: 'Não houve',          acao: 'Reaplicar aula anterior', colorLight: '#64748b', colorDark: '#94a3b8' },
+  concluida:  { emoji: '✓', label: 'Concluída',          acao: 'Criar nova aula',         dotClass: 'bg-[#16a34a] dark:bg-[#4ade80]',  textClass: 'text-[#16a34a] dark:text-[#4ade80]'  },
+  revisao:    { emoji: '↻', label: 'Necessário revisar', acao: 'depois avançar',           dotClass: 'bg-[#2563eb] dark:bg-[#60a5fa]',  textClass: 'text-[#2563eb] dark:text-[#60a5fa]'  },
+  incompleta: { emoji: '↩', label: 'Incompleta',         acao: 'Retomar de onde parou',   dotClass: 'bg-[#b45309] dark:bg-[#fbbf24]',  textClass: 'text-[#b45309] dark:text-[#fbbf24]'  },
+  nao_houve:  { emoji: '✗', label: 'Não houve',          acao: 'Reaplicar aula anterior',  dotClass: 'bg-[#64748b] dark:bg-[#94a3b8]',  textClass: 'text-[#64748b] dark:text-[#94a3b8]'  },
 }
 
 // ─── Sub-componente: seção "Última aula" ─────────────────────────────────────
@@ -151,15 +151,9 @@ function UltimaAulaSection({ registro }: { registro: RegistroPosAula | null }) {
 
       <div className="flex items-center gap-[5px]">
         {/* dot colorido */}
-        <span
-          className="w-[6px] h-[6px] rounded-full flex-shrink-0"
-          style={{ background: cfg.colorLight }}
-        />
+        <span className={`w-[6px] h-[6px] rounded-full flex-shrink-0 ${cfg.dotClass}`} />
         {/* resultado */}
-        <span
-          className="text-[10px] font-bold"
-          style={{ color: cfg.colorLight }}
-        >
+        <span className={`text-[10px] font-bold ${cfg.textClass}`}>
           {cfg.emoji} {cfg.label}
         </span>
         {/* seta › */}
