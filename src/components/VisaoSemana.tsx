@@ -18,9 +18,6 @@ const DIAS = [
   { key: 'sex', short: 'Sex' },
 ] as const
 
-// Paleta de cores por escola (borda esquerda dos cards)
-const ESCOLA_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
-
 function getMondayOf(date: Date): Date {
   const d = new Date(date)
   d.setHours(0, 0, 0, 0)
@@ -98,71 +95,38 @@ function inferStatus(r: RegistroPosAula): StatusEfetivo {
 const STATUS_CFG: Record<NonNullable<StatusEfetivo>, {
   emoji: string
   label: string
-  acao: string
-  dotClass: string
   textClass: string
+  borderClass: string
 }> = {
-  concluida:  { emoji: '✓', label: 'Concluída',          acao: 'Criar nova aula',         dotClass: 'bg-[#16a34a] dark:bg-[#4ade80]',  textClass: 'text-[#16a34a] dark:text-[#4ade80]'  },
-  revisao:    { emoji: '↻', label: 'Necessário revisar', acao: 'depois avançar',           dotClass: 'bg-[#2563eb] dark:bg-[#60a5fa]',  textClass: 'text-[#2563eb] dark:text-[#60a5fa]'  },
-  incompleta: { emoji: '↩', label: 'Incompleta',         acao: 'Retomar de onde parou',   dotClass: 'bg-[#b45309] dark:bg-[#fbbf24]',  textClass: 'text-[#b45309] dark:text-[#fbbf24]'  },
-  nao_houve:  { emoji: '✗', label: 'Não houve',          acao: 'Reaplicar aula anterior',  dotClass: 'bg-[#64748b] dark:bg-[#94a3b8]',  textClass: 'text-[#64748b] dark:text-[#94a3b8]'  },
+  concluida:  { emoji: '✓', label: 'Concluída',          textClass: 'text-[#16a34a] dark:text-[#4ade80]',  borderClass: 'border-[#16a34a] dark:border-[#4ade80]'  },
+  revisao:    { emoji: '↻', label: 'Necessário revisar', textClass: 'text-[#2563eb] dark:text-[#60a5fa]',  borderClass: 'border-[#2563eb] dark:border-[#60a5fa]'  },
+  incompleta: { emoji: '↩', label: 'Incompleta',         textClass: 'text-[#b45309] dark:text-[#fbbf24]',  borderClass: 'border-[#b45309] dark:border-[#fbbf24]'  },
+  nao_houve:  { emoji: '✗', label: 'Não houve',          textClass: 'text-[#64748b] dark:text-[#94a3b8]',  borderClass: 'border-[#64748b] dark:border-[#94a3b8]'  },
+}
+
+/** Retorna a classe Tailwind de borda esquerda com base no status da última aula */
+function getStatusBorderClass(registro: RegistroPosAula | null): string {
+  if (!registro) return 'border-[#E2E8F0] dark:border-[#374151]'
+  const status = inferStatus(registro)
+  if (!status) return 'border-[#E2E8F0] dark:border-[#374151]'
+  return STATUS_CFG[status].borderClass
 }
 
 // ─── Sub-componente: seção "Última aula" ─────────────────────────────────────
 
 function UltimaAulaSection({ registro }: { registro: RegistroPosAula | null }) {
-  if (!registro) {
-    return (
-      <div className="
-        border-t border-[#E6EAF0] dark:border-[#2D3A4F]
-        pt-[5px] pb-[7px] px-[10px]
-      ">
-        <span className="text-[9.5px] italic text-slate-400 dark:text-[#9CA3AF] tracking-[.3px]">
-          Nenhum registro ainda
-        </span>
-      </div>
-    )
-  }
-
-  const status = inferStatus(registro)
-  if (!status) {
-    return (
-      <div className="
-        border-t border-[#E6EAF0] dark:border-[#2D3A4F]
-        pt-[5px] pb-[7px] px-[10px]
-      ">
-        <span className="text-[9.5px] italic text-slate-400 dark:text-[#9CA3AF] tracking-[.3px]">
-          Nenhum registro ainda
-        </span>
-      </div>
-    )
-  }
-
-  const cfg = STATUS_CFG[status]
+  const status = registro ? inferStatus(registro) : null
 
   return (
-    <div className="px-[10px] pb-[7px]">
-      {/* linha inset — Opção B */}
-      <div className="h-px bg-[#E6EAF0] dark:bg-[#3D4F68] mb-[5px]" />
-
-      <span className="block text-[8.5px] font-bold tracking-[.9px] uppercase text-slate-400 dark:text-[#9CA3AF] mb-[4px]">
-        Última aula
-      </span>
-
-      <div className="flex items-center gap-[5px]">
-        {/* dot colorido */}
-        <span className={`w-[6px] h-[6px] rounded-full flex-shrink-0 ${cfg.dotClass}`} />
-        {/* resultado */}
-        <span className={`text-[10px] font-bold ${cfg.textClass}`}>
-          {cfg.emoji} {cfg.label}
+    <div className="px-[10px] pb-[8px]">
+      <div className="h-px bg-[#E6EAF0] dark:bg-[#3D4F68] mb-[6px]" />
+      {status ? (
+        <span className={`text-[10.5px] font-semibold ${STATUS_CFG[status].textClass}`}>
+          {STATUS_CFG[status].emoji} {STATUS_CFG[status].label}
         </span>
-        {/* seta › */}
-        <span className="text-[14px] font-bold leading-none text-slate-400 dark:text-[#6B7280]">›</span>
-        {/* ação */}
-        <span className="text-[10px] font-medium text-slate-500 dark:text-[#94A3B8]">
-          {cfg.acao}
-        </span>
-      </div>
+      ) : (
+        <span className="text-[10px] text-slate-300 dark:text-[#4B5563]">— sem registro</span>
+      )}
     </div>
   )
 }
@@ -191,18 +155,6 @@ export default function VisaoSemana() {
     date: addDays(semanaInicio, i),
     ymd:  toYMD(addDays(semanaInicio, i)),
   }))
-
-  // ── Lookup: escolaId → índice de cor (estável entre renders) ──────────────
-  const escolaColorMap = useMemo(() => {
-    const map: Record<string, number> = {}
-    let idx = 0
-    anosLetivos.forEach(ano =>
-      ano.escolas.forEach(escola => {
-        if (!(escola.id in map)) { map[escola.id] = idx % ESCOLA_COLORS.length; idx++ }
-      })
-    )
-    return map
-  }, [anosLetivos])
 
   // ── Aulas por dia — usa obterTurmasDoDia (mesmo dado que o AgendaSemanal) ─
   const aulasPorDia = useMemo(() =>
@@ -329,18 +281,15 @@ export default function VisaoSemana() {
                   <div className="text-center py-5 text-[11.5px] text-slate-300 dark:text-[#374151]">—</div>
                 ) : (
                   aulas.map((aula, i) => {
-                    const escolaId   = aula.escolaId ?? ''
-                    const colorIdx   = escolaColorMap[escolaId] ?? 0
-                    const borderClr  = ESCOLA_COLORS[colorIdx]
                     const turmaNome  = getNomeTurma(aula.anoLetivoId, aula.escolaId, aula.segmentoId, aula.turmaId, anosLetivos)
                     const escolaNome = getNomeEscola(aula.anoLetivoId, aula.escolaId, anosLetivos)
                     const ultimoReg  = ultimoRegistroMap[String(aula.turmaId)] ?? null
+                    const borderClass = getStatusBorderClass(ultimoReg)
 
                     return (
                       <div
                         key={`${aula.turmaId}-${aula.horario}-${i}`}
-                        style={{ borderLeftColor: borderClr }}
-                        className={`v2-card border-0 border-l-[4px] rounded-[8px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] ${
+                        className={`v2-card border-0 border-l-[4px] ${borderClass} rounded-[8px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] ${
                           !past
                             ? 'cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:-translate-y-px transition-all duration-150'
                             : 'cursor-default'
