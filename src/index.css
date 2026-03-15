@@ -46,7 +46,7 @@ input, textarea, select {
 /* Shadows */
 .dark .shadow, .dark .shadow-md, .dark .shadow-lg, .dark .shadow-xl, .dark .shadow-2xl { box-shadow: 0 4px 24px rgba(0,0,0,0.5) !important; }
 /* Inputs */
-.dark input, .dark textarea, .dark select { background: #273344 !important; color: #E5E7EB !important; border-color: #4B5563 !important; }
+.dark input, .dark textarea, .dark select { background: var(--v2-card) !important; color: #E5E7EB !important; border-color: #4B5563 !important; }
 /* Color tints */
 .dark .bg-indigo-50  { background: #1e1b4b !important; }
 .dark .bg-blue-50    { background: #172554 !important; }
