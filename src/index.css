@@ -5,6 +5,9 @@
 /* ── FONTE INTER (igual ao preview) ── */
 body { font-family: 'Inter', system-ui, sans-serif; }
 
+/* ── INPUTS TRANSPARENTES — remove fundo padrão do browser ── */
+input, textarea, select { background: transparent !important; }
+
 /* ── EDITOR RICH TEXT ── */
 .modal-enter { opacity: 0; transform: scale(0.95); }
 .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 300ms, transform 300ms; }
