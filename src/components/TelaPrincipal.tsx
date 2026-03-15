@@ -1648,8 +1648,10 @@ export default function TelaPrincipal() {
                 <input type="text" inputMode="search" value={busca} onChange={e=>setBusca(e.target.value)}
                     placeholder="Buscar por título, objetivo, conceito..."
                     className="flex-1 border-none outline-none text-[14px] tracking-[-0.01em] text-slate-800 dark:text-[#E5E7EB] bg-transparent placeholder:text-slate-400 dark:placeholder:text-[#6b7280]" />
-                {busca && (
+                {busca ? (
                     <button onClick={()=>setBusca('')} className="text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] text-[13px] flex-none transition">✕</button>
+                ) : (
+                    <span className="text-[10.5px] font-semibold text-slate-400 dark:text-[#6b7280] border border-[#E6EAF0] dark:border-[#374151] rounded-[5px] px-[7px] py-[2px] flex-none tracking-[0.01em] select-none">Ctrl K</span>
                 )}
             </div>
             <button onClick={()=>toggleFiltrosPlanos(!filtrosPlanos)}
