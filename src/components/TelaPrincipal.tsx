@@ -1688,25 +1688,25 @@ export default function TelaPrincipal() {
 
         {/* ── Contagem + Ordenar + Modo de visualização ── */}
         <div className="flex items-center justify-between mb-3">
-            <p className="text-[12px] text-slate-400 dark:text-[#6b7280] px-[2px]">{planosFiltrados.length} plano{planosFiltrados.length!==1?'s':''}</p>
-            <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-[#F1F4F8] dark:bg-[#273344] rounded-lg px-2.5 py-1.5">
-                    <span className="text-[11px] text-slate-400 dark:text-[#6b7280] font-semibold mr-0.5">Ordenar:</span>
-                    {([{id:'recente',label:'Recente'},{id:'az',label:'A–Z'},{id:'status',label:'Status'},{id:'favoritos',label:'★'}] as const).map(o=>(
-                        <button key={o.id} onClick={()=>setOrdenacaoCards(o.id)}
-                            className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all duration-[120ms] ${ordenacaoCards===o.id ? 'bg-[#5B5FEA] dark:bg-[#818cf8] text-white' : 'text-slate-400 dark:text-[#6b7280] hover:text-slate-700 dark:hover:text-[#9CA3AF]'}`}>
-                            {o.label}
-                        </button>
-                    ))}
-                </div>
-                <div className="flex bg-[#F1F4F8] dark:bg-[#273344] rounded-lg p-1 gap-0.5">
-                    {([{id:'grade',label:'⊞',title:'Grade'},{id:'compacto',label:'☰',title:'Lista'},{id:'kanban',label:'⠿',title:'Kanban'},{id:'periodo',label:'📆',title:'Por Período'},{id:'segmento',label:'👥',title:'Por Segmento'}] as const).map(m=>(
-                        <button key={m.id} onClick={()=>setModoVisualizacao(m.id)} title={m.title}
-                            className={`px-2.5 py-1 rounded text-[13px] font-bold transition-all duration-[120ms] ${modoVisualizacao===m.id ? 'bg-[#ffffff] dark:bg-[#1F2937] text-[#5B5FEA] dark:text-[#818cf8] shadow-sm' : 'text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF]'}`}>
-                            {m.label}
-                        </button>
-                    ))}
-                </div>
+            <p className="text-[12px] text-slate-400 dark:text-[#6b7280]">{planosFiltrados.length} plano{planosFiltrados.length!==1?'s':''}</p>
+            <div className="flex items-center bg-[#F1F4F8] dark:bg-[#273344] rounded-[8px] px-[6px] py-[4px] gap-[2px]">
+                {/* Ordenar */}
+                <span className="text-[11px] text-slate-400 dark:text-[#6b7280] font-medium px-[4px] select-none">Ordenar</span>
+                {([{id:'recente',label:'Recente'},{id:'az',label:'A–Z'},{id:'status',label:'Status'},{id:'favoritos',label:'★'}] as const).map(o=>(
+                    <button key={o.id} onClick={()=>setOrdenacaoCards(o.id)}
+                        className={`px-[8px] py-[3px] rounded-[5px] text-[11px] font-semibold transition-all duration-[120ms] ${ordenacaoCards===o.id ? 'bg-[#5B5FEA] text-white' : 'text-slate-500 dark:text-[#6b7280] hover:text-slate-700 dark:hover:text-[#9CA3AF]'}`}>
+                        {o.label}
+                    </button>
+                ))}
+                {/* Divisor */}
+                <span className="w-px h-[14px] bg-slate-300 dark:bg-[#374151] mx-[4px] flex-none" />
+                {/* Vista */}
+                {([{id:'grade',label:'⊞',title:'Grade'},{id:'compacto',label:'☰',title:'Lista'},{id:'kanban',label:'⠿',title:'Kanban'},{id:'periodo',label:'📆',title:'Por Período'},{id:'segmento',label:'👥',title:'Por Segmento'}] as const).map(m=>(
+                    <button key={m.id} onClick={()=>setModoVisualizacao(m.id)} title={m.title}
+                        className={`px-[7px] py-[3px] rounded-[5px] text-[13px] transition-all duration-[120ms] ${modoVisualizacao===m.id ? 'bg-[#ffffff] dark:bg-[#1F2937] text-[#5B5FEA] dark:text-[#818cf8] shadow-sm' : 'text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF]'}`}>
+                        {m.label}
+                    </button>
+                ))}
             </div>
         </div>
 
