@@ -39,6 +39,49 @@ function extractMediaUrls(html: string): string[] {
     )
 }
 
+// Converte URLs soltas do YouTube/Spotify em links amigáveis no HTML
+// (não toca URLs que já estão dentro de <a href="">)
+async function autoLinkMediaUrls(html: string): Promise<string> {
+    // Regex: URL do YT/Spotify que NÃO está precedida por href=" ou src="
+    const mediaRegex = /(?<!(?:href|src)=["'])https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|open\.spotify\.com\/)[^\s<>"'&]*/g
+    const matches = [...html.matchAll(mediaRegex)]
+    if (matches.length === 0) return html
+
+    let result = html
+    for (const match of matches) {
+        const url = match[0]
+        let label = ''
+        const ytId = getYouTubeId(url)
+        if (ytId) {
+            // Tenta buscar o título via oEmbed (sem API key necessária)
+            try {
+                const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`)
+                if (res.ok) {
+                    const data = await res.json()
+                    label = `▶ ${data.title || 'YouTube'}`
+                }
+            } catch { /* silencia erros de rede */ }
+            if (!label) label = `▶ YouTube`
+        } else if (/open\.spotify\.com/.test(url)) {
+            try {
+                const res = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`)
+                if (res.ok) {
+                    const data = await res.json()
+                    label = `🎵 ${data.title || 'Spotify'}`
+                }
+            } catch { /* silencia erros de rede */ }
+            if (!label) label = `🎵 Spotify`
+        }
+        if (label) {
+            result = result.replace(
+                url,
+                `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#6366f1;text-decoration:none;font-weight:600">${label}</a>`
+            )
+        }
+    }
+    return result
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function RichTextEditor({
@@ -125,9 +168,19 @@ export default function RichTextEditor({
     // Propaga para o pai no blur; atrasa o hide do float para permitir clique nos botões
     const handleBlur = (): void => {
         if (editorRef.current) {
-            const html = editorRef.current.innerHTML
-            onChange(html)
-            if (showLinkPreviews) setPreviewUrls(extractMediaUrls(html))
+            const rawHtml = editorRef.current.innerHTML
+            onChange(rawHtml)
+            if (showLinkPreviews) {
+                setPreviewUrls(extractMediaUrls(rawHtml))
+                // Converte URLs soltas em links amigáveis (async — atualiza DOM quando pronto)
+                autoLinkMediaUrls(rawHtml).then(linkedHtml => {
+                    if (linkedHtml !== rawHtml && editorRef.current) {
+                        editorRef.current.innerHTML = linkedHtml
+                        onChange(linkedHtml)
+                        setPreviewUrls(extractMediaUrls(linkedHtml))
+                    }
+                })
+            }
         }
         setTimeout(() => setFloatVisible(false), 150)
         onHashCancel?.()
