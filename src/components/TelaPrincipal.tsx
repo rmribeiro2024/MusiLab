@@ -906,123 +906,40 @@ export default function TelaPrincipal() {
                     </button>
                     {secoesForm.has('materiais') && (
                         <div className="px-3 sm:px-6 pb-5">
-                            {/* MATERIAIS - Sistema Inteligente */}
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">📦 Materiais</label>
-                                {/* Sugestões Rápidas (Checkboxes) */}
-                                <div className="mb-4">
-                                    <p className="text-xs text-slate-400 mb-2">Sugestões do seu histórico:</p>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                        {(() => {
-                                            const materiaisContagem: Record<string, number> = {};
-                                            planos.forEach(p => {
-                                                (p.materiais || []).forEach(mat => {
-                                                    const m = mat.trim();
-                                                    if (m && !materiaisBloqueados.includes(m)) {
-                                                        materiaisContagem[m] = (materiaisContagem[m] || 0) + 1;
-                                                    }
-                                                });
-                                            });
-                                            const sugestoes = Object.entries(materiaisContagem)
-                                                .sort((a, b) => b[1] - a[1])
-                                                .slice(0, 8)
-                                                .map(([mat]) => mat);
-                                            const sugestoesPadrao = [
-                                                'Flauta doce', 'Instrumentos Orff', 'Aparelho de som',
-                                                'Caderno de música', 'Lápis/Canetas', 'Papel pautado',
-                                                'Computador/Projetor', 'Caixa de som portátil'
-                                            ].filter(m => !materiaisBloqueados.includes(m));
-                                            const sugestoesFinais = sugestoes.length > 0 ? sugestoes : sugestoesPadrao;
-                                            return sugestoesFinais.map(mat => {
-                                                const jaAdicionado = planoEditando.materiais.includes(mat);
-                                                return (
-                                                    <div key={mat} className="flex items-center gap-1 bg-white p-2 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
-                                                        <label className="flex items-center gap-2 flex-1 cursor-pointer">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={jaAdicionado}
-                                                                onChange={(e) => {
-                                                                    const novos = e.target.checked
-                                                                        ? [...planoEditando.materiais, mat]
-                                                                        : planoEditando.materiais.filter(m => m !== mat);
-                                                                    setPlanoEditando({...planoEditando, materiais: novos});
-                                                                }}
-                                                                className="w-4 h-4"
-                                                            />
-                                                            <span className="text-sm flex-1">{mat}</span>
-                                                        </label>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setModalConfirm({ titulo: 'Remover sugestão?', conteudo: `Remover "${mat}" das sugestões permanentemente?`, labelConfirm: 'Remover', perigo: true, onConfirm: () => {
-                                                                    setMateriaisBloqueados([...materiaisBloqueados, mat]);
-                                                                    if (jaAdicionado) {
-                                                                        setPlanoEditando({
-                                                                            ...planoEditando,
-                                                                            materiais: planoEditando.materiais.filter(m => m !== mat)
-                                                                        });
-                                                                    }
-                                                                } });
-                                                            }}
-                                                            className="text-gray-400 hover:text-red-500 text-xs font-bold px-1"
-                                                            title="Remover das sugestões"
-                                                        >
-                                                            ✕
-                                                        </button>
-                                                    </div>
-                                                );
-                                            });
-                                        })()}
+                            {/* MATERIAIS */}
+                            <div className="flex flex-col gap-2">
+                                {/* Materiais adicionados como lista simples */}
+                                {planoEditando.materiais.map((mat, idx) => (
+                                    <div key={idx} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 dark:bg-[#1F2937] text-[13px] text-slate-700 dark:text-[#D1D5DB]">
+                                        <span>{mat}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPlanoEditando({
+                                                ...planoEditando,
+                                                materiais: planoEditando.materiais.filter((_, i) => i !== idx)
+                                            })}
+                                            className="text-slate-300 hover:text-rose-500 transition text-[16px] leading-none ml-2"
+                                        >×</button>
                                     </div>
-                                </div>
-                                {/* Campo Livre para Novos Materiais */}
-                                <div>
-                                    <p className="text-xs text-slate-400 mb-2">Adicionar outros:</p>
-                                    <div className="flex gap-2 mb-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Ex: Pandeiro, Violão, Microfone..."
-                                            onKeyPress={(e) => {
-                                                const t = e.target as HTMLInputElement;
-                                                if (e.key === 'Enter' && t.value.trim()) {
-                                                    const novoMat = t.value.trim();
-                                                    if (!planoEditando.materiais.includes(novoMat)) {
-                                                        setPlanoEditando({
-                                                            ...planoEditando,
-                                                            materiais: [...planoEditando.materiais, novoMat]
-                                                        });
-                                                    }
-                                                    t.value = '';
-                                                }
-                                            }}
-                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none"
-                                        />
-                                    </div>
-                                    <p className="text-xs text-gray-500">Pressione Enter para adicionar</p>
-                                </div>
-                                {/* Lista de Materiais Selecionados */}
-                                {planoEditando.materiais.length > 0 && (
-                                    <div className="mt-3 pt-3 border-t border-purple-300">
-                                        <p className="text-xs text-slate-400 mb-2">Selecionados ({planoEditando.materiais.length}):</p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {planoEditando.materiais.map((mat, idx) => (
-                                                <span key={idx} className="bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                                                    {mat}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setPlanoEditando({
-                                                            ...planoEditando,
-                                                            materiais: planoEditando.materiais.filter((_, i) => i !== idx)
-                                                        })}
-                                                        className="text-slate-400 hover:text-red-500 font-bold"
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                                ))}
+                                {/* Input para adicionar */}
+                                <input
+                                    type="text"
+                                    placeholder="Adicionar material... (Enter para confirmar)"
+                                    style={{ fontSize: 15 }}
+                                    onKeyDown={(e) => {
+                                        const t = e.target as HTMLInputElement;
+                                        if (e.key === 'Enter' && t.value.trim()) {
+                                            e.preventDefault()
+                                            const novoMat = t.value.trim();
+                                            if (!planoEditando.materiais.includes(novoMat)) {
+                                                setPlanoEditando({ ...planoEditando, materiais: [...planoEditando.materiais, novoMat] });
+                                            }
+                                            t.value = '';
+                                        }
+                                    }}
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-lg text-[13px] bg-[var(--v2-card)] text-slate-700 dark:text-[#E5E7EB] placeholder:text-slate-400 dark:placeholder:text-[#6B7280] focus:border-indigo-400 outline-none"
+                                />
                             </div>
                         </div>
                     )}
