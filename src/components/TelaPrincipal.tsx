@@ -373,8 +373,8 @@ export default function TelaPrincipal() {
                     )
                 })()}
 
-                {/* ─── TÍTULO + DURAÇÃO — sempre visíveis ─── */}
-                <div className="px-3 sm:px-6 pt-5 pb-4 border-b border-slate-100 dark:border-[#374151]">
+                {/* ─── TÍTULO + DURAÇÃO + NÍVEL — sempre visíveis ─── */}
+                <div className="px-3 sm:px-6 pt-5 pb-5 border-b border-slate-100 dark:border-[#374151] space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-3">
                         <div>
                             <label htmlFor="plano-titulo" className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide mb-1.5">Título *</label>
@@ -386,34 +386,22 @@ export default function TelaPrincipal() {
                             <datalist id="duracoes-list">{duracoesSugestao.map(d=><option key={d} value={d}/>)}</datalist>
                         </div>
                     </div>
-                </div>
-
-                {/* ════════════ ACCORDION: FAIXA ETÁRIA ════════════ */}
-                {!modoRapido && (
-                <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('faixaEtaria')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
-                        <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Nível</span>
-                            {!secoesForm.has('faixaEtaria') && (() => {
-                                const validos = (planoEditando.faixaEtaria||[]).filter(f => faixas.includes(f))
-                                return validos.length > 0
-                                    ? <p className="text-[11px] text-slate-300 mt-0.5 truncate">{validos.join(', ')}</p>
-                                    : null
-                            })()}
-                        </div>
-                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('faixaEtaria') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    </button>
-                    {secoesForm.has('faixaEtaria') && (
-                        <div className="px-3 sm:px-6 pt-5 pb-5">
-                            <div className="flex justify-end mb-3">
+                    {faixas.length > 1 && (
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide">Nível</label>
                                 <button type="button" onClick={()=>{ setNovaFaixaNome(''); setModalNovaFaixa(true); }}
-                                    className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors"
-                                    title="Gerenciar níveis">Gerenciar níveis →</button>
+                                    className="text-[11px] text-slate-400 hover:text-slate-600 dark:text-[#6B7280] dark:hover:text-slate-300 transition-colors">
+                                    Gerenciar →
+                                </button>
                             </div>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex bg-slate-100 dark:bg-[#374151] rounded-xl p-1 gap-1 flex-wrap">
                                 {faixas.slice(1).map(faixa => (
                                     <button key={faixa} type="button" onClick={() => toggleFaixa(faixa)}
-                                        className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition-all ${planoEditando.faixaEtaria.includes(faixa) ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                                        className={`flex-1 min-w-fit px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap
+                                            ${planoEditando.faixaEtaria.includes(faixa)
+                                                ? 'bg-white dark:bg-[#1F2937] text-indigo-600 dark:text-indigo-400 shadow-sm'
+                                                : 'text-slate-500 dark:text-[#9CA3AF] hover:text-slate-700 dark:hover:text-slate-200'}`}>
                                         {faixa}
                                     </button>
                                 ))}
@@ -421,7 +409,6 @@ export default function TelaPrincipal() {
                         </div>
                     )}
                 </div>
-                )}
 
                 {/* ════════════ ACCORDION: ROTEIRO DE ATIVIDADES ════════════ */}
                 <div className="border-b border-slate-100">
