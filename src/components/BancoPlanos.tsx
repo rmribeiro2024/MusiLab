@@ -1793,8 +1793,8 @@ export default function BancoPlanos({ session }) {
             // ============================================================
             const salvarNovaFaixa = () => {
                 const nome = novaFaixaNome.trim();
-                if (!nome) { showToast('Digite o nome da faixa etária!', 'error'); return; }
-                if (faixas.includes(nome)) { showToast('Essa faixa já existe!', 'error'); return; }
+                if (!nome) { showToast('Digite o nome do nível!', 'error'); return; }
+                if (faixas.includes(nome)) { showToast('Esse nível já existe!', 'error'); return; }
                 setFaixas([...faixas, nome]);
                 setNovaFaixaNome('');
                 setModalNovaFaixa(false);

@@ -244,9 +244,9 @@ export default function ModuloEstrategias() {
                             </div>
                         </div>
 
-                        {/* Faixa Etária */}
+                        {/* Nível */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Faixa Etária <span className="text-slate-400 font-normal normal-case">(opcional)</span></label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Nível <span className="text-slate-400 font-normal normal-case">(opcional)</span></label>
                             <input type="text" placeholder="Ex: 6-10 anos, Infantil, EF1..."
                                 value={estrategiaEditando.faixaEtaria||''}
                                 onChange={e=>setEstrategiaEditando({...estrategiaEditando, faixaEtaria:e.target.value})}

@@ -24,8 +24,8 @@ export default function ModalNovaFaixa() {
             <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm max-h-[90vh] flex flex-col" onClick={e=>e.stopPropagation()}>
                 <div className="bg-indigo-600 text-white p-5 rounded-t-2xl flex items-center justify-between">
                     <div>
-                        <h2 className="text-lg font-bold">👥 Faixas Etárias</h2>
-                        <p className="text-indigo-200 text-xs mt-0.5">Adicione, renomeie ou remova rótulos</p>
+                        <h2 className="text-lg font-bold">🎓 Níveis</h2>
+                        <p className="text-indigo-200 text-xs mt-0.5">Adicione, renomeie ou remova níveis</p>
                     </div>
                     <button onClick={()=>setModalNovaFaixa(false)} className="text-white/70 hover:text-white text-2xl leading-none font-bold">×</button>
                 </div>
@@ -41,7 +41,7 @@ export default function ModalNovaFaixa() {
                                     const novo = e.target.value.trim();
                                     if (!novo) { e.target.value = f; return; }
                                     if (novo === f) return;
-                                    if (faixas.includes(novo)) { showToast('Já existe uma faixa com esse nome!', 'error'); e.target.value = f; return; }
+                                    if (faixas.includes(novo)) { showToast('Já existe um nível com esse nome!', 'error'); e.target.value = f; return; }
                                     setFaixas(faixas.map(x => x === f ? novo : x));
                                     setPlanos(planos.map(p => ({
                                         ...p,
@@ -62,11 +62,11 @@ export default function ModalNovaFaixa() {
                                     } });
                                 }}
                                 className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 font-bold px-2 py-1 rounded-lg hover:bg-red-50 transition text-lg leading-none"
-                                title="Remover faixa">×</button>
+                                title="Remover nível">×</button>
                         </div>
                     ))}
                     {faixas.slice(1).length === 0 && (
-                        <p className="text-sm text-gray-400 text-center py-4">Nenhuma faixa cadastrada ainda.</p>
+                        <p className="text-sm text-gray-400 text-center py-4">Nenhum nível cadastrado ainda.</p>
                     )}
                 </div>
 
@@ -78,7 +78,7 @@ export default function ModalNovaFaixa() {
                             value={novaFaixaNome}
                             onChange={e=>setNovaFaixaNome(e.target.value)}
                             onKeyDown={e=>{ if(e.key==='Enter') salvarNovaFaixa(); }}
-                            placeholder="Nova faixa (ex: Maternal, EJA...)"
+                            placeholder="Novo nível (ex: Ed. Infantil, Fund. I, EJA...)"
                             className="flex-1 px-3 py-2.5 border-2 border-indigo-200 focus:border-indigo-500 rounded-xl text-sm outline-none"
                         />
                         <button onClick={salvarNovaFaixa}

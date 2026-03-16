@@ -203,7 +203,7 @@ export default function ModuloAtividades() {
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className={lbl}>Faixa Etária</label>
+                                <label className={lbl}>Nível</label>
                                 <div className="flex flex-wrap gap-2">
                                     {faixas.slice(1).map(f=>(
                                         <button key={f} type="button"
@@ -414,7 +414,7 @@ export default function ModuloAtividades() {
                               options:[<option key="t">Todas</option>, ...todasAsTags.map(t=><option key={t}>#{t}</option>)] },
                             { label:'Conceito', value:filtroConceitoAtividade, onChange:setFiltroConceitoAtividade,
                               options:[<option key="t">Todos</option>, ...conceitos.map(c=><option key={c}>{c}</option>)] },
-                            { label:'Faixa Etária', value:filtroFaixaAtividade, onChange:setFiltroFaixaAtividade,
+                            { label:'Nível', value:filtroFaixaAtividade, onChange:setFiltroFaixaAtividade,
                               options:faixas.map(f=><option key={f}>{f}</option>) },
                         ].map(({label,value,onChange,options})=>(
                             <div key={label} className="min-w-[140px]">
