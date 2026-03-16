@@ -457,6 +457,14 @@ export interface NotaAdaptacaoTurma {
 }
 
 // ─── PLANEJAMENTO POR TURMA ──────────────────────────────────
+
+export interface AtividadePlanejamentoTurma {
+  id: string
+  nome: string
+  duracao: string   // ex: "10 min", "20 min"
+  descricao: string
+}
+
 export interface PlanejamentoTurma {
   id: string
   // Chave composta da turma
@@ -472,6 +480,7 @@ export interface PlanejamentoTurma {
   objetivo?: string                     // opcional, secundário
   materiais?: string[]
   observacoes?: string
+  atividades?: AtividadePlanejamentoTurma[]
   // Metadados
   criadoEm: string
   atualizadoEm: string

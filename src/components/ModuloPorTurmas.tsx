@@ -9,7 +9,7 @@ import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContex
 import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import type { TurmaSelecionada } from '../contexts/PlanejamentoTurmaContext'
-import type { AnoLetivo, RegistroPosAula, Plano } from '../types'
+import type { AnoLetivo, RegistroPosAula, Plano, AtividadePlanejamentoTurma } from '../types'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -437,19 +437,34 @@ function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
     )
 }
 
-// ─── Helper: monta texto inicial para modo Adaptar ───────────────────────────
+// ─── Helpers do formulário ────────────────────────────────────────────────────
 
-function buildTextoAdaptar(r: RegistroPosAula | null): string {
-    if (!r) return ''
-    const parts: string[] = []
-    if (r.proximaAula?.trim())
-        parts.push(`Para a próxima aula:\n${r.proximaAula.trim()}`)
-    const pendentes = (r.encaminhamentos ?? []).filter(e => !e.concluido)
-    if (pendentes.length)
-        parts.push(`Encaminhamentos pendentes:\n${pendentes.map(e => `• ${e.texto}`).join('\n')}`)
-    if (r.poderiaMelhorar?.trim())
-        parts.push(`Poderia melhorar:\n${r.poderiaMelhorar.trim()}`)
-    return parts.join('\n\n')
+function gerarIdAtividade(): string {
+    return `a_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`
+}
+
+function stripHtml(html: string): string {
+    return html
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<\/div>/gi, '\n')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim()
+}
+
+function statusAulaLabel(status?: string): string {
+    const map: Record<string, string> = {
+        concluida: 'Concluída', revisao: 'Em revisão',
+        incompleta: 'Incompleta', nao_houve: 'Não houve', parcial: 'Parcial',
+    }
+    return map[status ?? ''] ?? 'Registrada'
 }
 
 // ─── Sub-componente: Formulário inline de planejamento ───────────────────────
@@ -465,19 +480,51 @@ function FormPlanoTurma({
     ultimoRegistro: RegistroPosAula | null
     onClose: () => void
 }) {
-    const { salvarPlanejamento } = usePlanejamentoTurmaContext()
+    const { salvarPlanejamento, planejamentosDaTurma } = usePlanejamentoTurmaContext()
     const { planos } = usePlanosContext()
 
-    const textoInicial = modo === 'adaptar' ? buildTextoAdaptar(ultimoRegistro) : ''
-    const [notas, setNotas] = useState(textoInicial)
+    // Atividades: em modo adaptar, importa do plano de aula anterior desta turma
+    // ⚠️ Nunca modifica o original — apenas cria cópias com novos IDs
+    const [atividades, setAtividades] = useState<AtividadePlanejamentoTurma[]>(() => {
+        if (modo === 'adaptar') {
+            // 1ª prioridade: último PlanejamentoTurma com atividades estruturadas
+            const ultPlan = planejamentosDaTurma[0]
+            if (ultPlan?.atividades?.length) {
+                return ultPlan.atividades.map(a => ({ ...a, id: gerarIdAtividade() }))
+            }
+
+            // 2ª prioridade: atividadesRoteiro do Plano (banco) ligado ao último pós-aula desta turma
+            // Caso mais comum: professor já usa banco de aulas mas ainda não tem PlanejamentoTurma salvo
+            if (ultimoRegistro) {
+                const planoOrigem = planos.find(p =>
+                    (p.registrosPosAula ?? []).some(r => String(r.id) === String(ultimoRegistro.id))
+                )
+                if (planoOrigem?.atividadesRoteiro?.length) {
+                    return planoOrigem.atividadesRoteiro
+                        .map(a => ({
+                            id: gerarIdAtividade(),
+                            nome: stripHtml(a.nome ?? ''),
+                            duracao: a.duracao,
+                            descricao: stripHtml(a.descricao ?? ''),
+                        }))
+                        .filter(a => a.nome.trim() || a.descricao.trim())
+                }
+            }
+
+            // 3ª prioridade: texto livre do último PlanejamentoTurma antigo
+            if (ultPlan?.oQuePretendoFazer?.trim()) {
+                return [{ id: gerarIdAtividade(), nome: '', duracao: '', descricao: ultPlan.oQuePretendoFazer }]
+            }
+        }
+        return []
+    })
+    // Accordion: qual card está expandido (null = todos colapsados)
+    const [activeAtivId, setActiveAtivId] = useState<string | null>(
+        () => atividades.length > 0 ? atividades[0].id : null
+    )
     const [planoImportadoId, setPlanoImportadoId] = useState<string | null>(null)
     const [busca, setBusca] = useState('')
     const [salvoNoBanco, setSalvoNoBanco] = useState(false)
-    // Referência da aula anterior — colapsada por padrão (mobile-first)
-    const [refAberta, setRefAberta] = useState(false)
-    const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-    useEffect(() => { textareaRef.current?.focus() }, [])
 
     // Filtra planos do banco para modo importar
     const planosFiltrados = useMemo<Plano[]>(() => {
@@ -489,33 +536,62 @@ function FormPlanoTurma({
             .slice(0, 12)
     }, [planos, busca, modo])
 
-    const planoSelecionado = planos.find(p => String(p.id) === planoImportadoId) ?? null
+    function handleImportarPlano(planoId: string) {
+        setPlanoImportadoId(planoId)
+        const p = planos.find(pl => String(pl.id) === planoId)
+        if (p?.atividadesRoteiro?.length) {
+            setAtividades(p.atividadesRoteiro
+                .map(a => ({
+                    id: gerarIdAtividade(),
+                    nome: stripHtml(a.nome ?? ''),
+                    duracao: a.duracao,
+                    descricao: stripHtml(a.descricao ?? ''),
+                }))
+                .filter(a => a.nome.trim() || a.descricao.trim())
+            )
+        }
+    }
 
-    // Encaminhamentos pendentes da última aula
-    const encPendentes = (ultimoRegistro?.encaminhamentos ?? []).filter(e => !e.concluido)
-    const temRef = modo === 'adaptar' && ultimoRegistro && (
-        ultimoRegistro.proximaAula || encPendentes.length > 0 || ultimoRegistro.poderiaMelhorar
-    )
+    function addAtividade() {
+        const novaId = gerarIdAtividade()
+        setAtividades(prev => [...prev, { id: novaId, nome: '', duracao: '30 min', descricao: '' }])
+        setActiveAtivId(novaId)
+    }
+
+    function removeAtividade(id: string) {
+        setAtividades(prev => prev.filter(a => a.id !== id))
+    }
+
+    function updateAtividade(id: string, field: keyof AtividadePlanejamentoTurma, value: string) {
+        setAtividades(prev => prev.map(a => a.id === id ? { ...a, [field]: value } : a))
+    }
 
     function handleSalvar() {
         const origemMap: Record<ModoForm, 'banco' | 'adaptacao' | 'livre'> = {
             adaptar: 'adaptacao', importar: 'banco', criar: 'livre',
         }
+        const atividadesValidas = atividades.filter(a => a.nome.trim())
+        const resumo = atividadesValidas.map(a => a.nome).join(' · ') || '(sem título)'
         salvarPlanejamento({
-            oQuePretendoFazer: notas || (planoSelecionado?.objetivoGeral ?? ''),
-            objetivo: planoSelecionado?.objetivoGeral,
+            oQuePretendoFazer: resumo,
             origemAula: origemMap[modo],
-            materiais: planoSelecionado?.materiais ?? [],
+            atividades: atividadesValidas.length ? atividadesValidas : undefined,
+            materiais: [],
             planosRelacionadosIds: planoImportadoId ? [planoImportadoId] : [],
         })
         setSalvoNoBanco(true)
         setTimeout(onClose, 1200)
     }
 
+    const podeSalvar = atividades.some(a => a.nome.trim())
+
     const modoLabel: Record<ModoForm, string> = {
-        adaptar:  '🔄 Adaptar da aula anterior',
-        importar: '🏛 Importar do banco de aulas',
-        criar:    '✏️ Nova aula',
+        adaptar:  'ADAPTAR DA AULA ANTERIOR',
+        importar: 'IMPORTAR DO BANCO DE AULAS',
+        criar:    'NOVA AULA',
+    }
+    const modoIcon: Record<ModoForm, string> = {
+        adaptar: '🔄', importar: '🏛', criar: '✏️',
     }
 
     return (
@@ -523,81 +599,20 @@ function FormPlanoTurma({
 
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#E6EAF0] dark:border-[#2D3748]">
-                <span className="text-[11px] font-semibold text-slate-600 dark:text-[#C1C8D4]">
-                    {modoLabel[modo]}
+                <span className="text-[11px] font-bold uppercase tracking-[.7px] text-slate-600 dark:text-[#C1C8D4]">
+                    {modoIcon[modo]} {modoLabel[modo]}
                 </span>
-                {/* min-h-[44px] garante área de toque adequada no mobile */}
                 <button
                     onClick={onClose}
                     className="flex items-center justify-center min-w-[44px] min-h-[44px] -mr-3 text-slate-400 hover:text-slate-600 dark:hover:text-[#9CA3AF] transition text-[20px] leading-none"
-                >
-                    ×
-                </button>
+                >×</button>
             </div>
 
-            <div className="px-5 py-4 flex flex-col gap-3">
-
-                {/* Referência colapsável — só no modo adaptar */}
-                {temRef && (
-                    <div className="rounded-lg border border-indigo-100 dark:border-indigo-900/60 overflow-hidden">
-                        <button
-                            onClick={() => setRefAberta(v => !v)}
-                            className="w-full flex items-center justify-between px-3 min-h-[44px] bg-indigo-50/70 dark:bg-indigo-950/30 text-left"
-                        >
-                            <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                                📋 Ver referência da aula anterior
-                            </span>
-                            <span
-                                className="text-[10px] text-indigo-400 dark:text-indigo-500 transition-transform duration-200"
-                                style={{ display: 'inline-block', transform: refAberta ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                            >▼</span>
-                        </button>
-                        {refAberta && (
-                            <div className="px-4 py-3 flex flex-col gap-2.5 border-t border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/30 dark:bg-indigo-950/10">
-                                {ultimoRegistro!.proximaAula && (
-                                    <div>
-                                        <p className="text-[10px] font-semibold uppercase tracking-[.5px] text-indigo-400 dark:text-indigo-500 mb-0.5">
-                                            Para a próxima aula
-                                        </p>
-                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed">
-                                            {ultimoRegistro!.proximaAula}
-                                        </p>
-                                    </div>
-                                )}
-                                {encPendentes.length > 0 && (
-                                    <div>
-                                        <p className="text-[10px] font-semibold uppercase tracking-[.5px] text-indigo-400 dark:text-indigo-500 mb-0.5">
-                                            Encaminhamentos pendentes
-                                        </p>
-                                        <ul className="flex flex-col gap-0.5">
-                                            {encPendentes.map((enc, i) => (
-                                                <li key={i} className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] flex gap-1.5 leading-relaxed">
-                                                    <span className="text-indigo-300 dark:text-indigo-600 shrink-0 mt-[1px]">•</span>
-                                                    {enc.texto}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                                {ultimoRegistro!.poderiaMelhorar && (
-                                    <div>
-                                        <p className="text-[10px] font-semibold uppercase tracking-[.5px] text-indigo-400 dark:text-indigo-500 mb-0.5">
-                                            Poderia melhorar
-                                        </p>
-                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed">
-                                            {ultimoRegistro!.poderiaMelhorar}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                )}
+            <div className="px-5 py-4 flex flex-col gap-4">
 
                 {/* Modo importar: seletor de plano do banco */}
                 {modo === 'importar' && (
                     <div className="flex flex-col gap-2">
-                        {/* font-size 16px evita zoom automático no iOS */}
                         <input
                             type="text"
                             value={busca}
@@ -611,7 +626,7 @@ function FormPlanoTurma({
                                 {planosFiltrados.map(p => (
                                     <button
                                         key={p.id}
-                                        onClick={() => { setPlanoImportadoId(String(p.id)); setNotas(p.objetivoGeral ?? '') }}
+                                        onClick={() => handleImportarPlano(String(p.id))}
                                         className={`w-full text-left px-3 py-3 rounded-lg text-[12.5px] transition border ${
                                             planoImportadoId === String(p.id)
                                                 ? 'border-indigo-300 dark:border-indigo-700 bg-[#5B5FEA]/[0.07] text-indigo-700 dark:text-indigo-300'
@@ -627,21 +642,86 @@ function FormPlanoTurma({
                     </div>
                 )}
 
-                {/* Notas / objetivo */}
+                {/* Atividades */}
                 <div>
-                    <label className="text-[10px] font-semibold uppercase tracking-[.6px] text-[#94A3B8] dark:text-[#6B7280] block mb-1.5">
-                        {modo === 'adaptar' ? 'O que pretendo retomar / ajustar' : 'O que pretendo fazer'}
-                    </label>
-                    {/* font-size 16px evita zoom automático no iOS ao focar o campo */}
-                    <textarea
-                        ref={textareaRef}
-                        value={notas}
-                        onChange={e => setNotas(e.target.value)}
-                        rows={5}
-                        style={{ fontSize: 16 }}
-                        placeholder="Descreva o planejamento para a próxima aula..."
-                        className="w-full px-3 py-2.5 rounded-lg border border-[#E6EAF0] dark:border-[#374151] bg-[var(--v2-card)] text-slate-700 dark:text-[#E5E7EB] placeholder:text-slate-400 dark:placeholder:text-[#6B7280] outline-none focus:border-indigo-400 resize-none leading-relaxed"
-                    />
+                    <label className="text-[10px] font-semibold uppercase tracking-[.6px] text-[#94A3B8] dark:text-[#6B7280] block mb-2">Atividades</label>
+                    <div className="flex flex-col gap-2">
+                        {atividades.map((ativ, idx) => {
+                            const isOpen = activeAtivId === ativ.id
+                            return (
+                            <div
+                                key={ativ.id}
+                                className="rounded-lg border border-[#E6EAF0] dark:border-[#374151] overflow-hidden"
+                                onClick={!isOpen ? () => setActiveAtivId(ativ.id) : undefined}
+                                style={!isOpen ? { cursor: 'pointer' } : undefined}
+                            >
+                                {/* Header */}
+                                <div
+                                    className={`flex items-center gap-2 px-3 py-4 select-none ${isOpen ? 'border-b border-[#E6EAF0] dark:border-[#374151] cursor-pointer' : ''}`}
+                                    onClick={isOpen ? () => setActiveAtivId(null) : undefined}
+                                >
+                                    <span className="text-[11px] text-slate-400 dark:text-[#6B7280] shrink-0">{isOpen ? '▲' : '▼'}</span>
+                                    <span className="text-[11px] text-slate-400 dark:text-[#6B7280] shrink-0">{idx + 1}.</span>
+                                    <input
+                                        value={ativ.nome}
+                                        onChange={e => updateAtividade(ativ.id, 'nome', e.target.value)}
+                                        onClick={e => e.stopPropagation()}
+                                        placeholder="Nome da atividade"
+                                        style={{ fontSize: 16 }}
+                                        className="flex-1 text-[14px] font-semibold bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none placeholder:font-normal placeholder:text-slate-400 dark:placeholder:text-[#6B7280] min-w-0 cursor-text"
+                                    />
+                                    {/* Duração ao lado do × — clica no label abre o card, clica no input não fecha */}
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        <span className="text-[12px] text-slate-400 dark:text-[#6B7280]">Duração:</span>
+                                        <input
+                                            value={ativ.duracao}
+                                            onChange={e => updateAtividade(ativ.id, 'duracao', e.target.value)}
+                                            onClick={e => { e.stopPropagation(); if (!isOpen) setActiveAtivId(ativ.id) }}
+                                            placeholder="15 min"
+                                            style={{ fontSize: 13 }}
+                                            className="w-[60px] text-[12px] px-2 py-1 rounded-md bg-slate-100 dark:bg-[#374151] text-slate-600 dark:text-[#D1D5DB] outline-none focus:ring-1 focus:ring-indigo-400"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={e => { e.stopPropagation(); removeAtividade(ativ.id) }}
+                                        className="flex items-center justify-center w-9 h-9 shrink-0 text-rose-400 hover:text-rose-600 transition text-[20px] leading-none"
+                                    >×</button>
+                                </div>
+
+                                {/* Corpo — só renderiza quando aberto */}
+                                {isOpen && (
+                                    <div className="px-4 pt-3 pb-4">
+                                        <textarea
+                                            value={ativ.descricao}
+                                            onChange={e => {
+                                                e.target.style.height = 'auto'
+                                                e.target.style.height = e.target.scrollHeight + 'px'
+                                                updateAtividade(ativ.id, 'descricao', e.target.value)
+                                            }}
+                                            ref={el => {
+                                                if (el) {
+                                                    el.style.height = 'auto'
+                                                    el.style.height = Math.max(el.scrollHeight, 200) + 'px'
+                                                }
+                                            }}
+                                            autoFocus={ativ.nome === ''}
+                                            style={{ fontSize: 15, minHeight: 200 }}
+                                            placeholder="Descreva esta atividade..."
+                                            className="w-full bg-transparent text-[13px] text-slate-600 dark:text-[#C1C8D4] placeholder:text-slate-400 dark:placeholder:text-[#6B7280] outline-none resize-none leading-relaxed overflow-hidden"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            )
+                        })}
+                        {/* Botão nova atividade — borda tracejada, mobile-friendly */}
+                        <button
+                            onClick={addAtividade}
+                            className="w-full py-3 rounded-lg border border-dashed border-[#CBD5E1] dark:border-[#374151] text-[12px] text-slate-400 dark:text-[#6B7280] hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-500 dark:hover:text-indigo-400 transition"
+                        >
+                            + Nova atividade
+                        </button>
+                    </div>
                 </div>
 
                 {/* Ações — min-h-[44px] para área de toque mobile */}
@@ -657,7 +737,7 @@ function FormPlanoTurma({
                     ) : (
                         <button
                             onClick={handleSalvar}
-                            disabled={!notas.trim() && !planoImportadoId}
+                            disabled={!podeSalvar}
                             className="flex items-center min-h-[44px] px-5 rounded-lg bg-[#5B5FEA] text-white text-[13px] font-semibold hover:bg-[#4B4FD9] disabled:opacity-40 disabled:cursor-not-allowed transition"
                         >
                             Salvar planejamento
@@ -687,6 +767,7 @@ function ConteudoTurma({ turmaSelecionada }: { turmaSelecionada: TurmaSelecionad
             {/* Bloco: Planejamento da próxima aula */}
             {modoAtivo ? (
                 <FormPlanoTurma
+                    key={`${turmaSelecionada.anoLetivoId}|${turmaSelecionada.turmaId}|${modoAtivo}`}
                     modo={modoAtivo}
                     ultimoRegistro={ultimoRegistroDaTurma}
                     onClose={() => setModoAtivo(null)}
