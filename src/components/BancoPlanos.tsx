@@ -45,6 +45,7 @@ import ModalTemplatesRoteiro from './modals/ModalTemplatesRoteiro'
 import ModalNovaMusicaInline from './modals/ModalNovaMusicaInline'
 import ModalRegistroRapido from './modals/ModalRegistroRapido'
 import ModalContextoNovaAula from './modals/ModalContextoNovaAula'
+import ModuloNovaAula from './ModuloNovaAula'
 import ModuleSidebar from './ModuleSidebar'
 import ModalConfiguracoes from './modals/ModalConfiguracoes'
 import ModalAdicionarAoPlano from './modals/ModalAdicionarAoPlano'
@@ -547,6 +548,7 @@ export default function BancoPlanos({ session }) {
                         if (s.modalTemplates)        { s.setModalTemplates(false); return; }
                         if (s.modalGradeSemanal)     { s.setModalGradeSemanal(false); return; }
                         if (s.modalEventos)          { s.setModalEventos(false); return; }
+                        if (s.viewMode === 'nova')   { s.setViewMode('lista'); return; }
                         if (s.statusDropdownId)      { s.setStatusDropdownId(null); return; }
                         if (s.modoEdicao)            { s.setModalConfirm({ titulo: 'Sair sem salvar?', conteudo: 'As alterações não salvas serão perdidas.', labelConfirm: 'Sair', labelCancelar: 'Continuar editando', perigo: true, onConfirm: s.fecharModal }); return; }
                         if (s.planoSelecionado)      { s.fecharModal(); return; }
@@ -561,7 +563,9 @@ export default function BancoPlanos({ session }) {
                             s.modalEventos || s.modoEdicao || s.planoSelecionado || s.showModalContextoNovaAula;
                         if (algumModalAberto) return;
                         if (s.viewMode === 'lista' || s.viewMode === 'resumoDia' || s.viewMode === 'agendaSemanal') {
-                            e.preventDefault(); s.setShowModalContextoNovaAula(true)
+                            e.preventDefault()
+                            s.novoPlano()
+                            s.setViewMode('lista')
                         }
                         return;
                     }
@@ -698,6 +702,7 @@ export default function BancoPlanos({ session }) {
 
             // ── Modal de contexto para Nova Aula ──────────────────────────
             const [showModalContextoNovaAula, setShowModalContextoNovaAula] = useState(false)
+            const [novaAulaPreData, setNovaAulaPreData] = useState<string | undefined>(undefined)
 
             // ── Sidebar lateral ──────────────────────────────────────────
             const [sidebarCollapsed, setSidebarCollapsed] = useState(
@@ -732,7 +737,7 @@ export default function BancoPlanos({ session }) {
             // Mapa viewMode → grupo para detectar grupo ativo
             const VIEWMODE_TO_GROUP: Record<string, string> = {
                 resumoDia: 'agenda', agendaSemanal: 'agenda', calendario: 'agenda',
-                lista: 'planejamento', sequencias: 'planejamento', visaoSemana: 'planejamento', porTurmas: 'planejamento',
+                lista: 'planejamento', nova: 'planejamento', sequencias: 'planejamento', visaoSemana: 'planejamento', porTurmas: 'planejamento',
                 turmas: 'turmas', historicoMusical: 'turmas',
                 repertorio: 'biblioteca', atividades: 'biblioteca', estrategias: 'biblioteca',
                 relatorios: 'relatorios',
@@ -757,7 +762,7 @@ export default function BancoPlanos({ session }) {
                     items: [
                         { label: 'Visão da Semana', short: 'Semana', icon: '📅', mode: 'visaoSemana', action: () => setViewMode('visaoSemana') },
                         { label: 'Banco de Aulas', short: 'Banco', icon: '📚', mode: 'lista',      action: () => { setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null); } },
-                        { label: 'Nova Aula',      short: 'Nova',  icon: '➕', mode: 'nova',       action: () => setShowModalContextoNovaAula(true), accent: true },
+                        { label: 'Nova Aula',      short: 'Nova',  icon: '➕', mode: 'lista',      action: () => { novoPlano(); setViewMode('lista') }, accent: true },
                         { label: 'Aula por Turma', short: 'Turma', icon: '👥', mode: 'porTurmas', action: () => setViewMode('porTurmas') },
                         { label: 'Sequência de Aulas', short: 'Seq.', icon: '🔗', mode: 'sequencias', action: () => setViewMode('sequencias') },
                     ]
@@ -2019,6 +2024,8 @@ export default function BancoPlanos({ session }) {
                 setModalNovaFaixa, setModalNovaEscola, setModalTemplates, setModalGradeSemanal,
                 setModalEventos, setStatusDropdownId, setShowBuscaGlobal,
                 showModalContextoNovaAula, setShowModalContextoNovaAula,
+                novaAulaPreData, setNovaAulaPreData,
+                setViewMode, dataDia,
                 sidebarCollapsed, setSidebarCollapsed,
                 mobileSidebarOpen, setMobileSidebarOpen,
             };
@@ -2665,6 +2672,22 @@ export default function BancoPlanos({ session }) {
 
                                 {/* ═══════════ VIEW SEQUÊNCIAS DIDÁTICAS ═══════════ */}
                                 {viewMode === 'sequencias' && <ErrorBoundary modulo="Sequências"><Suspense fallback={<CarregandoModulo />}><ModuloSequencias /></Suspense></ErrorBoundary>}
+                                {/* ═══════════ NOVA AULA (inline, sem popup) ═══════════ */}
+                                {viewMode === 'nova' && (
+                                    <ModuloNovaAula
+                                        preData={novaAulaPreData}
+                                        onConfirmar={(slots) => {
+                                            setNovaAulaSlots(slots)
+                                            novoPlano()
+                                            setViewMode('lista')
+                                        }}
+                                        onSemProgramar={() => {
+                                            novoPlano()
+                                            setViewMode('lista')
+                                        }}
+                                        onCancelar={() => setViewMode('lista')}
+                                    />
+                                )}
                                 {viewMode === 'lista' && <ErrorBoundary modulo="Banco de Aulas"><Suspense fallback={<CarregandoModulo />}><TelaPrincipal /></Suspense></ErrorBoundary>}
 
                                 {/* REPERTÓRIO INTELIGENTE */}

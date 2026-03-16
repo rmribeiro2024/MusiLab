@@ -209,9 +209,7 @@ export default function TelaPrincipal() {
     // ── ACCORDION do formulário de plano ──
     // Mobile (< 640px): só roteiro aberto por padrão — evita scroll longo entre aulas
     const [secoesForm, setSecoesForm] = useState<Set<string>>(
-        () => window.innerWidth < 640
-            ? new Set(['roteiro'])
-            : new Set(['faixaEtaria', 'roteiro', 'materiais', 'objetivos', 'classificacao', 'bncc', 'recursos'])
+        () => new Set(['roteiro'])
     )
     function toggleSecaoForm(id: string) {
         setSecoesForm(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
@@ -298,77 +296,36 @@ export default function TelaPrincipal() {
     if (modoEdicao && planoEditando) {
         return (
     <>
-    {/* Overlay escuro — só no modo expandido */}
-    {formExpandido && <div className="fixed inset-0 bg-black/60 z-40" onClick={()=>setFormExpandido(false)}/>}
-
-    {/* Container externo — inline compacto OU tela cheia */}
-    <div className={formExpandido ? "fixed inset-0 z-50 flex items-center justify-center p-2" : "max-w-3xl mx-auto mb-10"}>
-
-        {/* Linha "Voltar" — só no modo compacto */}
-        {!formExpandido && (
-            <div className="flex items-center gap-3 mb-4">
-                <button type="button" onClick={handleFechar} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-semibold text-sm transition-colors flex items-center gap-1.5">← Voltar</button>
-                <div>
-                    <h2 className="text-lg font-bold text-slate-800">{planoEditando.id ? 'Editar plano' : 'Novo plano de aula'}</h2>
-                </div>
-            </div>
-        )}
+    {/* Container externo — inline, largura total */}
+    <div className="w-full mb-10">
 
         {/* Card principal */}
-        <div className={`bg-white rounded-2xl overflow-hidden flex flex-col ${formExpandido ? 'w-full h-full max-w-[98vw] max-h-[85dvh] sm:max-h-[97vh] shadow-2xl' : 'shadow-sm border border-slate-200'}`}>
+        <div className="v2-card rounded-2xl border border-slate-200 dark:border-[#374151] overflow-hidden flex flex-col shadow-sm">
 
-            {/* ── HEADER EXPANDIDO ── */}
-            {formExpandido ? (
-                <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center flex-shrink-0">
-                    <div>
-                        <p className="text-xs font-semibold text-indigo-200 uppercase tracking-wide mb-0.5">{planoEditando.id ? 'Editar Plano' : 'Novo Plano'}</p>
-                        <h2 className="text-xl font-bold truncate leading-tight">{planoEditando.titulo||"Sem título"}</h2>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={()=>toggleFavorito(planoEditando)} className={`text-sm px-3 py-1.5 rounded-xl flex-shrink-0 transition-colors ${planoEditando.destaque ? 'bg-amber-400 text-amber-900 font-bold' : 'bg-white/20 hover:bg-white/30'}`}>
-                            {planoEditando.destaque ? '★ Favorito' : '☆ Favoritar'}
-                        </button>
-                        <button type="button" onClick={()=>setFormExpandido(false)} title="Compactar" className="p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-colors text-lg leading-none">⤡</button>
-                        <button type="button" onClick={handleFechar} title="Fechar" className="p-2 rounded-xl bg-white/20 hover:bg-red-500/60 text-white transition-colors text-lg leading-none">✕</button>
-                    </div>
+            {/* ── HEADER ── */}
+            <div className="h-1 bg-gradient-to-r from-indigo-500 to-violet-500 flex-shrink-0"/>
+            <div className="px-5 py-3.5 flex justify-between items-center border-b border-slate-100 dark:border-[#374151] flex-shrink-0">
+                <div className="flex items-center gap-3">
+                    <button type="button" onClick={handleFechar} className="text-slate-400 dark:text-[#9CA3AF] hover:text-slate-600 dark:hover:text-white text-sm font-semibold transition flex items-center gap-1">← Voltar</button>
+                    <span className="text-slate-200 dark:text-[#374151]">|</span>
+                    <h3 className="font-bold text-slate-800 dark:text-white text-sm leading-tight truncate max-w-xs">
+                        {planoEditando.id ? 'Editar plano' : 'Novo plano de aula'}
+                    </h3>
                 </div>
-            ) : (
-                /* ── HEADER COMPACTO ── */
-                <>
-                    <div className="h-1.5 bg-gradient-to-r from-indigo-500 to-violet-500 flex-shrink-0"/>
-                    <div className="px-5 py-3.5 flex justify-between items-center border-b border-slate-100 flex-shrink-0">
-                        <div>
-                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{planoEditando.id ? 'Editar' : 'Novo'}</p>
-                            <h3 className="font-bold text-slate-800 text-sm leading-tight truncate max-w-xs">{planoEditando.titulo||"Sem título"}</h3>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <button onClick={()=>toggleFavorito(planoEditando)} className={`text-xs px-2.5 py-1.5 rounded-xl transition-colors ${planoEditando.destaque ? 'bg-amber-100 text-amber-700 border border-amber-200 font-semibold' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
-                                {planoEditando.destaque ? '★' : '☆'}
-                            </button>
-                            <button type="button" onClick={()=>setFormExpandido(true)} title="Expandir para tela cheia" className="p-2 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-500 text-slate-400 transition-colors text-base leading-none">⤢</button>
-                            <button type="button" onClick={handleFechar} title="Fechar" className="p-2 rounded-xl bg-slate-100 hover:bg-red-50 hover:text-red-400 text-slate-400 transition-colors text-base leading-none">✕</button>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {/* ── CONTEÚDO DO FORM (igual nos dois modos) ── */}
-            <div className={`overflow-y-auto ${formExpandido ? 'flex-1' : ''}`} style={!formExpandido ? {maxHeight:'calc(100dvh - 260px)'} : {}}>
-
-                {/* ─── MODO RÁPIDO toggle ─── */}
-                <div className="px-3 sm:px-6 pt-3 pb-2.5 border-b border-slate-100 flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Modo de edição</span>
-                    <button type="button" onClick={() => {
-                        const next = !modoRapido
-                        setModoRapido(next)
-                        setSecoesForm(next
-                            ? new Set(['roteiro', 'materiais'])
-                            : new Set(['faixaEtaria', 'roteiro', 'materiais', 'objetivos', 'classificacao', 'bncc', 'recursos'])
-                        )
-                    }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${modoRapido ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'}`}>
-                        ⚡ {modoRapido ? 'Modo Rápido (ativo)' : 'Modo Rápido'}
+                <div className="flex items-center gap-1.5">
+                    <button type="button" onClick={() => setModoRapido(v => !v)}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${modoRapido ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700' : 'bg-slate-100 dark:bg-[#374151] text-slate-400 dark:text-[#9CA3AF] border-transparent hover:bg-slate-200 dark:hover:bg-[#4B5563]'}`}
+                        title="Modo Rápido: oculta campos avançados">
+                        ⚡ Rápido
+                    </button>
+                    <button onClick={()=>toggleFavorito(planoEditando)} className={`text-xs px-2.5 py-1.5 rounded-xl transition-colors ${planoEditando.destaque ? 'bg-amber-100 text-amber-700 border border-amber-200 font-semibold' : 'bg-slate-100 dark:bg-[#374151] text-slate-400 dark:text-[#9CA3AF] hover:bg-slate-200 dark:hover:bg-[#4B5563]'}`}>
+                        {planoEditando.destaque ? '★' : '☆'}
                     </button>
                 </div>
+            </div>
+
+            {/* ── CONTEÚDO DO FORM ── */}
+            <div className="overflow-y-auto">
 
                 {/* ─── CONTEXTO DA TURMA — painel recolhível ─── */}
                 {(() => {
@@ -417,15 +374,17 @@ export default function TelaPrincipal() {
                 })()}
 
                 {/* ─── TÍTULO + DURAÇÃO — sempre visíveis ─── */}
-                <div className="px-3 sm:px-6 pt-5 pb-4 border-b border-slate-100 space-y-4">
-                    <div>
-                        <label htmlFor="plano-titulo" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Título *</label>
-                        <input id="plano-titulo" ref={tituloInputRef} type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Duração</label>
-                        <input type="text" value={planoEditando.duracao} onChange={e=>setPlanoEditando({...planoEditando, duracao: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Ex: 50 min" list="duracoes-list" />
-                        <datalist id="duracoes-list">{duracoesSugestao.map(d=><option key={d} value={d}/>)}</datalist>
+                <div className="px-3 sm:px-6 pt-5 pb-4 border-b border-slate-100 dark:border-[#374151]">
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-3">
+                        <div>
+                            <label htmlFor="plano-titulo" className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide mb-1.5">Título *</label>
+                            <input id="plano-titulo" ref={tituloInputRef} type="text" value={planoEditando.titulo} onChange={e=>setPlanoEditando({...planoEditando, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] text-slate-800 dark:text-white" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide mb-1.5">Duração</label>
+                            <input type="text" value={planoEditando.duracao} onChange={e=>setPlanoEditando({...planoEditando, duracao: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] text-slate-800 dark:text-white" placeholder="Ex: 50 min" list="duracoes-list" />
+                            <datalist id="duracoes-list">{duracoesSugestao.map(d=><option key={d} value={d}/>)}</datalist>
+                        </div>
                     </div>
                 </div>
 

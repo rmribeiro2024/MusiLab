@@ -69,7 +69,7 @@ export default function ModuleSidebar({
             {/* ── Desktop sidebar ── */}
             <aside
                 className="v2-side hidden sm:flex flex-col border-r border-[#E6EAF0] dark:border-[#1f2937] flex-none overflow-hidden transition-all duration-200"
-                style={{ width: collapsed ? 64 : 220 }}
+                style={{ width: collapsed ? 64 : 248 }}
             >
                 {/* Section label */}
                 {!collapsed && sectionLabel && (
