@@ -2,6 +2,7 @@ import React from 'react'
 import { useCalendarioContext } from '../../contexts'
 import { useAnoLetivoContext, RUBRICAS_PADRAO } from '../../contexts/AnoLetivoContext'
 import { usePlanosContext, useAplicacoesContext } from '../../contexts'
+import { useEstrategiasContext } from '../../contexts'
 import { startRecording, stopRecording, blobToBase64, base64ToObjectUrl, base64SizeKb } from '../../lib/audioRecorder'
 
 // ── ACCORDION CHIP — campo colapsável genérico ──
@@ -284,6 +285,7 @@ export default function ModalRegistroPosAula() {
     const { anosLetivos, alunosGetByTurma, turmaGetRubricas, turmaSetRubricas } = useAnoLetivoContext() as any
     const { planos, setPlanos, salvarRegistro, editarRegistro, excluirRegistro } = usePlanosContext()
     const { aplicacoes, atualizarStatusAplicacao } = useAplicacoesContext()
+    const { estrategias } = useEstrategiasContext()
     const setRegSerieSel: ((v: string) => void) | undefined = undefined
 
     // ── IA pós-aula ──
@@ -356,6 +358,8 @@ export default function ModalRegistroPosAula() {
     const [turmasCopiar, setTurmasCopiar] = React.useState<Set<string>>(new Set())
     const [copiarOutroDia, setCopiarOutroDia] = React.useState<string>('')
     const [novoEnc, setNovoEnc] = React.useState('')
+    const [showEstrategiasFuncionaram, setShowEstrategiasFuncionaram] = React.useState(false)
+    const [buscaEstrategiaPos, setBuscaEstrategiaPos] = React.useState('')
     // ── estados de áudio (B3) ──
     const [gravando, setGravando] = React.useState(false)
     const [timerGravacao, setTimerGravacao] = React.useState(0)
@@ -949,6 +953,69 @@ export default function ModalRegistroPosAula() {
                                                                 </button>
                                                             </div>
                                                         </div>
+                                                    </div>
+                                                )
+                                            })()}
+
+                                            {/* ── Estratégias que funcionaram hoje ── */}
+                                            {(() => {
+                                                const estrategiasFuncionaram: string[] = (novoRegistro as any).estrategiasQueFunc || []
+                                                return (
+                                                    <div style={{ border: '1px solid #ede9fe', borderRadius: 10, overflow: 'hidden', background: '#faf5ff' }}>
+                                                        <div
+                                                            onClick={() => setShowEstrategiasFuncionaram(o => !o)}
+                                                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
+                                                            <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>🧩</span>
+                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: estrategiasFuncionaram.length > 0 ? '#5b21b6' : '#7c3aed', flex: 1 }}>
+                                                                Estratégias que funcionaram hoje
+                                                            </span>
+                                                            {estrategiasFuncionaram.length > 0 && (
+                                                                <span style={{ fontSize: 10, color: '#7c3aed', fontWeight: 700, background: '#ede9fe', padding: '1px 8px', borderRadius: 99, border: '1px solid #ddd6fe', flexShrink: 0 }}>
+                                                                    {estrategiasFuncionaram.length}
+                                                                </span>
+                                                            )}
+                                                            <span style={{ fontSize: 10, color: '#a78bfa', transition: 'transform .2s', display: 'inline-block', transform: showEstrategiasFuncionaram ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                                                        </div>
+                                                        {showEstrategiasFuncionaram && (
+                                                            <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                                {estrategiasFuncionaram.map((nome, idx) => (
+                                                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                                        <span style={{ fontSize: 11, color: '#5b21b6', flex: 1 }}>🧩 {nome}</span>
+                                                                        <button type="button" onClick={() => {
+                                                                            const nova = estrategiasFuncionaram.filter((_, i) => i !== idx)
+                                                                            setNovoRegistro({ ...novoRegistro, estrategiasQueFunc: nova } as any)
+                                                                        }} style={{ color: '#cbd5e1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, padding: '0 2px', flexShrink: 0 }}>✕</button>
+                                                                    </div>
+                                                                ))}
+                                                                <input type="text" value={buscaEstrategiaPos}
+                                                                    onChange={e => setBuscaEstrategiaPos(e.target.value)}
+                                                                    placeholder="Buscar estratégia..."
+                                                                    style={{ width: '100%', boxSizing: 'border-box', padding: '6px 10px', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#334155', outline: 'none', fontFamily: 'inherit', background: '#fff', marginBottom: 4 }}
+                                                                />
+                                                                {buscaEstrategiaPos.length >= 1 && (
+                                                                    <div style={{ maxHeight: 140, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                                        {estrategias
+                                                                            .filter(e => e.nome.toLowerCase().includes(buscaEstrategiaPos.toLowerCase()) && !estrategiasFuncionaram.includes(e.nome))
+                                                                            .slice(0, 6)
+                                                                            .map(est => (
+                                                                                <button key={est.id} type="button"
+                                                                                    onClick={() => {
+                                                                                        setNovoRegistro({ ...novoRegistro, estrategiasQueFunc: [...estrategiasFuncionaram, est.nome] } as any)
+                                                                                        setBuscaEstrategiaPos('')
+                                                                                    }}
+                                                                                    style={{ textAlign: 'left', padding: '6px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, color: '#5b21b6', background: 'none', border: 'none', cursor: 'pointer', transition: 'background .1s' }}
+                                                                                    onMouseEnter={e => (e.currentTarget.style.background = '#ede9fe')}
+                                                                                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                                                                                    🧩 {est.nome}
+                                                                                </button>
+                                                                            ))}
+                                                                        {estrategias.filter(e => e.nome.toLowerCase().includes(buscaEstrategiaPos.toLowerCase()) && !estrategiasFuncionaram.includes(e.nome)).length === 0 && (
+                                                                            <p style={{ fontSize: 11, color: '#a78bfa', textAlign: 'center', padding: '6px 0' }}>Nenhuma encontrada</p>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )
                                             })()}

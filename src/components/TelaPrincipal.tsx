@@ -196,8 +196,8 @@ export default function TelaPrincipal() {
     const [contextoAberto, setContextoAberto] = useState(true)
 
     // ── Picker de estratégia por atividade ──
-    const [pickerEstrategiaIdx, setPickerEstrategiaIdx] = useState<number | null>(null)
-    const [buscaEstrategia, setBuscaEstrategia] = useState('')
+    const [estrategiaBrowserOpen, setEstrategiaBrowserOpen] = useState(false)
+    const [buscaEstrategiaBrowser, setBuscaEstrategiaBrowser] = useState('')
 
     // ── Gerenciar Níveis — painel inline (substitui modal) ──
     const [gerenciarNiveisOpen, setGerenciarNiveisOpen] = useState(false)
@@ -237,9 +237,42 @@ export default function TelaPrincipal() {
         prevAtivCountRef.current = ativs.length
     }, [(planoEditando?.atividadesRoteiro || []).length]) // eslint-disable-line
 
-    // ── Link inline por atividade (substituí recursosExpandidos para o campo URL) ──
-    const [linkInputIdx, setLinkInputIdx] = useState<number | null>(null)
-    const [linkInputVal, setLinkInputVal] = useState('')
+
+
+    // ── Autocomplete # para tags na descrição ──
+    const [hashDropdown, setHashDropdown] = useState<{ query: string; pos: { top: number; left: number }; atividadeId: string } | null>(null)
+    const todasAsTags = useMemo(() => {
+        const set = new Set<string>()
+        planos.forEach(p => (p.atividadesRoteiro || []).forEach(a => (a.tags || []).forEach(t => set.add(t))))
+        ;(planoEditando?.atividadesRoteiro || []).forEach(a => (a.tags || []).forEach(t => set.add(t)))
+        return [...set].sort()
+    }, [planos, planoEditando])
+
+    // ── Salvar atividades no Banco — seleção no rodapé do plano ──
+    const [atividadesSelecionadasBanco, setAtividadesSelecionadasBanco] = useState<Set<string>>(() => new Set())
+    useEffect(() => {
+        const ids = (planoEditando?.atividadesRoteiro || []).map(a => String(a.id))
+        setAtividadesSelecionadasBanco(new Set(ids))
+    }, [planoEditando?.id]) // eslint-disable-line
+    const salvarAtividadesSelecionadasNoBanco = () => {
+        const paraSlavar = (planoEditando?.atividadesRoteiro || []).filter(a => atividadesSelecionadasBanco.has(String(a.id)))
+        if (paraSlavar.length === 0) return
+        let salvos = 0
+        const novasAtividades = [...atividades]
+        paraSlavar.forEach(atividade => {
+            if (!atividade.nome?.trim()) return
+            const idx = novasAtividades.findIndex(a => a.nome.toLowerCase().trim() === atividade.nome.toLowerCase().trim())
+            if (idx >= 0) {
+                const existe = novasAtividades[idx]
+                novasAtividades[idx] = { ...existe, descricao: atividade.descricao || existe.descricao, duracao: atividade.duracao || existe.duracao, conceitos: [...new Set([...(existe.conceitos||[]), ...(atividade.conceitos||[])])], tags: [...new Set([...(existe.tags||[]), ...(atividade.tags||[])])], faixaEtaria: planoEditando.faixaEtaria || existe.faixaEtaria, escola: planoEditando.escola || existe.escola, unidade: planoEditando.unidades?.[0] || existe.unidade }
+            } else {
+                novasAtividades.push({ id: Date.now() + salvos, nome: atividade.nome, descricao: atividade.descricao || '', duracao: atividade.duracao || '', conceitos: atividade.conceitos || [], tags: atividade.tags || [], recursos: atividade.recursos || [], materiais: [], faixaEtaria: planoEditando.faixaEtaria || [], escola: planoEditando.escola || '', unidade: planoEditando.unidades?.[0] || '' })
+            }
+            salvos++
+        })
+        setAtividades(novasAtividades)
+        showToast(`${salvos} atividade${salvos > 1 ? 's' : ''} salva${salvos > 1 ? 's' : ''} no Banco de Atividades!`, 'success')
+    }
 
     // ── Picker manual de músicas vinculadas ao plano ──
     const [buscaManual, setBuscaManual] = useState('')
@@ -509,7 +542,12 @@ export default function TelaPrincipal() {
                     </button>
                     {secoesForm.has('roteiro') && (
                         <div className="px-3 sm:px-6 pt-5 pb-5">
-                            <div className="flex justify-end items-center mb-3">
+                            <div className="flex justify-between items-center mb-3">
+                                <button type="button"
+                                    onClick={() => { setEstrategiaBrowserOpen(o => !o); setBuscaEstrategiaBrowser('') }}
+                                    className={`text-[11px] font-semibold transition-colors ${estrategiaBrowserOpen ? 'text-violet-700 dark:text-violet-300' : 'text-violet-500 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300'}`}>
+                                    💡 Estratégias
+                                </button>
                                 <div className="flex gap-2">
                                     <button type="button" onClick={() => setModalTemplates(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
                                         📐 Templates
@@ -522,6 +560,51 @@ export default function TelaPrincipal() {
                                     </button>
                                 </div>
                             </div>
+
+                            {/* ── Browser de estratégias ── */}
+                            {estrategiaBrowserOpen && (
+                                <div className="mb-4 bg-violet-50 dark:bg-violet-500/[0.06] border border-violet-200 dark:border-violet-500/30 rounded-xl p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <p className="text-[11px] font-semibold text-violet-700 dark:text-violet-300">
+                                            💡 Explorar banco de estratégias
+                                        </p>
+                                        <button type="button" onClick={() => setEstrategiaBrowserOpen(false)} className="text-violet-400 hover:text-violet-600 text-sm leading-none">×</button>
+                                    </div>
+                                    <input autoFocus type="text" placeholder="Buscar estratégia..."
+                                        value={buscaEstrategiaBrowser}
+                                        onChange={e => setBuscaEstrategiaBrowser(e.target.value)}
+                                        className="w-full px-3 py-2 border border-violet-200 dark:border-violet-500/30 rounded-lg text-xs mb-2 focus:border-violet-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white" />
+                                    {estrategias.length === 0
+                                        ? <p className="text-xs text-slate-400 text-center py-2">Nenhuma estratégia no banco ainda.</p>
+                                        : <div className="max-h-48 overflow-y-auto space-y-1">
+                                            {estrategias.filter(e => !buscaEstrategiaBrowser || e.nome.toLowerCase().includes(buscaEstrategiaBrowser.toLowerCase())).map(est => (
+                                                <button key={est.id} type="button"
+                                                    onClick={() => {
+                                                        const expandida = [...atividadesExpandidas][0]
+                                                        if (!expandida) { showToast('Expanda uma atividade primeiro!', 'error'); return }
+                                                        const idx = (planoEditando.atividadesRoteiro || []).findIndex(a => String(a.id) === expandida)
+                                                        if (idx < 0) return
+                                                        const jaVinculada = (planoEditando.atividadesRoteiro[idx].estrategiasVinculadas || []).includes(est.nome)
+                                                        if (jaVinculada) { showToast('Estratégia já vinculada a essa atividade.', 'error'); return }
+                                                        const arr = [...planoEditando.atividadesRoteiro]
+                                                        arr[idx] = { ...arr[idx], estrategiasVinculadas: [...(arr[idx].estrategiasVinculadas || []), est.nome] }
+                                                        setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
+                                                        showToast(`"${est.nome}" vinculada à atividade!`, 'success')
+                                                    }}
+                                                    className="w-full text-left px-3 py-2 rounded-lg text-xs transition-colors hover:bg-violet-100 dark:hover:bg-violet-500/10 text-slate-700 dark:text-slate-300 hover:text-violet-700">
+                                                    <span className="font-semibold">🧩 {est.nome}</span>
+                                                    {est.categoria && <span className="text-slate-400 ml-1">· {est.categoria}</span>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    }
+                                    {atividadesExpandidas.size === 0 && (
+                                        <p className="text-[11px] text-violet-400 dark:text-violet-400/60 mt-2 text-center">
+                                            Expanda uma atividade para vincular a estratégia
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                             {/* ⏱️ Contador de tempo total */}
                             {(() => {
                                 const ativs = planoEditando.atividadesRoteiro || [];
@@ -626,13 +709,6 @@ export default function TelaPrincipal() {
                                                     className={`w-[62px] text-right bg-transparent border-none outline-none text-xs font-semibold flex-shrink-0 cursor-text
                                                         ${(atividade.duracao||'').trim() ? 'text-slate-500 dark:text-[#9CA3AF]' : 'text-slate-300 dark:text-[#374151]'}`} />
 
-                                                {/* Salvar no banco */}
-                                                <button type="button" title="Salvar no Banco de Atividades"
-                                                    onClick={e => { e.stopPropagation(); saveToBank(); }}
-                                                    className="hidden sm:flex items-center text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors flex-shrink-0 px-1">
-                                                    💾
-                                                </button>
-
                                                 {/* Deletar */}
                                                 <button type="button" title="Remover atividade"
                                                     onClick={e => { e.stopPropagation(); removerAtividadeRoteiro(atividade.id); }}
@@ -646,19 +722,50 @@ export default function TelaPrincipal() {
                                             {isOpen && (
                                                 <div className="px-4 pt-4 pb-5 space-y-4">
 
-                                                    {/* Rich text com toolbar flutuante */}
-                                                    <RichTextEditor
-                                                        value={atividade.descricao}
-                                                        onChange={val => atualizarAtividadeRoteiro(atividade.id, 'descricao', val)}
-                                                        placeholder="Descreva como realizar esta atividade..."
-                                                        rows={6}
-                                                        floatingToolbar
-                                                    />
+                                                    {/* Rich text com toolbar flutuante + preview links + autocomplete # tags */}
+                                                    <div className="relative">
+                                                        <RichTextEditor
+                                                            value={atividade.descricao}
+                                                            onChange={val => atualizarAtividadeRoteiro(atividade.id, 'descricao', val)}
+                                                            placeholder="Descreva como realizar esta atividade... (digite # para tags)"
+                                                            rows={6}
+                                                            floatingToolbar
+                                                            showLinkPreviews
+                                                            onHashTrigger={(query, pos) => setHashDropdown({ query, pos, atividadeId: String(atividade.id) })}
+                                                            onHashCancel={() => setHashDropdown(null)}
+                                                        />
+                                                        {/* Dropdown de tags ao digitar # */}
+                                                        {hashDropdown && hashDropdown.atividadeId === String(atividade.id) && (() => {
+                                                            const filtradas = todasAsTags.filter(t => t.toLowerCase().startsWith(hashDropdown.query.toLowerCase()))
+                                                            if (filtradas.length === 0) return null
+                                                            return (
+                                                                <div style={{ position: 'absolute', top: hashDropdown.pos.top + 4, left: hashDropdown.pos.left, zIndex: 50 }}
+                                                                    className="bg-white dark:bg-[#1F2937] border border-amber-200 dark:border-amber-500/30 rounded-xl shadow-xl py-1 min-w-[140px]">
+                                                                    {filtradas.slice(0, 8).map(tag => (
+                                                                        <button key={tag} type="button"
+                                                                            onMouseDown={e => {
+                                                                                e.preventDefault()
+                                                                                const curr = planoEditando.atividadesRoteiro[index]
+                                                                                if (!(curr.tags || []).includes(tag)) {
+                                                                                    const arr = [...planoEditando.atividadesRoteiro]
+                                                                                    arr[index] = { ...arr[index], tags: [...(arr[index].tags || []), tag] }
+                                                                                    setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
+                                                                                }
+                                                                                setHashDropdown(null)
+                                                                            }}
+                                                                            className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-400/10 transition-colors">
+                                                                            #{tag}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )
+                                                        })()}
+                                                    </div>
 
                                                     {/* ── Meta row unificada ── */}
                                                     <div className="space-y-2.5">
                                                         {/* Chips existentes */}
-                                                        {((atividade.musicasVinculadas||[]).length > 0 || (atividade.estrategiasVinculadas||[]).length > 0 || (atividade.conceitos||[]).length > 0 || (atividade.tags||[]).length > 0 || (atividade.recursos||[]).length > 0) && (
+                                                        {((atividade.musicasVinculadas||[]).length > 0 || (atividade.estrategiasVinculadas||[]).length > 0 || (atividade.conceitos||[]).length > 0 || (atividade.tags||[]).length > 0) && (
                                                             <div className="flex flex-wrap gap-1.5">
                                                                 {(atividade.musicasVinculadas||[]).map((m, mi) => (
                                                                     <span key={mi} className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
@@ -674,7 +781,7 @@ export default function TelaPrincipal() {
                                                                 ))}
                                                                 {(atividade.conceitos||[]).map((c, ci) => (
                                                                     <span key={ci} className="inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-400/10 text-purple-600 dark:text-purple-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
-                                                                        🎵 {c}
+                                                                        🎓 {c}
                                                                         <button type="button" onClick={() => { const arr=[...planoEditando.atividadesRoteiro]; arr[index].conceitos=arr[index].conceitos.filter((_,i)=>i!==ci); setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }} className="hover:text-rose-500 ml-0.5 leading-none">×</button>
                                                                     </span>
                                                                 ))}
@@ -682,12 +789,6 @@ export default function TelaPrincipal() {
                                                                     <span key={ti} className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-400/10 text-amber-600 dark:text-amber-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
                                                                         #{t}
                                                                         <button type="button" onClick={() => { const arr=[...planoEditando.atividadesRoteiro]; arr[index].tags=arr[index].tags.filter((_,i)=>i!==ti); setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }} className="hover:text-rose-500 ml-0.5 leading-none">×</button>
-                                                                    </span>
-                                                                ))}
-                                                                {(atividade.recursos||[]).map((r, ri) => (
-                                                                    <span key={ri} className="inline-flex items-center gap-1 bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
-                                                                        🔗 {r.url.replace(/^https?:\/\//,'').substring(0,22)}
-                                                                        <button type="button" onClick={() => { const arr=[...planoEditando.atividadesRoteiro]; arr[index].recursos.splice(ri,1); setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }} className="hover:text-rose-500 ml-0.5 leading-none">×</button>
                                                                     </span>
                                                                 ))}
                                                             </div>
@@ -698,9 +799,6 @@ export default function TelaPrincipal() {
                                                             <button type="button" onClick={() => setAtividadeVinculandoMusica(atividade.id)}
                                                                 className="text-[11px] font-semibold text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">+ Música</button>
                                                             <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
-                                                            <button type="button" onClick={() => { setPickerEstrategiaIdx(pickerEstrategiaIdx===index?null:index); setBuscaEstrategia('') }}
-                                                                className="text-[11px] font-semibold text-violet-500 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors">+ Estratégia</button>
-                                                            <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
                                                             <input type="text" placeholder="+ Conceito  Enter ↵"
                                                                 onKeyDown={(e) => { const t=e.target as HTMLInputElement; if(e.key==='Enter'){e.preventDefault();const val=t.value.trim();if(val&&!(atividade.conceitos||[]).includes(val)){const arr=[...planoEditando.atividadesRoteiro];arr[index].conceitos=[...(arr[index].conceitos||[]),val];setPlanoEditando({...planoEditando,atividadesRoteiro:arr});t.value=''}} }}
                                                                 className="text-[11px] font-semibold text-purple-500 dark:text-purple-400 bg-transparent border-none outline-none placeholder:text-purple-400/70 dark:placeholder:text-purple-400/40 w-36" />
@@ -708,54 +806,8 @@ export default function TelaPrincipal() {
                                                             <input type="text" placeholder="#tag  Enter ↵"
                                                                 onKeyDown={(e) => { const t=e.target as HTMLInputElement; if(e.key==='Enter'){e.preventDefault();const val=t.value.trim().replace(/^#/,'');if(val&&!(atividade.tags||[]).includes(val)){const arr=[...planoEditando.atividadesRoteiro];arr[index].tags=[...(arr[index].tags||[]),val];setPlanoEditando({...planoEditando,atividadesRoteiro:arr});t.value=''}} }}
                                                                 className="text-[11px] font-semibold text-amber-500 dark:text-amber-400 bg-transparent border-none outline-none placeholder:text-amber-400/70 dark:placeholder:text-amber-400/40 w-24" />
-                                                            <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
-                                                            <button type="button" onClick={() => setLinkInputIdx(linkInputIdx===index?null:index)}
-                                                                className="text-[11px] font-semibold text-slate-400 dark:text-[#6B7280] hover:text-slate-600 dark:hover:text-slate-300 transition-colors">+ Link</button>
-                                                            <div className="sm:hidden ml-auto">
-                                                                <button type="button" onClick={saveToBank}
-                                                                    className="text-[11px] font-semibold text-emerald-500 dark:text-emerald-400 hover:text-emerald-700 transition-colors">💾 Salvar</button>
-                                                            </div>
                                                         </div>
 
-                                                        {/* Picker de estratégia */}
-                                                        {pickerEstrategiaIdx === index && (
-                                                            <div className="bg-white dark:bg-[#1F2937] border border-violet-200 dark:border-violet-500/30 rounded-xl shadow-lg p-3">
-                                                                <input autoFocus type="text" placeholder="Buscar estratégia..."
-                                                                    value={buscaEstrategia} onChange={e => setBuscaEstrategia(e.target.value)}
-                                                                    className="w-full px-2 py-1.5 border border-slate-200 dark:border-[#374151] rounded-lg text-xs mb-2 focus:border-violet-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white" />
-                                                                {estrategias.length === 0
-                                                                    ? <p className="text-xs text-slate-400 text-center py-2">Nenhuma estratégia na biblioteca ainda.</p>
-                                                                    : <div className="max-h-40 overflow-y-auto space-y-1">
-                                                                        {estrategias.filter(e => !buscaEstrategia || e.nome.toLowerCase().includes(buscaEstrategia.toLowerCase())).map(e => {
-                                                                            const jaVinculada = (atividade.estrategiasVinculadas||[]).includes(e.nome)
-                                                                            return (
-                                                                                <button key={e.id} type="button"
-                                                                                    onClick={() => { if(jaVinculada) return; const arr=[...planoEditando.atividadesRoteiro]; arr[index]={...arr[index],estrategiasVinculadas:[...(arr[index].estrategiasVinculadas||[]),e.nome]}; setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); setPickerEstrategiaIdx(null); }}
-                                                                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${jaVinculada?'bg-violet-50 dark:bg-violet-500/10 text-violet-400 cursor-default':'hover:bg-violet-50 dark:hover:bg-violet-500/10 text-slate-700 dark:text-slate-300 hover:text-violet-700'}`}>
-                                                                                    <span className="font-semibold">🧩 {e.nome}</span>
-                                                                                    {e.categoria && <span className="text-slate-400 ml-1">· {e.categoria}</span>}
-                                                                                    {jaVinculada && <span className="text-violet-400 ml-1">✓</span>}
-                                                                                </button>
-                                                                            )
-                                                                        })}
-                                                                    </div>
-                                                                }
-                                                            </div>
-                                                        )}
-
-                                                        {/* Input de link inline */}
-                                                        {linkInputIdx === index && (
-                                                            <div className="flex gap-2">
-                                                                <input type="text" value={linkInputVal} onChange={e => setLinkInputVal(e.target.value)}
-                                                                    placeholder="Cole a URL aqui..."
-                                                                    onKeyDown={e => { if(e.key==='Enter'&&linkInputVal.trim()){const arr=[...planoEditando.atividadesRoteiro];arr[index].recursos=[...(arr[index].recursos||[]),{url:linkInputVal.trim(),tipo:'link'}];setPlanoEditando({...planoEditando,atividadesRoteiro:arr});setLinkInputVal('');setLinkInputIdx(null); }}}
-                                                                    className="flex-1 px-3 py-1.5 border border-slate-200 dark:border-[#374151] rounded-xl text-xs outline-none focus:border-indigo-400 bg-white dark:bg-[var(--v2-card)] dark:text-white" />
-                                                                <button type="button" onClick={() => { if(!linkInputVal.trim()) return; const arr=[...planoEditando.atividadesRoteiro]; arr[index].recursos=[...(arr[index].recursos||[]),{url:linkInputVal.trim(),tipo:'link'}]; setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); setLinkInputVal(''); setLinkInputIdx(null); }}
-                                                                    className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-xl hover:bg-indigo-700 transition-colors">Adicionar</button>
-                                                                <button type="button" onClick={() => { setLinkInputIdx(null); setLinkInputVal('') }}
-                                                                    className="px-3 py-1.5 text-slate-400 text-xs hover:text-slate-600 transition-colors">Cancelar</button>
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 </div>
                                             )}
@@ -1093,7 +1145,7 @@ export default function TelaPrincipal() {
                         <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('recursos') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     {secoesForm.has('recursos') && (
-                        <div className="px-3 sm:px-6 pt-5 pb-5">
+                        <div className="px-3 sm:px-6 pt-5 pb-5 space-y-5">
                             {!modoRapido && (
                                 <>
                                     <p className="text-[11px] text-slate-400 mb-3">Conteúdos digitais de apoio — músicas, vídeos, partituras, imagens, links.</p>
@@ -1140,6 +1192,34 @@ export default function TelaPrincipal() {
                             ) : modoRapido ? (
                                 <p className="text-[11px] text-slate-400 italic">Nenhum recurso adicionado.</p>
                             ) : null}
+
+                            {/* ── Materiais físicos necessários ── */}
+                            {!modoRapido && (
+                                <div>
+                                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-2">📦 Materiais necessários</p>
+                                    <div className="flex flex-wrap gap-1.5 mb-2">
+                                        {(planoEditando.materiaisNecessarios || []).map((mat, mi) => (
+                                            <span key={mi} className="inline-flex items-center gap-1 bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                                                📦 {mat}
+                                                <button type="button" onClick={() => setPlanoEditando({ ...planoEditando, materiaisNecessarios: (planoEditando.materiaisNecessarios || []).filter((_, i) => i !== mi) })} className="hover:text-rose-500 ml-0.5 leading-none">×</button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <input type="text" placeholder="Ex: pandeiro, papel A4, bola... Enter ↵"
+                                        onKeyDown={(e) => {
+                                            const t = e.target as HTMLInputElement
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault()
+                                                const val = t.value.trim()
+                                                if (val && !(planoEditando.materiaisNecessarios || []).includes(val)) {
+                                                    setPlanoEditando({ ...planoEditando, materiaisNecessarios: [...(planoEditando.materiaisNecessarios || []), val] })
+                                                    t.value = ''
+                                                }
+                                            }
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-xs outline-none focus:border-indigo-400 bg-white dark:bg-[var(--v2-card)] dark:text-white" />
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -1284,6 +1364,42 @@ export default function TelaPrincipal() {
                         </div>
                     )
                 })()}
+
+                {/* ─── SALVAR ATIVIDADES NO BANCO ─── */}
+                {(planoEditando?.atividadesRoteiro || []).filter(a => a.nome?.trim()).length > 0 && (
+                    <div className="px-3 sm:px-6 pb-4">
+                        <div className="border border-dashed border-emerald-200 dark:border-emerald-500/30 rounded-xl p-4 space-y-3">
+                            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                                💾 Salvar atividade(s) no Banco de Atividades
+                            </p>
+                            <div className="space-y-1.5">
+                                {(planoEditando?.atividadesRoteiro || []).filter(a => a.nome?.trim()).map(a => (
+                                    <label key={a.id} className="flex items-center gap-2 cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            checked={atividadesSelecionadasBanco.has(String(a.id))}
+                                            onChange={e => {
+                                                setAtividadesSelecionadasBanco(prev => {
+                                                    const s = new Set(prev)
+                                                    e.target.checked ? s.add(String(a.id)) : s.delete(String(a.id))
+                                                    return s
+                                                })
+                                            }}
+                                            className="accent-emerald-500 w-3.5 h-3.5"
+                                        />
+                                        <span className="text-xs text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-300 transition-colors">{a.nome}</span>
+                                    </label>
+                                ))}
+                            </div>
+                            <button type="button"
+                                onClick={salvarAtividadesSelecionadasNoBanco}
+                                disabled={atividadesSelecionadasBanco.size === 0}
+                                className="text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition-colors">
+                                Salvar selecionadas
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* ─── FOOTER STICKY ─── */}
                 <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white border-t border-slate-100 sticky bottom-0">

@@ -129,6 +129,7 @@ export interface RegistroPosAula {
   urlEvidencia?: string
   chamada?: { alunoId: string; presente: boolean }[]
   encaminhamentos?: { id: string; texto: string; concluido: boolean }[]
+  estrategiasQueFunc?: string[]   // estratégias que funcionaram nessa aula
   rubrica?: ItemRubrica[]
   audioNotaDeVoz?: string   // base64 do blob de áudio (sem prefixo data:...)
   audioDuracao?: number     // segundos gravados
@@ -168,6 +169,7 @@ export interface Plano {
   segmento?: string
   segmentos?: string[]   // auto-catalogado ao aplicar em turmas
   musicasVinculadasPlano?: VinculoMusicaPlano[]  // vínculo plano ↔ repertório
+  materiaisNecessarios?: string[]               // materiais físicos (instrumentos, papel, etc.)
   createdAt?: string
   updatedAt?: string
   _ultimaEdicao?: string
