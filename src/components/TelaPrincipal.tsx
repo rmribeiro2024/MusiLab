@@ -64,7 +64,7 @@ const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPl
 });
 
 export default function TelaPrincipal() {
-    const { anosLetivos, conceitos, setConceitos, faixas, tagsGlobais, setTagsGlobais, unidades, setModalNovaEscola, setNovaEscolaAnoId, setNovaEscolaNome, setModalNovaFaixa, setNovaFaixaNome } = useAnoLetivoContext()
+    const { anosLetivos, conceitos, setConceitos, faixas, setFaixas, tagsGlobais, setTagsGlobais, unidades, setModalNovaEscola, setNovaEscolaAnoId, setNovaEscolaNome, setModalNovaFaixa, setNovaFaixaNome } = useAnoLetivoContext()
     const { atividades, setAtividades, setAtividadeVinculandoMusica } = useAtividadesContext()
     const { repertorio } = useRepertorioContext()
     const { setModalConfirm } = useModalContext()
@@ -198,6 +198,48 @@ export default function TelaPrincipal() {
     // ── Picker de estratégia por atividade ──
     const [pickerEstrategiaIdx, setPickerEstrategiaIdx] = useState<number | null>(null)
     const [buscaEstrategia, setBuscaEstrategia] = useState('')
+
+    // ── Gerenciar Níveis — painel inline (substitui modal) ──
+    const [gerenciarNiveisOpen, setGerenciarNiveisOpen] = useState(false)
+    const [novoNivelInput, setNovoNivelInput] = useState('')
+    const adicionarNivel = () => {
+        const nome = novoNivelInput.trim()
+        if (!nome || faixas.includes(nome)) return
+        setFaixas([...faixas, nome])
+        setNovoNivelInput('')
+    }
+    const removerNivel = (f: string) => {
+        setFaixas(faixas.filter(x => x !== f))
+    }
+
+    // ── Cards colapsáveis do roteiro — Set de IDs expandidos ──
+    const [atividadesExpandidas, setAtividadesExpandidas] = useState<Set<string>>(() => new Set())
+    const prevAtivCountRef = useRef<number>(-1)
+    const toggleExpandidaAtiv = (id: string | number) => {
+        setAtividadesExpandidas(prev => {
+            const s = new Set(prev)
+            s.has(String(id)) ? s.delete(String(id)) : s.add(String(id))
+            return s
+        })
+    }
+    // Reset ao trocar de plano
+    useEffect(() => {
+        setAtividadesExpandidas(new Set())
+        prevAtivCountRef.current = (planoEditando?.atividadesRoteiro || []).length
+    }, [planoEditando?.id]) // eslint-disable-line
+    // Auto-expande a última atividade adicionada
+    useEffect(() => {
+        const ativs = planoEditando?.atividadesRoteiro || []
+        if (prevAtivCountRef.current >= 0 && ativs.length > prevAtivCountRef.current && ativs.length > 0) {
+            const lastId = ativs[ativs.length - 1].id
+            setAtividadesExpandidas(prev => { const s = new Set(prev); s.add(String(lastId)); return s })
+        }
+        prevAtivCountRef.current = ativs.length
+    }, [(planoEditando?.atividadesRoteiro || []).length]) // eslint-disable-line
+
+    // ── Link inline por atividade (substituí recursosExpandidos para o campo URL) ──
+    const [linkInputIdx, setLinkInputIdx] = useState<number | null>(null)
+    const [linkInputVal, setLinkInputVal] = useState('')
 
     // ── Picker manual de músicas vinculadas ao plano ──
     const [buscaManual, setBuscaManual] = useState('')
@@ -390,22 +432,53 @@ export default function TelaPrincipal() {
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <label className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide">Nível</label>
-                                <button type="button" onClick={()=>{ setNovaFaixaNome(''); setModalNovaFaixa(true); }}
-                                    className="text-[11px] text-slate-400 hover:text-slate-600 dark:text-[#6B7280] dark:hover:text-slate-300 transition-colors">
-                                    Gerenciar →
+                                <button type="button" onClick={() => setGerenciarNiveisOpen(v => !v)}
+                                    className={`text-[11px] font-semibold transition-colors ${gerenciarNiveisOpen ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:text-[#6B7280] dark:hover:text-slate-300'}`}>
+                                    {gerenciarNiveisOpen ? '✕ Fechar' : 'Gerenciar →'}
                                 </button>
                             </div>
-                            <div className="flex bg-slate-100 dark:bg-white/[0.06] dark:border dark:border-white/[0.08] rounded-xl p-1 gap-1 flex-wrap">
-                                {faixas.slice(1).map(faixa => (
-                                    <button key={faixa} type="button" onClick={() => toggleFaixa(faixa)}
-                                        className={`flex-1 min-w-fit px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap
-                                            ${planoEditando.faixaEtaria.includes(faixa)
-                                                ? 'bg-white dark:bg-indigo-500/20 dark:border dark:border-indigo-400/30 text-indigo-600 dark:text-indigo-300 shadow-sm'
-                                                : 'text-slate-500 dark:text-[#6B7280] hover:bg-white/70 hover:text-slate-700 dark:hover:bg-white/[0.06] dark:hover:text-slate-300'}`}>
-                                        {faixa}
-                                    </button>
-                                ))}
-                            </div>
+
+                            {/* Segmented selector */}
+                            {!gerenciarNiveisOpen && (
+                                <div className="flex bg-slate-100 dark:bg-white/[0.06] dark:border dark:border-white/[0.08] rounded-xl p-1 gap-1 flex-wrap">
+                                    {faixas.slice(1).map(faixa => (
+                                        <button key={faixa} type="button" onClick={() => toggleFaixa(faixa)}
+                                            className={`flex-1 min-w-fit px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap
+                                                ${planoEditando.faixaEtaria.includes(faixa)
+                                                    ? 'bg-white dark:bg-indigo-500/20 dark:border dark:border-indigo-400/30 text-indigo-600 dark:text-indigo-300 shadow-sm'
+                                                    : 'text-slate-500 dark:text-[#6B7280] hover:bg-white/70 hover:text-slate-700 dark:hover:bg-white/[0.06] dark:hover:text-slate-300'}`}>
+                                            {faixa}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Painel inline de gerenciamento */}
+                            {gerenciarNiveisOpen && (
+                                <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
+                                    <div className="divide-y divide-slate-100 dark:divide-[#374151]">
+                                        {faixas.slice(1).map(f => (
+                                            <div key={f} className="flex items-center gap-2 px-3 py-2 group">
+                                                <span className="flex-1 text-sm font-medium text-slate-700 dark:text-[#D1D5DB]">{f}</span>
+                                                <button type="button" onClick={() => removerNivel(f)}
+                                                    className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-300 dark:text-[#374151] hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-400/10 transition-all text-base leading-none flex-shrink-0">
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-2 p-3 border-t border-slate-100 dark:border-[#374151] bg-slate-50 dark:bg-white/[0.02]">
+                                        <input type="text" value={novoNivelInput} onChange={e => setNovoNivelInput(e.target.value)}
+                                            onKeyDown={e => { if (e.key === 'Enter') adicionarNivel() }}
+                                            placeholder="Novo nível... Enter ↵"
+                                            className="flex-1 bg-white dark:bg-[var(--v2-card)] border border-slate-200 dark:border-[#374151] rounded-lg px-3 py-1.5 text-sm outline-none focus:border-indigo-400 dark:text-white" />
+                                        <button type="button" onClick={adicionarNivel}
+                                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors">
+                                            + Add
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -436,9 +509,7 @@ export default function TelaPrincipal() {
                     </button>
                     {secoesForm.has('roteiro') && (
                         <div className="px-3 sm:px-6 pt-5 pb-5">
-                            {/* Roteiro de Atividades */}
-                            <div className="flex justify-between items-center mb-3">
-                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">📋 Roteiro de Atividades</label>
+                            <div className="flex justify-end items-center mb-3">
                                 <div className="flex gap-2">
                                     <button type="button" onClick={() => setModalTemplates(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
                                         📐 Templates
@@ -473,368 +544,224 @@ export default function TelaPrincipal() {
                                 );
                             })()}
 
+                            {/* ── Empty state ── */}
                             {(!planoEditando.atividadesRoteiro || planoEditando.atividadesRoteiro.length === 0) ? (
-                                <div className="text-center py-8 text-gray-400">
-                                    <p>Nenhuma atividade adicionada ainda.</p>
-                                    <p className="text-sm mt-2">Clique em "+ Adicionar Atividade" para começar.</p>
+                                <div className="flex flex-col items-center gap-3 py-10">
+                                    <div className="text-4xl opacity-30">📋</div>
+                                    <p className="text-sm font-semibold text-slate-400 dark:text-[#4B5563]">Nenhuma atividade ainda</p>
+                                    <p className="text-xs text-slate-300 dark:text-[#374151] text-center">Adicione a primeira atividade do roteiro.<br/>Você pode usar templates ou importar do seu banco.</p>
+                                    <button type="button" onClick={adicionarAtividadeRoteiro}
+                                        className="mt-1 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 dark:border dark:border-indigo-400/30 text-white dark:text-indigo-300 text-sm font-semibold rounded-xl transition-colors shadow-sm">
+                                        ＋ Adicionar atividade
+                                    </button>
+                                    <div className="flex gap-2">
+                                        <button type="button" onClick={() => setModalTemplates(true)} className="text-xs font-semibold text-slate-400 dark:text-[#4B5563] hover:text-slate-600 dark:hover:text-slate-300 transition-colors">📐 Templates</button>
+                                        <span className="text-slate-200 dark:text-[#374151]">·</span>
+                                        <button type="button" onClick={() => setModalImportarAtividade(true)} className="text-xs font-semibold text-slate-400 dark:text-[#4B5563] hover:text-slate-600 dark:hover:text-slate-300 transition-colors">📚 Importar</button>
+                                    </div>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    {(planoEditando.atividadesRoteiro || []).map((atividade, index) => (
+                                <div className="space-y-2">
+                                    {(planoEditando.atividadesRoteiro || []).map((atividade, index) => {
+                                        const isOpen = atividadesExpandidas.has(String(atividade.id))
+                                        const saveToBank = () => {
+                                            if(!atividade.nome?.trim()) { showToast('Nome obrigatório!', 'error'); return; }
+                                            const existe = atividades.find(a => a.nome.toLowerCase().trim() === atividade.nome.toLowerCase().trim());
+                                            if(existe) {
+                                                setModalConfirm({ titulo: 'Atividade já existe', conteudo: `"${atividade.nome}" já existe no Banco de Atividades.\n\nAtualizar?`, labelConfirm: 'Atualizar', onConfirm: () => {
+                                                    const atualizada = { ...existe, descricao: atividade.descricao || existe.descricao, duracao: atividade.duracao || existe.duracao, conceitos: [...new Set([...(existe.conceitos||[]), ...(atividade.conceitos||[])])], tags: [...new Set([...(existe.tags||[]), ...(atividade.tags||[])])], recursos: [...(existe.recursos||[]), ...(atividade.recursos||[])].filter((r,i,a) => a.findIndex(x=>x.url===r.url)===i), faixaEtaria: planoEditando.faixaEtaria || existe.faixaEtaria, escola: planoEditando.escola || existe.escola, unidade: planoEditando.unidades?.[0] || existe.unidade };
+                                                    setAtividades(atividades.map(a => a.id === existe.id ? atualizada : a));
+                                                    showToast('Atividade atualizada no Banco de Atividades!', 'success');
+                                                }});
+                                            } else {
+                                                setAtividades([...atividades, { id: Date.now(), nome: atividade.nome, descricao: atividade.descricao || '', duracao: atividade.duracao || '', conceitos: atividade.conceitos || [], tags: atividade.tags || [], recursos: atividade.recursos || [], materiais: [], faixaEtaria: planoEditando.faixaEtaria || [], escola: planoEditando.escola || '', unidade: planoEditando.unidades?.[0] || '' }]);
+                                                showToast('Atividade salva no Banco de Atividades!', 'success');
+                                            }
+                                        }
+                                        return (
                                         <div key={atividade.id}
                                             draggable
                                             onDragStart={(e) => { if (!dragFromHandle.current) { e.preventDefault(); return; } handleDragStart(index); }}
                                             onDragEnter={() => handleDragEnter(index)}
                                             onDragEnd={() => { dragFromHandle.current = false; handleDragEnd(); }}
                                             onDragOver={e => e.preventDefault()}
-                                            className={`bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm transition-opacity hover:border-indigo-200 ${dragActiveIndex === index ? 'dragging' : ''} ${dragOverIndex === index && dragActiveIndex !== index ? 'drag-over' : ''}`}>
-                                            <div className="flex justify-between items-center mb-3">
-                                                <div className="flex items-center gap-2 select-none">
-                                                    <span
-                                                        className="hidden sm:inline text-gray-300 hover:text-indigo-400 transition text-lg cursor-grab active:cursor-grabbing touch-none"
-                                                        title="Arraste para reordenar"
-                                                        onPointerDown={() => { dragFromHandle.current = true; }}
-                                                    >⠿</span>
-                                                    {/* Botões ↑↓ de reordenação — fallback mobile para drag */}
-                                                    <div className="flex sm:hidden gap-1">
-                                                        <button type="button"
-                                                            onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===0) return; arr.unshift(arr.splice(index,1)[0]); setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
-                                                            disabled={index===0}
-                                                            title="Mover para o início"
-                                                            className="p-2.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded-lg transition text-sm leading-none">⇈</button>
-                                                        <button type="button"
-                                                            onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===0) return; [arr[index-1],arr[index]]=[arr[index],arr[index-1]]; setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
-                                                            disabled={index===0}
-                                                            className="p-2.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded-lg transition text-sm leading-none">↑</button>
-                                                        <button type="button"
-                                                            onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===arr.length-1) return; [arr[index],arr[index+1]]=[arr[index+1],arr[index]]; setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
-                                                            disabled={index===(planoEditando.atividadesRoteiro||[]).length-1}
-                                                            className="p-2.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded-lg transition text-sm leading-none">↓</button>
-                                                        <button type="button"
-                                                            onClick={() => { const arr = [...(planoEditando.atividadesRoteiro||[])]; if(index===arr.length-1) return; arr.push(arr.splice(index,1)[0]); setPlanoEditando({...planoEditando, atividadesRoteiro:arr}); }}
-                                                            disabled={index===(planoEditando.atividadesRoteiro||[]).length-1}
-                                                            title="Mover para o final"
-                                                            className="p-2.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 rounded-lg transition text-sm leading-none">⇊</button>
-                                                    </div>
-                                                    <span className="font-bold text-indigo-700">Atividade {index + 1}</span>
+                                            className={`rounded-2xl border overflow-visible transition-all
+                                                ${isOpen ? 'border-indigo-200 dark:border-indigo-500/30' : 'border-slate-200 dark:border-[#374151]'}
+                                                ${dragActiveIndex === index ? 'opacity-50' : ''}
+                                                ${dragOverIndex === index && dragActiveIndex !== index ? 'border-indigo-400 dark:border-indigo-400' : ''}
+                                                bg-white dark:bg-[var(--v2-card)]`}>
+
+                                            {/* ── Header row (sempre visível) ── */}
+                                            <div className={`flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none
+                                                ${isOpen ? 'bg-indigo-50/60 dark:bg-indigo-500/[0.06] border-b border-indigo-100 dark:border-indigo-500/20 rounded-t-2xl' : 'rounded-2xl hover:bg-slate-50 dark:hover:bg-white/[0.02]'}`}
+                                                onClick={() => toggleExpandidaAtiv(atividade.id)}>
+
+                                                {/* Drag handle desktop */}
+                                                <span className="hidden sm:inline text-slate-300 dark:text-[#374151] hover:text-indigo-400 text-lg cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
+                                                    onPointerDown={e => { e.stopPropagation(); dragFromHandle.current = true }}>⠿</span>
+
+                                                {/* Reordenação mobile — só ↑ ↓ */}
+                                                <div className="flex sm:hidden gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                                                    <button type="button" disabled={index === 0}
+                                                        onClick={() => { const arr=[...(planoEditando.atividadesRoteiro||[])]; if(index===0) return; [arr[index-1],arr[index]]=[arr[index],arr[index-1]]; setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg transition">↑</button>
+                                                    <button type="button" disabled={index === (planoEditando.atividadesRoteiro||[]).length - 1}
+                                                        onClick={() => { const arr=[...(planoEditando.atividadesRoteiro||[])]; if(index===arr.length-1) return; [arr[index],arr[index+1]]=[arr[index+1],arr[index]]; setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg transition">↓</button>
                                                 </div>
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => toggleRecursosAtiv(index)}
-                                                        className="bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm font-bold hover:bg-blue-200"
-                                                    >
-                                                        📎 Links
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if(!atividade.nome?.trim()) {
-                                                                showToast('Nome obrigatório!', 'error');
-                                                                return;
-                                                            }
-                                                            const existe = atividades.find(a => a.nome.toLowerCase().trim() === atividade.nome.toLowerCase().trim());
-                                                            if(existe) {
-                                                                setModalConfirm({ titulo: 'Atividade já existe', conteudo: `"${atividade.nome}" já existe no Banco de Atividades.\n\nAtualizar?`, labelConfirm: 'Atualizar', onConfirm: () => {
-                                                                    const atualizada = {
-                                                                        ...existe,
-                                                                        descricao: atividade.descricao || existe.descricao,
-                                                                        duracao: atividade.duracao || existe.duracao,
-                                                                        conceitos: [...new Set([...(existe.conceitos||[]), ...(atividade.conceitos||[])])],
-                                                                        tags: [...new Set([...(existe.tags||[]), ...(atividade.tags||[])])],
-                                                                        recursos: [...(existe.recursos||[]), ...(atividade.recursos||[])].filter((r,i,a) => a.findIndex(x=>x.url===r.url)===i),
-                                                                        faixaEtaria: planoEditando.faixaEtaria || existe.faixaEtaria,
-                                                                        escola: planoEditando.escola || existe.escola,
-                                                                        unidade: planoEditando.unidades?.[0] || existe.unidade
-                                                                    };
-                                                                    setAtividades(atividades.map(a => a.id === existe.id ? atualizada : a));
-                                                                    showToast('Atividade atualizada no Banco de Atividades!', 'success');
-                                                                } });
-                                                            } else {
-                                                                const nova = {
-                                                                    id: Date.now(),
-                                                                    nome: atividade.nome,
-                                                                    descricao: atividade.descricao || '',
-                                                                    duracao: atividade.duracao || '',
-                                                                    conceitos: atividade.conceitos || [],
-                                                                    tags: atividade.tags || [],
-                                                                    recursos: atividade.recursos || [],
-                                                                    materiais: [],
-                                                                    faixaEtaria: planoEditando.faixaEtaria || [],
-                                                                    escola: planoEditando.escola || '',
-                                                                    unidade: planoEditando.unidades?.[0] || ''
-                                                                };
-                                                                setAtividades([...atividades, nova]);
-                                                                showToast('Atividade salva no Banco de Atividades!', 'success');
-                                                            }
-                                                        }}
-                                                        className="bg-green-500 text-white px-3 py-1 rounded text-sm font-bold hover:bg-green-600"
-                                                    >
-                                                        💾 → Atividades
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removerAtividadeRoteiro(atividade.id)}
-                                                        aria-label="Remover atividade"
-                                                        title="Remover atividade"
-                                                        className="text-red-500 hover:text-red-700 font-bold px-2"
-                                                    >
-                                                        🗑️
-                                                    </button>
-                                                </div>
+
+                                                {/* Nome inline */}
+                                                <input type="text" value={atividade.nome}
+                                                    onChange={e => atualizarAtividadeRoteiro(atividade.id, 'nome', e.target.value)}
+                                                    onClick={e => e.stopPropagation()}
+                                                    placeholder="Nome da atividade..."
+                                                    className={`flex-1 min-w-0 bg-transparent border-none outline-none text-sm font-semibold placeholder:font-normal cursor-text
+                                                        ${isOpen ? 'text-indigo-700 dark:text-indigo-300 placeholder:text-indigo-300/60' : 'text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#4B5563]'}`} />
+
+                                                {/* Duração inline */}
+                                                <input type="text" value={atividade.duracao || ''}
+                                                    onChange={e => atualizarAtividadeRoteiro(atividade.id, 'duracao', e.target.value)}
+                                                    onClick={e => e.stopPropagation()}
+                                                    placeholder="-- min"
+                                                    className={`w-[62px] text-right bg-transparent border-none outline-none text-xs font-semibold flex-shrink-0 cursor-text
+                                                        ${(atividade.duracao||'').trim() ? 'text-slate-500 dark:text-[#9CA3AF]' : 'text-slate-300 dark:text-[#374151]'}`} />
+
+                                                {/* Salvar no banco */}
+                                                <button type="button" title="Salvar no Banco de Atividades"
+                                                    onClick={e => { e.stopPropagation(); saveToBank(); }}
+                                                    className="hidden sm:flex items-center text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors flex-shrink-0 px-1">
+                                                    💾
+                                                </button>
+
+                                                {/* Deletar */}
+                                                <button type="button" title="Remover atividade"
+                                                    onClick={e => { e.stopPropagation(); removerAtividadeRoteiro(atividade.id); }}
+                                                    className="w-7 h-7 flex items-center justify-center text-slate-300 dark:text-[#374151] hover:text-rose-500 dark:hover:text-rose-400 transition-colors rounded-lg flex-shrink-0 text-lg leading-none">×</button>
+
+                                                {/* Chevron */}
+                                                <svg className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-indigo-400 dark:text-indigo-400' : 'text-slate-300 dark:text-[#374151]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                                             </div>
 
-                                            {recursosExpandidos[index] && (
-                                                <div className="mb-3 p-3 bg-blue-50 rounded border">
-                                                    <div className="flex gap-2 mb-2">
-                                                        <input type="text" id={`recurso-${index}`} placeholder="URL" className="flex-1 px-2 py-1 border rounded text-sm" />
-                                                        <button type="button" onClick={() => {
-                                                            const el = document.getElementById(`recurso-${index}`) as HTMLInputElement | null;
-                                                            const url = el?.value.trim();
-                                                            if(url) {
-                                                                const atualizado = [...planoEditando.atividadesRoteiro];
-                                                                atualizado[index].recursos = [...(atualizado[index].recursos||[]), {url, tipo:'link'}];
-                                                                setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                                if (el) el.value = '';
-                                                            }
-                                                        }} className="bg-blue-600 text-white px-3 py-1 rounded text-sm">+</button>
-                                                    </div>
-                                                    {(atividade.recursos||[]).map((r, ri) => (
-                                                        <div key={ri} className="flex items-center gap-2 bg-white p-2 rounded text-xs mb-1">
-                                                            <span className="flex-1 truncate">🔗 {r.url}</span>
-                                                            <button type="button" onClick={() => {
-                                                                const atualizado = [...planoEditando.atividadesRoteiro];
-                                                                atualizado[index].recursos.splice(ri, 1);
-                                                                setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                            }} className="text-red-500 font-bold">✕</button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            <div className="space-y-3">
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                    <div className="md:col-span-2">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <label className="block text-sm font-bold text-gray-700">Nome da Atividade</label>
-                                                            <button type="button" onClick={() => setAtividadeVinculandoMusica(atividade.id)} className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold hover:bg-blue-600">
-                                                                🎵 Vincular música
-                                                            </button>
-                                                        </div>
-                                                        <input
-                                                            type="text"
-                                                            value={atividade.nome}
-                                                            onChange={(e) => atualizarAtividadeRoteiro(atividade.id, 'nome', e.target.value)}
-                                                            className="w-full px-3 py-2 border-2 rounded-lg"
-                                                            placeholder="Ex: Música Tindolelê, Aquecimento Vocal..."
-                                                        />
-                                                        {/* Músicas Vinculadas */}
-                                                        {(atividade.musicasVinculadas||[]).length > 0 && (
-                                                            <div className="mt-2 space-y-1">
-                                                                {atividade.musicasVinculadas.map((musica, mi) => (
-                                                                    <div key={mi} className="flex items-center justify-between bg-blue-50 px-2 py-1 rounded text-xs">
-                                                                        <span className="text-blue-700">🎵 {musica.titulo} {musica.autor && `- ${musica.autor}`}</span>
-                                                                        <button type="button" onClick={() => {
-                                                                            const atualizado = [...planoEditando.atividadesRoteiro];
-                                                                            atualizado[index].musicasVinculadas = atualizado[index].musicasVinculadas.filter((_, idx) => idx !== mi);
-                                                                            setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                                        }} className="text-red-500 font-bold hover:text-red-700">×</button>
-                                                                    </div>
+                                            {/* ── Corpo expandido ── */}
+                                            {isOpen && (
+                                                <div className="px-4 pt-4 pb-5 space-y-4">
+
+                                                    {/* Rich text com toolbar flutuante */}
+                                                    <RichTextEditor
+                                                        value={atividade.descricao}
+                                                        onChange={val => atualizarAtividadeRoteiro(atividade.id, 'descricao', val)}
+                                                        placeholder="Descreva como realizar esta atividade..."
+                                                        rows={6}
+                                                        floatingToolbar
+                                                    />
+
+                                                    {/* ── Meta row unificada ── */}
+                                                    <div className="space-y-2.5">
+                                                        {/* Chips existentes */}
+                                                        {((atividade.musicasVinculadas||[]).length > 0 || (atividade.estrategiasVinculadas||[]).length > 0 || (atividade.conceitos||[]).length > 0 || (atividade.tags||[]).length > 0 || (atividade.recursos||[]).length > 0) && (
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {(atividade.musicasVinculadas||[]).map((m, mi) => (
+                                                                    <span key={mi} className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                                                                        🎵 {m.titulo}
+                                                                        <button type="button" onClick={() => { const arr=[...planoEditando.atividadesRoteiro]; arr[index].musicasVinculadas=arr[index].musicasVinculadas.filter((_,i)=>i!==mi); setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }} className="hover:text-rose-500 ml-0.5 leading-none">×</button>
+                                                                    </span>
+                                                                ))}
+                                                                {(atividade.estrategiasVinculadas||[]).map((nome, ei) => (
+                                                                    <span key={ei} className="inline-flex items-center gap-1 bg-violet-50 dark:bg-violet-400/10 text-violet-600 dark:text-violet-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                                                                        🧩 {nome}
+                                                                        <button type="button" onClick={() => { const arr=[...planoEditando.atividadesRoteiro]; arr[index]={...arr[index],estrategiasVinculadas:(arr[index].estrategiasVinculadas||[]).filter((_,i)=>i!==ei)}; setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }} className="hover:text-rose-500 ml-0.5 leading-none">×</button>
+                                                                    </span>
+                                                                ))}
+                                                                {(atividade.conceitos||[]).map((c, ci) => (
+                                                                    <span key={ci} className="inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-400/10 text-purple-600 dark:text-purple-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                                                                        🎵 {c}
+                                                                        <button type="button" onClick={() => { const arr=[...planoEditando.atividadesRoteiro]; arr[index].conceitos=arr[index].conceitos.filter((_,i)=>i!==ci); setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }} className="hover:text-rose-500 ml-0.5 leading-none">×</button>
+                                                                    </span>
+                                                                ))}
+                                                                {(atividade.tags||[]).map((t, ti) => (
+                                                                    <span key={ti} className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-400/10 text-amber-600 dark:text-amber-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                                                                        #{t}
+                                                                        <button type="button" onClick={() => { const arr=[...planoEditando.atividadesRoteiro]; arr[index].tags=arr[index].tags.filter((_,i)=>i!==ti); setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }} className="hover:text-rose-500 ml-0.5 leading-none">×</button>
+                                                                    </span>
+                                                                ))}
+                                                                {(atividade.recursos||[]).map((r, ri) => (
+                                                                    <span key={ri} className="inline-flex items-center gap-1 bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                                                                        🔗 {r.url.replace(/^https?:\/\//,'').substring(0,22)}
+                                                                        <button type="button" onClick={() => { const arr=[...planoEditando.atividadesRoteiro]; arr[index].recursos.splice(ri,1); setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }} className="hover:text-rose-500 ml-0.5 leading-none">×</button>
+                                                                    </span>
                                                                 ))}
                                                             </div>
                                                         )}
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-bold text-gray-700 mb-1">⏱️ Duração</label>
-                                                        <input
-                                                            type="text"
-                                                            value={atividade.duracao || ''}
-                                                            onChange={(e) => atualizarAtividadeRoteiro(atividade.id, 'duracao', e.target.value)}
-                                                            className="w-full px-3 py-2 border-2 rounded-lg"
-                                                            placeholder="Ex: 15min"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <label className="block text-sm font-bold text-gray-700">Descrição / Como Fazer</label>
-                                                        <button type="button" onClick={() => setAtividadeVinculandoMusica(atividade.id)} className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold hover:bg-blue-600">
-                                                            🎵 Vincular música
-                                                        </button>
-                                                    </div>
-                                                    <RichTextEditor
-                                                        value={atividade.descricao}
-                                                        onChange={(val) => atualizarAtividadeRoteiro(atividade.id, 'descricao', val)}
-                                                        placeholder="Descreva como realizar esta atividade..."
-                                                        rows={10}
-                                                    />
-                                                    {/* Músicas Vinculadas */}
-                                                    {(atividade.musicasVinculadas||[]).length > 0 && (
-                                                        <div className="mt-2 space-y-1">
-                                                            {atividade.musicasVinculadas.map((musica, mi) => (
-                                                                <div key={mi} className="flex items-center justify-between bg-blue-50 px-2 py-1 rounded text-xs">
-                                                                    <span className="text-blue-700">🎵 {musica.titulo} {musica.autor && `- ${musica.autor}`}</span>
-                                                                    <button type="button" onClick={() => {
-                                                                        const atualizado = [...planoEditando.atividadesRoteiro];
-                                                                        atualizado[index].musicasVinculadas = atualizado[index].musicasVinculadas.filter((_, idx) => idx !== mi);
-                                                                        setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                                    }} className="text-red-500 font-bold hover:text-red-700">×</button>
-                                                                </div>
-                                                            ))}
+
+                                                        {/* Botões de adicionar */}
+                                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                                                            <button type="button" onClick={() => setAtividadeVinculandoMusica(atividade.id)}
+                                                                className="text-[11px] font-semibold text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">+ Música</button>
+                                                            <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
+                                                            <button type="button" onClick={() => { setPickerEstrategiaIdx(pickerEstrategiaIdx===index?null:index); setBuscaEstrategia('') }}
+                                                                className="text-[11px] font-semibold text-violet-500 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors">+ Estratégia</button>
+                                                            <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
+                                                            <input type="text" placeholder="+ Conceito  Enter ↵"
+                                                                onKeyDown={(e) => { const t=e.target as HTMLInputElement; if(e.key==='Enter'){e.preventDefault();const val=t.value.trim();if(val&&!(atividade.conceitos||[]).includes(val)){const arr=[...planoEditando.atividadesRoteiro];arr[index].conceitos=[...(arr[index].conceitos||[]),val];setPlanoEditando({...planoEditando,atividadesRoteiro:arr});t.value=''}} }}
+                                                                className="text-[11px] font-semibold text-purple-500 dark:text-purple-400 bg-transparent border-none outline-none placeholder:text-purple-400/70 dark:placeholder:text-purple-400/40 w-36" />
+                                                            <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
+                                                            <input type="text" placeholder="#tag  Enter ↵"
+                                                                onKeyDown={(e) => { const t=e.target as HTMLInputElement; if(e.key==='Enter'){e.preventDefault();const val=t.value.trim().replace(/^#/,'');if(val&&!(atividade.tags||[]).includes(val)){const arr=[...planoEditando.atividadesRoteiro];arr[index].tags=[...(arr[index].tags||[]),val];setPlanoEditando({...planoEditando,atividadesRoteiro:arr});t.value=''}} }}
+                                                                className="text-[11px] font-semibold text-amber-500 dark:text-amber-400 bg-transparent border-none outline-none placeholder:text-amber-400/70 dark:placeholder:text-amber-400/40 w-24" />
+                                                            <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
+                                                            <button type="button" onClick={() => setLinkInputIdx(linkInputIdx===index?null:index)}
+                                                                className="text-[11px] font-semibold text-slate-400 dark:text-[#6B7280] hover:text-slate-600 dark:hover:text-slate-300 transition-colors">+ Link</button>
+                                                            <div className="sm:hidden ml-auto">
+                                                                <button type="button" onClick={saveToBank}
+                                                                    className="text-[11px] font-semibold text-emerald-500 dark:text-emerald-400 hover:text-emerald-700 transition-colors">💾 Salvar</button>
+                                                            </div>
                                                         </div>
-                                                    )}
-                                                </div>
-                                                {/* ── Estratégias Vinculadas ── */}
-                                                <div className="mt-3">
-                                                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                                                        {(atividade.estrategiasVinculadas || []).map((nome, ei) => (
-                                                            <span key={ei} className="inline-flex items-center gap-1 bg-violet-50 border border-violet-200 text-violet-700 text-[11px] font-semibold px-2 py-1 rounded-lg">
-                                                                🧩 {nome}
-                                                                <button type="button" onClick={() => {
-                                                                    const arr = [...planoEditando.atividadesRoteiro]
-                                                                    arr[index] = { ...arr[index], estrategiasVinculadas: (arr[index].estrategiasVinculadas || []).filter((_, i) => i !== ei) }
-                                                                    setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
-                                                                }} className="hover:text-red-600 font-bold ml-0.5">×</button>
-                                                            </span>
-                                                        ))}
-                                                        <button type="button"
-                                                            onClick={() => { setPickerEstrategiaIdx(pickerEstrategiaIdx === index ? null : index); setBuscaEstrategia('') }}
-                                                            className="text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 hover:bg-violet-100 px-2 py-1 rounded-lg transition-colors">
-                                                            + Estratégia
-                                                        </button>
-                                                    </div>
-                                                    {pickerEstrategiaIdx === index && (
-                                                        <div className="bg-white border border-violet-200 rounded-xl shadow-lg p-3 mb-2">
-                                                            <input
-                                                                autoFocus
-                                                                type="text"
-                                                                placeholder="Buscar estratégia..."
-                                                                value={buscaEstrategia}
-                                                                onChange={e => setBuscaEstrategia(e.target.value)}
-                                                                className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs mb-2 focus:border-violet-400 outline-none"
-                                                            />
-                                                            {estrategias.length === 0
-                                                                ? <p className="text-xs text-slate-400 text-center py-2">Nenhuma estratégia na biblioteca ainda.</p>
-                                                                : <div className="max-h-40 overflow-y-auto space-y-1">
-                                                                    {estrategias
-                                                                        .filter(e => !buscaEstrategia || e.nome.toLowerCase().includes(buscaEstrategia.toLowerCase()))
-                                                                        .map(e => {
-                                                                            const jaVinculada = (atividade.estrategiasVinculadas || []).includes(e.nome)
+
+                                                        {/* Picker de estratégia */}
+                                                        {pickerEstrategiaIdx === index && (
+                                                            <div className="bg-white dark:bg-[#1F2937] border border-violet-200 dark:border-violet-500/30 rounded-xl shadow-lg p-3">
+                                                                <input autoFocus type="text" placeholder="Buscar estratégia..."
+                                                                    value={buscaEstrategia} onChange={e => setBuscaEstrategia(e.target.value)}
+                                                                    className="w-full px-2 py-1.5 border border-slate-200 dark:border-[#374151] rounded-lg text-xs mb-2 focus:border-violet-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white" />
+                                                                {estrategias.length === 0
+                                                                    ? <p className="text-xs text-slate-400 text-center py-2">Nenhuma estratégia na biblioteca ainda.</p>
+                                                                    : <div className="max-h-40 overflow-y-auto space-y-1">
+                                                                        {estrategias.filter(e => !buscaEstrategia || e.nome.toLowerCase().includes(buscaEstrategia.toLowerCase())).map(e => {
+                                                                            const jaVinculada = (atividade.estrategiasVinculadas||[]).includes(e.nome)
                                                                             return (
                                                                                 <button key={e.id} type="button"
-                                                                                    onClick={() => {
-                                                                                        if (jaVinculada) return
-                                                                                        const arr = [...planoEditando.atividadesRoteiro]
-                                                                                        arr[index] = { ...arr[index], estrategiasVinculadas: [...(arr[index].estrategiasVinculadas || []), e.nome] }
-                                                                                        setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
-                                                                                        setPickerEstrategiaIdx(null)
-                                                                                    }}
-                                                                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${jaVinculada ? 'bg-violet-50 text-violet-400 cursor-default' : 'hover:bg-violet-50 text-slate-700 hover:text-violet-700'}`}>
+                                                                                    onClick={() => { if(jaVinculada) return; const arr=[...planoEditando.atividadesRoteiro]; arr[index]={...arr[index],estrategiasVinculadas:[...(arr[index].estrategiasVinculadas||[]),e.nome]}; setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); setPickerEstrategiaIdx(null); }}
+                                                                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${jaVinculada?'bg-violet-50 dark:bg-violet-500/10 text-violet-400 cursor-default':'hover:bg-violet-50 dark:hover:bg-violet-500/10 text-slate-700 dark:text-slate-300 hover:text-violet-700'}`}>
                                                                                     <span className="font-semibold">🧩 {e.nome}</span>
                                                                                     {e.categoria && <span className="text-slate-400 ml-1">· {e.categoria}</span>}
                                                                                     {jaVinculada && <span className="text-violet-400 ml-1">✓</span>}
                                                                                 </button>
                                                                             )
                                                                         })}
-                                                                </div>
-                                                            }
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        )}
 
-                                                {/* Conceitos/Tags Editáveis */}
-                                                <div className="mt-3 space-y-2">
-                                                    <div>
-                                                        <div className="flex flex-wrap gap-1 mb-1">
-                                                            {(atividade.conceitos||[]).map((c, ci) => (
-                                                                <span key={ci} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full flex items-center gap-1">
-                                                                    🎵 {c}
-                                                                    <button type="button" onClick={() => {
-                                                                        const atualizado = [...planoEditando.atividadesRoteiro];
-                                                                        atualizado[index].conceitos = atualizado[index].conceitos.filter((_,idx)=>idx!==ci);
-                                                                        setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                                    }} className="hover:text-red-600 font-bold">×</button>
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                        <div className="flex gap-1">
-                                                            <input
-                                                                type="text"
-                                                                placeholder="Novo conceito + Enter"
-                                                                onKeyPress={(e) => {
-                                                                    const t = e.target as HTMLInputElement;
-                                                                    if(e.key === 'Enter') {
-                                                                        let val = t.value.trim();
-                                                                        if(val && !(atividade.conceitos||[]).includes(val)) {
-                                                                            const atualizado = [...planoEditando.atividadesRoteiro];
-                                                                            atualizado[index].conceitos = [...(atualizado[index].conceitos||[]), val];
-                                                                            setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                                            t.value = '';
-                                                                        }
-                                                                    }
-                                                                }}
-                                                                className="flex-1 text-xs px-2 py-1 border rounded"
-                                                            />
-                                                            <select onChange={(e) => {
-                                                                if(e.target.value && !(atividade.conceitos||[]).includes(e.target.value)) {
-                                                                    const atualizado = [...planoEditando.atividadesRoteiro];
-                                                                    atualizado[index].conceitos = [...(atualizado[index].conceitos||[]), e.target.value];
-                                                                    setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                                    e.target.value = '';
-                                                                }
-                                                            }} className="text-xs px-2 py-1 border rounded">
-                                                                <option value="">+ Conceito</option>
-                                                                {conceitos.map(c => <option key={c} value={c}>{c}</option>)}
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex flex-wrap gap-1 mb-1">
-                                                            {(atividade.tags||[]).map((t, ti) => (
-                                                                <span key={ti} className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full flex items-center gap-1">
-                                                                    #{t}
-                                                                    <button type="button" onClick={() => {
-                                                                        const atualizado = [...planoEditando.atividadesRoteiro];
-                                                                        atualizado[index].tags = atualizado[index].tags.filter((_,idx)=>idx!==ti);
-                                                                        setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                                    }} className="hover:text-red-600 font-bold">×</button>
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                        <div className="flex gap-1">
-                                                            <input
-                                                                type="text"
-                                                                placeholder="Nova tag + Enter"
-                                                                onKeyPress={(e) => {
-                                                                    const t = e.target as HTMLInputElement;
-                                                                    if(e.key === 'Enter') {
-                                                                        let val = t.value.trim().replace(/^#/, '');
-                                                                        if(val && !(atividade.tags||[]).includes(val)) {
-                                                                            const atualizado = [...planoEditando.atividadesRoteiro];
-                                                                            atualizado[index].tags = [...(atualizado[index].tags||[]), val];
-                                                                            setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                                            t.value = '';
-                                                                        }
-                                                                    }
-                                                                }}
-                                                                className="flex-1 text-xs px-2 py-1 border rounded"
-                                                            />
-                                                            <select onChange={(e) => {
-                                                                if(e.target.value && !(atividade.tags||[]).includes(e.target.value)) {
-                                                                    const atualizado = [...planoEditando.atividadesRoteiro];
-                                                                    atualizado[index].tags = [...(atualizado[index].tags||[]), e.target.value];
-                                                                    setPlanoEditando({...planoEditando, atividadesRoteiro: atualizado});
-                                                                    e.target.value = '';
-                                                                }
-                                                            }} className="text-xs px-2 py-1 border rounded">
-                                                                <option value="">+ Tag</option>
-                                                                {tagsGlobais.map(t => <option key={t} value={t}>#{t}</option>)}
-                                                            </select>
-                                                        </div>
+                                                        {/* Input de link inline */}
+                                                        {linkInputIdx === index && (
+                                                            <div className="flex gap-2">
+                                                                <input type="text" value={linkInputVal} onChange={e => setLinkInputVal(e.target.value)}
+                                                                    placeholder="Cole a URL aqui..."
+                                                                    onKeyDown={e => { if(e.key==='Enter'&&linkInputVal.trim()){const arr=[...planoEditando.atividadesRoteiro];arr[index].recursos=[...(arr[index].recursos||[]),{url:linkInputVal.trim(),tipo:'link'}];setPlanoEditando({...planoEditando,atividadesRoteiro:arr});setLinkInputVal('');setLinkInputIdx(null); }}}
+                                                                    className="flex-1 px-3 py-1.5 border border-slate-200 dark:border-[#374151] rounded-xl text-xs outline-none focus:border-indigo-400 bg-white dark:bg-[var(--v2-card)] dark:text-white" />
+                                                                <button type="button" onClick={() => { if(!linkInputVal.trim()) return; const arr=[...planoEditando.atividadesRoteiro]; arr[index].recursos=[...(arr[index].recursos||[]),{url:linkInputVal.trim(),tipo:'link'}]; setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); setLinkInputVal(''); setLinkInputIdx(null); }}
+                                                                    className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-xl hover:bg-indigo-700 transition-colors">Adicionar</button>
+                                                                <button type="button" onClick={() => { setLinkInputIdx(null); setLinkInputVal('') }}
+                                                                    className="px-3 py-1.5 text-slate-400 text-xs hover:text-slate-600 transition-colors">Cancelar</button>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            </div>
+                                            )}
                                         </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             )}
                         </div>
