@@ -401,7 +401,7 @@ export default function TelaPrincipal() {
                                         className={`flex-1 min-w-fit px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap
                                             ${planoEditando.faixaEtaria.includes(faixa)
                                                 ? 'bg-white dark:bg-indigo-500/20 dark:border dark:border-indigo-400/30 text-indigo-600 dark:text-indigo-300 shadow-sm'
-                                                : 'text-slate-500 dark:text-[#6B7280] hover:text-slate-700 dark:hover:bg-white/[0.06] dark:hover:text-slate-300'}`}>
+                                                : 'text-slate-500 dark:text-[#6B7280] hover:bg-white/70 hover:text-slate-700 dark:hover:bg-white/[0.06] dark:hover:text-slate-300'}`}>
                                         {faixa}
                                     </button>
                                 ))}
