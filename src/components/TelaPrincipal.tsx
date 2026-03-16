@@ -395,13 +395,13 @@ export default function TelaPrincipal() {
                                     Gerenciar →
                                 </button>
                             </div>
-                            <div className="flex bg-slate-100 dark:bg-[#374151] rounded-xl p-1 gap-1 flex-wrap">
+                            <div className="flex bg-slate-100 dark:bg-white/[0.06] dark:border dark:border-white/[0.08] rounded-xl p-1 gap-1 flex-wrap">
                                 {faixas.slice(1).map(faixa => (
                                     <button key={faixa} type="button" onClick={() => toggleFaixa(faixa)}
                                         className={`flex-1 min-w-fit px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap
                                             ${planoEditando.faixaEtaria.includes(faixa)
-                                                ? 'bg-white dark:bg-[#1F2937] text-indigo-600 dark:text-indigo-400 shadow-sm'
-                                                : 'text-slate-500 dark:text-[#9CA3AF] hover:text-slate-700 dark:hover:text-slate-200'}`}>
+                                                ? 'bg-white dark:bg-indigo-500/20 dark:border dark:border-indigo-400/30 text-indigo-600 dark:text-indigo-300 shadow-sm'
+                                                : 'text-slate-500 dark:text-[#6B7280] hover:text-slate-700 dark:hover:bg-white/[0.06] dark:hover:text-slate-300'}`}>
                                         {faixa}
                                     </button>
                                 ))}
