@@ -855,6 +855,7 @@ function FormPlanejamentoInline({
   ultimoRegistro,
   acionarBloco2,
   ultimoPlanejamento,
+  calendarDateStr,
 }: {
   turmaSelecionada: TurmaSelecionada
   planejamentoEditando: import('../types').PlanejamentoTurma | null
@@ -863,6 +864,7 @@ function FormPlanejamentoInline({
   ultimoRegistro?: RegistroPosAula | null
   acionarBloco2?: { n: number; modo: Exclude<Modo, null> } | null
   ultimoPlanejamento?: import('../types').PlanejamentoTurma | null
+  calendarDateStr?: string
 }) {
   const { planos } = usePlanosContext()
   const { setViewMode } = useRepertorioContext()
@@ -905,7 +907,7 @@ function FormPlanejamentoInline({
   })()
 
   const [modo, setModo] = useState<Modo>(modoInicial)
-  const [dataPrevista, setDataPrevista] = useState(planejamentoEditando?.dataPrevista ?? proximaData)
+  const [dataPrevista, setDataPrevista] = useState(planejamentoEditando?.dataPrevista ?? proximaData ?? calendarDateStr ?? '')
   const [oQuePretendoFazer, setOQuePretendoFazer] = useState(
     planejamentoEditando?.oQuePretendoFazer ?? (modoInicial === 'adaptar' ? buildAdaptarHtml() : '')
   )
@@ -1876,11 +1878,12 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
           key={`form-${turmaSelecionada.turmaId}-${planejamentoEditando?.id ?? 'new'}`}
           turmaSelecionada={turmaSelecionada}
           planejamentoEditando={planejamentoEditando}
-          onSalvar={dados => { salvarPlanejamento(dados); fecharForm(); setPlanejamentosExpandidos(true); showToast('Planejamento salvo! ✅') }}
+          onSalvar={dados => { salvarPlanejamento({ ...dados, dataPrevista: dados.dataPrevista || calendarDateStr }); fecharForm(); setPlanejamentosExpandidos(true); showToast('Planejamento salvo! ✅') }}
           onCancelarEdicao={fecharForm}
           ultimoRegistro={ultimoRegistroDaTurma}
           acionarBloco2={acionarBloco2}
           ultimoPlanejamento={planejamentosDoDia[0] ?? null}
+          calendarDateStr={calendarDateStr}
         />
       </div>
 
