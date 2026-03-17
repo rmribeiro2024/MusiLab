@@ -1308,25 +1308,6 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         ].filter(Boolean).map(stripHtml).join('\n').toLowerCase()
         if (!textoRoteiro.trim() || textoRoteiro.length < 30) return
 
-        // ── Fallback por palavras-chave (funciona sem API key) ───────────────
-        // Para esses dois padrões as palavras são inequívocas — IA não é necessária
-        const kwAquecimento = ['aquecimento', 'relaxamento corporal', 'despertar sensorial', 'auto-massagem', 'automassagem']
-        const kwVocalizes   = ['vocalise', 'vocalize', 'vocalizo', 'aquecimento vocal', 'corposolfa']
-
-        const matchAquecimento = kwAquecimento.some(kw => textoRoteiro.includes(kw))
-        const matchVocalizes   = kwVocalizes.some(kw => textoRoteiro.includes(kw))
-
-        if (matchAquecimento || matchVocalizes) {
-            const tipo = matchAquecimento ? 'aquecimento_corporal' : 'vocalizes'
-            const nomeSugerido = matchAquecimento ? 'Aquecimento e Relaxamento Corporal' : 'Vocalizes / Aquecimento Vocal'
-            // Se a estratégia já existe no banco, não exibir modal novamente
-            const jaExiste = estrategias.some(e => e.nome.trim().toLowerCase() === nomeSugerido.toLowerCase())
-            if (jaExiste) return
-            setEstrategiaDetectadaIA({ tipo, nomeSugerido, planoId: plano.id })
-            setShowModalEstrategiaIA(true)
-            return
-        }
-
         // ── Detecção por IA (quando API key disponível) ──────────────────────
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY
         if (!apiKey) return
