@@ -182,12 +182,16 @@ export default function TelaPrincipal() {
     const [restaurarOpen, setRestaurarOpen] = useState(false)
 
     // ── Feedback visual do botão Salvar ──
+    // salvarPlano() é síncrono (atualiza estado local imediatamente).
+    // requestAnimationFrame garante que 'salvando' seja pintado antes de transicionar.
     const [estadoSalvar, setEstadoSalvar] = useState<'idle' | 'salvando' | 'salvo'>('idle')
     const handleSalvarPlano = () => {
         setEstadoSalvar('salvando')
         salvarPlano()
-        setTimeout(() => setEstadoSalvar('salvo'), 400)
-        setTimeout(() => setEstadoSalvar('idle'), 1900)
+        requestAnimationFrame(() => {
+            setEstadoSalvar('salvo')
+            setTimeout(() => setEstadoSalvar('idle'), 1400)
+        })
     }
 
     // ── Modo Rápido ──
@@ -270,8 +274,12 @@ export default function TelaPrincipal() {
 
 
 
-    // ── Reordenação mobile — memoizados para evitar re-renders nos cards ──
+    // ── Reordenação mobile — memoizados + debounce para evitar swap duplo no double-tap ──
+    const reorderingRef = useRef(false)
     const handleMoveUp = useCallback((index: number) => {
+        if (reorderingRef.current) return
+        reorderingRef.current = true
+        setTimeout(() => { reorderingRef.current = false }, 300)
         const arr = [...(planoEditando?.atividadesRoteiro || [])]
         if (index === 0) return
         ;[arr[index - 1], arr[index]] = [arr[index], arr[index - 1]]
@@ -279,6 +287,9 @@ export default function TelaPrincipal() {
     }, [planoEditando, setPlanoEditando])
 
     const handleMoveDown = useCallback((index: number) => {
+        if (reorderingRef.current) return
+        reorderingRef.current = true
+        setTimeout(() => { reorderingRef.current = false }, 300)
         const arr = [...(planoEditando?.atividadesRoteiro || [])]
         if (index === arr.length - 1) return
         ;[arr[index], arr[index + 1]] = [arr[index + 1], arr[index]]
@@ -897,11 +908,15 @@ export default function TelaPrincipal() {
                             <div>
                                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivos Específicos</label>
                                 <RichTextEditor
-                                    value={Array.isArray(planoEditando.objetivosEspecificos)
-                                        ? (planoEditando.objetivosEspecificos.length > 0 && typeof planoEditando.objetivosEspecificos[0] === 'string' && !planoEditando.objetivosEspecificos[0].startsWith('<')
-                                            ? '<ul>' + planoEditando.objetivosEspecificos.map(o=>`<li>${o}</li>`).join('') + '</ul>'
-                                            : planoEditando.objetivosEspecificos.join('\n'))
-                                        : planoEditando.objetivosEspecificos}
+                                    value={(() => {
+                                        const objs = planoEditando.objetivosEspecificos
+                                        if (!Array.isArray(objs)) return objs ?? ''
+                                        if (objs.length === 0) return ''
+                                        // Itens já em HTML (novo formato): usar o primeiro elemento direto
+                                        if (typeof objs[0] === 'string' && objs[0].startsWith('<')) return objs[0]
+                                        // Itens em texto simples (formato legado): envolver em lista
+                                        return '<ul>' + objs.map(o => `<li>${o}</li>`).join('') + '</ul>'
+                                    })()}
                                     onChange={val => setPlanoEditando({...planoEditando, objetivosEspecificos: [val]})}
                                     placeholder="Liste os objetivos específicos da aula..."
                                     rows={5}
