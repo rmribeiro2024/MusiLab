@@ -138,6 +138,7 @@ const CardAtividadeRoteiro = memo(function CardAtividadeRoteiro({
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div
+      data-activity-id={atividade.id}
       draggable
       onDragStart={(e) => {
         if (!dragFromHandle.current) { e.preventDefault(); return }

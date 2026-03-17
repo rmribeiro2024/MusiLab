@@ -242,12 +242,28 @@ export default function TelaPrincipal() {
         setAtividadesExpandidas(new Set())
         prevAtivCountRef.current = (planoEditando?.atividadesRoteiro || []).length
     }, [planoEditando?.id]) // eslint-disable-line
-    // Auto-expande a última atividade adicionada
+
+    // Bug 1: sincroniza notasAdaptacao do planoEditando com o estado vivo em planos.
+    // salvarNotaAdaptacao atualiza `planos` diretamente; planoEditando é snapshot e fica stale.
+    useEffect(() => {
+        if (!modoEdicao || !planoEditando?.id) return
+        const live = planos.find(p => String(p.id) === String(planoEditando.id))
+        if (!live?.notasAdaptacao) return
+        const mesmaNota = JSON.stringify(planoEditando.notasAdaptacao ?? []) === JSON.stringify(live.notasAdaptacao)
+        if (!mesmaNota) setPlanoEditando({ ...planoEditando, notasAdaptacao: live.notasAdaptacao })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [planos])
+    // Auto-expande a última atividade adicionada + scroll até ela
     useEffect(() => {
         const ativs = planoEditando?.atividadesRoteiro || []
         if (prevAtivCountRef.current >= 0 && ativs.length > prevAtivCountRef.current && ativs.length > 0) {
             const lastId = ativs[ativs.length - 1].id
             setAtividadesExpandidas(prev => { const s = new Set(prev); s.add(String(lastId)); return s })
+            // Scroll suave até a nova atividade
+            setTimeout(() => {
+                const el = document.querySelector(`[data-activity-id="${lastId}"]`)
+                el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+            }, 80)
         }
         prevAtivCountRef.current = ativs.length
     }, [(planoEditando?.atividadesRoteiro || []).length]) // eslint-disable-line
@@ -318,7 +334,19 @@ export default function TelaPrincipal() {
         () => new Set(['roteiro'])
     )
     function toggleSecaoForm(id: string) {
-        setSecoesForm(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
+        setSecoesForm(prev => {
+            const next = new Set(prev)
+            if (next.has(id)) {
+                next.delete(id)
+                // Fechando o roteiro → fecha o painel Banco junto
+                if (id === 'roteiro') setBancoPanelOpen(false)
+            } else {
+                next.add(id)
+            }
+            return next
+        })
+        // Abrindo outra seção → fecha o Banco (contexto muda)
+        if (id !== 'roteiro') setBancoPanelOpen(false)
     }
 
     // ── Helpers para detecção de tipo de recurso externo ──
@@ -1373,7 +1401,7 @@ export default function TelaPrincipal() {
                                     ↩ Restaurar
                                 </button>
                                 {restaurarOpen && (
-                                    <div className="absolute bottom-full left-0 mb-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px]"
+                                    <div className="absolute bottom-full left-0 mb-1 bg-white dark:bg-[#1F2937] border border-slate-200 dark:border-[#374151] rounded-xl shadow-xl z-50 overflow-y-auto max-h-[280px] min-w-[160px]"
                                          onClick={e => e.stopPropagation()}>
                                         {planoEditando._historicoVersoes.map((v, i) => (
                                             <button key={i} type="button"
@@ -1639,7 +1667,7 @@ export default function TelaPrincipal() {
                                                 <button key={s}
                                                     onClick={()=>{setPlanos(planos.map(p=>p.id===plano.id?{...p,statusPlanejamento:s}:p));setStatusDropdownId(null);}}
                                                     className={`w-full text-left px-4 py-2.5 text-xs font-bold flex items-center gap-2 transition hover:bg-[#F6F8FB] dark:hover:bg-white/5 text-slate-700 dark:text-[#E5E7EB] ${status===s?'opacity-50 cursor-default':''}`}>
-                                                    {s}{status===s&&<span className="ml-auto text-slate-300">✓</span>}
+                                                    {s}{status===s&&<span className="ml-auto text-slate-500 dark:text-slate-300">✓</span>}
                                                 </button>
                                             ))}
                                         </div>
