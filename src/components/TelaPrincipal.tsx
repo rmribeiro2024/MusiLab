@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react'
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react'
 import { sanitizar } from '../lib/utils'
 import { showToast } from '../lib/toast'
 import { dbSize } from '../lib/db'
@@ -13,6 +13,8 @@ import ModalMusicasDetectadas from './modals/ModalMusicasDetectadas'
 import ModalEstrategiaDetectada from './modals/ModalEstrategiaDetectada'
 import type { Plano } from '../types'
 import SecaoAdaptacoesTurma from './SecaoAdaptacoesTurma'
+import CardAtividadeRoteiro from './CardAtividadeRoteiro'
+import { useBancoPainel } from '../hooks/useBancoPainel'
 
 // ── LINHA PLANO (memoizado — só re-renderiza quando o próprio plano muda) ──
 interface LinhaPlanoProps {
@@ -199,9 +201,15 @@ export default function TelaPrincipal() {
     const [contextoAberto, setContextoAberto] = useState(true)
 
     // ── Banco lateral (painel C) ──
-    const [bancoPanelOpen, setBancoPanelOpen] = useState(false)
-    const [bancoPanelTab, setBancoPanelTab] = useState<'atividades' | 'estrategias' | 'musicas'>('atividades')
-    const [bancoPanelBusca, setBancoPanelBusca] = useState('')
+    const {
+        open: bancoPanelOpen,
+        tab: bancoPanelTab,
+        busca: bancoPanelBusca,
+        toggle: toggleBancoPainel,
+        setOpen: setBancoPanelOpen,
+        changeTab: setBancoPanelTab,
+        setBusca: setBancoPanelBusca,
+    } = useBancoPainel()
     // mantido para compatibilidade com código legado (não mais exposto na UI)
     const [estrategiaBrowserOpen, setEstrategiaBrowserOpen] = useState(false)
     const [buscaEstrategiaBrowser, setBuscaEstrategiaBrowser] = useState('')
@@ -246,6 +254,21 @@ export default function TelaPrincipal() {
 
 
 
+    // ── Reordenação mobile — memoizados para evitar re-renders nos cards ──
+    const handleMoveUp = useCallback((index: number) => {
+        const arr = [...(planoEditando?.atividadesRoteiro || [])]
+        if (index === 0) return
+        ;[arr[index - 1], arr[index]] = [arr[index], arr[index - 1]]
+        setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
+    }, [planoEditando, setPlanoEditando])
+
+    const handleMoveDown = useCallback((index: number) => {
+        const arr = [...(planoEditando?.atividadesRoteiro || [])]
+        if (index === arr.length - 1) return
+        ;[arr[index], arr[index + 1]] = [arr[index + 1], arr[index]]
+        setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
+    }, [planoEditando, setPlanoEditando])
+
     // ── Autocomplete # para tags na descrição ──
     const [hashDropdown, setHashDropdown] = useState<{ query: string; pos: { top: number; left: number }; atividadeId: string } | null>(null)
     const todasAsTags = useMemo(() => {
@@ -253,7 +276,8 @@ export default function TelaPrincipal() {
         planos.forEach(p => (p.atividadesRoteiro || []).forEach(a => (a.tags || []).forEach(t => set.add(t))))
         ;(planoEditando?.atividadesRoteiro || []).forEach(a => (a.tags || []).forEach(t => set.add(t)))
         return [...set].sort()
-    }, [planos, planoEditando])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [planos, planoEditando?.atividadesRoteiro])
 
     // ── Salvar atividades no Banco — seleção no rodapé do plano ──
     const [atividadesSelecionadasBanco, setAtividadesSelecionadasBanco] = useState<Set<string>>(() => new Set())
@@ -559,8 +583,8 @@ export default function TelaPrincipal() {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => { setBancoPanelOpen(o => !o); setBancoPanelBusca('') }}
-                                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${bancoPanelOpen ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300' : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.10] text-slate-600 dark:text-slate-300'}`}
+                                        onClick={toggleBancoPainel}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${bancoPanelOpen ? 'bg-slate-200 text-slate-700 dark:bg-white/[0.10] dark:text-slate-200' : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.10] text-slate-600 dark:text-slate-300'}`}
                                     >
                                         🗂 Banco {bancoPanelOpen ? '✕' : ''}
                                     </button>
@@ -610,173 +634,36 @@ export default function TelaPrincipal() {
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {(planoEditando.atividadesRoteiro || []).map((atividade, index) => {
-                                        const isOpen = atividadesExpandidas.has(String(atividade.id))
-                                        const saveToBank = () => {
-                                            if(!atividade.nome?.trim()) { showToast('Nome obrigatório!', 'error'); return; }
-                                            const existe = atividades.find(a => a.nome.toLowerCase().trim() === atividade.nome.toLowerCase().trim());
-                                            if(existe) {
-                                                setModalConfirm({ titulo: 'Atividade já existe', conteudo: `"${atividade.nome}" já existe no Banco de Atividades.\n\nAtualizar?`, labelConfirm: 'Atualizar', onConfirm: () => {
-                                                    const atualizada = { ...existe, descricao: atividade.descricao || existe.descricao, duracao: atividade.duracao || existe.duracao, conceitos: [...new Set([...(existe.conceitos||[]), ...(atividade.conceitos||[])])], tags: [...new Set([...(existe.tags||[]), ...(atividade.tags||[])])], recursos: [...(existe.recursos||[]), ...(atividade.recursos||[])].filter((r,i,a) => a.findIndex(x=>x.url===r.url)===i), faixaEtaria: planoEditando.faixaEtaria || existe.faixaEtaria, escola: planoEditando.escola || existe.escola, unidade: planoEditando.unidades?.[0] || existe.unidade };
-                                                    setAtividades(atividades.map(a => a.id === existe.id ? atualizada : a));
-                                                    showToast('Atividade atualizada no Banco de Atividades!', 'success');
-                                                }});
-                                            } else {
-                                                setAtividades([...atividades, { id: Date.now(), nome: atividade.nome, descricao: atividade.descricao || '', duracao: atividade.duracao || '', conceitos: atividade.conceitos || [], tags: atividade.tags || [], recursos: atividade.recursos || [], materiais: [], faixaEtaria: planoEditando.faixaEtaria || [], escola: planoEditando.escola || '', unidade: planoEditando.unidades?.[0] || '' }]);
-                                                showToast('Atividade salva no Banco de Atividades!', 'success');
-                                            }
-                                        }
-                                        return (
-                                        <div key={atividade.id}
-                                            draggable
-                                            onDragStart={(e) => { if (!dragFromHandle.current) { e.preventDefault(); return; } handleDragStart(index); }}
-                                            onDragEnter={() => handleDragEnter(index)}
-                                            onDragEnd={() => { dragFromHandle.current = false; handleDragEnd(); }}
-                                            onDragOver={e => e.preventDefault()}
-                                            className={`rounded-2xl border overflow-visible transition-all
-                                                ${isOpen ? 'border-indigo-200 dark:border-indigo-500/30' : 'border-slate-200 dark:border-[#374151]'}
-                                                ${dragActiveIndex === index ? 'opacity-50' : ''}
-                                                ${dragOverIndex === index && dragActiveIndex !== index ? 'border-indigo-400 dark:border-indigo-400' : ''}
-                                                bg-white dark:bg-[var(--v2-card)]`}>
-
-                                            {/* ── Header row (sempre visível) ── */}
-                                            <div className={`flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none
-                                                ${isOpen ? 'border-b border-slate-100 dark:border-[#374151] rounded-t-2xl' : 'rounded-2xl hover:bg-slate-50 dark:hover:bg-white/[0.02]'}`}
-                                                onClick={() => toggleExpandidaAtiv(atividade.id)}>
-
-                                                {/* Drag handle desktop */}
-                                                <span className="hidden sm:inline text-slate-300 dark:text-[#374151] hover:text-indigo-400 text-lg cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
-                                                    onPointerDown={e => { e.stopPropagation(); dragFromHandle.current = true }}>⠿</span>
-
-                                                {/* Reordenação mobile — só ↑ ↓ */}
-                                                <div className="flex sm:hidden gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                                                    <button type="button" disabled={index === 0}
-                                                        onClick={() => { const arr=[...(planoEditando.atividadesRoteiro||[])]; if(index===0) return; [arr[index-1],arr[index]]=[arr[index],arr[index-1]]; setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg transition">↑</button>
-                                                    <button type="button" disabled={index === (planoEditando.atividadesRoteiro||[]).length - 1}
-                                                        onClick={() => { const arr=[...(planoEditando.atividadesRoteiro||[])]; if(index===arr.length-1) return; [arr[index],arr[index+1]]=[arr[index+1],arr[index]]; setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg transition">↓</button>
-                                                </div>
-
-                                                {/* Nome inline */}
-                                                <input type="text" value={atividade.nome}
-                                                    onChange={e => atualizarAtividadeRoteiro(atividade.id, 'nome', e.target.value)}
-                                                    onClick={e => e.stopPropagation()}
-                                                    placeholder="Nome da atividade..."
-                                                    className={`flex-1 min-w-0 bg-transparent border-none outline-none text-sm font-semibold placeholder:font-normal cursor-text
-                                                        ${isOpen ? 'text-slate-800 dark:text-white placeholder:text-slate-400/60' : 'text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#4B5563]'}`} />
-
-                                                {/* Duração inline */}
-                                                <input type="text" value={atividade.duracao || ''}
-                                                    onChange={e => atualizarAtividadeRoteiro(atividade.id, 'duracao', e.target.value)}
-                                                    onClick={e => e.stopPropagation()}
-                                                    placeholder="-- min"
-                                                    className={`w-[62px] text-right bg-transparent border-none outline-none text-xs font-semibold flex-shrink-0 cursor-text
-                                                        ${(atividade.duracao||'').trim() ? 'text-slate-500 dark:text-[#9CA3AF]' : 'text-slate-300 dark:text-[#374151]'}`} />
-
-                                                {/* Deletar */}
-                                                <button type="button" title="Remover atividade"
-                                                    onClick={e => { e.stopPropagation(); removerAtividadeRoteiro(atividade.id); }}
-                                                    className="w-7 h-7 flex items-center justify-center text-slate-300 dark:text-[#374151] hover:text-rose-500 dark:hover:text-rose-400 transition-colors rounded-lg flex-shrink-0 text-lg leading-none">×</button>
-
-                                                {/* Chevron */}
-                                                <svg className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-slate-400' : 'text-slate-300 dark:text-[#374151]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                                            </div>
-
-                                            {/* ── Corpo expandido ── */}
-                                            {isOpen && (
-                                                <div className="px-4 pt-4 pb-5 space-y-4">
-
-                                                    {/* Rich text com toolbar flutuante + preview links + autocomplete # tags */}
-                                                    <div className="relative">
-                                                        <TipTapEditor
-                                                            value={atividade.descricao}
-                                                            onChange={val => atualizarAtividadeRoteiro(atividade.id, 'descricao', val)}
-                                                            placeholder="Descreva como realizar esta atividade... (digite # para tags)"
-                                                            onHashTrigger={(query, pos) => setHashDropdown({ query, pos, atividadeId: String(atividade.id) })}
-                                                            onHashCancel={() => setHashDropdown(null)}
-                                                            onSaveAsStrategy={text => adicionarEstrategiaRapida(text)}
-                                                        />
-                                                        {/* Dropdown de tags ao digitar # */}
-                                                        {hashDropdown && hashDropdown.atividadeId === String(atividade.id) && (() => {
-                                                            const filtradas = todasAsTags.filter(t => t.toLowerCase().startsWith(hashDropdown.query.toLowerCase()))
-                                                            if (filtradas.length === 0) return null
-                                                            return (
-                                                                <div style={{ position: 'fixed', top: hashDropdown.pos.top + 4, left: hashDropdown.pos.left, zIndex: 9999 }}
-                                                                    className="bg-white dark:bg-[#1F2937] border border-amber-200 dark:border-amber-500/30 rounded-xl shadow-xl py-1 min-w-[140px]">
-                                                                    {filtradas.slice(0, 8).map(tag => (
-                                                                        <button key={tag} type="button"
-                                                                            onMouseDown={e => {
-                                                                                e.preventDefault()
-                                                                                const curr = planoEditando.atividadesRoteiro[index]
-                                                                                if (!(curr.tags || []).includes(tag)) {
-                                                                                    const arr = [...planoEditando.atividadesRoteiro]
-                                                                                    arr[index] = { ...arr[index], tags: [...(arr[index].tags || []), tag] }
-                                                                                    setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
-                                                                                }
-                                                                                setHashDropdown(null)
-                                                                            }}
-                                                                            className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-400/10 transition-colors">
-                                                                            #{tag}
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            )
-                                                        })()}
-                                                    </div>
-
-                                                    {/* ── Meta row unificada ── */}
-                                                    <div className="space-y-2.5">
-                                                        {/* Chips existentes */}
-                                                        {((atividade.musicasVinculadas||[]).length > 0 || (atividade.estrategiasVinculadas||[]).length > 0 || (atividade.conceitos||[]).length > 0 || (atividade.tags||[]).length > 0) && (
-                                                            <div className="flex flex-wrap gap-1.5">
-                                                                {(atividade.musicasVinculadas||[]).map((m, mi) => (
-                                                                    <span key={mi} className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
-                                                                        🎵 {m.titulo}
-                                                                        <button type="button" onClick={() => { const arr=[...planoEditando.atividadesRoteiro]; arr[index].musicasVinculadas=arr[index].musicasVinculadas.filter((_,i)=>i!==mi); setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }} className="hover:text-rose-500 ml-0.5 leading-none">×</button>
-                                                                    </span>
-                                                                ))}
-                                                                {(atividade.estrategiasVinculadas||[]).map((nome, ei) => (
-                                                                    <span key={ei} className="inline-flex items-center gap-1 bg-violet-50 dark:bg-violet-400/10 text-violet-600 dark:text-violet-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
-                                                                        🧩 {nome}
-                                                                        <button type="button" onClick={() => { const arr=[...planoEditando.atividadesRoteiro]; arr[index]={...arr[index],estrategiasVinculadas:(arr[index].estrategiasVinculadas||[]).filter((_,i)=>i!==ei)}; setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }} className="hover:text-rose-500 ml-0.5 leading-none">×</button>
-                                                                    </span>
-                                                                ))}
-                                                                {(atividade.conceitos||[]).map((c, ci) => (
-                                                                    <span key={ci} className="inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-400/10 text-purple-600 dark:text-purple-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
-                                                                        🎓 {c}
-                                                                        <button type="button" onClick={() => { const arr=[...planoEditando.atividadesRoteiro]; arr[index].conceitos=arr[index].conceitos.filter((_,i)=>i!==ci); setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }} className="hover:text-rose-500 ml-0.5 leading-none">×</button>
-                                                                    </span>
-                                                                ))}
-                                                                {(atividade.tags||[]).map((t, ti) => (
-                                                                    <span key={ti} className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-400/10 text-amber-600 dark:text-amber-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
-                                                                        #{t}
-                                                                        <button type="button" onClick={() => { const arr=[...planoEditando.atividadesRoteiro]; arr[index].tags=arr[index].tags.filter((_,i)=>i!==ti); setPlanoEditando({...planoEditando,atividadesRoteiro:arr}); }} className="hover:text-rose-500 ml-0.5 leading-none">×</button>
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        )}
-
-                                                        {/* Botões de adicionar */}
-                                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                                                            <button type="button" onClick={() => setAtividadeVinculandoMusica(atividade.id)}
-                                                                className="text-[11px] font-semibold text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">+ Música</button>
-                                                            <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
-                                                            <input type="text" placeholder="+ Conceito  Enter ↵"
-                                                                onKeyDown={(e) => { const t=e.target as HTMLInputElement; if(e.key==='Enter'){e.preventDefault();const val=t.value.trim();if(val&&!(atividade.conceitos||[]).includes(val)){const arr=[...planoEditando.atividadesRoteiro];arr[index].conceitos=[...(arr[index].conceitos||[]),val];setPlanoEditando({...planoEditando,atividadesRoteiro:arr});t.value=''}} }}
-                                                                className="text-[11px] font-semibold text-purple-500 dark:text-purple-400 bg-transparent border-none outline-none placeholder:text-purple-400/70 dark:placeholder:text-purple-400/40 w-36" />
-                                                            <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
-                                                            <input type="text" placeholder="#tag  Enter ↵"
-                                                                onKeyDown={(e) => { const t=e.target as HTMLInputElement; if(e.key==='Enter'){e.preventDefault();const val=t.value.trim().replace(/^#/,'');if(val&&!(atividade.tags||[]).includes(val)){const arr=[...planoEditando.atividadesRoteiro];arr[index].tags=[...(arr[index].tags||[]),val];setPlanoEditando({...planoEditando,atividadesRoteiro:arr});t.value=''}} }}
-                                                                className="text-[11px] font-semibold text-amber-500 dark:text-amber-400 bg-transparent border-none outline-none placeholder:text-amber-400/70 dark:placeholder:text-amber-400/40 w-24" />
-                                                        </div>
-
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        )
-                                    })}
+                                    {(planoEditando.atividadesRoteiro || []).map((atividade, index) => (
+                                        <CardAtividadeRoteiro
+                                            key={atividade.id}
+                                            atividade={atividade}
+                                            index={index}
+                                            isOpen={atividadesExpandidas.has(String(atividade.id))}
+                                            atividadesCount={(planoEditando.atividadesRoteiro || []).length}
+                                            dragActiveIndex={dragActiveIndex}
+                                            dragOverIndex={dragOverIndex}
+                                            dragFromHandle={dragFromHandle}
+                                            onDragStart={handleDragStart}
+                                            onDragEnter={handleDragEnter}
+                                            onDragEnd={handleDragEnd}
+                                            onToggle={toggleExpandidaAtiv}
+                                            onFieldChange={atualizarAtividadeRoteiro}
+                                            onRemove={removerAtividadeRoteiro}
+                                            onMoveUp={() => handleMoveUp(index)}
+                                            onMoveDown={() => handleMoveDown(index)}
+                                            planoEditando={planoEditando}
+                                            setPlanoEditando={setPlanoEditando}
+                                            hashDropdown={hashDropdown}
+                                            setHashDropdown={setHashDropdown}
+                                            todasAsTags={todasAsTags}
+                                            onSaveAsStrategy={adicionarEstrategiaRapida}
+                                            onVincularMusica={setAtividadeVinculandoMusica}
+                                            bancoAtividades={atividades}
+                                            setBancoAtividades={setAtividades}
+                                            setModalConfirm={setModalConfirm}
+                                        />
+                                    ))}
                                 </div>
                             )}
                                 </div>{/* flex-1 min-w-0 */}
@@ -788,7 +675,7 @@ export default function TelaPrincipal() {
                                         <div className="flex mb-3">
                                             {(['atividades', 'estrategias', 'musicas'] as const).map(tab => (
                                                 <button key={tab} type="button"
-                                                    onClick={() => { setBancoPanelTab(tab); setBancoPanelBusca('') }}
+                                                    onClick={() => setBancoPanelTab(tab)}
                                                     className={`flex-1 py-1.5 text-[11px] font-semibold border-b-2 transition-colors ${bancoPanelTab === tab ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
                                                 >
                                                     {tab === 'atividades' ? '📦' : tab === 'estrategias' ? '💡' : '🎵'}

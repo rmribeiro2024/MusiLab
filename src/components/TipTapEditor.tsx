@@ -196,6 +196,16 @@ export default function TipTapEditor({
     const [previews, setPreviews] = useState<MediaPreview[]>([])
     const [floatingPlayer, setFloatingPlayer] = useState<MediaPreview | null>(null)
 
+    // Refs estáveis para callbacks — evita stale closure no useEditor
+    const onHashTriggerRef = useRef(onHashTrigger)
+    const onHashCancelRef = useRef(onHashCancel)
+    const onSaveAsStrategyRef = useRef(onSaveAsStrategy)
+    useEffect(() => {
+        onHashTriggerRef.current = onHashTrigger
+        onHashCancelRef.current = onHashCancel
+        onSaveAsStrategyRef.current = onSaveAsStrategy
+    })
+
     const editor = useEditor({
         extensions: [
             StarterKit,
@@ -231,34 +241,34 @@ export default function TipTapEditor({
             },
             handleKeyDown(view, event) {
                 // Ctrl+E com seleção → salvar como estratégia
-                if ((event.ctrlKey || event.metaKey) && event.key === 'e' && onSaveAsStrategy) {
+                if ((event.ctrlKey || event.metaKey) && event.key === 'e' && onSaveAsStrategyRef.current) {
                     const { from, to, empty } = view.state.selection
                     if (!empty) {
                         const text = view.state.doc.textBetween(from, to, ' ').trim()
-                        if (text) { onSaveAsStrategy(text); event.preventDefault(); return true }
+                        if (text) { onSaveAsStrategyRef.current(text); event.preventDefault(); return true }
                     }
                 }
                 const hs = hashState.current
                 if (event.key === '#') { hs.active = true; hs.buffer = ''; return false }
                 if (hs.active) {
-                    if (event.key === 'Escape' || event.key === ' ') { hs.active = false; hs.buffer = ''; onHashCancel?.(); return false }
+                    if (event.key === 'Escape' || event.key === ' ') { hs.active = false; hs.buffer = ''; onHashCancelRef.current?.(); return false }
                     if (event.key === 'Backspace') {
-                        if (hs.buffer.length === 0) { hs.active = false; onHashCancel?.() }
+                        if (hs.buffer.length === 0) { hs.active = false; onHashCancelRef.current?.() }
                         else {
                             hs.buffer = hs.buffer.slice(0, -1)
-                            if (onHashTrigger) {
+                            if (onHashTriggerRef.current) {
                                 const c = view.coordsAtPos(view.state.selection.from)
-                                onHashTrigger(hs.buffer, { top: c.bottom, left: c.left })
+                                onHashTriggerRef.current(hs.buffer, { top: c.bottom, left: c.left })
                             }
                         }
                         return false
                     }
-                    if (event.key === 'Enter') { hs.active = false; hs.buffer = ''; onHashCancel?.(); return false }
+                    if (event.key === 'Enter') { hs.active = false; hs.buffer = ''; onHashCancelRef.current?.(); return false }
                     if (event.key.length === 1) {
                         hs.buffer += event.key
-                        if (onHashTrigger) {
+                        if (onHashTriggerRef.current) {
                             const c = view.coordsAtPos(view.state.selection.from)
-                            onHashTrigger(hs.buffer, { top: c.bottom, left: c.left })
+                            onHashTriggerRef.current(hs.buffer, { top: c.bottom, left: c.left })
                         }
                     }
                 }
