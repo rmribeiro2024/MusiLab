@@ -847,7 +847,18 @@ export default function TelaPrincipal() {
                                                 if (items.length === 0) return <p className="text-[11px] text-slate-400 text-center py-3">Nenhuma música no repertório</p>
                                                 return items.map(m => (
                                                     <button key={m.id} type="button"
-                                                        onClick={() => importarMusicaParaPlano(m)}
+                                                        onClick={() => {
+                                                            const expandida = [...atividadesExpandidas][0]
+                                                            if (!expandida) { showToast('Expanda uma atividade primeiro!', 'error'); return }
+                                                            const idx = (planoEditando.atividadesRoteiro || []).findIndex((a: any) => String(a.id) === expandida)
+                                                            if (idx < 0) return
+                                                            const arr = [...planoEditando.atividadesRoteiro]
+                                                            const jaVinculada = (arr[idx].musicasVinculadas || []).find((mv: any) => (typeof mv === 'string' ? mv : mv.id) === m.id)
+                                                            if (jaVinculada) { showToast('Música já vinculada!', 'error'); return }
+                                                            arr[idx] = { ...arr[idx], musicasVinculadas: [...(arr[idx].musicasVinculadas || []), { id: m.id, titulo: m.titulo, autor: m.autor }] }
+                                                            setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
+                                                            showToast(`"${m.titulo}" vinculada!`, 'success')
+                                                        }}
                                                         className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
                                                     >
                                                         <span className="font-semibold block truncate">🎵 {m.titulo}</span>
@@ -856,7 +867,7 @@ export default function TelaPrincipal() {
                                                 ))
                                             })()}
                                         </div>
-                                        {bancoPanelTab === 'estrategias' && atividadesExpandidas.size === 0 && (
+                                        {(bancoPanelTab === 'estrategias' || bancoPanelTab === 'musicas') && atividadesExpandidas.size === 0 && (
                                             <p className="text-[10px] text-slate-400 mt-2 text-center">Expanda uma atividade para vincular</p>
                                         )}
                                     </div>

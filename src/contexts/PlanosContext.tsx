@@ -873,7 +873,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
 
     const importarMusicaParaPlano = useCallback((musica: Musica) => {
         const novaAtividade = {
-            id: Date.now(), nome: musica.titulo, duracao: '', descricao: musica.observacoes || '',
+            id: gerarIdSeguro(), nome: musica.titulo, duracao: '', descricao: musica.observacoes || '',
             conceitos: [...(planoEditando?.conceitos || [])], tags: [...(planoEditando?.tags || [])],
             recursos: [...(musica.links || []).map((l: string) => ({ url: l, tipo: 'link' }))], musicaId: musica.id,
         }
@@ -887,7 +887,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
 
     const importarAtividadeParaPlano = useCallback((atividade: Atividade) => {
         const novaAtividade = {
-            id: Date.now(), nome: atividade.nome, duracao: atividade.duracao || '',
+            id: gerarIdSeguro(), nome: atividade.nome, duracao: atividade.duracao || '',
             descricao: atividade.descricao || '', conceitos: [...(atividade.conceitos || [])],
             tags: [...(atividade.tags || [])], recursos: [...(atividade.recursos || [])], musicasVinculadas: [],
         }
