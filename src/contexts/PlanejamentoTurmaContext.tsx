@@ -43,7 +43,7 @@ export interface PlanejamentoTurmaContextValue {
   editarPlanejamento: (p: PlanejamentoTurma) => void
   salvarPlanejamento: (dados: Omit<PlanejamentoTurma, 'id' | 'criadoEm' | 'atualizadoEm' | 'anoLetivoId' | 'escolaId' | 'segmentoId' | 'turmaId'>) => void
   excluirPlanejamento: (id: string) => void
-  copiarPlanejamento: (planoId: string, destino: TurmaSelecionada) => void
+  copiarPlanejamento: (planoId: string, destino: TurmaSelecionada, dataPrevista?: string) => void
   fecharForm: () => void
 
   // Promoção para banco (retorna dados para o componente pré-preencher o form de plano)
@@ -262,7 +262,7 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
     setPlanejamentos(prev => prev.filter(p => p.id !== id))
   }, [])
 
-  const copiarPlanejamento = useCallback((planoId: string, destino: TurmaSelecionada) => {
+  const copiarPlanejamento = useCallback((planoId: string, destino: TurmaSelecionada, dataPrevista?: string) => {
     const src = planejamentos.find(p => p.id === planoId)
     if (!src) return
     const ts = agora()
@@ -272,6 +272,7 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
       escolaId: destino.escolaId,
       segmentoId: destino.segmentoId,
       turmaId: destino.turmaId,
+      dataPrevista: dataPrevista ?? src.dataPrevista,
       oQuePretendoFazer: src.oQuePretendoFazer,
       objetivo: src.objetivo,
       materiais: src.materiais ? [...src.materiais] : undefined,

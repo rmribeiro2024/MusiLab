@@ -1598,8 +1598,17 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   const [dataAtiva, setDataAtiva] = useState<string | null>(null)
   const formBlockRef = useRef<HTMLDivElement>(null)
 
+  // Limpa qualquer edição pendente ao montar (data ou turma mudou via key)
+  useEffect(() => { fecharForm() }, []) // eslint-disable-line
+
   // Resetar seleção ao trocar de turma
   useEffect(() => { setDataAtiva(null) }, [turmaSelecionada?.turmaId])
+
+  // Planejamentos filtrados para a data atual (evita exibir plans de outros dias)
+  const planejamentosDoDia = useMemo(
+    () => planejamentosDaTurma.filter(p => !p.dataPrevista || p.dataPrevista === calendarDateStr),
+    [planejamentosDaTurma, calendarDateStr]
+  )
 
   // Plano do calendário lateral — fixo na data selecionada, não muda ao clicar na timeline
   const planoDoCalendario = useMemo(() => {
@@ -1805,7 +1814,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
       })()}
 
       {/* ── BLOCO 2: Próximo Passo Sugerido ───────────────────────────────────── */}
-      {registroExibido?.proximaAulaOpcao && planejamentosDaTurma.length === 0 && (
+      {registroExibido?.proximaAulaOpcao && planejamentosDoDia.length === 0 && (
         <CardProximoPasso
           valor={registroExibido.proximaAulaOpcao}
           podeAdaptar={podeAdaptarBloco2}
@@ -1814,7 +1823,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
           onNovo={() => acionarModoFromBloco2('criar')}
         />
       )}
-      {registroExibido?.proximaAulaOpcao && planejamentosDaTurma.length > 0 && (
+      {registroExibido?.proximaAulaOpcao && planejamentosDoDia.length > 0 && (
         <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl">
           <span className="text-emerald-600 dark:text-emerald-400 text-sm">✅</span>
           <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Próxima aula já planejada</span>
@@ -1871,23 +1880,23 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
           onCancelarEdicao={fecharForm}
           ultimoRegistro={ultimoRegistroDaTurma}
           acionarBloco2={acionarBloco2}
-          ultimoPlanejamento={planejamentosDaTurma[0] ?? null}
+          ultimoPlanejamento={planejamentosDoDia[0] ?? null}
         />
       </div>
 
       {/* Planejamentos salvos (colapsável) */}
-      {planejamentosDaTurma.length > 0 && (
+      {planejamentosDoDia.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <button
             onClick={() => setPlanejamentosExpandidos(v => !v)}
             className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
           >
-            <span>Planejamentos salvos ({planejamentosDaTurma.length})</span>
+            <span>Planejamentos salvos ({planejamentosDoDia.length})</span>
             <span className="text-slate-400">{planejamentosExpandidos ? '▲' : '▼'}</span>
           </button>
           {planejamentosExpandidos && (
             <div className="px-4 pb-4 space-y-2">
-              {planejamentosDaTurma.map(p => <CardPlanejamento key={p.id} planejamento={p} />)}
+              {planejamentosDoDia.map(p => <CardPlanejamento key={p.id} planejamento={p} />)}
             </div>
           )}
         </div>
@@ -2251,7 +2260,7 @@ export default function ModuloPlanejamentoTurma() {
       {/* Painel direito — conteúdo de planejamento */}
       <div className="flex-1 min-w-0 space-y-3">
         {!turmaSelecionada && <EstadoVazio />}
-        {turmaSelecionada && <ConteudoTurma calendarDateStr={toDateStr(currentDate)} />}
+        {turmaSelecionada && <ConteudoTurma key={`${turmaSelecionada.turmaId}-${toDateStr(currentDate)}`} calendarDateStr={toDateStr(currentDate)} />}
       </div>
     </div>
   )

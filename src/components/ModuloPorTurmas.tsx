@@ -127,15 +127,15 @@ function SeletorTurma({ dataSelecionada, onDataChange, turmaSelecionada, onSelec
     // ── Drag-drop: copiar planejamento entre turmas ──
     const [dragSrcId, setDragSrcId] = useState<string | null>(null)
     const [dragOverId, setDragOverId] = useState<string | null>(null)
-    type CopyConfirm = { srcPlanoId: string; srcNome: string; dst: TurmaSelecionada; dstNome: string }
+    type CopyConfirm = { srcPlanoId: string; srcNome: string; dst: TurmaSelecionada; dstNome: string; dataPrevista: string }
     const [copyConfirm, setCopyConfirm] = useState<CopyConfirm | null>(null)
 
     const handleDrop = useCallback((e: React.DragEvent, dstAula: ReturnType<typeof obterTurmasDoDia>[number]) => {
         e.preventDefault()
         if (!dragSrcId || dragSrcId === String(dstAula.turmaId)) { setDragOverId(null); return }
-        const srcPlanos = planejamentos.filter(p => String(p.turmaId) === dragSrcId)
-        if (srcPlanos.length === 0) { setDragSrcId(null); setDragOverId(null); return }
         const ymd = toYMD(dataSelecionada)
+        const srcPlanos = planejamentos.filter(p => String(p.turmaId) === dragSrcId && p.dataPrevista === ymd)
+        if (srcPlanos.length === 0) { setDragSrcId(null); setDragOverId(null); return }
         const aulasDoDia = obterTurmasDoDia(ymd)
         const srcAula = aulasDoDia.find(a => String(a.turmaId) === dragSrcId)
         const srcNome = srcAula ? getNomeTurma(srcAula.anoLetivoId, srcAula.escolaId, srcAula.segmentoId, srcAula.turmaId, anosLetivos) : dragSrcId
@@ -145,6 +145,7 @@ function SeletorTurma({ dataSelecionada, onDataChange, turmaSelecionada, onSelec
             srcNome,
             dst: { anoLetivoId: String(dstAula.anoLetivoId ?? ''), escolaId: String(dstAula.escolaId ?? ''), segmentoId: String(dstAula.segmentoId), turmaId: String(dstAula.turmaId) },
             dstNome,
+            dataPrevista: ymd,
         })
         setDragSrcId(null)
         setDragOverId(null)
@@ -205,7 +206,7 @@ function SeletorTurma({ dataSelecionada, onDataChange, turmaSelecionada, onSelec
                                 // eslint-disable-next-line eqeqeq
                                 ? String(turmaSelecionada.turmaId) == String(aula.turmaId)
                                 : false
-                            const temPlano  = planejamentos.some(p => String(p.turmaId) === String(aula.turmaId))
+                            const temPlano  = planejamentos.some(p => String(p.turmaId) === String(aula.turmaId) && p.dataPrevista === ymd)
                             const isDragSrc = dragSrcId === String(aula.turmaId)
                             const isDragOver = dragOverId === String(aula.turmaId)
 
@@ -292,7 +293,7 @@ function SeletorTurma({ dataSelecionada, onDataChange, turmaSelecionada, onSelec
                         >Cancelar</button>
                         <button
                             onClick={() => {
-                                copiarPlanejamento(copyConfirm.srcPlanoId, copyConfirm.dst)
+                                copiarPlanejamento(copyConfirm.srcPlanoId, copyConfirm.dst, copyConfirm.dataPrevista)
                                 showToast(`Planejamento copiado para ${copyConfirm.dstNome} ✅`)
                                 setCopyConfirm(null)
                             }}
@@ -823,8 +824,11 @@ function FormPlanoTurma({
 // ─── Sub-componente: Conteúdo da turma selecionada ───────────────────────────
 
 function ConteudoTurma({ turmaSelecionada }: { turmaSelecionada: TurmaSelecionada }) {
-    const { ultimoRegistroDaTurma } = usePlanejamentoTurmaContext()
+    const { ultimoRegistroDaTurma, fecharForm } = usePlanejamentoTurmaContext()
     const [modoAtivo, setModoAtivo] = useState<ModoForm | null>(null)
+
+    // Garante que qualquer edição pendente de outro módulo seja descartada ao montar
+    useEffect(() => { fecharForm() }, []) // eslint-disable-line
 
     const temUltimoRegistro = !!ultimoRegistroDaTurma
 

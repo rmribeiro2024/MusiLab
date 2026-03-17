@@ -154,9 +154,9 @@ export default function VisaoSemana() {
   const { selecionarTurma, setDataNavegacao, planejamentos, copiarPlanejamento } = usePlanejamentoTurmaContext()
 
   // ── Drag-drop entre cards ──────────────────────────────────────────────────
-  const [dragSrcId, setDragSrcId] = useState<string | null>(null)   // turmaId
-  const [dragOverId, setDragOverId] = useState<string | null>(null) // turmaId
-  type CopyConfirm = { srcPlanoId: string; srcNome: string; dst: { anoLetivoId: string; escolaId: string; segmentoId: string; turmaId: string }; dstNome: string }
+  const [dragSrcId, setDragSrcId] = useState<string | null>(null)   // "${turmaId}-${ymd}"
+  const [dragOverId, setDragOverId] = useState<string | null>(null) // "${turmaId}-${ymd}"
+  type CopyConfirm = { srcPlanoId: string; srcNome: string; dst: { anoLetivoId: string; escolaId: string; segmentoId: string; turmaId: string }; dstNome: string; dataPrevista: string }
   const [copyConfirm, setCopyConfirm] = useState<CopyConfirm | null>(null)
 
   // Estado local de navegação — não interfere com AgendaSemanal
@@ -202,10 +202,12 @@ export default function VisaoSemana() {
     return map
   }, [anosLetivos])
 
-  // ── Set de turmaIds que já têm planejamento ──────────────────────────────
+  // ── Set de "turmaId-ymd" que já têm planejamento (por dia específico) ──────
   const turmasComPlano = useMemo(() => {
     const s = new Set<string>()
-    planejamentos.forEach(p => s.add(String(p.turmaId)))
+    planejamentos.forEach(p => {
+      if (p.dataPrevista) s.add(`${p.turmaId}-${p.dataPrevista}`)
+    })
     return s
   }, [planejamentos])
 
@@ -291,7 +293,7 @@ export default function VisaoSemana() {
 
       {/* ── Grid semanal ── */}
       <div className="grid grid-cols-5 gap-2">
-        {diasDaSemana.map(({ key, short, date }, idx) => {
+        {diasDaSemana.map(({ key, short, date, ymd }, idx) => {
           const aulas = aulasPorDia[idx]?.aulas ?? []
           const past  = isPast(date)
           const today = isHoje(date)
@@ -329,10 +331,11 @@ export default function VisaoSemana() {
                     const escolaNome = getNomeEscola(aula.anoLetivoId, aula.escolaId, anosLetivos)
                     const ultimoReg  = ultimoRegistroMap[String(aula.turmaId)] ?? null
                     const escolaCor  = aula.escolaId ? (escolaColorMap[String(aula.escolaId)] ?? null) : null
-                    const temPlano   = !past && turmasComPlano.has(String(aula.turmaId))
                     const tidStr     = String(aula.turmaId)
-                    const isDragSrc  = dragSrcId === tidStr
-                    const isDragOver = dragOverId === tidStr && dragSrcId !== tidStr
+                    const tidYmd     = `${tidStr}-${ymd}`
+                    const temPlano   = !past && turmasComPlano.has(tidYmd)
+                    const isDragSrc  = dragSrcId === tidYmd
+                    const isDragOver = dragOverId === tidYmd && dragSrcId !== tidYmd
                     const cardStyle  = escolaCor
                       ? { '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties
                       : undefined
@@ -352,27 +355,28 @@ export default function VisaoSemana() {
                           setDataNavegacao(date)
                           setViewMode('porTurmas')
                         } : undefined}
-                        onDragStart={e => { e.dataTransfer.effectAllowed = 'copy'; setDragSrcId(tidStr) }}
-                        onDragOver={e => { if (dragSrcId && dragSrcId !== tidStr) { e.preventDefault(); setDragOverId(tidStr) } }}
+                        onDragStart={e => { e.dataTransfer.effectAllowed = 'copy'; setDragSrcId(tidYmd) }}
+                        onDragOver={e => { if (dragSrcId && dragSrcId !== tidYmd) { e.preventDefault(); setDragOverId(tidYmd) } }}
                         onDragLeave={() => setDragOverId(null)}
                         onDrop={e => {
                           e.preventDefault()
-                          if (!dragSrcId || dragSrcId === tidStr) { setDragOverId(null); return }
-                          const srcPlanos = planejamentos.filter(p => String(p.turmaId) === dragSrcId)
+                          if (!dragSrcId || dragSrcId === tidYmd) { setDragOverId(null); return }
+                          // dragSrcId = "${srcTurmaId}-${srcYmd}"
+                          const [srcTidStr, srcYmd] = dragSrcId.split(/-(\d{4}-\d{2}-\d{2})$/).filter(Boolean) as [string, string]
+                          const srcPlanos = planejamentos.filter(p => String(p.turmaId) === srcTidStr && p.dataPrevista === srcYmd)
                           if (!srcPlanos.length) { setDragSrcId(null); setDragOverId(null); return }
-                          // encontra nome da turma de origem em todas as aulas da semana
-                          let srcNome = dragSrcId
-                          diasDaSemana.forEach(({ ymd: d }) => {
-                            obterTurmasDoDia(d).forEach(a => {
-                              if (String(a.turmaId) === dragSrcId)
-                                srcNome = getNomeTurma(a.anoLetivoId, a.escolaId, a.segmentoId, a.turmaId, anosLetivos)
-                            })
+                          // encontra nome da turma de origem
+                          let srcNome = srcTidStr
+                          obterTurmasDoDia(srcYmd).forEach(a => {
+                            if (String(a.turmaId) === srcTidStr)
+                              srcNome = getNomeTurma(a.anoLetivoId, a.escolaId, a.segmentoId, a.turmaId, anosLetivos)
                           })
                           setCopyConfirm({
                             srcPlanoId: srcPlanos[0].id,
                             srcNome,
                             dst: { anoLetivoId: String(aula.anoLetivoId ?? ''), escolaId: String(aula.escolaId ?? ''), segmentoId: String(aula.segmentoId), turmaId: tidStr },
                             dstNome: turmaNome,
+                            dataPrevista: ymd,
                           })
                           setDragSrcId(null); setDragOverId(null)
                         }}
@@ -438,7 +442,7 @@ export default function VisaoSemana() {
               >Cancelar</button>
               <button
                 onClick={() => {
-                  copiarPlanejamento(copyConfirm.srcPlanoId, copyConfirm.dst)
+                  copiarPlanejamento(copyConfirm.srcPlanoId, copyConfirm.dst, copyConfirm.dataPrevista)
                   showToast(`Planejamento copiado para ${copyConfirm.dstNome} ✅`)
                   setCopyConfirm(null)
                 }}
