@@ -560,7 +560,7 @@ export default function TelaPrincipal() {
                                     <button
                                         type="button"
                                         onClick={() => { setBancoPanelOpen(o => !o); setBancoPanelBusca('') }}
-                                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${bancoPanelOpen ? 'bg-indigo-600 text-white' : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.10] text-slate-600 dark:text-slate-300'}`}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${bancoPanelOpen ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300' : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.10] text-slate-600 dark:text-slate-300'}`}
                                     >
                                         🗂 Banco {bancoPanelOpen ? '✕' : ''}
                                     </button>
@@ -641,7 +641,7 @@ export default function TelaPrincipal() {
 
                                             {/* ── Header row (sempre visível) ── */}
                                             <div className={`flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none
-                                                ${isOpen ? 'bg-indigo-50/60 dark:bg-indigo-500/[0.06] border-b border-indigo-100 dark:border-indigo-500/20 rounded-t-2xl' : 'rounded-2xl hover:bg-slate-50 dark:hover:bg-white/[0.02]'}`}
+                                                ${isOpen ? 'border-b border-slate-100 dark:border-[#374151] rounded-t-2xl' : 'rounded-2xl hover:bg-slate-50 dark:hover:bg-white/[0.02]'}`}
                                                 onClick={() => toggleExpandidaAtiv(atividade.id)}>
 
                                                 {/* Drag handle desktop */}
@@ -664,7 +664,7 @@ export default function TelaPrincipal() {
                                                     onClick={e => e.stopPropagation()}
                                                     placeholder="Nome da atividade..."
                                                     className={`flex-1 min-w-0 bg-transparent border-none outline-none text-sm font-semibold placeholder:font-normal cursor-text
-                                                        ${isOpen ? 'text-indigo-700 dark:text-indigo-300 placeholder:text-indigo-300/60' : 'text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#4B5563]'}`} />
+                                                        ${isOpen ? 'text-slate-800 dark:text-white placeholder:text-slate-400/60' : 'text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#4B5563]'}`} />
 
                                                 {/* Duração inline */}
                                                 <input type="text" value={atividade.duracao || ''}
@@ -680,7 +680,7 @@ export default function TelaPrincipal() {
                                                     className="w-7 h-7 flex items-center justify-center text-slate-300 dark:text-[#374151] hover:text-rose-500 dark:hover:text-rose-400 transition-colors rounded-lg flex-shrink-0 text-lg leading-none">×</button>
 
                                                 {/* Chevron */}
-                                                <svg className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-indigo-400 dark:text-indigo-400' : 'text-slate-300 dark:text-[#374151]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                                <svg className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-slate-400' : 'text-slate-300 dark:text-[#374151]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                                             </div>
 
                                             {/* ── Corpo expandido ── */}
