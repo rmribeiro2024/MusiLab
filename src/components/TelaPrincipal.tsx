@@ -819,57 +819,74 @@ export default function TelaPrincipal() {
                                                 ))
                                             })()}
                                             {bancoPanelTab === 'estrategias' && (() => {
+                                                const expandida = [...atividadesExpandidas][0]
+                                                const atividadeAlvo = expandida ? (planoEditando.atividadesRoteiro || []).find((a: any) => String(a.id) === expandida) : null
                                                 const items = estrategias.filter(e => !bancoPanelBusca || e.nome.toLowerCase().includes(bancoPanelBusca.toLowerCase()))
-                                                if (items.length === 0) return <p className="text-[11px] text-slate-400 text-center py-3">Nenhuma estratégia no banco</p>
-                                                return items.map(est => (
-                                                    <button key={est.id} type="button"
-                                                        onClick={() => {
-                                                            const expandida = [...atividadesExpandidas][0]
-                                                            if (!expandida) { showToast('Expanda uma atividade primeiro!', 'error'); return }
-                                                            const idx = (planoEditando.atividadesRoteiro || []).findIndex(a => String(a.id) === expandida)
-                                                            if (idx < 0) return
-                                                            const jaVinculada = (planoEditando.atividadesRoteiro[idx].estrategiasVinculadas || []).includes(est.nome)
-                                                            if (jaVinculada) { showToast('Estratégia já vinculada!', 'error'); return }
-                                                            const arr = [...planoEditando.atividadesRoteiro]
-                                                            arr[idx] = { ...arr[idx], estrategiasVinculadas: [...(arr[idx].estrategiasVinculadas || []), est.nome] }
-                                                            setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
-                                                            showToast(`"${est.nome}" vinculada!`, 'success')
-                                                        }}
-                                                        className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
-                                                    >
-                                                        <span className="font-semibold block truncate">🧩 {est.nome}</span>
-                                                        {est.categoria && <span className="text-slate-400 text-[10px]">{est.categoria}</span>}
-                                                    </button>
-                                                ))
+                                                return <>
+                                                    {atividadeAlvo
+                                                        ? <p className="text-[10px] text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 rounded-lg px-2 py-1 mb-1.5 truncate">→ <span className="font-semibold">{atividadeAlvo.nome || 'Atividade sem nome'}</span></p>
+                                                        : <p className="text-[10px] text-slate-400 bg-slate-50 dark:bg-white/[0.03] rounded-lg px-2 py-1 mb-1.5">⬆ Expanda uma atividade para vincular</p>
+                                                    }
+                                                    {items.length === 0
+                                                        ? <p className="text-[11px] text-slate-400 text-center py-3">Nenhuma estratégia no banco</p>
+                                                        : items.map(est => (
+                                                            <button key={est.id} type="button"
+                                                                onClick={() => {
+                                                                    const expId = [...atividadesExpandidas][0]
+                                                                    if (!expId) { showToast('Expanda uma atividade primeiro!', 'error'); return }
+                                                                    const idx = (planoEditando.atividadesRoteiro || []).findIndex((a: any) => String(a.id) === expId)
+                                                                    if (idx < 0) { showToast('Expanda uma atividade primeiro!', 'error'); return }
+                                                                    const jaVinculada = (planoEditando.atividadesRoteiro[idx].estrategiasVinculadas || []).includes(est.nome)
+                                                                    if (jaVinculada) { showToast('Estratégia já vinculada!', 'error'); return }
+                                                                    const arr = [...planoEditando.atividadesRoteiro]
+                                                                    arr[idx] = { ...arr[idx], estrategiasVinculadas: [...(arr[idx].estrategiasVinculadas || []), est.nome] }
+                                                                    setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
+                                                                    showToast(`"${est.nome}" vinculada!`, 'success')
+                                                                }}
+                                                                className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+                                                            >
+                                                                <span className="font-semibold block truncate">🧩 {est.nome}</span>
+                                                                {est.categoria && <span className="text-slate-400 text-[10px]">{est.categoria}</span>}
+                                                            </button>
+                                                        ))
+                                                    }
+                                                </>
                                             })()}
                                             {bancoPanelTab === 'musicas' && (() => {
+                                                const expandida = [...atividadesExpandidas][0]
+                                                const atividadeAlvo = expandida ? (planoEditando.atividadesRoteiro || []).find((a: any) => String(a.id) === expandida) : null
                                                 const items = repertorio.filter(m => !bancoPanelBusca || m.titulo.toLowerCase().includes(bancoPanelBusca.toLowerCase()))
-                                                if (items.length === 0) return <p className="text-[11px] text-slate-400 text-center py-3">Nenhuma música no repertório</p>
-                                                return items.map(m => (
-                                                    <button key={m.id} type="button"
-                                                        onClick={() => {
-                                                            const expandida = [...atividadesExpandidas][0]
-                                                            if (!expandida) { showToast('Expanda uma atividade primeiro!', 'error'); return }
-                                                            const idx = (planoEditando.atividadesRoteiro || []).findIndex((a: any) => String(a.id) === expandida)
-                                                            if (idx < 0) return
-                                                            const arr = [...planoEditando.atividadesRoteiro]
-                                                            const jaVinculada = (arr[idx].musicasVinculadas || []).find((mv: any) => (typeof mv === 'string' ? mv : mv.id) === m.id)
-                                                            if (jaVinculada) { showToast('Música já vinculada!', 'error'); return }
-                                                            arr[idx] = { ...arr[idx], musicasVinculadas: [...(arr[idx].musicasVinculadas || []), { id: m.id, titulo: m.titulo, autor: m.autor }] }
-                                                            setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
-                                                            showToast(`"${m.titulo}" vinculada!`, 'success')
-                                                        }}
-                                                        className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
-                                                    >
-                                                        <span className="font-semibold block truncate">🎵 {m.titulo}</span>
-                                                        {m.artista && <span className="text-slate-400 text-[10px]">{m.artista}</span>}
-                                                    </button>
-                                                ))
+                                                return <>
+                                                    {atividadeAlvo
+                                                        ? <p className="text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg px-2 py-1 mb-1.5 truncate">→ <span className="font-semibold">{atividadeAlvo.nome || 'Atividade sem nome'}</span></p>
+                                                        : <p className="text-[10px] text-slate-400 bg-slate-50 dark:bg-white/[0.03] rounded-lg px-2 py-1 mb-1.5">⬆ Expanda uma atividade para vincular</p>
+                                                    }
+                                                    {items.length === 0
+                                                        ? <p className="text-[11px] text-slate-400 text-center py-3">Nenhuma música no repertório</p>
+                                                        : items.map(m => (
+                                                            <button key={m.id} type="button"
+                                                                onClick={() => {
+                                                                    const expId = [...atividadesExpandidas][0]
+                                                                    if (!expId) { showToast('Expanda uma atividade primeiro!', 'error'); return }
+                                                                    const idx = (planoEditando.atividadesRoteiro || []).findIndex((a: any) => String(a.id) === expId)
+                                                                    if (idx < 0) { showToast('Expanda uma atividade primeiro!', 'error'); return }
+                                                                    const arr = [...planoEditando.atividadesRoteiro]
+                                                                    const jaVinculada = (arr[idx].musicasVinculadas || []).find((mv: any) => (typeof mv === 'string' ? mv : mv.id) === m.id)
+                                                                    if (jaVinculada) { showToast('Música já vinculada!', 'error'); return }
+                                                                    arr[idx] = { ...arr[idx], musicasVinculadas: [...(arr[idx].musicasVinculadas || []), { id: m.id, titulo: m.titulo, autor: m.autor }] }
+                                                                    setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
+                                                                    showToast(`"${m.titulo}" vinculada!`, 'success')
+                                                                }}
+                                                                className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                                                            >
+                                                                <span className="font-semibold block truncate">🎵 {m.titulo}</span>
+                                                                {m.autor && <span className="text-slate-400 text-[10px]">{m.autor}</span>}
+                                                            </button>
+                                                        ))
+                                                    }
+                                                </>
                                             })()}
                                         </div>
-                                        {(bancoPanelTab === 'estrategias' || bancoPanelTab === 'musicas') && atividadesExpandidas.size === 0 && (
-                                            <p className="text-[10px] text-slate-400 mt-2 text-center">Expanda uma atividade para vincular</p>
-                                        )}
                                     </div>
                                 )}
                             </div>{/* flex gap-4 */}
