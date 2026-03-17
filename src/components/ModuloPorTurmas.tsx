@@ -936,7 +936,7 @@ export default function ModuloPorTurmas() {
                 />
 
                 {turmaSelecionada
-                    ? <ConteudoTurma turmaSelecionada={turmaSelecionada} />
+                    ? <ConteudoTurma key={`${turmaSelecionada.turmaId}-${ymd}`} turmaSelecionada={turmaSelecionada} />
                     : <EstadoVazio dataYmd={ymd} />
                 }
             </div>
