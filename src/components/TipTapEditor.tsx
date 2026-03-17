@@ -1,129 +1,23 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Youtube from '@tiptap/extension-youtube'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
-import { Node, Extension, mergeAttributes } from '@tiptap/core'
-import { nodePasteRule } from '@tiptap/core'
-import { Plugin, PluginKey } from '@tiptap/pm/state'
 
-// ── Extensão Spotify ─────────────────────────────────────────────────────────
-
-const SpotifyExtension = Node.create({
-    name: 'spotify',
-    group: 'block',
-    atom: true,
-
-    addAttributes() {
-        return { src: { default: null } }
-    },
-
-    parseHTML() {
-        return [{ tag: 'div[data-spotify]' }]
-    },
-
-    renderHTML({ HTMLAttributes }) {
-        return [
-            'div',
-            mergeAttributes({ 'data-spotify': '' }, { style: 'margin: 8px 0; border-radius: 12px; overflow: hidden;' }),
-            [
-                'iframe',
-                {
-                    src: HTMLAttributes.src,
-                    width: '100%',
-                    height: '80',
-                    frameborder: '0',
-                    allow: 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture',
-                    loading: 'lazy',
-                    style: 'border-radius: 12px;',
-                },
-            ],
-        ]
-    },
-
-    addPasteRules() {
-        return [
-            nodePasteRule({
-                find: /https?:\/\/open\.spotify\.com\/(track|album|playlist)\/([^?/\s]+)/g,
-                type: this.type,
-                getAttributes: (match) => ({
-                    src: `https://open.spotify.com/embed/${match[1]}/${match[2]}`,
-                }),
-            }),
-        ]
-    },
-})
-
-// ── Extensão Hash (autocomplete de tags) ─────────────────────────────────────
-
-interface HashOptions {
-    onHashTrigger: ((query: string, position: { top: number; left: number }) => void) | undefined
-    onHashCancel: (() => void) | undefined
+// ── Helper: converte URLs do Spotify em embeds no HTML ───────────────────────
+// Chamado no blur — URLs soltas viram iframe inline
+function convertSpotifyUrls(html: string): string {
+    return html.replace(
+        /(?<!['"=])https?:\/\/open\.spotify\.com\/(track|album|playlist)\/([^?/\s<"'&]+)/g,
+        (_full, type, id) =>
+            `<div data-spotify="" style="margin:8px 0;border-radius:12px;overflow:hidden">` +
+            `<iframe src="https://open.spotify.com/embed/${type}/${id}" width="100%" height="80" ` +
+            `frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" ` +
+            `loading="lazy" style="border-radius:12px;display:block"></iframe></div>`
+    )
 }
-
-const HashExtension = Extension.create<HashOptions>({
-    name: 'hashTrigger',
-
-    addOptions() {
-        return { onHashTrigger: undefined, onHashCancel: undefined }
-    },
-
-    addProseMirrorPlugins() {
-        const { onHashTrigger, onHashCancel } = this.options
-        let hashActive = false
-        let hashBuffer = ''
-
-        return [
-            new Plugin({
-                key: new PluginKey('hashTrigger'),
-                props: {
-                    handleKeyDown(view, event) {
-                        if (event.key === '#') {
-                            hashActive = true
-                            hashBuffer = ''
-                            // Deixa o # ser inserido normalmente; dispara na próxima tecla
-                            return false
-                        }
-
-                        if (hashActive) {
-                            if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
-                                hashActive = false
-                                hashBuffer = ''
-                                onHashCancel?.()
-                                return false
-                            }
-                            if (event.key === 'Backspace') {
-                                if (hashBuffer.length === 0) {
-                                    hashActive = false
-                                    onHashCancel?.()
-                                } else {
-                                    hashBuffer = hashBuffer.slice(0, -1)
-                                    const domSel = view.dom.ownerDocument.getSelection()
-                                    const rect = domSel?.getRangeAt(0).getBoundingClientRect()
-                                    if (rect && onHashTrigger) {
-                                        onHashTrigger(hashBuffer, { top: rect.bottom + 4, left: rect.left })
-                                    }
-                                }
-                                return false
-                            }
-                            if (event.key.length === 1) {
-                                hashBuffer += event.key
-                                const domSel = view.dom.ownerDocument.getSelection()
-                                const rect = domSel?.getRangeAt(0).getBoundingClientRect()
-                                if (rect && onHashTrigger) {
-                                    onHashTrigger(hashBuffer, { top: rect.bottom + 4, left: rect.left })
-                                }
-                            }
-                        }
-                        return false
-                    },
-                },
-            }),
-        ]
-    },
-})
 
 // ── Componente principal ─────────────────────────────────────────────────────
 
@@ -144,6 +38,9 @@ export default function TipTapEditor({
     onHashTrigger,
     onHashCancel,
 }: TipTapEditorProps) {
+    // Estado do hash autocomplete — gerenciado via ref para não recriar o editor
+    const hashState = useRef({ active: false, buffer: '' })
+
     const editor = useEditor({
         extensions: [
             StarterKit,
@@ -154,30 +51,74 @@ export default function TipTapEditor({
                 width: 480,
                 height: 270,
                 HTMLAttributes: {
-                    style: 'margin: 8px auto; border-radius: 10px; overflow: hidden; display: block;',
+                    style: 'margin:8px auto;border-radius:10px;overflow:hidden;display:block;',
                 },
             }),
             Link.configure({
                 openOnClick: false,
                 autolink: true,
                 HTMLAttributes: {
-                    style: 'color: #6366f1; font-weight: 600; text-decoration: none;',
+                    style: 'color:#6366f1;font-weight:600;text-decoration:none;',
                     target: '_blank',
                     rel: 'noopener noreferrer',
                 },
             }),
             Placeholder.configure({ placeholder }),
-            SpotifyExtension,
-            HashExtension.configure({ onHashTrigger, onHashCancel }),
         ],
         content: value || '',
         onBlur: ({ editor: ed }) => {
-            onChange(ed.getHTML())
+            let html = ed.getHTML()
+            // Converte URLs de Spotify soltas em embeds
+            const converted = convertSpotifyUrls(html)
+            if (converted !== html) {
+                ed.commands.setContent(converted, false)
+                html = converted
+            }
+            onChange(html)
         },
         editorProps: {
             attributes: {
                 class: 'tiptap-editor focus:outline-none',
                 style: 'min-height: 80px; padding: 10px 12px;',
+            },
+            handleKeyDown(_view, event) {
+                const hs = hashState.current
+
+                if (event.key === '#') {
+                    hs.active = true
+                    hs.buffer = ''
+                    return false
+                }
+
+                if (hs.active) {
+                    if (event.key === 'Escape' || event.key === ' ') {
+                        hs.active = false
+                        hs.buffer = ''
+                        onHashCancel?.()
+                        return false
+                    }
+                    if (event.key === 'Backspace') {
+                        if (hs.buffer.length === 0) {
+                            hs.active = false
+                            onHashCancel?.()
+                        } else {
+                            hs.buffer = hs.buffer.slice(0, -1)
+                            _emitHashPos(event, hs.buffer, onHashTrigger)
+                        }
+                        return false
+                    }
+                    if (event.key === 'Enter') {
+                        hs.active = false
+                        hs.buffer = ''
+                        onHashCancel?.()
+                        return false
+                    }
+                    if (event.key.length === 1) {
+                        hs.buffer += event.key
+                        _emitHashPos(event, hs.buffer, onHashTrigger)
+                    }
+                }
+                return false
             },
         },
     })
@@ -244,4 +185,17 @@ export default function TipTapEditor({
             <EditorContent editor={editor} />
         </div>
     )
+}
+
+// Emite posição do cursor para o hash dropdown
+function _emitHashPos(
+    event: KeyboardEvent,
+    buffer: string,
+    onHashTrigger: ((q: string, pos: { top: number; left: number }) => void) | undefined
+) {
+    if (!onHashTrigger) return
+    const sel = window.getSelection()
+    if (!sel || sel.rangeCount === 0) return
+    const rect = sel.getRangeAt(0).getBoundingClientRect()
+    onHashTrigger(buffer, { top: rect.bottom + 4, left: rect.left })
 }
