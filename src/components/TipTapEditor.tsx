@@ -180,6 +180,7 @@ interface TipTapEditorProps {
     className?: string
     onHashTrigger?: (query: string, position: { top: number; left: number }) => void
     onHashCancel?: () => void
+    onSaveAsStrategy?: (text: string) => void
 }
 
 export default function TipTapEditor({
@@ -189,6 +190,7 @@ export default function TipTapEditor({
     className = '',
     onHashTrigger,
     onHashCancel,
+    onSaveAsStrategy,
 }: TipTapEditorProps) {
     const hashState = useRef({ active: false, buffer: '' })
     const [previews, setPreviews] = useState<MediaPreview[]>([])
@@ -227,7 +229,15 @@ export default function TipTapEditor({
                 class: 'tiptap-editor focus:outline-none',
                 style: 'min-height: 80px; padding: 10px 12px;',
             },
-            handleKeyDown(_view, event) {
+            handleKeyDown(view, event) {
+                // Ctrl+E com seleção → salvar como estratégia
+                if ((event.ctrlKey || event.metaKey) && event.key === 'e' && onSaveAsStrategy) {
+                    const { from, to, empty } = view.state.selection
+                    if (!empty) {
+                        const text = view.state.doc.textBetween(from, to, ' ').trim()
+                        if (text) { onSaveAsStrategy(text); event.preventDefault(); return true }
+                    }
+                }
                 const hs = hashState.current
                 if (event.key === '#') { hs.active = true; hs.buffer = ''; return false }
                 if (hs.active) {
@@ -273,6 +283,21 @@ export default function TipTapEditor({
                         <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleUnderline().run() }} className={btn(editor.isActive('underline'))} title="Sublinhado"><u>U</u></button>
                         <div className="w-px h-4 bg-slate-200 dark:bg-slate-600 mx-0.5" />
                         <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBulletList().run() }} className={btn(editor.isActive('bulletList'))} title="Lista">≡</button>
+                        {onSaveAsStrategy && (
+                            <>
+                                <div className="w-px h-4 bg-slate-200 dark:bg-slate-600 mx-0.5" />
+                                <button
+                                    onMouseDown={e => {
+                                        e.preventDefault()
+                                        const { from, to } = editor.state.selection
+                                        const text = editor.state.doc.textBetween(from, to, ' ').trim()
+                                        if (text) onSaveAsStrategy(text)
+                                    }}
+                                    className="px-2 py-1 rounded text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition"
+                                    title="Salvar como estratégia (Ctrl+E)"
+                                >💡 Estratégia</button>
+                            </>
+                        )}
                     </div>
                 </BubbleMenu>
             )}

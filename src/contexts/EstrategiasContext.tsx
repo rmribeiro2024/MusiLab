@@ -70,6 +70,8 @@ export interface EstrategiasContextValue {
   restaurarEstrategia: (id: string) => void
   /** Registra uso da estratégia em um plano (anti-duplicata por planoId). */
   registrarUsoEstrategia: (estrategiaId: string, planoId: string | number, planoTitulo: string) => void
+  /** Cria e salva uma estratégia rapidamente a partir de um texto (ex: seleção no editor). */
+  adicionarEstrategiaRapida: (nome: string) => void
 }
 
 // ─── CONTEXTO ─────────────────────────────────────────────────────────────────
@@ -186,6 +188,21 @@ export function EstrategiasProvider({ children, userId }: EstrategiasProviderPro
     setEstrategiaEditando(null)
   }
 
+  function adicionarEstrategiaRapida(nome: string) {
+    const texto = nome.trim()
+    if (!texto) return
+    const agora = new Date().toISOString()
+    const item: Estrategia = {
+      id: gerarIdSeguro(),
+      nome: texto,
+      descricao: '', categoria: '', funcao: '',
+      objetivos: [], faixaEtaria: '', ativo: true,
+      _criadoEm: agora, _ultimaEdicao: agora,
+    }
+    setEstrategias(prev => [...prev, item])
+    showToast('✅ Estratégia adicionada ao banco!', 'success')
+  }
+
   function excluirEstrategia(id: string) {
     setModalConfirm({
       titulo: 'Excluir estratégia?',
@@ -246,7 +263,8 @@ export function EstrategiasProvider({ children, userId }: EstrategiasProviderPro
     novoObjetivoEstr, setNovoObjetivoEstr,
     novaEstrategia, salvarEstrategia, excluirEstrategia,
     arquivarEstrategia, restaurarEstrategia, registrarUsoEstrategia,
-  }), [estrategias, estrategiaEditando, buscaEstrategia, filtroCategoriaEstrategia, filtroFuncaoEstrategia, filtroObjetivoEstrategia, mostrarArquivadasEstrategia, filtroDimensaoEstrategia, categoriasEstrategia, funcoesEstrategia, objetivosEstrategia, novaCategoriaEstr, novaFuncaoEstr, novoObjetivoEstr, novaEstrategia, salvarEstrategia, excluirEstrategia, arquivarEstrategia, restaurarEstrategia, registrarUsoEstrategia])
+    adicionarEstrategiaRapida,
+  }), [estrategias, estrategiaEditando, buscaEstrategia, filtroCategoriaEstrategia, filtroFuncaoEstrategia, filtroObjetivoEstrategia, mostrarArquivadasEstrategia, filtroDimensaoEstrategia, categoriasEstrategia, funcoesEstrategia, objetivosEstrategia, novaCategoriaEstr, novaFuncaoEstr, novoObjetivoEstr, novaEstrategia, salvarEstrategia, excluirEstrategia, arquivarEstrategia, restaurarEstrategia, registrarUsoEstrategia, adicionarEstrategiaRapida])
 
   return (
     <EstrategiasContext.Provider value={value}>

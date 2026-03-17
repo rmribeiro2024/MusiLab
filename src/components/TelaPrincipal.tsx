@@ -70,7 +70,7 @@ export default function TelaPrincipal() {
     const { repertorio } = useRepertorioContext()
     const { setModalConfirm } = useModalContext()
     const { periodoDias, setPeriodoDias, dataInicioCustom, setDataInicioCustom, dataFimCustom, setDataFimCustom, gradesSemanas } = useCalendarioContext()
-    const { estrategias } = useEstrategiasContext()
+    const { estrategias, adicionarEstrategiaRapida } = useEstrategiasContext()
 
     // Itens de planos: via PlanosContext
     const {
@@ -731,6 +731,7 @@ export default function TelaPrincipal() {
                                                             placeholder="Descreva como realizar esta atividade... (digite # para tags)"
                                                             onHashTrigger={(query, pos) => setHashDropdown({ query, pos, atividadeId: String(atividade.id) })}
                                                             onHashCancel={() => setHashDropdown(null)}
+                                                            onSaveAsStrategy={text => adicionarEstrategiaRapida(text)}
                                                         />
                                                         {/* Dropdown de tags ao digitar # */}
                                                         {hashDropdown && hashDropdown.atividadeId === String(atividade.id) && (() => {
