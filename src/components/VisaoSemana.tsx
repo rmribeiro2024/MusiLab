@@ -2,13 +2,14 @@
 // Etapa 4 — Visão da Semana (Planejamento)
 // Mostra o grid SEG–SEX com turmas agendadas. Foco: preparação (não registro).
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContext'
 import type { AnoLetivo, RegistroPosAula } from '../types'
+import { showToast } from '../lib/toast'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -150,7 +151,13 @@ export default function VisaoSemana() {
   const { anosLetivos } = useAnoLetivoContext()
   const { planos } = usePlanosContext()
   const { setViewMode } = useRepertorioContext()
-  const { selecionarTurma, setDataNavegacao, planejamentos } = usePlanejamentoTurmaContext()
+  const { selecionarTurma, setDataNavegacao, planejamentos, copiarPlanejamento } = usePlanejamentoTurmaContext()
+
+  // ── Drag-drop entre cards ──────────────────────────────────────────────────
+  const [dragSrcId, setDragSrcId] = useState<string | null>(null)   // turmaId
+  const [dragOverId, setDragOverId] = useState<string | null>(null) // turmaId
+  type CopyConfirm = { srcPlanoId: string; srcNome: string; dst: { anoLetivoId: string; escolaId: string; segmentoId: string; turmaId: string }; dstNome: string }
+  const [copyConfirm, setCopyConfirm] = useState<CopyConfirm | null>(null)
 
   // Estado local de navegação — não interfere com AgendaSemanal
   const [semanaInicio, setSemanaInicio] = useState<Date>(() => getSemanaAtualInicio())
@@ -323,6 +330,9 @@ export default function VisaoSemana() {
                     const ultimoReg  = ultimoRegistroMap[String(aula.turmaId)] ?? null
                     const escolaCor  = aula.escolaId ? (escolaColorMap[String(aula.escolaId)] ?? null) : null
                     const temPlano   = !past && turmasComPlano.has(String(aula.turmaId))
+                    const tidStr     = String(aula.turmaId)
+                    const isDragSrc  = dragSrcId === tidStr
+                    const isDragOver = dragOverId === tidStr && dragSrcId !== tidStr
                     const cardStyle  = escolaCor
                       ? { '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties
                       : undefined
@@ -331,20 +341,50 @@ export default function VisaoSemana() {
                       <div
                         key={`${aula.turmaId}-${aula.horario}-${i}`}
                         style={cardStyle}
+                        draggable={temPlano}
                         onClick={!past ? () => {
                           selecionarTurma({
                             anoLetivoId: String(aula.anoLetivoId ?? ''),
                             escolaId:    String(aula.escolaId ?? ''),
                             segmentoId:  String(aula.segmentoId),
-                            turmaId:     String(aula.turmaId),
+                            turmaId:     tidStr,
                           })
                           setDataNavegacao(date)
                           setViewMode('porTurmas')
                         } : undefined}
-                        className={`v2-card rounded-[8px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] ${
-                          !past
-                            ? 'cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:-translate-y-px transition-all duration-150'
-                            : 'cursor-default'
+                        onDragStart={e => { e.dataTransfer.effectAllowed = 'copy'; setDragSrcId(tidStr) }}
+                        onDragOver={e => { if (dragSrcId && dragSrcId !== tidStr) { e.preventDefault(); setDragOverId(tidStr) } }}
+                        onDragLeave={() => setDragOverId(null)}
+                        onDrop={e => {
+                          e.preventDefault()
+                          if (!dragSrcId || dragSrcId === tidStr) { setDragOverId(null); return }
+                          const srcPlanos = planejamentos.filter(p => String(p.turmaId) === dragSrcId)
+                          if (!srcPlanos.length) { setDragSrcId(null); setDragOverId(null); return }
+                          // encontra nome da turma de origem em todas as aulas da semana
+                          let srcNome = dragSrcId
+                          diasDaSemana.forEach(({ ymd: d }) => {
+                            obterTurmasDoDia(d).forEach(a => {
+                              if (String(a.turmaId) === dragSrcId)
+                                srcNome = getNomeTurma(a.anoLetivoId, a.escolaId, a.segmentoId, a.turmaId, anosLetivos)
+                            })
+                          })
+                          setCopyConfirm({
+                            srcPlanoId: srcPlanos[0].id,
+                            srcNome,
+                            dst: { anoLetivoId: String(aula.anoLetivoId ?? ''), escolaId: String(aula.escolaId ?? ''), segmentoId: String(aula.segmentoId), turmaId: tidStr },
+                            dstNome: turmaNome,
+                          })
+                          setDragSrcId(null); setDragOverId(null)
+                        }}
+                        onDragEnd={() => { setDragSrcId(null); setDragOverId(null) }}
+                        className={`v2-card rounded-[8px] overflow-hidden transition-all duration-150 ${
+                          isDragOver
+                            ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 shadow-[0_4px_16px_rgba(91,95,234,0.25)]'
+                            : isDragSrc
+                            ? 'opacity-50 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'
+                            : !past
+                            ? 'shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:-translate-y-px'
+                            : 'shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-default'
                         }`}
                       >
                         {/* card body */}
@@ -382,6 +422,32 @@ export default function VisaoSemana() {
           )
         })}
       </div>
+
+      {/* ── Modal: confirmar cópia de planejamento ─────────────────────────── */}
+      {copyConfirm && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setCopyConfirm(null)}>
+          <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl p-5 max-w-xs w-full" onClick={e => e.stopPropagation()}>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">Copiar planejamento?</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              Copiar o planejamento de <strong className="text-slate-700 dark:text-slate-200">{copyConfirm.srcNome}</strong> para <strong className="text-slate-700 dark:text-slate-200">{copyConfirm.dstNome}</strong>?
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCopyConfirm(null)}
+                className="flex-1 text-sm border border-slate-200 dark:border-[#374151] rounded-xl px-3 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.05] transition"
+              >Cancelar</button>
+              <button
+                onClick={() => {
+                  copiarPlanejamento(copyConfirm.srcPlanoId, copyConfirm.dst)
+                  showToast(`Planejamento copiado para ${copyConfirm.dstNome} ✅`)
+                  setCopyConfirm(null)
+                }}
+                className="flex-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-3 py-2 font-medium transition"
+              >Copiar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )
