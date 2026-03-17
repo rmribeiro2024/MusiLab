@@ -134,7 +134,10 @@ function SeletorTurma({ dataSelecionada, onDataChange, turmaSelecionada, onSelec
         e.preventDefault()
         if (!dragSrcId || dragSrcId === String(dstAula.turmaId)) { setDragOverId(null); return }
         const ymd = toYMD(dataSelecionada)
-        const srcPlanos = planejamentos.filter(p => String(p.turmaId) === dragSrcId && p.dataPrevista === ymd)
+        // busca plano mais recente da turma de origem (independente de data)
+        const srcPlanos = planejamentos
+          .filter(p => String(p.turmaId) === dragSrcId)
+          .sort((a, b) => (b.atualizadoEm ?? b.criadoEm ?? '').localeCompare(a.atualizadoEm ?? a.criadoEm ?? ''))
         if (srcPlanos.length === 0) { setDragSrcId(null); setDragOverId(null); return }
         const aulasDoDia = obterTurmasDoDia(ymd)
         const srcAula = aulasDoDia.find(a => String(a.turmaId) === dragSrcId)
@@ -206,7 +209,7 @@ function SeletorTurma({ dataSelecionada, onDataChange, turmaSelecionada, onSelec
                                 // eslint-disable-next-line eqeqeq
                                 ? String(turmaSelecionada.turmaId) == String(aula.turmaId)
                                 : false
-                            const temPlano  = planejamentos.some(p => String(p.turmaId) === String(aula.turmaId) && p.dataPrevista === ymd)
+                            const temPlano  = planejamentos.some(p => String(p.turmaId) === String(aula.turmaId))
                             const isDragSrc = dragSrcId === String(aula.turmaId)
                             const isDragOver = dragOverId === String(aula.turmaId)
 

@@ -202,12 +202,19 @@ export default function VisaoSemana() {
     return map
   }, [anosLetivos])
 
-  // ── Set de "turmaId-ymd" que já têm planejamento (por dia específico) ──────
+  // Set de "turmaId-ymd" para badge ✓ (dia-específico)
   const turmasComPlano = useMemo(() => {
     const s = new Set<string>()
     planejamentos.forEach(p => {
       if (p.dataPrevista) s.add(`${p.turmaId}-${p.dataPrevista}`)
     })
+    return s
+  }, [planejamentos])
+
+  // Set de turmaId para arrastar (qualquer plano da turma, independente de data)
+  const turmasArrastaveis = useMemo(() => {
+    const s = new Set<string>()
+    planejamentos.forEach(p => s.add(String(p.turmaId)))
     return s
   }, [planejamentos])
 
@@ -331,11 +338,12 @@ export default function VisaoSemana() {
                     const escolaNome = getNomeEscola(aula.anoLetivoId, aula.escolaId, anosLetivos)
                     const ultimoReg  = ultimoRegistroMap[String(aula.turmaId)] ?? null
                     const escolaCor  = aula.escolaId ? (escolaColorMap[String(aula.escolaId)] ?? null) : null
-                    const tidStr     = String(aula.turmaId)
-                    const tidYmd     = `${tidStr}-${ymd}`
-                    const temPlano   = !past && turmasComPlano.has(tidYmd)
-                    const isDragSrc  = dragSrcId === tidYmd
-                    const isDragOver = dragOverId === tidYmd && dragSrcId !== tidYmd
+                    const tidStr      = String(aula.turmaId)
+                    const tidYmd      = `${tidStr}-${ymd}`
+                    const temPlano    = !past && turmasComPlano.has(tidYmd)    // badge ✓ (dia-específico)
+                    const eArrastavel = !past && turmasArrastaveis.has(tidStr) // arrastar (qualquer plano)
+                    const isDragSrc   = dragSrcId === tidYmd
+                    const isDragOver  = dragOverId === tidYmd && dragSrcId !== tidYmd
                     const cardStyle  = escolaCor
                       ? { '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties
                       : undefined
@@ -344,7 +352,7 @@ export default function VisaoSemana() {
                       <div
                         key={`${aula.turmaId}-${aula.horario}-${i}`}
                         style={cardStyle}
-                        draggable={temPlano}
+                        draggable={eArrastavel}
                         onClick={!past ? () => {
                           selecionarTurma({
                             anoLetivoId: String(aula.anoLetivoId ?? ''),
@@ -362,12 +370,16 @@ export default function VisaoSemana() {
                           e.preventDefault()
                           if (!dragSrcId || dragSrcId === tidYmd) { setDragOverId(null); return }
                           // dragSrcId = "${srcTurmaId}-${srcYmd}"
-                          const [srcTidStr, srcYmd] = dragSrcId.split(/-(\d{4}-\d{2}-\d{2})$/).filter(Boolean) as [string, string]
-                          const srcPlanos = planejamentos.filter(p => String(p.turmaId) === srcTidStr && p.dataPrevista === srcYmd)
+                          const srcYmd = dragSrcId.match(/(\d{4}-\d{2}-\d{2})$/)?.[1] ?? ''
+                          const srcTidStr = dragSrcId.replace(/-\d{4}-\d{2}-\d{2}$/, '')
+                          // busca plano mais recente da turma de origem (independente de data)
+                          const srcPlanos = planejamentos
+                            .filter(p => String(p.turmaId) === srcTidStr)
+                            .sort((a, b) => (b.atualizadoEm ?? b.criadoEm ?? '').localeCompare(a.atualizadoEm ?? a.criadoEm ?? ''))
                           if (!srcPlanos.length) { setDragSrcId(null); setDragOverId(null); return }
                           // encontra nome da turma de origem
                           let srcNome = srcTidStr
-                          obterTurmasDoDia(srcYmd).forEach(a => {
+                          obterTurmasDoDia(srcYmd || ymd).forEach(a => {
                             if (String(a.turmaId) === srcTidStr)
                               srcNome = getNomeTurma(a.anoLetivoId, a.escolaId, a.segmentoId, a.turmaId, anosLetivos)
                           })
