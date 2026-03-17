@@ -60,13 +60,18 @@ export async function exportarPlanoPDF(plano) {
     // ── Conversor HTML → texto limpo (apenas ASCII safe) ──
     const htmlToText = (html) => {
         if (!html) return '';
-        return html
+        // Iframes de YouTube/Spotify → texto descritivo
+        let result = html
+            .replace(/<iframe[^>]*src="([^"]*youtube[^"]*)"[^>]*>(<\/iframe>)?/gi, '[YouTube: $1]')
+            .replace(/<iframe[^>]*src="([^"]*spotify[^"]*)"[^>]*>(<\/iframe>)?/gi, '[Spotify: $1]');
+        return result
             .replace(/<\/p>\s*<p>/gi, '\n')
             .replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n')
             .replace(/<br\s*\/?>/gi, '\n')
             .replace(/<\/li>/gi, '\n')
             .replace(/<li[^>]*>/gi, '- ')
             .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '')
+            .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '$2 ($1)')
             .replace(/<[^>]*>/g, '')
             .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
             .replace(/\n{3,}/g, '\n\n').trim();
@@ -454,9 +459,13 @@ export async function exportarAtividadePDF(ativ) {
 
     const htmlToText = (html) => {
         if (!html) return '';
-        return html
+        let result = html
+            .replace(/<iframe[^>]*src="([^"]*youtube[^"]*)"[^>]*>(<\/iframe>)?/gi, '[YouTube: $1]')
+            .replace(/<iframe[^>]*src="([^"]*spotify[^"]*)"[^>]*>(<\/iframe>)?/gi, '[Spotify: $1]');
+        return result
             .replace(/<\/p>\s*<p>/gi, '\n').replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n')
             .replace(/<br\s*\/?>/gi, '\n').replace(/<\/li>/gi, '\n').replace(/<li[^>]*>/gi, '- ')
+            .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '$2 ($1)')
             .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '').replace(/<[^>]*>/g, '')
             .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
             .replace(/\n{3,}/g, '\n\n').trim();

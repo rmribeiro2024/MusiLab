@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspens
 import { supabase } from '../lib/supabase'
 import {
   sanitizar,
+  sanitizarRich,
   sanitizeUrl,
   validarBackup,
   gerarIdSeguro,
@@ -2821,7 +2822,7 @@ export default function BancoPlanos({ session }) {
                                                             {ativ.nome && <span className="font-semibold text-slate-800 text-sm">{ativ.nome}</span>}
                                                             {ativ.duracao && <span className="text-xs text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded-full ml-auto">{ativ.duracao}</span>}
                                                         </div>
-                                                        {ativ.descricao && <div className="text-sm text-slate-600 mt-1 ml-1 rich-editor-area" dangerouslySetInnerHTML={{__html: sanitizar(ativ.descricao)}} />}
+                                                        {ativ.descricao && <div className="text-sm text-slate-600 mt-1 ml-1 rich-editor-area" dangerouslySetInnerHTML={{__html: sanitizarRich(ativ.descricao)}} />}
                                                         {ativ.musicasVinculadas?.length > 0 && (
                                                             <div className="mt-2 ml-1 space-y-1">
                                                                 {ativ.musicasVinculadas.map((m, j) => {

@@ -14,6 +14,22 @@ export function sanitizar(html: string): string {
     })
 }
 
+// ── SANITIZAÇÃO RICH (para conteúdo do TipTapEditor) ──
+// Permite iframes de YouTube/Spotify e links — conteúdo gerado pelo próprio professor.
+export function sanitizarRich(html: string): string {
+    if (!html) return ''
+    if (typeof DOMPurify === 'undefined') return html
+    return DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ['b', 'i', 'u', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'p', 'span',
+                       'a', 'div', 'iframe'],
+        ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'width', 'height', 'frameborder',
+                       'allow', 'loading', 'style', 'data-spotify', 'data-youtube-video',
+                       'data-type', 'class'],
+        ALLOW_DATA_ATTR: false,
+        FORCE_BODY: false,
+    })
+}
+
 // ── SANITIZAÇÃO DE URL ──
 // Bloqueia protocolos perigosos (javascript:, vbscript:, data:text/html).
 // Permite data URIs de arquivos uploadados (imagens, áudio, PDF).

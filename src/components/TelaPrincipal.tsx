@@ -6,6 +6,7 @@ import { useInfiniteScroll } from '../lib/hooks'
 import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [offlineSync]
 import { usePlanosContext, useAnoLetivoContext, useAtividadesContext, useRepertorioContext, useModalContext, useCalendarioContext, useEstrategiasContext } from '../contexts'
 import RichTextEditor from './RichTextEditor'
+import TipTapEditor from './TipTapEditor'
 import { exportarPlanoPDF, gerarLinkCompartilhavel } from '../utils/pdf'
 import ModalAplicarEmTurmas from './modals/ModalAplicarEmTurmas'
 import ModalMusicasDetectadas from './modals/ModalMusicasDetectadas'
@@ -724,13 +725,10 @@ export default function TelaPrincipal() {
 
                                                     {/* Rich text com toolbar flutuante + preview links + autocomplete # tags */}
                                                     <div className="relative">
-                                                        <RichTextEditor
+                                                        <TipTapEditor
                                                             value={atividade.descricao}
                                                             onChange={val => atualizarAtividadeRoteiro(atividade.id, 'descricao', val)}
                                                             placeholder="Descreva como realizar esta atividade... (digite # para tags)"
-                                                            rows={6}
-                                                            floatingToolbar
-                                                            showLinkPreviews
                                                             onHashTrigger={(query, pos) => setHashDropdown({ query, pos, atividadeId: String(atividade.id) })}
                                                             onHashCancel={() => setHashDropdown(null)}
                                                         />
