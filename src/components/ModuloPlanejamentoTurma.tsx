@@ -9,6 +9,7 @@ import { usePlanosContext } from '../contexts/PlanosContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import RichTextEditor from './RichTextEditor'
+import TipTapEditor from './TipTapEditor'
 import { stripHTML, gerarIdSeguro } from '../lib/utils'
 import { showToast } from '../lib/toast'
 import { useAtividadesContext, useAplicacoesContext, useSequenciasContext, useEstrategiasContext } from '../contexts'
@@ -1284,7 +1285,7 @@ function FormPlanejamentoInline({
             <label className="block text-xs font-medium text-slate-700 mb-1">
               O que pretendo fazer <span className="text-red-400">*</span>
             </label>
-            <RichTextEditor
+            <TipTapEditor
               key={`rte-${planejamentoEditando?.id ?? 'new'}-${turmaSelecionada.turmaId}-${editorKey}`}
               value={oQuePretendoFazer}
               onChange={html => { hasEditedRef.current = true; setOQuePretendoFazer(html) }}
@@ -1293,7 +1294,7 @@ function FormPlanejamentoInline({
                 modo === 'adaptar' ? 'Edite o conteúdo pré-preenchido conforme necessário...' :
                 'O conteúdo da aula importada aparecerá aqui para edição...'
               }
-              rows={5}
+              className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden"
             />
           </div>
 
