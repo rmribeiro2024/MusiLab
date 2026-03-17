@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import ReactDOM from 'react-dom'
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
+import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -249,7 +249,15 @@ export default function TipTapEditor({
                     }
                 }
                 const hs = hashState.current
-                if (event.key === '#') { hs.active = true; hs.buffer = ''; return false }
+                if (event.key === '#') {
+                    hs.active = true; hs.buffer = ''
+                    // Dispara imediatamente ao digitar #
+                    if (onHashTriggerRef.current) {
+                        const c = view.coordsAtPos(view.state.selection.from)
+                        onHashTriggerRef.current('', { top: c.bottom, left: c.left })
+                    }
+                    return false
+                }
                 if (hs.active) {
                     if (event.key === 'Escape' || event.key === ' ') { hs.active = false; hs.buffer = ''; onHashCancelRef.current?.(); return false }
                     if (event.key === 'Backspace') {
@@ -343,35 +351,6 @@ export default function TipTapEditor({
                         </>
                     )}
                 </div>
-            )}
-
-            {/* BubbleMenu — aparece ao selecionar texto (formatação rápida) */}
-            {editor && (
-                <BubbleMenu editor={editor} shouldShow={({ state }) => !state.selection.empty}
-                    tippyOptions={{ duration: 100, placement: 'top-start' }}>
-                    <div className="flex items-center gap-0.5 bg-white dark:bg-[#1E2A4A] border border-slate-200 dark:border-[#374151] rounded-lg shadow-xl px-1 py-0.5">
-                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBold().run() }} className={btnBubble(editor.isActive('bold'))} title="Negrito"><strong>B</strong></button>
-                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleItalic().run() }} className={btnBubble(editor.isActive('italic'))} title="Itálico"><em>I</em></button>
-                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleUnderline().run() }} className={btnBubble(editor.isActive('underline'))} title="Sublinhado"><u>U</u></button>
-                        <div className="w-px h-4 bg-slate-200 dark:bg-slate-600 mx-0.5" />
-                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBulletList().run() }} className={btnBubble(editor.isActive('bulletList'))} title="Lista">≡</button>
-                        {onSaveAsStrategy && (
-                            <>
-                                <div className="w-px h-4 bg-slate-200 dark:bg-slate-600 mx-0.5" />
-                                <button
-                                    onMouseDown={e => {
-                                        e.preventDefault()
-                                        const { from, to } = editor.state.selection
-                                        const text = editor.state.doc.textBetween(from, to, ' ').trim()
-                                        if (text) onSaveAsStrategy(text)
-                                    }}
-                                    className="px-2 py-1 rounded text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition"
-                                    title="Salvar como estratégia (Ctrl+E)"
-                                >💡 Estratégia</button>
-                            </>
-                        )}
-                    </div>
-                </BubbleMenu>
             )}
 
             {/* Editor */}

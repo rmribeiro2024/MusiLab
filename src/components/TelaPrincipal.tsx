@@ -5,6 +5,7 @@ import { dbSize } from '../lib/db'
 import { useInfiniteScroll } from '../lib/hooks'
 import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [offlineSync]
 import { usePlanosContext, useAnoLetivoContext, useAtividadesContext, useRepertorioContext, useModalContext, useCalendarioContext, useEstrategiasContext } from '../contexts'
+import { useBancoPlanos } from './BancoPlanosContext'
 import RichTextEditor from './RichTextEditor'
 import TipTapEditor from './TipTapEditor'
 import { exportarPlanoPDF, gerarLinkCompartilhavel } from '../utils/pdf'
@@ -73,6 +74,7 @@ export default function TelaPrincipal() {
     const { setModalConfirm } = useModalContext()
     const { periodoDias, setPeriodoDias, dataInicioCustom, setDataInicioCustom, dataFimCustom, setDataFimCustom, gradesSemanas } = useCalendarioContext()
     const { estrategias, adicionarEstrategiaRapida } = useEstrategiasContext()
+    const { setModalTemplates } = useBancoPlanos()
 
     // Itens de planos: via PlanosContext
     const {
@@ -80,7 +82,6 @@ export default function TelaPrincipal() {
         baixarBackup,
         novoPlano,
         userId,
-        setModalTemplates,
         adicionandoConceito,
         adicionandoUnidade,
         adicionarAtividadeRoteiro,
@@ -625,7 +626,7 @@ export default function TelaPrincipal() {
                                         onClick={toggleBancoPainel}
                                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${bancoPanelOpen ? 'bg-slate-200 text-slate-700 dark:bg-white/[0.10] dark:text-slate-200' : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.10] text-slate-600 dark:text-slate-300'}`}
                                     >
-                                        🗂 Banco {bancoPanelOpen ? '✕' : ''}
+                                        🗂 Banco
                                     </button>
                                 </div>
                             </div>
@@ -658,18 +659,11 @@ export default function TelaPrincipal() {
                             {/* ── Empty state ── */}
                             {(!planoEditando.atividadesRoteiro || planoEditando.atividadesRoteiro.length === 0) ? (
                                 <div className="flex flex-col items-center gap-3 py-10">
-                                    <div className="text-4xl opacity-30">📋</div>
                                     <p className="text-sm font-semibold text-slate-400 dark:text-[#4B5563]">Nenhuma atividade ainda</p>
-                                    <p className="text-xs text-slate-300 dark:text-[#374151] text-center">Adicione a primeira atividade do roteiro.<br/>Você pode usar templates ou importar do seu banco.</p>
                                     <button type="button" onClick={adicionarAtividadeRoteiro}
                                         className="mt-1 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 dark:border dark:border-indigo-400/30 text-white dark:text-indigo-300 text-sm font-semibold rounded-xl transition-colors shadow-sm">
-                                        ＋ Adicionar atividade
+                                        + Adicionar atividade
                                     </button>
-                                    <div className="flex gap-2">
-                                        <button type="button" onClick={() => setModalTemplates(true)} className="text-xs font-semibold text-slate-400 dark:text-[#4B5563] hover:text-slate-600 dark:hover:text-slate-300 transition-colors">📐 Templates</button>
-                                        <span className="text-slate-200 dark:text-[#374151]">·</span>
-                                        <button type="button" onClick={() => setModalImportarAtividade(true)} className="text-xs font-semibold text-slate-400 dark:text-[#4B5563] hover:text-slate-600 dark:hover:text-slate-300 transition-colors">📚 Importar</button>
-                                    </div>
                                 </div>
                             ) : (
                                 <div className="space-y-2">
@@ -710,8 +704,8 @@ export default function TelaPrincipal() {
                                 {/* ── Painel lateral do Banco ── */}
                                 {bancoPanelOpen && (
                                     <div className="w-56 shrink-0 border-l border-slate-100 dark:border-[#374151] pl-4 pt-1">
-                                        {/* Abas */}
-                                        <div className="flex mb-3">
+                                        {/* Abas + X */}
+                                        <div className="flex items-center mb-3">
                                             {(['atividades', 'estrategias', 'musicas'] as const).map(tab => (
                                                 <button key={tab} type="button"
                                                     onClick={() => setBancoPanelTab(tab)}
@@ -721,6 +715,11 @@ export default function TelaPrincipal() {
                                                     <span className="ml-1">{tab === 'atividades' ? 'Ativ.' : tab === 'estrategias' ? 'Estrat.' : 'Músicas'}</span>
                                                 </button>
                                             ))}
+                                            <button type="button" onClick={() => setBancoPanelOpen(false)}
+                                                className="ml-1 shrink-0 text-slate-300 hover:text-slate-500 dark:hover:text-slate-300 transition-colors p-1 rounded"
+                                                title="Fechar painel">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            </button>
                                         </div>
                                         {/* Busca */}
                                         <input autoFocus type="text" placeholder="Buscar..."

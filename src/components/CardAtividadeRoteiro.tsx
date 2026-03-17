@@ -243,35 +243,34 @@ const CardAtividadeRoteiro = memo(function CardAtividadeRoteiro({
             />
             {/* Dropdown de tags ao digitar # */}
             {hashDropdown && hashDropdown.atividadeId === String(atividade.id) && (() => {
-              const filtradas = todasAsTags.filter(
-                t => t.toLowerCase().startsWith(hashDropdown.query.toLowerCase())
-              )
-              if (filtradas.length === 0) return null
+              const q = hashDropdown.query.toLowerCase()
+              const filtradas = todasAsTags.filter(t => !q || t.toLowerCase().startsWith(q))
+              const podeNovaTag = hashDropdown.query.trim() && !todasAsTags.includes(hashDropdown.query.trim())
+              if (filtradas.length === 0 && !podeNovaTag) return null
+              const addTag = (tag: string) => {
+                const curr = planoEditando.atividadesRoteiro[index]
+                if (!(curr.tags || []).includes(tag)) {
+                  updateArr(arr => { arr[index] = { ...arr[index], tags: [...(arr[index].tags || []), tag] }; return arr })
+                }
+                setHashDropdown(null)
+              }
               return (
                 <div
                   style={{ position: 'fixed', top: hashDropdown.pos.top + 4, left: hashDropdown.pos.left, zIndex: 9999 }}
                   className="bg-white dark:bg-[#1F2937] border border-amber-200 dark:border-amber-500/30 rounded-xl shadow-xl py-1 min-w-[140px]"
                 >
                   {filtradas.slice(0, 8).map(tag => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onMouseDown={e => {
-                        e.preventDefault()
-                        const curr = planoEditando.atividadesRoteiro[index]
-                        if (!(curr.tags || []).includes(tag)) {
-                          updateArr(arr => {
-                            arr[index] = { ...arr[index], tags: [...(arr[index].tags || []), tag] }
-                            return arr
-                          })
-                        }
-                        setHashDropdown(null)
-                      }}
-                      className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-400/10 transition-colors"
-                    >
+                    <button key={tag} type="button" onMouseDown={e => { e.preventDefault(); addTag(tag) }}
+                      className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-400/10 transition-colors">
                       #{tag}
                     </button>
                   ))}
+                  {podeNovaTag && (
+                    <button type="button" onMouseDown={e => { e.preventDefault(); addTag(hashDropdown.query.trim()) }}
+                      className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-400/10 transition-colors border-t border-slate-100 dark:border-white/[0.06]">
+                      + criar #{hashDropdown.query.trim()}
+                    </button>
+                  )}
                 </div>
               )
             })()}
