@@ -244,11 +244,23 @@ export default function TipTapEditor({
                     if (event.key === 'Escape' || event.key === ' ') { hs.active = false; hs.buffer = ''; onHashCancel?.(); return false }
                     if (event.key === 'Backspace') {
                         if (hs.buffer.length === 0) { hs.active = false; onHashCancel?.() }
-                        else { hs.buffer = hs.buffer.slice(0, -1); _emitHashPos(event, hs.buffer, onHashTrigger) }
+                        else {
+                            hs.buffer = hs.buffer.slice(0, -1)
+                            if (onHashTrigger) {
+                                const c = view.coordsAtPos(view.state.selection.from)
+                                onHashTrigger(hs.buffer, { top: c.bottom, left: c.left })
+                            }
+                        }
                         return false
                     }
                     if (event.key === 'Enter') { hs.active = false; hs.buffer = ''; onHashCancel?.(); return false }
-                    if (event.key.length === 1) { hs.buffer += event.key; _emitHashPos(event, hs.buffer, onHashTrigger) }
+                    if (event.key.length === 1) {
+                        hs.buffer += event.key
+                        if (onHashTrigger) {
+                            const c = view.coordsAtPos(view.state.selection.from)
+                            onHashTrigger(hs.buffer, { top: c.bottom, left: c.left })
+                        }
+                    }
                 }
                 return false
             },
@@ -348,14 +360,3 @@ export default function TipTapEditor({
     )
 }
 
-function _emitHashPos(
-    event: KeyboardEvent,
-    buffer: string,
-    onHashTrigger: ((q: string, pos: { top: number; left: number }) => void) | undefined
-) {
-    if (!onHashTrigger) return
-    const sel = window.getSelection()
-    if (!sel || sel.rangeCount === 0) return
-    const rect = sel.getRangeAt(0).getBoundingClientRect()
-    onHashTrigger(buffer, { top: rect.bottom + 4, left: rect.left })
-}

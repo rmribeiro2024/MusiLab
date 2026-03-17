@@ -702,7 +702,7 @@ export default function TelaPrincipal() {
                                                             const filtradas = todasAsTags.filter(t => t.toLowerCase().startsWith(hashDropdown.query.toLowerCase()))
                                                             if (filtradas.length === 0) return null
                                                             return (
-                                                                <div style={{ position: 'absolute', top: hashDropdown.pos.top + 4, left: hashDropdown.pos.left, zIndex: 50 }}
+                                                                <div style={{ position: 'fixed', top: hashDropdown.pos.top + 4, left: hashDropdown.pos.left, zIndex: 9999 }}
                                                                     className="bg-white dark:bg-[#1F2937] border border-amber-200 dark:border-amber-500/30 rounded-xl shadow-xl py-1 min-w-[140px]">
                                                                     {filtradas.slice(0, 8).map(tag => (
                                                                         <button key={tag} type="button"
