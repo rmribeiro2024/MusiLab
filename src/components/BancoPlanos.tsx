@@ -2395,6 +2395,7 @@ export default function BancoPlanos({ session }) {
         setModalNovaMusicaInline,
         setModalRegistro,
         setModalRegistroRapido,
+        setModalTemplates,
         setModalTurmas,
         setModalVincularPlano,
         setModoEdicao,
