@@ -166,6 +166,8 @@ export default function TelaPrincipal() {
         desvincularMusicaDoPlano,
         vincularMusicaAoPlano,
         atualizarKanbanStatus,
+        importarAtividadeParaPlano,
+        importarMusicaParaPlano,
     } = usePlanosContext()
 
     // Constantes estáticas (não precisam vir do ctx)
@@ -196,7 +198,11 @@ export default function TelaPrincipal() {
     // ── Painel contexto da turma ──
     const [contextoAberto, setContextoAberto] = useState(true)
 
-    // ── Picker de estratégia por atividade ──
+    // ── Banco lateral (painel C) ──
+    const [bancoPanelOpen, setBancoPanelOpen] = useState(false)
+    const [bancoPanelTab, setBancoPanelTab] = useState<'atividades' | 'estrategias' | 'musicas'>('atividades')
+    const [bancoPanelBusca, setBancoPanelBusca] = useState('')
+    // mantido para compatibilidade com código legado (não mais exposto na UI)
     const [estrategiaBrowserOpen, setEstrategiaBrowserOpen] = useState(false)
     const [buscaEstrategiaBrowser, setBuscaEstrategiaBrowser] = useState('')
 
@@ -544,68 +550,26 @@ export default function TelaPrincipal() {
                     {secoesForm.has('roteiro') && (
                         <div className="px-3 sm:px-6 pt-5 pb-5">
                             <div className="flex justify-between items-center mb-3">
-                                <button type="button"
-                                    onClick={() => { setEstrategiaBrowserOpen(o => !o); setBuscaEstrategiaBrowser('') }}
-                                    className={`text-[11px] font-semibold transition-colors ${estrategiaBrowserOpen ? 'text-violet-700 dark:text-violet-300' : 'text-violet-500 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300'}`}>
-                                    💡 Estratégias
-                                </button>
                                 <div className="flex gap-2">
-                                    <button type="button" onClick={() => setModalTemplates(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                                    <button type="button" onClick={() => setModalTemplates(true)} className="bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.10] text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
                                         📐 Templates
                                     </button>
-                                    <button type="button" onClick={adicionarAtividadeRoteiro} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                                    <button type="button" onClick={adicionarAtividadeRoteiro} className="border border-slate-300 dark:border-[#374151] hover:border-slate-400 hover:bg-slate-50 dark:hover:bg-white/[0.04] text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
                                         + Atividade
                                     </button>
-                                    <button type="button" onClick={() => setModalImportarAtividade(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
-                                        📚 Importar
+                                    <button
+                                        type="button"
+                                        onClick={() => { setBancoPanelOpen(o => !o); setBancoPanelBusca('') }}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${bancoPanelOpen ? 'bg-indigo-600 text-white' : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.10] text-slate-600 dark:text-slate-300'}`}
+                                    >
+                                        🗂 Banco {bancoPanelOpen ? '✕' : ''}
                                     </button>
                                 </div>
                             </div>
 
-                            {/* ── Browser de estratégias ── */}
-                            {estrategiaBrowserOpen && (
-                                <div className="mb-4 bg-violet-50 dark:bg-violet-500/[0.06] border border-violet-200 dark:border-violet-500/30 rounded-xl p-3">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <p className="text-[11px] font-semibold text-violet-700 dark:text-violet-300">
-                                            💡 Explorar banco de estratégias
-                                        </p>
-                                        <button type="button" onClick={() => setEstrategiaBrowserOpen(false)} className="text-violet-400 hover:text-violet-600 text-sm leading-none">×</button>
-                                    </div>
-                                    <input autoFocus type="text" placeholder="Buscar estratégia..."
-                                        value={buscaEstrategiaBrowser}
-                                        onChange={e => setBuscaEstrategiaBrowser(e.target.value)}
-                                        className="w-full px-3 py-2 border border-violet-200 dark:border-violet-500/30 rounded-lg text-xs mb-2 focus:border-violet-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white" />
-                                    {estrategias.length === 0
-                                        ? <p className="text-xs text-slate-400 text-center py-2">Nenhuma estratégia no banco ainda.</p>
-                                        : <div className="max-h-48 overflow-y-auto space-y-1">
-                                            {estrategias.filter(e => !buscaEstrategiaBrowser || e.nome.toLowerCase().includes(buscaEstrategiaBrowser.toLowerCase())).map(est => (
-                                                <button key={est.id} type="button"
-                                                    onClick={() => {
-                                                        const expandida = [...atividadesExpandidas][0]
-                                                        if (!expandida) { showToast('Expanda uma atividade primeiro!', 'error'); return }
-                                                        const idx = (planoEditando.atividadesRoteiro || []).findIndex(a => String(a.id) === expandida)
-                                                        if (idx < 0) return
-                                                        const jaVinculada = (planoEditando.atividadesRoteiro[idx].estrategiasVinculadas || []).includes(est.nome)
-                                                        if (jaVinculada) { showToast('Estratégia já vinculada a essa atividade.', 'error'); return }
-                                                        const arr = [...planoEditando.atividadesRoteiro]
-                                                        arr[idx] = { ...arr[idx], estrategiasVinculadas: [...(arr[idx].estrategiasVinculadas || []), est.nome] }
-                                                        setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
-                                                        showToast(`"${est.nome}" vinculada à atividade!`, 'success')
-                                                    }}
-                                                    className="w-full text-left px-3 py-2 rounded-lg text-xs transition-colors hover:bg-violet-100 dark:hover:bg-violet-500/10 text-slate-700 dark:text-slate-300 hover:text-violet-700">
-                                                    <span className="font-semibold">🧩 {est.nome}</span>
-                                                    {est.categoria && <span className="text-slate-400 ml-1">· {est.categoria}</span>}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    }
-                                    {atividadesExpandidas.size === 0 && (
-                                        <p className="text-[11px] text-violet-400 dark:text-violet-400/60 mt-2 text-center">
-                                            Expanda uma atividade para vincular a estratégia
-                                        </p>
-                                    )}
-                                </div>
-                            )}
+                            {/* ── Painel Banco lateral (Opção C) ── */}
+                            <div className={`flex gap-4 ${bancoPanelOpen ? 'items-start' : ''}`}>
+                                <div className="flex-1 min-w-0">
                             {/* ⏱️ Contador de tempo total */}
                             {(() => {
                                 const ativs = planoEditando.atividadesRoteiro || [];
@@ -815,6 +779,89 @@ export default function TelaPrincipal() {
                                     })}
                                 </div>
                             )}
+                                </div>{/* flex-1 min-w-0 */}
+
+                                {/* ── Painel lateral do Banco ── */}
+                                {bancoPanelOpen && (
+                                    <div className="w-56 shrink-0 border-l border-slate-100 dark:border-[#374151] pl-4 pt-1">
+                                        {/* Abas */}
+                                        <div className="flex mb-3">
+                                            {(['atividades', 'estrategias', 'musicas'] as const).map(tab => (
+                                                <button key={tab} type="button"
+                                                    onClick={() => { setBancoPanelTab(tab); setBancoPanelBusca('') }}
+                                                    className={`flex-1 py-1.5 text-[11px] font-semibold border-b-2 transition-colors ${bancoPanelTab === tab ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                                                >
+                                                    {tab === 'atividades' ? '📦' : tab === 'estrategias' ? '💡' : '🎵'}
+                                                    <span className="ml-1">{tab === 'atividades' ? 'Ativ.' : tab === 'estrategias' ? 'Estrat.' : 'Músicas'}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {/* Busca */}
+                                        <input autoFocus type="text" placeholder="Buscar..."
+                                            value={bancoPanelBusca}
+                                            onChange={e => setBancoPanelBusca(e.target.value)}
+                                            className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-[#374151] rounded-lg text-[11px] mb-2 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white focus:border-indigo-400"
+                                        />
+                                        {/* Lista */}
+                                        <div className="overflow-y-auto max-h-72 space-y-0.5">
+                                            {bancoPanelTab === 'atividades' && (() => {
+                                                const items = atividades.filter(a => !bancoPanelBusca || a.nome.toLowerCase().includes(bancoPanelBusca.toLowerCase()))
+                                                if (items.length === 0) return <p className="text-[11px] text-slate-400 text-center py-3">Nenhuma atividade no banco</p>
+                                                return items.map(a => (
+                                                    <button key={a.id} type="button"
+                                                        onClick={() => { importarAtividadeParaPlano(a); showToast(`"${a.nome}" adicionada!`, 'success') }}
+                                                        className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors group"
+                                                    >
+                                                        <span className="font-semibold block truncate">{a.nome}</span>
+                                                        {a.duracao && <span className="text-slate-400 text-[10px]">{a.duracao} min · </span>}
+                                                        <span className="text-indigo-400 text-[10px] opacity-0 group-hover:opacity-100">+ adicionar</span>
+                                                    </button>
+                                                ))
+                                            })()}
+                                            {bancoPanelTab === 'estrategias' && (() => {
+                                                const items = estrategias.filter(e => !bancoPanelBusca || e.nome.toLowerCase().includes(bancoPanelBusca.toLowerCase()))
+                                                if (items.length === 0) return <p className="text-[11px] text-slate-400 text-center py-3">Nenhuma estratégia no banco</p>
+                                                return items.map(est => (
+                                                    <button key={est.id} type="button"
+                                                        onClick={() => {
+                                                            const expandida = [...atividadesExpandidas][0]
+                                                            if (!expandida) { showToast('Expanda uma atividade primeiro!', 'error'); return }
+                                                            const idx = (planoEditando.atividadesRoteiro || []).findIndex(a => String(a.id) === expandida)
+                                                            if (idx < 0) return
+                                                            const jaVinculada = (planoEditando.atividadesRoteiro[idx].estrategiasVinculadas || []).includes(est.nome)
+                                                            if (jaVinculada) { showToast('Estratégia já vinculada!', 'error'); return }
+                                                            const arr = [...planoEditando.atividadesRoteiro]
+                                                            arr[idx] = { ...arr[idx], estrategiasVinculadas: [...(arr[idx].estrategiasVinculadas || []), est.nome] }
+                                                            setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
+                                                            showToast(`"${est.nome}" vinculada!`, 'success')
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+                                                    >
+                                                        <span className="font-semibold block truncate">🧩 {est.nome}</span>
+                                                        {est.categoria && <span className="text-slate-400 text-[10px]">{est.categoria}</span>}
+                                                    </button>
+                                                ))
+                                            })()}
+                                            {bancoPanelTab === 'musicas' && (() => {
+                                                const items = repertorio.filter(m => !bancoPanelBusca || m.titulo.toLowerCase().includes(bancoPanelBusca.toLowerCase()))
+                                                if (items.length === 0) return <p className="text-[11px] text-slate-400 text-center py-3">Nenhuma música no repertório</p>
+                                                return items.map(m => (
+                                                    <button key={m.id} type="button"
+                                                        onClick={() => importarMusicaParaPlano(m)}
+                                                        className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                                                    >
+                                                        <span className="font-semibold block truncate">🎵 {m.titulo}</span>
+                                                        {m.artista && <span className="text-slate-400 text-[10px]">{m.artista}</span>}
+                                                    </button>
+                                                ))
+                                            })()}
+                                        </div>
+                                        {bancoPanelTab === 'estrategias' && atividadesExpandidas.size === 0 && (
+                                            <p className="text-[10px] text-slate-400 mt-2 text-center">Expanda uma atividade para vincular</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>{/* flex gap-4 */}
                         </div>
                     )}
                 </div>
