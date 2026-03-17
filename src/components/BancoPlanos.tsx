@@ -763,7 +763,7 @@ export default function BancoPlanos({ session }) {
                     items: [
                         { label: 'Visão da Semana', short: 'Semana', icon: '📅', mode: 'visaoSemana', action: () => setViewMode('visaoSemana') },
                         { label: 'Banco de Aulas', short: 'Banco', icon: '📚', mode: 'lista',      action: () => { setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null); } },
-                        { label: 'Nova Aula',      short: 'Nova',  icon: '➕', mode: 'lista',      action: () => { novoPlano(); setViewMode('lista') }, accent: true },
+                        { label: 'Nova Aula',      short: 'Nova',  icon: '➕', mode: '__nova__',   action: () => { novoPlano(); setViewMode('lista') }, accent: true },
                         { label: 'Aula por Turma', short: 'Turma', icon: '👥', mode: 'porTurmas', action: () => setViewMode('porTurmas') },
                         { label: 'Sequência de Aulas', short: 'Seq.', icon: '🔗', mode: 'sequencias', action: () => setViewMode('sequencias') },
                     ]
