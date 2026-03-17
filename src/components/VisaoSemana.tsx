@@ -150,7 +150,7 @@ export default function VisaoSemana() {
   const { anosLetivos } = useAnoLetivoContext()
   const { planos } = usePlanosContext()
   const { setViewMode } = useRepertorioContext()
-  const { selecionarTurma, setDataNavegacao } = usePlanejamentoTurmaContext()
+  const { selecionarTurma, setDataNavegacao, planejamentos } = usePlanejamentoTurmaContext()
 
   // Estado local de navegação — não interfere com AgendaSemanal
   const [semanaInicio, setSemanaInicio] = useState<Date>(() => getSemanaAtualInicio())
@@ -194,6 +194,13 @@ export default function VisaoSemana() {
     })
     return map
   }, [anosLetivos])
+
+  // ── Set de turmaIds que já têm planejamento ──────────────────────────────
+  const turmasComPlano = useMemo(() => {
+    const s = new Set<string>()
+    planejamentos.forEach(p => s.add(String(p.turmaId)))
+    return s
+  }, [planejamentos])
 
   // ── Mapa turmaId → último registro pós-aula ──────────────────────────────
   const ultimoRegistroMap = useMemo(() => {
@@ -315,6 +322,7 @@ export default function VisaoSemana() {
                     const escolaNome = getNomeEscola(aula.anoLetivoId, aula.escolaId, anosLetivos)
                     const ultimoReg  = ultimoRegistroMap[String(aula.turmaId)] ?? null
                     const escolaCor  = aula.escolaId ? (escolaColorMap[String(aula.escolaId)] ?? null) : null
+                    const temPlano   = !past && turmasComPlano.has(String(aula.turmaId))
                     const cardStyle  = escolaCor
                       ? { '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties
                       : undefined
@@ -346,8 +354,15 @@ export default function VisaoSemana() {
                               {formatHorario(aula.horario)}
                             </div>
                           )}
-                          <div className="text-[13px] font-bold tracking-tight leading-tight text-slate-800 dark:text-[#E5E7EB]">
-                            {turmaNome}
+                          <div className="flex items-center justify-between gap-1">
+                            <div className="text-[13px] font-bold tracking-tight leading-tight text-slate-800 dark:text-[#E5E7EB]">
+                              {turmaNome}
+                            </div>
+                            {temPlano && (
+                              <span title="Próxima aula já planejada" className="shrink-0 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-100 dark:border-emerald-500/25 rounded-full px-1.5 py-px leading-tight">
+                                ✓
+                              </span>
+                            )}
                           </div>
                           {escolaNome && (
                             <div className="escola-label text-[10px] font-medium mt-[3px] truncate">

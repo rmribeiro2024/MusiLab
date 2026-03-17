@@ -1805,7 +1805,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
       })()}
 
       {/* ── BLOCO 2: Próximo Passo Sugerido ───────────────────────────────────── */}
-      {registroExibido?.proximaAulaOpcao && (
+      {registroExibido?.proximaAulaOpcao && planejamentosDaTurma.length === 0 && (
         <CardProximoPasso
           valor={registroExibido.proximaAulaOpcao}
           podeAdaptar={podeAdaptarBloco2}
@@ -1813,6 +1813,17 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
           onImportar={() => acionarModoFromBloco2('importar')}
           onNovo={() => acionarModoFromBloco2('criar')}
         />
+      )}
+      {registroExibido?.proximaAulaOpcao && planejamentosDaTurma.length > 0 && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl">
+          <span className="text-emerald-600 dark:text-emerald-400 text-sm">✅</span>
+          <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Próxima aula já planejada</span>
+          <button
+            type="button"
+            onClick={() => setPlanejamentosExpandidos(v => !v)}
+            className="ml-auto text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+          >{planejamentosExpandidos ? 'Recolher' : 'Ver planejamento ▼'}</button>
+        </div>
       )}
 
       {/* Histórico anterior (colapsável) */}
@@ -1856,7 +1867,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
           key={`form-${turmaSelecionada.turmaId}-${planejamentoEditando?.id ?? 'new'}`}
           turmaSelecionada={turmaSelecionada}
           planejamentoEditando={planejamentoEditando}
-          onSalvar={dados => { salvarPlanejamento(dados); fecharForm() }}
+          onSalvar={dados => { salvarPlanejamento(dados); fecharForm(); setPlanejamentosExpandidos(true); showToast('Planejamento salvo! ✅') }}
           onCancelarEdicao={fecharForm}
           ultimoRegistro={ultimoRegistroDaTurma}
           acionarBloco2={acionarBloco2}
