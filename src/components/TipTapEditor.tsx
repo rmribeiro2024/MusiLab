@@ -7,16 +7,27 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
 
 // ── Helper: converte URLs do Spotify em embeds no HTML ───────────────────────
-// Chamado no blur — URLs soltas viram iframe inline
+// Chamado no blur. Lida com dois casos:
+//   1. URL solta no texto (sem <a>)
+//   2. URL já dentro de <a href="..."> pelo autolink do TipTap/Link extension
 function convertSpotifyUrls(html: string): string {
-    return html.replace(
-        /(?<!['"=])https?:\/\/open\.spotify\.com\/(track|album|playlist)\/([^?/\s<"'&]+)/g,
-        (_full, type, id) =>
-            `<div data-spotify="" style="margin:8px 0;border-radius:12px;overflow:hidden">` +
-            `<iframe src="https://open.spotify.com/embed/${type}/${id}" width="100%" height="80" ` +
-            `frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" ` +
-            `loading="lazy" style="border-radius:12px;display:block"></iframe></div>`
+    const embed = (type: string, id: string) =>
+        `<div data-spotify="" style="margin:8px 0;border-radius:12px;overflow:hidden">` +
+        `<iframe src="https://open.spotify.com/embed/${type}/${id}" width="100%" height="80" ` +
+        `frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" ` +
+        `loading="lazy" style="border-radius:12px;display:block"></iframe></div>`
+
+    // Caso 1: <a href="https://open.spotify.com/...">qualquer texto</a>
+    let result = html.replace(
+        /<a[^>]*href="https?:\/\/open\.spotify\.com\/(track|album|playlist)\/([^?"#\s]+)[^"]*"[^>]*>.*?<\/a>/gi,
+        (_full, type, id) => embed(type, id)
     )
+    // Caso 2: URL solta (sem <a>)
+    result = result.replace(
+        /(?<!['"=])https?:\/\/open\.spotify\.com\/(track|album|playlist)\/([^?/\s<"'&]+)/g,
+        (_full, type, id) => embed(type, id)
+    )
+    return result
 }
 
 // ── Componente principal ─────────────────────────────────────────────────────
@@ -68,13 +79,29 @@ export default function TipTapEditor({
         content: value || '',
         onBlur: ({ editor: ed }) => {
             let html = ed.getHTML()
-            // Converte URLs de Spotify soltas em embeds
             const converted = convertSpotifyUrls(html)
             if (converted !== html) {
                 ed.commands.setContent(converted, false)
                 html = converted
             }
             onChange(html)
+        },
+        // Após qualquer update: se o último nó for youtube, garante parágrafo vazio + move cursor
+        onUpdate: ({ editor: ed }) => {
+            const { doc } = ed.state
+            const lastChild = doc.lastChild
+            if (lastChild?.type.name === 'youtube') {
+                setTimeout(() => {
+                    if (ed.isDestroyed) return
+                    const docNow = ed.state.doc
+                    if (docNow.lastChild?.type.name === 'youtube') {
+                        ed.chain()
+                            .insertContentAt(docNow.content.size, { type: 'paragraph' })
+                            .focus('end')
+                            .run()
+                    }
+                }, 20)
+            }
         },
         editorProps: {
             attributes: {
@@ -141,10 +168,11 @@ export default function TipTapEditor({
 
     return (
         <div className={`relative tiptap-wrapper ${className}`}>
-            {/* BubbleMenu — aparece ao selecionar texto */}
+            {/* BubbleMenu — aparece SOMENTE ao selecionar texto */}
             {editor && (
                 <BubbleMenu
                     editor={editor}
+                    shouldShow={({ state }) => !state.selection.empty}
                     tippyOptions={{ duration: 100, placement: 'top-start' }}
                 >
                     <div className="flex items-center gap-0.5 bg-white dark:bg-[#1E2A4A] border border-slate-200 dark:border-[#374151] rounded-lg shadow-xl px-1 py-0.5">
