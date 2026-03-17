@@ -59,7 +59,7 @@ async function processMediaUrls(html: string): Promise<{ html: string; previews:
 
         if (kind && title) {
             const icon = kind === 'youtube' ? '▶' : '🎵'
-            const link = `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#6366f1;font-weight:600;text-decoration:none;">${icon} ${title}</a>`
+            const link = `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#64748b;font-weight:400;text-decoration:underline;text-underline-offset:2px;">${icon} ${title}</a>`
             result = result.replace(raw, link)
             previews.push({ url, kind, title })
         }
@@ -202,7 +202,7 @@ export default function TipTapEditor({
                 openOnClick: false,
                 autolink: true,
                 HTMLAttributes: {
-                    style: 'color:#6366f1;font-weight:600;text-decoration:none;',
+                    style: 'color:#64748b;font-weight:400;text-decoration:underline;text-underline-offset:2px;',
                     target: '_blank',
                     rel: 'noopener noreferrer',
                 },
