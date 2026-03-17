@@ -289,22 +289,72 @@ export default function TipTapEditor({
     }, [value, editor])
 
     const btn = (active: boolean) =>
+        `px-1.5 py-0.5 rounded text-xs transition ${active
+            ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300'
+            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.08]'}`
+
+    const btnBubble = (active: boolean) =>
         `px-2 py-1 rounded text-sm transition ${active
             ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300'
             : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.08]'}`
 
     return (
         <div className={`relative tiptap-wrapper ${className}`}>
-            {/* BubbleMenu — só ao selecionar texto */}
+            {/* Barra de formatação fixa — sempre visível */}
+            {editor && (
+                <div className="flex items-center gap-0.5 px-2 pt-1.5 pb-1 border-b border-slate-100 dark:border-white/[0.06]">
+                    <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBold().run() }} className={btn(editor.isActive('bold'))} title="Negrito"><strong>B</strong></button>
+                    <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleItalic().run() }} className={btn(editor.isActive('italic'))} title="Itálico"><em>I</em></button>
+                    <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleUnderline().run() }} className={btn(editor.isActive('underline'))} title="Sublinhado"><u>U</u></button>
+                    <div className="w-px h-3 bg-slate-200 dark:bg-slate-600 mx-0.5" />
+                    <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBulletList().run() }} className={btn(editor.isActive('bulletList'))} title="Lista com marcadores">
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="2" cy="4" r="1.5" fill="currentColor"/>
+                            <rect x="5" y="3" width="9" height="2" rx="1" fill="currentColor"/>
+                            <circle cx="2" cy="8" r="1.5" fill="currentColor"/>
+                            <rect x="5" y="7" width="9" height="2" rx="1" fill="currentColor"/>
+                            <circle cx="2" cy="12" r="1.5" fill="currentColor"/>
+                            <rect x="5" y="11" width="9" height="2" rx="1" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleOrderedList().run() }} className={btn(editor.isActive('orderedList'))} title="Lista numerada">
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <text x="0" y="5" fontSize="5" fill="currentColor" fontWeight="600">1.</text>
+                            <rect x="5" y="3" width="9" height="2" rx="1" fill="currentColor"/>
+                            <text x="0" y="9.5" fontSize="5" fill="currentColor" fontWeight="600">2.</text>
+                            <rect x="5" y="7" width="9" height="2" rx="1" fill="currentColor"/>
+                            <text x="0" y="14" fontSize="5" fill="currentColor" fontWeight="600">3.</text>
+                            <rect x="5" y="11" width="9" height="2" rx="1" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    {onSaveAsStrategy && (
+                        <>
+                            <div className="w-px h-3 bg-slate-200 dark:bg-slate-600 mx-0.5" />
+                            <button
+                                onMouseDown={e => {
+                                    e.preventDefault()
+                                    const { from, to } = editor.state.selection
+                                    const text = editor.state.doc.textBetween(from, to, ' ').trim()
+                                    if (text) onSaveAsStrategy(text)
+                                }}
+                                className="px-1.5 py-0.5 rounded text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition"
+                                title="Salvar seleção como estratégia (Ctrl+E)"
+                            >💡</button>
+                        </>
+                    )}
+                </div>
+            )}
+
+            {/* BubbleMenu — aparece ao selecionar texto (formatação rápida) */}
             {editor && (
                 <BubbleMenu editor={editor} shouldShow={({ state }) => !state.selection.empty}
                     tippyOptions={{ duration: 100, placement: 'top-start' }}>
                     <div className="flex items-center gap-0.5 bg-white dark:bg-[#1E2A4A] border border-slate-200 dark:border-[#374151] rounded-lg shadow-xl px-1 py-0.5">
-                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBold().run() }} className={btn(editor.isActive('bold'))} title="Negrito"><strong>B</strong></button>
-                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleItalic().run() }} className={btn(editor.isActive('italic'))} title="Itálico"><em>I</em></button>
-                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleUnderline().run() }} className={btn(editor.isActive('underline'))} title="Sublinhado"><u>U</u></button>
+                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBold().run() }} className={btnBubble(editor.isActive('bold'))} title="Negrito"><strong>B</strong></button>
+                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleItalic().run() }} className={btnBubble(editor.isActive('italic'))} title="Itálico"><em>I</em></button>
+                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleUnderline().run() }} className={btnBubble(editor.isActive('underline'))} title="Sublinhado"><u>U</u></button>
                         <div className="w-px h-4 bg-slate-200 dark:bg-slate-600 mx-0.5" />
-                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBulletList().run() }} className={btn(editor.isActive('bulletList'))} title="Lista">≡</button>
+                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBulletList().run() }} className={btnBubble(editor.isActive('bulletList'))} title="Lista">≡</button>
                         {onSaveAsStrategy && (
                             <>
                                 <div className="w-px h-4 bg-slate-200 dark:bg-slate-600 mx-0.5" />
