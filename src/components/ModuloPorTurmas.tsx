@@ -2,13 +2,14 @@
 // Etapa 6 — Planejar por Turma
 // Foco: "O que vou dar para esta turma na próxima aula?"
 
-import React, { useState, useMemo, useEffect, useRef } from 'react'
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import type { TurmaSelecionada } from '../contexts/PlanejamentoTurmaContext'
+import { showToast } from '../lib/toast'
 import type { AnoLetivo, RegistroPosAula, Plano, AtividadePlanejamentoTurma } from '../types'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -120,7 +121,34 @@ interface SeletorProps {
 function SeletorTurma({ dataSelecionada, onDataChange, turmaSelecionada, onSelecionarTurma }: SeletorProps) {
     const { obterTurmasDoDia } = useCalendarioContext()
     const { anosLetivos } = useAnoLetivoContext()
+    const { planejamentos, copiarPlanejamento } = usePlanejamentoTurmaContext()
     const escolaColorMap = useMemo(() => buildEscolaColorMap(anosLetivos), [anosLetivos])
+
+    // ── Drag-drop: copiar planejamento entre turmas ──
+    const [dragSrcId, setDragSrcId] = useState<string | null>(null)
+    const [dragOverId, setDragOverId] = useState<string | null>(null)
+    type CopyConfirm = { srcPlanoId: string; srcNome: string; dst: TurmaSelecionada; dstNome: string }
+    const [copyConfirm, setCopyConfirm] = useState<CopyConfirm | null>(null)
+
+    const handleDrop = useCallback((e: React.DragEvent, dstAula: ReturnType<typeof obterTurmasDoDia>[number]) => {
+        e.preventDefault()
+        if (!dragSrcId || dragSrcId === String(dstAula.turmaId)) { setDragOverId(null); return }
+        const srcPlanos = planejamentos.filter(p => String(p.turmaId) === dragSrcId)
+        if (srcPlanos.length === 0) { setDragSrcId(null); setDragOverId(null); return }
+        const ymd = toYMD(dataSelecionada)
+        const aulasDoDia = obterTurmasDoDia(ymd)
+        const srcAula = aulasDoDia.find(a => String(a.turmaId) === dragSrcId)
+        const srcNome = srcAula ? getNomeTurma(srcAula.anoLetivoId, srcAula.escolaId, srcAula.segmentoId, srcAula.turmaId, anosLetivos) : dragSrcId
+        const dstNome = getNomeTurma(dstAula.anoLetivoId, dstAula.escolaId, dstAula.segmentoId, dstAula.turmaId, anosLetivos)
+        setCopyConfirm({
+            srcPlanoId: srcPlanos[0].id,
+            srcNome,
+            dst: { anoLetivoId: String(dstAula.anoLetivoId ?? ''), escolaId: String(dstAula.escolaId ?? ''), segmentoId: String(dstAula.segmentoId), turmaId: String(dstAula.turmaId) },
+            dstNome,
+        })
+        setDragSrcId(null)
+        setDragOverId(null)
+    }, [dragSrcId, planejamentos, dataSelecionada, obterTurmasDoDia, anosLetivos])
 
     const ymd = toYMD(dataSelecionada)
     const aulasDoDia = useMemo(
@@ -134,6 +162,7 @@ function SeletorTurma({ dataSelecionada, onDataChange, turmaSelecionada, onSelec
     const mesNome  = mesNomes[dataSelecionada.getMonth()]
 
     return (
+    <>
         <aside className="w-52 flex-shrink-0 flex flex-col gap-3">
 
             {/* ── Navegação de data ── */}
@@ -176,31 +205,45 @@ function SeletorTurma({ dataSelecionada, onDataChange, turmaSelecionada, onSelec
                                 // eslint-disable-next-line eqeqeq
                                 ? String(turmaSelecionada.turmaId) == String(aula.turmaId)
                                 : false
+                            const temPlano  = planejamentos.some(p => String(p.turmaId) === String(aula.turmaId))
+                            const isDragSrc = dragSrcId === String(aula.turmaId)
+                            const isDragOver = dragOverId === String(aula.turmaId)
 
                             return (
                                 <button
                                     key={`${aula.turmaId}-${i}`}
+                                    draggable={temPlano}
                                     onClick={() => onSelecionarTurma({
                                         anoLetivoId: String(aula.anoLetivoId ?? ''),
                                         escolaId:    String(aula.escolaId ?? ''),
                                         segmentoId:  String(aula.segmentoId),
                                         turmaId:     String(aula.turmaId),
                                     })}
+                                    onDragStart={e => { e.dataTransfer.effectAllowed = 'copy'; setDragSrcId(String(aula.turmaId)) }}
+                                    onDragOver={e => { if (dragSrcId && dragSrcId !== String(aula.turmaId)) { e.preventDefault(); setDragOverId(String(aula.turmaId)) } }}
+                                    onDragLeave={() => setDragOverId(null)}
+                                    onDrop={e => handleDrop(e, aula)}
+                                    onDragEnd={() => { setDragSrcId(null); setDragOverId(null) }}
                                     style={escolaCor
                                         ? { '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties
                                         : undefined}
                                     className={`w-full text-left px-3 py-2 transition-all ${
-                                        isAtiva
+                                        isDragOver
+                                            ? 'bg-indigo-50 dark:bg-indigo-500/20 ring-1 ring-indigo-300 dark:ring-indigo-500/40'
+                                            : isDragSrc
+                                            ? 'opacity-50'
+                                            : isAtiva
                                             ? 'bg-[#5B5FEA]/[0.09] dark:bg-[#5B5FEA]/[0.16]'
                                             : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
                                     }`}
                                 >
-                                    <div className={`text-[12.5px] font-semibold leading-tight truncate ${
+                                    <div className={`flex items-center gap-1 text-[12.5px] font-semibold leading-tight ${
                                         isAtiva
                                             ? 'text-indigo-700 dark:text-indigo-300'
                                             : 'text-slate-700 dark:text-[#D1D5DB]'
                                     }`}>
-                                        {nome}
+                                        <span className="truncate flex-1">{nome}</span>
+                                        {temPlano && <span title="Tem planejamento — arraste para copiar" className="text-[9px] text-emerald-500 shrink-0">✓</span>}
                                     </div>
                                     {escola && (
                                         <div className="escola-label text-[10px] font-medium truncate mt-[1px]">
@@ -233,6 +276,33 @@ function SeletorTurma({ dataSelecionada, onDataChange, turmaSelecionada, onSelec
                 ir para hoje
             </button>
         </aside>
+
+        {/* ── Modal confirmação: copiar planejamento ── */}
+        {copyConfirm && (
+            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setCopyConfirm(null)}>
+                <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl p-5 max-w-xs w-full" onClick={e => e.stopPropagation()}>
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">Copiar planejamento?</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                        Copiar o planejamento de <strong className="text-slate-700 dark:text-slate-200">{copyConfirm.srcNome}</strong> para <strong className="text-slate-700 dark:text-slate-200">{copyConfirm.dstNome}</strong>?
+                    </p>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setCopyConfirm(null)}
+                            className="flex-1 text-sm border border-slate-200 dark:border-[#374151] rounded-xl px-3 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.05] transition"
+                        >Cancelar</button>
+                        <button
+                            onClick={() => {
+                                copiarPlanejamento(copyConfirm.srcPlanoId, copyConfirm.dst)
+                                showToast(`Planejamento copiado para ${copyConfirm.dstNome} ✅`)
+                                setCopyConfirm(null)
+                            }}
+                            className="flex-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-3 py-2 font-medium transition"
+                        >Copiar</button>
+                    </div>
+                </div>
+            </div>
+        )}
+    </>
     )
 }
 
