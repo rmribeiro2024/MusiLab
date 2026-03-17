@@ -355,12 +355,6 @@ const CardAtividadeRoteiro = memo(function CardAtividadeRoteiro({
 
             {/* Botões de adicionar */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <button
-                type="button"
-                onClick={() => onVincularMusica(atividade.id)}
-                className="text-[11px] font-semibold text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-              >+ Música</button>
-              <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
               <input
                 type="text"
                 placeholder="+ Conceito  Enter ↵"
