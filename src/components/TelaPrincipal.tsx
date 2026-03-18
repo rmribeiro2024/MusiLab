@@ -830,7 +830,12 @@ export default function TelaPrincipal() {
 
                             {/* Lista de vínculos */}
                             {vinculadas.length === 0 && !pickerAberto && (
-                                <p className="text-xs text-slate-400 italic">Nenhuma música vinculada ainda. Adicione o repertório da aula.</p>
+                                <button type="button" onClick={() => setPickerAberto(true)}
+                                    className="w-full text-left px-3 py-2.5 rounded-xl border border-dashed border-slate-200 dark:border-[#374151] hover:border-indigo-300 hover:bg-indigo-50/40 dark:hover:bg-indigo-400/5 transition-all group">
+                                    <span className="text-xs text-slate-400 group-hover:text-indigo-500 transition-colors">
+                                        Qual música você vai usar nesta aula? <span className="underline underline-offset-2">Clique para buscar ou digitar</span>
+                                    </span>
+                                </button>
                             )}
                             {vinculadas.length > 0 && (
                                 <div className="flex flex-col gap-1.5">
