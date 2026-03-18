@@ -881,47 +881,72 @@ export default function TelaPrincipal() {
                             {vinculadas.length > 0 && (
                                 <div className="space-y-1.5">
                                     {vinculadas.map(v => {
-                                        // Cards com link → thumbnail + botão Abrir (player flutuante)
+                                        // Cards com link → thumbnail + player inline expansível
                                         if (v.url) {
                                             const ytId = getYoutubeId(v.url)
                                             const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null
                                             const isSpotifyLink = isSpotifyUrl(v.url)
-                                            const kind = ytId ? 'youtube' : isSpotifyLink ? 'spotify' : null
                                             const displayTitle = (v.titulo === '▶ Link YouTube' || v.titulo === '🎵 Link Spotify') ? '' : v.titulo
+                                            const playerKey = String(v.musicaId)
+                                            const isOpen = musicaPlayer?.url === v.url
+                                            const embedSrc = ytId
+                                                ? `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1`
+                                                : (() => { const m = v.url!.match(/open\.spotify\.com\/(?:[a-z-]+\/)?(track|album|playlist)\/([^?/#\s]+)/); return m ? `https://open.spotify.com/embed/${m[1]}/${m[2]}` : '' })()
                                             return (
-                                                <div key={String(v.musicaId)} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-[#374151] bg-slate-50 dark:bg-white/[0.03]">
-                                                    {/* Thumbnail */}
-                                                    <div className="relative w-16 h-11 shrink-0 flex items-center justify-center rounded-lg overflow-hidden bg-slate-200 dark:bg-white/10">
-                                                        <span className="text-xl leading-none">{ytId ? '▶' : '🎵'}</span>
-                                                        {thumbUrl && <img src={thumbUrl} alt="" className="absolute inset-0 w-full h-full object-cover rounded-lg" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
-                                                    </div>
-                                                    {/* Título */}
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm text-slate-700 dark:text-[#D1D5DB] truncate font-medium">
-                                                            {displayTitle || (ytId ? 'YouTube' : 'Spotify')}
-                                                        </p>
-                                                        {v.confirmadoPor === 'auto' && (
-                                                            <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 py-0.5 rounded">detectada</span>
-                                                        )}
-                                                    </div>
-                                                    {/* Botão Abrir (player flutuante) */}
-                                                    {(ytId || isSpotifyLink) && (
+                                                <div key={playerKey} className="rounded-xl border border-slate-200 dark:border-[#374151] overflow-hidden bg-slate-50 dark:bg-white/[0.03]">
+                                                    {/* Linha principal do card */}
+                                                    <div className="flex items-center gap-2.5 p-2.5">
+                                                        {/* Thumbnail clicável */}
                                                         <button type="button"
-                                                            onClick={() => setMusicaPlayer({
-                                                                url: v.url!,
-                                                                title: displayTitle || (ytId ? 'YouTube' : 'Spotify'),
-                                                                kind: ytId ? 'youtube' : 'spotify',
-                                                            })}
-                                                            className="text-xs font-semibold text-indigo-500 hover:text-indigo-700 transition-colors shrink-0">
-                                                            ▶ Abrir
+                                                            onClick={() => setMusicaPlayer(isOpen ? null : { url: v.url!, title: displayTitle || (ytId ? 'YouTube' : 'Spotify'), kind: ytId ? 'youtube' : 'spotify' })}
+                                                            className="relative w-16 h-11 shrink-0 flex items-center justify-center rounded-lg overflow-hidden bg-slate-200 dark:bg-white/10 hover:ring-2 hover:ring-indigo-400 transition-all group">
+                                                            <span className="text-xl leading-none">{ytId ? '▶' : '🎵'}</span>
+                                                            {thumbUrl && <img src={thumbUrl} alt="" className="absolute inset-0 w-full h-full object-cover rounded-lg" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
+                                                            {(ytId || isSpotifyLink) && (
+                                                                <span className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-bold">
+                                                                    {isOpen ? '✕' : '▶'}
+                                                                </span>
+                                                            )}
                                                         </button>
+                                                        {/* Título */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm text-slate-700 dark:text-[#D1D5DB] truncate font-medium">
+                                                                {displayTitle || (ytId ? 'YouTube' : 'Spotify')}
+                                                            </p>
+                                                            {v.confirmadoPor === 'auto' && (
+                                                                <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 py-0.5 rounded">detectada</span>
+                                                            )}
+                                                        </div>
+                                                        {/* Botão Abrir */}
+                                                        {(ytId || isSpotifyLink) && (
+                                                            <button type="button"
+                                                                onClick={() => setMusicaPlayer(isOpen ? null : { url: v.url!, title: displayTitle || (ytId ? 'YouTube' : 'Spotify'), kind: ytId ? 'youtube' : 'spotify' })}
+                                                                className="text-xs font-semibold text-indigo-500 hover:text-indigo-700 transition-colors shrink-0">
+                                                                {isOpen ? '✕ Fechar' : '▶ Abrir'}
+                                                            </button>
+                                                        )}
+                                                        <button type="button"
+                                                            onClick={() => {
+                                                                if (isOpen) setMusicaPlayer(null)
+                                                                setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: vinculadas.filter(x => String(x.musicaId) !== String(v.musicaId)) })
+                                                                desvincularMusicaDoPlano(planoEditando.id, v.musicaId)
+                                                            }}
+                                                            className="text-slate-300 hover:text-red-500 transition shrink-0 text-xs">✕</button>
+                                                    </div>
+                                                    {/* Player inline — expande abaixo */}
+                                                    {isOpen && embedSrc && (
+                                                        <div className="border-t border-slate-200 dark:border-[#374151]">
+                                                            <iframe
+                                                                src={embedSrc}
+                                                                width="100%"
+                                                                height={isSpotifyLink ? 80 : 200}
+                                                                frameBorder="0"
+                                                                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                                                allowFullScreen
+                                                                style={{ display: 'block' }}
+                                                            />
+                                                        </div>
                                                     )}
-                                                    <button type="button"
-                                                        onClick={() => {
-                                                            setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: vinculadas.filter(x => String(x.musicaId) !== String(v.musicaId)) })
-                                                            desvincularMusicaDoPlano(planoEditando.id, v.musicaId)
-                                                        }}
-                                                        className="text-slate-300 hover:text-red-500 transition shrink-0 text-xs">✕</button>
                                                 </div>
                                             )
                                         }
@@ -2208,40 +2233,6 @@ export default function TelaPrincipal() {
             />
         )}
         <ModalMusicasDetectadas />
-        {musicaPlayer && ReactDOM.createPortal(
-            <div style={{
-                position: 'fixed', zIndex: 9999,
-                right: 24, bottom: 24,
-                width: 320, height: musicaPlayer.kind === 'spotify' ? 128 : 212,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
-                borderRadius: 12, overflow: 'hidden',
-            }}>
-                <div style={{
-                    height: 32,
-                    background: musicaPlayer.kind === 'youtube' ? '#1e1e1e' : '#191414',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '0 10px', gap: 8,
-                }}>
-                    <span style={{ color: '#fff', fontSize: 11, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                        {musicaPlayer.kind === 'youtube' ? '▶' : '🎵'} {musicaPlayer.title}
-                    </span>
-                    <button onClick={() => setMusicaPlayer(null)}
-                        style={{ color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 2px' }}>×</button>
-                </div>
-                <iframe
-                    src={musicaPlayer.kind === 'youtube'
-                        ? `https://www.youtube-nocookie.com/embed/${getYoutubeId(musicaPlayer.url)}?autoplay=1`
-                        : (() => { const m = musicaPlayer.url.match(/open\.spotify\.com\/(?:[a-z-]+\/)?(track|album|playlist)\/([^?/#\s]+)/); return m ? `https://open.spotify.com/embed/${m[1]}/${m[2]}` : musicaPlayer.url })()
-                    }
-                    width="100%" height={musicaPlayer.kind === 'spotify' ? 96 : 180}
-                    frameBorder="0"
-                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                    allowFullScreen
-                    style={{ display: 'block', background: '#000' }}
-                />
-            </div>,
-            document.body
-        )}
 
         {/* ── Modal revisão de conceitos do plano ── */}
         {modalConceitosPlano && (
