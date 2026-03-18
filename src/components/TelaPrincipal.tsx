@@ -916,10 +916,10 @@ export default function TelaPrincipal() {
                             {vinculadas.length === 0 && !pickerAberto && (
                                 <button type="button" onClick={() => setPickerAberto(true)}
                                     className="w-full text-left px-3 py-3 rounded-xl border border-dashed border-slate-200 dark:border-[#374151] hover:border-indigo-300 hover:bg-indigo-50/40 dark:hover:bg-indigo-400/5 transition-all group space-y-0.5">
-                                    <span className="block text-xs text-slate-400 group-hover:text-indigo-500 transition-colors">
+                                    <span className="block text-xs text-slate-600 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                         Adicione as músicas desta aula — nome, artista ou link do YouTube/Spotify
                                     </span>
-                                    <span className="block text-[10px] text-slate-300 dark:text-[#4B5563]">
+                                    <span className="block text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
                                         Links colados no texto do roteiro também aparecem aqui ao salvar
                                     </span>
                                 </button>
