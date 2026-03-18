@@ -101,7 +101,7 @@ import { usePlanosContext, useAnoLetivoContext, useAtividadesContext, useReperto
 import { useBancoPlanos } from './BancoPlanosContext'
 import RichTextEditor from './RichTextEditor'
 import TipTapEditor from './TipTapEditor'
-import { exportarPlanoPDF, gerarLinkCompartilhavel } from '../utils/pdf'
+import { exportarPlanoPDF, previewPlanoPDF, gerarLinkCompartilhavel } from '../utils/pdf'
 import ModalAplicarEmTurmas from './modals/ModalAplicarEmTurmas'
 import ModalMusicasDetectadas from './modals/ModalMusicasDetectadas'
 import type { Plano } from '../types'
@@ -421,6 +421,19 @@ export default function TelaPrincipal() {
 
     // ── Modo Leitura ──
     const [modoLeitura, setModoLeitura] = useState(false)
+
+    // ── Preview PDF ──
+    const [previewPDFUrl, setPreviewPDFUrl] = useState<string | null>(null)
+    const [gerandoPreview, setGerandoPreview] = useState(false)
+    async function abrirPreviewPDF(plano: Plano) {
+        setGerandoPreview(true)
+        try {
+            const url = await previewPlanoPDF(plano)
+            setPreviewPDFUrl(url)
+        } catch { /* silencioso */ } finally {
+            setGerandoPreview(false)
+        }
+    }
 
     // ── Filtros colapsáveis (padrão: aberto, preferência persistida) ──
     const [filtrosPlanos, setFiltrosPlanos] = useState(() => localStorage.getItem('planos_filtros_abertos') !== 'false')
@@ -1768,6 +1781,13 @@ export default function TelaPrincipal() {
                                 )}
                             </div>
                         ) : null}
+                        <button type="button"
+                            onClick={() => abrirPreviewPDF(planoEditando)}
+                            disabled={gerandoPreview}
+                            title="Pré-visualizar PDF"
+                            className="px-3 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm active:scale-95 disabled:opacity-50 shrink-0">
+                            {gerandoPreview ? '⏳' : '📄'}
+                        </button>
                         <button type="button" onClick={handleSalvarPlano} disabled={estadoSalvar !== 'idle'} className={`flex-1 py-2.5 rounded-xl font-semibold text-white transition-all shadow-sm text-sm active:scale-95 ${estadoSalvar === 'salvo' ? 'bg-emerald-500' : estadoSalvar === 'salvando' ? 'bg-indigo-400 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700'}`}>
                             {estadoSalvar === 'salvando' ? 'Salvando...' : estadoSalvar === 'salvo' ? '✓ Salvo!' : 'Salvar Plano'}
                         </button>
@@ -1776,6 +1796,32 @@ export default function TelaPrincipal() {
             </div>{/* fim conteúdo */}
         </div>{/* fim card principal */}
     </div>{/* fim container externo */}
+
+    {/* ── MODAL PREVIEW PDF ── */}
+    {previewPDFUrl && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4" onClick={() => setPreviewPDFUrl(null)}>
+            <div className="bg-white dark:bg-[#1F2937] rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-[#374151]">
+                    <h3 className="font-bold text-slate-800 dark:text-white text-sm">📄 Preview — {planoEditando.titulo}</h3>
+                    <div className="flex items-center gap-2">
+                        <button type="button"
+                            onClick={() => { exportarPlanoPDF(planoEditando); setPreviewPDFUrl(null) }}
+                            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition-colors">
+                            ⬇ Baixar PDF
+                        </button>
+                        <button type="button" onClick={() => setPreviewPDFUrl(null)}
+                            className="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg leading-none px-2">✕</button>
+                    </div>
+                </div>
+                <iframe
+                    src={previewPDFUrl}
+                    className="flex-1 rounded-b-2xl"
+                    style={{ minHeight: '70vh' }}
+                    title="Preview PDF"
+                />
+            </div>
+        </div>
+    )}
     </>
         )
     }
