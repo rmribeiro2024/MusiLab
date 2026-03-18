@@ -919,7 +919,7 @@ export default function TelaPrincipal() {
                                     <span className="block text-xs text-slate-600 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                         Adicione as músicas desta aula — nome, artista ou link do YouTube/Spotify
                                     </span>
-                                    <span className="block text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                                    <span className="block text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
                                         Links colados no texto do roteiro também aparecem aqui ao salvar
                                     </span>
                                 </button>
