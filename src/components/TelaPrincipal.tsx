@@ -1045,6 +1045,31 @@ export default function TelaPrincipal() {
                     </button>
                     {secoesForm.has('roteiro') && (
                         <div className="px-3 sm:px-6 pt-5 pb-5">
+                            {/* ── Alerta de tempo ── */}
+                            {(() => {
+                                const duracaoAula = parseInt((planoEditando.duracao || '').replace(/[^\d]/g, ''))
+                                if (!duracaoAula || isNaN(duracaoAula)) return null
+                                let totalRoteiro = 0
+                                ;(planoEditando.atividadesRoteiro || []).forEach(a => {
+                                    const n = parseInt((a.duracao || '').toString())
+                                    if (!isNaN(n)) totalRoteiro += n
+                                })
+                                if (totalRoteiro === 0 || totalRoteiro <= duracaoAula) return null
+                                const excesso = totalRoteiro - duracaoAula
+                                return (
+                                    <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-400/10 border border-amber-200 dark:border-amber-400/30 rounded-xl px-3 py-2.5 mb-3">
+                                        <span className="text-base shrink-0">⏱️</span>
+                                        <div>
+                                            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                                                Roteiro passa {excesso} min do tempo da aula
+                                            </p>
+                                            <p className="text-[11px] text-amber-600 dark:text-amber-500 mt-0.5">
+                                                Total do roteiro: <strong>{totalRoteiro} min</strong> · Aula: <strong>{duracaoAula} min</strong>. Considere reduzir ou marcar alguma atividade como opcional.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )
+                            })()}
                             <div className="flex justify-between items-center mb-3">
                                 <div className="flex gap-2">
                                     <button type="button" onClick={() => setModalTemplates(true)} className="bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.10] text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
