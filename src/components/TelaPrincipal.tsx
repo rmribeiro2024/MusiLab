@@ -877,33 +877,46 @@ export default function TelaPrincipal() {
 
                             {/* Lista de vínculos */}
                             {vinculadas.length > 0 && (
-                                <div className="flex flex-col gap-1.5">
+                                <div className="space-y-1.5">
                                     {vinculadas.map(v => {
-                                        const ytId = v.url ? getYoutubeId(v.url) : null
-                                        const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/default.jpg` : null
-                                        const isSpotify = v.url && isSpotifyUrl(v.url)
+                                        // Cards com link → mesmo visual que Recursos da Aula
+                                        if (v.url) {
+                                            const tipo = detectarTipoRecurso(v.url)
+                                            const { icone, label, cor } = getRecursoMeta(tipo)
+                                            const ytId = getYoutubeId(v.url)
+                                            const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null
+                                            return (
+                                                <div key={String(v.musicaId)} className={`flex items-start gap-2.5 p-2.5 rounded-xl border ${cor.split(' ').slice(0,2).join(' ')}`}>
+                                                    <a href={v.url} target="_blank" rel="noopener noreferrer"
+                                                        className="relative w-16 h-11 shrink-0 flex items-center justify-center rounded-lg overflow-hidden bg-white/60">
+                                                        <span className="text-xl leading-none">{icone}</span>
+                                                        {thumbUrl && <img src={thumbUrl} alt="" className="absolute inset-0 w-full h-full object-cover rounded-lg shadow-sm" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
+                                                    </a>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className={`text-[10px] font-bold uppercase tracking-wide ${cor.split(' ').slice(2).join(' ')}`}>{label}</span>
+                                                        <a href={v.url} target="_blank" rel="noopener noreferrer"
+                                                            className="text-[11px] text-slate-500 hover:underline truncate block">{v.titulo !== '▶ Link YouTube' && v.titulo !== '🎵 Link Spotify' ? v.titulo : v.url}</a>
+                                                        {v.confirmadoPor === 'auto' && (
+                                                            <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 py-0.5 rounded">detectada</span>
+                                                        )}
+                                                    </div>
+                                                    <button type="button"
+                                                        onClick={() => {
+                                                            setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: vinculadas.filter(x => String(x.musicaId) !== String(v.musicaId)) })
+                                                            desvincularMusicaDoPlano(planoEditando.id, v.musicaId)
+                                                        }}
+                                                        className="text-slate-300 hover:text-red-500 transition shrink-0 text-xs mt-0.5">✕</button>
+                                                </div>
+                                            )
+                                        }
+                                        // Cards sem link → só título (do repertório ou digitado)
                                         return (
                                             <div key={String(v.musicaId)}
-                                                className="flex items-center gap-2 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-[#374151] rounded-lg px-2.5 py-1.5">
-                                                {/* Thumbnail YouTube ou ícone Spotify */}
-                                                {thumbUrl && (
-                                                    <a href={v.url} target="_blank" rel="noopener noreferrer" className="shrink-0">
-                                                        <img src={thumbUrl} alt="" className="w-10 h-7 object-cover rounded" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                                                    </a>
-                                                )}
-                                                {isSpotify && !thumbUrl && (
-                                                    <a href={v.url} target="_blank" rel="noopener noreferrer" className="shrink-0 w-7 h-7 flex items-center justify-center bg-green-100 rounded text-green-600 text-base">🎵</a>
-                                                )}
-                                                <span className="flex-1 min-w-0 text-sm">
-                                                    {v.url ? (
-                                                        <a href={v.url} target="_blank" rel="noopener noreferrer"
-                                                            className="text-slate-700 dark:text-[#D1D5DB] hover:text-indigo-600 transition-colors truncate block">
-                                                            {v.titulo}
-                                                        </a>
-                                                    ) : (
-                                                        <span className="text-slate-700 dark:text-[#D1D5DB] truncate block">{v.titulo}</span>
-                                                    )}
-                                                    {v.autor && <span className="text-slate-400 text-xs">· {v.autor}</span>}
+                                                className="flex items-center gap-2 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-[#374151] rounded-lg px-3 py-2">
+                                                <span className="text-base">🎵</span>
+                                                <span className="flex-1 min-w-0 text-sm text-slate-700 dark:text-[#D1D5DB] truncate">
+                                                    {v.titulo}
+                                                    {v.autor && <span className="text-slate-400 ml-1.5 text-xs">· {v.autor}</span>}
                                                 </span>
                                                 {v.confirmadoPor === 'auto' && (
                                                     <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded shrink-0">detectada</span>
@@ -913,8 +926,7 @@ export default function TelaPrincipal() {
                                                         setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: vinculadas.filter(x => String(x.musicaId) !== String(v.musicaId)) })
                                                         desvincularMusicaDoPlano(planoEditando.id, v.musicaId)
                                                     }}
-                                                    className="text-slate-300 hover:text-red-500 text-base leading-none shrink-0 transition-colors ml-1"
-                                                    title="Remover">✕</button>
+                                                    className="text-slate-300 hover:text-red-500 transition shrink-0 text-xs">✕</button>
                                             </div>
                                         )
                                     })}
