@@ -56,12 +56,12 @@ export default function ModalTemplatesRoteiro() {
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
                                             <p className="font-bold text-gray-800">{tmpl.nome}</p>
-                                            <p className="text-xs text-gray-400">{tmpl.atividades.length} atividade(s) · Criado em {tmpl.criadoEm}</p>
+                                            <p className="text-xs text-gray-400">{(tmpl.atividades || []).length} atividade(s) · Criado em {tmpl.criadoEm}</p>
                                         </div>
                                         <div className="flex gap-2">
                                             <button onClick={() => {
                                                 setModalConfirm({ titulo: `Aplicar template "${tmpl.nome}"?`, conteudo: 'Isso substituirá o roteiro atual.', labelConfirm: 'Aplicar', onConfirm: () => {
-                                                    setPlanoEditando({...planoEditando, atividadesRoteiro: tmpl.atividades.map(a=>({...a, id:gerarIdSeguro()}))});
+                                                    setPlanoEditando({...planoEditando, atividadesRoteiro: (tmpl.atividades || []).map(a=>({...a, id:gerarIdSeguro()}))});
                                                     setModalTemplates(false);
                                                 } });
                                             }} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold">▶ Aplicar</button>
@@ -70,7 +70,7 @@ export default function ModalTemplatesRoteiro() {
                                         </div>
                                     </div>
                                     <div className="space-y-1 mt-2">
-                                        {tmpl.atividades.map((a, i) => (
+                                        {(tmpl.atividades || []).map((a, i) => (
                                             <div key={i} className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
                                                 <span className="bg-purple-200 text-purple-800 font-bold px-1.5 py-0.5 rounded-full">{i+1}</span>
                                                 <span className="font-medium">{a.nome || '(sem nome)'}</span>

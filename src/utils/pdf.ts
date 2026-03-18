@@ -314,6 +314,111 @@ export async function exportarPlanoPDF(plano) {
     doc.save('Plano - ' + plano.titulo + '.pdf');
 }
 
+// Retorna blob URL para pré-visualização (sem baixar)
+export async function previewPlanoPDF(plano): Promise<string> {
+    const { jsPDF } = await import('jspdf')
+    const doc = new jsPDF();
+    await carregarFontePDF(doc);
+    // Reutiliza a mesma lógica — copia o conteúdo chamando exportarPlanoPDF em modo "bloburl"
+    // Estratégia: duplicamos só o output, o doc é gerado via exportarPlanoPDF mas capturamos via blob
+    // Solução mais simples: exportarPlanoPDF retorna o doc internamente aqui não é possível sem refactor.
+    // Alternativa: gerar o PDF direto como blob. Chamamos exportarPlanoPDF numa versão que retorna blob.
+    // Por ora, geramos novamente e retornamos bloburl.
+    const { jsPDF: jsPDF2 } = await import('jspdf')
+    const docPreview = new jsPDF2()
+    // Preenche o docPreview com o mesmo conteúdo de exportarPlanoPDF
+    // Para evitar duplicar 300 linhas, usamos um truque: save interceptado via output
+    const blobUrl = await _gerarDocPlano(plano, docPreview)
+    return blobUrl
+}
+
+async function _gerarDocPlano(plano, doc): Promise<string> {
+    await carregarFontePDF(doc);
+    const W = 210, H = 297;
+    const mL = 22, mR = 22, mB = 28;
+    const cW = W - mL - mR;
+    const ACCENT = [55, 65, 81];
+    const DARK   = [17, 24, 39];
+    const LABEL  = [100, 110, 125];
+    let y = 0;
+    const LS = 6.5;
+    const totalPages = 1; // aproximado — não afeta preview
+
+    function chk(needed: number) {
+        if (y + needed > H - mB) { doc.addPage(); y = 19; doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...DARK); }
+    }
+    function sectionTitle(title: string) {
+        chk(12);
+        doc.setFillColor(238, 240, 255);
+        doc.roundedRect(mL - 2, y - 4, cW + 4, 9, 2, 2, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...ACCENT);
+        doc.text(title.toUpperCase(), mL, y + 1); y += 8;
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(...DARK);
+    }
+    function addLine(text: string, bold = false, indent = 0) {
+        doc.setFont('helvetica', bold ? 'bold' : 'normal');
+        doc.setTextColor(...DARK);
+        const lines = doc.splitTextToSize(String(text).trim(), cW - (indent || 0));
+        lines.forEach((l: string) => { chk(LS); doc.text(l, mL + indent, y); y += LS; });
+    }
+
+    y = 19;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(19); doc.setTextColor(...DARK);
+    const titleLines = doc.splitTextToSize(plano.titulo || 'Plano de Aula', cW);
+    titleLines.forEach((l: string) => { doc.text(l, mL, y); y += 9; });
+    y += 2;
+
+    const meta: string[] = [];
+    if (plano.duracao) meta.push(`Duração: ${plano.duracao}`);
+    if ((plano.faixaEtaria || []).length) meta.push(`Nível: ${plano.faixaEtaria.join(', ')}`);
+    if (plano.data) meta.push(`Data: ${plano.data}`);
+    if (meta.length) {
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...LABEL);
+        doc.text(meta.join('   ·   '), mL, y); y += 7;
+    }
+    doc.setDrawColor(200, 200, 220); doc.setLineWidth(0.3); doc.line(mL, y, W - mR, y); y += 7;
+
+    if (plano.continuacaoAnterior?.trim()) { sectionTitle('Contexto'); addLine(plano.continuacaoAnterior.trim()); y += 3; }
+    if (plano.objetivoGeral?.trim()) { sectionTitle('Objetivo Geral'); addLine(plano.objetivoGeral.trim()); y += 3; }
+    const especificos = (plano.objetivosEspecificos || []).filter((s: string) => s.trim());
+    if (especificos.length) { sectionTitle('Objetivos Específicos'); especificos.forEach((o: string) => { addLine(`• ${o}`); }); y += 3; }
+
+    const ativs = plano.atividadesRoteiro || [];
+    if (ativs.length) {
+        sectionTitle('Roteiro de Atividades');
+        ativs.forEach((a: any, i: number) => {
+            chk(10);
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...DARK);
+            const header = `${i + 1}. ${a.nome || 'Atividade'}${a.duracao ? `  (${a.duracao} min)` : ''}`;
+            doc.text(header, mL, y); y += LS;
+            if (a.descricao?.trim()) { doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...DARK); const ls2 = doc.splitTextToSize(a.descricao.trim(), cW - 4); ls2.forEach((l: string) => { chk(LS); doc.text(l, mL + 4, y); y += LS; }); }
+            y += 2;
+        });
+        y += 1;
+    }
+
+    const temAvaliacao = plano.avaliacaoEvidencia?.trim() || plano.avaliacaoFechamento?.trim() || plano.avaliacaoContingencia?.trim() || plano.avaliacaoObservacoes?.trim()
+    if (temAvaliacao) {
+        sectionTitle('Avaliação');
+        if (plano.avaliacaoEvidencia?.trim()) { addLine('O que observarei:', true); addLine(plano.avaliacaoEvidencia.trim(), false, 4); y += 2; }
+        if (plano.avaliacaoFechamento?.trim()) { addLine('Pergunta de fechamento:', true); addLine(plano.avaliacaoFechamento.trim(), false, 4); y += 2; }
+        if (plano.avaliacaoContingencia?.trim()) { addLine('Se não funcionar:', true); addLine(plano.avaliacaoContingencia.trim(), false, 4); y += 2; }
+        if (!plano.avaliacaoEvidencia && !plano.avaliacaoFechamento && plano.avaliacaoObservacoes?.trim()) addLine(plano.avaliacaoObservacoes.trim());
+        y += 1;
+    }
+
+    // Rodapé
+    const totalPgs = (doc as any).internal.getNumberOfPages();
+    for (let p = 1; p <= totalPgs; p++) {
+        doc.setPage(p);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...LABEL);
+        doc.text('MusiLab - Plano de Aula', mL, H - 9);
+        doc.text(`${p} / ${totalPgs}`, W - mR, H - 9, { align: 'right' });
+    }
+
+    return doc.output('bloburl') as string;
+}
+
 // ── SEQUÊNCIA DIDÁTICA ──
 export async function exportarSequenciaPDF(sequencia, anosLetivos = []) {
     const { jsPDF } = await import('jspdf')
