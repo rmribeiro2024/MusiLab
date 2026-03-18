@@ -222,13 +222,10 @@ export interface PlanosContextValue {
     modalConfiguracoes: boolean; setModalConfiguracoes: React.Dispatch<React.SetStateAction<boolean>>
     // detecção de músicas no plano
     musicasDetectadas: MusicaDetectada[]
+    setMusicasDetectadas: React.Dispatch<React.SetStateAction<MusicaDetectada[]>>
     limparMusicasDetectadas: () => void
     showModalMusicas: boolean
     setShowModalMusicas: React.Dispatch<React.SetStateAction<boolean>>
-    // detecção de estratégia no roteiro (IA)
-    estrategiaDetectadaIA: { tipo: 'aquecimento_corporal' | 'vocalizes'; nomeSugerido: string; planoId: string | number } | null
-    showModalEstrategiaIA: boolean
-    setShowModalEstrategiaIA: React.Dispatch<React.SetStateAction<boolean>>
     vincularMusicaAoPlano: (planoId: string | number, vinculo: VinculoMusicaPlano) => void
     desvincularMusicaDoPlano: (planoId: string | number, musicaId: string | number) => void
     // funções cross-domain
@@ -675,8 +672,6 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             }))
         }
 
-        // Detecção de estratégia no roteiro — fire and forget, não bloqueia o fluxo
-        detectarEstrategiaNoRoteiro(planoParaSalvar).catch(() => {})
     }
 
     const excluirPlano = useCallback((id: any) => {
@@ -886,14 +881,35 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     }, [planoEditando, repertorio, setRepertorio, setModalConfirm])
 
     const importarAtividadeParaPlano = useCallback((atividade: Atividade) => {
+        const musicasDaAtiv = atividade.musicasVinculadas || []
         const novaAtividade = {
             id: gerarIdSeguro(), nome: atividade.nome, duracao: atividade.duracao || '',
             descricao: atividade.descricao || '', conceitos: [...(atividade.conceitos || [])],
-            tags: [...(atividade.tags || [])], recursos: [...(atividade.recursos || [])], musicasVinculadas: [],
+            tags: [...(atividade.tags || [])], recursos: [...(atividade.recursos || [])],
+            musicasVinculadas: [...musicasDaAtiv],
         }
-        setPlanoEditando({ ...planoEditando, atividadesRoteiro: [...(planoEditando?.atividadesRoteiro || []), novaAtividade] })
+        // Vincular músicas da atividade ao plano (sem duplicar)
+        const vinculadasAtuais = planoEditando?.musicasVinculadasPlano || []
+        const idsExistentes = new Set(vinculadasAtuais.map(v => String(v.musicaId)))
+        const novasVinculadas = musicasDaAtiv
+            .filter(mv => mv.id && !idsExistentes.has(String(mv.id)))
+            .map(mv => ({
+                musicaId: mv.id ?? mv.titulo ?? String(Date.now()),
+                titulo: mv.titulo ?? '',
+                autor: mv.autor,
+                confirmadoPor: 'professor' as const,
+                confirmadoEm: new Date().toISOString(),
+            }))
+        setPlanoEditando({
+            ...planoEditando,
+            atividadesRoteiro: [...(planoEditando?.atividadesRoteiro || []), novaAtividade],
+            musicasVinculadasPlano: [...vinculadasAtuais, ...novasVinculadas],
+        })
         setModalImportarAtividade(false)
-        showToast('Atividade importada!', 'success')
+        const msg = novasVinculadas.length > 0
+            ? `Atividade importada com ${novasVinculadas.length} música${novasVinculadas.length > 1 ? 's' : ''} vinculada${novasVinculadas.length > 1 ? 's' : ''}!`
+            : 'Atividade importada!'
+        showToast(msg, 'success')
     }, [planoEditando, setModalConfirm])
 
     const adicionarAtividadeAoPlano = useCallback((atividadeId: string | number, planoId: string | number) => {
@@ -921,12 +937,26 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         if ((atividade as any).unidade && (atividade as any).unidade.trim() && !unidadesMescladas.includes((atividade as any).unidade)) {
             unidadesMescladas.push((atividade as any).unidade)
         }
+        // Vincular músicas da atividade ao plano (sem duplicar)
+        const musicasDaAtiv = atividade.musicasVinculadas || []
+        const vinculadasAtuais = plano.musicasVinculadasPlano || []
+        const idsExistentes = new Set(vinculadasAtuais.map((v: any) => String(v.musicaId)))
+        const novasVinculadas = musicasDaAtiv
+            .filter((mv: any) => mv.id && !idsExistentes.has(String(mv.id)))
+            .map((mv: any) => ({
+                musicaId: mv.id ?? mv.titulo ?? String(Date.now()),
+                titulo: mv.titulo ?? '',
+                autor: mv.autor,
+                confirmadoPor: 'professor' as const,
+                confirmadoEm: new Date().toISOString(),
+            }))
         setPlanos(planos.map((p: any) => p.id === planoId
-            ? { ...p, atividadesRoteiro: [...(p.atividadesRoteiro || []), novaAtivRoteiro], conceitos: conceitosMesclados, tags: tagsMescladas, materiais: materiaisMesclados, recursos: recursosUnicos, unidades: unidadesMescladas }
+            ? { ...p, atividadesRoteiro: [...(p.atividadesRoteiro || []), novaAtivRoteiro], conceitos: conceitosMesclados, tags: tagsMescladas, materiais: materiaisMesclados, recursos: recursosUnicos, unidades: unidadesMescladas, musicasVinculadasPlano: [...vinculadasAtuais, ...novasVinculadas] }
             : p
         ))
         setModalAdicionarAoPlano(null)
-        showToast(`Atividade "${atividade.nome}" vinculada ao plano "${plano.titulo}"!`, 'success')
+        const extra = novasVinculadas.length > 0 ? ` (+${novasVinculadas.length} música${novasVinculadas.length > 1 ? 's' : ''})` : ''
+        showToast(`Atividade "${atividade.nome}" vinculada ao plano "${plano.titulo}"!${extra}`, 'success')
     }, [atividades, planos, setModalAdicionarAoPlano, setModalConfirm])
 
     // ── CROSS-DOMAIN: REGISTRO PÓS-AULA ──────────────────────────────────
@@ -1289,64 +1319,6 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const [showModalMusicas, setShowModalMusicas] = useState(false)
 
     // ── Detecção de estratégia no roteiro (IA) ────────────────────────────
-    const [estrategiaDetectadaIA, setEstrategiaDetectadaIA] = useState<{
-        tipo: 'aquecimento_corporal' | 'vocalizes'
-        nomeSugerido: string
-        planoId: string | number
-    } | null>(null)
-    const [showModalEstrategiaIA, setShowModalEstrategiaIA] = useState(false)
-
-    async function detectarEstrategiaNoRoteiro(plano: Plano) {
-        const stripHtml = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-        const textoRoteiro = [
-            plano.titulo,
-            plano.objetivoGeral,
-            ...(plano.atividadesRoteiro || []).map((a: any) =>
-                [a.nome, a.descricao].filter(Boolean).map(stripHtml).join(': ')
-            ),
-            (plano as any).conteudo,
-        ].filter(Boolean).map(stripHtml).join('\n').toLowerCase()
-        if (!textoRoteiro.trim() || textoRoteiro.length < 30) return
-
-        // ── Detecção por IA (quando API key disponível) ──────────────────────
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-        if (!apiKey) return
-
-        const prompt = `Você é um assistente especializado em pedagogia musical. Analise o roteiro abaixo e identifique se há uma sequência CLARA e INEQUÍVOCA de:
-
-1. AQUECIMENTO_CORPORAL: preparação física com massagem, despertar sensorial, mobilização de segmentos do corpo (cabeça, ombro, pés, língua, articulações), esticar, relaxar, sacudir, respiração corporal, imagens metafóricas guiando o corpo.
-2. VOCALIZES: aquecimento vocal, vocalises, exercícios de vogais, dicção, ressonância, Corposolfa, preparação da voz.
-
-REGRAS:
-- Só detecte se o padrão for óbvio e dominante no roteiro
-- Em caso de dúvida, retorne detectado: false
-- Nunca invente — só detecte o que está explícito
-- Se houver os dois, retorne o mais dominante
-
-Roteiro:
-${textoRoteiro}
-
-Responda APENAS com JSON válido:
-{"detectado": true/false, "tipo": "aquecimento_corporal" | "vocalizes" | null, "nome_sugerido": "nome curto em português" | null}`
-
-        try {
-            const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-                { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
-            )
-            if (!res.ok) return
-            const json = await res.json()
-            const text: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-            const match = text.match(/\{[\s\S]*\}/)
-            if (!match) return
-            const result = JSON.parse(match[0])
-            if (result.detectado && result.tipo && result.nome_sugerido) {
-                setEstrategiaDetectadaIA({ tipo: result.tipo, nomeSugerido: result.nome_sugerido, planoId: plano.id })
-                setShowModalEstrategiaIA(true)
-            }
-        } catch { /* silencioso — não interrompe o fluxo */ }
-    }
 
     /** Adiciona um vínculo música↔plano e persiste. */
     const vincularMusicaAoPlano = useCallback((planoId: string | number, vinculo: VinculoMusicaPlano) => {
@@ -1597,9 +1569,8 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         toggleFavorito, handleDragStart, handleDragEnter, handleDragEnd, toggleRecursosAtiv,
         templatesRoteiro, setTemplatesRoteiro, modalTemplates, setModalTemplates, nomeNovoTemplate, setNomeNovoTemplate,
         modalConfiguracoes, setModalConfiguracoes,
-        musicasDetectadas, limparMusicasDetectadas,
+        musicasDetectadas, setMusicasDetectadas, limparMusicasDetectadas,
         showModalMusicas, setShowModalMusicas,
-        estrategiaDetectadaIA, showModalEstrategiaIA, setShowModalEstrategiaIA,
         vincularMusicaAoPlano, desvincularMusicaDoPlano,
         vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano,
         abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro,
@@ -1607,7 +1578,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         salvarNotaAdaptacao, removerNotaAdaptacao,
         baixarBackup, restaurarBackup,
         userId,
-    }), [planos, planoSelecionado, modoEdicao, planoEditando, formExpandido, materiaisBloqueados, novoConceito, adicionandoConceito, novaUnidade, adicionandoUnidade, novoRecursoUrl, novoRecursoTipo, novaDataAula, dataEdicao, busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, modoVisualizacao, ordenacaoCards, limparFiltros, statusDropdownId, recursosExpandidos, modalImportarMusica, modalImportarAtividade, dragActiveIndex, dragOverIndex, escolas, segmentosPlanos, duracoesSugestao, planosFiltrados, buscaAvancada, sugerirBNCC, gerandoBNCC, sugerirObjetivosIA, gerandoObjetivos, novoPlano, editarPlano, salvarPlano, excluirPlano, fecharModal, restaurarVersao, toggleConceito, toggleFaixa, toggleUnidade, adicionarRecurso, removerRecurso, adicionarDataEdicao, removerDataEdicao, adicionarDataAulaVisualizacao, removerDataAulaVisualizacao, adicionarConceitoNovo, adicionarTagNova, removerTag, adicionarUnidadeNova, adicionarAtividadeRoteiro, removerAtividadeRoteiro, atualizarAtividadeRoteiro, toggleFavorito, handleDragStart, handleDragEnter, handleDragEnd, toggleRecursosAtiv, templatesRoteiro, modalTemplates, nomeNovoTemplate, modalConfiguracoes, musicasDetectadas, limparMusicasDetectadas, showModalMusicas, estrategiaDetectadaIA, showModalEstrategiaIA, vincularMusicaAoPlano, desvincularMusicaDoPlano, vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano, abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro, adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido, atualizarKanbanStatus, criarPlanosDeSequencia, baixarBackup, restaurarBackup, userId])
+    }), [planos, planoSelecionado, modoEdicao, planoEditando, formExpandido, materiaisBloqueados, novoConceito, adicionandoConceito, novaUnidade, adicionandoUnidade, novoRecursoUrl, novoRecursoTipo, novaDataAula, dataEdicao, busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, modoVisualizacao, ordenacaoCards, limparFiltros, statusDropdownId, recursosExpandidos, modalImportarMusica, modalImportarAtividade, dragActiveIndex, dragOverIndex, escolas, segmentosPlanos, duracoesSugestao, planosFiltrados, buscaAvancada, sugerirBNCC, gerandoBNCC, sugerirObjetivosIA, gerandoObjetivos, novoPlano, editarPlano, salvarPlano, excluirPlano, fecharModal, restaurarVersao, toggleConceito, toggleFaixa, toggleUnidade, adicionarRecurso, removerRecurso, adicionarDataEdicao, removerDataEdicao, adicionarDataAulaVisualizacao, removerDataAulaVisualizacao, adicionarConceitoNovo, adicionarTagNova, removerTag, adicionarUnidadeNova, adicionarAtividadeRoteiro, removerAtividadeRoteiro, atualizarAtividadeRoteiro, toggleFavorito, handleDragStart, handleDragEnter, handleDragEnd, toggleRecursosAtiv, templatesRoteiro, modalTemplates, nomeNovoTemplate, modalConfiguracoes, musicasDetectadas, setMusicasDetectadas, limparMusicasDetectadas, showModalMusicas, vincularMusicaAoPlano, desvincularMusicaDoPlano, vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano, abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro, adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido, atualizarKanbanStatus, criarPlanosDeSequencia, baixarBackup, restaurarBackup, userId])
 
     return <PlanosContext.Provider value={value}>{children}</PlanosContext.Provider>
 }
