@@ -97,6 +97,7 @@ export interface AtividadeRoteiro {
   musicaId?: string | number
   estrategiasVinculadas?: string[]
   origemAtividadeId?: string | number // referência à atividade da biblioteca
+  bibliotecaId?: string | number      // ID da entrada criada na Biblioteca de Atividades (após exportar)
 }
 
 export interface RegistroPosAula {
@@ -190,6 +191,7 @@ export interface VinculoMusicaPlano {
   musicaId: string | number
   titulo: string
   autor?: string
+  url?: string                                      // YouTube/Spotify link (opcional)
   atividadeIdx?: number                             // futuro: atividade específica
   origemDeteccao?: 'encontrada' | 'nova' | 'manual'
   confirmadoPor?: 'auto' | 'professor'
