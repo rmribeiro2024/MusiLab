@@ -770,10 +770,26 @@ export default function TelaPrincipal() {
                             {pickerAberto && (
                                 <div className="mb-3 relative">
                                     <input type="text" autoFocus
-                                        placeholder="Buscar no repertório…"
+                                        placeholder="Buscar no repertório ou digitar nome…"
                                         className="w-full px-3 py-2 border border-indigo-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
                                         value={buscaManual}
-                                        onChange={e => setBuscaManual(e.target.value)} />
+                                        onChange={e => setBuscaManual(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter' && buscaManual.trim().length >= 2 && sugestoesManual.length === 0) {
+                                                const titulo = buscaManual.trim()
+                                                const vinculo = {
+                                                    musicaId: titulo,
+                                                    titulo,
+                                                    origemDeteccao: 'nova' as const,
+                                                    confirmadoPor: 'professor' as const,
+                                                    confirmadoEm: new Date().toISOString(),
+                                                }
+                                                setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: [...vinculadas, vinculo] })
+                                                vincularMusicaAoPlano(planoEditando.id, vinculo)
+                                                setBuscaManual('')
+                                                setPickerAberto(false)
+                                            }
+                                        }} />
                                     {sugestoesManual.length > 0 && (
                                         <div className="absolute top-full left-0 right-0 z-10 bg-white border border-slate-200 rounded-xl shadow-lg mt-1 overflow-hidden max-h-48 overflow-y-auto">
                                             {sugestoesManual.map(m => (
@@ -787,7 +803,27 @@ export default function TelaPrincipal() {
                                         </div>
                                     )}
                                     {buscaManual.trim().length >= 2 && sugestoesManual.length === 0 && (
-                                        <p className="text-xs text-slate-400 mt-1.5">Nenhuma música no repertório com esse nome.</p>
+                                        <div className="mt-1.5 flex items-center gap-2">
+                                            <p className="text-xs text-slate-400">Não está no repertório.</p>
+                                            <button type="button"
+                                                onClick={() => {
+                                                    const titulo = buscaManual.trim()
+                                                    const vinculo = {
+                                                        musicaId: titulo,
+                                                        titulo,
+                                                        origemDeteccao: 'nova' as const,
+                                                        confirmadoPor: 'professor' as const,
+                                                        confirmadoEm: new Date().toISOString(),
+                                                    }
+                                                    setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: [...vinculadas, vinculo] })
+                                                    vincularMusicaAoPlano(planoEditando.id, vinculo)
+                                                    setBuscaManual('')
+                                                    setPickerAberto(false)
+                                                }}
+                                                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline underline-offset-2 transition-colors">
+                                                Usar "{buscaManual.trim()}" mesmo assim →
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             )}
@@ -807,8 +843,8 @@ export default function TelaPrincipal() {
                                                 {v.confirmadoPor === 'auto' && (
                                                     <span className="ml-1.5 text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded">auto</span>
                                                 )}
-                                                {v.origemDeteccao === 'manual' && (
-                                                    <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">manual</span>
+                                                {v.origemDeteccao === 'nova' && (
+                                                    <span className="ml-1.5 text-[10px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded" title="Música não cadastrada no repertório">fora do rep.</span>
                                                 )}
                                             </span>
                                             <button type="button"
