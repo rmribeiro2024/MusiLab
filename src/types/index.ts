@@ -183,6 +183,7 @@ export interface Plano {
   origemSequenciaId?: string   // C4: preenchido quando criado via sequential planning
   origemSlotOrdem?: number     // C4: posição do slot que originou este plano
   notasAdaptacao?: NotaAdaptacaoTurma[]  // MVP: uma nota por turma, upsert por turmaId
+  continuacaoAnterior?: string           // "Como esta aula continua a anterior?"
 }
 
 // ─── VÍNCULO MÚSICA ↔ PLANO ──────────────────────────────────
