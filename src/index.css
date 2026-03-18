@@ -62,6 +62,8 @@ input, textarea, select {
 .dark .text-slate-900, .dark .text-slate-800, .dark .text-slate-700 { color: #E5E7EB !important; }
 .dark .text-slate-600, .dark .text-slate-500 { color: #9CA3AF !important; }
 .dark .text-slate-400 { color: #6b7280 !important; }
+.dark .text-slate-300 { color: #CBD5E1 !important; }
+.dark .text-slate-200 { color: #E2E8F0 !important; }
 /* Borders */
 .dark .border-gray-200, .dark .border-gray-100 { border-color: #374151 !important; }
 .dark .border-slate-200, .dark .border-slate-100 { border-color: #374151 !important; }
