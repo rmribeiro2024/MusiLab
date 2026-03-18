@@ -1283,7 +1283,7 @@ export default function TelaPrincipal() {
                 <div className="border-b border-slate-100">
                     <button type="button" onClick={() => toggleSecaoForm('classificacao')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
                         <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Classificação Pedagógica</span>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Documentação</span>
                             {!secoesForm.has('classificacao') && (() => {
                                 const parts: string[] = []
                                 if (planoEditando.statusPlanejamento) parts.push(planoEditando.statusPlanejamento)
