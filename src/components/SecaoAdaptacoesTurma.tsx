@@ -13,6 +13,18 @@ interface Props {
   turmasDisponiveis: TurmaOpcao[]
 }
 
+function formatarData(iso: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const hoje = new Date()
+  const ontem = new Date(hoje)
+  ontem.setDate(hoje.getDate() - 1)
+  const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  if (d.toDateString() === hoje.toDateString()) return `hoje às ${hora}`
+  if (d.toDateString() === ontem.toDateString()) return `ontem às ${hora}`
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) + ` às ${hora}`
+}
+
 export default function SecaoAdaptacoesTurma({ planoId, notas, turmasDisponiveis }: Props) {
   const { salvarNotaAdaptacao, removerNotaAdaptacao } = usePlanosContext()
 
@@ -150,6 +162,11 @@ export default function SecaoAdaptacoesTurma({ planoId, notas, turmasDisponiveis
                     </div>
                   </div>
                   <p className="text-xs text-slate-600 whitespace-pre-wrap leading-relaxed">{nota.texto}</p>
+                  <p className="text-[10px] text-slate-400 mt-1.5">
+                    {nota.atualizadaEm !== nota.criadaEm
+                      ? `Editada ${formatarData(nota.atualizadaEm)}`
+                      : `Criada ${formatarData(nota.criadaEm)}`}
+                  </p>
                 </>
               )}
             </div>
