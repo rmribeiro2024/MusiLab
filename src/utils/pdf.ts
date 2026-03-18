@@ -272,13 +272,29 @@ export async function exportarPlanoPDF(plano) {
     }
 
     // ════════════════════════════════
-    // AVALIACAO / OBSERVACOES
+    // AVALIACAO
     // ════════════════════════════════
-    if (plano.avaliacaoObservacoes && plano.avaliacaoObservacoes.trim()) {
-        sectionTitle("Avaliacao / Observacoes");
-        doc.setFont(FONTE_PDF, "italic"); doc.setFontSize(11); doc.setTextColor(...DARK);
-        const ls = doc.splitTextToSize(plano.avaliacaoObservacoes.trim(), cW);
-        ls.forEach(l => { chk(LS); doc.text(l, mL, y); y += LS; });
+    const temAvaliacao = plano.avaliacaoEvidencia?.trim() || plano.avaliacaoFechamento?.trim() || plano.avaliacaoContingencia?.trim() || plano.avaliacaoObservacoes?.trim()
+    if (temAvaliacao) {
+        sectionTitle("Avaliacao");
+        const addCampo = (label: string, valor?: string) => {
+            if (!valor?.trim()) return
+            doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(10); doc.setTextColor(...LABEL);
+            chk(LS); doc.text(label, mL, y); y += LS;
+            doc.setFont(FONTE_PDF, "italic"); doc.setFontSize(11); doc.setTextColor(...DARK);
+            const ls = doc.splitTextToSize(valor.trim(), cW);
+            ls.forEach(l => { chk(LS); doc.text(l, mL, y); y += LS; });
+            y += 2;
+        }
+        if (plano.avaliacaoEvidencia || plano.avaliacaoFechamento || plano.avaliacaoContingencia) {
+            addCampo("O que observarei para saber se funcionou:", plano.avaliacaoEvidencia)
+            addCampo("Pergunta para o fechamento:", plano.avaliacaoFechamento)
+            addCampo("Se nao funcionar:", plano.avaliacaoContingencia)
+        } else if (plano.avaliacaoObservacoes?.trim()) {
+            doc.setFont(FONTE_PDF, "italic"); doc.setFontSize(11); doc.setTextColor(...DARK);
+            const ls = doc.splitTextToSize(plano.avaliacaoObservacoes.trim(), cW);
+            ls.forEach(l => { chk(LS); doc.text(l, mL, y); y += LS; });
+        }
         y += 3;
     }
 

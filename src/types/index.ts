@@ -165,7 +165,10 @@ export interface Plano {
   arquivado?: boolean
   cor?: string
   metodologia?: string
-  avaliacaoObservacoes?: string
+  avaliacaoObservacoes?: string          // legado — mantido para retrocompatibilidade
+  avaliacaoEvidencia?: string            // "O que observarei para saber se funcionou?"
+  avaliacaoFechamento?: string           // "Qual pergunta farei no fechamento?"
+  avaliacaoContingencia?: string         // "Se não funcionar, o que farei?" (opcional)
   unidade?: string
   segmento?: string
   segmentos?: string[]   // auto-catalogado ao aplicar em turmas

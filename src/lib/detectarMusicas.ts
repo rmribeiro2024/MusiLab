@@ -16,6 +16,28 @@ function normalizar(texto: string): string {
         .trim()
 }
 
+// ── Extração de títulos de embeds de mídia (YouTube/Spotify) do HTML ──────────
+// O TipTapEditor substitui URLs por: <a href="URL">▶ Título</a> (YouTube) ou <a href="URL">🎵 Título</a> (Spotify)
+// Spotify → sempre música. YouTube → pode ser qualquer coisa; só detectar se estiver no repertório.
+const RE_SPOTIFY_LINK = /<a[^>]+href="https?:\/\/open\.spotify\.com[^"]*"[^>]*>🎵\s*([^<]+)<\/a>/gi
+const RE_YOUTUBE_LINK = /<a[^>]+href="https?:\/\/(?:(?:www\.)?youtu(?:\.be|be\.com))[^"]*"[^>]*>▶\s*([^<]+)<\/a>/gi
+
+function extrairTitulosMediaHTML(html: string, origem: string): Array<{ titulo: string; kind: 'spotify' | 'youtube' }> {
+    const titulos: Array<{ titulo: string; kind: 'spotify' | 'youtube' }> = []
+    RE_SPOTIFY_LINK.lastIndex = 0
+    RE_YOUTUBE_LINK.lastIndex = 0
+    let m: RegExpExecArray | null
+    while ((m = RE_SPOTIFY_LINK.exec(html)) !== null) {
+        const titulo = m[1].trim()
+        if (titulo && titulo !== 'Spotify') titulos.push({ titulo, kind: 'spotify' })
+    }
+    while ((m = RE_YOUTUBE_LINK.exec(html)) !== null) {
+        const titulo = m[1].trim()
+        if (titulo && titulo !== 'YouTube') titulos.push({ titulo, kind: 'youtube' })
+    }
+    return titulos
+}
+
 // ── Extração de blocos de texto do plano ──────────────────────────────────────
 function extrairTextosPlano(plano: Plano): Array<{ texto: string; origem: string }> {
     const blocos: Array<{ texto: string; origem: string }> = []
@@ -23,6 +45,10 @@ function extrairTextosPlano(plano: Plano): Array<{ texto: string; origem: string
     if (plano.titulo?.trim())
         blocos.push({ texto: plano.titulo, origem: 'título do plano' })
 
+    if (plano.avaliacaoEvidencia?.trim())
+        blocos.push({ texto: plano.avaliacaoEvidencia, origem: 'avaliação' })
+    if (plano.avaliacaoFechamento?.trim())
+        blocos.push({ texto: plano.avaliacaoFechamento, origem: 'avaliação' })
     if (plano.avaliacaoObservacoes?.trim())
         blocos.push({ texto: plano.avaliacaoObservacoes, origem: 'observações' })
 
@@ -115,6 +141,48 @@ export function detectarMusicasNoPlano(plano: Plano, repertorio: Musica[]): Musi
     const blocos = extrairTextosPlano(plano)
     const textosNorm = blocos.map(b => ({ norm: normalizar(b.texto), origem: b.origem }))
 
+    // ── FASE 0: títulos extraídos de embeds YouTube/Spotify no HTML ───────────
+    // Spotify → sempre música, detecta mesmo sem estar no repertório.
+    // YouTube → pode ser notícia/tutorial; só detecta se o título bater com o repertório.
+    const resultadosFase0: MusicaDetectada[] = []
+    const normsFase0 = new Set<string>()
+
+    for (let i = 0; i < (plano.atividadesRoteiro || []).length; i++) {
+        const a = plano.atividadesRoteiro[i]
+        if (!a.descricao?.trim()) continue
+        const origem = `atividade ${i + 1}`
+        for (const { titulo, kind } of extrairTitulosMediaHTML(a.descricao, origem)) {
+            const norm = normalizar(titulo)
+            if (norm.length <= 3 || normsFase0.has(norm)) continue
+            normsFase0.add(norm)
+
+            const matches = repertorio.filter(m => {
+                const mn = normalizar(m.titulo || '')
+                return mn.length > 3 && (mn === norm || mn.includes(norm) || norm.includes(mn))
+            })
+
+            if (matches.length === 1) {
+                resultadosFase0.push({
+                    tituloDetectado: titulo, origem,
+                    classificacao: 'encontrada', musica: matches[0],
+                    jaVinculada: vinculadasNorm.has(norm),
+                })
+            } else if (matches.length > 1) {
+                resultadosFase0.push({
+                    tituloDetectado: titulo, origem,
+                    classificacao: 'ambigua', candidatas: matches,
+                    jaVinculada: matches.some(m => vinculadasNorm.has(normalizar(m.titulo || ''))),
+                })
+            } else {
+                // Sem match no repertório → sugerir como nova música (professor decide no modal)
+                resultadosFase0.push({
+                    tituloDetectado: titulo, origem,
+                    classificacao: 'nova', jaVinculada: false,
+                })
+            }
+        }
+    }
+
     // ── FASE 1: títulos do repertório encontrados no texto ────────────────────
     interface MatchRep { musica: Musica; norm: string; origem: string }
     const matchesRep: MatchRep[] = []
@@ -198,5 +266,9 @@ export function detectarMusicasNoPlano(plano: Plano, repertorio: Musica[]): Musi
         citacoesProcessadas.add(norm)
     }
 
-    return resultados
+    // Merge: Fase 0 tem prioridade; fases 1 e 2 só adicionam se norm não coberto pela Fase 0
+    const normsCobertasFase0 = new Set(resultadosFase0.map(r => normalizar(r.tituloDetectado)))
+    const resultadosFiltrados = resultados.filter(r => !normsCobertasFase0.has(normalizar(r.tituloDetectado)))
+
+    return [...resultadosFase0, ...resultadosFiltrados]
 }

@@ -1595,21 +1595,61 @@ export default function TelaPrincipal() {
                     )}
                 </div>
 
-                {/* ════════════ ACCORDION: AVALIAÇÃO / OBSERVAÇÕES ════════════ */}
+                {/* ════════════ ACCORDION: AVALIAÇÃO ════════════ */}
                 {!modoRapido && (
                 <div className="border-b border-slate-100">
                     <button type="button" onClick={() => toggleSecaoForm('avaliacao')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
                         <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Avaliação / Observações</span>
-                            {!secoesForm.has('avaliacao') && planoEditando.avaliacaoObservacoes && (
-                                <p className="text-[11px] text-slate-300 mt-0.5 truncate">{planoEditando.avaliacaoObservacoes.slice(0,60)}</p>
-                            )}
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Avaliação</span>
+                            {!secoesForm.has('avaliacao') && (() => {
+                                const preview = planoEditando.avaliacaoEvidencia || planoEditando.avaliacaoFechamento || planoEditando.avaliacaoObservacoes
+                                return preview ? <p className="text-[11px] text-[#94A3B8] mt-0.5 truncate">{preview.slice(0,60)}</p> : null
+                            })()}
                         </div>
                         <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('avaliacao') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     {secoesForm.has('avaliacao') && (
-                        <div className="px-3 sm:px-6 pt-5 pb-5">
-                            <textarea value={planoEditando.avaliacaoObservacoes} onChange={(e) => setPlanoEditando({...planoEditando, avaliacaoObservacoes: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" rows={3} />
+                        <div className="px-3 sm:px-6 pt-4 pb-5 space-y-4">
+                            {/* Field 1 — Evidência */}
+                            <div>
+                                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                                    📊 O que observarei para saber se funcionou?
+                                </label>
+                                <textarea
+                                    value={planoEditando.avaliacaoEvidencia ?? ((!planoEditando.avaliacaoEvidencia && !planoEditando.avaliacaoFechamento && planoEditando.avaliacaoObservacoes) ? planoEditando.avaliacaoObservacoes : '')}
+                                    onChange={(e) => setPlanoEditando({ ...planoEditando, avaliacaoEvidencia: e.target.value })}
+                                    placeholder="Ex: alunos conseguem tocar o ritmo sem apoio visual, participam da improvisação…"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
+                                    rows={2}
+                                />
+                            </div>
+                            {/* Field 2 — Fechamento */}
+                            <div>
+                                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                                    ❓ Qual pergunta farei no fechamento?
+                                </label>
+                                <textarea
+                                    value={planoEditando.avaliacaoFechamento ?? ''}
+                                    onChange={(e) => setPlanoEditando({ ...planoEditando, avaliacaoFechamento: e.target.value })}
+                                    placeholder="Ex: O que foi mais difícil? O que vocês notaram sobre o ritmo?"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
+                                    rows={2}
+                                />
+                            </div>
+                            {/* Field 3 — Contingência (opcional) */}
+                            <div>
+                                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                                    ⚡ Se não funcionar, o que farei?
+                                    <span className="font-normal text-[#94A3B8] ml-1">(opcional)</span>
+                                </label>
+                                <textarea
+                                    value={planoEditando.avaliacaoContingencia ?? ''}
+                                    onChange={(e) => setPlanoEditando({ ...planoEditando, avaliacaoContingencia: e.target.value })}
+                                    placeholder="Ex: simplificar o ritmo para colcheia/semínima, trocar a atividade pelo jogo de eco…"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
+                                    rows={2}
+                                />
+                            </div>
                         </div>
                     )}
                 </div>
