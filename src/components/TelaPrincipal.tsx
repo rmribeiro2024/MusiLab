@@ -1,5 +1,55 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react'
 import { FloatingPlayer } from './TipTapEditor'
+
+// ── Card de música com player flutuante (padrão idêntico ao TipTapEditor) ─────
+function MusicaCardComPlayer({ v, onRemover, getYoutubeId }: {
+    v: import('../types').VinculoMusicaPlano
+    onRemover: () => void
+    getYoutubeId: (url: string) => string | null
+}) {
+    const [player, setPlayer] = useState<{ url: string; title: string; kind: 'youtube' | 'spotify' } | null>(null)
+    if (!v.url) return null
+    const ytId = getYoutubeId(v.url)
+    const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null
+    const isSpotify = /spotify\.com/i.test(v.url)
+    const mediaKind: 'youtube' | 'spotify' | null = ytId ? 'youtube' : isSpotify ? 'spotify' : null
+    const displayTitle = (v.titulo === '▶ Link YouTube' || v.titulo === '🎵 Link Spotify') ? '' : v.titulo
+    return (
+        <>
+            <div className="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-[#374151] bg-slate-50 dark:bg-white/[0.03]">
+                <div className="relative w-14 h-9 shrink-0 flex items-center justify-center rounded-lg overflow-hidden bg-slate-200 dark:bg-white/10">
+                    <span className="text-lg leading-none">{ytId ? '▶' : '🎵'}</span>
+                    {thumbUrl && <img src={thumbUrl} alt="" className="absolute inset-0 w-full h-full object-cover rounded-lg" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm text-slate-700 dark:text-[#D1D5DB] truncate font-medium">
+                        {displayTitle || (ytId ? 'YouTube' : 'Spotify')}
+                    </p>
+                    {v.confirmadoPor === 'auto' && (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 py-0.5 rounded">detectada</span>
+                    )}
+                </div>
+                {mediaKind && (
+                    <button type="button"
+                        onClick={() => setPlayer({ url: v.url!, title: displayTitle || (ytId ? 'YouTube' : 'Spotify'), kind: mediaKind })}
+                        className="shrink-0 text-[11px] font-semibold text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 px-2 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition">
+                        {ytId ? '▶ Abrir' : '▶ Player'}
+                    </button>
+                )}
+                <button type="button" onClick={onRemover}
+                    className="text-slate-300 hover:text-red-500 transition shrink-0 text-xs">✕</button>
+            </div>
+            {player && (
+                <FloatingPlayer
+                    url={player.url}
+                    title={player.title}
+                    kind={player.kind}
+                    onClose={() => setPlayer(null)}
+                />
+            )}
+        </>
+    )
+}
 import { sanitizar } from '../lib/utils'
 import { showToast } from '../lib/toast'
 import { detectarMusicasNoPlano } from '../lib/detectarMusicas'
@@ -481,8 +531,6 @@ export default function TelaPrincipal() {
     // ── Picker manual de músicas vinculadas ao plano ──
     const [buscaManual, setBuscaManual] = useState('')
     const [pickerAberto, setPickerAberto] = useState(false)
-    const [musicaPlayer, setMusicaPlayer] = useState<{ url: string; title: string; kind: 'youtube' | 'spotify' } | null>(null)
-
     // ── Drag-and-drop: só permite arrastar quando iniciado pelo handle ──
     const dragFromHandle = useRef(false)
 
@@ -881,47 +929,18 @@ export default function TelaPrincipal() {
                             {vinculadas.length > 0 && (
                                 <div className="space-y-1.5">
                                     {vinculadas.map(v => {
-                                        // Cards com link → thumbnail + botão Abrir (FloatingPlayer)
+                                        // Cards com link → MusicaCardComPlayer (FloatingPlayer próprio)
                                         if (v.url) {
-                                            const ytId = getYoutubeId(v.url)
-                                            const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null
-                                            const isSpotifyLink = isSpotifyUrl(v.url)
-                                            const mediaKind: 'youtube' | 'spotify' | null = ytId ? 'youtube' : isSpotifyLink ? 'spotify' : null
-                                            const displayTitle = (v.titulo === '▶ Link YouTube' || v.titulo === '🎵 Link Spotify') ? '' : v.titulo
                                             return (
-                                                <div key={String(v.musicaId)} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-[#374151] bg-slate-50 dark:bg-white/[0.03]">
-                                                    {/* Thumbnail */}
-                                                    <div className="relative w-16 h-11 shrink-0 flex items-center justify-center rounded-lg overflow-hidden bg-slate-200 dark:bg-white/10">
-                                                        <span className="text-xl leading-none">{ytId ? '▶' : '🎵'}</span>
-                                                        {thumbUrl && <img src={thumbUrl} alt="" className="absolute inset-0 w-full h-full object-cover rounded-lg" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
-                                                    </div>
-                                                    {/* Título */}
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm text-slate-700 dark:text-[#D1D5DB] truncate font-medium">
-                                                            {displayTitle || (ytId ? 'YouTube' : 'Spotify')}
-                                                        </p>
-                                                        {v.confirmadoPor === 'auto' && (
-                                                            <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 py-0.5 rounded">detectada</span>
-                                                        )}
-                                                    </div>
-                                                    {/* Botão Abrir */}
-                                                    {mediaKind && (
-                                                        <button type="button"
-                                                            onClick={() => {
-                                                                const k = mediaKind  // captura antes do setState
-                                                                setMusicaPlayer({ url: v.url!, title: displayTitle || (k === 'youtube' ? 'YouTube' : 'Spotify'), kind: k })
-                                                            }}
-                                                            className="text-xs font-semibold text-indigo-500 hover:text-indigo-700 transition-colors shrink-0">
-                                                            ▶ Abrir
-                                                        </button>
-                                                    )}
-                                                    <button type="button"
-                                                        onClick={() => {
-                                                            setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: vinculadas.filter(x => String(x.musicaId) !== String(v.musicaId)) })
-                                                            desvincularMusicaDoPlano(planoEditando.id, v.musicaId)
-                                                        }}
-                                                        className="text-slate-300 hover:text-red-500 transition shrink-0 text-xs">✕</button>
-                                                </div>
+                                                <MusicaCardComPlayer
+                                                    key={String(v.musicaId)}
+                                                    v={v}
+                                                    getYoutubeId={getYoutubeId}
+                                                    onRemover={() => {
+                                                        setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: vinculadas.filter(x => String(x.musicaId) !== String(v.musicaId)) })
+                                                        desvincularMusicaDoPlano(planoEditando.id, v.musicaId)
+                                                    }}
+                                                />
                                             )
                                         }
                                         // Cards sem link → só título (do repertório ou digitado)
@@ -2207,14 +2226,6 @@ export default function TelaPrincipal() {
             />
         )}
         <ModalMusicasDetectadas />
-        {musicaPlayer && (
-            <FloatingPlayer
-                url={musicaPlayer.url}
-                title={musicaPlayer.title}
-                kind={musicaPlayer.kind}
-                onClose={() => setMusicaPlayer(null)}
-            />
-        )}
 
         {/* ── Modal revisão de conceitos do plano ── */}
         {modalConceitosPlano && (
