@@ -1,6 +1,48 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react'
 import { sanitizar } from '../lib/utils'
 import { showToast } from '../lib/toast'
+import { detectarMusicasNoPlano } from '../lib/detectarMusicas'
+
+import { agruparPorCategoria } from '../lib/taxonomia'
+
+// ── Detecção de conceitos via Gemini (chamada avulsa, sem estado React) ───────
+async function analisarConceitosAtividade(nome: string, descricaoHtml: string, apiKey: string): Promise<string[]> {
+    const texto = descricaoHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+    if (texto.length < 10) return []
+    const prompt = `Você é especialista em pedagogia musical. Analise a atividade abaixo e identifique os conceitos musicais pedagógicos presentes.
+
+Atividade: "${nome}"
+Descrição: "${texto.slice(0, 600)}"
+
+Use APENAS conceitos destas categorias:
+1. Parâmetros Físicos do Som: Altura, Duração, Intensidade, Timbre
+2. Ritmo e Organização Temporal: Pulsação, Andamento, Métrica, Células Rítmicas, Síncope, Ostinato
+3. Melodia e Alturas: Fraseado, Contorno, Escalas, Intervalos, Tonalidade
+4. Harmonia e Textura: Acordes, Campo Harmônico, Consonância, Textura, Densidade
+5. Estrutura e Forma: Motivo, Frase, Período, Formas (AB, ABA, Rondó, Sonata)
+6. Dinâmica e Expressividade: Crescendo, Articulação, Caráter
+7. Processos Criativos e Ações: Criação, Execução, Apreciação, Escuta ativa
+8. Movimento e Corpo: Espaço, Peso, Fluência, Percussão Corporal, Coordenação Motora
+9. Contexto e Cultura: Gêneros, História, Etnomusicologia
+10. Tecnologia Musical: Áudio, MIDI, Software
+
+Retorne máximo 5 conceitos. Responda APENAS com JSON: {"conceitos": ["conceito1", "conceito2"]}
+Se não identificar nenhum, retorne: {"conceitos": []}`
+    try {
+        const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
+        )
+        if (!res.ok) return []
+        const json = await res.json()
+        const raw: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+        const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || raw.match(/(\{[\s\S]*\})/)
+        if (!match) return []
+        const result = JSON.parse(match[1] || match[0])
+        return Array.isArray(result.conceitos) ? result.conceitos : []
+    } catch { return [] }
+}
 import { dbSize } from '../lib/db'
 import { useInfiniteScroll } from '../lib/hooks'
 import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [offlineSync]
@@ -11,11 +53,103 @@ import TipTapEditor from './TipTapEditor'
 import { exportarPlanoPDF, gerarLinkCompartilhavel } from '../utils/pdf'
 import ModalAplicarEmTurmas from './modals/ModalAplicarEmTurmas'
 import ModalMusicasDetectadas from './modals/ModalMusicasDetectadas'
-import ModalEstrategiaDetectada from './modals/ModalEstrategiaDetectada'
 import type { Plano } from '../types'
 import SecaoAdaptacoesTurma from './SecaoAdaptacoesTurma'
 import CardAtividadeRoteiro from './CardAtividadeRoteiro'
 import { useBancoPainel } from '../hooks/useBancoPainel'
+
+// ── Modal revisão de conceitos detectados no plano ───────────────────────────
+interface ModalConceitosPlanoProps {
+    conceitos: string[]
+    onConfirmar: (conceitos: string[]) => void
+    onFechar: () => void
+}
+function ModalConceitosPlano({ conceitos, onConfirmar, onFechar }: ModalConceitosPlanoProps) {
+    const [draft, setDraft] = React.useState<string[]>([...conceitos])
+    const [novoConceito, setNovoConceito] = React.useState('')
+
+    function remover(c: string) {
+        setDraft(prev => prev.filter(x => x !== c))
+    }
+    function adicionar() {
+        const val = novoConceito.trim()
+        if (!val) return
+        setDraft(prev => [...new Set([...prev, val])])
+        setNovoConceito('')
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+            onClick={e => { if (e.target === e.currentTarget) onFechar() }}>
+            <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh]">
+
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-[#374151] flex-shrink-0">
+                    <div>
+                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Conceitos da aula</p>
+                        <p className="text-[11px] text-slate-400 dark:text-[#9CA3AF] mt-0.5">Detectados pela IA — revise antes de aplicar</p>
+                    </div>
+                    <button onClick={onFechar} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-base leading-none transition-colors">×</button>
+                </div>
+
+                {/* Body */}
+                <div className="overflow-y-auto flex-1 px-5 py-4 space-y-3">
+                    {draft.length === 0 ? (
+                        <p className="text-[11px] text-slate-400 dark:text-[#4B5563] italic">
+                            Nenhum conceito identificado — adicione manualmente.
+                        </p>
+                    ) : (
+                        <div className="space-y-2">
+                            {Object.entries(agruparPorCategoria(draft)).map(([cat, cs]) => (
+                                <div key={cat}>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-400 dark:text-[#4B5563] mb-1">{cat}</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {cs.map(c => (
+                                            <span key={c} className="inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-400/10 text-purple-600 dark:text-purple-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                                                {c}
+                                                <button type="button" onClick={() => remover(c)}
+                                                    className="hover:text-rose-500 transition-colors leading-none ml-0.5">×</button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* + adicionar conceito */}
+                    <div className="flex gap-1.5 pt-1">
+                        <input
+                            type="text"
+                            value={novoConceito}
+                            onChange={e => setNovoConceito(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionar() } }}
+                            placeholder="+ Adicionar conceito"
+                            className="flex-1 border border-slate-200 dark:border-[#374151] rounded-lg px-2.5 py-1.5 text-[11px] bg-white dark:bg-[var(--v2-card)] dark:text-white focus:border-indigo-400 outline-none transition-colors"
+                        />
+                        <button type="button" onClick={adicionar}
+                            disabled={!novoConceito.trim()}
+                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.10] text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-lg transition-colors disabled:opacity-40">
+                            Add
+                        </button>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-5 py-3 border-t border-slate-100 dark:border-[#374151] flex gap-2 flex-shrink-0">
+                    <button type="button" onClick={onFechar}
+                        className="flex-1 text-sm border border-slate-200 dark:border-[#374151] rounded-xl px-3 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.05] transition">
+                        Ignorar
+                    </button>
+                    <button type="button" onClick={() => onConfirmar(draft)}
+                        className="flex-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-3 py-2 font-medium transition">
+                        ✓ Aplicar conceitos
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
 
 // ── LINHA PLANO (memoizado — só re-renderiza quando o próprio plano muda) ──
 interface LinhaPlanoProps {
@@ -171,6 +305,8 @@ export default function TelaPrincipal() {
         atualizarKanbanStatus,
         importarAtividadeParaPlano,
         importarMusicaParaPlano,
+        setMusicasDetectadas,
+        setShowModalMusicas,
     } = usePlanosContext()
 
     // Constantes estáticas (não precisam vir do ctx)
@@ -193,7 +329,41 @@ export default function TelaPrincipal() {
             setEstadoSalvar('salvo')
             setTimeout(() => setEstadoSalvar('idle'), 1400)
         })
+        // Fluxo 3: detectar músicas ao salvar
+        const detectarAtivo = localStorage.getItem('musilab_detectar_musicas_ao_salvar') !== 'false'
+        if (detectarAtivo && planoEditando) {
+            const detectadas = detectarMusicasNoPlano(planoEditando, repertorio)
+            if (detectadas.length > 0) {
+                setMusicasDetectadas(detectadas)
+                setShowModalMusicas(true)
+            }
+        }
+        // Fluxo 4: detectar conceitos → abrir modal de revisão (visão unificada do plano)
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+        const planoId = planoEditando?.id
+        if (apiKey && planoEditando && planoId) {
+            const semConceitos = (planoEditando.atividadesRoteiro || []).filter(
+                a => a.descricao?.replace(/<[^>]*>/g, '').trim().length > 10 && !(a.conceitos?.length)
+            )
+            if (semConceitos.length > 0) {
+                setDetectandoConceitos(true)
+                Promise.all(semConceitos.map(a => analisarConceitosAtividade(a.nome || '', a.descricao || '', apiKey)))
+                    .then(resultados => {
+                        // Merge: conceitos Gemini (novos) + conceitos já existentes nas atividades
+                        const existentes = (planoEditando.atividadesRoteiro || []).flatMap(a => a.conceitos || [])
+                        const novos = resultados.flat()
+                        const merged = [...new Set([...existentes, ...novos])].filter(Boolean)
+                        if (merged.length > 0) setModalConceitosPlano({ planoId: String(planoId), conceitos: merged })
+                    })
+                    .catch(() => {/* silencioso */})
+                    .finally(() => setDetectandoConceitos(false))
+            }
+        }
     }
+
+    // ── Modal revisão de conceitos do plano ──
+    const [modalConceitosPlano, setModalConceitosPlano] = useState<{ planoId: string; conceitos: string[] } | null>(null)
+    const [detectandoConceitos, setDetectandoConceitos] = useState(false)
 
     // ── Modo Rápido ──
     const [modoRapido, setModoRapido] = useState(false)
@@ -306,32 +476,6 @@ export default function TelaPrincipal() {
         return [...set].sort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [planos, planoEditando?.atividadesRoteiro])
-
-    // ── Salvar atividades no Banco — seleção no rodapé do plano ──
-    const [atividadesSelecionadasBanco, setAtividadesSelecionadasBanco] = useState<Set<string>>(() => new Set())
-    useEffect(() => {
-        const ids = (planoEditando?.atividadesRoteiro || []).map(a => String(a.id))
-        setAtividadesSelecionadasBanco(new Set(ids))
-    }, [planoEditando?.id]) // eslint-disable-line
-    const salvarAtividadesSelecionadasNoBanco = () => {
-        const paraSlavar = (planoEditando?.atividadesRoteiro || []).filter(a => atividadesSelecionadasBanco.has(String(a.id)))
-        if (paraSlavar.length === 0) return
-        let salvos = 0
-        const novasAtividades = [...atividades]
-        paraSlavar.forEach(atividade => {
-            if (!atividade.nome?.trim()) return
-            const idx = novasAtividades.findIndex(a => a.nome.toLowerCase().trim() === atividade.nome.toLowerCase().trim())
-            if (idx >= 0) {
-                const existe = novasAtividades[idx]
-                novasAtividades[idx] = { ...existe, descricao: atividade.descricao || existe.descricao, duracao: atividade.duracao || existe.duracao, conceitos: [...new Set([...(existe.conceitos||[]), ...(atividade.conceitos||[])])], tags: [...new Set([...(existe.tags||[]), ...(atividade.tags||[])])], faixaEtaria: planoEditando.faixaEtaria || existe.faixaEtaria, escola: planoEditando.escola || existe.escola, unidade: planoEditando.unidades?.[0] || existe.unidade }
-            } else {
-                novasAtividades.push({ id: Date.now() + salvos, nome: atividade.nome, descricao: atividade.descricao || '', duracao: atividade.duracao || '', conceitos: atividade.conceitos || [], tags: atividade.tags || [], recursos: atividade.recursos || [], materiais: [], faixaEtaria: planoEditando.faixaEtaria || [], escola: planoEditando.escola || '', unidade: planoEditando.unidades?.[0] || '' })
-            }
-            salvos++
-        })
-        setAtividades(novasAtividades)
-        showToast(`${salvos} atividade${salvos > 1 ? 's' : ''} salva${salvos > 1 ? 's' : ''} no Banco de Atividades!`, 'success')
-    }
 
     // ── Picker manual de músicas vinculadas ao plano ──
     const [buscaManual, setBuscaManual] = useState('')
@@ -586,6 +730,121 @@ export default function TelaPrincipal() {
                         </div>
                     )}
                 </div>
+
+                {/* ════════════ BLOCO B — MÚSICAS VINCULADAS AO PLANO ════════════ */}
+                {(() => {
+                    const vinculadas = planoEditando.musicasVinculadasPlano || []
+                    const vinculadosIds = new Set(vinculadas.map(v => String(v.musicaId)))
+                    const sugestoesManual = buscaManual.trim().length >= 2
+                        ? repertorio.filter(m =>
+                            !vinculadosIds.has(String(m.id ?? m.titulo)) &&
+                            m.titulo.toLowerCase().includes(buscaManual.toLowerCase())
+                          ).slice(0, 8)
+                        : []
+                    function adicionarManual(m: import('../types').Musica) {
+                        const vinculo = {
+                            musicaId: m.id ?? m.titulo,
+                            titulo: m.titulo,
+                            autor: m.autor,
+                            origemDeteccao: 'manual' as const,
+                            confirmadoPor: 'professor' as const,
+                            confirmadoEm: new Date().toISOString(),
+                        }
+                        setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: [...vinculadas, vinculo] })
+                        vincularMusicaAoPlano(planoEditando.id, vinculo)
+                        setBuscaManual('')
+                        setPickerAberto(false)
+                    }
+                    return (
+                        <div className="border-b border-slate-100 dark:border-[#374151] px-3 sm:px-6 py-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em]">🎵 Músicas da aula</p>
+                                <button type="button"
+                                    onClick={() => setPickerAberto(o => !o)}
+                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                                    {pickerAberto ? '✕ Fechar' : '+ Adicionar'}
+                                </button>
+                            </div>
+
+                            {/* Picker manual */}
+                            {pickerAberto && (
+                                <div className="mb-3 relative">
+                                    <input type="text" autoFocus
+                                        placeholder="Buscar no repertório…"
+                                        className="w-full px-3 py-2 border border-indigo-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                        value={buscaManual}
+                                        onChange={e => setBuscaManual(e.target.value)} />
+                                    {sugestoesManual.length > 0 && (
+                                        <div className="absolute top-full left-0 right-0 z-10 bg-white border border-slate-200 rounded-xl shadow-lg mt-1 overflow-hidden max-h-48 overflow-y-auto">
+                                            {sugestoesManual.map(m => (
+                                                <button key={String(m.id ?? m.titulo)} type="button"
+                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 border-b border-slate-100 last:border-0"
+                                                    onClick={() => adicionarManual(m)}>
+                                                    <span className="font-medium text-slate-800">{m.titulo}</span>
+                                                    {m.autor && <span className="text-slate-400 ml-2 text-xs">{m.autor}</span>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {buscaManual.trim().length >= 2 && sugestoesManual.length === 0 && (
+                                        <p className="text-xs text-slate-400 mt-1.5">Nenhuma música no repertório com esse nome.</p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Lista de vínculos */}
+                            {vinculadas.length === 0 && !pickerAberto && (
+                                <p className="text-xs text-slate-400 italic">Nenhuma música vinculada ainda. Adicione o repertório da aula.</p>
+                            )}
+                            {vinculadas.length > 0 && (
+                                <div className="flex flex-col gap-1.5">
+                                    {vinculadas.map(v => (
+                                        <div key={String(v.musicaId)}
+                                            className="flex items-center justify-between gap-2 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-[#374151] rounded-lg px-3 py-1.5 text-sm">
+                                            <span className="flex-1 min-w-0 truncate text-slate-700 dark:text-[#D1D5DB]">
+                                                {v.titulo}
+                                                {v.autor && <span className="text-slate-400 ml-1.5 text-xs">· {v.autor}</span>}
+                                                {v.confirmadoPor === 'auto' && (
+                                                    <span className="ml-1.5 text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded">auto</span>
+                                                )}
+                                                {v.origemDeteccao === 'manual' && (
+                                                    <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">manual</span>
+                                                )}
+                                            </span>
+                                            <button type="button"
+                                                onClick={() => {
+                                                    setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: vinculadas.filter(x => String(x.musicaId) !== String(v.musicaId)) })
+                                                    desvincularMusicaDoPlano(planoEditando.id, v.musicaId)
+                                                }}
+                                                className="text-slate-300 hover:text-red-500 text-base leading-none shrink-0 transition-colors"
+                                                title="Remover vínculo">✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )
+                })()}
+
+                {/* ── Conceitos do plano — chips sempre visíveis ── */}
+                {(planoEditando.conceitos || []).length > 0 && (
+                    <div className="px-3 sm:px-6 py-3 border-b border-slate-100 dark:border-[#374151] flex flex-wrap gap-1.5 items-center">
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-[#4B5563] uppercase tracking-[0.08em] shrink-0 mr-0.5">Conceitos</span>
+                        {(planoEditando.conceitos || []).map(c => (
+                            <span key={c} className="inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-400/10 text-purple-600 dark:text-purple-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                                {c}
+                                <button type="button"
+                                    onClick={() => setPlanoEditando({ ...planoEditando, conceitos: (planoEditando.conceitos || []).filter(x => x !== c) })}
+                                    className="hover:text-rose-500 transition-colors leading-none ml-0.5">×</button>
+                            </span>
+                        ))}
+                        <button type="button"
+                            onClick={() => setSecoesForm(prev => new Set([...prev, 'classificacao']))}
+                            className="text-[10px] text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 underline transition-colors ml-1">
+                            + editar
+                        </button>
+                    </div>
+                )}
 
                 {/* ════════════ ACCORDION: ROTEIRO DE ATIVIDADES ════════════ */}
                 <div className="border-b border-slate-100">
@@ -1247,101 +1506,6 @@ export default function TelaPrincipal() {
                 </div>
                 )}
 
-                {/* ════════════ MÚSICAS VINCULADAS AO PLANO ════════════ */}
-                {(() => {
-                    const vinculadas = planoEditando.musicasVinculadasPlano || []
-                    const vinculadosIds = new Set(vinculadas.map(v => String(v.musicaId)))
-                    const sugestoesManual = buscaManual.trim().length >= 2
-                        ? repertorio.filter(m =>
-                            !vinculadosIds.has(String(m.id ?? m.titulo)) &&
-                            m.titulo.toLowerCase().includes(buscaManual.toLowerCase())
-                          ).slice(0, 8)
-                        : []
-                    function adicionarManual(m: import('../types').Musica) {
-                        const vinculo = {
-                            musicaId: m.id ?? m.titulo,
-                            titulo: m.titulo,
-                            autor: m.autor,
-                            origemDeteccao: 'manual' as const,
-                            confirmadoPor: 'professor' as const,
-                            confirmadoEm: new Date().toISOString(),
-                        }
-                        setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: [...vinculadas, vinculo] })
-                        vincularMusicaAoPlano(planoEditando.id, vinculo)
-                        setBuscaManual('')
-                        setPickerAberto(false)
-                    }
-                    return (
-                        <div className="border-b border-slate-100 px-3 sm:px-6 py-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em]">🎵 Músicas vinculadas ao plano</p>
-                                <button type="button"
-                                    onClick={() => setPickerAberto(o => !o)}
-                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
-                                    {pickerAberto ? '✕ Fechar' : '+ Adicionar'}
-                                </button>
-                            </div>
-
-                            {/* Picker manual */}
-                            {pickerAberto && (
-                                <div className="mb-3 relative">
-                                    <input type="text" autoFocus
-                                        placeholder="Buscar no repertório…"
-                                        className="w-full px-3 py-2 border border-indigo-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                                        value={buscaManual}
-                                        onChange={e => setBuscaManual(e.target.value)} />
-                                    {sugestoesManual.length > 0 && (
-                                        <div className="absolute top-full left-0 right-0 z-10 bg-white border border-slate-200 rounded-xl shadow-lg mt-1 overflow-hidden max-h-48 overflow-y-auto">
-                                            {sugestoesManual.map(m => (
-                                                <button key={String(m.id ?? m.titulo)} type="button"
-                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 border-b border-slate-100 last:border-0"
-                                                    onClick={() => adicionarManual(m)}>
-                                                    <span className="font-medium text-slate-800">{m.titulo}</span>
-                                                    {m.autor && <span className="text-slate-400 ml-2 text-xs">{m.autor}</span>}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                    {buscaManual.trim().length >= 2 && sugestoesManual.length === 0 && (
-                                        <p className="text-xs text-slate-400 mt-1.5">Nenhuma música no repertório com esse nome.</p>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Lista de vínculos */}
-                            {vinculadas.length === 0 && !pickerAberto && (
-                                <p className="text-xs text-slate-400 italic">Nenhuma música vinculada ainda.</p>
-                            )}
-                            {vinculadas.length > 0 && (
-                                <div className="flex flex-col gap-1.5">
-                                    {vinculadas.map(v => (
-                                        <div key={String(v.musicaId)}
-                                            className="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm">
-                                            <span className="flex-1 min-w-0 truncate text-slate-700">
-                                                {v.titulo}
-                                                {v.autor && <span className="text-slate-400 ml-1.5 text-xs">· {v.autor}</span>}
-                                                {v.confirmadoPor === 'auto' && (
-                                                    <span className="ml-1.5 text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded">auto</span>
-                                                )}
-                                                {v.origemDeteccao === 'manual' && (
-                                                    <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">manual</span>
-                                                )}
-                                            </span>
-                                            <button type="button"
-                                                onClick={() => {
-                                                    setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: vinculadas.filter(x => String(x.musicaId) !== String(v.musicaId)) })
-                                                    desvincularMusicaDoPlano(planoEditando.id, v.musicaId)
-                                                }}
-                                                className="text-slate-300 hover:text-red-500 text-base leading-none shrink-0 transition-colors"
-                                                title="Remover vínculo">✕</button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )
-                })()}
-
                 {/* ════════════ ADAPTAÇÕES POR TURMA ════════════ */}
                 {(() => {
                     const turmasFlat = anosLetivos.flatMap(a =>
@@ -1368,41 +1532,6 @@ export default function TelaPrincipal() {
                     )
                 })()}
 
-                {/* ─── SALVAR ATIVIDADES NO BANCO ─── */}
-                {(planoEditando?.atividadesRoteiro || []).filter(a => a.nome?.trim()).length > 0 && (
-                    <div className="px-3 sm:px-6 pb-4">
-                        <div className="border border-dashed border-emerald-200 dark:border-emerald-500/30 rounded-xl p-4 space-y-3">
-                            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                                💾 Salvar atividade(s) no Banco de Atividades
-                            </p>
-                            <div className="space-y-1.5">
-                                {(planoEditando?.atividadesRoteiro || []).filter(a => a.nome?.trim()).map(a => (
-                                    <label key={a.id} className="flex items-center gap-2 cursor-pointer group">
-                                        <input
-                                            type="checkbox"
-                                            checked={atividadesSelecionadasBanco.has(String(a.id))}
-                                            onChange={e => {
-                                                setAtividadesSelecionadasBanco(prev => {
-                                                    const s = new Set(prev)
-                                                    e.target.checked ? s.add(String(a.id)) : s.delete(String(a.id))
-                                                    return s
-                                                })
-                                            }}
-                                            className="accent-emerald-500 w-3.5 h-3.5"
-                                        />
-                                        <span className="text-xs text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-300 transition-colors">{a.nome}</span>
-                                    </label>
-                                ))}
-                            </div>
-                            <button type="button"
-                                onClick={salvarAtividadesSelecionadasNoBanco}
-                                disabled={atividadesSelecionadasBanco.size === 0}
-                                className="text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition-colors">
-                                Salvar selecionadas
-                            </button>
-                        </div>
-                    </div>
-                )}
 
                 {/* ─── FOOTER STICKY ─── */}
                 <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white border-t border-slate-100 sticky bottom-0">
@@ -1953,7 +2082,35 @@ export default function TelaPrincipal() {
             />
         )}
         <ModalMusicasDetectadas />
-        <ModalEstrategiaDetectada />
+
+        {/* ── Modal revisão de conceitos do plano ── */}
+        {modalConceitosPlano && (
+            <ModalConceitosPlano
+                conceitos={modalConceitosPlano.conceitos}
+                onConfirmar={(conceitos) => {
+                    const pid = modalConceitosPlano.planoId
+                    setPlanos(prev => prev.map(p =>
+                        String(p.id) === pid ? { ...p, conceitos } : p
+                    ))
+                    setPlanoEditando(prev =>
+                        prev && String(prev.id) === pid ? { ...prev, conceitos } : prev
+                    )
+                    setModalConceitosPlano(null)
+                    // Abre o accordion de Classificação para o professor ver os chips aplicados
+                    setSecoesForm(prev => new Set([...prev, 'classificacao']))
+                    showToast('Conceitos do plano atualizados', 'success')
+                }}
+                onFechar={() => setModalConceitosPlano(null)}
+            />
+        )}
+
+        {/* ── Indicador sutil enquanto Gemini analisa conceitos ── */}
+        {detectandoConceitos && (
+            <div className="fixed bottom-20 right-4 z-40 bg-white dark:bg-[#1F2937] border border-slate-200 dark:border-[#374151] rounded-xl px-3 py-2 shadow-lg flex items-center gap-2 text-[11px] text-slate-500 dark:text-[#9CA3AF]">
+                <span className="w-3 h-3 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin" />
+                Detectando conceitos…
+            </div>
+        )}
     </>
     );
 
