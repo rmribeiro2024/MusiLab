@@ -8,6 +8,10 @@ export default defineConfig({
   // Em GitHub Actions, GITHUB_ACTIONS=true — usa /MusiLab/ como base.
   // Em dev local (npm run dev) e builds locais, usa /.
   base,
+  server: {
+    port: 3000,
+    strictPort: true,  // falha se 3000 estiver ocupada (não muda silenciosamente)
+  },
   plugins: [
     react(),
     VitePWA({
