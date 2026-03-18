@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react'
+import ReactDOM from 'react-dom'
 import { sanitizar } from '../lib/utils'
 import { showToast } from '../lib/toast'
 import { detectarMusicasNoPlano } from '../lib/detectarMusicas'
@@ -53,7 +54,6 @@ import TipTapEditor from './TipTapEditor'
 import { exportarPlanoPDF, gerarLinkCompartilhavel } from '../utils/pdf'
 import ModalAplicarEmTurmas from './modals/ModalAplicarEmTurmas'
 import ModalMusicasDetectadas from './modals/ModalMusicasDetectadas'
-import { FloatingPlayer } from './TipTapEditor'
 import type { Plano } from '../types'
 import SecaoAdaptacoesTurma from './SecaoAdaptacoesTurma'
 import CardAtividadeRoteiro from './CardAtividadeRoteiro'
@@ -905,10 +905,14 @@ export default function TelaPrincipal() {
                                                         )}
                                                     </div>
                                                     {/* Botão Abrir (player flutuante) */}
-                                                    {kind && (
+                                                    {(ytId || isSpotifyLink) && (
                                                         <button type="button"
-                                                            onClick={() => setMusicaPlayer({ url: v.url!, title: displayTitle || (ytId ? 'YouTube' : 'Spotify'), kind })}
-                                                            className="text-xs font-semibold text-indigo-500 hover:text-indigo-700 transition-colors shrink-0 flex items-center gap-1">
+                                                            onClick={() => setMusicaPlayer({
+                                                                url: v.url!,
+                                                                title: displayTitle || (ytId ? 'YouTube' : 'Spotify'),
+                                                                kind: ytId ? 'youtube' : 'spotify',
+                                                            })}
+                                                            className="text-xs font-semibold text-indigo-500 hover:text-indigo-700 transition-colors shrink-0">
                                                             ▶ Abrir
                                                         </button>
                                                     )}
@@ -2204,13 +2208,39 @@ export default function TelaPrincipal() {
             />
         )}
         <ModalMusicasDetectadas />
-        {musicaPlayer && (
-            <FloatingPlayer
-                url={musicaPlayer.url}
-                title={musicaPlayer.title}
-                kind={musicaPlayer.kind}
-                onClose={() => setMusicaPlayer(null)}
-            />
+        {musicaPlayer && ReactDOM.createPortal(
+            <div style={{
+                position: 'fixed', zIndex: 9999,
+                right: 24, bottom: 24,
+                width: 320, height: musicaPlayer.kind === 'spotify' ? 128 : 212,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+                borderRadius: 12, overflow: 'hidden',
+            }}>
+                <div style={{
+                    height: 32,
+                    background: musicaPlayer.kind === 'youtube' ? '#1e1e1e' : '#191414',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '0 10px', gap: 8,
+                }}>
+                    <span style={{ color: '#fff', fontSize: 11, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                        {musicaPlayer.kind === 'youtube' ? '▶' : '🎵'} {musicaPlayer.title}
+                    </span>
+                    <button onClick={() => setMusicaPlayer(null)}
+                        style={{ color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 2px' }}>×</button>
+                </div>
+                <iframe
+                    src={musicaPlayer.kind === 'youtube'
+                        ? `https://www.youtube-nocookie.com/embed/${getYoutubeId(musicaPlayer.url)}?autoplay=1`
+                        : (() => { const m = musicaPlayer.url.match(/open\.spotify\.com\/(?:[a-z-]+\/)?(track|album|playlist)\/([^?/#\s]+)/); return m ? `https://open.spotify.com/embed/${m[1]}/${m[2]}` : musicaPlayer.url })()
+                    }
+                    width="100%" height={musicaPlayer.kind === 'spotify' ? 96 : 180}
+                    frameBorder="0"
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    allowFullScreen
+                    style={{ display: 'block', background: '#000' }}
+                />
+            </div>,
+            document.body
         )}
 
         {/* ── Modal revisão de conceitos do plano ── */}
