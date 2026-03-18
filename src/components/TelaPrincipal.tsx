@@ -53,6 +53,7 @@ import TipTapEditor from './TipTapEditor'
 import { exportarPlanoPDF, gerarLinkCompartilhavel } from '../utils/pdf'
 import ModalAplicarEmTurmas from './modals/ModalAplicarEmTurmas'
 import ModalMusicasDetectadas from './modals/ModalMusicasDetectadas'
+import { FloatingPlayer } from './TipTapEditor'
 import type { Plano } from '../types'
 import SecaoAdaptacoesTurma from './SecaoAdaptacoesTurma'
 import CardAtividadeRoteiro from './CardAtividadeRoteiro'
@@ -480,6 +481,7 @@ export default function TelaPrincipal() {
     // ── Picker manual de músicas vinculadas ao plano ──
     const [buscaManual, setBuscaManual] = useState('')
     const [pickerAberto, setPickerAberto] = useState(false)
+    const [musicaPlayer, setMusicaPlayer] = useState<{ url: string; title: string; kind: 'youtube' | 'spotify' } | null>(null)
 
     // ── Drag-and-drop: só permite arrastar quando iniciado pelo handle ──
     const dragFromHandle = useRef(false)
@@ -879,33 +881,43 @@ export default function TelaPrincipal() {
                             {vinculadas.length > 0 && (
                                 <div className="space-y-1.5">
                                     {vinculadas.map(v => {
-                                        // Cards com link → mesmo visual que Recursos da Aula
+                                        // Cards com link → thumbnail + botão Abrir (player flutuante)
                                         if (v.url) {
-                                            const tipo = detectarTipoRecurso(v.url)
-                                            const { icone, label, cor } = getRecursoMeta(tipo)
                                             const ytId = getYoutubeId(v.url)
                                             const thumbUrl = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null
+                                            const isSpotifyLink = isSpotifyUrl(v.url)
+                                            const kind = ytId ? 'youtube' : isSpotifyLink ? 'spotify' : null
+                                            const displayTitle = (v.titulo === '▶ Link YouTube' || v.titulo === '🎵 Link Spotify') ? '' : v.titulo
                                             return (
-                                                <div key={String(v.musicaId)} className={`flex items-start gap-2.5 p-2.5 rounded-xl border ${cor.split(' ').slice(0,2).join(' ')}`}>
-                                                    <a href={v.url} target="_blank" rel="noopener noreferrer"
-                                                        className="relative w-16 h-11 shrink-0 flex items-center justify-center rounded-lg overflow-hidden bg-white/60">
-                                                        <span className="text-xl leading-none">{icone}</span>
-                                                        {thumbUrl && <img src={thumbUrl} alt="" className="absolute inset-0 w-full h-full object-cover rounded-lg shadow-sm" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
-                                                    </a>
+                                                <div key={String(v.musicaId)} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-[#374151] bg-slate-50 dark:bg-white/[0.03]">
+                                                    {/* Thumbnail */}
+                                                    <div className="relative w-16 h-11 shrink-0 flex items-center justify-center rounded-lg overflow-hidden bg-slate-200 dark:bg-white/10">
+                                                        <span className="text-xl leading-none">{ytId ? '▶' : '🎵'}</span>
+                                                        {thumbUrl && <img src={thumbUrl} alt="" className="absolute inset-0 w-full h-full object-cover rounded-lg" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
+                                                    </div>
+                                                    {/* Título */}
                                                     <div className="flex-1 min-w-0">
-                                                        <span className={`text-[10px] font-bold uppercase tracking-wide ${cor.split(' ').slice(2).join(' ')}`}>{label}</span>
-                                                        <a href={v.url} target="_blank" rel="noopener noreferrer"
-                                                            className="text-[11px] text-slate-500 hover:underline truncate block">{v.titulo !== '▶ Link YouTube' && v.titulo !== '🎵 Link Spotify' ? v.titulo : v.url}</a>
+                                                        <p className="text-sm text-slate-700 dark:text-[#D1D5DB] truncate font-medium">
+                                                            {displayTitle || (ytId ? 'YouTube' : 'Spotify')}
+                                                        </p>
                                                         {v.confirmadoPor === 'auto' && (
                                                             <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 py-0.5 rounded">detectada</span>
                                                         )}
                                                     </div>
+                                                    {/* Botão Abrir (player flutuante) */}
+                                                    {kind && (
+                                                        <button type="button"
+                                                            onClick={() => setMusicaPlayer({ url: v.url!, title: displayTitle || (ytId ? 'YouTube' : 'Spotify'), kind })}
+                                                            className="text-xs font-semibold text-indigo-500 hover:text-indigo-700 transition-colors shrink-0 flex items-center gap-1">
+                                                            ▶ Abrir
+                                                        </button>
+                                                    )}
                                                     <button type="button"
                                                         onClick={() => {
                                                             setPlanoEditando({ ...planoEditando, musicasVinculadasPlano: vinculadas.filter(x => String(x.musicaId) !== String(v.musicaId)) })
                                                             desvincularMusicaDoPlano(planoEditando.id, v.musicaId)
                                                         }}
-                                                        className="text-slate-300 hover:text-red-500 transition shrink-0 text-xs mt-0.5">✕</button>
+                                                        className="text-slate-300 hover:text-red-500 transition shrink-0 text-xs">✕</button>
                                                 </div>
                                             )
                                         }
@@ -2192,6 +2204,14 @@ export default function TelaPrincipal() {
             />
         )}
         <ModalMusicasDetectadas />
+        {musicaPlayer && (
+            <FloatingPlayer
+                url={musicaPlayer.url}
+                title={musicaPlayer.title}
+                kind={musicaPlayer.kind}
+                onClose={() => setMusicaPlayer(null)}
+            />
+        )}
 
         {/* ── Modal revisão de conceitos do plano ── */}
         {modalConceitosPlano && (

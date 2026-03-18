@@ -75,7 +75,7 @@ interface FloatingPlayerProps {
     onClose: () => void
 }
 
-function FloatingPlayer({ url, title, kind, onClose }: FloatingPlayerProps) {
+export function FloatingPlayer({ url, title, kind, onClose }: FloatingPlayerProps) {
     const [pos, setPos] = useState({ x: window.innerWidth - 360, y: window.innerHeight - 240 })
     const [size, setSize] = useState({ w: 320, h: kind === 'spotify' ? 96 : 180 })
     const dragging = useRef(false)
@@ -181,6 +181,7 @@ interface TipTapEditorProps {
     onHashTrigger?: (query: string, position: { top: number; left: number }) => void
     onHashCancel?: () => void
     onSaveAsStrategy?: (text: string) => void
+    onEditorBlur?: () => void
 }
 
 export default function TipTapEditor({
@@ -191,6 +192,7 @@ export default function TipTapEditor({
     onHashTrigger,
     onHashCancel,
     onSaveAsStrategy,
+    onEditorBlur,
 }: TipTapEditorProps) {
     const hashState = useRef({ active: false, buffer: '' })
     const [previews, setPreviews] = useState<MediaPreview[]>([])
@@ -200,10 +202,12 @@ export default function TipTapEditor({
     const onHashTriggerRef = useRef(onHashTrigger)
     const onHashCancelRef = useRef(onHashCancel)
     const onSaveAsStrategyRef = useRef(onSaveAsStrategy)
+    const onEditorBlurRef = useRef(onEditorBlur)
     useEffect(() => {
         onHashTriggerRef.current = onHashTrigger
         onHashCancelRef.current = onHashCancel
         onSaveAsStrategyRef.current = onSaveAsStrategy
+        onEditorBlurRef.current = onEditorBlur
     })
 
     const editor = useEditor({
@@ -233,6 +237,7 @@ export default function TipTapEditor({
                 }
                 setPreviews(p)
             })
+            onEditorBlurRef.current?.()
         },
         editorProps: {
             attributes: {
