@@ -7,6 +7,7 @@ import { agruparPorCategoria } from '../lib/taxonomia'
 import CardAtividadeRoteiro from './CardAtividadeRoteiro'
 import TipTapEditor, { FloatingPlayer } from './TipTapEditor'
 import { useBancoPainel } from '../hooks/useBancoPainel'
+import { useBancoPlanos } from './BancoPlanosContext'
 import {
   useAtividadesContext,
   useRepertorioContext,
@@ -269,6 +270,7 @@ export default function FormularioAulaPlena({
   const { estrategias, adicionarEstrategiaRapida } = useEstrategiasContext()
   const { setModalConfirm } = useModalContext()
   const { setAtividadeVinculandoMusica } = useAtividadesContext()
+  const { setModalTemplates } = useBancoPlanos()
 
   // ── Plano local ──
   const [plano, setPlano] = useState<Plano>(() => buildEmptyPlano(initialPlano))
@@ -885,6 +887,10 @@ Responda APENAS com JSON: {"habilidades": ["EF15AR14", "EF69AR16"]}`
 
               <div className="flex justify-between items-center mb-3">
                 <div className="flex gap-2">
+                  <button type="button" onClick={() => setModalTemplates(true)}
+                    className="bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.10] text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
+                    📐 Templates
+                  </button>
                   <button type="button" onClick={adicionarAtividade}
                     className="border border-slate-300 dark:border-[#374151] hover:border-slate-400 hover:bg-slate-50 dark:hover:bg-white/[0.04] text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
                     + Atividade
