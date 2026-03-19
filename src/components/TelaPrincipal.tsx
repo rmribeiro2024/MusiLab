@@ -422,9 +422,6 @@ export default function TelaPrincipal() {
     const modoRapido = modoForm === 'rapido'
     const modoDetalhado = modoForm === 'detalhado'
 
-    // ── Modo Leitura ──
-    const [modoLeitura, setModoLeitura] = useState(false)
-
     // ── Preview PDF ──
     const [previewPDFUrl, setPreviewPDFUrl] = useState<string | null>(null)
     const [gerandoPreview, setGerandoPreview] = useState(false)
@@ -675,11 +672,6 @@ export default function TelaPrincipal() {
                     </h3>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <button type="button" onClick={() => setModoLeitura(v => !v)}
-                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${modoLeitura ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700' : 'bg-slate-100 dark:bg-[#374151] text-slate-400 dark:text-[#9CA3AF] border-transparent hover:bg-slate-200 dark:hover:bg-[#4B5563]'}`}
-                        title="Modo Leitura: trava edição para apresentar no projetor">
-                        👁 Leitura
-                    </button>
                     {/* Seletor 3 camadas: rápido · completo · detalhado */}
                     <div className="flex bg-slate-100 dark:bg-[#374151] rounded-xl p-0.5 gap-0.5" title="Modo do formulário">
                         {([
@@ -705,7 +697,7 @@ export default function TelaPrincipal() {
             </div>
 
             {/* ── CONTEÚDO DO FORM ── */}
-            <div className={`overflow-y-auto ${modoLeitura ? 'pointer-events-none select-none' : ''}`}>
+            <div className="overflow-y-auto">
 
                 {/* ─── CONTEXTO DA TURMA — painel recolhível ─── */}
                 {(() => {
@@ -1974,7 +1966,7 @@ export default function TelaPrincipal() {
                 })()}
 
                 {/* ─── FOOTER STICKY ─── */}
-                <div className={`px-3 sm:px-4 py-3 sm:py-4 bg-white border-t border-slate-100 sticky bottom-0 ${modoLeitura ? 'pointer-events-none opacity-40' : ''}`}>
+                <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white border-t border-slate-100 sticky bottom-0">
                     <div className="flex gap-2">
                         <button type="button" onClick={handleFechar} className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm active:scale-95">Cancelar</button>
                         {planoEditando._historicoVersoes?.length ? (

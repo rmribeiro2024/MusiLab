@@ -395,6 +395,8 @@ const CardAtividadeRoteiro = memo(function CardAtividadeRoteiro({
   // Cache e in-flight por instância do card (sobrevive a re-renders)
   const geminiCacheRef = useRef<Map<string, string[]>>(new Map())
   const geminiInFlightRef = useRef<Set<string>>(new Set())
+  // Cache de fase detectada (dado silencioso para F3.5)
+  const faseCacheRef = useRef<Map<string, string>>(new Map())
 
   // ── Fechar menu ao clicar fora ────────────────────────────────
   useEffect(() => {
@@ -470,17 +472,74 @@ Se não identificar nenhum conceito, retorne: {"conceitos": []}`
     }
   }
 
-  // ── onBlur do editor: dispara análise IA em background ───────
+  // ── Detectar fase da atividade via IA (dado silencioso para F3.5) ──
+  const detectarFaseIA = async (id: string) => {
+    const texto = stripHtml(atividade.descricao || '')
+    const cacheKey = `fase-${id}-${(atividade.descricao || '').length}`
+    if (faseCacheRef.current.has(cacheKey)) return
+    if (!texto || texto.length < 15) return
+
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+    if (!apiKey) return
+
+    const prompt = `Classifique esta atividade de aula de música em UMA fase pedagógica. Responda APENAS com uma das palavras abaixo, sem pontuação:
+
+aquecimento — início da aula, prepara, aquece, engaja, jogos introdutórios
+desenvolvimento — conteúdo principal, ensino direto, prática com suporte
+pratica_guiada — exercícios orientados, repetição, consolidação técnica
+criacao — criação livre, improvisação, composição autônoma
+fechamento — encerramento, reflexão, síntese, avaliação formativa, despedida
+
+Atividade: "${atividade.nome || ''}"
+Descrição: "${texto.slice(0, 400)}"
+
+Responda com uma palavra apenas.`
+
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        }
+      )
+      if (!res.ok) return
+      const json = await res.json()
+      const raw: string = (json?.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim().toLowerCase()
+      const fases = ['aquecimento', 'desenvolvimento', 'pratica_guiada', 'criacao', 'fechamento']
+      const fase = fases.find(f => raw.includes(f))
+      if (!fase) return
+
+      faseCacheRef.current.set(cacheKey, fase)
+
+      // Só grava se o professor ainda não definiu manualmente
+      if (!atividade.tipoFase) {
+        updateArr(arr => {
+          arr[index] = { ...arr[index], tipoFase: fase as AtividadeRoteiro['tipoFase'] }
+          return arr
+        })
+      }
+    } catch {
+      // silencioso — falha não incomoda o professor
+    }
+  }
+
+  // ── onBlur do editor: dispara análises IA em background ──────
   const handleEditorBlur = () => {
     const id = String(atividade.id)
     const texto = stripHtml(atividade.descricao || '')
     if (texto.length < 15) return
-    const cacheKey = `${id}-${(atividade.descricao || '').length}`
-    if (geminiCacheRef.current.has(cacheKey)) return
-    if (geminiInFlightRef.current.has(id)) return
 
-    geminiInFlightRef.current.add(id)
-    analisarConceitos(id).finally(() => geminiInFlightRef.current.delete(id))
+    // Conceitos musicais
+    const cacheKey = `${id}-${(atividade.descricao || '').length}`
+    if (!geminiCacheRef.current.has(cacheKey) && !geminiInFlightRef.current.has(id)) {
+      geminiInFlightRef.current.add(id)
+      analisarConceitos(id).finally(() => geminiInFlightRef.current.delete(id))
+    }
+
+    // Fase pedagógica (silenciosa)
+    detectarFaseIA(id)
   }
 
   // ── Abrir modal de salvar na biblioteca ─────────────────────
@@ -642,20 +701,6 @@ Se não identificar nenhum conceito, retorne: {"conceitos": []}`
                 : 'text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#4B5563]'}`}
           />
 
-          {/* Indicador de fase (quando definida) */}
-          {atividade.tipoFase && (
-            <span
-              onClick={e => e.stopPropagation()}
-              className={`shrink-0 text-[10px] font-bold rounded-full px-1.5 py-px leading-tight ${
-                atividade.tipoFase === 'aquecimento'    ? 'bg-orange-100 dark:bg-orange-400/15 text-orange-500 dark:text-orange-400' :
-                atividade.tipoFase === 'desenvolvimento' ? 'bg-indigo-100 dark:bg-indigo-400/15 text-indigo-600 dark:text-indigo-400' :
-                                                           'bg-emerald-100 dark:bg-emerald-400/15 text-emerald-600 dark:text-emerald-400'
-              }`}
-            >
-              {atividade.tipoFase === 'aquecimento' ? '🔥' : atividade.tipoFase === 'desenvolvimento' ? '🎯' : '✅'}
-            </span>
-          )}
-
           {/* Badge "Na biblioteca" */}
           {atividade.bibliotecaId && (
             <span
@@ -745,34 +790,6 @@ Se não identificar nenhum conceito, retorne: {"conceitos": []}`
         {/* ── Corpo expandido ── */}
         {isOpen && (
           <div className="px-4 pt-4 pb-5 space-y-4">
-
-            {/* Fase da atividade */}
-            {(() => {
-              const FASES: { key: 'aquecimento' | 'desenvolvimento' | 'fechamento'; label: string; color: string; active: string }[] = [
-                { key: 'aquecimento',    label: '🔥 Aquecimento',    color: 'bg-orange-50 dark:bg-orange-400/10 text-orange-500 dark:text-orange-400 border border-orange-200 dark:border-orange-400/20 hover:bg-orange-100 dark:hover:bg-orange-400/20', active: 'bg-orange-500 text-white border border-orange-500' },
-                { key: 'desenvolvimento', label: '🎯 Desenvolvimento', color: 'bg-indigo-50 dark:bg-indigo-400/10 text-indigo-500 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-400/20 hover:bg-indigo-100 dark:hover:bg-indigo-400/20', active: 'bg-indigo-600 text-white border border-indigo-600' },
-                { key: 'fechamento',     label: '✅ Fechamento',     color: 'bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-400/20 hover:bg-emerald-100 dark:hover:bg-emerald-400/20', active: 'bg-emerald-600 text-white border border-emerald-600' },
-              ]
-              return (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {FASES.map(f => (
-                    <button
-                      key={f.key}
-                      type="button"
-                      onClick={() => updateArr(arr => {
-                        arr[index] = { ...arr[index], tipoFase: atividade.tipoFase === f.key ? undefined : f.key }
-                        return arr
-                      })}
-                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${
-                        atividade.tipoFase === f.key ? f.active : f.color
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              )
-            })()}
 
             {/* Rich text + autocomplete # */}
             <div className="relative">

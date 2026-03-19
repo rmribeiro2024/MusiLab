@@ -98,7 +98,7 @@ export interface AtividadeRoteiro {
   estrategiasVinculadas?: string[]
   origemAtividadeId?: string | number // referência à atividade da biblioteca
   bibliotecaId?: string | number      // ID da entrada criada na Biblioteca de Atividades (após exportar)
-  tipoFase?: 'aquecimento' | 'desenvolvimento' | 'fechamento' // Fase pedagógica da atividade
+  tipoFase?: 'aquecimento' | 'desenvolvimento' | 'pratica_guiada' | 'criacao' | 'fechamento' // Fase pedagógica (detectada silenciosamente via IA para F3.5)
 }
 
 export interface RegistroPosAula {
