@@ -1,9 +1,18 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useAnoLetivoContext, useCalendarioContext } from '../../contexts'
 import { useBancoPlanos } from '../BancoPlanosContext'
 
+const TOGGLE_KEY = 'musilab_detectar_musicas_ao_salvar'
+
 export default function ModalConfiguracoes() {
     const { modalConfiguracoes, setModalConfiguracoes, baixarBackup, restaurarBackup, autoBackupAtivo, configurarAutoBackup, desativarAutoBackup, salvarAutoBackupAgora } = useBancoPlanos()
+    const [detectarMusicas, setDetectarMusicas] = useState(() => localStorage.getItem(TOGGLE_KEY) !== 'false')
+
+    function toggleDetectarMusicas() {
+        const novo = !detectarMusicas
+        setDetectarMusicas(novo)
+        localStorage.setItem(TOGGLE_KEY, String(novo))
+    }
     const { anosLetivos, setModalTurmas } = useAnoLetivoContext()
     const { setModalGradeSemanal } = useCalendarioContext()
 
@@ -67,6 +76,22 @@ export default function ModalConfiguracoes() {
                                 <input type="file" accept=".json" onChange={e => { restaurarBackup(e); setModalConfiguracoes(false) }} className="hidden" />
                             </label>
                         </div>
+                    </div>
+
+                    {/* Detecção de músicas */}
+                    <div className="border-l-2 border-blue-200 pl-3 py-3 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-700 mb-0.5">Detectar músicas ao salvar</p>
+                            <p className="text-xs text-slate-400">Sugere adicionar ao repertório músicas encontradas no plano</p>
+                        </div>
+                        <button
+                            onClick={toggleDetectarMusicas}
+                            className={`shrink-0 mt-0.5 w-9 h-5 rounded-full transition-colors relative ${detectarMusicas ? 'bg-indigo-500' : 'bg-slate-200'}`}
+                            aria-checked={detectarMusicas}
+                            role="switch"
+                        >
+                            <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${detectarMusicas ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                        </button>
                     </div>
 
                     {/* Auto-backup local */}

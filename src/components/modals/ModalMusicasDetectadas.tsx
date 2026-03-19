@@ -336,7 +336,7 @@ export default function ModalMusicasDetectadas() {
                 {/* rodapé */}
                 <div className="px-5 pb-5 pt-3 border-t border-slate-100">
                     <button onClick={fechar}
-                        className="w-full bg-slate-800 text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-slate-700">
+                        className="w-full border border-slate-200 text-slate-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
                         Fechar
                     </button>
                 </div>

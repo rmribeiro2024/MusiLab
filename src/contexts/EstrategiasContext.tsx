@@ -71,7 +71,7 @@ export interface EstrategiasContextValue {
   /** Registra uso da estratégia em um plano (anti-duplicata por planoId). */
   registrarUsoEstrategia: (estrategiaId: string, planoId: string | number, planoTitulo: string) => void
   /** Cria e salva uma estratégia rapidamente a partir de um texto (ex: seleção no editor). */
-  adicionarEstrategiaRapida: (nome: string) => void
+  adicionarEstrategiaRapida: (nome: string, categoria?: string) => void
 }
 
 // ─── CONTEXTO ─────────────────────────────────────────────────────────────────
@@ -188,19 +188,19 @@ export function EstrategiasProvider({ children, userId }: EstrategiasProviderPro
     setEstrategiaEditando(null)
   }
 
-  function adicionarEstrategiaRapida(nome: string) {
+  function adicionarEstrategiaRapida(nome: string, categoria?: string) {
     const texto = nome.trim()
     if (!texto) return
     const agora = new Date().toISOString()
     const item: Estrategia = {
       id: gerarIdSeguro(),
       nome: texto,
-      descricao: '', categoria: '', funcao: '',
+      descricao: '', categoria: categoria || '', funcao: '',
       objetivos: [], faixaEtaria: '', ativo: true,
       _criadoEm: agora, _ultimaEdicao: agora,
     }
     setEstrategias(prev => [...prev, item])
-    showToast('✅ Estratégia adicionada ao banco!', 'success')
+    showToast('✅ Estratégia salva na biblioteca!', 'success')
   }
 
   function excluirEstrategia(id: string) {
