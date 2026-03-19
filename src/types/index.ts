@@ -187,6 +187,8 @@ export interface Plano {
   notasAdaptacao?: NotaAdaptacaoTurma[]  // MVP: uma nota por turma, upsert por turmaId
   continuacaoAnterior?: string           // "Como esta aula continua a anterior?"
   nivelMusical?: string                  // F2.5: nível musical da turma (Iniciante, Intermediário, Avançado, Misto)
+  contextoAulaAnterior?: string          // Aula por Turma: contexto gerado/editado no modo Adaptar
+  avaliacao?: string                     // legado simplificado
 }
 
 // ─── VÍNCULO MÚSICA ↔ PLANO ──────────────────────────────────
@@ -492,6 +494,7 @@ export interface PlanejamentoTurma {
   materiais?: string[]
   observacoes?: string
   atividades?: AtividadePlanejamentoTurma[]
+  planoData?: import('./index').Plano    // Formulário completo — salvo pelo FormularioAulaPlena
   // Metadados
   criadoEm: string
   atualizadoEm: string

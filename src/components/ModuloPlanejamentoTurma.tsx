@@ -14,6 +14,7 @@ import { stripHTML, gerarIdSeguro } from '../lib/utils'
 import { showToast } from '../lib/toast'
 import { useAtividadesContext, useAplicacoesContext, useSequenciasContext, useEstrategiasContext } from '../contexts'
 import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula, AlunoDestaque, AnotacaoAluno, MarcoAluno } from '../types'
+import FormularioAulaPlena from './FormularioAulaPlena'
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -867,8 +868,25 @@ function FormPlanejamentoInline({
   calendarDateStr?: string
 }) {
   const { planos } = usePlanosContext()
+  const { anosLetivos } = useAnoLetivoContext()
   const { setViewMode } = useRepertorioContext()
   const { gradesSemanas } = useCalendarioContext()
+
+  const turmaNome = useMemo(() => {
+    for (const ano of anosLetivos) {
+      for (const escola of ano.escolas ?? []) {
+        for (const seg of escola.segmentos ?? []) {
+          // eslint-disable-next-line eqeqeq
+          if (seg.id == turmaSelecionada.segmentoId) {
+            // eslint-disable-next-line eqeqeq
+            const t = (seg.turmas ?? []).find((t: import('../types').Turma) => t.id == turmaSelecionada.turmaId)
+            if (t) return t.nome
+          }
+        }
+      }
+    }
+    return `Turma ${turmaSelecionada.turmaId}`
+  }, [turmaSelecionada, anosLetivos])
 
   const proximaData = useMemo(
     () => calcProximaAula(turmaSelecionada, gradesSemanas),
@@ -1233,233 +1251,64 @@ function FormPlanejamentoInline({
 
       ) : (
 
-        // ── FORMULÁRIO (modo selecionado) ────────────────────────────────────
-        <div className="px-5 py-4 space-y-4">
-
-          {/* MODO IMPORTAR — painel ou chip da aula-base */}
-          {modo === 'importar' && (
-            <div>
-              {basePlano ? (
-                <div className="flex items-center gap-2 text-xs bg-blue-50 text-blue-700 border border-blue-100 px-3 py-2.5 rounded-xl">
-                  <span>🏦</span>
-                  <span className="font-medium flex-1 truncate">Aula-base: {basePlano.titulo}</span>
-                  <button
-                    type="button"
-                    onClick={() => setPlanoPreview(basePlano)}
-                    className="text-blue-500 hover:text-blue-700 underline whitespace-nowrap"
-                  >
-                    Ver roteiro
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBasePlano(null)
-                      setOQuePretendoFazer('')
-                      setEditorKey(k => k + 1)
-                      setMateriais([])
-                      setPlanosRelacionadosIds([])
-                      setPainelImportarAberto(true)
-                    }}
-                    className="text-blue-400 hover:text-blue-700 ml-0.5"
-                  >✕</button>
-                </div>
-              ) : painelImportarAberto ? (
-                <PainelImportarBanco
-                  planosRelacionadosIds={planosRelacionadosIds}
-                  onToggle={togglePlano}
-                  onFechar={() => setPainelImportarAberto(false)}
-                  onImportar={importarDoBanco}
-                />
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setPainelImportarAberto(true)}
-                  className="w-full text-xs text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 font-medium transition-colors text-center"
-                >
-                  🏦 Escolher aula do banco…
-                </button>
-              )}
+        // ── FORMULÁRIO PLENO ──────────────────────────────────────────────
+        <>
+          {/* MODO IMPORTAR — mostrar picker enquanto basePlano não foi selecionado */}
+          {modo === 'importar' && !basePlano ? (
+            <div className="px-5 py-4 space-y-3">
+              <PainelImportarBanco
+                planosRelacionadosIds={planosRelacionadosIds}
+                onToggle={togglePlano}
+                onFechar={() => setPainelImportarAberto(false)}
+                onImportar={importarDoBanco}
+              />
             </div>
-          )}
-
-          {/* O que pretendo fazer — SEMPRE PRIMEIRO */}
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
-              O que pretendo fazer <span className="text-red-400">*</span>
-            </label>
-            <TipTapEditor
-              key={`rte-${planejamentoEditando?.id ?? 'new'}-${turmaSelecionada.turmaId}-${editorKey}`}
-              value={oQuePretendoFazer}
-              onChange={html => { hasEditedRef.current = true; setOQuePretendoFazer(html) }}
-              placeholder={
-                modo === 'criar' ? 'Descreva o que planeja fazer nesta aula...' :
-                modo === 'adaptar' ? 'Edite o conteúdo pré-preenchido conforme necessário...' :
-                'O conteúdo da aula importada aparecerá aqui para edição...'
-              }
-              className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden"
+          ) : (
+            <FormularioAulaPlena
+              key={`fap-${turmaSelecionada.turmaId}-${planejamentoEditando?.id ?? 'new'}-${modo}`}
+              initialPlano={(() => {
+                // Edição: restaura planoData salvo anteriormente
+                if (planejamentoEditando?.planoData) {
+                  return { ...planejamentoEditando.planoData }
+                }
+                // Adaptar: pré-preenche com plano do banco da última aula
+                if (modo === 'adaptar' && planoDaUltimaAulaId) {
+                  const planoBase = planos.find(p => String(p.id) === planoDaUltimaAulaId)
+                  return planoBase ? { ...planoBase, id: gerarIdSeguro() } : {}
+                }
+                // Importar: pré-preenche com plano escolhido do banco
+                if (modo === 'importar' && basePlano) {
+                  return { ...basePlano, id: gerarIdSeguro() }
+                }
+                return {}
+              })()}
+              modo={modo}
+              ultimoRegistro={ultimoRegistro}
+              turmaNome={turmaNome}
+              dataPrevista={planejamentoEditando?.dataPrevista ?? proximaData ?? calendarDateStr ?? ''}
+              onSalvar={plano => {
+                const origemAula: 'banco' | 'adaptacao' | 'livre' =
+                  modo === 'adaptar' ? 'adaptacao' :
+                  modo === 'importar' ? 'banco' : 'livre'
+                onSalvar({
+                  dataPrevista: dataPrevista || undefined,
+                  oQuePretendoFazer: plano.objetivoGeral || plano.titulo || '',
+                  planosRelacionadosIds: planosRelacionadosIds.length > 0 ? planosRelacionadosIds : undefined,
+                  materiais: plano.materiais?.length ? plano.materiais : undefined,
+                  origemAula,
+                  planoData: plano,
+                })
+              }}
+              onCancelar={() => {
+                if (planejamentoEditando) {
+                  onCancelarEdicao()
+                } else {
+                  tentarVoltarSeletor()
+                }
+              }}
             />
-          </div>
-
-          {/* MODO ADAPTAR — Planos de referência colapsáveis (abaixo do editor) */}
-          {modo === 'adaptar' && (
-            <div className="border border-slate-100 rounded-xl overflow-hidden">
-              {/* Cabeçalho clicável */}
-              <button
-                type="button"
-                onClick={() => setPlanosAdaptarAbertos(v => !v)}
-                className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
-              >
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  📚 Planos de referência
-                  {planosRelacionados.length > 0 && (
-                    <span className="ml-2 normal-case font-normal text-blue-600 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded-full">
-                      {planosRelacionados.length}
-                    </span>
-                  )}
-                </span>
-                <span className="text-slate-300 text-xs">{planosAdaptarAbertos ? '▲' : '▼'}</span>
-              </button>
-
-              {/* Conteúdo expandido */}
-              {planosAdaptarAbertos && (
-                <div>
-                  {planosRelacionados.length > 0 && (
-                    <div className="divide-y divide-slate-50">
-                      {planosRelacionados.map(p => (
-                        <div key={p.id} className="flex items-center justify-between px-3 py-2.5">
-                          <span className="text-xs text-slate-700 font-medium truncate flex-1">🏦 {p.titulo}</span>
-                          <div className="flex items-center gap-3 flex-shrink-0 ml-2">
-                            <button
-                              type="button"
-                              onClick={() => setPlanoPreview(p)}
-                              className="text-xs text-blue-500 hover:text-blue-700 font-medium"
-                            >
-                              👁 Ver
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => togglePlano(String(p.id))}
-                              className="text-xs text-slate-300 hover:text-red-400 transition-colors"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Botão + Adicionar / painel de busca */}
-                  {painelAdaptarAberto ? (
-                    <div className="border-t border-slate-100">
-                      <PainelImportarBanco
-                        planosRelacionadosIds={planosRelacionadosIds}
-                        onToggle={togglePlano}
-                        onFechar={() => setPainelAdaptarAberto(false)}
-                      />
-                    </div>
-                  ) : (
-                    <div className="border-t border-slate-50 px-3 py-2">
-                      <button
-                        type="button"
-                        onClick={() => setPainelAdaptarAberto(true)}
-                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        + Adicionar plano
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
           )}
-
-          {/* Materiais — colapsável */}
-          <div className="border border-slate-100 rounded-xl overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setMateriaisAbertos(v => !v)}
-              className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
-            >
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                📦 Materiais
-                {materiais.length > 0 && (
-                  <span className="ml-2 normal-case font-normal text-blue-600 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded-full">
-                    {materiais.length}
-                  </span>
-                )}
-              </span>
-              <span className="text-slate-300 text-xs">{materiaisAbertos ? '▲' : '▼'}</span>
-            </button>
-
-            {materiaisAbertos && (
-              <div className="px-3 py-3 space-y-2">
-                {materiais.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {materiais.map(m => (
-                      <span key={m} className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1 rounded-full">
-                        {m}
-                        <button type="button" onClick={() => removerMaterial(m)} className="text-blue-400 hover:text-blue-700 ml-0.5">✕</button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {sugestoesMateriais.length > 0 && (
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1.5">Sugestões:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {sugestoesMateriais.map(m => {
-                        const jaTem = materiais.includes(m)
-                        return (
-                          <button
-                            key={m}
-                            type="button"
-                            onClick={() => jaTem ? removerMaterial(m) : adicionarMaterial(m)}
-                            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${jaTem ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50'}`}
-                          >
-                            {jaTem ? '✓ ' : '+ '}{m}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={novoMaterial}
-                    onChange={e => setNovoMaterial(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarMaterial() } }}
-                    placeholder="Adicionar material..."
-                    className={`${inputClass} flex-1`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => adicionarMaterial()}
-                    className="text-xs px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-medium transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Data prevista — no final, campo secundário */}
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Data prevista</label>
-            <input type="date" value={dataPrevista} onChange={e => setDataPrevista(e.target.value)} className={inputClass} min={new Date().toISOString().split('T')[0]} />
-          </div>
-
-          {/* Botão salvar */}
-          <button
-            type="submit"
-            className="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
-          >
-            <span className="text-emerald-500 text-base font-black">✓</span>
-            {planejamentoEditando ? 'Salvar alterações' : 'Salvar planejamento'}
-          </button>
-        </div>
+        </>
       )}
 
       {/* Modal preview de plano */}
