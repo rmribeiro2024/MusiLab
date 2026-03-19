@@ -108,6 +108,7 @@ import type { Plano } from '../types'
 import SecaoAdaptacoesTurma from './SecaoAdaptacoesTurma'
 import CardAtividadeRoteiro from './CardAtividadeRoteiro'
 import { useBancoPainel } from '../hooks/useBancoPainel'
+import { BNCC_MUSICA, buscarBNCC, extrairCodigo } from '../lib/bnccMusica'
 
 // ── Modal revisão de conceitos detectados no plano ───────────────────────────
 interface ModalConceitosPlanoProps {
@@ -457,6 +458,9 @@ export default function TelaPrincipal() {
     // mantido para compatibilidade com código legado (não mais exposto na UI)
     const [estrategiaBrowserOpen, setEstrategiaBrowserOpen] = useState(false)
     const [buscaEstrategiaBrowser, setBuscaEstrategiaBrowser] = useState('')
+
+    // ── BNCC picker ──
+    const [bnccBusca, setBnccBusca] = useState('')
 
     // ── Gerenciar Níveis — painel inline (substitui modal) ──
     const [gerenciarNiveisOpen, setGerenciarNiveisOpen] = useState(false)
@@ -1388,7 +1392,7 @@ export default function TelaPrincipal() {
                                                 .map(s => s.replace(/<[^>]+>/g, '').trim())
                                                 .filter(Boolean)
                                         }
-                                        return rawObjs.filter(Boolean)
+                                        return rawObjs  // preserva strings vazias (itens recém-adicionados)
                                     })()
                                     const setObjs = (next: string[]) => setPlanoEditando({...planoEditando, objetivosEspecificos: next})
                                     return (
@@ -1804,9 +1808,93 @@ export default function TelaPrincipal() {
                         <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('bncc') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     {secoesForm.has('bncc') && (
-                        <div className="px-3 sm:px-6 pt-5 pb-5">
-                            <div className="flex justify-between items-center mb-2"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🏛️ Habilidades BNCC</label><button type="button" onClick={sugerirBNCC} disabled={gerandoBNCC} className="flex items-center gap-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{gerandoBNCC ? '⏳ Gerando...' : '✨ Sugerir com IA'}</button></div>
-                            <textarea value={(planoEditando.habilidadesBNCC || []).join('\n')} onChange={e => setPlanoEditando({...planoEditando, habilidadesBNCC: e.target.value.split('\n')})} className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white" rows={5} placeholder="EF15ARXX - Descrição..." />
+                        <div className="px-3 sm:px-6 pt-5 pb-5 space-y-4">
+
+                            {/* Header */}
+                            <div className="flex justify-between items-center">
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">🏛️ Habilidades BNCC</label>
+                                <button type="button" onClick={sugerirBNCC} disabled={gerandoBNCC}
+                                    className="flex items-center gap-1.5 bg-violet-50 hover:bg-violet-100 dark:bg-violet-400/10 dark:hover:bg-violet-400/20 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-400/25 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {gerandoBNCC ? '⏳ Gerando...' : '✨ Sugerir com IA'}
+                                </button>
+                            </div>
+
+                            {/* Chips de habilidades já adicionadas */}
+                            {(planoEditando.habilidadesBNCC || []).filter(Boolean).length > 0 && (
+                                <div className="flex flex-col gap-2">
+                                    {(planoEditando.habilidadesBNCC || []).filter(Boolean).map((hab, i) => {
+                                        const codigo = extrairCodigo(hab)
+                                        const encontrado = BNCC_MUSICA.find(b => b.codigo === codigo)
+                                        return (
+                                            <div key={i} className="flex items-start gap-2.5 bg-violet-50 dark:bg-violet-400/10 border border-violet-200 dark:border-violet-400/20 rounded-xl px-3 py-2.5">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="text-xs font-bold text-violet-700 dark:text-violet-400">{codigo}</span>
+                                                        {encontrado && <span className="text-[10px] font-medium text-violet-400 dark:text-violet-500 bg-violet-100 dark:bg-violet-400/10 px-1.5 py-px rounded-full">{encontrado.anos}</span>}
+                                                    </div>
+                                                    <p className="text-[11px] text-violet-600 dark:text-violet-400 leading-relaxed">
+                                                        {encontrado?.descricao ?? hab.replace(/^EF\w+\s*-?\s*/, '')}
+                                                    </p>
+                                                </div>
+                                                <button type="button"
+                                                    onClick={() => setPlanoEditando({...planoEditando, habilidadesBNCC: (planoEditando.habilidadesBNCC || []).filter((_, j) => j !== i)})}
+                                                    className="text-violet-300 dark:text-violet-600 hover:text-red-500 dark:hover:text-red-400 transition text-base leading-none shrink-0 mt-0.5">×</button>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+
+                            {/* Busca manual */}
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={bnccBusca}
+                                    onChange={e => setBnccBusca(e.target.value)}
+                                    placeholder="Buscar por código (EF15AR14) ou palavra (ritmo, improvisação…)"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm bg-white dark:bg-[var(--v2-card)] dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#4B5563] focus:border-violet-400 dark:focus:border-violet-500 outline-none transition-colors"
+                                />
+                                {bnccBusca.trim() && (() => {
+                                    const resultados = buscarBNCC(bnccBusca).slice(0, 6)
+                                    if (resultados.length === 0) return (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1F2937] border border-slate-200 dark:border-[#374151] rounded-xl shadow-xl z-50 px-3 py-2.5">
+                                            <p className="text-xs text-slate-400 dark:text-[#6B7280]">Nenhuma habilidade encontrada para "{bnccBusca}"</p>
+                                        </div>
+                                    )
+                                    return (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1F2937] border border-slate-200 dark:border-[#374151] rounded-xl shadow-xl z-50 overflow-hidden">
+                                            {resultados.map(b => {
+                                                const jaAdicionado = (planoEditando.habilidadesBNCC || []).some(h => extrairCodigo(h) === b.codigo)
+                                                return (
+                                                    <button key={b.codigo} type="button"
+                                                        disabled={jaAdicionado}
+                                                        onClick={() => {
+                                                            if (!jaAdicionado) {
+                                                                setPlanoEditando({...planoEditando, habilidadesBNCC: [...(planoEditando.habilidadesBNCC || []), `${b.codigo} - ${b.descricao}`]})
+                                                                setBnccBusca('')
+                                                            }
+                                                        }}
+                                                        className="w-full text-left px-3 py-2.5 hover:bg-violet-50 dark:hover:bg-violet-400/10 transition border-b border-slate-100 dark:border-[#374151] last:border-0 disabled:opacity-40">
+                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                            <span className="text-xs font-bold text-violet-700 dark:text-violet-400">{b.codigo}</span>
+                                                            <span className="text-[10px] text-slate-400 dark:text-[#6B7280]">{b.anos}</span>
+                                                            {jaAdicionado && <span className="text-[10px] text-emerald-600 dark:text-emerald-400 ml-auto font-semibold">✓ adicionado</span>}
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-500 dark:text-[#9CA3AF] line-clamp-2">{b.descricao}</p>
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    )
+                                })()}
+                            </div>
+
+                            {/* Empty state */}
+                            {(planoEditando.habilidadesBNCC || []).filter(Boolean).length === 0 && !gerandoBNCC && (
+                                <p className="text-xs text-slate-400 dark:text-[#4B5563] italic">
+                                    Clique em "✨ Sugerir com IA" ou busque um código acima. Habilidades disponíveis: EF15AR14–EF15AR18 (1º–5º) e EF69AR16–EF69AR25 (6º–9º).
+                                </p>
+                            )}
                         </div>
                     )}
                 </div>
