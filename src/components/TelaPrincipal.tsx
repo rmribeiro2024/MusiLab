@@ -105,7 +105,6 @@ import { exportarPlanoPDF, previewPlanoPDF, gerarLinkCompartilhavel } from '../u
 import ModalAplicarEmTurmas from './modals/ModalAplicarEmTurmas'
 import ModalMusicasDetectadas from './modals/ModalMusicasDetectadas'
 import type { Plano } from '../types'
-import SecaoAdaptacoesTurma from './SecaoAdaptacoesTurma'
 import CardAtividadeRoteiro from './CardAtividadeRoteiro'
 import { useBancoPainel } from '../hooks/useBancoPainel'
 import { BNCC_MUSICA, buscarBNCC, extrairCodigo } from '../lib/bnccMusica'
@@ -211,25 +210,50 @@ interface LinhaPlanoProps {
   setPlanoSelecionado: (plano: Plano) => void
   abrirModalRegistro: (plano: Plano, e: React.MouseEvent) => void
   editarPlano: (plano: Plano) => void
+  statusDropdownId: string | number | null
+  setStatusDropdownId: (id: string | number | null) => void
+  onStatusChange: (id: string | number, status: string) => void
 }
-const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPlanoSelecionado, abrirModalRegistro, editarPlano }: LinhaPlanoProps) => {
+const STATUS_CORES: Record<string, string> = {
+  'Concluído':    '#10b981',
+  'Em Andamento': '#5B5FEA',
+  'A Fazer':      '#f59e0b',
+}
+const LinhaPlano = React.memo(({ plano, showEscola = true, toggleFavorito, setPlanoSelecionado, abrirModalRegistro, editarPlano, statusDropdownId, setStatusDropdownId, onStatusChange }: LinhaPlanoProps) => {
     const conceito1 = (plano.conceitos || [])[0] || '';
     const faixa = (plano.faixaEtaria || [])[0] || plano.nivel || '';
     const status = plano.statusPlanejamento || 'A Fazer';
-    const statusCfg = {
-        'Concluído':    { dot: 'bg-emerald-400', badge: 'bg-emerald-50 text-emerald-700' },
-        'Em Andamento': { dot: 'bg-blue-400',    badge: 'bg-blue-50 text-blue-700' },
-        'A Fazer':      { dot: 'bg-slate-300',   badge: 'bg-slate-100 text-slate-500' }
-    };
-    const sc = statusCfg[status] || statusCfg['A Fazer'];
+    const dotColor = STATUS_CORES[status] || STATUS_CORES['A Fazer'];
+    const isOpen = statusDropdownId === plano.id;
     return (
         <div className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors duration-150 group">
-            <div className={`w-2 h-2 rounded-full shrink-0 ${sc.dot}`} />
+            {/* Bolinha de status clicável */}
+            <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
+                <button
+                    type="button"
+                    title={status}
+                    onClick={() => setStatusDropdownId(isOpen ? null : plano.id)}
+                    className="w-2.5 h-2.5 rounded-full block p-0 transition-transform hover:scale-150 focus:outline-none"
+                    style={{ background: dotColor }}
+                />
+                {isOpen && (
+                    <div className="absolute top-full left-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px] py-1">
+                        {(['A Fazer', 'Em Andamento', 'Concluído'] as const).map(s => (
+                            <button key={s} type="button"
+                                onClick={() => { onStatusChange(plano.id, s); setStatusDropdownId(null); }}
+                                className="w-full text-left px-3 py-2 text-xs font-semibold flex items-center gap-2 hover:bg-slate-50 transition-colors text-slate-700">
+                                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: STATUS_CORES[s] }} />
+                                {s}
+                                {status === s && <span className="ml-auto text-slate-400">✓</span>}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
             <button onClick={(e)=>{e.stopPropagation();toggleFavorito(plano,e);}} aria-label={plano.destaque ? 'Remover dos favoritos' : 'Marcar como favorito'} className="text-base shrink-0 opacity-50 hover:opacity-100 transition-opacity">{plano.destaque?'⭐':'☆'}</button>
             <div className="flex-1 min-w-0 cursor-pointer" onClick={()=>setPlanoSelecionado(plano)}>
                 <div className="flex items-center gap-2 flex-wrap">
                     {plano.numeroAula && <span className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-1 rounded-full shrink-0">#{plano.numeroAula}</span>}
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full shrink-0 ${sc.badge}`}>{status}</span>
                     <span className="font-semibold text-slate-800 text-sm truncate">{plano.titulo}</span>
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -363,6 +387,11 @@ export default function TelaPrincipal() {
 
     // Constantes estáticas (não precisam vir do ctx)
     const niveis = ["Todos", "Iniciante", "Intermediário", "Avançado"]
+
+    // Unidades temáticas únicas derivadas dos próprios planos
+    const unidadesPlanos = useMemo(() =>
+        ['Todos', ...Array.from(new Set(planos.map(p => p.unidade).filter((u): u is string => !!u?.trim()))).sort()]
+    , [planos])
 
     // ── Modal Aplicar em Turmas ──
     const [planoParaAplicar, setPlanoParaAplicar] = useState<Plano | null>(null)
@@ -757,6 +786,11 @@ export default function TelaPrincipal() {
                             <input type="text" value={planoEditando.duracao} onChange={e=>setPlanoEditando({...planoEditando, duracao: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] text-slate-800 dark:text-white" placeholder="Ex: 50 min" list="duracoes-list" />
                             <datalist id="duracoes-list">{duracoesSugestao.map(d=><option key={d} value={d}/>)}</datalist>
                         </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide mb-1.5">Unidade Temática</label>
+                        <input type="text" value={planoEditando.unidade || ''} onChange={e=>setPlanoEditando({...planoEditando, unidade: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#4B5563]" placeholder="Ex: Flauta Doce, Ritmo e Pulso, Canto Coral..." list="unidades-list" />
+                        <datalist id="unidades-list">{unidadesPlanos.filter(u => u !== 'Todos').map(u => <option key={u} value={u}/>)}</datalist>
                     </div>
                     {faixas.length > 1 && (
                         <div>
@@ -1169,7 +1203,7 @@ export default function TelaPrincipal() {
                                 <div className="flex flex-col items-center gap-3 py-10">
                                     <p className="text-sm font-semibold text-slate-400 dark:text-[#4B5563]">Nenhuma atividade ainda</p>
                                     <button type="button" onClick={adicionarAtividadeRoteiro}
-                                        className="mt-1 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 dark:border dark:border-indigo-400/30 text-white dark:text-indigo-300 text-sm font-semibold rounded-xl transition-colors shadow-sm">
+                                        className="mt-1 px-5 py-2 border border-slate-300 dark:border-[#374151] hover:border-slate-400 hover:bg-slate-50 dark:hover:bg-white/[0.04] text-slate-600 dark:text-slate-300 text-sm font-semibold rounded-xl transition-colors">
                                         + Adicionar atividade
                                     </button>
                                 </div>
@@ -1341,25 +1375,24 @@ export default function TelaPrincipal() {
                         <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('objetivos') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     {secoesForm.has('objetivos') && (
-                        <div className="px-3 sm:px-6 pt-5 pb-5 space-y-5">
-                            <div className="flex justify-end">
-                                <button
-                                    type="button"
-                                    onClick={sugerirObjetivosIA}
-                                    disabled={gerandoObjetivos}
-                                    className="flex items-center gap-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {gerandoObjetivos ? '⏳ Gerando...' : '✨ Gerar com IA'}
-                                </button>
-                            </div>
-
+                        <div className="px-3 sm:px-6 pt-3 pb-5 space-y-4">
                             {/* Objetivo Geral — input 1 linha */}
                             <div>
-                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">🎯 Objetivo Geral *</label>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">🎯 Objetivo Geral *</label>
+                                    <button
+                                        type="button"
+                                        onClick={sugerirObjetivosIA}
+                                        disabled={gerandoObjetivos}
+                                        className="flex items-center gap-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {gerandoObjetivos ? '⏳ Gerando...' : '✨ Gerar com IA'}
+                                    </button>
+                                </div>
                                 <textarea
                                     value={(planoEditando.objetivoGeral || '').replace(/<[^>]+>/g, '')}
                                     onChange={e => setPlanoEditando({...planoEditando, objetivoGeral: e.target.value})}
-                                    placeholder="O que o aluno deverá ser capaz de fazer ao final desta aula?"
+                                    placeholder="Ex: Executar padrão rítmico binário usando percussão corporal..."
                                     rows={2}
                                     className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#374151] rounded-xl text-sm text-slate-700 dark:text-slate-200 bg-white dark:bg-[var(--v2-card)] placeholder:text-slate-400 dark:placeholder:text-[#4B5563] focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-500 resize-none transition-colors"
                                 />
@@ -1401,7 +1434,11 @@ export default function TelaPrincipal() {
                                                             setObjs(next)
                                                         }}
                                                         className="flex-1 text-sm text-slate-700 dark:text-slate-200 bg-transparent border-none outline-none placeholder:text-slate-400 dark:placeholder:text-[#4B5563]"
-                                                        placeholder="Descreva um objetivo específico..."
+                                                        placeholder={
+                                                            i === 0 ? "Ex: Reconhecer e distinguir pulsação de ritmo..." :
+                                                            i === 1 ? "Ex: Cantar a melodia com afinação e expressão..." :
+                                                                       "Ex: Criar uma variação rítmica em grupo..."
+                                                        }
                                                     />
                                                     <button
                                                         type="button"
@@ -1425,195 +1462,6 @@ export default function TelaPrincipal() {
                                         </div>
                                     )
                                 })()}
-                            </div>
-                        </div>
-                    )}
-                </div>
-                )}
-
-                {/* ════════════ ACCORDION: CLASSIFICAÇÃO PEDAGÓGICA ════════════ */}
-                {modoDetalhado && (
-                <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('classificacao')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
-                        <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Documentação</span>
-                            {!secoesForm.has('classificacao') && (() => {
-                                const parts: string[] = []
-                                if (planoEditando.statusPlanejamento) parts.push(planoEditando.statusPlanejamento)
-                                if ((planoEditando.conceitos||[]).length > 0) parts.push(`${(planoEditando.conceitos||[]).length} conceito${(planoEditando.conceitos||[]).length > 1 ? 's' : ''}`)
-                                if ((planoEditando.tags||[]).length > 0) parts.push(`${(planoEditando.tags||[]).length} tag${(planoEditando.tags||[]).length > 1 ? 's' : ''}`)
-                                return parts.length > 0 ? <p className="text-[11px] text-slate-300 mt-0.5 truncate">{parts.join(' · ')}</p> : null
-                            })()}
-                        </div>
-                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('classificacao') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    </button>
-                    {secoesForm.has('classificacao') && (
-                        <div className="px-3 sm:px-6 pt-5 pb-5 space-y-5">
-                            {/* Status do Planejamento */}
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">📊 Status</label>
-                                <div className="flex gap-2">
-                                    {[
-                                        {value: 'A Fazer', color: 'bg-slate-50 border-slate-200 text-slate-500', activeColor: 'bg-slate-600 border-slate-600 text-white'},
-                                        {value: 'Em Andamento', color: 'bg-blue-50 border-blue-200 text-blue-600', activeColor: 'bg-blue-500 border-blue-500 text-white'},
-                                        {value: 'Concluído', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', activeColor: 'bg-emerald-500 border-emerald-500 text-white'}
-                                    ].map(s => (
-                                        <button key={s.value} type="button"
-                                            onClick={()=>setPlanoEditando({...planoEditando, statusPlanejamento: s.value})}
-                                            className={`flex-1 px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                                                (planoEditando.statusPlanejamento || 'A Fazer') === s.value ? s.activeColor : s.color
-                                            }`}>
-                                            {s.value}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Conceitos Musicais */}
-                            <div>
-                                <div className="flex justify-between items-center mb-3">
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">🎵 Conceitos Musicais</label>
-                                    <div className="flex gap-1.5">
-                                        {!adicionandoConceito && (
-                                            <>
-                                                <button type="button" onClick={() => setAdicionandoConceito('editar')}
-                                                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${adicionandoConceito === 'editar' ? 'bg-slate-200 text-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>
-                                                    Editar
-                                                </button>
-                                                <button type="button" onClick={() => setAdicionandoConceito(true)}
-                                                    className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
-                                                    + Novo
-                                                </button>
-                                            </>
-                                        )}
-                                        {adicionandoConceito === 'editar' && (
-                                            <button type="button" onClick={() => setAdicionandoConceito(false)}
-                                                className="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
-                                                ✓ Concluir
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                                {adicionandoConceito === true && (
-                                    <div className="mb-3 flex gap-2">
-                                        <input type="text" value={novoConceito} onChange={(e) => setNovoConceito(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarConceitoNovo()} className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Nome do conceito..." autoFocus />
-                                        <button type="button" onClick={adicionarConceitoNovo} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✓</button>
-                                        <button type="button" onClick={() => { setAdicionandoConceito(false); setNovoConceito(""); }} className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✕</button>
-                                    </div>
-                                )}
-                                <div className="flex flex-wrap gap-2">
-                                    {(conceitos || []).map(conceito => (
-                                        adicionandoConceito === 'editar' ? (
-                                            <span key={conceito} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold border ${(planoEditando.conceitos || []).includes(conceito) ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-600 border-slate-200'}`}>
-                                                {conceito}
-                                                <button type="button"
-                                                    onClick={() => setConceitos(prev => prev.filter(c => c !== conceito))}
-                                                    className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full hover:bg-black/20 text-xs leading-none transition-colors">
-                                                    ×
-                                                </button>
-                                            </span>
-                                        ) : (
-                                            <button key={conceito} type="button" onClick={() => toggleConceito(conceito)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.conceitos || []).includes(conceito) ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>{conceito}</button>
-                                        )
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Tags */}
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">🏷️ Tags</label>
-                                {(planoEditando.tags || []).length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-slate-100">
-                                        {(planoEditando.tags || []).map((tag, idx) => (
-                                            <span key={idx} className="bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
-                                                #{tag}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setPlanoEditando({
-                                                        ...planoEditando,
-                                                        tags: planoEditando.tags.filter((_,i)=>i!==idx)
-                                                    })}
-                                                    className="hover:bg-indigo-200 rounded-full w-4 h-4 flex items-center justify-center text-indigo-500 transition-colors"
-                                                >
-                                                    ×
-                                                </button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                                <p className="text-xs text-slate-400 mb-2">Selecione das existentes:</p>
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {(tagsGlobais || []).map(tag => (
-                                        <div key={tag} className="flex items-center gap-0 bg-white border border-slate-200 rounded-full hover:border-slate-300 transition-colors">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    if (!(planoEditando.tags||[]).includes(tag)) {
-                                                        setPlanoEditando({
-                                                            ...planoEditando,
-                                                            tags: [...(planoEditando.tags||[]), tag]
-                                                        });
-                                                    }
-                                                }}
-                                                disabled={(planoEditando.tags||[]).includes(tag)}
-                                                className={`px-3 py-1 rounded-l-full text-sm transition-all ${
-                                                    (planoEditando.tags||[]).includes(tag)
-                                                    ? 'text-slate-300 cursor-not-allowed'
-                                                    : 'text-slate-600 hover:bg-slate-50'
-                                                }`}
-                                            >
-                                                #{tag}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setModalConfirm({ titulo: 'Remover tag?', conteudo: `Remover "${tag}" da lista permanentemente?`, labelConfirm: 'Remover', perigo: true, onConfirm: () => {
-                                                        setTagsGlobais(tagsGlobais.filter(t => t !== tag));
-                                                        if ((planoEditando.tags||[]).includes(tag)) {
-                                                            setPlanoEditando({
-                                                                ...planoEditando,
-                                                                tags: planoEditando.tags.filter(t => t !== tag)
-                                                            });
-                                                        }
-                                                    } });
-                                                }}
-                                                className="text-slate-300 hover:text-red-400 px-2 py-1 rounded-r-full transition-all"
-                                            >
-                                                ✕
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                                <p className="text-xs text-slate-400 mb-2">Ou adicione nova:</p>
-                                <input
-                                    type="text"
-                                    onKeyDown={e => {
-                                        const t = e.target as HTMLInputElement;
-                                        if ((e.key === 'Enter' || e.key === ' ') && t.value.trim()) {
-                                            e.preventDefault();
-                                            const novaTag = t.value.trim().replace(/^#/, '');
-                                            if (novaTag && !(planoEditando.tags || []).includes(novaTag)) {
-                                                setPlanoEditando({
-                                                    ...planoEditando,
-                                                    tags: [...(planoEditando.tags||[]), novaTag]
-                                                });
-                                                if (!tagsGlobais.includes(novaTag)) {
-                                                    setTagsGlobais([...tagsGlobais, novaTag].sort());
-                                                }
-                                            }
-                                            t.value = '';
-                                        }
-                                    }}
-                                    className="w-full px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none"
-                                    placeholder="Digite e pressione Enter... Ex: roda, jogos"
-                                />
-                            </div>
-
-                            {/* Unidades */}
-                            <div>
-                                <div className="flex justify-between items-center mb-3"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">📚 Unidades</label>{!adicionandoUnidade && (<button type="button" onClick={() => setAdicionandoUnidade(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">+ Novo</button>)}</div>
-                                {adicionandoUnidade && (<div className="mb-3 flex gap-2"><input type="text" value={novaUnidade} onChange={(e) => setNovaUnidade(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && adicionarUnidadeNova()} className="flex-1 px-3 py-1.5 border border-dashed border-slate-300 rounded-xl text-sm focus:border-indigo-400 outline-none" placeholder="Nome da unidade..." autoFocus /><button type="button" onClick={adicionarUnidadeNova} className="border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✓</button><button type="button" onClick={() => { setAdicionandoUnidade(false); setNovaUnidade(""); }} className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors">✕</button></div>)}
-                                <div className="flex flex-wrap gap-2">{(unidades || []).map(unidade => (<button key={unidade} type="button" onClick={() => toggleUnidade(unidade)} className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${(planoEditando.unidades || []).includes(unidade) ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>{unidade}</button>))}</div>
                             </div>
                         </div>
                     )}
@@ -1892,32 +1740,6 @@ export default function TelaPrincipal() {
                 </div>
                 )}
 
-                {/* ════════════ ADAPTAÇÕES POR TURMA ════════════ */}
-                {(() => {
-                    const turmasFlat = anosLetivos.flatMap(a =>
-                        a.escolas.flatMap(e =>
-                            e.segmentos.flatMap(s =>
-                                s.turmas.map(t => ({
-                                    id: String(t.id),
-                                    nome: [e.nome, s.nome, t.nome].filter(Boolean).join(' › ')
-                                }))
-                            )
-                        )
-                    )
-                    // Ler notas do estado atual em planos (não de planoEditando que é snapshot)
-                    const planoAtual = planos.find(p => String(p.id) === String(planoEditando.id))
-                    const notasAtuais = planoAtual?.notasAdaptacao ?? planoEditando.notasAdaptacao ?? []
-                    return (
-                        <div className="px-3 sm:px-6 pb-4">
-                            <SecaoAdaptacoesTurma
-                                planoId={planoEditando.id}
-                                notas={notasAtuais}
-                                turmasDisponiveis={turmasFlat}
-                            />
-                        </div>
-                    )
-                })()}
-
 
                 {/* ─── ALERTAS PEDAGÓGICOS AUTOMÁTICOS ─── */}
                 {(() => {
@@ -1929,7 +1751,7 @@ export default function TelaPrincipal() {
                     if (atividades.length >= 2) {
                         const temFechamento = atividades.some(a => a.tipoFase === 'fechamento')
                         if (!temFechamento) {
-                            alertas.push({ icon: '✅', texto: 'Roteiro sem atividade de Fechamento' })
+                            alertas.push({ icon: '⚠️', texto: 'Roteiro sem atividade de Fechamento' })
                         }
                     }
                     // 2. Sem músicas vinculadas
@@ -1952,11 +1774,12 @@ export default function TelaPrincipal() {
 
                     if (alertas.length === 0) return null
                     return (
-                        <div className="px-3 sm:px-6 pb-4 pt-2">
+                        <div className="px-3 sm:px-6 pb-4 pt-1 border-t border-slate-100 dark:border-[#374151]">
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1.5 pt-3">Sugestões</p>
                             <div className="flex flex-wrap gap-1.5">
                                 {alertas.map((a, i) => (
-                                    <span key={i} className="inline-flex items-center gap-1 text-[11px] font-semibold bg-amber-50 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-400/25 px-2.5 py-1 rounded-lg">
-                                        <span className="text-xs">{a.icon}</span>
+                                    <span key={i} className="inline-flex items-center gap-1.5 text-[11px] font-medium bg-slate-50 dark:bg-white/[0.04] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-[#374151] px-2.5 py-1 rounded-lg">
+                                        <span className="text-[10px]">{a.icon}</span>
                                         {a.texto}
                                     </span>
                                 ))}
@@ -1966,7 +1789,7 @@ export default function TelaPrincipal() {
                 })()}
 
                 {/* ─── FOOTER STICKY ─── */}
-                <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white border-t border-slate-100 sticky bottom-0">
+                <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white dark:bg-[var(--v2-card)] border-t border-slate-100 dark:border-[#374151] sticky bottom-0">
                     <div className="flex gap-2">
                         <button type="button" onClick={handleFechar} className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm active:scale-95">Cancelar</button>
                         {planoEditando._historicoVersoes?.length ? (
@@ -1993,10 +1816,14 @@ export default function TelaPrincipal() {
                             onClick={() => abrirPreviewPDF(planoEditando)}
                             disabled={gerandoPreview}
                             title="Pré-visualizar PDF"
-                            className="px-3 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm active:scale-95 disabled:opacity-50 shrink-0">
-                            {gerandoPreview ? '⏳' : '📄'}
+                            className="px-3 py-2.5 rounded-xl font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] border border-slate-200 dark:border-[#374151] transition-colors text-sm active:scale-95 disabled:opacity-50 shrink-0 flex items-center gap-1.5">
+                            {gerandoPreview
+                                ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            }
+                            <span className="hidden sm:inline text-xs">Preview</span>
                         </button>
-                        <button type="button" onClick={handleSalvarPlano} disabled={estadoSalvar !== 'idle'} className={`flex-1 py-2.5 rounded-xl font-semibold text-white transition-all shadow-sm text-sm active:scale-95 ${estadoSalvar === 'salvo' ? 'bg-emerald-500' : estadoSalvar === 'salvando' ? 'bg-indigo-400 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700'}`}>
+                        <button type="button" onClick={handleSalvarPlano} disabled={estadoSalvar !== 'idle'} className={`flex-1 py-2.5 rounded-xl font-semibold text-white transition-all text-sm active:scale-95 ${estadoSalvar === 'salvo' ? 'bg-emerald-500' : estadoSalvar === 'salvando' ? 'bg-slate-600 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'}`}>
                             {estadoSalvar === 'salvando' ? 'Salvando...' : estadoSalvar === 'salvo' ? '✓ Salvo!' : 'Salvar Plano'}
                         </button>
                     </div>
@@ -2200,7 +2027,7 @@ export default function TelaPrincipal() {
                 <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Nível</label><select value={filtroNivel} onChange={e=>setFiltroNivel(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none">{niveis.map(n=><option key={n} value={n}>{n}</option>)}</select></div>
                 <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Segmento</label><select value={filtroSegmento} onChange={e=>setFiltroSegmento(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none">{segmentosPlanos.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
                 <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Conceito</label><select value={filtroConceito} onChange={e=>setFiltroConceito(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none"><option value="Todos">Todos</option>{conceitos.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
-                <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Unidade</label><select value={filtroUnidade} onChange={e=>setFiltroUnidade(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none"><option value="Todos">Todos</option>{unidades.map(u=><option key={u} value={u}>{u}</option>)}</select></div>
+                <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Unidade</label><select value={filtroUnidade} onChange={e=>setFiltroUnidade(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none">{unidadesPlanos.map(u=><option key={u} value={u}>{u}</option>)}</select></div>
                 <div><label className="block text-[10px] font-bold text-slate-400 dark:text-[#6b7280] uppercase tracking-[0.06em] mb-1.5">Tag</label><select value={filtroTag} onChange={e=>setFiltroTag(e.target.value)} className="w-full px-2.5 py-1.5 border border-[#E6EAF0] dark:border-[#374151] rounded-lg text-xs bg-transparent text-slate-700 dark:text-[#E5E7EB] outline-none"><option value="Todas">Todas</option>{tagsGlobais.map(t=><option key={t} value={t}>#{t}</option>)}</select></div>
             </div>
         )}
@@ -2260,28 +2087,28 @@ export default function TelaPrincipal() {
                                 {plano.destaque?'★':'☆'}
                             </button>
 
-                            {/* Status dot + label — só se não for Concluído */}
-                            {status !== 'Concluído' && (
-                                <div className="relative mb-[9px]">
-                                    <button onClick={e=>{e.stopPropagation();setStatusDropdownId(statusDropdownId===plano.id?null:plano.id);}}
-                                        className="flex items-center gap-[5px] hover:opacity-70 transition">
-                                        <span style={{width:6,height:6,borderRadius:'50%',background:dotColor,flexShrink:0,display:'inline-block'}} />
-                                        <span style={{color:dotColor}} className="text-[11px] font-bold uppercase tracking-[0.01em]">{status}</span>
-                                    </button>
-                                    {statusDropdownId === plano.id && (
-                                        <div className="v2-card absolute top-full left-0 mt-1 border border-[#E6EAF0] dark:border-[#374151] rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px]"
-                                             onClick={e=>e.stopPropagation()}>
-                                            {(['A Fazer','Em Andamento','Concluído'] as const).map(s => (
-                                                <button key={s}
-                                                    onClick={()=>{setPlanos(planos.map(p=>p.id===plano.id?{...p,statusPlanejamento:s}:p));setStatusDropdownId(null);}}
-                                                    className={`w-full text-left px-4 py-2.5 text-xs font-bold flex items-center gap-2 transition hover:bg-[#F6F8FB] dark:hover:bg-white/5 text-slate-700 dark:text-[#E5E7EB] ${status===s?'opacity-50 cursor-default':''}`}>
-                                                    {s}{status===s&&<span className="ml-auto text-slate-500 dark:text-slate-300">✓</span>}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                            {/* Status dot — sempre visível, sem texto */}
+                            <div className="relative mb-[9px]">
+                                <button
+                                    onClick={e=>{e.stopPropagation();setStatusDropdownId(statusDropdownId===plano.id?null:plano.id);}}
+                                    title={status}
+                                    className="w-2 h-2 rounded-full block p-0 hover:scale-150 transition-transform focus:outline-none"
+                                    style={{background:dotColor}}
+                                />
+                                {statusDropdownId === plano.id && (
+                                    <div className="v2-card absolute top-full left-0 mt-1 border border-[#E6EAF0] dark:border-[#374151] rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px] py-1"
+                                         onClick={e=>e.stopPropagation()}>
+                                        {(['A Fazer','Em Andamento','Concluído'] as const).map(s => (
+                                            <button key={s}
+                                                onClick={()=>{setPlanos(planos.map(p=>p.id===plano.id?{...p,statusPlanejamento:s}:p));setStatusDropdownId(null);}}
+                                                className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center gap-2 transition hover:bg-[#F6F8FB] dark:hover:bg-white/5 text-slate-700 dark:text-[#E5E7EB] ${status===s?'opacity-50 cursor-default':''}`}>
+                                                <span className="w-2 h-2 rounded-full shrink-0" style={{background: STATUS_CORES[s]}} />
+                                                {s}{status===s&&<span className="ml-auto text-slate-400">✓</span>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Título — máx 2 linhas, normaliza ALL CAPS */}
                             <h3 className="font-semibold text-slate-900 dark:text-[#E5E7EB] text-[14px] leading-[1.35] tracking-[-0.01em] mb-[6px] line-clamp-2 pr-[24px]">
@@ -2353,7 +2180,7 @@ export default function TelaPrincipal() {
                         </button>
                     </div>
                 )}
-                {planosFiltrados.map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} toggleFavorito={toggleFavorito} setPlanoSelecionado={setPlanoSelecionado} abrirModalRegistro={abrirModalRegistro} editarPlano={editarPlano} />)}
+                {planosFiltrados.map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} toggleFavorito={toggleFavorito} setPlanoSelecionado={setPlanoSelecionado} abrirModalRegistro={abrirModalRegistro} editarPlano={editarPlano} statusDropdownId={statusDropdownId} setStatusDropdownId={setStatusDropdownId} onStatusChange={(id, s) => setPlanos(prev => prev.map(p => p.id === id ? {...p, statusPlanejamento: s} : p))} />)}
             </div>
         )}
 
@@ -2431,7 +2258,7 @@ export default function TelaPrincipal() {
                                         <span className="font-bold text-sm">{mesesNomes[g.mes-1]} {g.ano}</span>
                                         <span className="text-indigo-200 text-xs">{g.planos.length} plano{g.planos.length!==1?'s':''}</span>
                                     </div>
-                                    {g.planos.map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} toggleFavorito={toggleFavorito} setPlanoSelecionado={setPlanoSelecionado} abrirModalRegistro={abrirModalRegistro} editarPlano={editarPlano} />)}
+                                    {g.planos.map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} toggleFavorito={toggleFavorito} setPlanoSelecionado={setPlanoSelecionado} abrirModalRegistro={abrirModalRegistro} editarPlano={editarPlano} statusDropdownId={statusDropdownId} setStatusDropdownId={setStatusDropdownId} onStatusChange={(id, s) => setPlanos(prev => prev.map(p => p.id === id ? {...p, statusPlanejamento: s} : p))} />)}
                                 </div>
                             );
                         })}
@@ -2466,7 +2293,7 @@ export default function TelaPrincipal() {
                                 <span className="font-bold text-sm">👥 {seg}</span>
                                 <span className="text-teal-200 text-xs">{gruposSegmento[seg].length} plano{gruposSegmento[seg].length!==1?'s':''}</span>
                             </div>
-                            {gruposSegmento[seg].map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} toggleFavorito={toggleFavorito} setPlanoSelecionado={setPlanoSelecionado} abrirModalRegistro={abrirModalRegistro} editarPlano={editarPlano} />)}
+                            {gruposSegmento[seg].map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} toggleFavorito={toggleFavorito} setPlanoSelecionado={setPlanoSelecionado} abrirModalRegistro={abrirModalRegistro} editarPlano={editarPlano} statusDropdownId={statusDropdownId} setStatusDropdownId={setStatusDropdownId} onStatusChange={(id, s) => setPlanos(prev => prev.map(p => p.id === id ? {...p, statusPlanejamento: s} : p))} />)}
                         </div>
                     ))}
                     {semSegmento.length > 0 && (
@@ -2475,7 +2302,7 @@ export default function TelaPrincipal() {
                                 <span className="font-bold text-sm">📄 Sem segmento definido</span>
                                 <span className="text-gray-200 text-xs">{semSegmento.length} plano{semSegmento.length!==1?'s':''}</span>
                             </div>
-                            {semSegmento.map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} toggleFavorito={toggleFavorito} setPlanoSelecionado={setPlanoSelecionado} abrirModalRegistro={abrirModalRegistro} editarPlano={editarPlano} />)}
+                            {semSegmento.map(plano => <LinhaPlano key={plano.id} plano={plano} showEscola={true} toggleFavorito={toggleFavorito} setPlanoSelecionado={setPlanoSelecionado} abrirModalRegistro={abrirModalRegistro} editarPlano={editarPlano} statusDropdownId={statusDropdownId} setStatusDropdownId={setStatusDropdownId} onStatusChange={(id, s) => setPlanos(prev => prev.map(p => p.id === id ? {...p, statusPlanejamento: s} : p))} />)}
                         </div>
                     )}
                 </div>

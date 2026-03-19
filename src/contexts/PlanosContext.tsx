@@ -468,7 +468,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         return planos.filter(plano => {
             const matchBusca    = buscaAvancada(plano, buscaDebounced)
             const matchConceito = filtroConceito === 'Todos'  || (plano.conceitos && plano.conceitos.includes(filtroConceito))
-            const matchUnidade  = filtroUnidade  === 'Todos'  || (plano.unidades  && plano.unidades.includes(filtroUnidade))
+            const matchUnidade  = filtroUnidade  === 'Todos'  || (plano.unidade && plano.unidade.trim() === filtroUnidade.trim())
             const matchFaixa    = filtroFaixa    === 'Todos'  || (plano.faixaEtaria && plano.faixaEtaria.includes(filtroFaixa))
             const matchNivel    = filtroNivel    === 'Todos'  || plano.nivel === filtroNivel
             const matchEscola   = filtroEscola   === 'Todas'  || plano.escola === filtroEscola
@@ -1394,16 +1394,13 @@ Faixa etária: ${faixa || 'não informada'}
 Atividades:
 ${listaAtividades}
 
-Gere também um objetivo geral (1 frase ampla descrevendo a intenção principal da aula) além dos objetivos específicos (2-3 frases mensuráveis).
-Retorne no formato JSON: {"objetivoGeral": "...", "objetivosEspecificos": ["...", "..."]}
-
 Responda APENAS no formato JSON:
 {
   "geral": "objetivo geral — 1 frase ampla descrevendo a intenção principal da aula",
-  "especificos": ["objetivo específico mensurável 1", "objetivo específico mensurável 2", "objetivo específico mensurável 3"]
+  "especificos": ["objetivo específico mensurável 1", "objetivo específico mensurável 2"]
 }
 
-Os objetivos devem ser curtos (máx. 15 palavras cada), começar com verbo no infinitivo, e ser práticos. O campo "geral" é obrigatório.`
+Regras: máx. 15 palavras por objetivo, começar com verbo no infinitivo, ser práticos e pedagógicos. O campo "geral" é obrigatório.`
 
         setGerandoObjetivos(true)
         try {
