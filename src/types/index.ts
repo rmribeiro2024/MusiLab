@@ -143,6 +143,7 @@ export interface Plano {
   titulo: string
   tema?: string
   nivel: string
+  etapasEnsino?: string[]
   duracao: string
   escola?: string
   data?: string

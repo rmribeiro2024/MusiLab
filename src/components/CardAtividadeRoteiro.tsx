@@ -712,25 +712,21 @@ Responda com uma palavra apenas.`
             </span>
           )}
 
-          {/* Duração inline — apenas dígitos, exibe label "min" fixo */}
-          <div className="flex items-center gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+          {/* Duração inline */}
+          <div className="flex items-center gap-1 flex-shrink-0 px-2 py-1 rounded-lg border border-slate-200 dark:border-[#374151] hover:border-indigo-300 dark:hover:border-indigo-500/50 bg-white dark:bg-white/[0.04] cursor-text transition-colors"
+            title="Duração (minutos)"
+            onClick={e => { e.stopPropagation(); (e.currentTarget.querySelector('input') as HTMLInputElement)?.focus() }}>
+            <svg className="w-3.5 h-3.5 text-slate-500 dark:text-slate-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10"/><path strokeLinecap="round" d="M12 6v6l4 2"/></svg>
             <input
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
               value={(atividade.duracao || '').toString().replace(/[^\d]/g, '')}
               onChange={e => onFieldChange(atividade.id, 'duracao', e.target.value.replace(/[^\d]/g, ''))}
-              placeholder="–"
-              className={`w-[36px] text-right bg-transparent border-none outline-none text-xs font-semibold cursor-text
-                ${(atividade.duracao || '').toString().replace(/[^\d]/g, '').trim()
-                  ? 'text-slate-500 dark:text-[#9CA3AF]'
-                  : 'text-slate-300 dark:text-[#374151]'}`}
+              placeholder="0"
+              className="w-[24px] text-center bg-transparent border-none outline-none text-xs font-semibold cursor-text text-slate-600 dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600"
             />
-            <span className={`text-xs font-semibold flex-shrink-0 ${
-              (atividade.duracao || '').toString().replace(/[^\d]/g, '').trim()
-                ? 'text-slate-400 dark:text-[#6B7280]'
-                : 'text-slate-200 dark:text-[#374151]'
-            }`}>min</span>
+            <span className="text-xs text-slate-400 dark:text-slate-400 flex-shrink-0">min</span>
           </div>
 
           {/* Menu ··· */}
@@ -743,9 +739,9 @@ Responda com uma palavra apenas.`
               type="button"
               title="Opções"
               onClick={() => setMenuOpen(v => !v)}
-              className="w-7 h-7 flex items-center justify-center text-slate-300 dark:text-[#374151] hover:text-slate-500 dark:hover:text-[#9CA3AF] transition-colors rounded-lg text-base leading-none"
+              className="w-7 h-7 flex items-center justify-center text-slate-500 dark:text-[#4B5563] hover:text-slate-800 dark:hover:text-[#9CA3AF] transition-colors rounded-lg"
             >
-              ···
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><circle cx="4" cy="10" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/></svg>
             </button>
 
             {menuOpen && (
@@ -904,47 +900,7 @@ Responda com uma palavra apenas.`
                 </div>
               )}
 
-              {/* Inputs de adicionar */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                <input
-                  type="text"
-                  placeholder="+ Conceito  Enter ↵"
-                  onKeyDown={(e) => {
-                    const t = e.target as HTMLInputElement
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      const val = t.value.trim()
-                      if (val && !(atividade.conceitos || []).includes(val)) {
-                        updateArr(arr => {
-                          arr[index] = { ...arr[index], conceitos: [...(arr[index].conceitos || []), val] }
-                          return arr
-                        })
-                        t.value = ''
-                      }
-                    }
-                  }}
-                  className="text-[11px] font-semibold text-purple-500 dark:text-purple-400 bg-transparent border-none outline-none placeholder:text-purple-400/70 dark:placeholder:text-purple-400/40 w-36"
-                />
-                <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
-                <input
-                  type="text"
-                  placeholder="#tag  Enter ↵"
-                  onKeyDown={(e) => {
-                    const t = e.target as HTMLInputElement
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      const val = t.value.trim().replace(/^#/, '')
-                      if (val && !(atividade.tags || []).includes(val)) {
-                        updateArr(arr => {
-                          arr[index] = { ...arr[index], tags: [...(arr[index].tags || []), val] }
-                          return arr
-                        })
-                        t.value = ''
-                      }
-                    }
-                  }}
-                  className="text-[11px] font-semibold text-amber-500 dark:text-amber-400 bg-transparent border-none outline-none placeholder:text-amber-400/70 dark:placeholder:text-amber-400/40 w-24"
-                />
               </div>
             </div>
           </div>

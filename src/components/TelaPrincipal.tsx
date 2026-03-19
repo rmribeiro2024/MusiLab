@@ -787,116 +787,116 @@ export default function TelaPrincipal() {
                             <datalist id="duracoes-list">{duracoesSugestao.map(d=><option key={d} value={d}/>)}</datalist>
                         </div>
                     </div>
-                    <div>
-                        <label className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide mb-1.5">Unidade Temática</label>
-                        <input type="text" value={planoEditando.unidade || ''} onChange={e=>setPlanoEditando({...planoEditando, unidade: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#4B5563]" placeholder="Ex: Flauta Doce, Ritmo e Pulso, Canto Coral..." list="unidades-list" />
-                        <datalist id="unidades-list">{unidadesPlanos.filter(u => u !== 'Todos').map(u => <option key={u} value={u}/>)}</datalist>
-                    </div>
-                    {faixas.length > 1 && (
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide">Faixa Etária / Turma</label>
-                                <button type="button" onClick={() => setGerenciarNiveisOpen(v => !v)}
-                                    className={`text-[11px] font-semibold transition-colors ${gerenciarNiveisOpen ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:text-[#6B7280] dark:hover:text-slate-300'}`}>
-                                    {gerenciarNiveisOpen ? '✕ Fechar' : 'Gerenciar →'}
-                                </button>
-                            </div>
-
-                            {/* Segmented selector */}
-                            {!gerenciarNiveisOpen && (
-                                <div className="flex bg-slate-100 dark:bg-white/[0.06] dark:border dark:border-white/[0.08] rounded-xl p-1 gap-1 flex-wrap">
-                                    {faixas.slice(1).map(faixa => (
-                                        <button key={faixa} type="button" onClick={() => toggleFaixa(faixa)}
-                                            className={`flex-1 min-w-fit px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap
-                                                ${planoEditando.faixaEtaria.includes(faixa)
-                                                    ? 'bg-white dark:bg-indigo-500/20 dark:border dark:border-indigo-400/30 text-indigo-600 dark:text-indigo-300 shadow-sm'
-                                                    : 'text-slate-500 dark:text-[#6B7280] hover:bg-white/70 hover:text-slate-700 dark:hover:bg-white/[0.06] dark:hover:text-slate-300'}`}>
-                                            {faixa}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Painel inline de gerenciamento */}
-                            {gerenciarNiveisOpen && (
-                                <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
-                                    <div className="divide-y divide-slate-100 dark:divide-[#374151]">
-                                        {faixas.slice(1).map(f => (
-                                            <div key={f} className="flex items-center gap-2 px-3 py-2 group">
-                                                <span className="flex-1 text-sm font-medium text-slate-700 dark:text-[#D1D5DB]">{f}</span>
-                                                <button type="button" onClick={() => removerNivel(f)}
-                                                    className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-300 dark:text-[#374151] hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-400/10 transition-all text-base leading-none flex-shrink-0">
-                                                    ×
-                                                </button>
-                                            </div>
+                    {(() => {
+                        const unidadeVal = planoEditando.unidade || ''
+                        const sugestoesUnidade = unidadesPlanos.filter(u => u !== 'Todos' && u.toLowerCase().includes(unidadeVal.toLowerCase()) && u !== unidadeVal)
+                        return (
+                            <div className="relative">
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide mb-1.5">Unidade Temática</label>
+                                <input
+                                    type="text"
+                                    value={unidadeVal}
+                                    onChange={e => setPlanoEditando({...planoEditando, unidade: e.target.value})}
+                                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur() } }}
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#4B5563]"
+                                    placeholder="Ex: Flauta Doce, Ritmo e Pulso, Canto Coral..."
+                                />
+                                {sugestoesUnidade.length > 0 && unidadeVal.length > 0 && (
+                                    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-[var(--v2-card)] border border-slate-200 dark:border-[#374151] rounded-xl shadow-lg overflow-hidden">
+                                        {sugestoesUnidade.map(u => (
+                                            <button key={u} type="button"
+                                                onMouseDown={e => { e.preventDefault(); setPlanoEditando({...planoEditando, unidade: u}) }}
+                                                className="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.06] transition-colors">
+                                                {u}
+                                            </button>
                                         ))}
                                     </div>
-                                    <div className="flex gap-2 p-3 border-t border-slate-100 dark:border-[#374151] bg-slate-50 dark:bg-white/[0.02]">
-                                        <input type="text" value={novoNivelInput} onChange={e => setNovoNivelInput(e.target.value)}
-                                            onKeyDown={e => { if (e.key === 'Enter') adicionarNivel() }}
-                                            placeholder="Novo nível... Enter ↵"
-                                            className="flex-1 bg-white dark:bg-[var(--v2-card)] border border-slate-200 dark:border-[#374151] rounded-lg px-3 py-1.5 text-sm outline-none focus:border-indigo-400 dark:text-white" />
-                                        <button type="button" onClick={adicionarNivel}
-                                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors">
-                                            + Add
+                                )}
+                            </div>
+                        )
+                    })()}
+                    {/* Segmento — multi-select */}
+                    {(() => {
+                        const SEGMENTOS_FIXOS = ['Ed. Infantil', 'Fundamental I', 'Fundamental II', 'Ensino Médio']
+                        const etapas = planoEditando.etapasEnsino || []
+                        const etapasFixas = etapas.filter(e => SEGMENTOS_FIXOS.includes(e))
+                        const outrosValor = etapas.find(e => !SEGMENTOS_FIXOS.includes(e))
+                        const outrosConfirmado = outrosValor !== undefined && outrosValor !== ''
+                        const outrosEditando = outrosValor !== undefined && outrosValor === ''
+
+                        const toggleFixo = (seg: string) => {
+                            setPlanoEditando({...planoEditando, etapasEnsino:
+                                etapas.includes(seg) ? etapas.filter(e => e !== seg) : [...etapas, seg]
+                            })
+                        }
+                        const abrirOutros = () => {
+                            if (outrosValor !== undefined) return // já aberto
+                            setPlanoEditando({...planoEditando, etapasEnsino: [...etapas, '']})
+                        }
+                        const confirmarOutros = (val: string) => {
+                            const limpo = val.trim()
+                            if (!limpo) {
+                                // vazio → remove Outros
+                                setPlanoEditando({...planoEditando, etapasEnsino: etapasFixas})
+                            } else {
+                                setPlanoEditando({...planoEditando, etapasEnsino: [...etapasFixas, limpo]})
+                            }
+                        }
+                        const removerOutros = () => setPlanoEditando({...planoEditando, etapasEnsino: etapasFixas})
+
+                        return (
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide mb-2">Segmento</label>
+                                <div className="flex gap-1.5 flex-wrap items-center">
+                                    {SEGMENTOS_FIXOS.map(seg => (
+                                        <button key={seg} type="button" onClick={() => toggleFixo(seg)}
+                                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${etapas.includes(seg)
+                                                ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
+                                                : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-[#6B7280] hover:bg-slate-200 dark:hover:bg-white/[0.10]'
+                                            }`}>{seg}</button>
+                                    ))}
+                                    {/* Outros — chip confirmado com × */}
+                                    {outrosConfirmado ? (
+                                        <span className="inline-flex items-center gap-1.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold px-3 py-1.5 rounded-lg">
+                                            {outrosValor}
+                                            <button type="button" onClick={removerOutros} className="hover:opacity-70 transition-opacity leading-none">×</button>
+                                        </span>
+                                    ) : outrosEditando ? (
+                                        <input
+                                            type="text"
+                                            autoFocus
+                                            defaultValue=""
+                                            onBlur={e => confirmarOutros(e.target.value)}
+                                            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') removerOutros() }}
+                                            placeholder="Ex: EJA, Conservatório..."
+                                            className="px-3 py-1.5 border border-slate-300 dark:border-[#374151] rounded-lg text-xs focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] text-slate-800 dark:text-white placeholder:text-slate-400 w-44"
+                                        />
+                                    ) : (
+                                        <button type="button" onClick={abrirOutros}
+                                            className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-[#6B7280] hover:bg-slate-200 dark:hover:bg-white/[0.10]">
+                                            Outros
                                         </button>
-                                    </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Nível Musical — separado de Faixa Etária (F2.5) */}
-                    <div>
-                        <label className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide mb-2">Nível Musical</label>
-                        <div className="flex gap-1.5 flex-wrap">
-                            {(['Iniciante', 'Intermediário', 'Avançado', 'Misto'] as const).map(nivel => (
-                                <button
-                                    key={nivel}
-                                    type="button"
-                                    onClick={() => setPlanoEditando({...planoEditando, nivelMusical: planoEditando.nivelMusical === nivel ? undefined : nivel})}
-                                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
-                                        planoEditando.nivelMusical === nivel
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-[#6B7280] hover:bg-slate-200 dark:hover:bg-white/[0.10]'
-                                    }`}
-                                >{nivel}</button>
-                            ))}
-                        </div>
-                    </div>
+                            </div>
+                        )
+                    })()}
                 </div>
 
-                {/* ════════════ ACCORDION: CONTEXTO ════════════ */}
-                {modoDetalhado && (
-                <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('contexto')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
-                        <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Contexto</span>
-                            {!secoesForm.has('contexto') && planoEditando.continuacaoAnterior && (
-                                <p className="text-[11px] text-[#94A3B8] mt-0.5 truncate">{planoEditando.continuacaoAnterior.slice(0, 60)}</p>
+                {/* ════════════ ACCORDION: MÚSICAS DA AULA ════════════ */}
+                <div className="border-b border-slate-100 dark:border-[#374151]">
+                    <button type="button" onClick={() => toggleSecaoForm('musicas')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
+                        <div className="min-w-0 flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">🎵 Músicas da Aula</span>
+                            {(planoEditando.musicasVinculadasPlano || []).length > 0 && (
+                                <span className="text-[10px] bg-indigo-100 text-indigo-600 font-bold px-1.5 py-0.5 rounded-full">
+                                    {(planoEditando.musicasVinculadasPlano || []).length}
+                                </span>
                             )}
                         </div>
-                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('contexto') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('musicas') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
-                    {secoesForm.has('contexto') && (
-                        <div className="px-3 sm:px-6 pt-4 pb-5">
-                            <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
-                                🔗 Como esta aula continua a anterior?
-                            </label>
-                            <textarea
-                                value={planoEditando.continuacaoAnterior ?? ''}
-                                onChange={(e) => setPlanoEditando({ ...planoEditando, continuacaoAnterior: e.target.value })}
-                                placeholder="Ex: Na aula passada trabalhamos o pulso. Agora introduzimos a divisão em colcheias partindo do que já conhecem…"
-                                className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
-                                rows={3}
-                            />
-                        </div>
-                    )}
-                </div>
-                )}
-
-                {/* ════════════ BLOCO B — MÚSICAS DA AULA ════════════ */}
-                {(() => {
+                    {secoesForm.has('musicas') && (() => {
                     const vinculadas = planoEditando.musicasVinculadasPlano || []
                     const vinculadosIds = new Set(vinculadas.map(v => String(v.musicaId)))
 
@@ -959,7 +959,7 @@ export default function TelaPrincipal() {
                     }
 
                     return (
-                        <div className="border-b border-slate-100 dark:border-[#374151] px-3 sm:px-6 py-4">
+                        <div className="px-3 sm:px-6 py-4">
                             <div className="flex items-center justify-between mb-3">
                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em]">🎵 Músicas da aula</p>
                                 <button type="button"
@@ -1082,7 +1082,8 @@ export default function TelaPrincipal() {
                             )}
                         </div>
                     )
-                })()}
+                    })()}
+                </div>
 
                 {/* ── Conceitos do plano — chips sempre visíveis ── */}
                 {(planoEditando.conceitos || []).length > 0 && (
@@ -1188,12 +1189,13 @@ export default function TelaPrincipal() {
                                 });
                                 const duracaoAula = parseInt(planoEditando.duracao) || 0;
                                 const diff = duracaoAula ? totalMin - duracaoAula : null;
-                                const cor = diff === null ? 'text-indigo-700' : diff > 5 ? 'text-red-600' : diff < -5 ? 'text-amber-600' : 'text-green-600';
-                                const icon = diff === null ? '⏱️' : diff > 5 ? '⚠️' : diff < -5 ? '💡' : '✅';
+                                const cor = diff === null ? 'text-slate-400 dark:text-slate-500' : diff > 5 ? 'text-red-500' : diff < -5 ? 'text-slate-400 dark:text-slate-500' : 'text-emerald-600';
+                                const icon = diff === null ? '⏱' : diff > 5 ? '⚠️' : diff < -5 ? '⏱' : '✓';
                                 return (
-                                    <div className={`flex items-center gap-2 mb-3 text-sm font-bold ${cor}`}>
-                                        <span>{icon} Tempo total: {totalMin} min{temIndefinido ? '+' : ''}</span>
-                                        {diff !== null && <span className="font-normal text-xs opacity-80">({diff > 0 ? '+' : ''}{diff} min em relação à duração da aula)</span>}
+                                    <div className={`flex items-center gap-1.5 mb-3 text-xs font-medium ${cor}`}>
+                                        <svg className="w-3.5 h-3.5 text-slate-600 dark:text-slate-200 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10"/><path strokeLinecap="round" d="M12 6v6l4 2"/></svg>
+                                        <span>Tempo total: {totalMin} min{temIndefinido ? '+' : ''}</span>
+                                        {diff !== null && <span className="opacity-60 font-normal">({diff > 0 ? '+' : ''}{diff} min)</span>}
                                     </div>
                                 );
                             })()}
@@ -1468,6 +1470,66 @@ export default function TelaPrincipal() {
                 </div>
                 )}
 
+                {/* ════════════ ACCORDION: AVALIAÇÃO ════════════ */}
+                {!modoRapido && (
+                <div className="border-b border-slate-100">
+                    <button type="button" onClick={() => toggleSecaoForm('avaliacao')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Avaliação</span>
+                            {!secoesForm.has('avaliacao') && (() => {
+                                const preview = planoEditando.avaliacaoEvidencia || planoEditando.avaliacaoFechamento || planoEditando.avaliacaoObservacoes
+                                return preview ? <p className="text-[11px] text-[#94A3B8] mt-0.5 truncate">{preview.slice(0,60)}</p> : null
+                            })()}
+                        </div>
+                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('avaliacao') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    {secoesForm.has('avaliacao') && (
+                        <div className="px-3 sm:px-6 pt-4 pb-5 space-y-4">
+                            {/* Field 1 — Evidência */}
+                            <div>
+                                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                                    📊 O que observarei para saber se funcionou?
+                                </label>
+                                <textarea
+                                    value={planoEditando.avaliacaoEvidencia ?? ((!planoEditando.avaliacaoEvidencia && !planoEditando.avaliacaoFechamento && planoEditando.avaliacaoObservacoes) ? planoEditando.avaliacaoObservacoes : '')}
+                                    onChange={(e) => setPlanoEditando({ ...planoEditando, avaliacaoEvidencia: e.target.value })}
+                                    placeholder="Ex: alunos conseguem tocar o ritmo sem apoio visual, participam da improvisação…"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
+                                    rows={2}
+                                />
+                            </div>
+                            {/* Field 2 — Fechamento */}
+                            <div>
+                                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                                    ❓ Qual pergunta farei no fechamento?
+                                </label>
+                                <textarea
+                                    value={planoEditando.avaliacaoFechamento ?? ''}
+                                    onChange={(e) => setPlanoEditando({ ...planoEditando, avaliacaoFechamento: e.target.value })}
+                                    placeholder="Ex: O que foi mais difícil? O que vocês notaram sobre o ritmo?"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
+                                    rows={2}
+                                />
+                            </div>
+                            {/* Field 3 — Contingência (opcional) */}
+                            <div>
+                                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                                    ⚡ Se não funcionar, o que farei?
+                                    <span className="font-normal text-[#94A3B8] ml-1">(opcional)</span>
+                                </label>
+                                <textarea
+                                    value={planoEditando.avaliacaoContingencia ?? ''}
+                                    onChange={(e) => setPlanoEditando({ ...planoEditando, avaliacaoContingencia: e.target.value })}
+                                    placeholder="Ex: simplificar o ritmo para colcheia/semínima, trocar a atividade pelo jogo de eco…"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
+                                    rows={2}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+                )}
+
                 {/* ════════════ ACCORDION: RECURSOS DA AULA ════════════ */}
                 <div className="border-b border-slate-100">
                     <button type="button" onClick={() => toggleSecaoForm('recursos')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
@@ -1529,9 +1591,8 @@ export default function TelaPrincipal() {
                                 <p className="text-[11px] text-slate-400 italic">Nenhum recurso adicionado.</p>
                             ) : null}
 
-                            {/* ── O que preciso levar (materiais físicos — fusão de materiais + materiaisNecessarios) ── */}
+                            {/* ── O que preciso levar (materiais físicos) ── */}
                             {modoDetalhado && (() => {
-                                // Fusão dos dois arrays, sem duplicatas
                                 const todosMat = [
                                     ...planoEditando.materiais,
                                     ...(planoEditando.materiaisNecessarios || []).filter(m => !planoEditando.materiais.includes(m))
@@ -1574,66 +1635,6 @@ export default function TelaPrincipal() {
                         </div>
                     )}
                 </div>
-
-                {/* ════════════ ACCORDION: AVALIAÇÃO ════════════ */}
-                {!modoRapido && (
-                <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('avaliacao')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
-                        <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Avaliação</span>
-                            {!secoesForm.has('avaliacao') && (() => {
-                                const preview = planoEditando.avaliacaoEvidencia || planoEditando.avaliacaoFechamento || planoEditando.avaliacaoObservacoes
-                                return preview ? <p className="text-[11px] text-[#94A3B8] mt-0.5 truncate">{preview.slice(0,60)}</p> : null
-                            })()}
-                        </div>
-                        <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 flex-shrink-0 ml-3 ${secoesForm.has('avaliacao') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    </button>
-                    {secoesForm.has('avaliacao') && (
-                        <div className="px-3 sm:px-6 pt-4 pb-5 space-y-4">
-                            {/* Field 1 — Evidência */}
-                            <div>
-                                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
-                                    📊 O que observarei para saber se funcionou?
-                                </label>
-                                <textarea
-                                    value={planoEditando.avaliacaoEvidencia ?? ((!planoEditando.avaliacaoEvidencia && !planoEditando.avaliacaoFechamento && planoEditando.avaliacaoObservacoes) ? planoEditando.avaliacaoObservacoes : '')}
-                                    onChange={(e) => setPlanoEditando({ ...planoEditando, avaliacaoEvidencia: e.target.value })}
-                                    placeholder="Ex: alunos conseguem tocar o ritmo sem apoio visual, participam da improvisação…"
-                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
-                                    rows={2}
-                                />
-                            </div>
-                            {/* Field 2 — Fechamento */}
-                            <div>
-                                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
-                                    ❓ Qual pergunta farei no fechamento?
-                                </label>
-                                <textarea
-                                    value={planoEditando.avaliacaoFechamento ?? ''}
-                                    onChange={(e) => setPlanoEditando({ ...planoEditando, avaliacaoFechamento: e.target.value })}
-                                    placeholder="Ex: O que foi mais difícil? O que vocês notaram sobre o ritmo?"
-                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
-                                    rows={2}
-                                />
-                            </div>
-                            {/* Field 3 — Contingência (opcional) */}
-                            <div>
-                                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
-                                    ⚡ Se não funcionar, o que farei?
-                                    <span className="font-normal text-[#94A3B8] ml-1">(opcional)</span>
-                                </label>
-                                <textarea
-                                    value={planoEditando.avaliacaoContingencia ?? ''}
-                                    onChange={(e) => setPlanoEditando({ ...planoEditando, avaliacaoContingencia: e.target.value })}
-                                    placeholder="Ex: simplificar o ritmo para colcheia/semínima, trocar a atividade pelo jogo de eco…"
-                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
-                                    rows={2}
-                                />
-                            </div>
-                        </div>
-                    )}
-                </div>
-                )}
 
                 {/* ════════════ ACCORDION: BNCC ════════════ */}
                 {modoDetalhado && (
@@ -1691,7 +1692,7 @@ export default function TelaPrincipal() {
                                     type="text"
                                     value={bnccBusca}
                                     onChange={e => setBnccBusca(e.target.value)}
-                                    placeholder="Buscar por código (EF15AR14) ou palavra (ritmo, improvisação…)"
+                                    placeholder="Buscar por código (EI03TS01, EF15AR14…) ou palavra (ritmo, improvisação…)"
                                     className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm bg-white dark:bg-[var(--v2-card)] dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#4B5563] focus:border-violet-400 dark:focus:border-violet-500 outline-none transition-colors"
                                 />
                                 {bnccBusca.trim() && (() => {
@@ -1732,7 +1733,7 @@ export default function TelaPrincipal() {
                             {/* Empty state */}
                             {(planoEditando.habilidadesBNCC || []).filter(Boolean).length === 0 && !gerandoBNCC && (
                                 <p className="text-xs text-slate-400 dark:text-[#4B5563] italic">
-                                    Clique em "✨ Sugerir com IA" ou busque um código acima. Habilidades disponíveis: EF15AR14–EF15AR18 (1º–5º) e EF69AR16–EF69AR25 (6º–9º).
+                                    Clique em "✨ Sugerir com IA" ou busque um código acima. Habilidades disponíveis: EI01–EI03 (Ed. Infantil) · EF15AR14–EF15AR18 (1º–5º) · EF69AR16–EF69AR25 (6º–9º).
                                 </p>
                             )}
                         </div>
