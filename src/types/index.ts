@@ -98,6 +98,7 @@ export interface AtividadeRoteiro {
   estrategiasVinculadas?: string[]
   origemAtividadeId?: string | number // referência à atividade da biblioteca
   bibliotecaId?: string | number      // ID da entrada criada na Biblioteca de Atividades (após exportar)
+  tipoFase?: 'aquecimento' | 'desenvolvimento' | 'fechamento' // Fase pedagógica da atividade
 }
 
 export interface RegistroPosAula {
@@ -184,6 +185,7 @@ export interface Plano {
   origemSlotOrdem?: number     // C4: posição do slot que originou este plano
   notasAdaptacao?: NotaAdaptacaoTurma[]  // MVP: uma nota por turma, upsert por turmaId
   continuacaoAnterior?: string           // "Como esta aula continua a anterior?"
+  nivelMusical?: string                  // F2.5: nível musical da turma (Iniciante, Intermediário, Avançado, Misto)
 }
 
 // ─── VÍNCULO MÚSICA ↔ PLANO ──────────────────────────────────

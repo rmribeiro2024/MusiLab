@@ -1,6 +1,10 @@
-import React, { memo } from 'react'
+import React, { memo, useState, useRef, useEffect } from 'react'
+import ReactDOM from 'react-dom'
 import TipTapEditor from './TipTapEditor'
 import { showToast } from '../lib/toast'
+import { gerarIdSeguro } from '../lib/utils'
+import { agruparPorCategoria } from '../lib/taxonomia'
+import { useEstrategiasContext } from '../contexts'
 import type { AtividadeRoteiro, Plano, Atividade } from '../types'
 
 // ── Tipos locais ─────────────────────────────────────────────────────────────
@@ -45,14 +49,308 @@ export interface CardAtividadeRoteiroProps {
   onSaveAsStrategy: (text: string) => void
   onVincularMusica: (atividadeId: string | number) => void
 
-  // Banco de atividades (para "salvar no banco")
+  // Banco de atividades (para "salvar na biblioteca")
   bancoAtividades: Atividade[]
   setBancoAtividades: (v: Atividade[]) => void
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setModalConfirm: (v: any) => void
 }
 
-// ── Componente ────────────────────────────────────────────────────────────────
+// ── Helper: remove HTML tags ─────────────────────────────────────────────────
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+// ── Taxonomia C completa (usada no prompt Gemini) ────────────────────────────
+
+const TAXONOMIA_PROMPT = `
+1. Parâmetros Físicos do Som: Altura, Duração, Intensidade, Timbre
+2. Ritmo e Organização Temporal: Pulsação, Andamento, Métrica, Células Rítmicas, Síncope, Ostinato
+3. Melodia e Alturas: Fraseado, Contorno, Escalas, Intervalos, Tonalidade
+4. Harmonia e Textura: Acordes, Campo Harmônico, Consonância, Textura, Densidade
+5. Estrutura e Forma: Motivo, Frase, Período, Formas (AB, ABA, Rondó, Sonata)
+6. Dinâmica e Expressividade: Crescendo, Articulação, Caráter
+7. Processos Criativos e Ações: Criação, Execução, Apreciação, Escuta ativa
+8. Movimento e Corpo: Espaço, Peso, Fluência, Percussão Corporal, Coordenação Motora
+9. Contexto e Cultura: Gêneros, História, Etnomusicologia
+10. Tecnologia Musical: Áudio, MIDI, Software`.trim()
+
+// ── Modal de salvar na biblioteca ────────────────────────────────────────────
+
+interface ModalSalvarProps {
+  nome: string
+  chips: string[]
+  isLoading: boolean
+  onChipRemove: (chip: string) => void
+  onChipAdd: (chip: string) => void
+  onSave: () => void
+  onCancel: () => void
+}
+
+function ModalSalvarNaBiblioteca({ nome, chips, isLoading, onChipRemove, onChipAdd, onSave, onCancel }: ModalSalvarProps) {
+  const [novoConceito, setNovoConceito] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Fecha com Esc
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onCancel])
+
+  const handleAdd = () => {
+    const val = novoConceito.trim()
+    if (val && !chips.includes(val)) { onChipAdd(val); setNovoConceito('') }
+  }
+
+  return ReactDOM.createPortal(
+    <div
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl max-w-sm w-full flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-[#374151]">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Salvar na biblioteca</p>
+            {nome && <p className="text-[11px] text-slate-400 dark:text-[#9CA3AF] truncate mt-0.5">{nome}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-base leading-none ml-3 flex-shrink-0 transition-colors"
+          >×</button>
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-4 space-y-3">
+
+          <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">
+            Conceitos identificados
+          </p>
+
+          {/* Shimmer enquanto IA analisa */}
+          {isLoading ? (
+            <div className="flex flex-wrap gap-1.5 min-h-[32px]">
+              {[72, 88, 60, 80].map(w => (
+                <div
+                  key={w}
+                  className="h-[26px] rounded-lg bg-slate-200 dark:bg-white/[0.08] animate-pulse"
+                  style={{ width: w }}
+                />
+              ))}
+            </div>
+          ) : chips.length === 0 ? (
+            <p className="text-[11px] text-slate-400 dark:text-[#4B5563] italic">
+              Nenhum conceito identificado — adicione manualmente.
+            </p>
+          ) : (
+            /* Chips agrupados por categoria */
+            <div className="space-y-2">
+              {Object.entries(agruparPorCategoria(chips)).map(([cat, cs]) => (
+                <div key={cat}>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-400 dark:text-[#4B5563] mb-1">{cat}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {cs.map(chip => (
+                      <span
+                        key={chip}
+                        className="inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-400/10 text-purple-600 dark:text-purple-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg"
+                      >
+                        {chip}
+                        <button
+                          type="button"
+                          onClick={() => onChipRemove(chip)}
+                          className="hover:text-rose-500 ml-0.5 leading-none transition-colors"
+                        >×</button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Input para adicionar */}
+          {!isLoading && (
+            <div className="flex gap-2">
+              <input
+                ref={inputRef}
+                type="text"
+                value={novoConceito}
+                onChange={e => setNovoConceito(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAdd() } }}
+                placeholder="+ Adicionar conceito..."
+                className="flex-1 border border-slate-200 dark:border-[#374151] rounded-lg px-2.5 py-1.5 text-[11px] bg-white dark:bg-[var(--v2-card)] dark:text-white focus:border-indigo-400 outline-none transition-colors"
+              />
+              <button
+                type="button"
+                onClick={handleAdd}
+                disabled={!novoConceito.trim()}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.10] text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-lg transition-colors disabled:opacity-40"
+              >
+                + Add
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3 border-t border-slate-100 dark:border-[#374151] flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 text-sm border border-slate-200 dark:border-[#374151] rounded-xl px-3 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.05] transition"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={isLoading}
+            className="flex-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-3 py-2 font-medium transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            {isLoading ? 'Analisando...' : '✓ Salvar'}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
+// ── Panel slide-in de salvar estratégia ─────────────────────────────────────
+
+const CATEGORIAS_ESTRATEGIA = ['Engajamento', 'Avaliação', 'Criação', 'Apreciação']
+
+interface SlideInEstrategiaProps {
+  textoCapturado: string
+  onSalvar: (nome: string, categoria: string) => void
+  onCancelar: () => void
+}
+
+function SlideInEstrategia({ textoCapturado, onSalvar, onCancelar }: SlideInEstrategiaProps) {
+  const [nome, setNome] = useState(textoCapturado.slice(0, 80))
+  const [categoria, setCategoria] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { inputRef.current?.focus() }, [])
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancelar() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onCancelar])
+
+  return ReactDOM.createPortal(
+    <>
+      {/* Backdrop — visível só no mobile */}
+      <div className="fixed inset-0 z-[59] bg-black/20 sm:bg-transparent" onClick={onCancelar} />
+
+      {/* Panel — desktop: drawer lateral direito | mobile: bottom sheet */}
+      <div className="fixed z-[60] flex flex-col bg-white dark:bg-[#1F2937] overflow-hidden
+        bottom-0 left-0 right-0 rounded-t-2xl max-h-[65vh]
+        sm:bottom-0 sm:top-0 sm:left-auto sm:right-0 sm:rounded-none sm:max-h-full sm:w-72
+        border-t border-slate-200 dark:border-[#374151]
+        sm:border-t-0 sm:border-l
+        shadow-[0_-4px_24px_rgba(0,0,0,0.10)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.35)]
+        sm:shadow-[-8px_0_24px_rgba(0,0,0,0.08)] dark:sm:shadow-[-8px_0_24px_rgba(0,0,0,0.3)]">
+
+        {/* Handle mobile */}
+        <div className="sm:hidden flex justify-center pt-2.5 pb-1 flex-shrink-0">
+          <div className="w-8 h-1 rounded-full bg-slate-200 dark:bg-white/[0.12]" />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-[#374151] flex-shrink-0">
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">💡 Salvar estratégia</p>
+          <button
+            type="button"
+            onClick={onCancelar}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-base leading-none transition-colors"
+          >×</button>
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+
+          {/* Texto capturado */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400 mb-1.5">
+              Texto capturado
+            </p>
+            <p className="text-[12px] text-slate-500 dark:text-[#9CA3AF] bg-slate-50 dark:bg-white/[0.03] rounded-lg px-3 py-2 leading-relaxed line-clamp-3 border border-slate-100 dark:border-[#374151]">
+              {textoCapturado || '—'}
+            </p>
+          </div>
+
+          {/* Nome */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400 mb-1.5">
+              Nome da estratégia
+            </p>
+            <input
+              ref={inputRef}
+              type="text"
+              value={nome}
+              onChange={e => setNome(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && nome.trim()) { e.preventDefault(); onSalvar(nome.trim(), categoria) } }}
+              placeholder="Ex: Escuta ativa com perguntas..."
+              className="w-full border border-slate-200 dark:border-[#374151] rounded-xl px-3 py-2 text-sm bg-white dark:bg-[var(--v2-card)] dark:text-white focus:border-indigo-400 outline-none transition-colors"
+            />
+          </div>
+
+          {/* Categoria */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400 mb-1.5">
+              Categoria
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {CATEGORIAS_ESTRATEGIA.map(cat => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategoria(v => v === cat ? '' : cat)}
+                  className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${
+                    categoria === cat
+                      ? 'bg-violet-600 text-white'
+                      : 'bg-violet-50 dark:bg-violet-400/10 text-violet-600 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-400/20'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3 border-t border-slate-100 dark:border-[#374151] flex gap-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={onCancelar}
+            className="flex-1 text-sm border border-slate-200 dark:border-[#374151] rounded-xl px-3 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.05] transition"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={() => { if (nome.trim()) onSalvar(nome.trim(), categoria) }}
+            disabled={!nome.trim()}
+            className="flex-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-3 py-2 font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Salvar
+          </button>
+        </div>
+      </div>
+    </>,
+    document.body
+  )
+}
+
+// ── Componente principal ──────────────────────────────────────────────────────
 
 const CardAtividadeRoteiro = memo(function CardAtividadeRoteiro({
   atividade,
@@ -82,335 +380,585 @@ const CardAtividadeRoteiro = memo(function CardAtividadeRoteiro({
   setModalConfirm,
 }: CardAtividadeRoteiroProps) {
 
-  // ── Helper: mutação imutável do array de atividades ──────────────────────
+  // ── Contextos ────────────────────────────────────────────────
+  const { adicionarEstrategiaRapida } = useEstrategiasContext()
+
+  // ── Estado local ─────────────────────────────────────────────
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [showSalvarModal, setShowSalvarModal] = useState(false)
+  const [chipsModal, setChipsModal] = useState<string[]>([])
+  const [isGeminiLoading, setIsGeminiLoading] = useState(false)
+  const [panelEstrategia, setPanelEstrategia] = useState<{ texto: string } | null>(null)
+
+  // ── Refs ─────────────────────────────────────────────────────
+  const menuRef = useRef<HTMLDivElement>(null)
+  // Cache e in-flight por instância do card (sobrevive a re-renders)
+  const geminiCacheRef = useRef<Map<string, string[]>>(new Map())
+  const geminiInFlightRef = useRef<Set<string>>(new Set())
+
+  // ── Fechar menu ao clicar fora ────────────────────────────────
+  useEffect(() => {
+    if (!menuOpen) return
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [menuOpen])
+
+  // ── Helper: mutação imutável do array de atividades ──────────
   const updateArr = (updater: (arr: AtividadeRoteiro[]) => AtividadeRoteiro[]) => {
     const arr = updater([...(planoEditando.atividadesRoteiro || [])])
     setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
   }
 
-  // ── Salvar atividade no Banco de Atividades ───────────────────────────────
-  const saveToBank = () => {
-    if (!atividade.nome?.trim()) { showToast('Nome obrigatório!', 'error'); return }
+  // ── Chamar Gemini para análise de conceitos ──────────────────
+  const analisarConceitos = async (atividadeId: string): Promise<string[]> => {
+    const cacheKey = `${atividadeId}-${(atividade.descricao || '').length}`
+
+    // Retorna cache se existir
+    if (geminiCacheRef.current.has(cacheKey)) {
+      return geminiCacheRef.current.get(cacheKey)!
+    }
+
+    const texto = stripHtml(atividade.descricao || '')
+    if (!texto || texto.length < 10) return []
+
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+    if (!apiKey) return []
+
+    const prompt = `Você é um especialista em pedagogia musical. Analise a atividade abaixo e identifique os conceitos musicais pedagógicos presentes.
+
+Atividade: "${atividade.nome}"
+Descrição: "${texto}"
+
+Use APENAS conceitos da seguinte taxonomia pedagógica musical:
+${TAXONOMIA_PROMPT}
+
+Retorne apenas os conceitos claramente identificados (máximo 6), usando os nomes exatos da taxonomia.
+Responda APENAS com JSON válido: {"conceitos": ["conceito1", "conceito2"]}
+Se não identificar nenhum conceito, retorne: {"conceitos": []}`
+
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        }
+      )
+      if (!res.ok) {
+        console.error('[Gemini conceitos] HTTP', res.status, await res.text())
+        return []
+      }
+      const json = await res.json()
+      const rawText: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      console.log('[Gemini conceitos] raw:', rawText)
+      // Extrai JSON: aceita tanto ```json ... ``` quanto { ... } solto
+      const match = rawText.match(/```(?:json)?\s*([\s\S]*?)```/) || rawText.match(/(\{[\s\S]*\})/)
+      if (!match) { console.warn('[Gemini conceitos] sem JSON na resposta'); return [] }
+      const result = JSON.parse(match[1] || match[0])
+      const conceitos: string[] = Array.isArray(result.conceitos) ? result.conceitos : []
+      geminiCacheRef.current.set(cacheKey, conceitos)
+      return conceitos
+    } catch (e) {
+      console.error('[Gemini conceitos] erro:', e)
+      return []
+    }
+  }
+
+  // ── onBlur do editor: dispara análise IA em background ───────
+  const handleEditorBlur = () => {
+    const id = String(atividade.id)
+    const texto = stripHtml(atividade.descricao || '')
+    if (texto.length < 15) return
+    const cacheKey = `${id}-${(atividade.descricao || '').length}`
+    if (geminiCacheRef.current.has(cacheKey)) return
+    if (geminiInFlightRef.current.has(id)) return
+
+    geminiInFlightRef.current.add(id)
+    analisarConceitos(id).finally(() => geminiInFlightRef.current.delete(id))
+  }
+
+  // ── Abrir modal de salvar na biblioteca ─────────────────────
+  const abrirModalSalvar = () => {
+    setMenuOpen(false)
+    if (!atividade.nome?.trim()) { showToast('Adicione um nome à atividade antes de salvar.', 'error'); return }
+
+    const id = String(atividade.id)
+    const cacheKey = `${id}-${(atividade.descricao || '').length}`
+    const cached = geminiCacheRef.current.get(cacheKey)
+
+    if (cached) {
+      const merged = [...new Set([...(atividade.conceitos || []), ...cached])]
+      setChipsModal(merged)
+      setIsGeminiLoading(false)
+    } else {
+      // Abre o modal imediatamente com shimmer, dispara Gemini em paralelo
+      setChipsModal(atividade.conceitos || [])
+      setIsGeminiLoading(true)
+      analisarConceitos(id).then(conceitos => {
+        const merged = [...new Set([...(atividade.conceitos || []), ...conceitos])]
+        setChipsModal(merged)
+        setIsGeminiLoading(false)
+      })
+    }
+
+    setShowSalvarModal(true)
+  }
+
+  // ── Salvar atividade na biblioteca ───────────────────────────
+  const confirmarSalvarNaBiblioteca = () => {
     const existe = bancoAtividades.find(
       a => a.nome.toLowerCase().trim() === atividade.nome.toLowerCase().trim()
     )
+
+    const doSave = (bibliotecaId: string | number) => {
+      // Atualiza o card com os conceitos do modal + marca como salva
+      updateArr(arr => {
+        arr[index] = { ...arr[index], conceitos: chipsModal, bibliotecaId }
+        return arr
+      })
+      setShowSalvarModal(false)
+      showToast(`"${atividade.nome}" salva na biblioteca`, 'success')
+    }
+
     if (existe) {
+      setShowSalvarModal(false)
       setModalConfirm({
         titulo: 'Atividade já existe',
-        conteudo: `"${atividade.nome}" já existe no Banco de Atividades.\n\nAtualizar?`,
+        conteudo: `"${atividade.nome}" já existe na biblioteca.\n\nAtualizar com estes dados?`,
         labelConfirm: 'Atualizar',
         onConfirm: () => {
-          const atualizada = {
+          const atualizada: Atividade = {
             ...existe,
-            descricao: atividade.descricao || existe.descricao,
+            descricao: stripHtml(atividade.descricao || '') || existe.descricao,
             duracao: atividade.duracao || existe.duracao,
-            conceitos: [...new Set([...(existe.conceitos || []), ...(atividade.conceitos || [])])],
+            conceitos: chipsModal.length > 0 ? chipsModal : existe.conceitos,
             tags: [...new Set([...(existe.tags || []), ...(atividade.tags || [])])],
-            recursos: [...(existe.recursos || []), ...(atividade.recursos || [])].filter(
-              (r, i, a) => a.findIndex(x => x.url === r.url) === i
-            ),
-            faixaEtaria: planoEditando.faixaEtaria || existe.faixaEtaria,
-            escola: planoEditando.escola || existe.escola,
-            unidade: planoEditando.unidades?.[0] || existe.unidade,
           }
           setBancoAtividades(bancoAtividades.map(a => a.id === existe.id ? atualizada : a))
-          showToast('Atividade atualizada no Banco de Atividades!', 'success')
+          doSave(existe.id)
         },
       })
     } else {
-      setBancoAtividades([...bancoAtividades, {
-        id: Date.now(),
+      const novaId = gerarIdSeguro()
+      const nova: Atividade = {
+        id: novaId,
         nome: atividade.nome,
-        descricao: atividade.descricao || '',
+        descricao: stripHtml(atividade.descricao || ''),
         duracao: atividade.duracao || '',
-        conceitos: atividade.conceitos || [],
+        conceitos: chipsModal,
         tags: atividade.tags || [],
         recursos: atividade.recursos || [],
         materiais: [],
         faixaEtaria: planoEditando.faixaEtaria || [],
         escola: planoEditando.escola || '',
         unidade: planoEditando.unidades?.[0] || '',
-      }])
-      showToast('Atividade salva no Banco de Atividades!', 'success')
+        createdAt: new Date().toISOString(),
+      }
+      setBancoAtividades([...bancoAtividades, nova])
+      doSave(novaId)
     }
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
-  return (
-    <div
-      data-activity-id={atividade.id}
-      draggable
-      onDragStart={(e) => {
-        if (!dragFromHandle.current) { e.preventDefault(); return }
-        onDragStart(index)
-      }}
-      onDragEnter={() => onDragEnter(index)}
-      onDragEnd={() => { dragFromHandle.current = false; onDragEnd() }}
-      onDragOver={e => e.preventDefault()}
-      className={`rounded-2xl border overflow-visible transition-all
-        ${isOpen ? 'border-indigo-200 dark:border-indigo-500/30' : 'border-slate-200 dark:border-[#374151]'}
-        ${dragActiveIndex === index ? 'opacity-50' : ''}
-        ${dragOverIndex === index && dragActiveIndex !== index ? 'border-indigo-400 dark:border-indigo-400' : ''}
-        bg-white dark:bg-[var(--v2-card)]`}
-    >
+  // ── Duplicar atividade no plano ──────────────────────────────
+  const duplicar = () => {
+    setMenuOpen(false)
+    const copia: AtividadeRoteiro = {
+      ...atividade,
+      id: gerarIdSeguro(),
+      nome: `${atividade.nome} (cópia)`,
+      bibliotecaId: undefined,
+    }
+    const arr = [...(planoEditando.atividadesRoteiro || [])]
+    arr.splice(index + 1, 0, copia)
+    setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
+    showToast('Atividade duplicada', 'success')
+  }
 
-      {/* ── Header row (sempre visível) ── */}
+  // ── Render ────────────────────────────────────────────────────
+  return (
+    <>
       <div
-        className={`flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none
-          ${isOpen ? 'border-b border-slate-100 dark:border-[#374151] rounded-t-2xl' : 'rounded-2xl hover:bg-slate-50 dark:hover:bg-white/[0.02]'}`}
-        onClick={() => onToggle(atividade.id)}
+        data-activity-id={atividade.id}
+        draggable
+        onDragStart={(e) => {
+          if (!dragFromHandle.current) { e.preventDefault(); return }
+          onDragStart(index)
+        }}
+        onDragEnter={() => onDragEnter(index)}
+        onDragEnd={() => { dragFromHandle.current = false; onDragEnd() }}
+        onDragOver={e => e.preventDefault()}
+        className={`rounded-2xl border overflow-visible transition-all
+          ${isOpen ? 'border-indigo-200 dark:border-indigo-500/30' : 'border-slate-200 dark:border-[#374151]'}
+          ${dragActiveIndex === index ? 'opacity-50' : ''}
+          ${dragOverIndex === index && dragActiveIndex !== index ? 'border-indigo-400 dark:border-indigo-400' : ''}
+          bg-white dark:bg-[var(--v2-card)]`}
       >
 
-        {/* Drag handle desktop */}
-        <span
-          className="hidden sm:inline text-slate-300 dark:text-[#374151] hover:text-indigo-400 text-lg cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
-          onPointerDown={e => { e.stopPropagation(); dragFromHandle.current = true }}
-        >⠿</span>
+        {/* ── Header row (sempre visível) ── */}
+        <div
+          className={`flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none
+            ${isOpen ? 'border-b border-slate-100 dark:border-[#374151] rounded-t-2xl' : 'rounded-2xl hover:bg-slate-50 dark:hover:bg-white/[0.02]'}`}
+          onClick={() => onToggle(atividade.id)}
+        >
 
-        {/* Reordenação mobile — só ↑ ↓ */}
-        <div className="flex sm:hidden gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
-          <button
-            type="button"
-            disabled={index === 0}
-            onClick={onMoveUp}
-            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg transition"
-          >↑</button>
-          <button
-            type="button"
-            disabled={index === atividadesCount - 1}
-            onClick={onMoveDown}
-            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg transition"
-          >↓</button>
+          {/* Drag handle desktop */}
+          <span
+            className="hidden sm:inline text-slate-300 dark:text-[#374151] hover:text-indigo-400 text-lg cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
+            onPointerDown={e => { e.stopPropagation(); dragFromHandle.current = true }}
+          >⠿</span>
+
+          {/* Reordenação mobile */}
+          <div className="flex sm:hidden gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+            <button
+              type="button"
+              disabled={index === 0}
+              onClick={onMoveUp}
+              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg transition"
+            >↑</button>
+            <button
+              type="button"
+              disabled={index === atividadesCount - 1}
+              onClick={onMoveDown}
+              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg transition"
+            >↓</button>
+          </div>
+
+          {/* Nome inline */}
+          <input
+            type="text"
+            value={atividade.nome}
+            onChange={e => onFieldChange(atividade.id, 'nome', e.target.value)}
+            onClick={e => e.stopPropagation()}
+            placeholder="Nome da atividade..."
+            className={`flex-1 min-w-0 bg-transparent border-none outline-none text-sm font-semibold placeholder:font-normal cursor-text
+              ${isOpen
+                ? 'text-slate-800 dark:text-white placeholder:text-slate-400/60'
+                : 'text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#4B5563]'}`}
+          />
+
+          {/* Indicador de fase (quando definida) */}
+          {atividade.tipoFase && (
+            <span
+              onClick={e => e.stopPropagation()}
+              className={`shrink-0 text-[10px] font-bold rounded-full px-1.5 py-px leading-tight ${
+                atividade.tipoFase === 'aquecimento'    ? 'bg-orange-100 dark:bg-orange-400/15 text-orange-500 dark:text-orange-400' :
+                atividade.tipoFase === 'desenvolvimento' ? 'bg-indigo-100 dark:bg-indigo-400/15 text-indigo-600 dark:text-indigo-400' :
+                                                           'bg-emerald-100 dark:bg-emerald-400/15 text-emerald-600 dark:text-emerald-400'
+              }`}
+            >
+              {atividade.tipoFase === 'aquecimento' ? '🔥' : atividade.tipoFase === 'desenvolvimento' ? '🎯' : '✅'}
+            </span>
+          )}
+
+          {/* Badge "Na biblioteca" */}
+          {atividade.bibliotecaId && (
+            <span
+              onClick={e => e.stopPropagation()}
+              className="shrink-0 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-100 dark:border-emerald-500/25 rounded-full px-1.5 py-px leading-tight"
+              title="Salva na biblioteca"
+            >
+              📚
+            </span>
+          )}
+
+          {/* Duração inline — apenas dígitos, exibe label "min" fixo */}
+          <div className="flex items-center gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={(atividade.duracao || '').toString().replace(/[^\d]/g, '')}
+              onChange={e => onFieldChange(atividade.id, 'duracao', e.target.value.replace(/[^\d]/g, ''))}
+              placeholder="–"
+              className={`w-[36px] text-right bg-transparent border-none outline-none text-xs font-semibold cursor-text
+                ${(atividade.duracao || '').toString().replace(/[^\d]/g, '').trim()
+                  ? 'text-slate-500 dark:text-[#9CA3AF]'
+                  : 'text-slate-300 dark:text-[#374151]'}`}
+            />
+            <span className={`text-xs font-semibold flex-shrink-0 ${
+              (atividade.duracao || '').toString().replace(/[^\d]/g, '').trim()
+                ? 'text-slate-400 dark:text-[#6B7280]'
+                : 'text-slate-200 dark:text-[#374151]'
+            }`}>min</span>
+          </div>
+
+          {/* Menu ··· */}
+          <div
+            ref={menuRef}
+            className="relative flex-shrink-0"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              title="Opções"
+              onClick={() => setMenuOpen(v => !v)}
+              className="w-7 h-7 flex items-center justify-center text-slate-300 dark:text-[#374151] hover:text-slate-500 dark:hover:text-[#9CA3AF] transition-colors rounded-lg text-base leading-none"
+            >
+              ···
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-white dark:bg-[#1F2937] border border-slate-200 dark:border-[#374151] rounded-xl shadow-xl py-1 min-w-[172px] z-[100]">
+                <button
+                  type="button"
+                  onClick={abrirModalSalvar}
+                  className="w-full text-left px-3 py-2 flex items-center gap-2 text-[12px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors"
+                >
+                  <span>📚</span>
+                  <span>{atividade.bibliotecaId ? 'Atualizar na biblioteca' : 'Salvar na biblioteca'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={duplicar}
+                  className="w-full text-left px-3 py-2 flex items-center gap-2 text-[12px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors"
+                >
+                  <span>📋</span>
+                  <span>Duplicar</span>
+                </button>
+                <div className="my-1 border-t border-slate-100 dark:border-[#374151]" />
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); onRemove(atividade.id) }}
+                  className="w-full text-left px-3 py-2 flex items-center gap-2 text-[12px] font-semibold text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                >
+                  <span>🗑</span>
+                  <span>Remover</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Chevron */}
+          <svg
+            className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-slate-400' : 'text-slate-300 dark:text-[#374151]'}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+          ><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+
         </div>
 
-        {/* Nome inline */}
-        <input
-          type="text"
-          value={atividade.nome}
-          onChange={e => onFieldChange(atividade.id, 'nome', e.target.value)}
-          onClick={e => e.stopPropagation()}
-          placeholder="Nome da atividade..."
-          className={`flex-1 min-w-0 bg-transparent border-none outline-none text-sm font-semibold placeholder:font-normal cursor-text
-            ${isOpen
-              ? 'text-slate-800 dark:text-white placeholder:text-slate-400/60'
-              : 'text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#4B5563]'}`}
-        />
+        {/* ── Corpo expandido ── */}
+        {isOpen && (
+          <div className="px-4 pt-4 pb-5 space-y-4">
 
-        {/* Duração inline */}
-        <input
-          type="text"
-          value={atividade.duracao || ''}
-          onChange={e => onFieldChange(atividade.id, 'duracao', e.target.value)}
-          onClick={e => e.stopPropagation()}
-          placeholder="Ex: 10 min"
-          className={`w-[72px] text-right bg-transparent border-none outline-none text-xs font-semibold flex-shrink-0 cursor-text
-            ${(atividade.duracao || '').trim()
-              ? 'text-slate-500 dark:text-[#9CA3AF]'
-              : 'text-slate-300 dark:text-[#374151]'}`}
-        />
-
-        {/* Deletar */}
-        <button
-          type="button"
-          title="Remover atividade"
-          onClick={e => { e.stopPropagation(); onRemove(atividade.id) }}
-          className="w-7 h-7 flex items-center justify-center text-slate-300 dark:text-[#374151] hover:text-rose-500 dark:hover:text-rose-400 transition-colors rounded-lg flex-shrink-0 text-lg leading-none"
-        >×</button>
-
-        {/* Chevron */}
-        <svg
-          className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-slate-400' : 'text-slate-300 dark:text-[#374151]'}`}
-          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
-        ><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
-
-      </div>
-
-      {/* ── Corpo expandido ── */}
-      {isOpen && (
-        <div className="px-4 pt-4 pb-5 space-y-4">
-
-          {/* Rich text + autocomplete # */}
-          <div className="relative">
-            <TipTapEditor
-              value={atividade.descricao}
-              onChange={val => onFieldChange(atividade.id, 'descricao', val)}
-              placeholder="Descreva como realizar esta atividade... (digite # para tags)"
-              onHashTrigger={(query, pos) =>
-                setHashDropdown({ query, pos, atividadeId: String(atividade.id) })
-              }
-              onHashCancel={() => setHashDropdown(null)}
-              onSaveAsStrategy={onSaveAsStrategy}
-            />
-            {/* Dropdown de tags ao digitar # */}
-            {hashDropdown && hashDropdown.atividadeId === String(atividade.id) && (() => {
-              const q = hashDropdown.query.toLowerCase()
-              const filtradas = todasAsTags.filter(t => !q || t.toLowerCase().startsWith(q))
-              const podeNovaTag = hashDropdown.query.trim() && !todasAsTags.includes(hashDropdown.query.trim())
-              if (filtradas.length === 0 && !podeNovaTag) return null
-              const addTag = (tag: string) => {
-                const curr = planoEditando.atividadesRoteiro[index]
-                if (!(curr.tags || []).includes(tag)) {
-                  updateArr(arr => { arr[index] = { ...arr[index], tags: [...(arr[index].tags || []), tag] }; return arr })
-                }
-                setHashDropdown(null)
-              }
+            {/* Fase da atividade */}
+            {(() => {
+              const FASES: { key: 'aquecimento' | 'desenvolvimento' | 'fechamento'; label: string; color: string; active: string }[] = [
+                { key: 'aquecimento',    label: '🔥 Aquecimento',    color: 'bg-orange-50 dark:bg-orange-400/10 text-orange-500 dark:text-orange-400 border border-orange-200 dark:border-orange-400/20 hover:bg-orange-100 dark:hover:bg-orange-400/20', active: 'bg-orange-500 text-white border border-orange-500' },
+                { key: 'desenvolvimento', label: '🎯 Desenvolvimento', color: 'bg-indigo-50 dark:bg-indigo-400/10 text-indigo-500 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-400/20 hover:bg-indigo-100 dark:hover:bg-indigo-400/20', active: 'bg-indigo-600 text-white border border-indigo-600' },
+                { key: 'fechamento',     label: '✅ Fechamento',     color: 'bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-400/20 hover:bg-emerald-100 dark:hover:bg-emerald-400/20', active: 'bg-emerald-600 text-white border border-emerald-600' },
+              ]
               return (
-                <div
-                  style={{ position: 'fixed', top: hashDropdown.pos.top + 4, left: hashDropdown.pos.left, zIndex: 9999 }}
-                  className="bg-white dark:bg-[#1F2937] border border-amber-200 dark:border-amber-500/30 rounded-xl shadow-xl py-1 min-w-[140px]"
-                >
-                  {filtradas.slice(0, 8).map(tag => (
-                    <button key={tag} type="button" onMouseDown={e => { e.preventDefault(); addTag(tag) }}
-                      className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-400/10 transition-colors">
-                      #{tag}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {FASES.map(f => (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => updateArr(arr => {
+                        arr[index] = { ...arr[index], tipoFase: atividade.tipoFase === f.key ? undefined : f.key }
+                        return arr
+                      })}
+                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${
+                        atividade.tipoFase === f.key ? f.active : f.color
+                      }`}
+                    >
+                      {f.label}
                     </button>
                   ))}
-                  {podeNovaTag && (
-                    <button type="button" onMouseDown={e => { e.preventDefault(); addTag(hashDropdown.query.trim()) }}
-                      className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-400/10 transition-colors border-t border-slate-100 dark:border-white/[0.06]">
-                      + criar #{hashDropdown.query.trim()}
-                    </button>
-                  )}
                 </div>
               )
             })()}
-          </div>
 
-          {/* ── Meta row ── */}
-          <div className="space-y-2.5">
-            {/* Chips existentes */}
-            {(
-              (atividade.musicasVinculadas || []).length > 0 ||
-              (atividade.estrategiasVinculadas || []).length > 0 ||
-              (atividade.conceitos || []).length > 0 ||
-              (atividade.tags || []).length > 0
-            ) && (
-              <div className="flex flex-wrap gap-1.5">
-                {(atividade.musicasVinculadas || []).map((m, mi) => (
-                  <span key={mi} className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
-                    🎵 {m.titulo}
-                    <button
-                      type="button"
-                      onClick={() => updateArr(arr => {
-                        arr[index] = {
-                          ...arr[index],
-                          musicasVinculadas: (arr[index].musicasVinculadas || []).filter((_, i) => i !== mi),
-                        }
-                        return arr
-                      })}
-                      className="hover:text-rose-500 ml-0.5 leading-none"
-                    >×</button>
-                  </span>
-                ))}
-                {(atividade.estrategiasVinculadas || []).map((nome, ei) => (
-                  <span key={ei} className="inline-flex items-center gap-1 bg-violet-50 dark:bg-violet-400/10 text-violet-600 dark:text-violet-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
-                    🧩 {nome}
-                    <button
-                      type="button"
-                      onClick={() => updateArr(arr => {
-                        arr[index] = {
-                          ...arr[index],
-                          estrategiasVinculadas: (arr[index].estrategiasVinculadas || []).filter((_, i) => i !== ei),
-                        }
-                        return arr
-                      })}
-                      className="hover:text-rose-500 ml-0.5 leading-none"
-                    >×</button>
-                  </span>
-                ))}
-                {(atividade.conceitos || []).map((c, ci) => (
-                  <span key={ci} className="inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-400/10 text-purple-600 dark:text-purple-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
-                    🎓 {c}
-                    <button
-                      type="button"
-                      onClick={() => updateArr(arr => {
-                        arr[index] = {
-                          ...arr[index],
-                          conceitos: (arr[index].conceitos || []).filter((_, i) => i !== ci),
-                        }
-                        return arr
-                      })}
-                      className="hover:text-rose-500 ml-0.5 leading-none"
-                    >×</button>
-                  </span>
-                ))}
-                {(atividade.tags || []).map((t, ti) => (
-                  <span key={ti} className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-400/10 text-amber-600 dark:text-amber-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
-                    #{t}
-                    <button
-                      type="button"
-                      onClick={() => updateArr(arr => {
-                        arr[index] = {
-                          ...arr[index],
-                          tags: (arr[index].tags || []).filter((_, i) => i !== ti),
-                        }
-                        return arr
-                      })}
-                      className="hover:text-rose-500 ml-0.5 leading-none"
-                    >×</button>
-                  </span>
-                ))}
-              </div>
-            )}
+            {/* Rich text + autocomplete # */}
+            <div className="relative">
+              <TipTapEditor
+                value={atividade.descricao}
+                onChange={val => onFieldChange(atividade.id, 'descricao', val)}
+                placeholder="Descreva como realizar esta atividade... (digite # para tags)"
+                onHashTrigger={(query, pos) =>
+                  setHashDropdown({ query, pos, atividadeId: String(atividade.id) })
+                }
+                onHashCancel={() => setHashDropdown(null)}
+                onSaveAsStrategy={texto => setPanelEstrategia({ texto })}
+                onEditorBlur={handleEditorBlur}
+              />
+              {/* Dropdown de tags ao digitar # */}
+              {hashDropdown && hashDropdown.atividadeId === String(atividade.id) && (() => {
+                const q = hashDropdown.query.toLowerCase()
+                const filtradas = todasAsTags.filter(t => !q || t.toLowerCase().startsWith(q))
+                const podeNovaTag = hashDropdown.query.trim() && !todasAsTags.includes(hashDropdown.query.trim())
+                if (filtradas.length === 0 && !podeNovaTag) return null
+                const addTag = (tag: string) => {
+                  const curr = planoEditando.atividadesRoteiro[index]
+                  if (!(curr.tags || []).includes(tag)) {
+                    updateArr(arr => { arr[index] = { ...arr[index], tags: [...(arr[index].tags || []), tag] }; return arr })
+                  }
+                  setHashDropdown(null)
+                }
+                return (
+                  <div
+                    style={{ position: 'fixed', top: hashDropdown.pos.top + 4, left: hashDropdown.pos.left, zIndex: 9999 }}
+                    className="bg-white dark:bg-[#1F2937] border border-amber-200 dark:border-amber-500/30 rounded-xl shadow-xl py-1 min-w-[140px]"
+                  >
+                    {filtradas.slice(0, 8).map(tag => (
+                      <button key={tag} type="button" onMouseDown={e => { e.preventDefault(); addTag(tag) }}
+                        className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-400/10 transition-colors">
+                        #{tag}
+                      </button>
+                    ))}
+                    {podeNovaTag && (
+                      <button type="button" onMouseDown={e => { e.preventDefault(); addTag(hashDropdown.query.trim()) }}
+                        className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-400/10 transition-colors border-t border-slate-100 dark:border-white/[0.06]">
+                        + criar #{hashDropdown.query.trim()}
+                      </button>
+                    )}
+                  </div>
+                )
+              })()}
+            </div>
 
-            {/* Botões de adicionar */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <input
-                type="text"
-                placeholder="+ Conceito  Enter ↵"
-                onKeyDown={(e) => {
-                  const t = e.target as HTMLInputElement
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    const val = t.value.trim()
-                    if (val && !(atividade.conceitos || []).includes(val)) {
-                      updateArr(arr => {
-                        arr[index] = { ...arr[index], conceitos: [...(arr[index].conceitos || []), val] }
-                        return arr
-                      })
-                      t.value = ''
-                    }
-                  }
-                }}
-                className="text-[11px] font-semibold text-purple-500 dark:text-purple-400 bg-transparent border-none outline-none placeholder:text-purple-400/70 dark:placeholder:text-purple-400/40 w-36"
-              />
-              <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
-              <input
-                type="text"
-                placeholder="#tag  Enter ↵"
-                onKeyDown={(e) => {
-                  const t = e.target as HTMLInputElement
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    const val = t.value.trim().replace(/^#/, '')
-                    if (val && !(atividade.tags || []).includes(val)) {
-                      updateArr(arr => {
-                        arr[index] = { ...arr[index], tags: [...(arr[index].tags || []), val] }
-                        return arr
-                      })
-                      t.value = ''
-                    }
-                  }
-                }}
-                className="text-[11px] font-semibold text-amber-500 dark:text-amber-400 bg-transparent border-none outline-none placeholder:text-amber-400/70 dark:placeholder:text-amber-400/40 w-24"
-              />
-              {/* Botão salvar no banco — visível em hover */}
-              {atividade.nome?.trim() && (
-                <>
-                  <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
-                  <button
-                    type="button"
-                    onClick={saveToBank}
-                    className="text-[11px] font-semibold text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                    title="Salvar esta atividade no Banco de Atividades"
-                  >💾 Banco</button>
-                </>
+            {/* ── Meta row ── */}
+            <div className="space-y-2.5">
+              {/* Chips existentes */}
+              {(
+                (atividade.musicasVinculadas || []).length > 0 ||
+                (atividade.estrategiasVinculadas || []).length > 0 ||
+                (atividade.conceitos || []).length > 0 ||
+                (atividade.tags || []).length > 0
+              ) && (
+                <div className="flex flex-wrap gap-1.5">
+                  {(atividade.musicasVinculadas || []).map((m, mi) => (
+                    <span key={mi} className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                      🎵 {m.titulo}
+                      <button
+                        type="button"
+                        onClick={() => updateArr(arr => {
+                          arr[index] = { ...arr[index], musicasVinculadas: (arr[index].musicasVinculadas || []).filter((_, i) => i !== mi) }
+                          return arr
+                        })}
+                        className="hover:text-rose-500 ml-0.5 leading-none"
+                      >×</button>
+                    </span>
+                  ))}
+                  {(atividade.estrategiasVinculadas || []).map((nome, ei) => (
+                    <span key={ei} className="inline-flex items-center gap-1 bg-violet-50 dark:bg-violet-400/10 text-violet-600 dark:text-violet-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                      🧩 {nome}
+                      <button
+                        type="button"
+                        onClick={() => updateArr(arr => {
+                          arr[index] = { ...arr[index], estrategiasVinculadas: (arr[index].estrategiasVinculadas || []).filter((_, i) => i !== ei) }
+                          return arr
+                        })}
+                        className="hover:text-rose-500 ml-0.5 leading-none"
+                      >×</button>
+                    </span>
+                  ))}
+                  {(atividade.conceitos || []).map((c, ci) => (
+                    <span key={ci} className="inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-400/10 text-purple-600 dark:text-purple-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                      🎓 {c}
+                      <button
+                        type="button"
+                        onClick={() => updateArr(arr => {
+                          arr[index] = { ...arr[index], conceitos: (arr[index].conceitos || []).filter((_, i) => i !== ci) }
+                          return arr
+                        })}
+                        className="hover:text-rose-500 ml-0.5 leading-none"
+                      >×</button>
+                    </span>
+                  ))}
+                  {(atividade.tags || []).map((t, ti) => (
+                    <span key={ti} className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-400/10 text-amber-600 dark:text-amber-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                      #{t}
+                      <button
+                        type="button"
+                        onClick={() => updateArr(arr => {
+                          arr[index] = { ...arr[index], tags: (arr[index].tags || []).filter((_, i) => i !== ti) }
+                          return arr
+                        })}
+                        className="hover:text-rose-500 ml-0.5 leading-none"
+                      >×</button>
+                    </span>
+                  ))}
+                </div>
               )}
+
+              {/* Inputs de adicionar */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <input
+                  type="text"
+                  placeholder="+ Conceito  Enter ↵"
+                  onKeyDown={(e) => {
+                    const t = e.target as HTMLInputElement
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      const val = t.value.trim()
+                      if (val && !(atividade.conceitos || []).includes(val)) {
+                        updateArr(arr => {
+                          arr[index] = { ...arr[index], conceitos: [...(arr[index].conceitos || []), val] }
+                          return arr
+                        })
+                        t.value = ''
+                      }
+                    }
+                  }}
+                  className="text-[11px] font-semibold text-purple-500 dark:text-purple-400 bg-transparent border-none outline-none placeholder:text-purple-400/70 dark:placeholder:text-purple-400/40 w-36"
+                />
+                <span className="text-slate-200 dark:text-[#374151] text-xs">·</span>
+                <input
+                  type="text"
+                  placeholder="#tag  Enter ↵"
+                  onKeyDown={(e) => {
+                    const t = e.target as HTMLInputElement
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      const val = t.value.trim().replace(/^#/, '')
+                      if (val && !(atividade.tags || []).includes(val)) {
+                        updateArr(arr => {
+                          arr[index] = { ...arr[index], tags: [...(arr[index].tags || []), val] }
+                          return arr
+                        })
+                        t.value = ''
+                      }
+                    }
+                  }}
+                  className="text-[11px] font-semibold text-amber-500 dark:text-amber-400 bg-transparent border-none outline-none placeholder:text-amber-400/70 dark:placeholder:text-amber-400/40 w-24"
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
+      </div>
+
+      {/* ── Modal de salvar na biblioteca ── */}
+      {showSalvarModal && (
+        <ModalSalvarNaBiblioteca
+          nome={atividade.nome}
+          chips={chipsModal}
+          isLoading={isGeminiLoading}
+          onChipRemove={chip => setChipsModal(prev => prev.filter(c => c !== chip))}
+          onChipAdd={chip => setChipsModal(prev => [...prev, chip])}
+          onSave={confirmarSalvarNaBiblioteca}
+          onCancel={() => setShowSalvarModal(false)}
+        />
       )}
-    </div>
+
+      {/* ── Slide-in panel de salvar estratégia ── */}
+      {panelEstrategia && (
+        <SlideInEstrategia
+          textoCapturado={panelEstrategia.texto}
+          onSalvar={(nome, categoria) => {
+            adicionarEstrategiaRapida(nome, categoria)
+            setPanelEstrategia(null)
+          }}
+          onCancelar={() => setPanelEstrategia(null)}
+        />
+      )}
+    </>
   )
 })
 

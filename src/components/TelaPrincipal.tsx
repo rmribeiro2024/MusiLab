@@ -416,8 +416,10 @@ export default function TelaPrincipal() {
     const [modalConceitosPlano, setModalConceitosPlano] = useState<{ planoId: string; conceitos: string[] } | null>(null)
     const [detectandoConceitos, setDetectandoConceitos] = useState(false)
 
-    // ── Modo Rápido ──
-    const [modoRapido, setModoRapido] = useState(false)
+    // ── Modo do formulário: rápido | completo | detalhado ──
+    const [modoForm, setModoForm] = useState<'rapido' | 'completo' | 'detalhado'>('completo')
+    const modoRapido = modoForm === 'rapido'
+    const modoDetalhado = modoForm === 'detalhado'
 
     // ── Modo Leitura ──
     const [modoLeitura, setModoLeitura] = useState(false)
@@ -674,11 +676,24 @@ export default function TelaPrincipal() {
                         title="Modo Leitura: trava edição para apresentar no projetor">
                         👁 Leitura
                     </button>
-                    <button type="button" onClick={() => setModoRapido(v => !v)}
-                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${modoRapido ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700' : 'bg-slate-100 dark:bg-[#374151] text-slate-400 dark:text-[#9CA3AF] border-transparent hover:bg-slate-200 dark:hover:bg-[#4B5563]'}`}
-                        title="Modo Rápido: oculta campos avançados">
-                        ⚡ Rápido
-                    </button>
+                    {/* Seletor 3 camadas: rápido · completo · detalhado */}
+                    <div className="flex bg-slate-100 dark:bg-[#374151] rounded-xl p-0.5 gap-0.5" title="Modo do formulário">
+                        {([
+                            { key: 'rapido',    icon: '⚡', title: 'Rápido: só roteiro e dados essenciais' },
+                            { key: 'completo',  icon: '📋', title: 'Completo: + objetivos e avaliação' },
+                            { key: 'detalhado', icon: '🔬', title: 'Detalhado: todos os campos' },
+                        ] as const).map(m => (
+                            <button key={m.key} type="button"
+                                onClick={() => setModoForm(m.key)}
+                                title={m.title}
+                                className={`text-xs font-semibold px-2.5 py-1 rounded-[9px] transition-all ${
+                                    modoForm === m.key
+                                        ? 'bg-white dark:bg-[#1F2937] text-slate-700 dark:text-white shadow-sm'
+                                        : 'text-slate-400 dark:text-[#6B7280] hover:text-slate-600 dark:hover:text-[#9CA3AF]'
+                                }`}
+                            >{m.icon}</button>
+                        ))}
+                    </div>
                     <button onClick={()=>toggleFavorito(planoEditando)} className={`text-xs px-2.5 py-1.5 rounded-xl transition-colors ${planoEditando.destaque ? 'bg-amber-100 text-amber-700 border border-amber-200 font-semibold' : 'bg-slate-100 dark:bg-[#374151] text-slate-400 dark:text-[#9CA3AF] hover:bg-slate-200 dark:hover:bg-[#4B5563]'}`}>
                         {planoEditando.destaque ? '★' : '☆'}
                     </button>
@@ -750,7 +765,7 @@ export default function TelaPrincipal() {
                     {faixas.length > 1 && (
                         <div>
                             <div className="flex items-center justify-between mb-2">
-                                <label className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide">Nível</label>
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide">Faixa Etária / Turma</label>
                                 <button type="button" onClick={() => setGerenciarNiveisOpen(v => !v)}
                                     className={`text-[11px] font-semibold transition-colors ${gerenciarNiveisOpen ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:text-[#6B7280] dark:hover:text-slate-300'}`}>
                                     {gerenciarNiveisOpen ? '✕ Fechar' : 'Gerenciar →'}
@@ -800,10 +815,29 @@ export default function TelaPrincipal() {
                             )}
                         </div>
                     )}
+
+                    {/* Nível Musical — separado de Faixa Etária (F2.5) */}
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-[#6B7280] uppercase tracking-wide mb-2">Nível Musical</label>
+                        <div className="flex gap-1.5 flex-wrap">
+                            {(['Iniciante', 'Intermediário', 'Avançado', 'Misto'] as const).map(nivel => (
+                                <button
+                                    key={nivel}
+                                    type="button"
+                                    onClick={() => setPlanoEditando({...planoEditando, nivelMusical: planoEditando.nivelMusical === nivel ? undefined : nivel})}
+                                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                                        planoEditando.nivelMusical === nivel
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-[#6B7280] hover:bg-slate-200 dark:hover:bg-white/[0.10]'
+                                    }`}
+                                >{nivel}</button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
                 {/* ════════════ ACCORDION: CONTEXTO ════════════ */}
-                {!modoRapido && (
+                {modoDetalhado && (
                 <div className="border-b border-slate-100">
                     <button type="button" onClick={() => toggleSecaoForm('contexto')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
                         <div className="min-w-0">
@@ -1322,31 +1356,79 @@ export default function TelaPrincipal() {
                                     {gerandoObjetivos ? '⏳ Gerando...' : '✨ Gerar com IA'}
                                 </button>
                             </div>
+
+                            {/* Objetivo Geral — input 1 linha */}
                             <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivo Geral *</label>
-                                <RichTextEditor
-                                    value={planoEditando.objetivoGeral}
-                                    onChange={val => setPlanoEditando({...planoEditando, objetivoGeral: val})}
-                                    placeholder="Descreva o objetivo geral da aula..."
-                                    rows={3}
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">🎯 Objetivo Geral *</label>
+                                <textarea
+                                    value={(planoEditando.objetivoGeral || '').replace(/<[^>]+>/g, '')}
+                                    onChange={e => setPlanoEditando({...planoEditando, objetivoGeral: e.target.value})}
+                                    placeholder="O que o aluno deverá ser capaz de fazer ao final desta aula?"
+                                    rows={2}
+                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#374151] rounded-xl text-sm text-slate-700 dark:text-slate-200 bg-white dark:bg-[var(--v2-card)] placeholder:text-slate-400 dark:placeholder:text-[#4B5563] focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-500 resize-none transition-colors"
                                 />
                             </div>
+
+                            {/* Objetivos Específicos — lista dinâmica, máx 3 */}
                             <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">🎯 Objetivos Específicos</label>
-                                <RichTextEditor
-                                    value={(() => {
-                                        const objs = planoEditando.objetivosEspecificos
-                                        if (!Array.isArray(objs)) return objs ?? ''
-                                        if (objs.length === 0) return ''
-                                        // Itens já em HTML (novo formato): usar o primeiro elemento direto
-                                        if (typeof objs[0] === 'string' && objs[0].startsWith('<')) return objs[0]
-                                        // Itens em texto simples (formato legado): envolver em lista
-                                        return '<ul>' + objs.map(o => `<li>${o}</li>`).join('') + '</ul>'
-                                    })()}
-                                    onChange={val => setPlanoEditando({...planoEditando, objetivosEspecificos: [val]})}
-                                    placeholder="Liste os objetivos específicos da aula..."
-                                    rows={5}
-                                />
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+                                    🎯 Objetivos Específicos
+                                    <span className="ml-1 font-normal normal-case text-slate-400 dark:text-[#4B5563]">(máx. 3)</span>
+                                </label>
+                                {(() => {
+                                    // Normaliza array: lida com legado HTML e strings simples
+                                    const rawObjs = planoEditando.objetivosEspecificos || []
+                                    const objs: string[] = (() => {
+                                        if (rawObjs.length === 0) return []
+                                        if (rawObjs.length === 1 && typeof rawObjs[0] === 'string' && rawObjs[0].startsWith('<')) {
+                                            // Legado: HTML em um único item — extrai texto de cada <li>
+                                            return rawObjs[0]
+                                                .replace(/<\/?(ul|ol)>/gi, '')
+                                                .split(/<\/li>/i)
+                                                .map(s => s.replace(/<[^>]+>/g, '').trim())
+                                                .filter(Boolean)
+                                        }
+                                        return rawObjs.filter(Boolean)
+                                    })()
+                                    const setObjs = (next: string[]) => setPlanoEditando({...planoEditando, objetivosEspecificos: next})
+                                    return (
+                                        <div className="space-y-1.5">
+                                            {objs.map((obj, i) => (
+                                                <div key={i} className="flex items-start gap-2 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-[#374151] rounded-xl px-3 py-2">
+                                                    <span className="text-[11px] font-bold text-indigo-500 dark:text-indigo-400 mt-0.5 shrink-0">{i + 1}.</span>
+                                                    <input
+                                                        type="text"
+                                                        value={obj}
+                                                        onChange={e => {
+                                                            const next = [...objs]
+                                                            next[i] = e.target.value
+                                                            setObjs(next)
+                                                        }}
+                                                        className="flex-1 text-sm text-slate-700 dark:text-slate-200 bg-transparent border-none outline-none placeholder:text-slate-400 dark:placeholder:text-[#4B5563]"
+                                                        placeholder="Descreva um objetivo específico..."
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setObjs(objs.filter((_, j) => j !== i))}
+                                                        className="shrink-0 text-slate-300 hover:text-red-500 dark:text-[#374151] dark:hover:text-red-400 transition-colors text-sm leading-none mt-0.5"
+                                                    >×</button>
+                                                </div>
+                                            ))}
+                                            {objs.length < 3 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setObjs([...objs, ''])}
+                                                    className="text-xs font-semibold text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
+                                                >
+                                                    + Adicionar objetivo
+                                                </button>
+                                            )}
+                                            {objs.length === 0 && (
+                                                <p className="text-xs text-slate-400 dark:text-[#4B5563] italic">Nenhum objetivo específico. Clique em "+ Adicionar" para incluir.</p>
+                                            )}
+                                        </div>
+                                    )
+                                })()}
                             </div>
                         </div>
                     )}
@@ -1354,7 +1436,7 @@ export default function TelaPrincipal() {
                 )}
 
                 {/* ════════════ ACCORDION: CLASSIFICAÇÃO PEDAGÓGICA ════════════ */}
-                {!modoRapido && (
+                {modoDetalhado && (
                 <div className="border-b border-slate-100">
                     <button type="button" onClick={() => toggleSecaoForm('classificacao')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
                         <div className="min-w-0">
@@ -1592,7 +1674,7 @@ export default function TelaPrincipal() {
                                                     <span className={`text-[10px] font-bold uppercase tracking-wide ${cor.split(' ').slice(2).join(' ')}`}>{label}</span>
                                                     <a href={rec.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-400 hover:underline truncate block">{rec.url}</a>
                                                 </div>
-                                                {!modoRapido && (
+                                                {modoDetalhado && (
                                                     <button type="button" onClick={() => removerRecurso(idx)} className="text-slate-300 hover:text-red-500 transition shrink-0 text-xs mt-0.5">✕</button>
                                                 )}
                                             </div>
@@ -1604,7 +1686,7 @@ export default function TelaPrincipal() {
                             ) : null}
 
                             {/* ── O que preciso levar (materiais físicos — fusão de materiais + materiaisNecessarios) ── */}
-                            {!modoRapido && (() => {
+                            {modoDetalhado && (() => {
                                 // Fusão dos dois arrays, sem duplicatas
                                 const todosMat = [
                                     ...planoEditando.materiais,
@@ -1710,7 +1792,7 @@ export default function TelaPrincipal() {
                 )}
 
                 {/* ════════════ ACCORDION: BNCC ════════════ */}
-                {!modoRapido && (
+                {modoDetalhado && (
                 <div className="border-b border-slate-100">
                     <button type="button" onClick={() => toggleSecaoForm('bncc')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
                         <div className="min-w-0">
@@ -1756,6 +1838,52 @@ export default function TelaPrincipal() {
                     )
                 })()}
 
+
+                {/* ─── ALERTAS PEDAGÓGICOS AUTOMÁTICOS ─── */}
+                {(() => {
+                    const atividades = planoEditando.atividadesRoteiro || []
+                    const musicas = planoEditando.musicasVinculadasPlano || []
+                    const alertas: { icon: string; texto: string }[] = []
+
+                    // 1. Roteiro com atividades mas sem fechamento
+                    if (atividades.length >= 2) {
+                        const temFechamento = atividades.some(a => a.tipoFase === 'fechamento')
+                        if (!temFechamento) {
+                            alertas.push({ icon: '✅', texto: 'Roteiro sem atividade de Fechamento' })
+                        }
+                    }
+                    // 2. Sem músicas vinculadas
+                    if (musicas.length === 0 && (planoEditando.titulo || '').trim()) {
+                        alertas.push({ icon: '🎵', texto: 'Nenhuma música vinculada ao plano' })
+                    }
+                    // 3. Objetivos preenchidos mas roteiro vazio
+                    const temObjetivos = (planoEditando.objetivoGeral || '').replace(/<[^>]+>/g,'').trim() ||
+                                        (planoEditando.objetivosEspecificos || []).filter(Boolean).length > 0
+                    if (temObjetivos && atividades.length === 0) {
+                        alertas.push({ icon: '📋', texto: 'Objetivos definidos mas roteiro vazio' })
+                    }
+                    // 4. Avaliação vazia
+                    const temAvaliacao = (planoEditando.avaliacaoEvidencia || '').trim() ||
+                                        (planoEditando.avaliacaoFechamento || '').trim() ||
+                                        (planoEditando.avaliacaoObservacoes || '').trim()
+                    if (!temAvaliacao && (planoEditando.titulo || '').trim()) {
+                        alertas.push({ icon: '📊', texto: 'Avaliação não preenchida' })
+                    }
+
+                    if (alertas.length === 0) return null
+                    return (
+                        <div className="px-3 sm:px-6 pb-4 pt-2">
+                            <div className="flex flex-wrap gap-1.5">
+                                {alertas.map((a, i) => (
+                                    <span key={i} className="inline-flex items-center gap-1 text-[11px] font-semibold bg-amber-50 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-400/25 px-2.5 py-1 rounded-lg">
+                                        <span className="text-xs">{a.icon}</span>
+                                        {a.texto}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )
+                })()}
 
                 {/* ─── FOOTER STICKY ─── */}
                 <div className={`px-3 sm:px-4 py-3 sm:py-4 bg-white border-t border-slate-100 sticky bottom-0 ${modoLeitura ? 'pointer-events-none opacity-40' : ''}`}>
