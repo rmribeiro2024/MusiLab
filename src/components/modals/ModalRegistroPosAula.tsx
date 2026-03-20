@@ -545,7 +545,10 @@ export default function ModalRegistroPosAula() {
                             const criterio = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
                             const temConteudo = objetivo || roteiro.length > 0 || criterio
                             return (
-                                <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+                                <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, position: 'relative' }}>
+                                    <button onClick={() => setPlanejadoAberto(false)} title="Fechar" style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#94a3b8', lineHeight: 1, padding: 2 }}
+                                        onMouseOver={e => (e.currentTarget.style.color = '#475569')}
+                                        onMouseOut={e  => (e.currentTarget.style.color = '#94a3b8')}>✕</button>
                                     {!temConteudo && (
                                         <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Este plano não tem objetivo, roteiro ou critério preenchidos.</p>
                                     )}
