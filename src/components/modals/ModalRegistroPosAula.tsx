@@ -1369,7 +1369,12 @@ export default function ModalRegistroPosAula() {
                                         const hojeStr2 = new Date().toISOString().split('T')[0]
                                         const seg2 = (() => { const h = new Date(); const d = h.getDay(); const diff = d === 0 ? -6 : 1 - d; const s = new Date(h); s.setDate(h.getDate() + diff); return s.toISOString().split('T')[0] })()
                                         const fim2 = (() => { const s = new Date(seg2 + 'T00:00:00'); s.setDate(s.getDate() + 6); return s.toISOString().split('T')[0] })()
-                                        const regs = (planoParaRegistro.registrosPosAula || []).filter(r => {
+                                        // Quando há filtro de turma, busca em todos os planos (histórico cross-plan)
+                                        const todosRegsPool: any[] = filtroRegTurma
+                                            ? planos.flatMap((p: any) => (p.registrosPosAula || []).map((r: any) => ({ ...r, planoTitulo: p.titulo, planoId: p.id })))
+                                            : (planoParaRegistro.registrosPosAula || []).map((r: any) => ({ ...r, planoTitulo: planoParaRegistro.titulo, planoId: planoParaRegistro.id }))
+
+                                        const regs = todosRegsPool.filter((r: any) => {
                                             if (filtroRegTurma) {
                                                 if (r.turma != filtroRegTurma) return false
                                             } else if (filtroRegData) {
@@ -1431,27 +1436,37 @@ export default function ModalRegistroPosAula() {
                                                     let urlEvidenciaValida = false
                                                     try { urlEvidenciaValida = !!(reg as any).urlEvidencia && !!new URL((reg as any).urlEvidencia) } catch { urlEvidenciaValida = false }
 
+                                                    const isOutroPlano = (reg as any).planoId !== planoParaRegistro.id
+
                                                     return (
                                                         <div key={reg.id ?? i} style={{ border: registroEditando?.id === reg.id ? '1px solid #94a3b8' : '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', background: registroEditando?.id === reg.id ? '#f8fafc' : '#fff' }}>
                                                             {/* Cabeçalho clicável */}
                                                             <div onClick={toggleReg}
                                                                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', cursor: 'pointer', background: isOpen ? '#f8fafc' : '#fff', borderBottom: isOpen ? '1px solid #e2e8f0' : 'none' }}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
                                                                     {turmaLabel && (
-                                                                        <span style={{ fontSize: 10, fontWeight: 700, background: '#e0f2fe', color: '#0284c7', padding: '2px 8px', borderRadius: 99 }}>{turmaLabel}</span>
+                                                                        <span style={{ fontSize: 10, fontWeight: 700, background: '#e0f2fe', color: '#0284c7', padding: '2px 8px', borderRadius: 99, flexShrink: 0 }}>{turmaLabel}</span>
                                                                     )}
-                                                                    <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{dataFmt}</span>
-                                                                    {isHoje && <span style={{ fontSize: 11, color: '#3b82f6', fontWeight: 600 }}>hoje</span>}
-                                                                    {reg.dataEdicao && <span style={{ fontSize: 11, color: '#93c5fd' }}>· editado</span>}
-                                                                    {(reg as any).audioNotaDeVoz && <span title="Tem nota de voz" style={{ fontSize: 12 }}>🎙️</span>}
+                                                                    <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', flexShrink: 0 }}>{dataFmt}</span>
+                                                                    {isHoje && <span style={{ fontSize: 11, color: '#3b82f6', fontWeight: 600, flexShrink: 0 }}>hoje</span>}
+                                                                    {reg.dataEdicao && <span style={{ fontSize: 11, color: '#93c5fd', flexShrink: 0 }}>· editado</span>}
+                                                                    {(reg as any).audioNotaDeVoz && <span title="Tem nota de voz" style={{ fontSize: 12, flexShrink: 0 }}>🎙️</span>}
+                                                                    {isOutroPlano && (reg as any).planoTitulo && (
+                                                                        <span style={{ fontSize: 10, color: '#64748b', background: '#f1f5f9', border: '1px solid #e2e8f0', padding: '1px 6px', borderRadius: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }} title={(reg as any).planoTitulo}>
+                                                                            {(reg as any).planoTitulo}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                                    <button onClick={e => { e.stopPropagation(); editarRegistro(reg) }}
-                                                                        style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }} title="Editar">✏️</button>
-                                                                    <button onClick={e => { e.stopPropagation(); if (copiandoRegId === (reg.id ?? i)) { setCopiandoRegId(null); setTurmasCopiar(new Set()); setCopiarOutroDia('') } else { setCopiandoRegId(reg.id ?? i); setTurmasCopiar(new Set()); setCopiarOutroDia('') } }}
-                                                                        style={{ padding: '3px 7px', fontSize: 11, color: copiandoRegId === (reg.id ?? i) ? '#2563eb' : '#94a3b8', border: `1px solid ${copiandoRegId === (reg.id ?? i) ? '#93c5fd' : '#e2e8f0'}`, borderRadius: 6, background: copiandoRegId === (reg.id ?? i) ? '#eff6ff' : '#fff', cursor: 'pointer' }} title="Copiar para outras turmas">📋</button>
-                                                                    <button onClick={e => { e.stopPropagation(); excluirRegistro(reg.id) }}
-                                                                        style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }} title="Excluir">🗑️</button>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                                                                    {!isOutroPlano && <>
+                                                                        <button onClick={e => { e.stopPropagation(); editarRegistro(reg) }}
+                                                                            style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }} title="Editar">✏️</button>
+                                                                        <button onClick={e => { e.stopPropagation(); if (copiandoRegId === (reg.id ?? i)) { setCopiandoRegId(null); setTurmasCopiar(new Set()); setCopiarOutroDia('') } else { setCopiandoRegId(reg.id ?? i); setTurmasCopiar(new Set()); setCopiarOutroDia('') } }}
+                                                                            style={{ padding: '3px 7px', fontSize: 11, color: copiandoRegId === (reg.id ?? i) ? '#2563eb' : '#94a3b8', border: `1px solid ${copiandoRegId === (reg.id ?? i) ? '#93c5fd' : '#e2e8f0'}`, borderRadius: 6, background: copiandoRegId === (reg.id ?? i) ? '#eff6ff' : '#fff', cursor: 'pointer' }} title="Copiar para outras turmas">📋</button>
+                                                                        <button onClick={e => { e.stopPropagation(); excluirRegistro(reg.id) }}
+                                                                            style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }} title="Excluir">🗑️</button>
+                                                                    </>
+                                                                    }
                                                                     <span style={{ fontSize: 10, color: '#94a3b8', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
                                                                 </div>
                                                             </div>
