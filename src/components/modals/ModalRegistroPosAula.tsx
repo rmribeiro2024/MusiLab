@@ -406,7 +406,29 @@ export default function ModalRegistroPosAula() {
     const timerIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null)
     const MAX_DURACAO_AUDIO = 60
     const [mostrarAvancados, setMostrarAvancados] = React.useState(false)
-    const [editandoTurma, setEditandoTurma] = React.useState(false)
+    const [seletorTurma, setSeletorTurma] = React.useState(false)
+    const [seletorEscola, setSeletorEscola] = React.useState(false)
+    const [modoCompacto, setModoCompacto] = React.useState(false)
+    const [semanaOffset, setSemanaOffset] = React.useState(0)
+    const [editandoData, setEditandoData] = React.useState(false)
+    const getWeekDays = (offset: number) => {
+        const today = new Date()
+        const dow = today.getDay()
+        const monday = new Date(today)
+        monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1) + offset * 7)
+        return Array.from({ length: 6 }, (_, i) => { const d = new Date(monday); d.setDate(monday.getDate() + i); return d })
+    }
+    const seletorRef = React.useRef<HTMLDivElement>(null)
+    React.useEffect(() => {
+        if (!seletorTurma && !seletorEscola) return
+        const handler = (e: MouseEvent) => {
+            if (seletorRef.current && !seletorRef.current.contains(e.target as Node)) {
+                setSeletorTurma(false); setSeletorEscola(false)
+            }
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [seletorTurma, seletorEscola])
     // Opcao A — painel "O que foi planejado" (header)
     const [planejadoAberto, setPlanejadoAberto] = React.useState(false)
     // Painel inline no form (chip dentro do scroll)
@@ -653,48 +675,155 @@ export default function ModalRegistroPosAula() {
                             {!verRegistros ? (
                                 <>
 
-                                    {/* Turma + Data — compacto quando selecionado */}
-                                    {regTurmaSel && !editandoTurma ? (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-                                            {(() => {
-                                                const ano = anosLetivos.find(a => a.id == regAnoSel)
-                                                const esc = ano?.escolas.find(e => e.id == regEscolaSel)
-                                                const seg = esc?.segmentos.find(s => s.id == regSegmentoSel)
-                                                const tur = seg?.turmas.find(t => t.id == regTurmaSel)
-                                                const [y, m, d] = (novoRegistro.dataAula || '').split('-')
-                                                const dataFmt = d && m && y ? `${d}/${m}/${y}` : novoRegistro.dataAula
+                                    {/* Turma + Data — linha compacta (sempre visível quando turma selecionada) */}
+                                    {(regTurmaSel || modoCompacto) ? (
+                                        <div ref={seletorRef} style={{ position: 'relative' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                                                {(() => {
+                                                    const ano = anosLetivos.find(a => a.id == regAnoSel)
+                                                    const esc = ano?.escolas.find(e => e.id == regEscolaSel)
+                                                    const seg = esc?.segmentos.find(s => s.id == regSegmentoSel)
+                                                    const tur = seg?.turmas.find(t => t.id == regTurmaSel)
+                                                    const [y, m, d] = (novoRegistro.dataAula || '').split('-')
+                                                    const dataFmt = d && m && y ? `${d}/${m}/${y}` : novoRegistro.dataAula
+                                                    return (
+                                                        <span style={{ fontSize: 13, flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 0 }}>
+                                                            {/* Turma — abre só turmas */}
+                                                            <button type="button" onClick={() => { setSeletorTurma(v => !v); setSeletorEscola(false) }}
+                                                                style={{ fontWeight: 700, fontSize: 13, color: seletorTurma ? '#6366f1' : '#1e293b', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                                                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#6366f1' }}
+                                                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = seletorTurma ? '#6366f1' : '#1e293b' }}>
+                                                                {tur?.nome || 'Turma'}
+                                                                <span style={{ fontSize: 9, color: '#94a3b8', lineHeight: 1 }}>▾</span>
+                                                            </button>
+                                                            {esc && <>
+                                                                <span style={{ fontSize: 12, color: '#cbd5e1', margin: '0 4px' }}>·</span>
+                                                                {/* Escola — abre só escolas */}
+                                                                <button type="button" onClick={() => { setSeletorEscola(v => !v); setSeletorTurma(false) }}
+                                                                    style={{ fontWeight: 400, fontSize: 12, color: seletorEscola ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                                                                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#6366f1' }}
+                                                                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = seletorEscola ? '#6366f1' : '#94a3b8' }}>
+                                                                    {esc.nome}
+                                                                    <span style={{ fontSize: 9, color: '#94a3b8', lineHeight: 1 }}>▾</span>
+                                                                </button>
+                                                            </>}
+                                                            <span style={{ fontSize: 12, color: '#cbd5e1', margin: '0 4px' }}>·</span>
+                                                            {/* Data — clicável, abre faixa de dias */}
+                                                            {(() => {
+                                                                const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+                                                                const d = novoRegistro.dataAula ? new Date(novoRegistro.dataAula + 'T12:00') : null
+                                                                const label = d ? `${dias[d.getDay()]}, ${dataFmt}` : dataFmt
+                                                                return (
+                                                                    <button type="button" onClick={() => setEditandoData(v => !v)}
+                                                                        style={{ fontSize: 12, color: editandoData ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                                                                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#6366f1' }}
+                                                                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = editandoData ? '#6366f1' : '#94a3b8' }}>
+                                                                        {label}
+                                                                        <span style={{ fontSize: 9, color: '#94a3b8', lineHeight: 1 }}>▾</span>
+                                                                    </button>
+                                                                )
+                                                            })()}
+                                                        </span>
+                                                    )
+                                                })()}
+                                                {planoParaRegistro && (
+                                                    <button type="button" onClick={() => setPlanejadoAberto(v => !v)}
+                                                        style={{ fontSize: 12, fontWeight: 500, color: planejadoAberto ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', flexShrink: 0, lineHeight: 1 }}>
+                                                        Ver plano
+                                                    </button>
+                                                )}
+                                                {registroEditando && (
+                                                    <button type="button"
+                                                        onClick={() => { setRegistroEditando(null); setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', poderiaMelhorar: '', proximaAula: '', comportamento: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined }); setRegEscolaSel(''); setRegTurmaSel('') }}
+                                                        style={{ fontSize: 10, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}
+                                                        onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
+                                                        onMouseOut={e  => (e.currentTarget.style.color = '#94a3b8')}
+                                                        title="Cancelar edição">✕</button>
+                                                )}
+                                            </div>
+
+                                            {/* Faixa de dias da semana — abre ao clicar na data */}
+                                            {editandoData && (() => {
+                                                const days = getWeekDays(semanaOffset)
+                                                const todayStr = new Date().toISOString().split('T')[0]
+                                                const nomes = ['Seg','Ter','Qua','Qui','Sex','Sáb']
                                                 return (
-                                                    <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                        {tur?.nome || 'Turma'}
-                                                        {esc && <span style={{ fontSize: 12, fontWeight: 400, color: '#94a3b8' }}> · {esc.nome}</span>}
-                                                        <span style={{ fontSize: 12, fontWeight: 400, color: '#94a3b8' }}> · {dataFmt}</span>
-                                                    </span>
+                                                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '8px 10px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                            <button type="button" onClick={() => setSemanaOffset(v => v - 1)}
+                                                                style={{ fontSize: 13, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', lineHeight: 1, flexShrink: 0 }}>‹</button>
+                                                            <div style={{ display: 'flex', gap: 4, flex: 1 }}>
+                                                                {days.map((d, i) => {
+                                                                    const iso = d.toISOString().split('T')[0]
+                                                                    const isSelected = novoRegistro.dataAula === iso
+                                                                    const isToday = iso === todayStr
+                                                                    return (
+                                                                        <button key={iso} type="button" onClick={() => { setNovoRegistro(r => ({ ...r, dataAula: iso })); setEditandoData(false) }}
+                                                                            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '5px 2px', borderRadius: 8, border: isSelected ? '1.5px solid #1e2a4a' : isToday ? '1.5px solid #6366f1' : '1px solid #e2e8f0', background: isSelected ? '#1e2a4a' : '#fff', cursor: 'pointer', transition: 'all .12s' }}>
+                                                                            <span style={{ fontSize: 9, fontWeight: 600, color: isSelected ? '#93c5fd' : isToday ? '#6366f1' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '.04em' }}>{nomes[i]}</span>
+                                                                            <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? '#fff' : isToday ? '#6366f1' : '#475569', marginTop: 2 }}>{d.getDate()}</span>
+                                                                        </button>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                            <button type="button" onClick={() => setSemanaOffset(v => v + 1)}
+                                                                style={{ fontSize: 13, color: semanaOffset >= 0 ? '#cbd5e1' : '#94a3b8', background: 'none', border: 'none', cursor: semanaOffset >= 0 ? 'default' : 'pointer', padding: '2px 4px', lineHeight: 1, flexShrink: 0 }}
+                                                                disabled={semanaOffset >= 0}>›</button>
+                                                        </div>
+                                                    </div>
                                                 )
                                             })()}
-                                            {planoParaRegistro && (
-                                                <button type="button" onClick={() => setPlanejadoAberto(v => !v)} title="Ver o que foi planejado"
-                                                    style={{ fontSize: 14, color: planejadoAberto ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0, lineHeight: 1 }}>
-                                                    📋
-                                                </button>
-                                            )}
-                                            <button type="button" onClick={() => setVerRegistros(true)} title="Ver histórico de registros"
-                                                style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 13, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0, lineHeight: 1 }}>
-                                                🕐{planoParaRegistro?.registrosPosAula?.length > 0 && <span style={{ fontSize: 11, background: '#f1f5f9', color: '#64748b', padding: '1px 5px', borderRadius: 99 }}>{planoParaRegistro.registrosPosAula.length}</span>}
-                                            </button>
-                                            <button type="button" onClick={() => setEditandoTurma(true)} title="Trocar turma ou data"
-                                                style={{ fontSize: 14, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0, lineHeight: 1 }}>
-                                                ✏️
-                                            </button>
-                                            {registroEditando && (
-                                                <button type="button"
-                                                    onClick={() => { setRegistroEditando(null); setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', poderiaMelhorar: '', proximaAula: '', comportamento: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined }); setRegEscolaSel(''); setRegTurmaSel('') }}
-                                                    style={{ fontSize: 10, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}
-                                                    onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
-                                                    onMouseOut={e  => (e.currentTarget.style.color = '#94a3b8')}
-                                                    title="Cancelar edição">✕</button>
-                                            )}
+
+                                            {/* Popover — só turmas */}
+                                            {seletorTurma && (() => {
+                                                const ano = anosLetivos.find(a => a.id == regAnoSel)
+                                                const esc = ano?.escolas.find(e => e.id == regEscolaSel)
+                                                const segs = esc?.segmentos || []
+                                                return (
+                                                    <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,.12)', padding: '12px', zIndex: 50, minWidth: 180 }}>
+                                                        <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Turma</p>
+                                                        {segs.filter(s => s.turmas.length > 0).map((s, si) => (
+                                                            <div key={s.id}>
+                                                                {segs.filter(s2 => s2.turmas.length > 0).length > 1 && (
+                                                                    <p style={{ fontSize: 10, color: '#cbd5e1', marginBottom: 4, marginTop: si > 0 ? 8 : 0 }}>{s.nome}</p>
+                                                                )}
+                                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                                                    {s.turmas.map(t => (
+                                                                        <button key={t.id} type="button"
+                                                                            onClick={() => { setRegSegmentoSel(s.id); setRegTurmaSel(t.id); setSeletorTurma(false); setModoCompacto(true) }}
+                                                                            style={{ fontSize: 13, fontWeight: regTurmaSel == t.id ? 700 : 500, padding: '6px 13px', borderRadius: 8, border: regTurmaSel == t.id ? '1.5px solid #1e2a4a' : '1px solid #e2e8f0', background: regTurmaSel == t.id ? '#1e2a4a' : '#f8fafc', color: regTurmaSel == t.id ? '#fff' : '#475569', cursor: 'pointer', transition: 'all .12s' }}>
+                                                                            {t.nome}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                        {segs.every(s => s.turmas.length === 0) && <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Nenhuma turma cadastrada.</p>}
+                                                    </div>
+                                                )
+                                            })()}
+                                            {/* Popover — só escolas */}
+                                            {seletorEscola && (() => {
+                                                const ano = anosLetivos.find(a => a.id == regAnoSel)
+                                                const escolas = ano?.escolas || []
+                                                return (
+                                                    <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,.12)', padding: '12px', zIndex: 50, minWidth: 180 }}>
+                                                        <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Escola</p>
+                                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                                            {escolas.map(e => (
+                                                                <button key={e.id} type="button"
+                                                                    onClick={() => { setRegEscolaSel(e.id); setRegSegmentoSel(''); setRegTurmaSel(''); setSeletorEscola(false); setSeletorTurma(true) }}
+                                                                    style={{ fontSize: 12, fontWeight: regEscolaSel == e.id ? 700 : 500, padding: '6px 13px', borderRadius: 8, border: regEscolaSel == e.id ? '1.5px solid #1e2a4a' : '1px solid #e2e8f0', background: regEscolaSel == e.id ? '#1e2a4a' : '#f8fafc', color: regEscolaSel == e.id ? '#fff' : '#475569', cursor: 'pointer', transition: 'all .12s' }}>
+                                                                    {e.nome}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })()}
                                         </div>
                                     ) : (
+                                        /* Seleção inicial — nenhuma turma escolhida ainda */
                                         <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12 }} className="space-y-2">
                                             <p style={{ fontSize: 10, fontWeight: 700, color: '#64748b', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 4 }}>Identificar turma</p>
                                             <select value={regAnoSel} onChange={e => { setRegAnoSel(e.target.value); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('') }}
@@ -733,7 +862,7 @@ export default function ModalRegistroPosAula() {
                                                 return seg && seg.turmas.length > 0 ? (
                                                     <div className="flex flex-wrap gap-2 mt-1">
                                                         {seg.turmas.map(t => (
-                                                            <button key={t.id} type="button" onClick={() => { setRegTurmaSel(t.id == regTurmaSel ? '' : t.id); if (t.id != regTurmaSel) setEditandoTurma(false) }}
+                                                            <button key={t.id} type="button" onClick={() => { const next = t.id == regTurmaSel ? '' : t.id; setRegTurmaSel(next); if (next) setModoCompacto(true) }}
                                                                 style={{ padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: regTurmaSel == t.id ? 700 : 500, background: regTurmaSel == t.id ? '#475569' : '#f8fafc', color: regTurmaSel == t.id ? '#fff' : '#64748b', border: regTurmaSel == t.id ? '1px solid #475569' : '1px solid #e2e8f0', transition: 'all .15s' }}>
                                                                 {t.nome}
                                                             </button>
