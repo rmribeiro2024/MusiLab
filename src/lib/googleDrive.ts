@@ -53,31 +53,30 @@ function loadGIS(): Promise<void> {
     })
 }
 
-async function getAccessTokenPopup(clientId: string): Promise<string> {
-    if (accessToken) return accessToken
+// Inicializa o token client sem abrir popup — chamar antes do clique do usuário
+export async function initDriveAuth(
+    clientId: string,
+    onToken: (token: string) => void,
+    onError: (msg: string) => void
+): Promise<void> {
     await loadGIS()
-    return new Promise((resolve, reject) => {
-        // Timeout de 90s — se popup for fechado sem autenticar, não fica pendurado
-        const timeout = setTimeout(() => {
-            reject(new Error('Autenticação cancelada ou popup bloqueado. Libere popups para este site e tente novamente.'))
-        }, 90_000)
-
-        tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
-            client_id: clientId,
-            scope: SCOPE,
-            callback: (resp: any) => {
-                clearTimeout(timeout)
-                if (resp.error) { reject(new Error(`Erro Google: ${resp.error}`)); return }
-                accessToken = resp.access_token
-                resolve(resp.access_token)
-            },
-            error_callback: (err: any) => {
-                clearTimeout(timeout)
-                reject(new Error(`Erro OAuth: ${err?.type || err}`))
-            },
-        })
-        tokenClient.requestAccessToken({ prompt: '' })
+    tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: SCOPE,
+        callback: (resp: any) => {
+            if (resp.error) { onError(`Erro Google: ${resp.error}`); return }
+            accessToken = resp.access_token
+            onToken(resp.access_token)
+        },
+        error_callback: (err: any) => {
+            onError(`Erro OAuth: ${err?.type || err}`)
+        },
     })
+}
+
+// Chama diretamente de um clique do usuário (contexto síncrono — sem await antes)
+export function requestDriveToken(): void {
+    tokenClient?.requestAccessToken({ prompt: accessToken ? '' : 'consent' })
 }
 
 async function getOrCreateFolder(token: string): Promise<string> {
@@ -104,14 +103,11 @@ async function getOrCreateFolder(token: string): Promise<string> {
 
 export async function uploadEvidencia(
     file: File,
-    clientId: string,
+    _clientId: string,
     onProgress?: (pct: number) => void
 ): Promise<string> {
-    // Mobile usa redirect flow — token já deve estar em accessToken
-    // Desktop usa popup
-    const token = isMobileDevice()
-        ? (accessToken ?? (() => { throw new Error('Não autenticado. Conecte o Google Drive primeiro.') })())
-        : await getAccessTokenPopup(clientId)
+    const token = accessToken
+    if (!token) throw new Error('Não autenticado. Conecte o Google Drive primeiro.')
 
     const folderId = await getOrCreateFolder(token)
 

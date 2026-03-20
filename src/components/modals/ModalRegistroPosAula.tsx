@@ -4,7 +4,7 @@ import { useAnoLetivoContext, RUBRICAS_PADRAO } from '../../contexts/AnoLetivoCo
 import { usePlanosContext, useAplicacoesContext } from '../../contexts'
 import { useEstrategiasContext } from '../../contexts'
 import { startRecording, stopRecording, blobToBase64, base64ToObjectUrl, base64SizeKb } from '../../lib/audioRecorder'
-import { uploadEvidencia, isGoogleDriveConfigured, isMobileDevice, hasValidToken, checkRedirectToken, redirectToGoogleAuth } from '../../lib/googleDrive'
+import { uploadEvidencia, isGoogleDriveConfigured, isMobileDevice, hasValidToken, checkRedirectToken, redirectToGoogleAuth, initDriveAuth, requestDriveToken } from '../../lib/googleDrive'
 
 // ── ACCORDION CHIP — campo colapsável genérico ──
 const AccordionChip = React.forwardRef<() => void, {
@@ -453,6 +453,16 @@ export default function ModalRegistroPosAula() {
             return !v
         })
     }
+
+    // Pré-inicializa GIS sem abrir popup — para que requestDriveToken() possa ser chamado sincronamente no clique
+    React.useEffect(() => {
+        if (!isGoogleDriveConfigured() || isMobileDevice()) return
+        initDriveAuth(
+            import.meta.env.VITE_GOOGLE_CLIENT_ID,
+            () => setDriveConectado(true),
+            (msg) => setUploadErro(msg)
+        ).catch(() => {})
+    }, []) // eslint-disable-line
 
     // Reset upload states when turma changes (evidência is per-turma)
     React.useEffect(() => {
@@ -1337,10 +1347,17 @@ export default function ModalRegistroPosAula() {
                                                                             style={{ display: 'none' }}
                                                                             onChange={handleFileSelect}
                                                                         />
-                                                                        {/* Mobile sem token: botão de conectar */}
-                                                                        {isMobileDevice() && !driveConectado ? (
+                                                                        {/* Sem token: botão de conectar (mobile=redirect, desktop=popup síncrono) */}
+                                                                        {!driveConectado ? (
                                                                             <button type="button"
-                                                                                onClick={() => redirectToGoogleAuth(import.meta.env.VITE_GOOGLE_CLIENT_ID)}
+                                                                                onClick={() => {
+                                                                                    setUploadErro('')
+                                                                                    if (isMobileDevice()) {
+                                                                                        redirectToGoogleAuth(import.meta.env.VITE_GOOGLE_CLIENT_ID)
+                                                                                    } else {
+                                                                                        requestDriveToken()
+                                                                                    }
+                                                                                }}
                                                                                 style={{
                                                                                     width: '100%', padding: '10px', borderRadius: 8, border: '1.5px solid #c7d2fe',
                                                                                     background: '#eef2ff', cursor: 'pointer',
