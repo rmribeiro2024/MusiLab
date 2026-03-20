@@ -1220,18 +1220,7 @@ export default function ModalRegistroPosAula() {
                                                 ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length] = fn }}
                                             />
 
-                                            {/* ── 3. O que os alunos disseram — observacional/factual ── */}
-                                            {[{ id: 'av-voz', icon: '💬', label: 'O que os alunos disseram sobre a aula?', field: 'vozAluno', placeholder: 'Ex: "Isso foi difícil" / "Eu entendi agora!" — qualquer comentário significativo...' }]
-                                                .map(({ id, icon, label, field, placeholder }) => {
-                                                const valor = (novoRegistro as any)[field] || ''
-                                                return (
-                                                    <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
-                                                        value={valor} filled={valor.trim().length > 0} allowVoice
-                                                        onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v } as any)} />
-                                                )
-                                            })}
-
-                                            {/* ── 4. Como a aula aconteceu na prática — narrativo ── */}
+                                            {/* ── 3. Como a aula aconteceu na prática — narrativo ── */}
                                             <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
                                                 <div onClick={() => setContextoAberto(o => !o)}
                                                     style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
