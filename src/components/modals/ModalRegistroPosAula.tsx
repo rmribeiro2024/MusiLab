@@ -803,13 +803,13 @@ export default function ModalRegistroPosAula() {
                                     {(() => {
                                         const statusVal = ((novoRegistro as any).statusAula || inferStatusLegado((novoRegistro as any).resultadoAula, (novoRegistro as any).proximaAulaOpcao, (novoRegistro as any).statusAula)) as StatusAula
                                         const ops: { value: StatusAula; label: string; emoji: string }[] = [
-                                            { value: 'concluida', label: 'Avançar — seguir para nova aula',                                   emoji: '✓' },
+                                            { value: 'concluida', label: 'Avançar — seguir em frente',  emoji: '✓' },
                                             { value: 'revisao',   label: 'Retomar ou revisar — repetir de onde parei ou reforçar algo', emoji: '↻' },
                                         ]
                                         return (
                                             <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                                                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase' as const, color: '#94a3b8', flex: 1 }}>Como foi a aula?</span>
+                                                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase' as const, color: '#94a3b8', flex: 1 }}>E agora?</span>
                                                     {statusVal && (
                                                         <button tabIndex={-1} onClick={() => setNovoRegistro({ ...novoRegistro, statusAula: undefined } as any)}
                                                             style={{ fontSize: 10, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}>
