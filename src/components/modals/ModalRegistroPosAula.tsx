@@ -54,54 +54,40 @@ const AccordionChip = React.forwardRef<() => void, {
     )
 })
 
-// ── BEHAVIOR CHIP — comportamento com tags clicáveis + campo livre ──
+// ── BEHAVIOR CHIP — comportamento com tags clicáveis ──
 const BEHAVIOR_TAGS = [
-    { id: 'bom',      label: '✓ Bom no geral' },
     { id: 'focada',   label: 'Focada e participativa' },
-    { id: 'dispersa', label: 'Muito dispersa / difícil conduzir' },
+    { id: 'animada',  label: 'Animada mas difícil conduzir' },
     { id: 'apatica',  label: 'Apática / pouco engajamento' },
-    { id: 'instavel', label: 'Instável — alternou bem e mal' },
+    { id: 'instavel', label: 'Instável — oscilou muito' },
     { id: 'timida',   label: 'Tímida / retraída' },
-    { id: 'falante',  label: 'Muito falante / difícil silêncio' },
 ]
 
 const BehaviorChip = React.forwardRef<() => void, {
     value: string, filled: boolean,
     onChange: (v: string) => void,
     onTabNext?: () => void,
-}>(function BehaviorChip({ value, filled, onChange, onTabNext }, ref) {
+}>(function BehaviorChip({ value, filled, onChange }, ref) {
     const [open, setOpen] = React.useState(false)
     const [selectedTags, setSelectedTags] = React.useState<string[]>([])
-    const [freeText, setFreeText] = React.useState('')
 
     React.useImperativeHandle(ref, () => () => setOpen(true))
     React.useEffect(() => { if (filled) setOpen(true) }, [filled])
 
-    // Sincroniza estado de tags com o valor externo ao carregar (ex: editar registro)
+    // Sincroniza tags selecionadas ao carregar (ex: editar registro)
     React.useEffect(() => {
-        if (value && selectedTags.length === 0 && freeText === '') {
-            setFreeText(value)
+        if (value) {
+            const matched = BEHAVIOR_TAGS.filter(t => value.includes(t.label)).map(t => t.id)
+            if (matched.length > 0) setSelectedTags(matched)
         }
     }, []) // eslint-disable-line
 
     const toggleTag = (tagId: string) => {
-        const tagLabel = BEHAVIOR_TAGS.find(t => t.id === tagId)?.label || ''
-        // Remove emoji do label para texto limpo
-        const cleanLabel = tagLabel.replace(/^[\S]+ /, '')
         const next = selectedTags.includes(tagId)
             ? selectedTags.filter(t => t !== tagId)
             : [...selectedTags, tagId]
         setSelectedTags(next)
-        // Reconstrói o valor combinado: tags selecionadas + texto livre
-        const tagTexts = next.map(id => BEHAVIOR_TAGS.find(t => t.id === id)?.label.replace(/^[\S]+ /, '') || '')
-        const combined = [...tagTexts, freeText].filter(Boolean).join('. ')
-        onChange(combined)
-    }
-
-    const handleFreeTextChange = (v: string) => {
-        setFreeText(v)
-        const tagTexts = selectedTags.map(id => BEHAVIOR_TAGS.find(t => t.id === id)?.label.replace(/^[\S]+ /, '') || '')
-        const combined = [...tagTexts, v].filter(Boolean).join('. ')
+        const combined = next.map(id => BEHAVIOR_TAGS.find(t => t.id === id)?.label || '').filter(Boolean).join('. ')
         onChange(combined)
     }
 
@@ -111,39 +97,28 @@ const BehaviorChip = React.forwardRef<() => void, {
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
                 <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>👥</span>
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: filled ? '#334155' : '#64748b', flex: 1 }}>
-                    Comportamento da turma
+                    Como a turma chegou hoje?
                 </span>
                 {filled && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
                 <span style={{ fontSize: 9, color: '#94a3b8', flexShrink: 0, marginLeft: 4, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
             </div>
             {open && (
-                <div style={{ padding: '0 12px 10px' }}>
-                    {/* Tags clicáveis */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 }}>
+                <div style={{ padding: '0 12px 12px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                         {BEHAVIOR_TAGS.map(tag => (
                             <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)}
                                 style={{
-                                    padding: '5px 10px', borderRadius: 8, fontSize: 12, fontWeight: 500,
+                                    padding: '6px 12px', borderRadius: 8, fontSize: 12,
                                     cursor: 'pointer', transition: 'all .12s', fontFamily: 'inherit',
-                                    background: selectedTags.includes(tag.id) ? '#f0fdf4' : '#fff',
-                                    color:      selectedTags.includes(tag.id) ? '#16a34a' : '#475569',
-                                    border:     selectedTags.includes(tag.id) ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
+                                    background: selectedTags.includes(tag.id) ? '#f1f5f9' : '#fff',
+                                    color:      selectedTags.includes(tag.id) ? '#1e293b' : '#475569',
+                                    border:     selectedTags.includes(tag.id) ? '1px solid #334155' : '1px solid #e2e8f0',
+                                    fontWeight: selectedTags.includes(tag.id) ? 600 : 500,
                                 }}>
                                 {tag.label}
                             </button>
                         ))}
                     </div>
-                    <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 5 }}>
-                        Ou descreva livremente
-                    </p>
-                    <textarea
-                        value={freeText} onChange={e => handleFreeTextChange(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Tab') { e.preventDefault(); setOpen(false); onTabNext?.() } }}
-                        rows={2} placeholder="Ex: Turma agitada no início, focou após aquecimento..."
-                        style={{ width: '100%', padding: '9px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#334155', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none' }}
-                        onFocus={e => (e.target.style.borderColor = '#94a3b8')}
-                        onBlur={e  => (e.target.style.borderColor = '#e2e8f0')}
-                    />
                 </div>
             )}
         </div>
@@ -548,6 +523,23 @@ export default function ModalRegistroPosAula() {
                             {minimizado && <p style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Clique para restaurar</p>}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, flexShrink: 0 }}>
+                            {planoParaRegistro && (() => {
+                                const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim()
+                                const temPlano = (
+                                    stripHtml((planoParaRegistro as any).objetivoGeral || '') ||
+                                    ((planoParaRegistro as any).atividadesRoteiro?.length > 0) ||
+                                    stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
+                                )
+                                if (!temPlano) return null
+                                return (
+                                    <button title="Ver o que foi planejado"
+                                        onClick={e => { e.stopPropagation(); setPlanejadoAberto(v => !v) }}
+                                        style={{ width: 28, height: 28, borderRadius: 8, background: planejadoAberto ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)', border: 'none', color: planejadoAberto ? '#fff' : '#94a3b8', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background .15s' }}
+                                        onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,.22)')}
+                                        onMouseOut={e  => (e.currentTarget.style.background = planejadoAberto ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)')}
+                                    >📋</button>
+                                )
+                            })()}
                             {[
                                 { title: minimizado ? 'Restaurar' : 'Minimizar', label: '—', onClick: () => { setMinimizado(m => !m); setMaximizado(false) }, active: minimizado },
                                 { title: maximizado ? 'Restaurar tamanho' : 'Maximizar', label: maximizado ? '⊡' : '⤢', onClick: () => { setMaximizado(m => !m); setMinimizado(false) }, active: maximizado },
@@ -567,6 +559,44 @@ export default function ModalRegistroPosAula() {
                 {/* ── CONTEÚDO ── */}
                 {!minimizado && (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+                        {/* Painel planejado — abre via ícone no header */}
+                        {planejadoAberto && planoParaRegistro && (() => {
+                            const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim()
+                            const roteiro: any[] = (planoParaRegistro as any).atividadesRoteiro || []
+                            const objetivo = stripHtml((planoParaRegistro as any).objetivoGeral || '')
+                            const criterio = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
+                            return (
+                                <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+                                    {objetivo && (
+                                        <div>
+                                            <p style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 2 }}>Objetivo</p>
+                                            <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.4 }}>{objetivo}</p>
+                                        </div>
+                                    )}
+                                    {roteiro.length > 0 && (
+                                        <div>
+                                            <p style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 4 }}>Roteiro</p>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                {roteiro.map((at: any, i: number) => (
+                                                    <div key={at.id ?? i} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                                        <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 700, flexShrink: 0, minWidth: 14, textAlign: 'right' as const }}>{i + 1}.</span>
+                                                        <span style={{ fontSize: 12, color: '#475569', flex: 1 }}>{at.nome}</span>
+                                                        {at.duracao ? <span style={{ fontSize: 10, color: '#94a3b8', flexShrink: 0 }}>{String(at.duracao).replace(/min$/i, '')}min</span> : null}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {criterio && (
+                                        <div>
+                                            <p style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 2 }}>Critério de sucesso</p>
+                                            <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.4, fontStyle: 'italic' }}>{criterio}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })()}
 
                         {/* Tabs */}
                         <div className="flex border-b border-slate-100 bg-white" style={{ flexShrink: 0 }}>
@@ -724,62 +754,6 @@ export default function ModalRegistroPosAula() {
                                                 <p className="text-[11px] font-bold text-amber-700 mb-1 uppercase tracking-wide">📌 Planejado para esta turma</p>
                                                 <p className="text-xs text-amber-900 whitespace-pre-wrap leading-relaxed">{nota.texto}</p>
                                             </div>
-                                        )
-                                    })()}
-
-                                    {/* Opcao A — Contexto do planejado (botao discreto) */}
-                                    {planoParaRegistro && (() => {
-                                        const roteiro: any[] = (planoParaRegistro as any).atividadesRoteiro || []
-                                        const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim()
-                                        const objetivo: string = stripHtml((planoParaRegistro as any).objetivoGeral || '')
-                                        const criterio: string = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
-                                        if (!objetivo && roteiro.length === 0 && !criterio) return null
-                                        return (
-                                            <>
-                                                {(objetivo || roteiro.length > 0 || criterio) && (
-                                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
-                                                        <button
-                                                            type="button"
-                                                            onClick={togglePlanejadoAberto}
-                                                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'transparent', border: 'none', cursor: 'pointer', gap: 8 }}>
-                                                            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: '#94a3b8' }}>
-                                                                📋 O que foi planejado
-                                                            </span>
-                                                            <span style={{ fontSize: 9, color: '#cbd5e1', transform: planejadoAberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
-                                                        </button>
-                                                        {planejadoAberto && (
-                                                            <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                                                {objetivo ? (
-                                                                    <div>
-                                                                        <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 3 }}>Objetivo</p>
-                                                                        <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.4 }}>{objetivo}</p>
-                                                                    </div>
-                                                                ) : null}
-                                                                {roteiro.length > 0 ? (
-                                                                    <div>
-                                                                        <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 4 }}>Roteiro</p>
-                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                                                            {roteiro.map((at: any, i: number) => (
-                                                                                <div key={at.id ?? i} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                                                                    <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 700, flexShrink: 0, minWidth: 16, textAlign: 'right' as const }}>{i + 1}.</span>
-                                                                                    <span style={{ fontSize: 12, color: '#475569', flex: 1 }}>{at.nome}</span>
-                                                                                    {at.duracao ? <span style={{ fontSize: 10, color: '#94a3b8', flexShrink: 0 }}>{String(at.duracao).replace(/min$/i, '')}min</span> : null}
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-                                                                ) : null}
-                                                                {criterio ? (
-                                                                    <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 8 }}>
-                                                                        <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 3 }}>Critério de sucesso</p>
-                                                                        <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.4, fontStyle: 'italic' }}>{criterio}</p>
-                                                                    </div>
-                                                                ) : null}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </>
                                         )
                                     })()}
 
