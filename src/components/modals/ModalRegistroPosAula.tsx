@@ -645,8 +645,8 @@ export default function ModalRegistroPosAula() {
                                             <input type="date" value={novoRegistro.dataAula} onChange={e => setNovoRegistro({ ...novoRegistro, dataAula: e.target.value })}
                                                 style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: 'transparent', border: 'none', outline: 'none', flexShrink: 0 }} />
                                             <button type="button" onClick={() => setEditandoTurma(true)} title="Trocar turma ou data"
-                                                style={{ fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}>
-                                                ✎
+                                                style={{ fontSize: 14, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0, lineHeight: 1 }}>
+                                                ✏️
                                             </button>
                                             {registroEditando && (
                                                 <button type="button"
