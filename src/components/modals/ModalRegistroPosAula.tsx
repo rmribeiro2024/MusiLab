@@ -496,8 +496,9 @@ export default function ModalRegistroPosAula() {
 
     // ── Campos de anotação ──
     const camposConfig = [
-        { id: 'reg-aprenderam', icon: '🎯', label: 'O que os alunos demonstraram aprender?', field: 'funcionouBem', placeholder: 'Ex: 3 alunos tocaram a cadência completa sem parar. A turma manteve o pulso estável por 2 compassos pela primeira vez...' },
-        { id: 'reg-mudar',      icon: '💭', label: 'O que faria diferente?',                  field: 'naoFuncionou', placeholder: 'Se você pudesse dar esta aula de novo sabendo o que sabe agora — o que faria diferente?' },
+        { id: 'reg-aprenderam', icon: '🎯', label: 'O que os alunos demonstraram aprender?',  field: 'funcionouBem', placeholder: 'Ex: 3 alunos tocaram a cadência completa sem parar. A turma manteve o pulso estável por 2 compassos pela primeira vez...' },
+        { id: 'reg-repetiria',  icon: '⭐', label: 'O que funcionou e você faria de novo?',   field: 'repetiria',    placeholder: 'Ex: A demonstração tocada antes de explicar — os alunos entenderam muito mais rápido. Repetiria sempre que introduzir técnica nova...' },
+        { id: 'reg-mudar',      icon: '💭', label: 'O que faria diferente?',                   field: 'naoFuncionou', placeholder: 'Se você pudesse dar esta aula de novo sabendo o que sabe agora — o que faria diferente?' },
     ] as const
 
     return (
@@ -1452,7 +1453,7 @@ export default function ModalRegistroPosAula() {
                                             if (filtroRegPeriodo === 'semana' && (r.data < seg2 || r.data > fim2)) return false
                                             if (buscaRegistros.trim()) {
                                                 const q = buscaRegistros.toLowerCase()
-                                                const campos = [r.resumoAula, r.funcionouBem, r.naoFuncionou, r.poderiaMelhorar, r.proximaAula, r.comportamento, r.anotacoesGerais]
+                                                const campos = [r.resumoAula, r.funcionouBem, (r as any).repetiria, r.naoFuncionou, r.poderiaMelhorar, r.proximaAula, r.comportamento, r.anotacoesGerais]
                                                 if (!campos.some(c => (c || '').toLowerCase().includes(q))) return false
                                             }
                                             return true
@@ -1490,8 +1491,9 @@ export default function ModalRegistroPosAula() {
                                                     // Campos preenchidos para chips de leitura
                                                     const chipFields = [
                                                         { icon: '📋', label: 'Realizado',              text: reg.resumoAula },
-                                                        { icon: '✅', label: 'Funcionou bem',           text: reg.funcionouBem },
-                                                        { icon: '⚠️', label: 'O que mudar',             text: reg.naoFuncionou },
+                                                        { icon: '✅', label: 'O que aprenderam',        text: reg.funcionouBem },
+                                                        { icon: '⭐', label: 'O que faria de novo',     text: (reg as any).repetiria },
+                                                        { icon: '💭', label: 'O que faria diferente',  text: reg.naoFuncionou },
                                                         { icon: '🔧', label: 'Poderia ter sido melhor', text: reg.poderiaMelhorar },
                                                         { icon: '💡', label: 'Próxima aula / estratégias',            text: reg.proximaAula },
                                                         { icon: '👥', label: 'Comportamento',           text: reg.comportamento },
@@ -1638,7 +1640,7 @@ export default function ModalRegistroPosAula() {
                         {!verRegistros && (
                             <div style={{ padding: '10px 16px', borderTop: '1px solid #e2e8f0', background: '#fff', flexShrink: 0 }}>
                                 <button ref={salvarBtnRef} onClick={() => {
-                                    const algumCampo = !!(novoRegistro.funcionouBem || novoRegistro.naoFuncionou || novoRegistro.proximaAula || (novoRegistro as any).comportamento || (novoRegistro as any).audioNotaDeVoz)
+                                    const algumCampo = !!(novoRegistro.funcionouBem || (novoRegistro as any).repetiria || novoRegistro.naoFuncionou || novoRegistro.proximaAula || (novoRegistro as any).comportamento || (novoRegistro as any).audioNotaDeVoz)
                                     const dadosParaIA = { ...novoRegistro }
                                     const tituloPlano = planoParaRegistro?.titulo || ''
                                     if (audioUrl) URL.revokeObjectURL(audioUrl)
