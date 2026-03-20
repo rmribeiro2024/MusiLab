@@ -837,7 +837,7 @@ export default function ModalRegistroPosAula() {
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
                                                     <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📌</span>
                                                     <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: encaminhamentos.length > 0 ? '#334155' : '#64748b', flex: 1 }}>
-                                                        {(novoRegistro as any).statusAula === 'revisao' ? 'O que retomar na próxima aula?' : 'Algum lembrete para a próxima aula?'}
+                                                        {(novoRegistro as any).statusAula === 'revisao' ? 'O que fazer na próxima aula?' : 'Algum lembrete para a próxima aula?'}
                                                     </span>
                                                     {encaminhamentos.length > 0 && (
                                                         <span style={{ fontSize: 10, color: '#6366f1', fontWeight: 700, background: '#eef2ff', padding: '1px 8px', borderRadius: 99, border: '1px solid #c7d2fe', flexShrink: 0 }}>
