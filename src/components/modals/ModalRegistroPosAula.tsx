@@ -4,6 +4,7 @@ import { useAnoLetivoContext, RUBRICAS_PADRAO } from '../../contexts/AnoLetivoCo
 import { usePlanosContext, useAplicacoesContext } from '../../contexts'
 import { useEstrategiasContext } from '../../contexts'
 import { startRecording, stopRecording, blobToBase64, base64ToObjectUrl, base64SizeKb } from '../../lib/audioRecorder'
+import { uploadEvidencia, isGoogleDriveConfigured } from '../../lib/googleDrive'
 
 // ── ACCORDION CHIP — campo colapsável genérico ──
 const AccordionChip = React.forwardRef<() => void, {
@@ -411,6 +412,13 @@ export default function ModalRegistroPosAula() {
     const [buscaEstrategiaPos, setBuscaEstrategiaPos] = React.useState('')
     // ── estados de áudio (B3) ──
     const [mostrarAvancados, setMostrarAvancados] = React.useState(false)
+    const [encAberto, setEncAberto] = React.useState(false)
+    const [evidenciaAberta, setEvidenciaAberta] = React.useState(false)
+    const [aprovAberto, setAprovAberto] = React.useState(false)
+    const [uploadandoEvidencia, setUploadandoEvidencia] = React.useState(false)
+    const [uploadProgresso, setUploadProgresso] = React.useState(0)
+    const [uploadErro, setUploadErro] = React.useState('')
+    const fileInputRef = React.useRef<HTMLInputElement>(null)
     const [contextoAberto, setContextoAberto] = React.useState(false)
     const [seletorTurma, setSeletorTurma] = React.useState(false)
     const [seletorEscola, setSeletorEscola] = React.useState(false)
@@ -988,9 +996,11 @@ export default function ModalRegistroPosAula() {
                                         )
                                     })()}
 
-                                    {/* ── Para a próxima aula (encaminhamentos — visível por padrão) ── */}
+                                    {/* ── Para a próxima aula (encaminhamentos — colapsável) ── */}
                                     {(() => {
                                         const encaminhamentos: { id: string; texto: string; concluido: boolean }[] = (novoRegistro as any).encaminhamentos || []
+                                        const isRevisao = (novoRegistro as any).statusAula === 'revisao'
+                                        const aberto = encAberto || isRevisao
                                         const addEnc = () => {
                                             const txt = novoEnc.trim()
                                             if (!txt) return
@@ -1000,52 +1010,56 @@ export default function ModalRegistroPosAula() {
                                         }
                                         return (
                                             <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}
+                                                    onClick={() => setEncAberto(v => !v)}>
                                                     <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📌</span>
                                                     <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: encaminhamentos.length > 0 ? '#334155' : '#64748b', flex: 1 }}>
-                                                        {(novoRegistro as any).statusAula === 'revisao' ? 'O que fazer na próxima aula?' : 'Algum lembrete para a próxima aula?'}
+                                                        {isRevisao ? 'O que fazer na próxima aula?' : 'Algum lembrete para a próxima aula?'}
                                                     </span>
                                                     {encaminhamentos.length > 0 && (
                                                         <span style={{ fontSize: 10, color: '#6366f1', fontWeight: 700, background: '#eef2ff', padding: '1px 8px', borderRadius: 99, border: '1px solid #c7d2fe', flexShrink: 0 }}>
                                                             {encaminhamentos.length}
                                                         </span>
                                                     )}
-                                                    <button type="button" onClick={toggleVozEnc} title={gravandoEnc ? 'Parar gravação' : 'Gravar por voz'}
+                                                    <button type="button" onClick={e => { e.stopPropagation(); toggleVozEnc() }} title={gravandoEnc ? 'Parar gravação' : 'Gravar por voz'}
                                                         style={{ fontSize: 13, background: gravandoEnc ? '#fee2e2' : 'transparent', border: gravandoEnc ? '1px solid #fca5a5' : '1px solid transparent', borderRadius: 6, cursor: 'pointer', padding: '2px 5px', flexShrink: 0, color: gravandoEnc ? '#ef4444' : '#94a3b8', outline: 'none' }}>
                                                         {gravandoEnc ? '⏹' : '🎙'}
                                                     </button>
+                                                    <span style={{ fontSize: 10, color: '#cbd5e1', transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
                                                 </div>
-                                                <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                                    {encaminhamentos.map((enc, idx) => (
-                                                        <div key={enc.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                            <input type="checkbox" checked={enc.concluido}
-                                                                onChange={() => {
-                                                                    const nova = encaminhamentos.map((e, i) => i === idx ? { ...e, concluido: !e.concluido } : e)
+                                                {aberto && (
+                                                    <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                        {encaminhamentos.map((enc, idx) => (
+                                                            <div key={enc.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                <input type="checkbox" checked={enc.concluido}
+                                                                    onChange={() => {
+                                                                        const nova = encaminhamentos.map((e, i) => i === idx ? { ...e, concluido: !e.concluido } : e)
+                                                                        setNovoRegistro({ ...novoRegistro, encaminhamentos: nova } as any)
+                                                                    }}
+                                                                    style={{ accentColor: '#6366f1', flexShrink: 0 }}
+                                                                />
+                                                                <span style={{ fontSize: 12, color: enc.concluido ? '#94a3b8' : '#334155', flex: 1, textDecoration: enc.concluido ? 'line-through' : 'none' }}>{enc.texto}</span>
+                                                                <button type="button" onClick={() => {
+                                                                    const nova = encaminhamentos.filter((_, i) => i !== idx)
                                                                     setNovoRegistro({ ...novoRegistro, encaminhamentos: nova } as any)
-                                                                }}
-                                                                style={{ accentColor: '#6366f1', flexShrink: 0 }}
+                                                                }} style={{ color: '#cbd5e1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, padding: '0 2px', flexShrink: 0 }}>✕</button>
+                                                            </div>
+                                                        ))}
+                                                        <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+                                                            <input type="text" value={novoEnc} onChange={e => setNovoEnc(e.target.value)}
+                                                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEnc() } }}
+                                                                placeholder="O que fazer na próxima aula... (Enter para adicionar)"
+                                                                style={{ flex: 1, minWidth: 0, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', fontFamily: 'inherit', outline: 'none' }}
+                                                                onFocus={e => (e.target.style.borderColor = '#94a3b8')}
+                                                                onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
                                                             />
-                                                            <span style={{ fontSize: 12, color: enc.concluido ? '#94a3b8' : '#334155', flex: 1, textDecoration: enc.concluido ? 'line-through' : 'none' }}>{enc.texto}</span>
-                                                            <button type="button" onClick={() => {
-                                                                const nova = encaminhamentos.filter((_, i) => i !== idx)
-                                                                setNovoRegistro({ ...novoRegistro, encaminhamentos: nova } as any)
-                                                            }} style={{ color: '#cbd5e1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, padding: '0 2px', flexShrink: 0 }}>✕</button>
+                                                            <button type="button" onClick={addEnc} disabled={!novoEnc.trim()}
+                                                                style={{ padding: '7px 12px', background: novoEnc.trim() ? '#6366f1' : '#e2e8f0', color: novoEnc.trim() ? '#fff' : '#94a3b8', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: novoEnc.trim() ? 'pointer' : 'default', transition: 'all .15s', flexShrink: 0 }}>
+                                                                + Add
+                                                            </button>
                                                         </div>
-                                                    ))}
-                                                    <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
-                                                        <input type="text" value={novoEnc} onChange={e => setNovoEnc(e.target.value)}
-                                                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEnc() } }}
-                                                            placeholder="O que fazer na próxima aula... (Enter para adicionar)"
-                                                            style={{ flex: 1, minWidth: 0, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', fontFamily: 'inherit', outline: 'none' }}
-                                                            onFocus={e => (e.target.style.borderColor = '#94a3b8')}
-                                                            onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
-                                                        />
-                                                        <button type="button" onClick={addEnc} disabled={!novoEnc.trim()}
-                                                            style={{ padding: '7px 12px', background: novoEnc.trim() ? '#6366f1' : '#e2e8f0', color: novoEnc.trim() ? '#fff' : '#94a3b8', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: novoEnc.trim() ? 'pointer' : 'default', transition: 'all .15s', flexShrink: 0 }}>
-                                                            + Add
-                                                        </button>
                                                     </div>
-                                                </div>
+                                                )}
                                             </div>
                                         )
                                     })()}
@@ -1060,7 +1074,7 @@ export default function ModalRegistroPosAula() {
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
                                         }}>
                                         <span style={{ transition: 'transform .2s', display: 'inline-block', transform: mostrarAvancados ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-                                        {mostrarAvancados ? 'Ocultar campos extras' : 'Reflexão aprofundada · Chamada · Rubrica'}
+                                        {mostrarAvancados ? 'Ocultar extras' : 'Extras'}
                                     </button>
                                     {mostrarAvancados && (
                                         <div className="space-y-3">
@@ -1209,54 +1223,48 @@ export default function ModalRegistroPosAula() {
                                                 )
                                             })()}
 
-                                            {/* Rubrica de avaliação */}
-                                            {regTurmaSel && regAnoSel && regEscolaSel && regSegmentoSel && (() => {
-                                                const criterios = (typeof turmaGetRubricas === 'function'
-                                                    ? turmaGetRubricas(regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel)
-                                                    : RUBRICAS_PADRAO) as { id: string; nome: string; escala: number }[]
-                                                const rubricaAtual: { criterioId: string; valor: number }[] = (novoRegistro as any).rubrica || []
-                                                const getValor = (id: string) => rubricaAtual.find(r => r.criterioId === id)?.valor ?? 0
-                                                const setValor = (criterioId: string, valor: number) => {
-                                                    const nova = [...rubricaAtual.filter(r => r.criterioId !== criterioId), { criterioId, valor }]
-                                                    setNovoRegistro({ ...novoRegistro, rubrica: nova } as any)
-                                                }
-                                                const preenchida = rubricaAtual.some(r => r.valor > 0)
+                                            {/* Aproveitamento da aula */}
+                                            {(() => {
+                                                const LABELS = ['Ruim', 'Razoável', 'Boa', 'Excelente']
+                                                const val: number = (novoRegistro as any).aproveitamentoAula ?? 0
+                                                const setVal = (n: number) => setNovoRegistro({ ...novoRegistro, aproveitamentoAula: val === n ? 0 : n } as any)
+                                                const aberto = aprovAberto || val > 0
                                                 return (
                                                     <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}
+                                                            onClick={() => setAprovAberto(v => !v)}>
                                                             <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📊</span>
-                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: preenchida ? '#334155' : '#64748b', flex: 1 }}>
-                                                                Avaliação da aula
+                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: val > 0 ? '#334155' : '#64748b', flex: 1 }}>
+                                                                Aproveitamento da aula
                                                             </span>
-                                                            {preenchida && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                            {val > 0 && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                            <span style={{ fontSize: 10, color: '#cbd5e1', transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
                                                         </div>
-                                                        <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                                            {criterios.map(c => {
-                                                                const val = getValor(c.id)
-                                                                return (
-                                                                    <div key={c.id}>
-                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                                                            <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>{c.nome}</span>
-                                                                            <span style={{ fontSize: 11, color: val > 0 ? '#6366f1' : '#94a3b8' }}>{val > 0 ? `${val}/${c.escala}` : '—'}</span>
-                                                                        </div>
-                                                                        <div style={{ display: 'flex', gap: 4 }}>
-                                                                            {Array.from({ length: c.escala }, (_, i) => i + 1).map(n => (
-                                                                                <button key={n} type="button"
-                                                                                    onClick={() => setValor(c.id, val === n ? 0 : n)}
-                                                                                    style={{
-                                                                                        flex: 1, height: 28, borderRadius: 6, cursor: 'pointer', transition: 'all .15s', border: 'none',
-                                                                                        background: n <= val ? '#6366f1' : '#e2e8f0',
-                                                                                        color: n <= val ? '#fff' : '#94a3b8',
-                                                                                        fontSize: 11, fontWeight: 700,
-                                                                                    }}>
-                                                                                    {n}
-                                                                                </button>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-                                                                )
-                                                            })}
-                                                        </div>
+                                                        {aberto && (
+                                                            <div style={{ padding: '4px 12px 12px' }}>
+                                                                <div style={{ display: 'flex', gap: 6 }}>
+                                                                    {LABELS.map((label, i) => {
+                                                                        const n = i + 1
+                                                                        const ativo = val === n
+                                                                        return (
+                                                                            <button key={n} type="button" onClick={() => setVal(n)}
+                                                                                style={{
+                                                                                    flex: 1, padding: '10px 6px', borderRadius: 8, cursor: 'pointer',
+                                                                                    transition: 'all .15s', fontSize: 12, fontWeight: 700,
+                                                                                    background: ativo ? '#1e2a4a' : '#fff',
+                                                                                    color: ativo ? '#fff' : '#94a3b8',
+                                                                                    border: `2px solid ${ativo ? '#1e2a4a' : '#e2e8f0'}`,
+                                                                                    outline: 'none',
+                                                                                }}
+                                                                                onMouseEnter={e => { if (!ativo) { (e.currentTarget as HTMLButtonElement).style.borderColor = '#94a3b8'; (e.currentTarget as HTMLButtonElement).style.color = '#475569' } }}
+                                                                                onMouseLeave={e => { if (!ativo) { (e.currentTarget as HTMLButtonElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8' } }}>
+                                                                                {label}
+                                                                            </button>
+                                                                        )
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )
                                             })()}
@@ -1267,32 +1275,114 @@ export default function ModalRegistroPosAula() {
                                                 const url = (novoRegistro as any).urlEvidencia || ''
                                                 let urlValida = false
                                                 try { urlValida = url.length > 0 && !!new URL(url) } catch { urlValida = false }
+                                                const aberto = evidenciaAberta || !!url
+                                                const driveConfigurado = isGoogleDriveConfigured()
+
+                                                const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+                                                    const file = e.target.files?.[0]
+                                                    if (!file) return
+                                                    setUploadErro('')
+                                                    setUploadandoEvidencia(true)
+                                                    setUploadProgresso(0)
+                                                    try {
+                                                        const link = await uploadEvidencia(
+                                                            file,
+                                                            import.meta.env.VITE_GOOGLE_CLIENT_ID,
+                                                            pct => setUploadProgresso(pct)
+                                                        )
+                                                        setNovoRegistro({ ...novoRegistro, urlEvidencia: link } as any)
+                                                    } catch (err: any) {
+                                                        setUploadErro('Erro no upload. Tente novamente ou cole o link manualmente.')
+                                                    } finally {
+                                                        setUploadandoEvidencia(false)
+                                                        if (fileInputRef.current) fileInputRef.current.value = ''
+                                                    }
+                                                }
+
                                                 return (
                                                     <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}
+                                                            onClick={() => setEvidenciaAberta(v => !v)}>
                                                             <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📎</span>
                                                             <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: url ? '#334155' : '#64748b', flex: 1 }}>
                                                                 Evidência de aula
                                                             </span>
                                                             {url && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                            <span style={{ fontSize: 10, color: '#cbd5e1', transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
                                                         </div>
-                                                        <div style={{ padding: '0 12px 10px', display: 'flex', gap: 6 }}>
-                                                            <input
-                                                                type="url"
-                                                                value={url}
-                                                                onChange={e => setNovoRegistro({ ...novoRegistro, urlEvidencia: e.target.value })}
-                                                                placeholder="Cole um link (Google Drive, YouTube, áudio...)"
-                                                                style={{ flex: 1, padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#334155', fontFamily: 'inherit', outline: 'none', background: '#fff' }}
-                                                                onFocus={e => (e.target.style.borderColor = '#94a3b8')}
-                                                                onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
-                                                            />
-                                                            {urlValida && (
-                                                                <a href={url} target="_blank" rel="noopener noreferrer"
-                                                                    style={{ padding: '8px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#1d4ed8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                                                                    🔗 Abrir
-                                                                </a>
-                                                            )}
-                                                        </div>
+                                                        {aberto && (
+                                                            <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+                                                                {/* Botão de upload — só aparece se Drive estiver configurado */}
+                                                                {driveConfigurado && (
+                                                                    <>
+                                                                        <input
+                                                                            ref={fileInputRef}
+                                                                            type="file"
+                                                                            accept="image/*,video/*,audio/*"
+                                                                            style={{ display: 'none' }}
+                                                                            onChange={handleFileSelect}
+                                                                        />
+                                                                        <button type="button"
+                                                                            disabled={uploadandoEvidencia}
+                                                                            onClick={() => fileInputRef.current?.click()}
+                                                                            style={{
+                                                                                width: '100%', padding: '10px', borderRadius: 8, border: '1.5px dashed #c7d2fe',
+                                                                                background: uploadandoEvidencia ? '#f5f3ff' : '#fff', cursor: uploadandoEvidencia ? 'default' : 'pointer',
+                                                                                fontSize: 12, fontWeight: 600, color: '#6366f1', transition: 'all .15s',
+                                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                                                            }}>
+                                                                            {uploadandoEvidencia ? (
+                                                                                <>
+                                                                                    <span style={{ fontSize: 13 }}>⏳</span>
+                                                                                    Enviando para Google Drive... {uploadProgresso}%
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <span style={{ fontSize: 15 }}>📷</span>
+                                                                                    {url ? 'Trocar arquivo' : 'Foto ou vídeo — salva no seu Google Drive'}
+                                                                                </>
+                                                                            )}
+                                                                        </button>
+                                                                        {uploadandoEvidencia && (
+                                                                            <div style={{ height: 4, borderRadius: 99, background: '#e0e7ff', overflow: 'hidden' }}>
+                                                                                <div style={{ height: '100%', borderRadius: 99, background: '#6366f1', width: `${uploadProgresso}%`, transition: 'width .3s' }} />
+                                                                            </div>
+                                                                        )}
+                                                                        {uploadErro && (
+                                                                            <span style={{ fontSize: 11, color: '#ef4444' }}>{uploadErro}</span>
+                                                                        )}
+                                                                    </>
+                                                                )}
+
+                                                                {/* Arquivo já enviado */}
+                                                                {urlValida && (
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8 }}>
+                                                                        <span style={{ fontSize: 13 }}>✅</span>
+                                                                        <span style={{ fontSize: 12, color: '#15803d', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Arquivo no Google Drive</span>
+                                                                        <a href={url} target="_blank" rel="noopener noreferrer"
+                                                                            style={{ fontSize: 11, fontWeight: 600, color: '#1d4ed8', textDecoration: 'none', flexShrink: 0 }}>
+                                                                            Abrir ↗
+                                                                        </a>
+                                                                        <button type="button" onClick={() => setNovoRegistro({ ...novoRegistro, urlEvidencia: '' } as any)}
+                                                                            style={{ color: '#cbd5e1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, padding: 0, flexShrink: 0 }}>✕</button>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Fallback: link manual (sempre disponível) */}
+                                                                {!driveConfigurado && (
+                                                                    <input
+                                                                        type="url"
+                                                                        value={url}
+                                                                        onChange={e => setNovoRegistro({ ...novoRegistro, urlEvidencia: e.target.value } as any)}
+                                                                        placeholder="Cole um link (Google Drive, YouTube, áudio...)"
+                                                                        style={{ flex: 1, padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#334155', fontFamily: 'inherit', outline: 'none', background: '#fff' }}
+                                                                        onFocus={e => (e.target.style.borderColor = '#94a3b8')}
+                                                                        onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )
                                             })()}
