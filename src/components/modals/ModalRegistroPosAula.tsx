@@ -371,6 +371,22 @@ export default function ModalRegistroPosAula() {
     const timerIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null)
     const MAX_DURACAO_AUDIO = 60
     const [mostrarAvancados, setMostrarAvancados] = React.useState(false)
+    // Opcao A — painel "O que foi planejado"
+    const [planejadoAberto, setPlanejadoAberto] = React.useState(true)
+    React.useEffect(() => {
+        if (!planoParaRegistro?.id) return
+        const salvo = localStorage.getItem(`planejado-aberto-${planoParaRegistro.id}`)
+        if (salvo !== null) { setPlanejadoAberto(salvo === 'true'); return }
+        const temConteudo = ((planoParaRegistro as any)?.atividadesRoteiro?.length ?? 0) > 0 || !!((planoParaRegistro as any)?.avaliacaoEvidencia)
+        setPlanejadoAberto(temConteudo)
+    }, [planoParaRegistro?.id]) // eslint-disable-line
+    function togglePlanejadoAberto() {
+        setPlanejadoAberto(v => {
+            const novo = !v
+            if (planoParaRegistro?.id) localStorage.setItem(`planejado-aberto-${planoParaRegistro.id}`, String(novo))
+            return novo
+        })
+    }
 
     // Auto-expande campos avançados se o registro editado tiver valores neles
     React.useEffect(() => {
@@ -716,6 +732,57 @@ export default function ModalRegistroPosAula() {
                                         )
                                     })()}
 
+                                    {/* Opcao A — O que foi planejado */}
+                                    {planoParaRegistro && (() => {
+                                        const roteiro: any[] = (planoParaRegistro as any).atividadesRoteiro || []
+                                        const objetivo: string = (planoParaRegistro as any).objetivoGeral || ''
+                                        const criterio: string = (planoParaRegistro as any).avaliacaoEvidencia || ''
+                                        if (!objetivo && roteiro.length === 0 && !criterio) return null
+                                        return (
+                                            <div style={{ border: '1px solid #e0e7ff', borderRadius: 12, overflow: 'hidden', background: '#f5f3ff' }}>
+                                                <button
+                                                    type="button"
+                                                    onClick={togglePlanejadoAberto}
+                                                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', background: 'transparent', border: 'none', cursor: 'pointer', gap: 8 }}>
+                                                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: '#6366f1' }}>
+                                                        📋 O que foi planejado
+                                                    </span>
+                                                    <span style={{ fontSize: 9, color: '#a5b4fc', transform: planejadoAberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
+                                                </button>
+                                                {planejadoAberto && (
+                                                    <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                        {objetivo ? (
+                                                            <div>
+                                                                <p style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 3 }}>Objetivo</p>
+                                                                <p style={{ fontSize: 12, color: '#3730a3', lineHeight: 1.4 }}>{objetivo}</p>
+                                                            </div>
+                                                        ) : null}
+                                                        {roteiro.length > 0 ? (
+                                                            <div>
+                                                                <p style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 4 }}>Roteiro</p>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                                    {roteiro.map((at: any, i: number) => (
+                                                                        <div key={at.id ?? i} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                                                            <span style={{ fontSize: 10, color: '#a5b4fc', fontWeight: 700, flexShrink: 0, minWidth: 16, textAlign: 'right' as const }}>{i + 1}.</span>
+                                                                            <span style={{ fontSize: 12, color: '#3730a3', flex: 1 }}>{at.nome}</span>
+                                                                            {at.duracao ? <span style={{ fontSize: 10, color: '#a5b4fc', flexShrink: 0 }}>{at.duracao}min</span> : null}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        ) : null}
+                                                        {criterio ? (
+                                                            <div style={{ background: '#ede9fe', borderRadius: 8, padding: '7px 10px' }}>
+                                                                <p style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 3 }}>Critério de sucesso</p>
+                                                                <p style={{ fontSize: 12, color: '#3730a3', lineHeight: 1.4, fontStyle: 'italic' }}>{criterio}</p>
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })()}
+
                                     {/* Data */}
                                     <div className="flex items-center gap-2" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 12px' }}>
                                         <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Data da aula</span>
@@ -731,23 +798,7 @@ export default function ModalRegistroPosAula() {
                                         firstRef={statusAulaFirstRef}
                                     />
 
-                                    {/* O que foi realizado */}
-                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, background: '#f8fafc', padding: '10px 12px' }}>
-                                        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: (novoRegistro as any).resumoAula?.trim() ? '#334155' : '#64748b', marginBottom: 6 }}>
-                                            🗒 O que foi realizado
-                                        </p>
-                                        <textarea
-                                            rows={2}
-                                            value={(novoRegistro as any).resumoAula || ''}
-                                            onChange={e => setNovoRegistro({ ...novoRegistro, resumoAula: e.target.value } as any)}
-                                            placeholder="Ao final desta aula, os alunos conseguiram ___ que antes não conseguiam."
-                                            style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#334155', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', background: 'transparent' }}
-                                            onFocus={e => (e.target.style.borderColor = '#94a3b8')}
-                                            onBlur={e  => (e.target.style.borderColor = '#e2e8f0')}
-                                        />
-                                    </div>
-
-                                    {/* Chips de anotação */}
+{/* Chips de anotação */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                         {camposConfig.map(({ id, icon, label, field, placeholder }, idx) => {
                                             const valor = (novoRegistro as any)[field] || ''
@@ -1563,7 +1614,7 @@ export default function ModalRegistroPosAula() {
                         {!verRegistros && (
                             <div style={{ padding: '10px 16px', borderTop: '1px solid #e2e8f0', background: '#fff', flexShrink: 0 }}>
                                 <button ref={salvarBtnRef} onClick={() => {
-                                    const algumCampo = !!(novoRegistro.resumoAula || novoRegistro.funcionouBem || novoRegistro.naoFuncionou || novoRegistro.proximaAula || novoRegistro.comportamento)
+                                    const algumCampo = !!(novoRegistro.funcionouBem || novoRegistro.naoFuncionou || novoRegistro.proximaAula || novoRegistro.comportamento)
                                     const dadosParaIA = { ...novoRegistro }
                                     const tituloPlano = planoParaRegistro?.titulo || ''
                                     if (audioUrl) URL.revokeObjectURL(audioUrl)

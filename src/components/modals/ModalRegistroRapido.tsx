@@ -169,7 +169,7 @@ export default function ModalRegistroRapido() {
         setFiltroRegAno(''); setFiltroRegEscola(''); setFiltroRegSegmento('')
         setFiltroRegTurma(''); setFiltroRegData('')
         setRegistroEditando(null)
-        setNovoRegistro({ dataAula: rrData, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', statusAula: (rrResultados[String(aula.turmaId)] as any) || undefined, anotacoesGerais: '', urlEvidencia: '' } as any)
+        setNovoRegistro({ dataAula: rrData, funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', statusAula: (rrResultados[String(aula.turmaId)] as any) || undefined, anotacoesGerais: '', urlEvidencia: '' } as any)
         setModalRegistro(true)
         setModalRegistroRapido(false)
     }
