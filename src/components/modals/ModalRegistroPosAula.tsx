@@ -780,7 +780,7 @@ export default function ModalRegistroPosAula() {
                                                     }}>
                                                     <span style={{ fontSize: 13, flexShrink: 0 }}>📋</span>
                                                     <span style={{ fontSize: 12, color: planejadoInlineAberto ? '#334155' : '#64748b', flex: 1, fontWeight: planejadoInlineAberto ? 600 : 400 }}>
-                                                        {planejadoInlineAberto ? 'Ocultar o que foi planejado' : 'Ver o que foi planejado para esta aula'}
+                                                        {planejadoInlineAberto ? 'Ocultar plano de aula' : 'Ver plano de aula'}
                                                     </span>
                                                     <span style={{ fontSize: 10, color: '#94a3b8' }}>{planejadoInlineAberto ? '▲' : '▼'}</span>
                                                 </button>
