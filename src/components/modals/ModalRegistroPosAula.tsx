@@ -100,13 +100,22 @@ const AccordionChip = React.forwardRef<() => void, {
 })
 
 // ── BEHAVIOR CHIP — comportamento com tags clicáveis ──
-const BEHAVIOR_TAGS = [
-    { id: 'focada',   label: 'Focada e participativa' },
-    { id: 'animada',  label: 'Animada mas difícil conduzir' },
-    { id: 'apatica',  label: 'Apática / pouco engajamento' },
-    { id: 'instavel', label: 'Instável — oscilou muito' },
-    { id: 'timida',   label: 'Tímida / retraída' },
+const BEHAVIOR_PRIMARY = [
+    { id: 'focada',    label: '🎯 Focada e engajada' },
+    { id: 'animada',   label: '🔥 Animada' },
+    { id: 'esperado',  label: '😐 Dentro do esperado' },
+    { id: 'cansada',   label: '😴 Cansada' },
+    { id: 'dispersa',  label: '💭 Dispersa' },
 ]
+const BEHAVIOR_SECONDARY = [
+    { id: 'agitada',   label: '⚡ Muito agitada' },
+    { id: 'dificil',   label: '😤 Difícil conduzir' },
+    { id: 'falante',   label: '🗣️ Muito falante' },
+    { id: 'timida',    label: '🤐 Tímida' },
+    { id: 'oscilou',   label: '🔄 Oscilou muito' },
+    { id: 'lenta',     label: '🐢 Mais lenta hoje' },
+]
+const ALL_BEHAVIOR_TAGS = [...BEHAVIOR_PRIMARY, ...BEHAVIOR_SECONDARY]
 
 const BehaviorChip = React.forwardRef<() => void, {
     value: string, filled: boolean,
@@ -114,30 +123,60 @@ const BehaviorChip = React.forwardRef<() => void, {
     onTabNext?: () => void,
 }>(function BehaviorChip({ value, filled, onChange }, ref) {
     const [open, setOpen] = React.useState(false)
-    const [selectedTags, setSelectedTags] = React.useState<string[]>([])
+    const [expanded, setExpanded] = React.useState(false)
+    const [selectedIds, setSelectedIds] = React.useState<string[]>([])
+    const [nota, setNota] = React.useState('')
 
     React.useImperativeHandle(ref, () => () => setOpen(true))
     React.useEffect(() => { if (filled) setOpen(true) }, [filled])
 
-    // Sincroniza tags selecionadas ao carregar (ex: editar registro)
+    // Sincroniza ao carregar (ex: editar registro)
     React.useEffect(() => {
         if (value) {
-            const matched = BEHAVIOR_TAGS.filter(t => value.includes(t.label)).map(t => t.id)
-            if (matched.length > 0) setSelectedTags(matched)
+            const matched = ALL_BEHAVIOR_TAGS.filter(t => value.includes(t.label)).map(t => t.id)
+            if (matched.length > 0) {
+                setSelectedIds(matched)
+                // Abrir extras se algum selecionado for secundário
+                if (BEHAVIOR_SECONDARY.some(t => matched.includes(t.id))) setExpanded(true)
+            }
+            // Extrai nota de texto livre (após o último ". ")
+            const lastDot = value.lastIndexOf('. ')
+            if (lastDot > -1) {
+                const possibleNota = value.slice(lastDot + 2)
+                if (!ALL_BEHAVIOR_TAGS.some(t => t.label === possibleNota)) setNota(possibleNota)
+            }
         }
     }, []) // eslint-disable-line
 
     const toggleTag = (tagId: string) => {
-        const next = selectedTags.includes(tagId)
-            ? selectedTags.filter(t => t !== tagId)
-            : [...selectedTags, tagId]
-        setSelectedTags(next)
-        const combined = next.map(id => BEHAVIOR_TAGS.find(t => t.id === id)?.label || '').filter(Boolean).join('. ')
-        onChange(combined)
+        const next = selectedIds.includes(tagId)
+            ? selectedIds.filter(t => t !== tagId)
+            : [...selectedIds, tagId]
+        setSelectedIds(next)
+        emit(next, nota)
     }
+
+    const emit = (ids: string[], textoNota: string) => {
+        const labels = ids.map(id => ALL_BEHAVIOR_TAGS.find(t => t.id === id)?.label || '').filter(Boolean)
+        const parts = textoNota.trim() ? [...labels, textoNota.trim()] : labels
+        onChange(parts.join('. '))
+    }
+
+    const chipStyle = (sel: boolean): React.CSSProperties => ({
+        padding: '8px 13px', borderRadius: 20, fontSize: 13,
+        cursor: 'pointer', transition: 'all .12s', fontFamily: 'inherit',
+        whiteSpace: 'nowrap' as const, lineHeight: 1.2,
+        background: sel ? '#1e2a4a' : '#fff',
+        color:      sel ? '#fff'    : '#475569',
+        border:     sel ? '1.5px solid #1e2a4a' : '1.5px solid #e2e8f0',
+        fontWeight: sel ? 700 : 500,
+        outline: 'none',
+        WebkitTapHighlightColor: 'transparent',
+    })
 
     return (
         <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+            {/* Cabeçalho clicável */}
             <div onClick={() => setOpen(o => !o)}
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
                 <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>👥</span>
@@ -147,23 +186,49 @@ const BehaviorChip = React.forwardRef<() => void, {
                 {filled && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
                 <span style={{ fontSize: 9, color: '#94a3b8', flexShrink: 0, marginLeft: 4, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
             </div>
+
             {open && (
-                <div style={{ padding: '0 12px 12px' }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {BEHAVIOR_TAGS.map(tag => (
+                <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {/* Chips principais */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                        {BEHAVIOR_PRIMARY.map(tag => (
                             <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)}
-                                style={{
-                                    padding: '6px 12px', borderRadius: 8, fontSize: 12,
-                                    cursor: 'pointer', transition: 'all .12s', fontFamily: 'inherit',
-                                    background: selectedTags.includes(tag.id) ? '#f1f5f9' : '#fff',
-                                    color:      selectedTags.includes(tag.id) ? '#1e293b' : '#475569',
-                                    border:     selectedTags.includes(tag.id) ? '1px solid #334155' : '1px solid #e2e8f0',
-                                    fontWeight: selectedTags.includes(tag.id) ? 600 : 500,
-                                }}>
+                                style={chipStyle(selectedIds.includes(tag.id))}>
                                 {tag.label}
                             </button>
                         ))}
                     </div>
+
+                    {/* Chips secundários — expansíveis */}
+                    {expanded && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, paddingTop: 2 }}>
+                            {BEHAVIOR_SECONDARY.map(tag => (
+                                <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)}
+                                    style={chipStyle(selectedIds.includes(tag.id))}>
+                                    {tag.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Botão "+ mais opções" */}
+                    {!expanded && (
+                        <button type="button" onClick={() => setExpanded(true)}
+                            style={{ alignSelf: 'flex-start', fontSize: 12, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', fontFamily: 'inherit', outline: 'none' }}>
+                            + mais opções
+                        </button>
+                    )}
+
+                    {/* Campo de texto complementar */}
+                    <textarea
+                        value={nota}
+                        onChange={e => { setNota(e.target.value); emit(selectedIds, e.target.value) }}
+                        rows={2}
+                        placeholder="Se quiser, descreva um pouco mais…"
+                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', background: '#fff' }}
+                        onFocus={e => (e.target.style.borderColor = '#94a3b8')}
+                        onBlur={e  => (e.target.style.borderColor = '#e2e8f0')}
+                    />
                 </div>
             )}
         </div>
