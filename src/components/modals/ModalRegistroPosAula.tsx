@@ -16,25 +16,31 @@ const AccordionChip = React.forwardRef<() => void, {
 }>(function AccordionChip({ id, icon, label, placeholder, value, filled, defaultOpen, onChange, onTabNext, quickOptions, allowVoice }, ref) {
     const [open, setOpen] = React.useState(defaultOpen ?? false)
     const [gravando, setGravando] = React.useState(false)
+    const [speechAtivo, setSpeechAtivo] = React.useState(false)
     const recognitionRef = React.useRef<any>(null)
+    const valueRef = React.useRef(value)
+    React.useEffect(() => { valueRef.current = value }, [value])
     React.useImperativeHandle(ref, () => () => setOpen(true))
     React.useEffect(() => { if (filled) setOpen(true) }, [filled])
 
     const toggleVoz = (e: React.MouseEvent) => {
         e.stopPropagation()
-        if (gravando) { recognitionRef.current?.stop(); setGravando(false); return }
+        if (gravando) { recognitionRef.current?.stop(); setGravando(false); setSpeechAtivo(false); return }
         const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
         if (!SR) { alert('Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge.'); return }
         const rec = new SR()
         rec.lang = 'pt-BR'
         rec.continuous = true
         rec.interimResults = false
+        rec.onspeechstart = () => setSpeechAtivo(true)
+        rec.onspeechend = () => setSpeechAtivo(false)
         rec.onresult = (ev: any) => {
             const t = Array.from(ev.results).slice(ev.resultIndex).map((r: any) => r[0].transcript).join(' ')
-            onChange(value ? value + ' ' + t : t)
+            const cur = valueRef.current
+            onChange(cur ? cur + ' ' + t : t)
         }
-        rec.onend = () => setGravando(false)
-        rec.onerror = () => setGravando(false)
+        rec.onend = () => { setGravando(false); setSpeechAtivo(false) }
+        rec.onerror = () => { setGravando(false); setSpeechAtivo(false) }
         recognitionRef.current = rec
         rec.start()
         setGravando(true)
@@ -74,10 +80,18 @@ const AccordionChip = React.forwardRef<() => void, {
                     <textarea id={id} value={value} onChange={e => onChange(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Tab') { e.preventDefault(); setOpen(false); onTabNext?.() } }}
                         rows={2} placeholder={placeholder} autoFocus
-                        style={{ width: '100%', padding: '9px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#334155', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none' }}
-                        onFocus={e => (e.target.style.borderColor = '#94a3b8')}
-                        onBlur={e  => (e.target.style.borderColor = '#e2e8f0')}
+                        style={{ width: '100%', padding: '9px 10px', border: `1px solid ${gravando ? (speechAtivo ? '#fca5a5' : '#e2e8f0') : '#e2e8f0'}`, borderRadius: 8, fontSize: 13, color: '#334155', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', transition: 'border-color .2s' }}
+                        onFocus={e => { if (!gravando) e.target.style.borderColor = '#94a3b8' }}
+                        onBlur={e  => { if (!gravando) e.target.style.borderColor = '#e2e8f0' }}
                     />
+                    {gravando && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, fontSize: 11 }}>
+                            <span style={{ width: 7, height: 7, borderRadius: '50%', background: speechAtivo ? '#ef4444' : '#94a3b8', flexShrink: 0, transition: 'background .2s' }} />
+                            <span style={{ color: speechAtivo ? '#ef4444' : '#94a3b8', fontWeight: 500 }}>
+                                {speechAtivo ? 'Ouvindo...' : 'Aguardando — pode continuar falando ou pressionar ⏹'}
+                            </span>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -387,8 +401,8 @@ export default function ModalRegistroPosAula() {
         const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
         if (!SR) { alert('Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge.'); return }
         const rec = new SR()
-        rec.lang = 'pt-BR'; rec.continuous = false; rec.interimResults = false
-        rec.onresult = (ev: any) => { setNovoEnc(ev.results[0][0].transcript) }
+        rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = false
+        rec.onresult = (ev: any) => { const t = Array.from(ev.results).slice(ev.resultIndex).map((r: any) => r[0].transcript).join(' '); setNovoEnc(t) }
         rec.onend = () => setGravandoEnc(false)
         rec.onerror = () => setGravandoEnc(false)
         recognitionEncRef.current = rec; rec.start(); setGravandoEnc(true)
@@ -397,6 +411,7 @@ export default function ModalRegistroPosAula() {
     const [buscaEstrategiaPos, setBuscaEstrategiaPos] = React.useState('')
     // ── estados de áudio (B3) ──
     const [mostrarAvancados, setMostrarAvancados] = React.useState(false)
+    const [contextoAberto, setContextoAberto] = React.useState(false)
     const [seletorTurma, setSeletorTurma] = React.useState(false)
     const [seletorEscola, setSeletorEscola] = React.useState(false)
     const [modoCompacto, setModoCompacto] = React.useState(false)
@@ -1051,38 +1066,50 @@ export default function ModalRegistroPosAula() {
                                         <div className="space-y-3">
 
                                             {/* ── Contexto da aula ── */}
-                                            <div style={{ padding: '10px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-                                                <p style={{ fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>Como a aula aconteceu na prática?</p>
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                                    {(['Seguiu o plano', 'Pequenas adaptações', 'Mudou bastante', 'Improvisada'] as const).map(op => {
-                                                        const ativo = (novoRegistro as any).contextoAula === op
-                                                        return (
-                                                            <button key={op} type="button"
-                                                                onClick={() => setNovoRegistro({ ...novoRegistro, contextoAula: ativo ? '' : op } as any)}
-                                                                style={{ fontSize: 12, padding: '5px 10px', borderRadius: 20, border: '1px solid', cursor: 'pointer', transition: 'all .15s',
-                                                                    background: ativo ? '#1e293b' : '#fff',
-                                                                    borderColor: ativo ? '#1e293b' : '#e2e8f0',
-                                                                    color: ativo ? '#fff' : '#64748b',
-                                                                    fontWeight: ativo ? 600 : 400 }}>
-                                                                {op}
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                <div onClick={() => setContextoAberto(o => !o)}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
+                                                    <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>🗓</span>
+                                                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: (novoRegistro as any).contextoAula ? '#334155' : '#64748b', flex: 1 }}>
+                                                        Como a aula aconteceu na prática?
+                                                    </span>
+                                                    {(novoRegistro as any).contextoAula && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                    <span style={{ fontSize: 9, color: '#94a3b8', flexShrink: 0, marginLeft: 4, transform: contextoAberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
+                                                </div>
+                                                {contextoAberto && (
+                                                    <div style={{ padding: '0 12px 10px' }}>
+                                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                                                            {(['Seguiu o plano', 'Pequenas adaptações', 'Mudou bastante'] as const).map(op => {
+                                                                const ativo = (novoRegistro as any).contextoAula === op
+                                                                return (
+                                                                    <button key={op} type="button"
+                                                                        onClick={() => setNovoRegistro({ ...novoRegistro, contextoAula: ativo ? '' : op } as any)}
+                                                                        style={{ fontSize: 12, padding: '5px 10px', borderRadius: 20, border: '1px solid', cursor: 'pointer', transition: 'all .15s',
+                                                                            background: ativo ? '#1e293b' : '#fff',
+                                                                            borderColor: ativo ? '#1e293b' : '#e2e8f0',
+                                                                            color: ativo ? '#fff' : '#64748b',
+                                                                            fontWeight: ativo ? 600 : 400 }}>
+                                                                        {op}
+                                                                    </button>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                        <div style={{ position: 'relative' }}>
+                                                            <textarea
+                                                                value={(novoRegistro as any).contextoAulaDetalhe || ''}
+                                                                onChange={e => setNovoRegistro({ ...novoRegistro, contextoAulaDetalhe: e.target.value } as any)}
+                                                                rows={2} placeholder="Detalhe o que aconteceu... (opcional)"
+                                                                style={{ width: '100%', padding: '8px 36px 8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', background: '#fff' }}
+                                                                onFocus={e => (e.target.style.borderColor = '#94a3b8')}
+                                                                onBlur={e  => (e.target.style.borderColor = '#e2e8f0')}
+                                                            />
+                                                            <button type="button" onClick={toggleVozContexto} title={gravandoContexto ? 'Parar' : 'Gravar por voz'}
+                                                                style={{ position: 'absolute', right: 6, top: 6, fontSize: 13, background: gravandoContexto ? '#fee2e2' : 'transparent', border: gravandoContexto ? '1px solid #fca5a5' : '1px solid transparent', borderRadius: 6, cursor: 'pointer', padding: '2px 5px', color: gravandoContexto ? '#ef4444' : '#94a3b8', outline: 'none' }}>
+                                                                {gravandoContexto ? '⏹' : '🎙'}
                                                             </button>
-                                                        )
-                                                    })}
-                                                </div>
-                                                <div style={{ marginTop: 8, position: 'relative' }}>
-                                                    <textarea
-                                                        value={(novoRegistro as any).contextoAulaDetalhe || ''}
-                                                        onChange={e => setNovoRegistro({ ...novoRegistro, contextoAulaDetalhe: e.target.value } as any)}
-                                                        rows={2} placeholder="Detalhe o que aconteceu... (opcional)"
-                                                        style={{ width: '100%', padding: '8px 36px 8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', background: '#fff' }}
-                                                        onFocus={e => (e.target.style.borderColor = '#94a3b8')}
-                                                        onBlur={e  => (e.target.style.borderColor = '#e2e8f0')}
-                                                    />
-                                                    <button type="button" onClick={toggleVozContexto} title={gravandoContexto ? 'Parar gravação' : 'Gravar por voz'}
-                                                        style={{ position: 'absolute', right: 6, top: 6, fontSize: 13, background: gravandoContexto ? '#fee2e2' : 'transparent', border: gravandoContexto ? '1px solid #fca5a5' : '1px solid transparent', borderRadius: 6, cursor: 'pointer', padding: '2px 5px', color: gravandoContexto ? '#ef4444' : '#94a3b8', outline: 'none' }}>
-                                                        {gravandoContexto ? '⏹' : '🎙'}
-                                                    </button>
-                                                </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* ── Reflexão aprofundada ── */}
@@ -1234,68 +1261,6 @@ export default function ModalRegistroPosAula() {
                                                 )
                                             })()}
 
-                                            {/* ── Estratégias que funcionaram hoje ── */}
-                                            {(() => {
-                                                const estrategiasFuncionaram: string[] = (novoRegistro as any).estrategiasQueFunc || []
-                                                return (
-                                                    <div style={{ border: '1px solid #ede9fe', borderRadius: 10, overflow: 'hidden', background: '#faf5ff' }}>
-                                                        <div
-                                                            onClick={() => setShowEstrategiasFuncionaram(o => !o)}
-                                                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
-                                                            <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>🧩</span>
-                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: estrategiasFuncionaram.length > 0 ? '#5b21b6' : '#7c3aed', flex: 1 }}>
-                                                                Estratégias que funcionaram hoje
-                                                            </span>
-                                                            {estrategiasFuncionaram.length > 0 && (
-                                                                <span style={{ fontSize: 10, color: '#7c3aed', fontWeight: 700, background: '#ede9fe', padding: '1px 8px', borderRadius: 99, border: '1px solid #ddd6fe', flexShrink: 0 }}>
-                                                                    {estrategiasFuncionaram.length}
-                                                                </span>
-                                                            )}
-                                                            <span style={{ fontSize: 10, color: '#a78bfa', transition: 'transform .2s', display: 'inline-block', transform: showEstrategiasFuncionaram ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-                                                        </div>
-                                                        {showEstrategiasFuncionaram && (
-                                                            <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                                                {estrategiasFuncionaram.map((nome, idx) => (
-                                                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                                        <span style={{ fontSize: 11, color: '#5b21b6', flex: 1 }}>🧩 {nome}</span>
-                                                                        <button type="button" onClick={() => {
-                                                                            const nova = estrategiasFuncionaram.filter((_, i) => i !== idx)
-                                                                            setNovoRegistro({ ...novoRegistro, estrategiasQueFunc: nova } as any)
-                                                                        }} style={{ color: '#cbd5e1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, padding: '0 2px', flexShrink: 0 }}>✕</button>
-                                                                    </div>
-                                                                ))}
-                                                                <input type="text" value={buscaEstrategiaPos}
-                                                                    onChange={e => setBuscaEstrategiaPos(e.target.value)}
-                                                                    placeholder="Buscar estratégia..."
-                                                                    style={{ width: '100%', boxSizing: 'border-box', padding: '6px 10px', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#334155', outline: 'none', fontFamily: 'inherit', background: '#fff', marginBottom: 4 }}
-                                                                />
-                                                                {buscaEstrategiaPos.length >= 1 && (
-                                                                    <div style={{ maxHeight: 140, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                                                        {estrategias
-                                                                            .filter(e => e.nome.toLowerCase().includes(buscaEstrategiaPos.toLowerCase()) && !estrategiasFuncionaram.includes(e.nome))
-                                                                            .slice(0, 6)
-                                                                            .map(est => (
-                                                                                <button key={est.id} type="button"
-                                                                                    onClick={() => {
-                                                                                        setNovoRegistro({ ...novoRegistro, estrategiasQueFunc: [...estrategiasFuncionaram, est.nome] } as any)
-                                                                                        setBuscaEstrategiaPos('')
-                                                                                    }}
-                                                                                    style={{ textAlign: 'left', padding: '6px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, color: '#5b21b6', background: 'none', border: 'none', cursor: 'pointer', transition: 'background .1s' }}
-                                                                                    onMouseEnter={e => (e.currentTarget.style.background = '#ede9fe')}
-                                                                                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                                                                                    🧩 {est.nome}
-                                                                                </button>
-                                                                            ))}
-                                                                        {estrategias.filter(e => e.nome.toLowerCase().includes(buscaEstrategiaPos.toLowerCase()) && !estrategiasFuncionaram.includes(e.nome)).length === 0 && (
-                                                                            <p style={{ fontSize: 11, color: '#a78bfa', textAlign: 'center', padding: '6px 0' }}>Nenhuma encontrada</p>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )
-                                            })()}
 
                                             {/* Evidência de Aula — URL */}
                                             {(() => {
