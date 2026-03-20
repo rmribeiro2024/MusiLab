@@ -517,14 +517,6 @@ export default function ModalRegistroPosAula() {
                             {minimizado && <p style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Clique para restaurar</p>}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, flexShrink: 0 }}>
-                            {planoParaRegistro && (
-                                <button title="Ver o que foi planejado"
-                                    onClick={e => { e.stopPropagation(); setPlanejadoAberto(v => !v) }}
-                                    style={{ width: 28, height: 28, borderRadius: 8, background: planejadoAberto ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)', border: 'none', color: planejadoAberto ? '#fff' : '#94a3b8', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background .15s' }}
-                                    onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,.22)')}
-                                    onMouseOut={e  => (e.currentTarget.style.background = planejadoAberto ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)')}
-                                >📋</button>
-                            )}
                             {[
                                 { title: minimizado ? 'Restaurar' : 'Minimizar', label: '—', onClick: () => { setMinimizado(m => !m); setMaximizado(false) }, active: minimizado },
                                 { title: maximizado ? 'Restaurar tamanho' : 'Maximizar', label: maximizado ? '⊡' : '⤢', onClick: () => { setMaximizado(m => !m); setMinimizado(false) }, active: maximizado },
