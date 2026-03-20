@@ -634,13 +634,6 @@ export default function ModalRegistroPosAula() {
                                 ════════════════════════════════ */}
                             {!verRegistros ? (
                                 <>
-                                    {registroEditando && (
-                                        <div className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                                            <span className="text-xs font-medium text-slate-600">Editando registro</span>
-                                            <button onClick={() => { setRegistroEditando(null); setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', poderiaMelhorar: '', proximaAula: '', comportamento: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined }); setRegEscolaSel(''); setRegTurmaSel('') }}
-                                                className="text-xs font-bold text-slate-500 hover:text-red-500 transition-colors">✕ Cancelar</button>
-                                        </div>
-                                    )}
 
                                     {/* Turma + Data — compacto quando selecionado */}
                                     {regTurmaSel && !editandoTurma ? (
@@ -663,6 +656,14 @@ export default function ModalRegistroPosAula() {
                                                 style={{ fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}>
                                                 ✎
                                             </button>
+                                            {registroEditando && (
+                                                <button type="button"
+                                                    onClick={() => { setRegistroEditando(null); setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', poderiaMelhorar: '', proximaAula: '', comportamento: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined }); setRegEscolaSel(''); setRegTurmaSel('') }}
+                                                    style={{ fontSize: 10, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}
+                                                    onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
+                                                    onMouseOut={e  => (e.currentTarget.style.color = '#94a3b8')}
+                                                    title="Cancelar edição">✕</button>
+                                            )}
                                         </div>
                                     ) : (
                                         <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12 }} className="space-y-2">
