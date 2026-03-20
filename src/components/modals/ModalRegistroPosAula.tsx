@@ -396,15 +396,6 @@ export default function ModalRegistroPosAula() {
     const [showEstrategiasFuncionaram, setShowEstrategiasFuncionaram] = React.useState(false)
     const [buscaEstrategiaPos, setBuscaEstrategiaPos] = React.useState('')
     // ── estados de áudio (B3) ──
-    const [gravando, setGravando] = React.useState(false)
-    const [timerGravacao, setTimerGravacao] = React.useState(0)
-    const [audioBase64, setAudioBase64] = React.useState<string | null>(null)
-    const [audioDuracao, setAudioDuracao] = React.useState(0)
-    const [audioMime, setAudioMime] = React.useState('audio/webm')
-    const [audioUrl, setAudioUrl] = React.useState<string | null>(null)
-    const [erroAudio, setErroAudio] = React.useState<string | null>(null)
-    const timerIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null)
-    const MAX_DURACAO_AUDIO = 60
     const [mostrarAvancados, setMostrarAvancados] = React.useState(false)
     const [seletorTurma, setSeletorTurma] = React.useState(false)
     const [seletorEscola, setSeletorEscola] = React.useState(false)
@@ -1105,6 +1096,7 @@ export default function ModalRegistroPosAula() {
                                                 return (
                                                     <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
                                                         value={valor} filled={valor.trim().length > 0}
+                                                        allowVoice
                                                         onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v } as any)}
                                                     />
                                                 )
@@ -1118,92 +1110,6 @@ export default function ModalRegistroPosAula() {
                                                 onTabNext={() => {}}
                                                 ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length] = fn }}
                                             />
-                                    {/* ── Nota de voz ── */}
-                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
-                                            <span style={{ fontSize: 14, lineHeight: 1 }}>🎙️</span>
-                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: audioBase64 ? '#334155' : '#64748b', flex: 1 }}>
-                                                Nota de voz
-                                            </span>
-                                            {audioBase64 && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0' }}>✓ {audioDuracao}s</span>}
-                                        </div>
-                                        <div style={{ padding: '0 12px 12px' }}>
-                                            {erroAudio && (
-                                                <p style={{ fontSize: 11, color: '#ef4444', margin: '0 0 8px' }}>{erroAudio}</p>
-                                            )}
-                                            {!audioBase64 && !gravando && (
-                                                <button type="button"
-                                                    onClick={async () => {
-                                                        setErroAudio(null)
-                                                        try {
-                                                            await startRecording()
-                                                            setGravando(true)
-                                                            setTimerGravacao(0)
-                                                            timerIntervalRef.current = setInterval(() => {
-                                                                setTimerGravacao(t => {
-                                                                    const next = t + 1
-                                                                    if (next >= MAX_DURACAO_AUDIO) {
-                                                                        clearInterval(timerIntervalRef.current!)
-                                                                        stopRecording().then(async blob => {
-                                                                            const b64 = await blobToBase64(blob)
-                                                                            const mime = blob.type || 'audio/webm'
-                                                                            const url = base64ToObjectUrl(b64, mime)
-                                                                            setAudioBase64(b64); setAudioMime(mime); setAudioUrl(url)
-                                                                            setAudioDuracao(MAX_DURACAO_AUDIO); setGravando(false)
-                                                                            setNovoRegistro((prev: any) => ({ ...prev, audioNotaDeVoz: b64, audioDuracao: MAX_DURACAO_AUDIO, audioMime: mime }))
-                                                                        })
-                                                                    }
-                                                                    return next
-                                                                })
-                                                            }, 1000)
-                                                        } catch {
-                                                            setErroAudio('Microfone não disponível. Verifique as permissões do navegador.')
-                                                        }
-                                                    }}
-                                                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
-                                                    <span>⏺</span> Gravar nota de voz
-                                                </button>
-                                            )}
-                                            {gravando && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <span style={{ fontSize: 11, fontWeight: 700, color: '#ef4444', background: '#fef2f2', padding: '4px 10px', borderRadius: 8, border: '1px solid #fecaca', letterSpacing: '.04em' }}>
-                                                        ● REC {String(Math.floor(timerGravacao / 60)).padStart(2, '0')}:{String(timerGravacao % 60).padStart(2, '0')} / {MAX_DURACAO_AUDIO}s
-                                                    </span>
-                                                    <button type="button"
-                                                        onClick={async () => {
-                                                            clearInterval(timerIntervalRef.current!)
-                                                            const blob = await stopRecording()
-                                                            const b64 = await blobToBase64(blob)
-                                                            const mime = blob.type || 'audio/webm'
-                                                            const url = base64ToObjectUrl(b64, mime)
-                                                            const dur = timerGravacao
-                                                            setAudioBase64(b64); setAudioMime(mime); setAudioUrl(url); setAudioDuracao(dur); setGravando(false)
-                                                            setNovoRegistro((prev: any) => ({ ...prev, audioNotaDeVoz: b64, audioDuracao: dur, audioMime: mime }))
-                                                        }}
-                                                        style={{ padding: '5px 12px', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, fontWeight: 700, color: '#dc2626', cursor: 'pointer' }}>
-                                                        ⏹ Parar
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {audioBase64 && audioUrl && !gravando && (
-                                                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-                                                    <audio controls src={audioUrl} style={{ width: '100%', height: 32 }} />
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{audioDuracao}s · ~{base64SizeKb(audioBase64)} KB</span>
-                                                        <button type="button"
-                                                            onClick={() => {
-                                                                if (audioUrl) URL.revokeObjectURL(audioUrl)
-                                                                setAudioBase64(null); setAudioUrl(null); setAudioDuracao(0); setAudioMime('audio/webm')
-                                                                setNovoRegistro((prev: any) => { const { audioNotaDeVoz: _a, audioDuracao: _d, audioMime: _m, ...rest } = prev; return rest })
-                                                            }}
-                                                            style={{ marginLeft: 'auto', padding: '3px 9px', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 6, fontSize: 11, fontWeight: 700, color: '#dc2626', cursor: 'pointer' }}>
-                                                            🗑 Excluir
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
 
                                             {/* Chamada rápida */}
                                             {regTurmaSel && regAnoSel && regEscolaSel && regSegmentoSel && (() => {
@@ -1840,8 +1746,6 @@ export default function ModalRegistroPosAula() {
                                     const algumCampo = !!(novoRegistro.funcionouBem || (novoRegistro as any).repetiria || novoRegistro.naoFuncionou || novoRegistro.proximaAula || (novoRegistro as any).comportamento || (novoRegistro as any).audioNotaDeVoz)
                                     const dadosParaIA = { ...novoRegistro }
                                     const tituloPlano = planoParaRegistro?.titulo || ''
-                                    if (audioUrl) URL.revokeObjectURL(audioUrl)
-                                    setAudioBase64(null); setAudioUrl(null); setAudioDuracao(0)
                                     salvarRegistro()
                                     if (algumCampo && !registroEditando) {
                                         const apiKey = import.meta.env.VITE_GEMINI_API_KEY
