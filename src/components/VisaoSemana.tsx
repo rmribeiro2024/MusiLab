@@ -102,10 +102,10 @@ const STATUS_CFG: Record<NonNullable<StatusEfetivo>, {
   acao: string
   textClass: string
 }> = {
-  incompleta: { emoji: '↩', label: 'Incompleta',  acao: 'retomar',           textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
-  concluida:  { emoji: '✓', label: 'Concluída',   acao: 'avançar · nova aula', textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
-  revisao:    { emoji: '↻', label: 'Revisão',     acao: 'revisar e avançar', textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
-  nao_houve:  { emoji: '✗', label: 'Não houve',   acao: 'reaplicar',         textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
+  incompleta: { emoji: '↻', label: 'Retomar ou revisar', acao: 'retomar ou revisar',  textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
+  concluida:  { emoji: '✓', label: 'Avançar',           acao: 'avançar · nova aula', textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
+  revisao:    { emoji: '↻', label: 'Retomar ou revisar', acao: 'retomar ou revisar',  textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
+  nao_houve:  { emoji: '✗', label: 'Não houve',          acao: 'reaplicar',           textClass: 'text-[#6B7280] dark:text-[#9CA3AF]' },
 }
 
 // Paleta de cores por escola — aplicada no nome da escola (tons suaves)

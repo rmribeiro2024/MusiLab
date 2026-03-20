@@ -372,7 +372,7 @@ export default function ModalRegistroPosAula() {
     const MAX_DURACAO_AUDIO = 60
     const [mostrarAvancados, setMostrarAvancados] = React.useState(false)
     // Opcao A — painel "O que foi planejado"
-    const [planejadoAberto, setPlanejadoAberto] = React.useState(true)
+    const [planejadoAberto, setPlanejadoAberto] = React.useState(false)
     React.useEffect(() => {
         if (!planoParaRegistro?.id) return
         const salvo = localStorage.getItem(`planejado-aberto-${planoParaRegistro.id}`)
@@ -393,7 +393,7 @@ export default function ModalRegistroPosAula() {
         if (!registroEditando) return
         const r = registroEditando as any
         if ((r.chamada?.length > 0) || (r.rubrica?.some((x: any) => x.valor > 0)) ||
-            r.urlEvidencia) {
+            r.urlEvidencia || r.comportamento || r.audioNotaDeVoz) {
             setMostrarAvancados(true)
         }
     }, [registroEditando]) // eslint-disable-line
@@ -517,8 +517,7 @@ export default function ModalRegistroPosAula() {
 
     // ── Campos de anotação ──
     const camposConfig = [
-        { id: 'reg-funcionou', icon: '✅', label: 'O que funcionou bem', field: 'funcionouBem', placeholder: 'Ex: A atividade rítmica em grupo engajou muito...' },
-        { id: 'reg-mudar',     icon: '⚠️', label: 'O que mudar',         field: 'naoFuncionou', placeholder: 'O que eu faria diferente sabendo o que sei agora?' },
+        { id: 'reg-mudar', icon: '💭', label: 'O que faria diferente', field: 'naoFuncionou', placeholder: 'Se você pudesse dar esta aula de novo sabendo o que sabe agora — o que faria diferente?' },
     ] as const
 
     return (
@@ -697,42 +696,7 @@ export default function ModalRegistroPosAula() {
                                         )
                                     })()}
 
-                                    {/* Banner última aula */}
-                                    {regTurmaSel && (() => {
-                                        const todosRegs: any[] = []
-                                        planos.forEach(p => { (p.registrosPosAula || []).forEach(r => { if (r.turma == regTurmaSel && !(registroEditando && r.id === registroEditando.id)) todosRegs.push({ ...r, planoTitulo: p.titulo }) }) })
-                                        if (todosRegs.length === 0) return null
-                                        const ultimo = todosRegs.sort((a, b) => (b.data || '').localeCompare(a.data || ''))[0]
-                                        const dataFmt = ultimo.data ? new Date(ultimo.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : ''
-                                        return (
-                                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '10px 12px' }} className="text-xs">
-                                                <p className="font-medium text-slate-600 mb-1">Última aula com esta turma — {dataFmt}</p>
-                                                <p className="text-slate-500 font-medium mb-1">{ultimo.planoTitulo}</p>
-                                                {ultimo.resumoAula && <p className="text-slate-700 mb-1"><span className="font-bold">Realizado:</span> {ultimo.resumoAula}</p>}
-                                                {(ultimo.encaminhamentos?.length > 0) ? (
-                                                    <div className="mt-1">
-                                                        <span className="font-medium text-slate-600">Para hoje:</span>
-                                                        <ul className="mt-0.5 ml-2 flex flex-col gap-0.5">
-                                                            {(ultimo.encaminhamentos as { texto: string; concluido: boolean }[]).map((enc, i) => (
-                                                                <li key={i} className="flex items-start gap-1.5">
-                                                                    <span className={enc.concluido ? 'text-green-500' : 'text-slate-400'}>
-                                                                        {enc.concluido ? '✓' : '•'}
-                                                                    </span>
-                                                                    <span className={enc.concluido ? 'line-through text-slate-400' : 'text-slate-700'}>
-                                                                        {enc.texto}
-                                                                    </span>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                ) : ultimo.proximaAula ? (
-                                                    <p className="text-slate-700"><span className="font-medium text-slate-600">Para hoje:</span> {ultimo.proximaAula}</p>
-                                                ) : null}
-                                            </div>
-                                        )
-                                    })()}
-
-                                    {/* Opcao A — O que foi planejado */}
+                                    {/* Opcao A — Contexto do planejado (botao discreto) */}
                                     {planoParaRegistro && (() => {
                                         const roteiro: any[] = (planoParaRegistro as any).atividadesRoteiro || []
                                         const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim()
@@ -740,47 +704,51 @@ export default function ModalRegistroPosAula() {
                                         const criterio: string = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
                                         if (!objetivo && roteiro.length === 0 && !criterio) return null
                                         return (
-                                            <div style={{ border: '1px solid #e0e7ff', borderRadius: 12, overflow: 'hidden', background: '#f5f3ff' }}>
-                                                <button
-                                                    type="button"
-                                                    onClick={togglePlanejadoAberto}
-                                                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', background: 'transparent', border: 'none', cursor: 'pointer', gap: 8 }}>
-                                                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: '#6366f1' }}>
-                                                        📋 O que foi planejado
-                                                    </span>
-                                                    <span style={{ fontSize: 9, color: '#a5b4fc', transform: planejadoAberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
-                                                </button>
-                                                {planejadoAberto && (
-                                                    <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                                        {objetivo ? (
-                                                            <div>
-                                                                <p style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 3 }}>Objetivo</p>
-                                                                <p style={{ fontSize: 12, color: '#3730a3', lineHeight: 1.4 }}>{objetivo}</p>
-                                                            </div>
-                                                        ) : null}
-                                                        {roteiro.length > 0 ? (
-                                                            <div>
-                                                                <p style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 4 }}>Roteiro</p>
-                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                                                    {roteiro.map((at: any, i: number) => (
-                                                                        <div key={at.id ?? i} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                                                            <span style={{ fontSize: 10, color: '#a5b4fc', fontWeight: 700, flexShrink: 0, minWidth: 16, textAlign: 'right' as const }}>{i + 1}.</span>
-                                                                            <span style={{ fontSize: 12, color: '#3730a3', flex: 1 }}>{at.nome}</span>
-                                                                            {at.duracao ? <span style={{ fontSize: 10, color: '#a5b4fc', flexShrink: 0 }}>{String(at.duracao).replace(/min$/i, '')}min</span> : null}
+                                            <>
+                                                {(objetivo || roteiro.length > 0) && (
+                                                    <div style={{ border: '1px solid #e0e7ff', borderRadius: 10, overflow: 'hidden', background: '#f5f3ff' }}>
+                                                        <button
+                                                            type="button"
+                                                            onClick={togglePlanejadoAberto}
+                                                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'transparent', border: 'none', cursor: 'pointer', gap: 8 }}>
+                                                            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase' as const, color: '#818cf8' }}>
+                                                                📋 O que foi planejado
+                                                            </span>
+                                                            <span style={{ fontSize: 9, color: '#a5b4fc', transform: planejadoAberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
+                                                        </button>
+                                                        {planejadoAberto && (
+                                                            <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                                {objetivo ? (
+                                                                    <div>
+                                                                        <p style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 3 }}>Objetivo</p>
+                                                                        <p style={{ fontSize: 12, color: '#3730a3', lineHeight: 1.4 }}>{objetivo}</p>
+                                                                    </div>
+                                                                ) : null}
+                                                                {roteiro.length > 0 ? (
+                                                                    <div>
+                                                                        <p style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 4 }}>Roteiro</p>
+                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                                            {roteiro.map((at: any, i: number) => (
+                                                                                <div key={at.id ?? i} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                                                                    <span style={{ fontSize: 10, color: '#a5b4fc', fontWeight: 700, flexShrink: 0, minWidth: 16, textAlign: 'right' as const }}>{i + 1}.</span>
+                                                                                    <span style={{ fontSize: 12, color: '#3730a3', flex: 1 }}>{at.nome}</span>
+                                                                                    {at.duracao ? <span style={{ fontSize: 10, color: '#a5b4fc', flexShrink: 0 }}>{String(at.duracao).replace(/min$/i, '')}min</span> : null}
+                                                                                </div>
+                                                                            ))}
                                                                         </div>
-                                                                    ))}
-                                                                </div>
+                                                                    </div>
+                                                                ) : null}
                                                             </div>
-                                                        ) : null}
-                                                        {criterio ? (
-                                                            <div style={{ background: '#ede9fe', borderRadius: 8, padding: '7px 10px' }}>
-                                                                <p style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 3 }}>Critério de sucesso</p>
-                                                                <p style={{ fontSize: 12, color: '#3730a3', lineHeight: 1.4, fontStyle: 'italic' }}>{criterio}</p>
-                                                            </div>
-                                                        ) : null}
+                                                        )}
                                                     </div>
                                                 )}
-                                            </div>
+                                                {criterio && (
+                                                    <div style={{ background: '#ede9fe', borderRadius: 10, padding: '9px 12px', border: '1px solid #c4b5fd' }}>
+                                                        <p style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 3 }}>Critério de sucesso planejado</p>
+                                                        <p style={{ fontSize: 12, color: '#3730a3', lineHeight: 1.4, fontStyle: 'italic' }}>{criterio}</p>
+                                                    </div>
+                                                )}
+                                            </>
                                         )
                                     })()}
 
@@ -790,14 +758,6 @@ export default function ModalRegistroPosAula() {
                                         <input type="date" autoFocus value={novoRegistro.dataAula} onChange={e => setNovoRegistro({ ...novoRegistro, dataAula: e.target.value })}
                                             className="flex-1 bg-transparent outline-none border-none text-right min-w-0" style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }} />
                                     </div>
-
-                                    {/* Como foi a aula? (campo unificado) */}
-                                    <StatusAulaSelector
-                                        value={(inferStatusLegado((novoRegistro as any).resultadoAula, (novoRegistro as any).proximaAulaOpcao, (novoRegistro as any).statusAula) || (novoRegistro as any).statusAula || '') as StatusAula}
-                                        onChange={v => setNovoRegistro({ ...novoRegistro, statusAula: v || undefined } as any)}
-                                        onDone={() => salvarBtnRef.current?.focus()}
-                                        firstRef={statusAulaFirstRef}
-                                    />
 
 {/* Chips de anotação */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -812,18 +772,38 @@ export default function ModalRegistroPosAula() {
                                                 />
                                             )
                                         })}
-
-                                        {/* Comportamento — chip especial com tags */}
-                                        <BehaviorChip
-                                            value={(novoRegistro as any).comportamento || ''}
-                                            filled={!!((novoRegistro as any).comportamento?.trim())}
-                                            onChange={v => setNovoRegistro({ ...novoRegistro, comportamento: v })}
-                                            onTabNext={() => salvarBtnRef.current?.focus()}
-                                            ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length] = fn }}
-                                        />
-
-
                                     </div>
+
+                                    {/* Como foi a aula? — 2 chips */}
+                                    {(() => {
+                                        const statusVal = ((novoRegistro as any).statusAula || inferStatusLegado((novoRegistro as any).resultadoAula, (novoRegistro as any).proximaAulaOpcao, (novoRegistro as any).statusAula)) as StatusAula
+                                        const ops: { value: StatusAula; label: string; color: string; bg: string; border: string }[] = [
+                                            { value: 'concluida', label: '✓  Avançar',              color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
+                                            { value: 'revisao',   label: '↻  Retomar ou revisar', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+                                        ]
+                                        return (
+                                            <div style={{ display: 'flex', gap: 8 }}>
+                                                {ops.map(op => {
+                                                    const sel = statusVal === op.value
+                                                    return (
+                                                        <button key={op.value} type="button"
+                                                            onClick={() => setNovoRegistro({ ...novoRegistro, statusAula: sel ? undefined : op.value } as any)}
+                                                            style={{
+                                                                flex: 1, padding: '9px 8px', borderRadius: 10,
+                                                                border: `1.5px solid ${sel ? op.border : '#e2e8f0'}`,
+                                                                background: sel ? op.bg : '#f8fafc',
+                                                                color: sel ? op.color : '#64748b',
+                                                                fontSize: 12, fontWeight: sel ? 700 : 500,
+                                                                cursor: 'pointer', transition: 'all .15s',
+                                                                outline: 'none',
+                                                            }}>
+                                                            {op.label}
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        )
+                                    })()}
 
                                     {/* ── Para a próxima aula (encaminhamentos — visível por padrão) ── */}
                                     {(() => {
@@ -840,7 +820,7 @@ export default function ModalRegistroPosAula() {
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
                                                     <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📌</span>
                                                     <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: encaminhamentos.length > 0 ? '#334155' : '#64748b', flex: 1 }}>
-                                                        Para a próxima aula
+                                                        {(novoRegistro as any).statusAula === 'revisao' ? 'O que fazer na próxima aula?' : 'Algum lembrete para a próxima aula?'}
                                                     </span>
                                                     {encaminhamentos.length > 0 && (
                                                         <span style={{ fontSize: 10, color: '#6366f1', fontWeight: 700, background: '#eef2ff', padding: '1px 8px', borderRadius: 99, border: '1px solid #c7d2fe', flexShrink: 0 }}>
@@ -883,7 +863,30 @@ export default function ModalRegistroPosAula() {
                                         )
                                     })()}
 
-                                    {/* ── Nota de voz (visível por padrão) ── */}
+                                    {/* ── Campos avançados ── */}
+                                    <button type="button" onClick={() => setMostrarAvancados(m => !m)}
+                                        style={{
+                                            width: '100%', padding: '8px 12px', background: mostrarAvancados ? '#f1f5f9' : '#f8fafc',
+                                            border: '1px dashed #cbd5e1', borderRadius: 10, fontSize: 11, fontWeight: 700,
+                                            color: '#64748b', cursor: 'pointer', textAlign: 'center', letterSpacing: '.06em',
+                                            textTransform: 'uppercase', transition: 'all .15s',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+                                        }}>
+                                        <span style={{ transition: 'transform .2s', display: 'inline-block', transform: mostrarAvancados ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                                        {mostrarAvancados ? 'Ocultar campos extras' : 'Comportamento · Nota de voz · Chamada · Rubrica'}
+                                    </button>
+                                    {mostrarAvancados && (
+                                        <div className="space-y-3">
+
+                                            {/* Comportamento da turma — chip com tags */}
+                                            <BehaviorChip
+                                                value={(novoRegistro as any).comportamento || ''}
+                                                filled={!!((novoRegistro as any).comportamento?.trim())}
+                                                onChange={v => setNovoRegistro({ ...novoRegistro, comportamento: v })}
+                                                onTabNext={() => {}}
+                                                ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length] = fn }}
+                                            />
+                                    {/* ── Nota de voz ── */}
                                     <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
                                             <span style={{ fontSize: 14, lineHeight: 1 }}>🎙️</span>
@@ -970,20 +973,6 @@ export default function ModalRegistroPosAula() {
                                         </div>
                                     </div>
 
-                                    {/* ── Campos avançados ── */}
-                                    <button type="button" onClick={() => setMostrarAvancados(m => !m)}
-                                        style={{
-                                            width: '100%', padding: '8px 12px', background: mostrarAvancados ? '#f1f5f9' : '#f8fafc',
-                                            border: '1px dashed #cbd5e1', borderRadius: 10, fontSize: 11, fontWeight: 700,
-                                            color: '#64748b', cursor: 'pointer', textAlign: 'center', letterSpacing: '.06em',
-                                            textTransform: 'uppercase', transition: 'all .15s',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
-                                        }}>
-                                        <span style={{ transition: 'transform .2s', display: 'inline-block', transform: mostrarAvancados ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-                                        {mostrarAvancados ? 'Ocultar campos extras' : 'Chamada · Rubrica · Estratégias'}
-                                    </button>
-                                    {mostrarAvancados && (
-                                        <div className="space-y-3">
                                             {/* Chamada rápida */}
                                             {regTurmaSel && regAnoSel && regEscolaSel && regSegmentoSel && (() => {
                                                 const todosAlunos = alunosGetByTurma(regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel)
@@ -1615,7 +1604,7 @@ export default function ModalRegistroPosAula() {
                         {!verRegistros && (
                             <div style={{ padding: '10px 16px', borderTop: '1px solid #e2e8f0', background: '#fff', flexShrink: 0 }}>
                                 <button ref={salvarBtnRef} onClick={() => {
-                                    const algumCampo = !!(novoRegistro.funcionouBem || novoRegistro.naoFuncionou || novoRegistro.proximaAula || novoRegistro.comportamento)
+                                    const algumCampo = !!(novoRegistro.naoFuncionou || novoRegistro.proximaAula || (novoRegistro as any).comportamento || (novoRegistro as any).audioNotaDeVoz)
                                     const dadosParaIA = { ...novoRegistro }
                                     const tituloPlano = planoParaRegistro?.titulo || ''
                                     if (audioUrl) URL.revokeObjectURL(audioUrl)
