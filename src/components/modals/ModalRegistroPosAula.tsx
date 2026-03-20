@@ -494,7 +494,7 @@ export default function ModalRegistroPosAula() {
 
     // ── Campos de anotação ──
     const camposConfig = [
-        { id: 'reg-aprenderam', icon: '🎯', label: 'O que os alunos demonstraram aprender?', field: 'funcionouBem', placeholder: 'Ex: 3 alunos tocaram a cadência sem ajuda. João ainda trava na troca G→D...' },
+        { id: 'reg-aprenderam', icon: '🎯', label: 'O que os alunos demonstraram aprender?', field: 'funcionouBem', placeholder: 'Ex: 3 alunos tocaram a cadência sem ajuda — a demonstração em dupla funcionou muito bem. João ainda trava na troca G→D...' },
         { id: 'reg-mudar',      icon: '💭', label: 'O que faria diferente?',                  field: 'naoFuncionou', placeholder: 'Se você pudesse dar esta aula de novo sabendo o que sabe agora — o que faria diferente?' },
     ] as const
 
@@ -757,14 +757,45 @@ export default function ModalRegistroPosAula() {
                                         )
                                     })()}
 
+{/* Chip — Ver planejamento (só aparece quando há plano vinculado com conteúdo) */}
+                                    {planoParaRegistro && (() => {
+                                        const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim()
+                                        const temPlano = (
+                                            stripHtml((planoParaRegistro as any).objetivoGeral || '') ||
+                                            ((planoParaRegistro as any).atividadesRoteiro?.length > 0) ||
+                                            stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
+                                        )
+                                        if (!temPlano) return null
+                                        return (
+                                            <button type="button"
+                                                onClick={() => setPlanejadoAberto(v => !v)}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: 8,
+                                                    padding: '8px 12px', borderRadius: 8, width: '100%',
+                                                    background: planejadoAberto ? '#f1f5f9' : '#fff',
+                                                    border: planejadoAberto ? '1px solid #cbd5e1' : '1px dashed #cbd5e1',
+                                                    cursor: 'pointer', transition: 'all .15s', fontFamily: 'inherit',
+                                                    textAlign: 'left' as const,
+                                                }}>
+                                                <span style={{ fontSize: 13, flexShrink: 0 }}>📋</span>
+                                                <span style={{ fontSize: 12, color: planejadoAberto ? '#334155' : '#64748b', flex: 1, fontWeight: planejadoAberto ? 600 : 400 }}>
+                                                    {planejadoAberto ? 'Ocultar o que foi planejado' : 'Ver o que foi planejado para esta aula'}
+                                                </span>
+                                                <span style={{ fontSize: 10, color: '#94a3b8' }}>{planejadoAberto ? '▲' : '▼'}</span>
+                                            </button>
+                                        )
+                                    })()}
+
 {/* Chips de anotação */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                         {camposConfig.map(({ id, icon, label, field, placeholder }, idx) => {
                                             const valor = (novoRegistro as any)[field] || ''
+                                            // Campo 1 abre sempre; campo 2 só abre se já tem conteúdo
+                                            const deveAbrir = idx === 0 ? (!registroEditando || valor.trim().length > 0) : valor.trim().length > 0
                                             return (
                                                 <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
                                                     value={valor} filled={valor.trim().length > 0}
-                                                    defaultOpen={!registroEditando || valor.trim().length > 0}
+                                                    defaultOpen={deveAbrir}
                                                     onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v })}
                                                     onTabNext={() => { const next = chipOpenRefs.current[idx + 1]; if (next) next(); else salvarBtnRef.current?.focus() }}
                                                     ref={(fn: (() => void) | null) => { chipOpenRefs.current[idx] = fn }}
@@ -837,7 +868,7 @@ export default function ModalRegistroPosAula() {
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
                                                     <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📌</span>
                                                     <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: encaminhamentos.length > 0 ? '#334155' : '#64748b', flex: 1 }}>
-                                                        {(novoRegistro as any).statusAula === 'revisao' ? 'O que fazer na próxima aula?' : 'Algum lembrete para a próxima aula?'}
+                                                        {(novoRegistro as any).statusAula === 'revisao' ? 'Para a próxima aula — o que retomar?' : 'Para a próxima aula'}
                                                     </span>
                                                     {encaminhamentos.length > 0 && (
                                                         <span style={{ fontSize: 10, color: '#6366f1', fontWeight: 700, background: '#eef2ff', padding: '1px 8px', borderRadius: 99, border: '1px solid #c7d2fe', flexShrink: 0 }}>
