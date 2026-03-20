@@ -525,23 +525,14 @@ export default function ModalRegistroPosAula() {
                             {minimizado && <p style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Clique para restaurar</p>}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, flexShrink: 0 }}>
-                            {planoParaRegistro && (() => {
-                                const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim()
-                                const temPlano = (
-                                    stripHtml((planoParaRegistro as any).objetivoGeral || '') ||
-                                    ((planoParaRegistro as any).atividadesRoteiro?.length > 0) ||
-                                    stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
-                                )
-                                if (!temPlano) return null
-                                return (
-                                    <button title="Ver o que foi planejado"
-                                        onClick={e => { e.stopPropagation(); setPlanejadoAberto(v => !v) }}
-                                        style={{ width: 28, height: 28, borderRadius: 8, background: planejadoAberto ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)', border: 'none', color: planejadoAberto ? '#fff' : '#94a3b8', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background .15s' }}
-                                        onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,.22)')}
-                                        onMouseOut={e  => (e.currentTarget.style.background = planejadoAberto ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)')}
-                                    >📋</button>
-                                )
-                            })()}
+                            {planoParaRegistro && (
+                                <button title="Ver o que foi planejado"
+                                    onClick={e => { e.stopPropagation(); setPlanejadoAberto(v => !v) }}
+                                    style={{ width: 28, height: 28, borderRadius: 8, background: planejadoAberto ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)', border: 'none', color: planejadoAberto ? '#fff' : '#94a3b8', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background .15s' }}
+                                    onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,.22)')}
+                                    onMouseOut={e  => (e.currentTarget.style.background = planejadoAberto ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)')}
+                                >📋</button>
+                            )}
                             {[
                                 { title: minimizado ? 'Restaurar' : 'Minimizar', label: '—', onClick: () => { setMinimizado(m => !m); setMaximizado(false) }, active: minimizado },
                                 { title: maximizado ? 'Restaurar tamanho' : 'Maximizar', label: maximizado ? '⊡' : '⤢', onClick: () => { setMaximizado(m => !m); setMinimizado(false) }, active: maximizado },
@@ -568,8 +559,12 @@ export default function ModalRegistroPosAula() {
                             const roteiro: any[] = (planoParaRegistro as any).atividadesRoteiro || []
                             const objetivo = stripHtml((planoParaRegistro as any).objetivoGeral || '')
                             const criterio = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
+                            const temConteudo = objetivo || roteiro.length > 0 || criterio
                             return (
                                 <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+                                    {!temConteudo && (
+                                        <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Este plano não tem objetivo, roteiro ou critério preenchidos.</p>
+                                    )}
                                     {objetivo && (
                                         <div>
                                             <p style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 2 }}>Objetivo</p>
