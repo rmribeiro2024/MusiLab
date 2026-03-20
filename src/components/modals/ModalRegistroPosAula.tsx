@@ -371,6 +371,7 @@ export default function ModalRegistroPosAula() {
     const timerIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null)
     const MAX_DURACAO_AUDIO = 60
     const [mostrarAvancados, setMostrarAvancados] = React.useState(false)
+    const [editandoTurma, setEditandoTurma] = React.useState(false)
     // Opcao A — painel "O que foi planejado"
     const [planejadoAberto, setPlanejadoAberto] = React.useState(false)
     React.useEffect(() => {
@@ -612,55 +613,83 @@ export default function ModalRegistroPosAula() {
                                         </div>
                                     )}
 
-                                    {/* Seleção de turma */}
-                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12 }} className="space-y-2">
-                                        <p style={{ fontSize: 10, fontWeight: 700, color: '#64748b', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 4 }}>Identificar turma</p>
-                                        <select value={regAnoSel} onChange={e => { setRegAnoSel(e.target.value); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('') }}
-                                            style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#0f172a', background: '#fff' }}
-                                            className="focus:outline-none focus:border-slate-400">
-                                            <option value="">— Ano Letivo —</option>
-                                            {anosLetivos.filter(a => a.status !== 'arquivado').map(a => <option key={a.id} value={a.id}>{a.ano}</option>)}
-                                        </select>
-                                        {regAnoSel && (() => {
-                                            const ano = anosLetivos.find(a => a.id == regAnoSel)
-                                            return ano && ano.escolas.length > 0 ? (
-                                                <select value={regEscolaSel} onChange={e => { setRegEscolaSel(e.target.value); setRegSegmentoSel(''); setRegTurmaSel('') }}
-                                                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#0f172a', background: '#fff' }}
-                                                    className="focus:outline-none focus:border-slate-400">
-                                                    <option value="">— Escola —</option>
-                                                    {ano.escolas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
-                                                </select>
-                                            ) : <p className="text-xs text-slate-400 italic">Nenhuma escola cadastrada neste ano.</p>
-                                        })()}
-                                        {regEscolaSel && (() => {
-                                            const ano = anosLetivos.find(a => a.id == regAnoSel)
-                                            const esc = ano?.escolas.find(e => e.id == regEscolaSel)
-                                            return esc && esc.segmentos.length > 0 ? (
-                                                <select value={regSegmentoSel} onChange={e => { setRegSegmentoSel(e.target.value); setRegTurmaSel('') }}
-                                                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#0f172a', background: '#fff' }}
-                                                    className="focus:outline-none focus:border-slate-400">
-                                                    <option value="">— Segmento —</option>
-                                                    {esc.segmentos.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
-                                                </select>
-                                            ) : <p className="text-xs text-slate-400 italic">Nenhum segmento cadastrado.</p>
-                                        })()}
-                                        {regSegmentoSel && (() => {
-                                            const ano = anosLetivos.find(a => a.id == regAnoSel)
-                                            const esc = ano?.escolas.find(e => e.id == regEscolaSel)
-                                            const seg = esc?.segmentos.find(s => s.id == regSegmentoSel)
-                                            return seg && seg.turmas.length > 0 ? (
-                                                <div className="flex flex-wrap gap-2 mt-1">
-                                                    {seg.turmas.map(t => (
-                                                        <button key={t.id} type="button" onClick={() => setRegTurmaSel(t.id == regTurmaSel ? '' : t.id)}
-                                                            style={{ padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: regTurmaSel == t.id ? 700 : 500, background: regTurmaSel == t.id ? '#475569' : '#f8fafc', color: regTurmaSel == t.id ? '#fff' : '#64748b', border: regTurmaSel == t.id ? '1px solid #475569' : '1px solid #e2e8f0', transition: 'all .15s' }}>
-                                                            {t.nome}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            ) : <p className="text-xs text-slate-400 italic">Nenhuma turma cadastrada.</p>
-                                        })()}
-                                        {!regAnoSel && <p className="text-xs text-slate-400">Cadastre anos letivos, escolas e turmas em <strong>🏫 Turmas</strong>.</p>}
-                                    </div>
+                                    {/* Turma + Data — compacto quando selecionado */}
+                                    {regTurmaSel && !editandoTurma ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                                            {(() => {
+                                                const ano = anosLetivos.find(a => a.id == regAnoSel)
+                                                const esc = ano?.escolas.find(e => e.id == regEscolaSel)
+                                                const seg = esc?.segmentos.find(s => s.id == regSegmentoSel)
+                                                const tur = seg?.turmas.find(t => t.id == regTurmaSel)
+                                                return (
+                                                    <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {tur?.nome || 'Turma'}
+                                                        {esc && <span style={{ fontSize: 12, fontWeight: 400, color: '#94a3b8' }}> · {esc.nome}</span>}
+                                                    </span>
+                                                )
+                                            })()}
+                                            <input type="date" value={novoRegistro.dataAula} onChange={e => setNovoRegistro({ ...novoRegistro, dataAula: e.target.value })}
+                                                style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: 'transparent', border: 'none', outline: 'none', flexShrink: 0 }} />
+                                            <button type="button" onClick={() => setEditandoTurma(true)} title="Trocar turma ou data"
+                                                style={{ fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}>
+                                                ✎
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12 }} className="space-y-2">
+                                            <p style={{ fontSize: 10, fontWeight: 700, color: '#64748b', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 4 }}>Identificar turma</p>
+                                            <select value={regAnoSel} onChange={e => { setRegAnoSel(e.target.value); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('') }}
+                                                style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#0f172a', background: '#fff' }}
+                                                className="focus:outline-none focus:border-slate-400">
+                                                <option value="">— Ano Letivo —</option>
+                                                {anosLetivos.filter(a => a.status !== 'arquivado').map(a => <option key={a.id} value={a.id}>{a.ano}</option>)}
+                                            </select>
+                                            {regAnoSel && (() => {
+                                                const ano = anosLetivos.find(a => a.id == regAnoSel)
+                                                return ano && ano.escolas.length > 0 ? (
+                                                    <select value={regEscolaSel} onChange={e => { setRegEscolaSel(e.target.value); setRegSegmentoSel(''); setRegTurmaSel('') }}
+                                                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#0f172a', background: '#fff' }}
+                                                        className="focus:outline-none focus:border-slate-400">
+                                                        <option value="">— Escola —</option>
+                                                        {ano.escolas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                                                    </select>
+                                                ) : <p className="text-xs text-slate-400 italic">Nenhuma escola cadastrada neste ano.</p>
+                                            })()}
+                                            {regEscolaSel && (() => {
+                                                const ano = anosLetivos.find(a => a.id == regAnoSel)
+                                                const esc = ano?.escolas.find(e => e.id == regEscolaSel)
+                                                return esc && esc.segmentos.length > 0 ? (
+                                                    <select value={regSegmentoSel} onChange={e => { setRegSegmentoSel(e.target.value); setRegTurmaSel('') }}
+                                                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#0f172a', background: '#fff' }}
+                                                        className="focus:outline-none focus:border-slate-400">
+                                                        <option value="">— Segmento —</option>
+                                                        {esc.segmentos.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                                                    </select>
+                                                ) : <p className="text-xs text-slate-400 italic">Nenhum segmento cadastrado.</p>
+                                            })()}
+                                            {regSegmentoSel && (() => {
+                                                const ano = anosLetivos.find(a => a.id == regAnoSel)
+                                                const esc = ano?.escolas.find(e => e.id == regEscolaSel)
+                                                const seg = esc?.segmentos.find(s => s.id == regSegmentoSel)
+                                                return seg && seg.turmas.length > 0 ? (
+                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                        {seg.turmas.map(t => (
+                                                            <button key={t.id} type="button" onClick={() => { setRegTurmaSel(t.id == regTurmaSel ? '' : t.id); if (t.id != regTurmaSel) setEditandoTurma(false) }}
+                                                                style={{ padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: regTurmaSel == t.id ? 700 : 500, background: regTurmaSel == t.id ? '#475569' : '#f8fafc', color: regTurmaSel == t.id ? '#fff' : '#64748b', border: regTurmaSel == t.id ? '1px solid #475569' : '1px solid #e2e8f0', transition: 'all .15s' }}>
+                                                                {t.nome}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                ) : <p className="text-xs text-slate-400 italic">Nenhuma turma cadastrada.</p>
+                                            })()}
+                                            {!regAnoSel && <p className="text-xs text-slate-400">Cadastre anos letivos, escolas e turmas em <strong>🏫 Turmas</strong>.</p>}
+                                            <div className="flex items-center gap-2 pt-1" style={{ borderTop: '1px solid #f1f5f9', marginTop: 4 }}>
+                                                <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', flex: 1 }}>Data da aula</span>
+                                                <input type="date" value={novoRegistro.dataAula} onChange={e => setNovoRegistro({ ...novoRegistro, dataAula: e.target.value })}
+                                                    className="bg-transparent outline-none border-none text-right" style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }} />
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* ⚠️ Alunos com flag de atenção */}
                                     {regTurmaSel && regAnoSel && regEscolaSel && regSegmentoSel && (() => {
@@ -752,13 +781,6 @@ export default function ModalRegistroPosAula() {
                                         )
                                     })()}
 
-                                    {/* Data */}
-                                    <div className="flex items-center gap-2" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 12px' }}>
-                                        <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>Data da aula</span>
-                                        <input type="date" autoFocus value={novoRegistro.dataAula} onChange={e => setNovoRegistro({ ...novoRegistro, dataAula: e.target.value })}
-                                            className="flex-1 bg-transparent outline-none border-none text-right min-w-0" style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }} />
-                                    </div>
-
 {/* Chips de anotação */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                         {camposConfig.map(({ id, icon, label, field, placeholder }, idx) => {
@@ -766,6 +788,7 @@ export default function ModalRegistroPosAula() {
                                             return (
                                                 <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
                                                     value={valor} filled={valor.trim().length > 0}
+                                                    defaultOpen={!registroEditando || valor.trim().length > 0}
                                                     onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v })}
                                                     onTabNext={() => { const next = chipOpenRefs.current[idx + 1]; if (next) next(); else salvarBtnRef.current?.focus() }}
                                                     ref={(fn: (() => void) | null) => { chipOpenRefs.current[idx] = fn }}
@@ -775,6 +798,7 @@ export default function ModalRegistroPosAula() {
                                     </div>
 
                                     {/* Como foi a aula? — 2 chips */}
+                                    <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: -4 }}>Como foi a aula?</p>
                                     {(() => {
                                         const statusVal = ((novoRegistro as any).statusAula || inferStatusLegado((novoRegistro as any).resultadoAula, (novoRegistro as any).proximaAulaOpcao, (novoRegistro as any).statusAula)) as StatusAula
                                         const ops: { value: StatusAula; label: string; color: string; bg: string; border: string }[] = [
