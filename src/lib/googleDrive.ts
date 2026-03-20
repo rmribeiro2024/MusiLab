@@ -6,6 +6,42 @@ const FOLDER_NAME = 'MusiLab Evidências'
 let tokenClient: any = null
 let accessToken: string | null = null
 
+export function isMobileDevice(): boolean {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+
+export function hasValidToken(): boolean {
+    return !!accessToken
+}
+
+// Chama no mount do app — extrai token do hash se voltou de redirect OAuth
+export function checkRedirectToken(): boolean {
+    const hash = window.location.hash
+    if (!hash.includes('access_token=')) return false
+    const params = new URLSearchParams(hash.replace(/^#/, ''))
+    const token = params.get('access_token')
+    if (token) {
+        accessToken = token
+        // Limpa o hash da URL sem recarregar
+        window.history.replaceState(null, '', window.location.pathname + window.location.search + '#')
+        return true
+    }
+    return false
+}
+
+// Redireciona para Google OAuth (mobile) — sem popup
+export function redirectToGoogleAuth(clientId: string): void {
+    const redirectUri = window.location.origin + window.location.pathname
+    const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: 'token',
+        scope: SCOPE,
+        include_granted_scopes: 'true',
+    })
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`
+}
+
 function loadGIS(): Promise<void> {
     if ((window as any).google?.accounts?.oauth2) return Promise.resolve()
     return new Promise((resolve, reject) => {
@@ -17,7 +53,8 @@ function loadGIS(): Promise<void> {
     })
 }
 
-async function getAccessToken(clientId: string): Promise<string> {
+async function getAccessTokenPopup(clientId: string): Promise<string> {
+    if (accessToken) return accessToken
     await loadGIS()
     return new Promise((resolve, reject) => {
         tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
@@ -29,8 +66,7 @@ async function getAccessToken(clientId: string): Promise<string> {
                 resolve(resp.access_token)
             },
         })
-        // Se já tem token válido, não pede consent de novo
-        tokenClient.requestAccessToken({ prompt: accessToken ? '' : 'consent' })
+        tokenClient.requestAccessToken({ prompt: '' })
     })
 }
 
@@ -44,7 +80,6 @@ async function getOrCreateFolder(token: string): Promise<string> {
     const { files } = await res.json()
     if (files?.length) return files[0].id
 
-    // Cria a pasta se não existir
     const create = await fetch('https://www.googleapis.com/drive/v3/files', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -62,7 +97,12 @@ export async function uploadEvidencia(
     clientId: string,
     onProgress?: (pct: number) => void
 ): Promise<string> {
-    const token = await getAccessToken(clientId)
+    // Mobile usa redirect flow — token já deve estar em accessToken
+    // Desktop usa popup
+    const token = isMobileDevice()
+        ? (accessToken ?? (() => { throw new Error('Não autenticado. Conecte o Google Drive primeiro.') })())
+        : await getAccessTokenPopup(clientId)
+
     const folderId = await getOrCreateFolder(token)
 
     onProgress?.(10)

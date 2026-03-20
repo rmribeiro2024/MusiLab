@@ -4,7 +4,7 @@ import { useAnoLetivoContext, RUBRICAS_PADRAO } from '../../contexts/AnoLetivoCo
 import { usePlanosContext, useAplicacoesContext } from '../../contexts'
 import { useEstrategiasContext } from '../../contexts'
 import { startRecording, stopRecording, blobToBase64, base64ToObjectUrl, base64SizeKb } from '../../lib/audioRecorder'
-import { uploadEvidencia, isGoogleDriveConfigured } from '../../lib/googleDrive'
+import { uploadEvidencia, isGoogleDriveConfigured, isMobileDevice, hasValidToken, checkRedirectToken, redirectToGoogleAuth } from '../../lib/googleDrive'
 
 // ── ACCORDION CHIP — campo colapsável genérico ──
 const AccordionChip = React.forwardRef<() => void, {
@@ -418,6 +418,7 @@ export default function ModalRegistroPosAula() {
     const [uploadandoEvidencia, setUploadandoEvidencia] = React.useState(false)
     const [uploadProgresso, setUploadProgresso] = React.useState(0)
     const [uploadErro, setUploadErro] = React.useState('')
+    const [driveConectado, setDriveConectado] = React.useState(() => hasValidToken() || checkRedirectToken())
     const fileInputRef = React.useRef<HTMLInputElement>(null)
     const [contextoAberto, setContextoAberto] = React.useState(false)
     const [seletorTurma, setSeletorTurma] = React.useState(false)
@@ -452,6 +453,17 @@ export default function ModalRegistroPosAula() {
             return !v
         })
     }
+
+    // Reset upload states when turma changes (evidência is per-turma)
+    React.useEffect(() => {
+        setUploadandoEvidencia(false)
+        setUploadProgresso(0)
+        setUploadErro('')
+        setEvidenciaAberta(false)
+        if (!registroEditando) {
+            setNovoRegistro(prev => ({ ...prev, urlEvidencia: '' } as any))
+        }
+    }, [regTurmaSel]) // eslint-disable-line
 
     // Auto-expande campos avançados se o registro editado tiver valores neles
     React.useEffect(() => {
@@ -1291,6 +1303,7 @@ export default function ModalRegistroPosAula() {
                                                             pct => setUploadProgresso(pct)
                                                         )
                                                         setNovoRegistro({ ...novoRegistro, urlEvidencia: link } as any)
+                                                        setDriveConectado(true)
                                                     } catch (err: any) {
                                                         setUploadErro('Erro no upload. Tente novamente ou cole o link manualmente.')
                                                     } finally {
@@ -1323,27 +1336,42 @@ export default function ModalRegistroPosAula() {
                                                                             style={{ display: 'none' }}
                                                                             onChange={handleFileSelect}
                                                                         />
-                                                                        <button type="button"
-                                                                            disabled={uploadandoEvidencia}
-                                                                            onClick={() => fileInputRef.current?.click()}
-                                                                            style={{
-                                                                                width: '100%', padding: '10px', borderRadius: 8, border: '1.5px dashed #c7d2fe',
-                                                                                background: uploadandoEvidencia ? '#f5f3ff' : '#fff', cursor: uploadandoEvidencia ? 'default' : 'pointer',
-                                                                                fontSize: 12, fontWeight: 600, color: '#6366f1', transition: 'all .15s',
-                                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                                                                            }}>
-                                                                            {uploadandoEvidencia ? (
-                                                                                <>
-                                                                                    <span style={{ fontSize: 13 }}>⏳</span>
-                                                                                    Enviando para Google Drive... {uploadProgresso}%
-                                                                                </>
-                                                                            ) : (
-                                                                                <>
-                                                                                    <span style={{ fontSize: 15 }}>📷</span>
-                                                                                    {url ? 'Trocar arquivo' : 'Foto ou vídeo — salva no seu Google Drive'}
-                                                                                </>
-                                                                            )}
-                                                                        </button>
+                                                                        {/* Mobile sem token: botão de conectar */}
+                                                                        {isMobileDevice() && !driveConectado ? (
+                                                                            <button type="button"
+                                                                                onClick={() => redirectToGoogleAuth(import.meta.env.VITE_GOOGLE_CLIENT_ID)}
+                                                                                style={{
+                                                                                    width: '100%', padding: '10px', borderRadius: 8, border: '1.5px solid #c7d2fe',
+                                                                                    background: '#eef2ff', cursor: 'pointer',
+                                                                                    fontSize: 12, fontWeight: 600, color: '#4f46e5',
+                                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                                                                }}>
+                                                                                <span style={{ fontSize: 15 }}>🔗</span>
+                                                                                Conectar Google Drive
+                                                                            </button>
+                                                                        ) : (
+                                                                            <button type="button"
+                                                                                disabled={uploadandoEvidencia}
+                                                                                onClick={() => fileInputRef.current?.click()}
+                                                                                style={{
+                                                                                    width: '100%', padding: '10px', borderRadius: 8, border: '1.5px dashed #c7d2fe',
+                                                                                    background: uploadandoEvidencia ? '#f5f3ff' : '#fff', cursor: uploadandoEvidencia ? 'default' : 'pointer',
+                                                                                    fontSize: 12, fontWeight: 600, color: '#6366f1', transition: 'all .15s',
+                                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                                                                }}>
+                                                                                {uploadandoEvidencia ? (
+                                                                                    <>
+                                                                                        <span style={{ fontSize: 13 }}>⏳</span>
+                                                                                        Enviando para Google Drive... {uploadProgresso}%
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <span style={{ fontSize: 15 }}>📷</span>
+                                                                                        {url ? 'Trocar arquivo' : 'Foto ou vídeo — salva no seu Google Drive'}
+                                                                                    </>
+                                                                                )}
+                                                                            </button>
+                                                                        )}
                                                                         {uploadandoEvidencia && (
                                                                             <div style={{ height: 4, borderRadius: 99, background: '#e0e7ff', overflow: 'hidden' }}>
                                                                                 <div style={{ height: '100%', borderRadius: 99, background: '#6366f1', width: `${uploadProgresso}%`, transition: 'width .3s' }} />
