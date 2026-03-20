@@ -394,7 +394,8 @@ export default function ModalRegistroPosAula() {
         if (!registroEditando) return
         const r = registroEditando as any
         if ((r.chamada?.length > 0) || (r.rubrica?.some((x: any) => x.valor > 0)) ||
-            r.urlEvidencia || r.comportamento || r.audioNotaDeVoz) {
+            r.urlEvidencia || r.comportamento || r.audioNotaDeVoz ||
+            r.alunoAtencao || r.surpresaMusical || r.pontoQueda || r.vozAluno) {
             setMostrarAvancados(true)
         }
     }, [registroEditando]) // eslint-disable-line
@@ -915,10 +916,26 @@ export default function ModalRegistroPosAula() {
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
                                         }}>
                                         <span style={{ transition: 'transform .2s', display: 'inline-block', transform: mostrarAvancados ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-                                        {mostrarAvancados ? 'Ocultar campos extras' : 'Comportamento · Nota de voz · Chamada · Rubrica'}
+                                        {mostrarAvancados ? 'Ocultar campos extras' : 'Reflexão aprofundada · Chamada · Rubrica'}
                                     </button>
                                     {mostrarAvancados && (
                                         <div className="space-y-3">
+
+                                            {/* ── Reflexão aprofundada ── */}
+                                            {[
+                                                { id: 'av-atencao',   icon: '👤', label: 'Qual aluno merece atenção especial?',          field: 'alunoAtencao',    placeholder: 'Ex: João ainda trava na troca G→D — dar atenção individual na próxima aula...' },
+                                                { id: 'av-surpresa',  icon: '🎵', label: 'O que os alunos fizeram que não esperava?',    field: 'surpresaMusical', placeholder: 'Ex: Joana improvisou uma variação espontânea — vale explorar na próxima aula...' },
+                                                { id: 'av-queda',     icon: '📉', label: 'Em que ponto o engajamento caiu?',             field: 'pontoQueda',      placeholder: 'Ex: Na explicação teórica após o aquecimento — a atividade prática antes funcionou melhor...' },
+                                                { id: 'av-voz',       icon: '💬', label: 'O que os alunos disseram sobre a aula?',       field: 'vozAluno',        placeholder: 'Ex: "Isso foi difícil" / "Eu entendi agora!" — qualquer comentário significativo...' },
+                                            ].map(({ id, icon, label, field, placeholder }) => {
+                                                const valor = (novoRegistro as any)[field] || ''
+                                                return (
+                                                    <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
+                                                        value={valor} filled={valor.trim().length > 0}
+                                                        onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v } as any)}
+                                                    />
+                                                )
+                                            })}
 
                                             {/* Comportamento da turma — chip com tags */}
                                             <BehaviorChip
