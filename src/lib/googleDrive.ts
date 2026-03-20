@@ -57,13 +57,23 @@ async function getAccessTokenPopup(clientId: string): Promise<string> {
     if (accessToken) return accessToken
     await loadGIS()
     return new Promise((resolve, reject) => {
+        // Timeout de 90s — se popup for fechado sem autenticar, não fica pendurado
+        const timeout = setTimeout(() => {
+            reject(new Error('Autenticação cancelada ou popup bloqueado. Libere popups para este site e tente novamente.'))
+        }, 90_000)
+
         tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
             client_id: clientId,
             scope: SCOPE,
             callback: (resp: any) => {
-                if (resp.error) { reject(new Error(resp.error)); return }
+                clearTimeout(timeout)
+                if (resp.error) { reject(new Error(`Erro Google: ${resp.error}`)); return }
                 accessToken = resp.access_token
                 resolve(resp.access_token)
+            },
+            error_callback: (err: any) => {
+                clearTimeout(timeout)
+                reject(new Error(`Erro OAuth: ${err?.type || err}`))
             },
         })
         tokenClient.requestAccessToken({ prompt: '' })

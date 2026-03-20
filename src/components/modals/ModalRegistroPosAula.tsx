@@ -1305,7 +1305,8 @@ export default function ModalRegistroPosAula() {
                                                         setNovoRegistro({ ...novoRegistro, urlEvidencia: link } as any)
                                                         setDriveConectado(true)
                                                     } catch (err: any) {
-                                                        setUploadErro('Erro no upload. Tente novamente ou cole o link manualmente.')
+                                                        console.error('[Drive upload error]', err)
+                                                        setUploadErro(err?.message || 'Erro no upload. Tente novamente.')
                                                     } finally {
                                                         setUploadandoEvidencia(false)
                                                         if (fileInputRef.current) fileInputRef.current.value = ''
