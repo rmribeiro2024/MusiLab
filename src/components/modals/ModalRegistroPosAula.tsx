@@ -365,6 +365,23 @@ export default function ModalRegistroPosAula() {
     const [novoEnc, setNovoEnc] = React.useState('')
     const [gravandoEnc, setGravandoEnc] = React.useState(false)
     const recognitionEncRef = React.useRef<any>(null)
+    const [gravandoContexto, setGravandoContexto] = React.useState(false)
+    const recognitionContextoRef = React.useRef<any>(null)
+    const toggleVozContexto = () => {
+        if (gravandoContexto) { recognitionContextoRef.current?.stop(); setGravandoContexto(false); return }
+        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        if (!SR) { alert('Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge.'); return }
+        const rec = new SR()
+        rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = false
+        const cur = (novoRegistro as any).contextoAulaDetalhe || ''
+        rec.onresult = (ev: any) => {
+            const t = Array.from(ev.results).slice(ev.resultIndex).map((r: any) => r[0].transcript).join(' ')
+            setNovoRegistro({ ...novoRegistro, contextoAulaDetalhe: cur ? cur + ' ' + t : t } as any)
+        }
+        rec.onend = () => setGravandoContexto(false)
+        rec.onerror = () => setGravandoContexto(false)
+        recognitionContextoRef.current = rec; rec.start(); setGravandoContexto(true)
+    }
     const toggleVozEnc = () => {
         if (gravandoEnc) { recognitionEncRef.current?.stop(); setGravandoEnc(false); return }
         const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -931,6 +948,20 @@ export default function ModalRegistroPosAula() {
                                                             </button>
                                                         )
                                                     })}
+                                                </div>
+                                                <div style={{ marginTop: 8, position: 'relative' }}>
+                                                    <textarea
+                                                        value={(novoRegistro as any).contextoAulaDetalhe || ''}
+                                                        onChange={e => setNovoRegistro({ ...novoRegistro, contextoAulaDetalhe: e.target.value } as any)}
+                                                        rows={2} placeholder="Detalhe o que aconteceu... (opcional)"
+                                                        style={{ width: '100%', padding: '8px 36px 8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', background: '#fff' }}
+                                                        onFocus={e => (e.target.style.borderColor = '#94a3b8')}
+                                                        onBlur={e  => (e.target.style.borderColor = '#e2e8f0')}
+                                                    />
+                                                    <button type="button" onClick={toggleVozContexto} title={gravandoContexto ? 'Parar gravação' : 'Gravar por voz'}
+                                                        style={{ position: 'absolute', right: 6, top: 6, fontSize: 13, background: gravandoContexto ? '#fee2e2' : 'transparent', border: gravandoContexto ? '1px solid #fca5a5' : '1px solid transparent', borderRadius: 6, cursor: 'pointer', padding: '2px 5px', color: gravandoContexto ? '#ef4444' : '#94a3b8', outline: 'none' }}>
+                                                        {gravandoContexto ? '⏹' : '🎙'}
+                                                    </button>
                                                 </div>
                                             </div>
 
