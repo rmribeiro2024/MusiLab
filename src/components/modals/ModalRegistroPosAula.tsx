@@ -12,10 +12,34 @@ const AccordionChip = React.forwardRef<() => void, {
     onChange: (v: string) => void,
     onTabNext?: () => void,
     quickOptions?: string[],
-}>(function AccordionChip({ id, icon, label, placeholder, value, filled, defaultOpen, onChange, onTabNext, quickOptions }, ref) {
+    allowVoice?: boolean,
+}>(function AccordionChip({ id, icon, label, placeholder, value, filled, defaultOpen, onChange, onTabNext, quickOptions, allowVoice }, ref) {
     const [open, setOpen] = React.useState(defaultOpen ?? false)
+    const [gravando, setGravando] = React.useState(false)
+    const recognitionRef = React.useRef<any>(null)
     React.useImperativeHandle(ref, () => () => setOpen(true))
     React.useEffect(() => { if (filled) setOpen(true) }, [filled])
+
+    const toggleVoz = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        if (gravando) { recognitionRef.current?.stop(); setGravando(false); return }
+        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        if (!SR) { alert('Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge.'); return }
+        const rec = new SR()
+        rec.lang = 'pt-BR'
+        rec.continuous = true
+        rec.interimResults = false
+        rec.onresult = (ev: any) => {
+            const t = Array.from(ev.results).slice(ev.resultIndex).map((r: any) => r[0].transcript).join(' ')
+            onChange(value ? value + ' ' + t : t)
+        }
+        rec.onend = () => setGravando(false)
+        rec.onerror = () => setGravando(false)
+        recognitionRef.current = rec
+        rec.start()
+        setGravando(true)
+        setOpen(true)
+    }
 
     return (
         <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
@@ -26,6 +50,12 @@ const AccordionChip = React.forwardRef<() => void, {
                     {label}
                 </span>
                 {filled && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                {allowVoice && (
+                    <button type="button" onClick={toggleVoz} title={gravando ? 'Parar gravação' : 'Gravar por voz'}
+                        style={{ fontSize: 13, background: gravando ? '#fee2e2' : 'transparent', border: gravando ? '1px solid #fca5a5' : '1px solid transparent', borderRadius: 6, cursor: 'pointer', padding: '2px 5px', flexShrink: 0, color: gravando ? '#ef4444' : '#94a3b8', outline: 'none' }}>
+                        {gravando ? '⏹' : '🎙'}
+                    </button>
+                )}
                 <span style={{ fontSize: 9, color: '#94a3b8', flexShrink: 0, marginLeft: 4, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
             </div>
             {open && (
@@ -333,6 +363,19 @@ export default function ModalRegistroPosAula() {
     const [turmasCopiar, setTurmasCopiar] = React.useState<Set<string>>(new Set())
     const [copiarOutroDia, setCopiarOutroDia] = React.useState<string>('')
     const [novoEnc, setNovoEnc] = React.useState('')
+    const [gravandoEnc, setGravandoEnc] = React.useState(false)
+    const recognitionEncRef = React.useRef<any>(null)
+    const toggleVozEnc = () => {
+        if (gravandoEnc) { recognitionEncRef.current?.stop(); setGravandoEnc(false); return }
+        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        if (!SR) { alert('Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge.'); return }
+        const rec = new SR()
+        rec.lang = 'pt-BR'; rec.continuous = false; rec.interimResults = false
+        rec.onresult = (ev: any) => { setNovoEnc(ev.results[0][0].transcript) }
+        rec.onend = () => setGravandoEnc(false)
+        rec.onerror = () => setGravandoEnc(false)
+        recognitionEncRef.current = rec; rec.start(); setGravandoEnc(true)
+    }
     const [showEstrategiasFuncionaram, setShowEstrategiasFuncionaram] = React.useState(false)
     const [buscaEstrategiaPos, setBuscaEstrategiaPos] = React.useState('')
     // ── estados de áudio (B3) ──
@@ -735,6 +778,7 @@ export default function ModalRegistroPosAula() {
                                                 <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
                                                     value={valor} filled={valor.trim().length > 0}
                                                     defaultOpen={deveAbrir}
+                                                    allowVoice
                                                     onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v })}
                                                     onTabNext={() => { const next = chipOpenRefs.current[idx + 1]; if (next) next(); else salvarBtnRef.current?.focus() }}
                                                     ref={(fn: (() => void) | null) => { chipOpenRefs.current[idx] = fn }}
@@ -814,6 +858,10 @@ export default function ModalRegistroPosAula() {
                                                             {encaminhamentos.length}
                                                         </span>
                                                     )}
+                                                    <button type="button" onClick={toggleVozEnc} title={gravandoEnc ? 'Parar gravação' : 'Gravar por voz'}
+                                                        style={{ fontSize: 13, background: gravandoEnc ? '#fee2e2' : 'transparent', border: gravandoEnc ? '1px solid #fca5a5' : '1px solid transparent', borderRadius: 6, cursor: 'pointer', padding: '2px 5px', flexShrink: 0, color: gravandoEnc ? '#ef4444' : '#94a3b8', outline: 'none' }}>
+                                                        {gravandoEnc ? '⏹' : '🎙'}
+                                                    </button>
                                                 </div>
                                                 <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                                                     {encaminhamentos.map((enc, idx) => (
