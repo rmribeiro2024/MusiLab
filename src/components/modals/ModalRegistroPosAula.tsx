@@ -923,8 +923,8 @@ export default function ModalRegistroPosAula() {
 
                                             {/* ── Reflexão aprofundada ── */}
                                             {[
-                                                { id: 'av-atencao',   icon: '👤', label: 'Qual aluno merece atenção especial?',          field: 'alunoAtencao',    placeholder: 'Ex: João ainda trava na troca G→D — dar atenção individual na próxima aula...' },
-                                                { id: 'av-surpresa',  icon: '🎵', label: 'O que os alunos fizeram que não esperava?',    field: 'surpresaMusical', placeholder: 'Ex: Joana improvisou uma variação espontânea — vale explorar na próxima aula...' },
+                                                { id: 'av-atencao',   icon: '👤', label: 'Qual aluno merece atenção especial na próxima aula?',      field: 'alunoAtencao',    placeholder: 'Ex: João ainda trava na troca G→D — dar atenção individual na próxima aula...' },
+                                                { id: 'av-surpresa',  icon: '🎵', label: 'O que os alunos fizeram musicalmente que não esperava?', field: 'surpresaMusical', placeholder: 'Ex: Joana improvisou uma variação espontânea — vale explorar na próxima aula...' },
                                                 { id: 'av-queda',     icon: '📉', label: 'Em que ponto o engajamento caiu?',             field: 'pontoQueda',      placeholder: 'Ex: Na explicação teórica após o aquecimento — a atividade prática antes funcionou melhor...' },
                                                 { id: 'av-voz',       icon: '💬', label: 'O que os alunos disseram sobre a aula?',       field: 'vozAluno',        placeholder: 'Ex: "Isso foi difícil" / "Eu entendi agora!" — qualquer comentário significativo...' },
                                             ].map(({ id, icon, label, field, placeholder }) => {
