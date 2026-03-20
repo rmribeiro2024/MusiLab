@@ -6,6 +6,27 @@ const ROOT_FOLDER = 'MusiLab Evidências'
 let tokenClient: any = null
 let accessToken: string | null = null
 
+const TOKEN_KEY = 'musilab_drive_token'
+const TOKEN_EXP_KEY = 'musilab_drive_token_exp'
+
+function saveToken(token: string, expiresIn = 3600): void {
+    accessToken = token
+    sessionStorage.setItem(TOKEN_KEY, token)
+    sessionStorage.setItem(TOKEN_EXP_KEY, String(Date.now() + (expiresIn - 60) * 1000))
+}
+
+function loadStoredToken(): string | null {
+    const token = sessionStorage.getItem(TOKEN_KEY)
+    const exp = Number(sessionStorage.getItem(TOKEN_EXP_KEY) || 0)
+    if (token && Date.now() < exp) {
+        accessToken = token
+        return token
+    }
+    sessionStorage.removeItem(TOKEN_KEY)
+    sessionStorage.removeItem(TOKEN_EXP_KEY)
+    return null
+}
+
 export interface EvidenciaUploadResult {
     webViewLink: string
     thumbnailLink: string
@@ -16,7 +37,7 @@ export function isMobileDevice(): boolean {
 }
 
 export function hasValidToken(): boolean {
-    return !!accessToken
+    return !!(accessToken || loadStoredToken())
 }
 
 // Chama no mount do app — extrai token do hash se voltou de redirect OAuth
@@ -25,8 +46,9 @@ export function checkRedirectToken(): boolean {
     if (!hash.includes('access_token=')) return false
     const params = new URLSearchParams(hash.replace(/^#/, ''))
     const token = params.get('access_token')
+    const expiresIn = Number(params.get('expires_in') || 3600)
     if (token) {
-        accessToken = token
+        saveToken(token, expiresIn)
         window.history.replaceState(null, '', window.location.pathname + window.location.search + '#')
         return true
     }
@@ -69,7 +91,7 @@ export async function initDriveAuth(
         scope: SCOPE,
         callback: (resp: any) => {
             if (resp.error) { onError(`Erro Google: ${resp.error}`); return }
-            accessToken = resp.access_token
+            saveToken(resp.access_token, resp.expires_in || 3600)
             onToken(resp.access_token)
         },
         error_callback: (err: any) => {
@@ -111,7 +133,7 @@ export async function uploadEvidencia(
     onProgress?: (pct: number) => void,
     meta?: { escola?: string; turma?: string; data?: string }
 ): Promise<EvidenciaUploadResult> {
-    const token = accessToken
+    const token = accessToken || loadStoredToken()
     if (!token) throw new Error('Não autenticado. Conecte o Google Drive primeiro.')
 
     // Hierarquia: MusiLab Evidências / Escola / Turma
