@@ -692,8 +692,26 @@ export default function ModalRegistroPosAula() {
                                             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '10px 12px' }} className="text-xs">
                                                 <p className="font-medium text-slate-600 mb-1">Última aula com esta turma — {dataFmt}</p>
                                                 <p className="text-slate-500 font-medium mb-1">{ultimo.planoTitulo}</p>
-                                                {ultimo.resumoAula  && <p className="text-slate-700 mb-1"><span className="font-bold">Realizado:</span> {ultimo.resumoAula}</p>}
-                                                {ultimo.proximaAula && <p className="text-slate-700"><span className="font-medium text-slate-600">Para hoje:</span> {ultimo.proximaAula}</p>}
+                                                {ultimo.resumoAula && <p className="text-slate-700 mb-1"><span className="font-bold">Realizado:</span> {ultimo.resumoAula}</p>}
+                                                {(ultimo.encaminhamentos?.length > 0) ? (
+                                                    <div className="mt-1">
+                                                        <span className="font-medium text-slate-600">Para hoje:</span>
+                                                        <ul className="mt-0.5 ml-2 flex flex-col gap-0.5">
+                                                            {(ultimo.encaminhamentos as { texto: string; concluido: boolean }[]).map((enc, i) => (
+                                                                <li key={i} className="flex items-start gap-1.5">
+                                                                    <span className={enc.concluido ? 'text-green-500' : 'text-slate-400'}>
+                                                                        {enc.concluido ? '✓' : '•'}
+                                                                    </span>
+                                                                    <span className={enc.concluido ? 'line-through text-slate-400' : 'text-slate-700'}>
+                                                                        {enc.texto}
+                                                                    </span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                ) : ultimo.proximaAula ? (
+                                                    <p className="text-slate-700"><span className="font-medium text-slate-600">Para hoje:</span> {ultimo.proximaAula}</p>
+                                                ) : null}
                                             </div>
                                         )
                                     })()}
@@ -712,6 +730,22 @@ export default function ModalRegistroPosAula() {
                                         onDone={() => salvarBtnRef.current?.focus()}
                                         firstRef={statusAulaFirstRef}
                                     />
+
+                                    {/* O que foi realizado */}
+                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, background: '#f8fafc', padding: '10px 12px' }}>
+                                        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: (novoRegistro as any).resumoAula?.trim() ? '#334155' : '#64748b', marginBottom: 6 }}>
+                                            🗒 O que foi realizado
+                                        </p>
+                                        <textarea
+                                            rows={2}
+                                            value={(novoRegistro as any).resumoAula || ''}
+                                            onChange={e => setNovoRegistro({ ...novoRegistro, resumoAula: e.target.value } as any)}
+                                            placeholder="Em 1-2 linhas: o que aconteceu nesta aula"
+                                            style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#334155', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', background: 'transparent' }}
+                                            onFocus={e => (e.target.style.borderColor = '#94a3b8')}
+                                            onBlur={e  => (e.target.style.borderColor = '#e2e8f0')}
+                                        />
+                                    </div>
 
                                     {/* Chips de anotação */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
