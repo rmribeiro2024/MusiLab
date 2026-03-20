@@ -1775,7 +1775,15 @@ export default function ModalRegistroPosAula() {
 
                         {/* ── Sticky save footer (Novo registro) ── */}
                         {!verRegistros && (
-                            <div style={{ padding: '10px 16px', borderTop: '1px solid #e2e8f0', background: '#fff', flexShrink: 0 }}>
+                            <div style={{ padding: '10px 16px', borderTop: '1px solid #e2e8f0', background: '#fff', flexShrink: 0, display: 'flex', gap: 8 }}>
+                                <button
+                                    onClick={() => setModalRegistro(false)}
+                                    style={{ flex: '0 0 auto', padding: '12px 20px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}
+                                    onMouseOver={e => { e.currentTarget.style.background = '#e2e8f0' }}
+                                    onMouseOut={e  => { e.currentTarget.style.background = '#f1f5f9' }}
+                                >
+                                    Cancelar
+                                </button>
                                 <button ref={salvarBtnRef} onClick={() => {
                                     const algumCampo = !!(novoRegistro.funcionouBem || (novoRegistro as any).repetiria || novoRegistro.naoFuncionou || novoRegistro.proximaAula || (novoRegistro as any).comportamento || (novoRegistro as any).audioNotaDeVoz)
                                     const dadosParaIA = { ...novoRegistro }
@@ -1810,7 +1818,7 @@ export default function ModalRegistroPosAula() {
                                         if (ap && ap.status !== 'realizada') atualizarStatusAplicacao(ap.id, 'realizada')
                                     }
                                 }}
-                                    style={{ width: '100%', padding: '12px', background: '#1e293b', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'all .15s' }}
+                                    style={{ flex: 1, padding: '12px', background: '#1e293b', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'all .15s' }}
                                     onMouseOver={e => { e.currentTarget.style.background = '#334155' }}
                                     onMouseOut={e  => { e.currentTarget.style.background = '#1e293b' }}
                                     onFocus={e  => { e.currentTarget.style.background = '#334155'; e.currentTarget.style.outline = 'none' }}
