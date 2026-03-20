@@ -803,7 +803,7 @@ export default function ModalRegistroPosAula() {
                                         const statusVal = ((novoRegistro as any).statusAula || inferStatusLegado((novoRegistro as any).resultadoAula, (novoRegistro as any).proximaAulaOpcao, (novoRegistro as any).statusAula)) as StatusAula
                                         const ops: { value: StatusAula; label: string; emoji: string }[] = [
                                             { value: 'concluida', label: 'Avançar — seguir para nova aula',                                   emoji: '✓' },
-                                            { value: 'revisao',   label: 'Retomar ou revisar — continuar de onde parou ou reforçar conteúdo', emoji: '↻' },
+                                            { value: 'revisao',   label: 'Retomar ou revisar — repetir ou reforçar', emoji: '↻' },
                                         ]
                                         return (
                                             <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
