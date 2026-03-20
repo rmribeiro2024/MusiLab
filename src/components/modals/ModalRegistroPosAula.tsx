@@ -1206,7 +1206,7 @@ export default function ModalRegistroPosAula() {
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
                                         }}>
                                         <span style={{ transition: 'transform .2s', display: 'inline-block', transform: mostrarAvancados ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-                                        {mostrarAvancados ? 'Ocultar' : 'Quer aprofundar?'}
+                                        {mostrarAvancados ? 'Ocultar' : 'Aprofundar (opcional)'}
                                     </button>
                                     {mostrarAvancados && (
                                         <div className="space-y-3">
