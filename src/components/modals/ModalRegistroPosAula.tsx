@@ -518,7 +518,8 @@ export default function ModalRegistroPosAula() {
 
     // ── Campos de anotação ──
     const camposConfig = [
-        { id: 'reg-mudar', icon: '💭', label: 'O que faria diferente', field: 'naoFuncionou', placeholder: 'Se você pudesse dar esta aula de novo sabendo o que sabe agora — o que faria diferente?' },
+        { id: 'reg-aprenderam', icon: '🎯', label: 'O que os alunos demonstraram aprender?', field: 'funcionouBem', placeholder: 'Ex: 3 alunos tocaram a cadência sem ajuda. João ainda trava na troca G→D...' },
+        { id: 'reg-mudar',      icon: '💭', label: 'O que faria diferente?',                  field: 'naoFuncionou', placeholder: 'Se você pudesse dar esta aula de novo sabendo o que sabe agora — o que faria diferente?' },
     ] as const
 
     return (
@@ -1645,7 +1646,7 @@ export default function ModalRegistroPosAula() {
                         {!verRegistros && (
                             <div style={{ padding: '10px 16px', borderTop: '1px solid #e2e8f0', background: '#fff', flexShrink: 0 }}>
                                 <button ref={salvarBtnRef} onClick={() => {
-                                    const algumCampo = !!(novoRegistro.naoFuncionou || novoRegistro.proximaAula || (novoRegistro as any).comportamento || (novoRegistro as any).audioNotaDeVoz)
+                                    const algumCampo = !!(novoRegistro.funcionouBem || novoRegistro.naoFuncionou || novoRegistro.proximaAula || (novoRegistro as any).comportamento || (novoRegistro as any).audioNotaDeVoz)
                                     const dadosParaIA = { ...novoRegistro }
                                     const tituloPlano = planoParaRegistro?.titulo || ''
                                     if (audioUrl) URL.revokeObjectURL(audioUrl)
