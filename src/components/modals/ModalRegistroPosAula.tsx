@@ -735,8 +735,9 @@ export default function ModalRegistroPosAula() {
                                     {/* Opcao A — O que foi planejado */}
                                     {planoParaRegistro && (() => {
                                         const roteiro: any[] = (planoParaRegistro as any).atividadesRoteiro || []
-                                        const objetivo: string = (planoParaRegistro as any).objetivoGeral || ''
-                                        const criterio: string = (planoParaRegistro as any).avaliacaoEvidencia || ''
+                                        const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim()
+                                        const objetivo: string = stripHtml((planoParaRegistro as any).objetivoGeral || '')
+                                        const criterio: string = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
                                         if (!objetivo && roteiro.length === 0 && !criterio) return null
                                         return (
                                             <div style={{ border: '1px solid #e0e7ff', borderRadius: 12, overflow: 'hidden', background: '#f5f3ff' }}>
@@ -765,7 +766,7 @@ export default function ModalRegistroPosAula() {
                                                                         <div key={at.id ?? i} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                                                                             <span style={{ fontSize: 10, color: '#a5b4fc', fontWeight: 700, flexShrink: 0, minWidth: 16, textAlign: 'right' as const }}>{i + 1}.</span>
                                                                             <span style={{ fontSize: 12, color: '#3730a3', flex: 1 }}>{at.nome}</span>
-                                                                            {at.duracao ? <span style={{ fontSize: 10, color: '#a5b4fc', flexShrink: 0 }}>{at.duracao}min</span> : null}
+                                                                            {at.duracao ? <span style={{ fontSize: 10, color: '#a5b4fc', flexShrink: 0 }}>{String(at.duracao).replace(/min$/i, '')}min</span> : null}
                                                                         </div>
                                                                     ))}
                                                                 </div>
