@@ -1,10 +1,15 @@
 // Google Drive upload utility
 // Scope mínimo: drive.file — só acessa arquivos criados pelo próprio app
 const SCOPE = 'https://www.googleapis.com/auth/drive.file'
-const FOLDER_NAME = 'MusiLab Evidências'
+const ROOT_FOLDER = 'MusiLab Evidências'
 
 let tokenClient: any = null
 let accessToken: string | null = null
+
+export interface EvidenciaUploadResult {
+    webViewLink: string
+    thumbnailLink: string
+}
 
 export function isMobileDevice(): boolean {
     return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -22,7 +27,6 @@ export function checkRedirectToken(): boolean {
     const token = params.get('access_token')
     if (token) {
         accessToken = token
-        // Limpa o hash da URL sem recarregar
         window.history.replaceState(null, '', window.location.pathname + window.location.search + '#')
         return true
     }
@@ -79,9 +83,10 @@ export function requestDriveToken(): void {
     tokenClient?.requestAccessToken({ prompt: accessToken ? '' : 'consent' })
 }
 
-async function getOrCreateFolder(token: string): Promise<string> {
+async function getOrCreateFolder(token: string, name: string, parentId?: string): Promise<string> {
+    const parentClause = parentId ? ` and '${parentId}' in parents` : ` and 'root' in parents`
     const q = encodeURIComponent(
-        `name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`
+        `name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false${parentClause}`
     )
     const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -89,13 +94,12 @@ async function getOrCreateFolder(token: string): Promise<string> {
     const { files } = await res.json()
     if (files?.length) return files[0].id
 
+    const body: any = { name, mimeType: 'application/vnd.google-apps.folder' }
+    if (parentId) body.parents = [parentId]
     const create = await fetch('https://www.googleapis.com/drive/v3/files', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            name: FOLDER_NAME,
-            mimeType: 'application/vnd.google-apps.folder',
-        }),
+        body: JSON.stringify(body),
     })
     const { id } = await create.json()
     return id
@@ -104,24 +108,36 @@ async function getOrCreateFolder(token: string): Promise<string> {
 export async function uploadEvidencia(
     file: File,
     _clientId: string,
-    onProgress?: (pct: number) => void
-): Promise<string> {
+    onProgress?: (pct: number) => void,
+    meta?: { escola?: string; turma?: string; data?: string }
+): Promise<EvidenciaUploadResult> {
     const token = accessToken
     if (!token) throw new Error('Não autenticado. Conecte o Google Drive primeiro.')
 
-    const folderId = await getOrCreateFolder(token)
+    // Hierarquia: MusiLab Evidências / Escola / Turma
+    const rootId = await getOrCreateFolder(token, ROOT_FOLDER)
+    const escolaId = meta?.escola
+        ? await getOrCreateFolder(token, meta.escola, rootId)
+        : rootId
+    const folderId = meta?.turma
+        ? await getOrCreateFolder(token, meta.turma, escolaId)
+        : escolaId
 
     onProgress?.(10)
 
-    const meta = JSON.stringify({ name: file.name, parents: [folderId] })
+    // Renomeia: 2026-03-20_NomeTurma_arquivo.jpg
+    const prefix = [meta?.data, meta?.turma].filter(Boolean).join('_')
+    const fileName = prefix ? `${prefix}_${file.name}` : file.name
+
+    const metadata = JSON.stringify({ name: fileName, parents: [folderId] })
     const form = new FormData()
-    form.append('metadata', new Blob([meta], { type: 'application/json' }))
+    form.append('metadata', new Blob([metadata], { type: 'application/json' }))
     form.append('file', file)
 
     onProgress?.(30)
 
     const upload = await fetch(
-        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,name,mimeType',
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,thumbnailLink,name,mimeType',
         { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form }
     )
 
@@ -138,7 +154,10 @@ export async function uploadEvidencia(
     })
 
     onProgress?.(100)
-    return fileData.webViewLink as string
+    return {
+        webViewLink: fileData.webViewLink as string,
+        thumbnailLink: (fileData.thumbnailLink as string) || '',
+    }
 }
 
 export function isGoogleDriveConfigured(): boolean {

@@ -1307,12 +1307,22 @@ export default function ModalRegistroPosAula() {
                                                     setUploadandoEvidencia(true)
                                                     setUploadProgresso(0)
                                                     try {
-                                                        const link = await uploadEvidencia(
+                                                        // Resolve nomes de escola e turma para organizar no Drive
+                                                        const ano = anosLetivos.find((a: any) => String(a.id) === String(regAnoSel))
+                                                        const esc = ano?.escolas.find((e: any) => String(e.id) === String(regEscolaSel))
+                                                        const seg = esc?.segmentos.find((s: any) => String(s.id) === String(regSegmentoSel))
+                                                        const tur = seg?.turmas.find((t: any) => String(t.id) === String(regTurmaSel))
+                                                        const result = await uploadEvidencia(
                                                             file,
                                                             import.meta.env.VITE_GOOGLE_CLIENT_ID,
-                                                            pct => setUploadProgresso(pct)
+                                                            pct => setUploadProgresso(pct),
+                                                            {
+                                                                escola: esc?.nome,
+                                                                turma: tur?.nome,
+                                                                data: novoRegistro.dataAula || new Date().toISOString().split('T')[0],
+                                                            }
                                                         )
-                                                        setNovoRegistro({ ...novoRegistro, urlEvidencia: link } as any)
+                                                        setNovoRegistro({ ...novoRegistro, urlEvidencia: result.webViewLink, thumbnailEvidencia: result.thumbnailLink } as any)
                                                         setDriveConectado(true)
                                                     } catch (err: any) {
                                                         console.error('[Drive upload error]', err)
@@ -1403,15 +1413,21 @@ export default function ModalRegistroPosAula() {
 
                                                                 {/* Arquivo já enviado */}
                                                                 {urlValida && (
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8 }}>
+                                                                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, overflow: 'hidden' }}>
+                                                                        {(novoRegistro as any).thumbnailEvidencia && (
+                                                                            <img src={(novoRegistro as any).thumbnailEvidencia} alt="Evidência"
+                                                                                style={{ width: '100%', maxHeight: 160, objectFit: 'cover', display: 'block' }} />
+                                                                        )}
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px' }}>
                                                                         <span style={{ fontSize: 13 }}>✅</span>
                                                                         <span style={{ fontSize: 12, color: '#15803d', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Arquivo no Google Drive</span>
                                                                         <a href={url} target="_blank" rel="noopener noreferrer"
                                                                             style={{ fontSize: 11, fontWeight: 600, color: '#1d4ed8', textDecoration: 'none', flexShrink: 0 }}>
                                                                             Abrir ↗
                                                                         </a>
-                                                                        <button type="button" onClick={() => setNovoRegistro({ ...novoRegistro, urlEvidencia: '' } as any)}
+                                                                        <button type="button" onClick={() => setNovoRegistro({ ...novoRegistro, urlEvidencia: '', thumbnailEvidencia: '' } as any)}
                                                                             style={{ color: '#cbd5e1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, padding: 0, flexShrink: 0 }}>✕</button>
+                                                                        </div>
                                                                     </div>
                                                                 )}
 
@@ -1807,13 +1823,21 @@ export default function ModalRegistroPosAula() {
                                                                         : <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Nenhum campo preenchido.</p>
                                                                     }
                                                                     {urlEvidenciaValida && (
-                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                                                                        <div style={{ borderRadius: 8, background: '#eff6ff', border: '1px solid #bfdbfe', overflow: 'hidden' }}>
+                                                                            {(reg as any).thumbnailEvidencia && (
+                                                                                <a href={(reg as any).urlEvidencia} target="_blank" rel="noopener noreferrer">
+                                                                                    <img src={(reg as any).thumbnailEvidencia} alt="Evidência"
+                                                                                        style={{ width: '100%', maxHeight: 140, objectFit: 'cover', display: 'block' }} />
+                                                                                </a>
+                                                                            )}
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px' }}>
                                                                             <span style={{ fontSize: 13, flexShrink: 0 }}>📎</span>
                                                                             <span style={{ fontSize: 9, fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '.08em', flexShrink: 0 }}>Evidência</span>
                                                                             <a href={(reg as any).urlEvidencia} target="_blank" rel="noopener noreferrer"
                                                                                 style={{ fontSize: 12, color: '#1d4ed8', fontWeight: 600, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                                                                                 🔗 Abrir link
                                                                             </a>
+                                                                            </div>
                                                                         </div>
                                                                     )}
                                                                     {(reg as any).audioNotaDeVoz && (
