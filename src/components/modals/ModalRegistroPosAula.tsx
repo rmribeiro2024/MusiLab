@@ -734,47 +734,47 @@ export default function ModalRegistroPosAula() {
                                         if (!objetivo && roteiro.length === 0 && !criterio) return null
                                         return (
                                             <>
-                                                {(objetivo || roteiro.length > 0) && (
-                                                    <div style={{ border: '1px solid #e0e7ff', borderRadius: 10, overflow: 'hidden', background: '#f5f3ff' }}>
+                                                {(objetivo || roteiro.length > 0 || criterio) && (
+                                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
                                                         <button
                                                             type="button"
                                                             onClick={togglePlanejadoAberto}
                                                             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'transparent', border: 'none', cursor: 'pointer', gap: 8 }}>
-                                                            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase' as const, color: '#818cf8' }}>
+                                                            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: '#94a3b8' }}>
                                                                 📋 O que foi planejado
                                                             </span>
-                                                            <span style={{ fontSize: 9, color: '#a5b4fc', transform: planejadoAberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
+                                                            <span style={{ fontSize: 9, color: '#cbd5e1', transform: planejadoAberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
                                                         </button>
                                                         {planejadoAberto && (
                                                             <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                                                                 {objetivo ? (
                                                                     <div>
-                                                                        <p style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 3 }}>Objetivo</p>
-                                                                        <p style={{ fontSize: 12, color: '#3730a3', lineHeight: 1.4 }}>{objetivo}</p>
+                                                                        <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 3 }}>Objetivo</p>
+                                                                        <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.4 }}>{objetivo}</p>
                                                                     </div>
                                                                 ) : null}
                                                                 {roteiro.length > 0 ? (
                                                                     <div>
-                                                                        <p style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 4 }}>Roteiro</p>
+                                                                        <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 4 }}>Roteiro</p>
                                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                                                                             {roteiro.map((at: any, i: number) => (
                                                                                 <div key={at.id ?? i} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                                                                    <span style={{ fontSize: 10, color: '#a5b4fc', fontWeight: 700, flexShrink: 0, minWidth: 16, textAlign: 'right' as const }}>{i + 1}.</span>
-                                                                                    <span style={{ fontSize: 12, color: '#3730a3', flex: 1 }}>{at.nome}</span>
-                                                                                    {at.duracao ? <span style={{ fontSize: 10, color: '#a5b4fc', flexShrink: 0 }}>{String(at.duracao).replace(/min$/i, '')}min</span> : null}
+                                                                                    <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 700, flexShrink: 0, minWidth: 16, textAlign: 'right' as const }}>{i + 1}.</span>
+                                                                                    <span style={{ fontSize: 12, color: '#475569', flex: 1 }}>{at.nome}</span>
+                                                                                    {at.duracao ? <span style={{ fontSize: 10, color: '#94a3b8', flexShrink: 0 }}>{String(at.duracao).replace(/min$/i, '')}min</span> : null}
                                                                                 </div>
                                                                             ))}
                                                                         </div>
                                                                     </div>
                                                                 ) : null}
+                                                                {criterio ? (
+                                                                    <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 8 }}>
+                                                                        <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 3 }}>Critério de sucesso</p>
+                                                                        <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.4, fontStyle: 'italic' }}>{criterio}</p>
+                                                                    </div>
+                                                                ) : null}
                                                             </div>
                                                         )}
-                                                    </div>
-                                                )}
-                                                {criterio && (
-                                                    <div style={{ background: '#ede9fe', borderRadius: 10, padding: '9px 12px', border: '1px solid #c4b5fd' }}>
-                                                        <p style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: 3 }}>Critério de sucesso planejado</p>
-                                                        <p style={{ fontSize: 12, color: '#3730a3', lineHeight: 1.4, fontStyle: 'italic' }}>{criterio}</p>
                                                     </div>
                                                 )}
                                             </>
@@ -797,34 +797,49 @@ export default function ModalRegistroPosAula() {
                                         })}
                                     </div>
 
-                                    {/* Como foi a aula? — 2 chips */}
-                                    <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: -4 }}>Como foi a aula?</p>
+                                    {/* Como foi a aula? — seletor estilo lista */}
                                     {(() => {
                                         const statusVal = ((novoRegistro as any).statusAula || inferStatusLegado((novoRegistro as any).resultadoAula, (novoRegistro as any).proximaAulaOpcao, (novoRegistro as any).statusAula)) as StatusAula
-                                        const ops: { value: StatusAula; label: string; color: string; bg: string; border: string }[] = [
-                                            { value: 'concluida', label: '✓  Avançar',              color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
-                                            { value: 'revisao',   label: '↻  Retomar ou revisar', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+                                        const ops: { value: StatusAula; label: string; emoji: string; color: string; accent: string }[] = [
+                                            { value: 'concluida', label: 'Avançar — seguir para o próximo conteúdo',              emoji: '✓', color: '#16a34a', accent: '#bbf7d0' },
+                                            { value: 'revisao',   label: 'Retomar ou revisar — algo precisou de mais atenção',    emoji: '↻', color: '#d97706', accent: '#fef3c7' },
                                         ]
                                         return (
-                                            <div style={{ display: 'flex', gap: 8 }}>
-                                                {ops.map(op => {
-                                                    const sel = statusVal === op.value
-                                                    return (
-                                                        <button key={op.value} type="button"
-                                                            onClick={() => setNovoRegistro({ ...novoRegistro, statusAula: sel ? undefined : op.value } as any)}
-                                                            style={{
-                                                                flex: 1, padding: '9px 8px', borderRadius: 10,
-                                                                border: `1.5px solid ${sel ? op.border : '#e2e8f0'}`,
-                                                                background: sel ? op.bg : '#f8fafc',
-                                                                color: sel ? op.color : '#64748b',
-                                                                fontSize: 12, fontWeight: sel ? 700 : 500,
-                                                                cursor: 'pointer', transition: 'all .15s',
-                                                                outline: 'none',
-                                                            }}>
-                                                            {op.label}
+                                            <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                                                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase' as const, color: '#94a3b8', flex: 1 }}>Como foi a aula?</span>
+                                                    {statusVal && (
+                                                        <button tabIndex={-1} onClick={() => setNovoRegistro({ ...novoRegistro, statusAula: undefined } as any)}
+                                                            style={{ fontSize: 10, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}>
+                                                            limpar
                                                         </button>
-                                                    )
-                                                })}
+                                                    )}
+                                                </div>
+                                                <div style={{ display: 'flex', flexDirection: 'column' as const }}>
+                                                    {ops.map((op, idx) => {
+                                                        const sel = statusVal === op.value
+                                                        return (
+                                                            <button key={op.value} type="button"
+                                                                onClick={() => setNovoRegistro({ ...novoRegistro, statusAula: sel ? undefined : op.value } as any)}
+                                                                style={{
+                                                                    display: 'flex', alignItems: 'center', gap: 10,
+                                                                    padding: '9px 12px', background: sel ? `${op.accent}50` : '#fff',
+                                                                    color: sel ? op.color : '#64748b', fontWeight: sel ? 600 : 400,
+                                                                    fontSize: 13, border: 'none',
+                                                                    borderTop: idx > 0 ? '1px solid #f1f5f9' : 'none',
+                                                                    borderLeft: sel ? `3px solid ${op.accent}` : '3px solid transparent',
+                                                                    cursor: 'pointer', textAlign: 'left' as const,
+                                                                    width: '100%', transition: 'all .1s', outline: 'none',
+                                                                }}
+                                                                onMouseOver={e => { if (!sel) e.currentTarget.style.background = '#f8fafc' }}
+                                                                onMouseOut={e  => { if (!sel) e.currentTarget.style.background = '#fff' }}
+                                                            >
+                                                                <span style={{ fontSize: 12, width: 16, textAlign: 'center' as const, flexShrink: 0, color: sel ? op.color : '#94a3b8' }}>{op.emoji}</span>
+                                                                {op.label}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
                                             </div>
                                         )
                                     })()}
