@@ -79,25 +79,38 @@ function loadGIS(): Promise<void> {
     })
 }
 
-// Inicializa o token client sem abrir popup — chamar antes do clique do usuário
+// Inicializa o token client e tenta auth silenciosa (prompt:none = iframe oculto, sem UI)
+// Se o usuário já autorizou antes → token renovado automaticamente, sem mostrar nada
+// Se é a primeira vez → onSilentFail é chamado → UI mostra botão "Conectar"
 export async function initDriveAuth(
     clientId: string,
     onToken: (token: string) => void,
-    onError: (msg: string) => void
+    onError: (msg: string) => void,
+    onSilentFail?: () => void
 ): Promise<void> {
     await loadGIS()
     tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: SCOPE,
         callback: (resp: any) => {
-            if (resp.error) { onError(`Erro Google: ${resp.error}`); return }
+            if (resp.error) {
+                // Erros silenciosos (interaction_required) = primeira vez → mostrar botão
+                const silentErrors = ['interaction_required', 'consent_required', 'login_required', 'access_denied']
+                if (silentErrors.includes(resp.error)) { onSilentFail?.(); return }
+                onError(`Erro Google: ${resp.error}`)
+                return
+            }
             saveToken(resp.access_token, resp.expires_in || 3600)
             onToken(resp.access_token)
         },
         error_callback: (err: any) => {
-            onError(`Erro OAuth: ${err?.type || err}`)
+            const type = err?.type || ''
+            if (type === 'popup_failed_to_open' || type === 'popup_closed') { onSilentFail?.(); return }
+            onError(`Erro OAuth: ${type || err}`)
         },
     })
+    // Tenta auth silenciosa imediatamente (iframe oculto)
+    tokenClient.requestAccessToken({ prompt: 'none' })
 }
 
 // Chama diretamente de um clique do usuário (contexto síncrono — sem await antes)

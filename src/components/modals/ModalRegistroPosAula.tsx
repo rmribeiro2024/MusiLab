@@ -454,13 +454,14 @@ export default function ModalRegistroPosAula() {
         })
     }
 
-    // Pré-inicializa GIS sem abrir popup — para que requestDriveToken() possa ser chamado sincronamente no clique
+    // Inicializa GIS e tenta auth silenciosa — se já autorizou antes, conecta sem mostrar nada
     React.useEffect(() => {
         if (!isGoogleDriveConfigured() || isMobileDevice()) return
         initDriveAuth(
             import.meta.env.VITE_GOOGLE_CLIENT_ID,
-            () => setDriveConectado(true),
-            (msg) => setUploadErro(msg)
+            () => setDriveConectado(true),   // auth silenciosa ok → já conectado
+            (msg) => setUploadErro(msg),      // erro real → mostra mensagem
+            () => setDriveConectado(false)    // primeira vez → mostra botão "Conectar"
         ).catch(() => {})
     }, []) // eslint-disable-line
 
