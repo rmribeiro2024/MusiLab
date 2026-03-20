@@ -351,18 +351,9 @@ export default function ModalRegistroPosAula() {
     const [planejadoAberto, setPlanejadoAberto] = React.useState(false)
     // Painel inline no form (chip dentro do scroll)
     const [planejadoInlineAberto, setPlanejadoInlineAberto] = React.useState(false)
-    React.useEffect(() => {
-        if (!planoParaRegistro?.id) return
-        const salvo = localStorage.getItem(`planejado-aberto-${planoParaRegistro.id}`)
-        if (salvo !== null) { setPlanejadoAberto(salvo === 'true'); return }
-        const temConteudo = ((planoParaRegistro as any)?.atividadesRoteiro?.length ?? 0) > 0 || !!((planoParaRegistro as any)?.avaliacaoEvidencia)
-        setPlanejadoAberto(temConteudo)
-    }, [planoParaRegistro?.id]) // eslint-disable-line
     function togglePlanejadoAberto() {
         setPlanejadoAberto(v => {
-            const novo = !v
-            if (planoParaRegistro?.id) localStorage.setItem(`planejado-aberto-${planoParaRegistro.id}`, String(novo))
-            return novo
+            return !v
         })
     }
 
