@@ -865,6 +865,27 @@ export default function ModalRegistroPosAula() {
                                     {mostrarAvancados && (
                                         <div className="space-y-3">
 
+                                            {/* ── Contexto da aula ── */}
+                                            <div style={{ padding: '10px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                                                <p style={{ fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>Como a aula aconteceu na prática?</p>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                                    {(['Seguiu o plano', 'Pequenas adaptações', 'Mudou bastante', 'Improvisada'] as const).map(op => {
+                                                        const ativo = (novoRegistro as any).contextoAula === op
+                                                        return (
+                                                            <button key={op} type="button"
+                                                                onClick={() => setNovoRegistro({ ...novoRegistro, contextoAula: ativo ? '' : op } as any)}
+                                                                style={{ fontSize: 12, padding: '5px 10px', borderRadius: 20, border: '1px solid', cursor: 'pointer', transition: 'all .15s',
+                                                                    background: ativo ? '#1e293b' : '#fff',
+                                                                    borderColor: ativo ? '#1e293b' : '#e2e8f0',
+                                                                    color: ativo ? '#fff' : '#64748b',
+                                                                    fontWeight: ativo ? 600 : 400 }}>
+                                                                {op}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+
                                             {/* ── Reflexão aprofundada ── */}
                                             {[
                                                 { id: 'av-atencao',   icon: '👤', label: 'Qual aluno merece atenção especial na próxima aula?',      field: 'alunoAtencao',    placeholder: 'Ex: João ainda trava na troca G→D — dar atenção individual na próxima aula...' },
