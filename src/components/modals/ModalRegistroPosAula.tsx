@@ -583,35 +583,6 @@ export default function ModalRegistroPosAula() {
                         })()}
 
                         {/* Tabs */}
-                        <div className="flex border-b border-slate-100 bg-white" style={{ flexShrink: 0 }}>
-                            <button onClick={() => setVerRegistros(false)} className="flex-1 py-3 text-sm font-bold transition-colors"
-                                style={{ color: !verRegistros ? '#1e293b' : '#94a3b8', borderBottom: !verRegistros ? '2px solid #1e293b' : '2px solid transparent' }}>
-                                {registroEditando ? 'Editando' : 'Novo registro'}
-                            </button>
-                            <button onClick={() => setVerRegistros(true)} className="flex-1 py-3 text-sm font-bold transition-colors"
-                                style={{ color: verRegistros ? '#1e293b' : '#94a3b8', borderBottom: verRegistros ? '2px solid #1e293b' : '2px solid transparent' }}>
-                                📚 Histórico{' '}
-                                {planoParaRegistro.registrosPosAula?.length > 0 && (() => {
-                                    const countFiltrado = (planoParaRegistro.registrosPosAula || []).filter((r: any) => {
-                                        if (filtroRegTurma) {
-                                            if (r.turma != filtroRegTurma) return false
-                                        } else if (filtroRegData) {
-                                            if (r.data != filtroRegData) return false
-                                        } else {
-                                            if (filtroRegAno      && r.anoLetivo             != filtroRegAno)      return false
-                                            if (filtroRegEscola   && r.escola                != filtroRegEscola)   return false
-                                            if (filtroRegSegmento && (r.segmento || r.serie) != filtroRegSegmento) return false
-                                        }
-                                        return true
-                                    }).length
-                                    return (
-                                        <span style={{ background: '#f1f5f9', color: '#94a3b8', fontSize: 11, padding: '1px 6px', borderRadius: 99, marginLeft: 4 }}>
-                                            {countFiltrado}
-                                        </span>
-                                    )
-                                })()}
-                            </button>
-                        </div>
 
                         {/* Body */}
                         <div className="p-4 space-y-3" style={{ flex: 1, overflowY: 'auto' }}>
@@ -630,21 +601,26 @@ export default function ModalRegistroPosAula() {
                                                 const esc = ano?.escolas.find(e => e.id == regEscolaSel)
                                                 const seg = esc?.segmentos.find(s => s.id == regSegmentoSel)
                                                 const tur = seg?.turmas.find(t => t.id == regTurmaSel)
+                                                const [y, m, d] = (novoRegistro.dataAula || '').split('-')
+                                                const dataFmt = d && m && y ? `${d}/${m}/${y}` : novoRegistro.dataAula
                                                 return (
                                                     <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                         {tur?.nome || 'Turma'}
                                                         {esc && <span style={{ fontSize: 12, fontWeight: 400, color: '#94a3b8' }}> · {esc.nome}</span>}
+                                                        <span style={{ fontSize: 12, fontWeight: 400, color: '#94a3b8' }}> · {dataFmt}</span>
                                                     </span>
                                                 )
                                             })()}
-                                            <input type="date" value={novoRegistro.dataAula} onChange={e => setNovoRegistro({ ...novoRegistro, dataAula: e.target.value })}
-                                                style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: 'transparent', border: 'none', outline: 'none', flexShrink: 0 }} />
                                             {planoParaRegistro && (
                                                 <button type="button" onClick={() => setPlanejadoAberto(v => !v)} title="Ver o que foi planejado"
                                                     style={{ fontSize: 14, color: planejadoAberto ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0, lineHeight: 1 }}>
                                                     📋
                                                 </button>
                                             )}
+                                            <button type="button" onClick={() => setVerRegistros(true)} title="Ver histórico de registros"
+                                                style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 13, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0, lineHeight: 1 }}>
+                                                🕐{planoParaRegistro?.registrosPosAula?.length > 0 && <span style={{ fontSize: 11, background: '#f1f5f9', color: '#64748b', padding: '1px 5px', borderRadius: 99 }}>{planoParaRegistro.registrosPosAula.length}</span>}
+                                            </button>
                                             <button type="button" onClick={() => setEditandoTurma(true)} title="Trocar turma ou data"
                                                 style={{ fontSize: 14, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0, lineHeight: 1 }}>
                                                 ✏️
