@@ -211,13 +211,11 @@ const BehaviorChip = React.forwardRef<() => void, {
                         </div>
                     )}
 
-                    {/* Botão "+ mais opções" */}
-                    {!expanded && (
-                        <button type="button" onClick={() => setExpanded(true)}
-                            style={{ alignSelf: 'flex-start', fontSize: 12, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', fontFamily: 'inherit', outline: 'none' }}>
-                            + mais opções
-                        </button>
-                    )}
+                    {/* Botão toggle "+ mais opções" / "− menos opções" */}
+                    <button type="button" onClick={() => setExpanded(v => !v)}
+                        style={{ alignSelf: 'flex-start', fontSize: 12, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', fontFamily: 'inherit', outline: 'none' }}>
+                        {expanded ? '− menos opções' : '+ mais opções'}
+                    </button>
 
                     {/* Campo de texto complementar */}
                     <textarea
