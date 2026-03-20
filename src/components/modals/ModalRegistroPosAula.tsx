@@ -800,9 +800,9 @@ export default function ModalRegistroPosAula() {
                                     {/* Como foi a aula? — seletor estilo lista */}
                                     {(() => {
                                         const statusVal = ((novoRegistro as any).statusAula || inferStatusLegado((novoRegistro as any).resultadoAula, (novoRegistro as any).proximaAulaOpcao, (novoRegistro as any).statusAula)) as StatusAula
-                                        const ops: { value: StatusAula; label: string; emoji: string; color: string; accent: string }[] = [
-                                            { value: 'concluida', label: 'Avançar — seguir para o próximo conteúdo',              emoji: '✓', color: '#16a34a', accent: '#bbf7d0' },
-                                            { value: 'revisao',   label: 'Retomar ou revisar — algo precisou de mais atenção',    emoji: '↻', color: '#d97706', accent: '#fef3c7' },
+                                        const ops: { value: StatusAula; label: string; emoji: string }[] = [
+                                            { value: 'concluida', label: 'Avançar — seguir para nova aula',                                   emoji: '✓' },
+                                            { value: 'revisao',   label: 'Retomar ou revisar — continuar de onde parou ou reforçar conteúdo', emoji: '↻' },
                                         ]
                                         return (
                                             <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
@@ -823,18 +823,20 @@ export default function ModalRegistroPosAula() {
                                                                 onClick={() => setNovoRegistro({ ...novoRegistro, statusAula: sel ? undefined : op.value } as any)}
                                                                 style={{
                                                                     display: 'flex', alignItems: 'center', gap: 10,
-                                                                    padding: '9px 12px', background: sel ? `${op.accent}50` : '#fff',
-                                                                    color: sel ? op.color : '#64748b', fontWeight: sel ? 600 : 400,
+                                                                    padding: '9px 12px',
+                                                                    background: sel ? '#f1f5f9' : '#fff',
+                                                                    color: sel ? '#1e293b' : '#64748b',
+                                                                    fontWeight: sel ? 600 : 400,
                                                                     fontSize: 13, border: 'none',
                                                                     borderTop: idx > 0 ? '1px solid #f1f5f9' : 'none',
-                                                                    borderLeft: sel ? `3px solid ${op.accent}` : '3px solid transparent',
+                                                                    borderLeft: sel ? '3px solid #334155' : '3px solid transparent',
                                                                     cursor: 'pointer', textAlign: 'left' as const,
                                                                     width: '100%', transition: 'all .1s', outline: 'none',
                                                                 }}
                                                                 onMouseOver={e => { if (!sel) e.currentTarget.style.background = '#f8fafc' }}
                                                                 onMouseOut={e  => { if (!sel) e.currentTarget.style.background = '#fff' }}
                                                             >
-                                                                <span style={{ fontSize: 12, width: 16, textAlign: 'center' as const, flexShrink: 0, color: sel ? op.color : '#94a3b8' }}>{op.emoji}</span>
+                                                                <span style={{ fontSize: 11, width: 16, textAlign: 'center' as const, flexShrink: 0, color: sel ? '#475569' : '#94a3b8' }}>{op.emoji}</span>
                                                                 {op.label}
                                                             </button>
                                                         )
