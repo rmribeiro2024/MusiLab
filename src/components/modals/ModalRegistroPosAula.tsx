@@ -97,7 +97,7 @@ const BehaviorChip = React.forwardRef<() => void, {
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
                 <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>👥</span>
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: filled ? '#334155' : '#64748b', flex: 1 }}>
-                    Como a turma chegou hoje?
+                    Como estava a turma hoje?
                 </span>
                 {filled && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
                 <span style={{ fontSize: 9, color: '#94a3b8', flexShrink: 0, marginLeft: 4, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
