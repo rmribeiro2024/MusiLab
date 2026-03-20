@@ -998,7 +998,9 @@ function FormPlanejamentoInline({
   const podeAdaptar = !!(
     ultimoRegistro?.proximaAula?.trim() ||
     ultimoRegistro?.poderiaMelhorar?.trim() ||
-    ultimoRegistro?.resumoAula?.trim()
+    ultimoRegistro?.resumoAula?.trim() ||
+    ultimoRegistro?.naoFuncionou?.trim() ||
+    (ultimoRegistro as any)?.encaminhamentos?.some((e: any) => !e.concluido)
   )
 
   // ── Selecionar modo ──────────────────────────────────────────────────────────
