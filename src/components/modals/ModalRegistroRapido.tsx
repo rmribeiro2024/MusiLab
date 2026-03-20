@@ -264,8 +264,8 @@ export default function ModalRegistroRapido() {
                                         {plano && (
                                             <div className="flex justify-end">
                                                 <button onClick={() => abrirRegistroCompleto(aula)}
-                                                    className="text-xs text-indigo-500 hover:text-indigo-700 font-semibold hover:underline transition">
-                                                    Registro completo →
+                                                    className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition">
+                                                    📋 Registro completo
                                                 </button>
                                             </div>
                                         )}

@@ -740,7 +740,7 @@ export default function ModalRegistroPosAula() {
                                             rows={2}
                                             value={(novoRegistro as any).resumoAula || ''}
                                             onChange={e => setNovoRegistro({ ...novoRegistro, resumoAula: e.target.value } as any)}
-                                            placeholder="Em 1-2 linhas: o que aconteceu nesta aula"
+                                            placeholder="Ao final desta aula, os alunos conseguiram ___ que antes não conseguiam."
                                             style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#334155', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', background: 'transparent' }}
                                             onFocus={e => (e.target.style.borderColor = '#94a3b8')}
                                             onBlur={e  => (e.target.style.borderColor = '#e2e8f0')}
@@ -766,21 +766,10 @@ export default function ModalRegistroPosAula() {
                                             value={(novoRegistro as any).comportamento || ''}
                                             filled={!!((novoRegistro as any).comportamento?.trim())}
                                             onChange={v => setNovoRegistro({ ...novoRegistro, comportamento: v })}
-                                            onTabNext={() => { const next = chipOpenRefs.current[camposConfig.length + 1]; if (next) next(); else salvarBtnRef.current?.focus() }}
+                                            onTabNext={() => salvarBtnRef.current?.focus()}
                                             ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length] = fn }}
                                         />
 
-                                        {/* Anotações gerais */}
-                                        <AccordionChip
-                                            id="reg-anotacoes" icon="📝" label="Anotações gerais"
-                                            placeholder="Ex: Trabalhamos ritmo corporal + intro música X. Aluno Pedro faltou..."
-                                            value={(novoRegistro as any).anotacoesGerais || ''}
-                                            filled={!!((novoRegistro as any).anotacoesGerais?.trim())}
-                                            onChange={v => setNovoRegistro({ ...novoRegistro, anotacoesGerais: v })}
-                                            onTabNext={() => salvarBtnRef.current?.focus()}
-                                            ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length + 1] = fn }}
-                                            quickOptions={['Plano de aula completo']}
-                                        />
 
                                     </div>
 
@@ -1427,7 +1416,7 @@ export default function ModalRegistroPosAula() {
                                                     const chipFields = [
                                                         { icon: '📋', label: 'Realizado',              text: reg.resumoAula },
                                                         { icon: '✅', label: 'Funcionou bem',           text: reg.funcionouBem },
-                                                        { icon: '⚠️', label: 'Não funcionou',           text: reg.naoFuncionou },
+                                                        { icon: '⚠️', label: 'O que mudar',             text: reg.naoFuncionou },
                                                         { icon: '🔧', label: 'Poderia ter sido melhor', text: reg.poderiaMelhorar },
                                                         { icon: '💡', label: 'Próxima aula / estratégias',            text: reg.proximaAula },
                                                         { icon: '👥', label: 'Comportamento',           text: reg.comportamento },
