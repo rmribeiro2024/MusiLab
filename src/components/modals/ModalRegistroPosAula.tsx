@@ -347,8 +347,10 @@ export default function ModalRegistroPosAula() {
     const MAX_DURACAO_AUDIO = 60
     const [mostrarAvancados, setMostrarAvancados] = React.useState(false)
     const [editandoTurma, setEditandoTurma] = React.useState(false)
-    // Opcao A — painel "O que foi planejado"
+    // Opcao A — painel "O que foi planejado" (header)
     const [planejadoAberto, setPlanejadoAberto] = React.useState(false)
+    // Painel inline no form (chip dentro do scroll)
+    const [planejadoInlineAberto, setPlanejadoInlineAberto] = React.useState(false)
     React.useEffect(() => {
         if (!planoParaRegistro?.id) return
         const salvo = localStorage.getItem(`planejado-aberto-${planoParaRegistro.id}`)
@@ -494,7 +496,7 @@ export default function ModalRegistroPosAula() {
 
     // ── Campos de anotação ──
     const camposConfig = [
-        { id: 'reg-aprenderam', icon: '🎯', label: 'O que os alunos demonstraram aprender?', field: 'funcionouBem', placeholder: 'Ex: 3 alunos tocaram a cadência sem ajuda — a demonstração em dupla funcionou muito bem. João ainda trava na troca G→D...' },
+        { id: 'reg-aprenderam', icon: '🎯', label: 'O que os alunos demonstraram aprender?', field: 'funcionouBem', placeholder: 'Ex: 3 alunos tocaram a cadência completa sem parar. A turma manteve o pulso estável por 2 compassos pela primeira vez...' },
         { id: 'reg-mudar',      icon: '💭', label: 'O que faria diferente?',                  field: 'naoFuncionou', placeholder: 'Se você pudesse dar esta aula de novo sabendo o que sabe agora — o que faria diferente?' },
     ] as const
 
@@ -757,32 +759,62 @@ export default function ModalRegistroPosAula() {
                                         )
                                     })()}
 
-{/* Chip — Ver planejamento (só aparece quando há plano vinculado com conteúdo) */}
+{/* Chip — Ver planejamento inline (só aparece quando há plano com conteúdo) */}
                                     {planoParaRegistro && (() => {
                                         const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim()
-                                        const temPlano = (
-                                            stripHtml((planoParaRegistro as any).objetivoGeral || '') ||
-                                            ((planoParaRegistro as any).atividadesRoteiro?.length > 0) ||
-                                            stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
-                                        )
+                                        const roteiro: any[] = (planoParaRegistro as any).atividadesRoteiro || []
+                                        const objetivo = stripHtml((planoParaRegistro as any).objetivoGeral || '')
+                                        const criterio = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
+                                        const temPlano = objetivo || roteiro.length > 0 || criterio
                                         if (!temPlano) return null
                                         return (
-                                            <button type="button"
-                                                onClick={() => setPlanejadoAberto(v => !v)}
-                                                style={{
-                                                    display: 'flex', alignItems: 'center', gap: 8,
-                                                    padding: '8px 12px', borderRadius: 8, width: '100%',
-                                                    background: planejadoAberto ? '#f1f5f9' : '#fff',
-                                                    border: planejadoAberto ? '1px solid #cbd5e1' : '1px dashed #cbd5e1',
-                                                    cursor: 'pointer', transition: 'all .15s', fontFamily: 'inherit',
-                                                    textAlign: 'left' as const,
-                                                }}>
-                                                <span style={{ fontSize: 13, flexShrink: 0 }}>📋</span>
-                                                <span style={{ fontSize: 12, color: planejadoAberto ? '#334155' : '#64748b', flex: 1, fontWeight: planejadoAberto ? 600 : 400 }}>
-                                                    {planejadoAberto ? 'Ocultar o que foi planejado' : 'Ver o que foi planejado para esta aula'}
-                                                </span>
-                                                <span style={{ fontSize: 10, color: '#94a3b8' }}>{planejadoAberto ? '▲' : '▼'}</span>
-                                            </button>
+                                            <div style={{ border: planejadoInlineAberto ? '1px solid #cbd5e1' : '1px dashed #cbd5e1', borderRadius: 8, overflow: 'hidden', background: '#fff' }}>
+                                                <button type="button"
+                                                    onClick={() => setPlanejadoInlineAberto(v => !v)}
+                                                    style={{
+                                                        display: 'flex', alignItems: 'center', gap: 8,
+                                                        padding: '8px 12px', width: '100%',
+                                                        background: 'transparent', border: 'none',
+                                                        cursor: 'pointer', fontFamily: 'inherit',
+                                                        textAlign: 'left' as const,
+                                                    }}>
+                                                    <span style={{ fontSize: 13, flexShrink: 0 }}>📋</span>
+                                                    <span style={{ fontSize: 12, color: planejadoInlineAberto ? '#334155' : '#64748b', flex: 1, fontWeight: planejadoInlineAberto ? 600 : 400 }}>
+                                                        {planejadoInlineAberto ? 'Ocultar o que foi planejado' : 'Ver o que foi planejado para esta aula'}
+                                                    </span>
+                                                    <span style={{ fontSize: 10, color: '#94a3b8' }}>{planejadoInlineAberto ? '▲' : '▼'}</span>
+                                                </button>
+                                                {planejadoInlineAberto && (
+                                                    <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid #f1f5f9' }}>
+                                                        {objetivo && (
+                                                            <div>
+                                                                <p style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.07em', margin: '8px 0 2px' }}>Objetivo</p>
+                                                                <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.4 }}>{objetivo}</p>
+                                                            </div>
+                                                        )}
+                                                        {roteiro.length > 0 && (
+                                                            <div>
+                                                                <p style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 4 }}>Roteiro</p>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                                    {roteiro.map((at: any, i: number) => (
+                                                                        <div key={at.id ?? i} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                                                            <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 700, flexShrink: 0, minWidth: 14, textAlign: 'right' as const }}>{i + 1}.</span>
+                                                                            <span style={{ fontSize: 12, color: '#475569', flex: 1 }}>{at.nome}</span>
+                                                                            {at.duracao ? <span style={{ fontSize: 10, color: '#94a3b8', flexShrink: 0 }}>{String(at.duracao).replace(/min$/i, '')}min</span> : null}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {criterio && (
+                                                            <div>
+                                                                <p style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 2 }}>Critério de sucesso</p>
+                                                                <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.4, fontStyle: 'italic' }}>{criterio}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         )
                                     })()}
 
