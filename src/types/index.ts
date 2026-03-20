@@ -127,6 +127,7 @@ export interface RegistroPosAula {
   resultadoAula?: string       // legado — usar statusAula em novos registros
   proximaAulaOpcao?: string    // legado — usar statusAula em novos registros
   statusAula?: 'concluida' | 'revisao' | 'incompleta' | 'nao_houve' | 'parcial'  // campo unificado (v2) — 'parcial' mantido p/ compat. legado
+  motivoCancelamento?: string  // preenchido quando statusAula === 'nao_houve'
   anotacoesGerais?: string
   urlEvidencia?: string
   chamada?: { alunoId: string; presente: boolean }[]
