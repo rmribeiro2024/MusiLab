@@ -1097,12 +1097,78 @@ export default function ModalRegistroPosAula() {
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
                                         }}>
                                         <span style={{ transition: 'transform .2s', display: 'inline-block', transform: mostrarAvancados ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-                                        {mostrarAvancados ? 'Ocultar extras' : 'Extras'}
+                                        {mostrarAvancados ? 'Ocultar extras' : 'Extras (opcional)'}
                                     </button>
                                     {mostrarAvancados && (
                                         <div className="space-y-3">
 
-                                            {/* ── Contexto da aula ── */}
+                                            {/* ── 1. Aproveitamento da aula — âncora emocional rápida ── */}
+                                            {(() => {
+                                                const LABELS = ['Ruim', 'Razoável', 'Boa', 'Excelente']
+                                                const val: number = (novoRegistro as any).aproveitamentoAula ?? 0
+                                                const setVal = (n: number) => setNovoRegistro({ ...novoRegistro, aproveitamentoAula: val === n ? 0 : n } as any)
+                                                const aberto = aprovAberto || val > 0
+                                                return (
+                                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}
+                                                            onClick={() => setAprovAberto(v => !v)}>
+                                                            <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📊</span>
+                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: val > 0 ? '#334155' : '#64748b', flex: 1 }}>
+                                                                Aproveitamento da aula
+                                                            </span>
+                                                            {val > 0 && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                            <span style={{ fontSize: 10, color: '#cbd5e1', transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
+                                                        </div>
+                                                        {aberto && (
+                                                            <div style={{ padding: '4px 12px 12px' }}>
+                                                                <div style={{ display: 'flex', gap: 6 }}>
+                                                                    {LABELS.map((label, i) => {
+                                                                        const n = i + 1
+                                                                        const ativo = val === n
+                                                                        return (
+                                                                            <button key={n} type="button" onClick={() => setVal(n)}
+                                                                                style={{
+                                                                                    flex: 1, padding: '10px 6px', borderRadius: 8, cursor: 'pointer',
+                                                                                    transition: 'all .15s', fontSize: 12, fontWeight: 700,
+                                                                                    background: ativo ? '#1e2a4a' : '#fff',
+                                                                                    color: ativo ? '#fff' : '#94a3b8',
+                                                                                    border: `2px solid ${ativo ? '#1e2a4a' : '#e2e8f0'}`,
+                                                                                    outline: 'none',
+                                                                                }}
+                                                                                onMouseEnter={e => { if (!ativo) { (e.currentTarget as HTMLButtonElement).style.borderColor = '#94a3b8'; (e.currentTarget as HTMLButtonElement).style.color = '#475569' } }}
+                                                                                onMouseLeave={e => { if (!ativo) { (e.currentTarget as HTMLButtonElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8' } }}>
+                                                                                {label}
+                                                                            </button>
+                                                                        )
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })()}
+
+                                            {/* ── 2. Como estava a turma hoje — contexto ── */}
+                                            <BehaviorChip
+                                                value={(novoRegistro as any).comportamento || ''}
+                                                filled={!!((novoRegistro as any).comportamento?.trim())}
+                                                onChange={v => setNovoRegistro({ ...novoRegistro, comportamento: v })}
+                                                onTabNext={() => {}}
+                                                ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length] = fn }}
+                                            />
+
+                                            {/* ── 3. O que os alunos disseram — observacional/factual ── */}
+                                            {[{ id: 'av-voz', icon: '💬', label: 'O que os alunos disseram sobre a aula?', field: 'vozAluno', placeholder: 'Ex: "Isso foi difícil" / "Eu entendi agora!" — qualquer comentário significativo...' }]
+                                                .map(({ id, icon, label, field, placeholder }) => {
+                                                const valor = (novoRegistro as any)[field] || ''
+                                                return (
+                                                    <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
+                                                        value={valor} filled={valor.trim().length > 0} allowVoice
+                                                        onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v } as any)} />
+                                                )
+                                            })}
+
+                                            {/* ── 4. Como a aula aconteceu na prática — narrativo ── */}
                                             <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
                                                 <div onClick={() => setContextoAberto(o => !o)}
                                                     style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
@@ -1149,33 +1215,21 @@ export default function ModalRegistroPosAula() {
                                                 )}
                                             </div>
 
-                                            {/* ── Reflexão aprofundada ── */}
+                                            {/* ── 5–7. Análise e diagnóstico — ordem: surpresa → queda → atenção ── */}
                                             {[
-                                                { id: 'av-atencao',   icon: '👤', label: 'Qual aluno merece atenção especial na próxima aula?',      field: 'alunoAtencao',    placeholder: 'Ex: João ainda trava na troca G→D — dar atenção individual na próxima aula...' },
                                                 { id: 'av-surpresa',  icon: '🎵', label: 'O que os alunos fizeram musicalmente que não esperava?', field: 'surpresaMusical', placeholder: 'Ex: Joana improvisou uma variação espontânea — vale explorar na próxima aula...' },
                                                 { id: 'av-queda',     icon: '📉', label: 'Em que ponto o engajamento caiu?',             field: 'pontoQueda',      placeholder: 'Ex: Na explicação teórica após o aquecimento — a atividade prática antes funcionou melhor...' },
-                                                { id: 'av-voz',       icon: '💬', label: 'O que os alunos disseram sobre a aula?',       field: 'vozAluno',        placeholder: 'Ex: "Isso foi difícil" / "Eu entendi agora!" — qualquer comentário significativo...' },
+                                                { id: 'av-atencao',   icon: '👤', label: 'Qual aluno merece atenção especial na próxima aula?',      field: 'alunoAtencao',    placeholder: 'Ex: João ainda trava na troca G→D — dar atenção individual na próxima aula...' },
                                             ].map(({ id, icon, label, field, placeholder }) => {
                                                 const valor = (novoRegistro as any)[field] || ''
                                                 return (
                                                     <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
-                                                        value={valor} filled={valor.trim().length > 0}
-                                                        allowVoice
-                                                        onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v } as any)}
-                                                    />
+                                                        value={valor} filled={valor.trim().length > 0} allowVoice
+                                                        onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v } as any)} />
                                                 )
                                             })}
 
-                                            {/* Comportamento da turma — chip com tags */}
-                                            <BehaviorChip
-                                                value={(novoRegistro as any).comportamento || ''}
-                                                filled={!!((novoRegistro as any).comportamento?.trim())}
-                                                onChange={v => setNovoRegistro({ ...novoRegistro, comportamento: v })}
-                                                onTabNext={() => {}}
-                                                ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length] = fn }}
-                                            />
-
-                                            {/* Chamada rápida */}
+                                            {/* ── 8. Chamada rápida ── */}
                                             {regTurmaSel && regAnoSel && regEscolaSel && regSegmentoSel && (() => {
                                                 const todosAlunos = alunosGetByTurma(regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel)
                                                 if (todosAlunos.length === 0) return null
@@ -1242,52 +1296,6 @@ export default function ModalRegistroPosAula() {
                                                                 )
                                                             })}
                                                         </div>
-                                                    </div>
-                                                )
-                                            })()}
-
-                                            {/* Aproveitamento da aula */}
-                                            {(() => {
-                                                const LABELS = ['Ruim', 'Razoável', 'Boa', 'Excelente']
-                                                const val: number = (novoRegistro as any).aproveitamentoAula ?? 0
-                                                const setVal = (n: number) => setNovoRegistro({ ...novoRegistro, aproveitamentoAula: val === n ? 0 : n } as any)
-                                                const aberto = aprovAberto || val > 0
-                                                return (
-                                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}
-                                                            onClick={() => setAprovAberto(v => !v)}>
-                                                            <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📊</span>
-                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: val > 0 ? '#334155' : '#64748b', flex: 1 }}>
-                                                                Aproveitamento da aula
-                                                            </span>
-                                                            {val > 0 && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
-                                                            <span style={{ fontSize: 10, color: '#cbd5e1', transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
-                                                        </div>
-                                                        {aberto && (
-                                                            <div style={{ padding: '4px 12px 12px' }}>
-                                                                <div style={{ display: 'flex', gap: 6 }}>
-                                                                    {LABELS.map((label, i) => {
-                                                                        const n = i + 1
-                                                                        const ativo = val === n
-                                                                        return (
-                                                                            <button key={n} type="button" onClick={() => setVal(n)}
-                                                                                style={{
-                                                                                    flex: 1, padding: '10px 6px', borderRadius: 8, cursor: 'pointer',
-                                                                                    transition: 'all .15s', fontSize: 12, fontWeight: 700,
-                                                                                    background: ativo ? '#1e2a4a' : '#fff',
-                                                                                    color: ativo ? '#fff' : '#94a3b8',
-                                                                                    border: `2px solid ${ativo ? '#1e2a4a' : '#e2e8f0'}`,
-                                                                                    outline: 'none',
-                                                                                }}
-                                                                                onMouseEnter={e => { if (!ativo) { (e.currentTarget as HTMLButtonElement).style.borderColor = '#94a3b8'; (e.currentTarget as HTMLButtonElement).style.color = '#475569' } }}
-                                                                                onMouseLeave={e => { if (!ativo) { (e.currentTarget as HTMLButtonElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8' } }}>
-                                                                                {label}
-                                                                            </button>
-                                                                        )
-                                                                    })}
-                                                                </div>
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 )
                                             })()}
