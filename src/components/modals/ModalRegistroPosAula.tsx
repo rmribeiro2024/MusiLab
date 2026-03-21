@@ -346,7 +346,7 @@ function StatusAulaSelector({ value, onChange, onDone, firstRef }: StatusAulaSel
 }
 // ──────────────────────────────────────────────────────────────────────────────
 
-export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: { inlineMode?: boolean; onVoltar?: () => void }) {
+export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hideHeader = false, saveLabel }: { inlineMode?: boolean; onVoltar?: () => void; hideHeader?: boolean; saveLabel?: string }) {
     const {
         modalRegistro, setModalRegistro,
         planoParaRegistro, setPlanoParaRegistro,
@@ -692,7 +692,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
                 ))}
 
                 {/* ── HEADER ── */}
-                {inlineMode ? (
+                {inlineMode && hideHeader ? null : inlineMode ? (
                     // Header inline — limpo, sem gradient, com botão Voltar
                     <div className="px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151] flex items-center gap-3 shrink-0 bg-white dark:bg-[#1F2937]">
                         <button
@@ -1993,7 +1993,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
                                 <button
                                     onClick={() => { salvarRegistro(); if (onVoltar) onVoltar() }}
                                     className="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[13px] font-semibold hover:bg-slate-700 dark:hover:bg-white transition">
-                                    ✓ Salvar registro
+                                    ✓ {saveLabel || 'Salvar registro'}
                                 </button>
                             </div>
                         )}

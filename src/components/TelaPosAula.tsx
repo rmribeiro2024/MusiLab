@@ -1,10 +1,12 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, lazy, Suspense } from 'react'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 
-export default function TelaPosAula({ onAbrirRegistro }: { onAbrirRegistro?: () => void }) {
+const ModalRegistroPosAula = lazy(() => import('./modals/ModalRegistroPosAula'))
+
+export default function TelaPosAula() {
     const { planos, sugerirPlanoParaTurma } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
     const {
@@ -24,33 +26,41 @@ export default function TelaPosAula({ onAbrirRegistro }: { onAbrirRegistro?: () 
     const hojeStr = toStr(hoje)
 
     const [dataSel, setDataSel] = useState(hojeStr)
+    const [listaAberta, setListaAberta] = useState(true)
+    const [turmaIdx, setTurmaIdx] = useState(-1)
     const dateInputRef = useRef<HTMLInputElement>(null)
 
     const navDia = (delta: number) => {
         const d = new Date(dataSel + 'T12:00:00')
         d.setDate(d.getDate() + delta)
         setDataSel(toStr(d))
+        // Ao mudar de dia, volta para a lista
+        setListaAberta(true)
+        setTurmaIdx(-1)
+        setModalRegistro(false)
     }
 
-    // Minutos desde meia-noite — para calcular se aula já passou
     const agora = new Date()
     const minAgora = agora.getHours() * 60 + agora.getMinutes()
     const ehHoje = dataSel === hojeStr
 
-    // Label da data selecionada
-    const diasSemanaLabel = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+    const diasSemanaLabel = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+    const diasSemanaLong  = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
     const mesesLabel = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+    const labelDataCurta = (ds: string) => {
+        const d = new Date(ds + 'T12:00:00')
+        return `${diasSemanaLabel[d.getDay()]}, ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+    }
     const labelDataLonga = (ds: string) => {
         const d = new Date(ds + 'T12:00:00')
-        return `${diasSemanaLabel[d.getDay()]}, ${d.getDate()} de ${mesesLabel[d.getMonth()]}`
+        return `${diasSemanaLong[d.getDay()]}, ${d.getDate()} de ${mesesLabel[d.getMonth()]}`
     }
 
-    // Todos os registros de todos os planos
     const todosRegistros = planos.flatMap(p =>
         (p.registrosPosAula || []).map(r => ({ ...r, planoTitulo: p.titulo, planoId: p.id }))
     )
 
-    // Turmas do dia selecionado enriquecidas
     const turmasDoDia = obterTurmasDoDia(dataSel)
     const apsDoDia = aplicacoesPorData[dataSel] || []
 
@@ -77,12 +87,13 @@ export default function TelaPosAula({ onAbrirRegistro }: { onAbrirRegistro?: () 
             return { aula, escNome: esc?.nome || '', segNome: seg?.nome || '?', turNome: tur?.nome || '?', plano, registrada, dimmed }
         })
 
-    const pendentes = turmasEnriq.filter(t => !t.registrada).length
-    const concluidas = turmasEnriq.filter(t => t.registrada).length
+    const pendentes  = turmasEnriq.filter(t => !t.registrada).length
+    const concluidas = turmasEnriq.filter(t =>  t.registrada).length
 
-    const abrirRegistro = (t: typeof turmasEnriq[0]) => {
-        // Usa o plano real se existir, caso contrário cria stub com nomes da turma
-        // para que o modal pré-selecione escola/segmento/turma corretamente
+    // Abre turma pelo índice
+    const abrirTurma = (idx: number) => {
+        const t = turmasEnriq[idx]
+        if (!t) return
         const plano = t.plano && typeof t.plano === 'object'
             ? t.plano as any
             : { id: `stub-${t.aula.id}`, titulo: '', escola: t.escNome, segmento: t.segNome, turma: t.turNome }
@@ -90,136 +101,212 @@ export default function TelaPosAula({ onAbrirRegistro }: { onAbrirRegistro?: () 
         setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
         setRegistroEditando(null)
         setVerRegistros(false)
-        if (onAbrirRegistro) {
-            onAbrirRegistro()
+        setModalRegistro(true) // ativa pre-seleção no ModalRegistroPosAula
+        setTurmaIdx(idx)
+        setListaAberta(false)
+    }
+
+    // Após salvar: avança para próxima pendente ou volta à lista
+    const handleDepoisSalvar = () => {
+        // Busca próxima pendente após o índice atual
+        const proxIdx = turmasEnriq.findIndex((t, i) => i > turmaIdx && !t.registrada)
+        if (proxIdx >= 0) {
+            abrirTurma(proxIdx)
         } else {
-            setModalRegistro(true)
+            // Verifica se há pendentes antes do índice atual
+            const proxAntes = turmasEnriq.findIndex((t, i) => i !== turmaIdx && !t.registrada)
+            if (proxAntes >= 0) {
+                abrirTurma(proxAntes)
+            } else {
+                // Tudo registrado — volta à lista
+                setListaAberta(true)
+                setTurmaIdx(-1)
+                setModalRegistro(false)
+            }
         }
     }
 
-    // Botão de navegação reutilizável
-    const NavBtn = ({ delta }: { delta: number }) => (
-        <button
-            onClick={() => navDia(delta)}
-            className="w-[30px] h-[30px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center cursor-pointer text-slate-400 dark:text-[#6b7280] text-[13px] shrink-0 transition hover:text-[#5B5FEA] dark:hover:text-[#818cf8] hover:border-[#5B5FEA]/30 dark:hover:border-[#818cf8]/30">
-            {delta < 0 ? '‹' : '›'}
-        </button>
-    )
+    // Navegar entre turmas com ‹ ›
+    const navTurma = (delta: number, e: React.MouseEvent) => {
+        e.stopPropagation()
+        const prox = turmaIdx + delta
+        if (prox < 0 || prox >= turmasEnriq.length) return
+        abrirTurma(prox)
+    }
+
+    const turmaAtual = turmasEnriq[turmaIdx]
 
     return (
-        <div className="max-w-2xl mx-auto space-y-4 pb-24">
+        <div className="max-w-2xl mx-auto pb-24">
 
-            {/* ── CABEÇALHO ── */}
-            <div>
-                <h1 className="text-[17px] font-bold tracking-tight text-slate-800 dark:text-[#E5E7EB]">Pós-aula</h1>
-                <p className="text-[12.5px] text-slate-500 dark:text-[#9CA3AF] mt-0.5">Registre o que aconteceu em cada aula</p>
-            </div>
-
-            {/* ── BARRA DE CONTEXTO (Opção 4) ── */}
-            <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] px-4 py-3 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-                {/* Esquerda: dot + data + status */}
-                <div className="flex items-center gap-3 min-w-0">
-                    {/* Clicável para abrir datepicker nativo */}
-                    <button
-                        onClick={() => dateInputRef.current?.showPicker ? dateInputRef.current.showPicker() : dateInputRef.current?.click()}
-                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
-                        <div className="text-[13px] font-semibold text-slate-700 dark:text-[#E5E7EB] flex items-center gap-2">
-                            {labelDataLonga(dataSel)}
-                            {ehHoje && <span className="text-[11px] font-medium text-[#5B5FEA] dark:text-[#818cf8] bg-[#5B5FEA]/8 dark:bg-[#818cf8]/10 px-1.5 py-0.5 rounded">Hoje</span>}
-                        </div>
-                        {turmasEnriq.length > 0 && (
-                            <div className="text-[11px] text-slate-400 dark:text-[#6b7280] mt-0.5">
-                                {pendentes > 0 ? `${pendentes} pendente${pendentes > 1 ? 's' : ''}` : 'tudo registrado'}
-                                {concluidas > 0 && pendentes > 0 && ` · ${concluidas} registrada${concluidas > 1 ? 's' : ''}`}
-                            </div>
-                        )}
-                    </button>
-                    {/* Input invisível para acionar datepicker */}
-                    <input
-                        ref={dateInputRef}
-                        type="date"
-                        value={dataSel}
-                        onChange={e => setDataSel(e.target.value)}
-                        style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
-                    />
+            {/* ── TÍTULO (só quando lista aberta) ── */}
+            {listaAberta && (
+                <div className="mb-4">
+                    <h1 className="text-[17px] font-bold tracking-tight text-slate-800 dark:text-[#E5E7EB]">Pós-aula</h1>
+                    <p className="text-[12.5px] text-slate-500 dark:text-[#9CA3AF] mt-0.5">Registre o que aconteceu em cada aula</p>
                 </div>
+            )}
 
-                {/* Direita: setas + botão Hoje */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                    {!ehHoje && (
-                        <button
-                            onClick={() => setDataSel(hojeStr)}
-                            className="mr-1 px-[10px] py-[4px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] cursor-pointer transition hover:text-slate-700 dark:hover:text-[#E5E7EB]">
-                            Hoje
-                        </button>
-                    )}
-                    <NavBtn delta={-1} />
-                    <NavBtn delta={+1} />
-                </div>
-            </div>
-
-            {/* ── TURMAS DO DIA ── */}
+            {/* ── CARD PRINCIPAL ── */}
             <div className="v2-card rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] overflow-hidden border border-[#E6EAF0] dark:border-[#374151]">
-                {/* Header */}
-                <div className="px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151] flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-slate-400 dark:text-[#6b7280]">
-                        Turmas
-                    </span>
-                    {turmasEnriq.length > 0 && (
-                        <span className="text-[11px] text-slate-400 dark:text-[#6b7280]">
-                            {concluidas}/{turmasEnriq.length} registradas
-                        </span>
+
+                {/* ══ HEADER — muda conforme estado ══ */}
+                <div className="sticky top-0 z-10 v2-card border-b border-[#E6EAF0] dark:border-[#374151]">
+
+                    {/* Lista aberta: data + setas de dia */}
+                    {listaAberta && (
+                        <div className="px-4 py-3 flex items-center justify-between">
+                            <button
+                                onClick={() => dateInputRef.current?.showPicker ? dateInputRef.current.showPicker() : dateInputRef.current?.click()}
+                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
+                                <div className="text-[13px] font-semibold text-slate-700 dark:text-[#E5E7EB] flex items-center gap-2">
+                                    {labelDataLonga(dataSel)}
+                                    {ehHoje && <span className="text-[11px] font-medium text-[#5B5FEA] dark:text-[#818cf8] bg-[#5B5FEA]/8 dark:bg-[#818cf8]/10 px-1.5 py-0.5 rounded">Hoje</span>}
+                                </div>
+                                {turmasEnriq.length > 0 && (
+                                    <div className="text-[11px] text-slate-400 dark:text-[#6b7280] mt-0.5">
+                                        {pendentes > 0
+                                            ? `${pendentes} pendente${pendentes > 1 ? 's' : ''}`
+                                            : <span className="text-emerald-500">Tudo registrado ✓</span>}
+                                        {concluidas > 0 && pendentes > 0 && ` · ${concluidas} registrada${concluidas > 1 ? 's' : ''}`}
+                                    </div>
+                                )}
+                            </button>
+                            <input
+                                ref={dateInputRef}
+                                type="date"
+                                value={dataSel}
+                                onChange={e => { setDataSel(e.target.value); setListaAberta(true); setTurmaIdx(-1) }}
+                                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+                            />
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                {!ehHoje && (
+                                    <button
+                                        onClick={() => { setDataSel(hojeStr); setListaAberta(true); setTurmaIdx(-1) }}
+                                        className="mr-1 px-[10px] py-[4px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] cursor-pointer transition hover:text-slate-700 dark:hover:text-[#E5E7EB]">
+                                        Hoje
+                                    </button>
+                                )}
+                                {/* Setas de dia */}
+                                {[-1, 1].map(d => (
+                                    <button key={d} onClick={() => navDia(d)}
+                                        className="w-[30px] h-[30px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center cursor-pointer text-slate-400 dark:text-[#6b7280] text-[13px] shrink-0 transition hover:text-[#5B5FEA] dark:hover:text-[#818cf8] hover:border-[#5B5FEA]/30">
+                                        {d < 0 ? '‹' : '›'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Lista colapsada: turma atual + setas de turma */}
+                    {!listaAberta && turmaAtual && (
+                        <div
+                            className="px-4 py-3 flex items-center gap-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/20 transition"
+                            onClick={() => setListaAberta(true)}>
+                            {/* Toggle lista */}
+                            <span className="text-[11px] text-slate-400 dark:text-[#6b7280] flex items-center gap-1 shrink-0 mr-1">
+                                <span>▼</span>
+                                <span>todas</span>
+                            </span>
+                            {/* Info da turma atual */}
+                            <div className="flex-1 flex items-center gap-[5px] text-[12px] min-w-0 overflow-hidden">
+                                <span className="font-bold tabular-nums text-slate-800 dark:text-[#E5E7EB] shrink-0">{turmaAtual.aula.horario}</span>
+                                <span className="text-slate-200 dark:text-slate-700">·</span>
+                                <span className="text-slate-500 dark:text-[#9CA3AF] truncate">{turmaAtual.escNome}</span>
+                                <span className="text-slate-200 dark:text-slate-700">·</span>
+                                <span className="font-bold text-slate-800 dark:text-[#E5E7EB] shrink-0">{turmaAtual.turNome}</span>
+                                <span className="text-slate-200 dark:text-slate-700">·</span>
+                                <span className="text-[#5B5FEA] dark:text-[#818cf8] text-[11px] shrink-0">{labelDataCurta(dataSel)}</span>
+                                <span className={`w-[7px] h-[7px] rounded-full shrink-0 ml-0.5 ${turmaAtual.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                            </div>
+                            {/* Setas de turma */}
+                            <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                                <button
+                                    onClick={e => navTurma(-1, e)}
+                                    disabled={turmaIdx === 0}
+                                    className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[13px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 transition hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer">
+                                    ‹
+                                </button>
+                                <span className="text-[11px] font-semibold text-slate-400 dark:text-[#6b7280] min-w-[28px] text-center tabular-nums">
+                                    {turmaIdx + 1}/{turmasEnriq.length}
+                                </span>
+                                <button
+                                    onClick={e => navTurma(1, e)}
+                                    disabled={turmaIdx === turmasEnriq.length - 1}
+                                    className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] bg-[#5B5FEA] border-[#5B5FEA] flex items-center justify-center text-[13px] text-white disabled:opacity-30 transition hover:bg-[#4f46e5] cursor-pointer">
+                                    ›
+                                </button>
+                            </div>
+                        </div>
                     )}
                 </div>
 
-                {/* Lista */}
-                {turmasEnriq.length === 0 ? (
-                    <div className="px-4 py-10 text-center space-y-1">
-                        <p className="text-[13px] text-slate-400 dark:text-[#6b7280]">Nenhuma aula na grade para este dia.</p>
-                        <p className="text-[12px] text-slate-300 dark:text-[#4B5563]">Configure a grade em Configurações → Grade Semanal.</p>
-                    </div>
-                ) : (
-                    <div className="divide-y divide-[#F1F4F8] dark:divide-[#374151]/60">
-                        {turmasEnriq.map(t => (
-                            <div
-                                key={t.aula.id}
-                                onClick={() => abrirRegistro(t)}
-                                className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition cursor-pointer"
-                                style={{ opacity: t.dimmed ? 0.72 : 1 }}>
+                {/* ══ LISTA DE TURMAS (colapsável) ══ */}
+                <div
+                    className="overflow-hidden transition-all duration-300 ease-in-out"
+                    style={{ maxHeight: listaAberta ? '2000px' : '0px', opacity: listaAberta ? 1 : 0 }}>
 
-                                {/* Status dot */}
-                                <span className={`w-2 h-2 rounded-full shrink-0 ${t.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                    {turmasEnriq.length === 0 ? (
+                        <div className="px-4 py-10 text-center space-y-1">
+                            <p className="text-[13px] text-slate-400 dark:text-[#6b7280]">Nenhuma aula na grade para este dia.</p>
+                            <p className="text-[12px] text-slate-300 dark:text-[#4B5563]">Configure a grade em Configurações → Grade Semanal.</p>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-[#F1F4F8] dark:divide-[#374151]/60">
+                            {turmasEnriq.map((t, i) => (
+                                <div
+                                    key={t.aula.id}
+                                    onClick={() => abrirTurma(i)}
+                                    className={`px-4 py-3 flex items-center gap-3 transition cursor-pointer
+                                        ${turmaIdx === i && !listaAberta ? 'bg-[#EEF0FF] dark:bg-[#5B5FEA]/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'}`}
+                                    style={{ opacity: t.dimmed ? 0.72 : 1 }}>
 
-                                {/* Info */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="text-[12px] font-semibold shrink-0 tabular-nums text-slate-700 dark:text-[#E5E7EB]">
-                                            {t.aula.horario}
-                                        </span>
-                                        {t.escNome && (<>
+                                    <span className={`w-2 h-2 rounded-full shrink-0 ${t.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-[12px] font-semibold shrink-0 tabular-nums text-slate-700 dark:text-[#E5E7EB]">{t.aula.horario}</span>
+                                            {t.escNome && (<>
+                                                <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
+                                                <span className="text-[12px] text-slate-400 dark:text-[#6b7280]">{t.escNome}</span>
+                                            </>)}
                                             <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
-                                            <span className="text-[12px] text-slate-400 dark:text-[#6b7280]">{t.escNome}</span>
-                                        </>)}
-                                        <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
-                                        <span className="text-[12px] font-medium text-slate-600 dark:text-[#9CA3AF]">{t.segNome}</span>
-                                        <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
-                                        <span className="text-[12px] text-slate-400 dark:text-[#6b7280]">{t.turNome}</span>
+                                            <span className="text-[12px] font-medium text-slate-600 dark:text-[#9CA3AF]">{t.segNome}</span>
+                                            <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
+                                            <span className="text-[12px] font-bold text-slate-700 dark:text-[#E5E7EB]">{t.turNome}</span>
+                                        </div>
+                                        {t.plano && typeof t.plano === 'object' && (
+                                            <p className="text-[11px] text-slate-400 dark:text-[#9CA3AF] mt-0.5 truncate">{(t.plano as any).titulo}</p>
+                                        )}
                                     </div>
-                                    {t.plano && typeof t.plano === 'object' && (
-                                        <p className="text-[11px] text-slate-400 dark:text-[#9CA3AF] mt-0.5 truncate">
-                                            {(t.plano as any).titulo}
-                                        </p>
-                                    )}
+
+                                    {t.registrada
+                                        ? <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full shrink-0">✓ registrada</span>
+                                        : <span className="text-[11px] shrink-0 text-slate-300 dark:text-slate-600">›</span>
+                                    }
                                 </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
-                                {/* Indicador de status sutil */}
-                                <span className="text-[11px] shrink-0 text-slate-300 dark:text-slate-600">›</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                {/* ══ FORMULÁRIO INLINE (colapsável) ══ */}
+                <div
+                    className="overflow-hidden transition-all duration-300 ease-in-out"
+                    style={{ maxHeight: !listaAberta ? '4000px' : '0px', opacity: !listaAberta ? 1 : 0 }}>
+                    {!listaAberta && (
+                        <Suspense fallback={<div className="px-4 py-8 text-center text-[13px] text-slate-400">Carregando...</div>}>
+                            <ModalRegistroPosAula
+                                inlineMode
+                                hideHeader
+                                onVoltar={handleDepoisSalvar}
+                                saveLabel="Salvar e próxima"
+                            />
+                        </Suspense>
+                    )}
+                </div>
+
             </div>
-
         </div>
     )
 }
