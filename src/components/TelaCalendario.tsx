@@ -752,125 +752,19 @@ export default function TelaResumoDia() {
 
     const toggleDia = (dataStr) => setDiasExpandidos(prev => ({ ...prev, [dataStr]: !prev[dataStr] }));
 
-    // Renderiza o conteúdo de registros de um dia (compartilhado entre modo dia e semana)
-    const renderRegistrosDia = (dataStr) => {
-        const regsNoDia = todosRegistros.filter(r => r.data === dataStr);
-        if (regsNoDia.length === 0) return <p className="px-4 py-3 text-xs text-gray-400 italic">Nenhum registro para este dia.</p>;
-        return (
-            <div className="divide-y divide-gray-100">
-                {regsNoDia.map(reg => {
-                    // Buscar label na nova estrutura (compatibilidade com registros antigos)
-                    let labelTurma = '';
-                    let ano = anosLetivos.find(a => a.id == reg.anoLetivo);
-                    let esc = ano?.escolas.find(e => e.id == reg.escola);
-                    let seg = esc?.segmentos.find(s => s.id == (reg.segmento || reg.serie));
-                    let tur = seg?.turmas.find(t => t.id == reg.turma);
-
-                    // Compatibilidade: registros antigos sem anoLetivo
-                    if (!ano && reg.escola) {
-                        for (const a of anosLetivos) {
-                            const e = a.escolas.find(e => e.id == reg.escola);
-                            if (e) {
-                                const s = e.segmentos.find(s => s.id == (reg.segmento || reg.serie));
-                                if (s) {
-                                    const t = s.turmas.find(t => t.id == reg.turma);
-                                    labelTurma = [a.ano, e.nome, s.nome, t?.nome].filter(Boolean).filter((v, i, arr) => i === 0 || v !== arr[i - 1]).join(' › ');
-                                    break;
-                                }
-                            }
-                        }
-                    } else {
-                        labelTurma = [ano?.ano, esc?.nome, seg?.nome, tur?.nome].filter(Boolean).filter((v, i, arr) => i === 0 || v !== arr[i - 1]).join(' › ');
-                    }
-
-                    return (
-                        <div key={reg.id} className="px-4 py-3">
-                            <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-                                {labelTurma
-                                    ? <span className="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full shrink-0">{labelTurma}</span>
-                                    : <span className="text-xs text-gray-400 italic shrink-0">Turma não identificada</span>
-                                }
-                                {reg.hora && <span className="text-xs text-gray-400">{reg.hora}</span>}
-                                {reg.dataRegistro && reg.dataRegistro !== reg.data && <span className="text-xs text-gray-300 italic">reg. depois</span>}
-                            </div>
-                            {reg.resumoAula
-                                ? <p className="text-sm font-medium text-slate-800 dark:text-[#E5E7EB] leading-snug">{reg.resumoAula}</p>
-                                : <p className="text-xs text-gray-400 italic">Sem resumo registrado</p>
-                            }
-                            {(reg.funcionouBem || reg.naoFuncionou || reg.proximaAula || reg.comportamento) && (
-                                <details className="mt-2">
-                                    <summary className="text-xs text-indigo-500 cursor-pointer select-none hover:text-indigo-700">ver detalhes ▾</summary>
-                                    <div className="mt-2 space-y-1.5 pl-3 border-l-2 border-indigo-100">
-                                        {reg.funcionouBem && <p className="text-xs text-gray-600"><span className="font-bold text-green-700">✅ </span>{reg.funcionouBem}</p>}
-                                        {reg.naoFuncionou && <p className="text-xs text-gray-600"><span className="font-bold text-red-600">❌ </span>{reg.naoFuncionou}</p>}
-                                        {reg.proximaAula && <p className="text-xs text-gray-600"><span className="font-bold text-blue-600">💡 </span>{reg.proximaAula}</p>}
-                                        {reg.comportamento && <p className="text-xs text-gray-600"><span className="font-bold text-purple-600">👥 </span>{reg.comportamento}</p>}
-                                    </div>
-                                </details>
-                            )}
-                            <p className="text-xs text-gray-400 mt-1.5">📄 {reg.planoTitulo}</p>
-                        </div>
-                    );
-                })}
-            </div>
-        );
-    };
 
     return (
         <div className="max-w-2xl mx-auto space-y-3">
 
             {/* ── BARRA DE VOLTA ── */}
-            <div className="sticky top-0 z-20 -mx-4 px-4 py-2 bg-indigo-50/90 backdrop-blur-sm flex items-center justify-between gap-3 border-b border-indigo-100">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={()=>setViewMode('lista')}
-                        className="flex items-center gap-1.5 text-indigo-700 font-bold text-sm active:opacity-60">
-                        ← Voltar
-                    </button>
-                    <span className="text-indigo-300">|</span>
-                    <span className="text-indigo-800 font-bold text-sm">☀️ Resumo do Dia</span>
-                </div>
+            <div className="sticky top-0 z-20 -mx-4 px-4 py-2 bg-indigo-50/90 backdrop-blur-sm flex items-center gap-3 border-b border-indigo-100">
                 <button
-                    onClick={()=>{
-                        const hoje = new Date().toISOString().split('T')[0];
-                        setRrData(hoje);
-
-                        // Buscar turmas do dia na grade semanal
-                        const turmasDoDia = obterTurmasDoDia(hoje);
-
-                        if (turmasDoDia.length > 0) {
-                            // Pegar primeira turma para pré-selecionar ano e escola
-                            const primeira = turmasDoDia[0];
-                            setRrAnoSel(primeira.anoLetivoId);
-                            setRrEscolaSel(primeira.escolaId);
-
-                            // Pré-preencher planos por segmento (sugestão automática)
-                            const planosPorSeg = {};
-                            turmasDoDia.forEach(aula => {
-                                if (!planosPorSeg[aula.segmentoId]) {
-                                    const sugerido = sugerirPlanoParaTurma(aula.anoLetivoId, aula.escolaId, aula.segmentoId, aula.turmaId);
-                                    if (sugerido) planosPorSeg[aula.segmentoId] = sugerido;
-                                }
-                            });
-                            setRrPlanosSegmento(planosPorSeg);
-                        } else {
-                            // Sem grade: pré-selecionar apenas ano ativo se houver
-                            const anoAtivo = anosLetivos.find(a => a.status === 'ativo');
-                            if (anoAtivo) {
-                                setRrAnoSel(anoAtivo.id);
-                            } else {
-                                setRrAnoSel('');
-                            }
-                            setRrEscolaSel('');
-                            setRrPlanosSegmento({});
-                        }
-
-                        setRrTextos({}); setRrPlanosSegmento({}); setRrResultados({}); setRrRubricas({}); setRrEncaminhamentos({}); setRrTurmaId(''); setRrSegmentoId('');
-                        setModalRegistroRapido(true);
-                    }}
-                    className="bg-green-500 hover:bg-green-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-sm">
-                    + Registro Rápido
+                    onClick={()=>setViewMode('lista')}
+                    className="flex items-center gap-1.5 text-indigo-700 font-bold text-sm active:opacity-60">
+                    ← Voltar
                 </button>
+                <span className="text-indigo-300">|</span>
+                <span className="text-indigo-800 font-bold text-sm">☀️ Hoje</span>
             </div>
 
             {/* ── PROGRESS BAR ANUAL ── */}
@@ -1264,7 +1158,6 @@ export default function TelaResumoDia() {
                             );
                         })()}
 
-                        {obterTurmasDoDia(dataDia).length > 0 && renderRegistrosDia(dataDia)}
                     </div>
                 );
             })()}
@@ -1374,8 +1267,6 @@ export default function TelaResumoDia() {
                                                     ))}
                                                 </div>
                                             )}
-                                            {/* Registros feitos */}
-                                            {renderRegistrosDia(dataStr)}
                                             {/* Dia sem nada */}
                                             {turmasComStatus.length === 0 && regsNoDia.length === 0 && (
                                                 <p className="px-4 py-4 text-xs text-gray-400 text-center italic">Nenhuma turma nem registro para este dia.</p>
