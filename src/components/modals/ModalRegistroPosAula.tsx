@@ -693,7 +693,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
 
                 {/* ── HEADER ── */}
                 {inlineMode ? (
-                    // Header inline — limpo, sem gradient, com botão Voltar
+                    // Header inline — limpo, sem gradient, com botão Voltar e Salvar
                     <div className="px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151] flex items-center gap-3 shrink-0 bg-white dark:bg-[#1F2937]">
                         <button
                             onClick={onVoltar ?? (() => setModalRegistro(false))}
@@ -703,6 +703,13 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
                         <span className="text-[14px] font-semibold text-slate-700 dark:text-[#E5E7EB] truncate flex-1">
                             {planoParaRegistro.titulo || 'Registro Pós-Aula'}
                         </span>
+                        {!verRegistros && (
+                            <button
+                                onClick={() => { salvarRegistro(); if (onVoltar) onVoltar() }}
+                                className="shrink-0 px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[12px] font-semibold hover:bg-slate-700 dark:hover:bg-white transition">
+                                ✓ Salvar
+                            </button>
+                        )}
                     </div>
                 ) : (
                     // Header original — gradient + drag + min/max/fechar
@@ -1971,8 +1978,8 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
                             )}
                         </div>
 
-                        {/* ── Sticky save footer (Novo registro) ── */}
-                        {!verRegistros && (
+                        {/* ── Sticky save footer (Novo registro) — só no modal flutuante ── */}
+                        {!inlineMode && !verRegistros && (
                             <div style={{ padding: '10px 16px', borderTop: '1px solid #e2e8f0', background: '#fff', flexShrink: 0 }}>
                                 <button ref={salvarBtnRef} onClick={() => {
                                     const algumCampo = !!(novoRegistro.funcionouBem || (novoRegistro as any).repetiria || novoRegistro.naoFuncionou || novoRegistro.proximaAula || (novoRegistro as any).comportamento || (novoRegistro as any).audioNotaDeVoz)
