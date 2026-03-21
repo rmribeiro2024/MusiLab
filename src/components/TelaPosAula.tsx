@@ -96,15 +96,7 @@ export default function TelaPosAula() {
     const NavBtn = ({ delta }: { delta: number }) => (
         <button
             onClick={() => navDia(delta)}
-            style={{
-                width: 30, height: 30, borderRadius: 7,
-                border: '1px solid #E6EAF0', background: 'var(--v2-card)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: '#94a3b8', fontSize: 13, flexShrink: 0,
-                transition: 'all 120ms ease', fontFamily: 'inherit',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#5B5FEA'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(91,95,234,0.3)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#E6EAF0' }}>
+            className="w-[30px] h-[30px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center cursor-pointer text-slate-400 dark:text-[#6b7280] text-[13px] shrink-0 transition hover:text-[#5B5FEA] dark:hover:text-[#818cf8] hover:border-[#5B5FEA]/30 dark:hover:border-[#818cf8]/30">
             {delta < 0 ? '‹' : '›'}
         </button>
     )
@@ -155,12 +147,7 @@ export default function TelaPosAula() {
                     {!ehHoje && (
                         <button
                             onClick={() => setDataSel(hojeStr)}
-                            style={{
-                                marginLeft: 4, padding: '4px 10px', borderRadius: 6,
-                                border: '1px solid #E6EAF0', background: 'var(--v2-card)',
-                                fontSize: 11, fontWeight: 500, color: '#64748b',
-                                cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms ease',
-                            }}>
+                            className="ml-1 px-[10px] py-[4px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] cursor-pointer transition hover:text-slate-700 dark:hover:text-[#E5E7EB]">
                             Hoje
                         </button>
                     )}
@@ -211,7 +198,7 @@ export default function TelaPosAula() {
                                         <span className="text-[12px] text-slate-400 dark:text-[#6b7280]">{t.turNome}</span>
                                     </div>
                                     {t.plano && typeof t.plano === 'object' && (
-                                        <p className="text-[11px] text-slate-400 dark:text-[#6b7280] mt-0.5 truncate">
+                                        <p className="text-[11px] text-slate-400 dark:text-[#9CA3AF] mt-0.5 truncate">
                                             {(t.plano as any).titulo}
                                         </p>
                                     )}
