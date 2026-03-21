@@ -10,9 +10,10 @@ export default function TelaPosAula() {
     const {
         obterTurmasDoDia,
         setModalRegistro,
-        setRrData, setRrAnoSel, setRrEscolaSel,
-        setRrTextos, setRrPlanosSegmento, setRrResultados, setRrRubricas, setRrEncaminhamentos,
-        setRrTurmaId, setRrSegmentoId,
+        setPlanoParaRegistro,
+        setNovoRegistro,
+        setRegistroEditando,
+        setVerRegistros,
     } = useCalendarioContext()
     const { aplicacoesPorData } = useAplicacoesContext()
 
@@ -79,16 +80,15 @@ export default function TelaPosAula() {
     const concluidas = turmasEnriq.filter(t => t.registrada).length
 
     const abrirRegistro = (t: typeof turmasEnriq[0]) => {
-        setRrData(dataSel)
-        setRrAnoSel(t.aula.anoLetivoId)
-        setRrEscolaSel(t.aula.escolaId)
-        setRrTextos({})
-        setRrPlanosSegmento({})
-        setRrResultados({})
-        setRrRubricas({})
-        setRrEncaminhamentos({})
-        setRrTurmaId(String(t.aula.turmaId))
-        setRrSegmentoId(String(t.aula.segmentoId))
+        // Usa o plano real se existir, caso contrário cria stub com nomes da turma
+        // para que o modal pré-selecione escola/segmento/turma corretamente
+        const plano = t.plano && typeof t.plano === 'object'
+            ? t.plano as any
+            : { id: `stub-${t.aula.id}`, titulo: '', escola: t.escNome, segmento: t.segNome, turma: t.turNome }
+        setPlanoParaRegistro(plano)
+        setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
+        setRegistroEditando(null)
+        setVerRegistros(false)
         setModalRegistro(true)
     }
 
