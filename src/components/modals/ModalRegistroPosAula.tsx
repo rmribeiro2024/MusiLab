@@ -1116,6 +1116,8 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                     {ops.map((op, idx) => {
                                                         const sel = statusVal === op.value
                                                         const isConcluida = op.value === 'concluida'
+                                                        const isRevisao = op.value === 'revisao'
+                                                        const selColor = isConcluida ? '#22c55e' : isRevisao ? '#f59e0b' : c.textMain
                                                         return (
                                                             <button key={op.value} type="button"
                                                                 onClick={() => {
@@ -1126,18 +1128,18 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                     display: 'flex', alignItems: 'center', gap: 10,
                                                                     padding: '9px 12px',
                                                                     background: sel ? c.cardBgAlt : c.cardBgSolid,
-                                                                    color: (isConcluida && sel) ? '#22c55e' : (sel ? c.textMain : c.textMed),
+                                                                    color: sel ? selColor : c.textMed,
                                                                     fontWeight: sel ? 600 : 400,
                                                                     fontSize: 13, border: 'none',
                                                                     borderTop: idx > 0 ? `1px solid ${c.borderLight}` : 'none',
-                                                                    borderLeft: sel ? `3px solid ${isConcluida ? '#22c55e' : c.textMain}` : '3px solid transparent',
+                                                                    borderLeft: sel ? `3px solid ${selColor}` : '3px solid transparent',
                                                                     cursor: 'pointer', textAlign: 'left' as const,
                                                                     width: '100%', transition: 'all .1s', outline: 'none',
                                                                 }}
                                                                 onMouseOver={e => { if (!sel) e.currentTarget.style.background = c.cardBg }}
                                                                 onMouseOut={e  => { if (!sel) e.currentTarget.style.background = c.cardBgSolid }}
                                                             >
-                                                                <span style={{ fontSize: 11, width: 16, textAlign: 'center' as const, flexShrink: 0, color: (isConcluida && sel) ? '#22c55e' : (sel ? c.textMed : c.textMuted) }}>
+                                                                <span style={{ fontSize: 11, width: 16, textAlign: 'center' as const, flexShrink: 0, color: sel ? selColor : c.textMuted }}>
                                                                     {isConcluida && checkFlash
                                                                         ? <span className="check-pop" style={{ display: 'inline-block' }}>✓</span>
                                                                         : op.emoji}
@@ -2026,7 +2028,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                             <div className="px-4 py-3 border-t border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] flex justify-end shrink-0">
                                 <button
                                     onClick={() => { salvarRegistro(); if (onVoltar) onVoltar() }}
-                                    className="px-4 py-2 rounded-lg bg-[#334155] dark:bg-[#475569] text-white text-[13px] font-semibold hover:bg-[#475569] dark:hover:bg-[#64748b] transition">
+                                    className="px-4 py-2 rounded-lg border border-[#cbd5e1] dark:border-[#374151] bg-transparent text-[#64748b] dark:text-[#9CA3AF] text-[13px] font-semibold hover:border-[#94a3b8] dark:hover:border-[#6b7280] hover:text-[#475569] dark:hover:text-[#E5E7EB] transition">
                                     ✓ {saveLabel || 'Salvar registro'}
                                 </button>
                             </div>
