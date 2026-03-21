@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, Suspense } from 'react'
+import React, { useState, Suspense } from 'react'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
@@ -86,26 +86,6 @@ export default function TelaPosAula() {
 
     const pendentes  = turmasEnriq.filter(t => !t.registrada).length
     const concluidas = turmasEnriq.filter(t =>  t.registrada).length
-
-    // Pré-popula header com a primeira turma pendente ao montar / trocar dia
-    const autoInitRef = useRef<string | null>(null)
-    useEffect(() => {
-        if (autoInitRef.current === dataSel || turmasEnriq.length === 0) return
-        autoInitRef.current = dataSel
-        const firstPending = turmasEnriq.findIndex(t => !t.registrada)
-        const idx = firstPending >= 0 ? firstPending : 0
-        const t = turmasEnriq[idx]
-        const plano = t.plano && typeof t.plano === 'object'
-            ? t.plano as any
-            : { id: `stub-${t.aula.id}`, titulo: '', escola: t.escNome, segmento: t.segNome, turma: t.turNome }
-        setPlanoParaRegistro(plano)
-        setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
-        setRegistroEditando(null)
-        setVerRegistros(false)
-        setTurmaIdx(idx)
-        setVerPlano(false)
-        // NÃO fecha a lista — professor precisa clicar para abrir o formulário
-    }, [turmasEnriq.length, dataSel]) // eslint-disable-line
 
     // Seleciona turma pelo índice — fecha a lista
     const abrirTurma = (idx: number) => {
@@ -239,6 +219,13 @@ export default function TelaPosAula() {
                         </div>
                     )}
                 </div>
+
+                {/* ══ INSTRUÇÃO — só quando nenhuma turma foi selecionada ainda ══ */}
+                {listaAberta && turmaIdx === -1 && turmasEnriq.length > 0 && (
+                    <div className="px-4 pt-3 pb-1">
+                        <p className="text-[12px] text-slate-400 dark:text-[#6b7280]">Selecione uma turma para registrar o pós-aula.</p>
+                    </div>
+                )}
 
                 {/* ══ LISTA DE TURMAS (colapsável) ══ */}
                 <div
