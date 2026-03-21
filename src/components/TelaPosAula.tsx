@@ -198,7 +198,7 @@ export default function TelaPosAula() {
 
                     {/* Sub-linha — instrução ou status */}
                     {listaAberta && turmasEnriq.length > 0 && (
-                        <div className="px-4 pb-2 text-[11.5px] text-slate-400 dark:text-[#6b7280]">
+                        <div className="px-4 pb-2 text-[11.5px] text-slate-400 dark:text-[#9CA3AF]">
                             {turmaIdx === -1
                                 ? <span>Selecione uma turma para registrar o pós-aula</span>
                                 : pendentes > 0
@@ -232,16 +232,11 @@ export default function TelaPosAula() {
                                     <span className={`w-2 h-2 rounded-full shrink-0 ${t.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
 
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                            <span className="text-[12px] font-semibold shrink-0 tabular-nums text-slate-700 dark:text-[#E5E7EB]">{t.aula.horario}</span>
-                                            {t.escNome && (<>
-                                                <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
-                                                <span className="text-[12px] text-slate-400 dark:text-[#6b7280]">{t.escNome}</span>
-                                            </>)}
-                                            <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
-                                            <span className="text-[12px] font-medium text-slate-600 dark:text-[#9CA3AF]">{t.segNome}</span>
-                                            <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
-                                            <span className="text-[12px] font-bold text-slate-700 dark:text-[#E5E7EB]">{t.turNome}</span>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '54px minmax(0, 110px) auto 1fr', columnGap: '6px', alignItems: 'center' }}>
+                                            <span className="text-[12px] font-semibold tabular-nums text-slate-700 dark:text-[#E5E7EB]">{t.aula.horario}</span>
+                                            <span className="text-[12px] text-slate-400 dark:text-[#6b7280] truncate">{t.escNome || ''}</span>
+                                            <span className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF] shrink-0">{t.segNome}</span>
+                                            <span className="text-[12px] font-bold text-slate-700 dark:text-[#E5E7EB] truncate">{t.turNome}</span>
                                         </div>
                                         {t.plano && typeof t.plano === 'object' && (
                                             <p className="text-[11px] text-slate-400 dark:text-[#9CA3AF] mt-0.5 truncate">{(t.plano as any).titulo}</p>
@@ -266,7 +261,7 @@ export default function TelaPosAula() {
                                 inlineMode
                                 hideHeader
                                 onVoltar={handleDepoisSalvar}
-                                saveLabel="Salvar e próxima"
+                                saveLabel="Salvar"
                             />
                         </Suspense>
                     </div>

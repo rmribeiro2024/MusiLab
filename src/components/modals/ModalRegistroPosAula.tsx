@@ -148,7 +148,8 @@ const BehaviorChip = React.forwardRef<() => void, {
     value: string, filled: boolean,
     onChange: (v: string) => void,
     onTabNext?: () => void,
-}>(function BehaviorChip({ value, filled, onChange }, ref) {
+    isDark?: boolean,
+}>(function BehaviorChip({ value, filled, onChange, isDark = false }, ref) {
     const [open, setOpen] = React.useState(false)
     const [expanded, setExpanded] = React.useState(false)
     const [selectedIds, setSelectedIds] = React.useState<string[]>([])
@@ -189,70 +190,53 @@ const BehaviorChip = React.forwardRef<() => void, {
         onChange(parts.join('. '))
     }
 
+    const cb = dk(isDark)
     const chipStyle = (sel: boolean): React.CSSProperties => ({
         padding: '8px 13px', borderRadius: 20, fontSize: 13,
         cursor: 'pointer', transition: 'all .12s', fontFamily: 'inherit',
         whiteSpace: 'nowrap' as const, lineHeight: 1.2,
-        background: sel ? '#1e2a4a' : '#fff',
-        color:      sel ? '#fff'    : '#475569',
-        border:     sel ? '1.5px solid #1e2a4a' : '1.5px solid #e2e8f0',
+        background: sel ? (isDark ? '#4f46e5' : '#1e2a4a') : cb.cardBgSolid,
+        color:      sel ? '#fff' : cb.textMed,
+        border:     sel ? `1.5px solid ${isDark ? '#4f46e5' : '#1e2a4a'}` : `1.5px solid ${cb.border}`,
         fontWeight: sel ? 700 : 500,
         outline: 'none',
         WebkitTapHighlightColor: 'transparent',
     })
 
     return (
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
-            {/* Cabeçalho clicável */}
+        <div style={{ border: `1px solid ${cb.border}`, borderRadius: 10, overflow: 'hidden', background: cb.cardBg }}>
             <div onClick={() => setOpen(o => !o)}
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
                 <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>👥</span>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: filled ? '#334155' : '#64748b', flex: 1 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: filled ? cb.textMain : cb.textMed, flex: 1 }}>
                     Como estava a turma hoje?
                 </span>
                 {filled && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
-                <span style={{ fontSize: 9, color: '#94a3b8', flexShrink: 0, marginLeft: 4, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
+                <span style={{ fontSize: 9, color: cb.textMuted, flexShrink: 0, marginLeft: 4, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
             </div>
-
             {open && (
                 <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {/* Chips principais */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                         {BEHAVIOR_PRIMARY.map(tag => (
-                            <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)}
-                                style={chipStyle(selectedIds.includes(tag.id))}>
-                                {tag.label}
-                            </button>
+                            <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)} style={chipStyle(selectedIds.includes(tag.id))}>{tag.label}</button>
                         ))}
                     </div>
-
-                    {/* Chips secundários — expansíveis */}
                     {expanded && (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, paddingTop: 2 }}>
                             {BEHAVIOR_SECONDARY.map(tag => (
-                                <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)}
-                                    style={chipStyle(selectedIds.includes(tag.id))}>
-                                    {tag.label}
-                                </button>
+                                <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)} style={chipStyle(selectedIds.includes(tag.id))}>{tag.label}</button>
                             ))}
                         </div>
                     )}
-
-                    {/* Botão toggle "+ mais opções" / "− menos opções" */}
                     <button type="button" onClick={() => setExpanded(v => !v)}
-                        style={{ alignSelf: 'flex-start', fontSize: 12, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', fontFamily: 'inherit', outline: 'none' }}>
+                        style={{ alignSelf: 'flex-start', fontSize: 12, color: cb.textMed, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', fontFamily: 'inherit', outline: 'none' }}>
                         {expanded ? '− menos opções' : '+ mais opções'}
                     </button>
-
-                    {/* Campo de texto complementar */}
-                    <textarea
-                        value={nota}
-                        onChange={e => { setNota(e.target.value); emit(selectedIds, e.target.value) }}
-                        rows={2}
-                        placeholder="Se quiser, descreva um pouco mais…"
-                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', background: '#fff' }}
+                    <textarea value={nota} onChange={e => { setNota(e.target.value); emit(selectedIds, e.target.value) }}
+                        rows={2} placeholder="Se quiser, descreva um pouco mais…"
+                        style={{ width: '100%', padding: '8px 10px', border: `1px solid ${cb.border}`, borderRadius: 8, fontSize: 12, color: cb.textMain, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', background: cb.inputBg }}
                         onFocus={e => (e.target.style.borderColor = '#94a3b8')}
-                        onBlur={e  => (e.target.style.borderColor = '#e2e8f0')}
+                        onBlur={e  => (e.target.style.borderColor = cb.border)}
                     />
                 </div>
             )}
@@ -507,6 +491,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
     const [encAberto, setEncAberto] = React.useState(false)
     const [evidenciaAberta, setEvidenciaAberta] = React.useState(false)
     const [aprovAberto, setAprovAberto] = React.useState(false)
+    const [checkFlash, setCheckFlash] = React.useState(false)
     const [uploadandoEvidencia, setUploadandoEvidencia] = React.useState(false)
     const [uploadProgresso, setUploadProgresso] = React.useState(0)
     const [uploadErro, setUploadErro] = React.useState('')
@@ -1130,25 +1115,33 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 <div style={{ display: 'flex', flexDirection: 'column' as const }}>
                                                     {ops.map((op, idx) => {
                                                         const sel = statusVal === op.value
+                                                        const isConcluida = op.value === 'concluida'
                                                         return (
                                                             <button key={op.value} type="button"
-                                                                onClick={() => setNovoRegistro({ ...novoRegistro, statusAula: sel ? undefined : op.value } as any)}
+                                                                onClick={() => {
+                                                                    setNovoRegistro({ ...novoRegistro, statusAula: sel ? undefined : op.value } as any)
+                                                                    if (isConcluida && !sel) { setCheckFlash(true); setTimeout(() => setCheckFlash(false), 900) }
+                                                                }}
                                                                 style={{
                                                                     display: 'flex', alignItems: 'center', gap: 10,
                                                                     padding: '9px 12px',
                                                                     background: sel ? c.cardBgAlt : c.cardBgSolid,
-                                                                    color: sel ? c.textMain : c.textMed,
+                                                                    color: isConcluida ? '#22c55e' : (sel ? c.textMain : c.textMed),
                                                                     fontWeight: sel ? 600 : 400,
                                                                     fontSize: 13, border: 'none',
                                                                     borderTop: idx > 0 ? `1px solid ${c.borderLight}` : 'none',
-                                                                    borderLeft: sel ? `3px solid ${c.textMain}` : '3px solid transparent',
+                                                                    borderLeft: sel ? `3px solid ${isConcluida ? '#22c55e' : c.textMain}` : '3px solid transparent',
                                                                     cursor: 'pointer', textAlign: 'left' as const,
                                                                     width: '100%', transition: 'all .1s', outline: 'none',
                                                                 }}
                                                                 onMouseOver={e => { if (!sel) e.currentTarget.style.background = c.cardBg }}
                                                                 onMouseOut={e  => { if (!sel) e.currentTarget.style.background = c.cardBgSolid }}
                                                             >
-                                                                <span style={{ fontSize: 11, width: 16, textAlign: 'center' as const, flexShrink: 0, color: sel ? c.textMed : c.textMuted }}>{op.emoji}</span>
+                                                                <span style={{ fontSize: 11, width: 16, textAlign: 'center' as const, flexShrink: 0, color: isConcluida ? '#22c55e' : (sel ? c.textMed : c.textMuted) }}>
+                                                                    {isConcluida && checkFlash
+                                                                        ? <span className="check-pop" style={{ display: 'inline-block' }}>✓</span>
+                                                                        : op.emoji}
+                                                                </span>
                                                                 {op.label}
                                                             </button>
                                                         )
@@ -1216,7 +1209,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                 onBlur={e => (e.target.style.borderColor = c.border)}
                                                             />
                                                             <button type="button" onClick={addEnc} disabled={!novoEnc.trim()}
-                                                                style={{ padding: '7px 12px', background: novoEnc.trim() ? '#6366f1' : '#e2e8f0', color: novoEnc.trim() ? '#fff' : '#94a3b8', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: novoEnc.trim() ? 'pointer' : 'default', transition: 'all .15s', flexShrink: 0 }}>
+                                                                style={{ padding: '7px 12px', background: novoEnc.trim() ? '#6366f1' : c.border, color: novoEnc.trim() ? '#fff' : c.textMuted, border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: novoEnc.trim() ? 'pointer' : 'default', transition: 'all .15s', flexShrink: 0 }}>
                                                                 + Add
                                                             </button>
                                                         </div>
@@ -1248,15 +1241,15 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 const setVal = (n: number) => setNovoRegistro({ ...novoRegistro, aproveitamentoAula: val === n ? 0 : n } as any)
                                                 const aberto = aprovAberto || val > 0
                                                 return (
-                                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                    <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}
                                                             onClick={() => setAprovAberto(v => !v)}>
                                                             <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📊</span>
-                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: val > 0 ? '#334155' : '#64748b', flex: 1 }}>
+                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: val > 0 ? c.textMain : c.textMed, flex: 1 }}>
                                                                 Aproveitamento da aula
                                                             </span>
                                                             {val > 0 && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
-                                                            <span style={{ fontSize: 10, color: '#cbd5e1', transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
+                                                            <span style={{ fontSize: 10, color: c.textMuted, transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
                                                         </div>
                                                         {aberto && (
                                                             <div style={{ padding: '4px 12px 12px' }}>
@@ -1269,13 +1262,13 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                                 style={{
                                                                                     flex: 1, padding: '10px 6px', borderRadius: 8, cursor: 'pointer',
                                                                                     transition: 'all .15s', fontSize: 12, fontWeight: 700,
-                                                                                    background: ativo ? '#1e2a4a' : '#fff',
-                                                                                    color: ativo ? '#fff' : '#94a3b8',
-                                                                                    border: `2px solid ${ativo ? '#1e2a4a' : '#e2e8f0'}`,
+                                                                                    background: ativo ? '#1e2a4a' : c.inputBg,
+                                                                                    color: ativo ? '#fff' : c.textMuted,
+                                                                                    border: `2px solid ${ativo ? '#1e2a4a' : c.border}`,
                                                                                     outline: 'none',
                                                                                 }}
-                                                                                onMouseEnter={e => { if (!ativo) { (e.currentTarget as HTMLButtonElement).style.borderColor = '#94a3b8'; (e.currentTarget as HTMLButtonElement).style.color = '#475569' } }}
-                                                                                onMouseLeave={e => { if (!ativo) { (e.currentTarget as HTMLButtonElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8' } }}>
+                                                                                onMouseEnter={e => { if (!ativo) { (e.currentTarget as HTMLButtonElement).style.borderColor = '#94a3b8'; (e.currentTarget as HTMLButtonElement).style.color = c.textMed } }}
+                                                                                onMouseLeave={e => { if (!ativo) { (e.currentTarget as HTMLButtonElement).style.borderColor = c.border; (e.currentTarget as HTMLButtonElement).style.color = c.textMuted } }}>
                                                                                 {label}
                                                                             </button>
                                                                         )
@@ -1293,19 +1286,20 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 filled={!!((novoRegistro as any).comportamento?.trim())}
                                                 onChange={v => setNovoRegistro({ ...novoRegistro, comportamento: v })}
                                                 onTabNext={() => {}}
+                                                isDark={isDark}
                                                 ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length] = fn }}
                                             />
 
                                             {/* ── 3. Como a aula aconteceu na prática — narrativo ── */}
-                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                            <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
                                                 <div onClick={() => setContextoAberto(o => !o)}
                                                     style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
                                                     <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>🗓</span>
-                                                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: (novoRegistro as any).contextoAula ? '#334155' : '#64748b', flex: 1 }}>
+                                                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: (novoRegistro as any).contextoAula ? c.textMain : c.textMed, flex: 1 }}>
                                                         Como a aula aconteceu na prática?
                                                     </span>
                                                     {(novoRegistro as any).contextoAula && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
-                                                    <span style={{ fontSize: 9, color: '#94a3b8', flexShrink: 0, marginLeft: 4, transform: contextoAberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
+                                                    <span style={{ fontSize: 9, color: c.textMuted, flexShrink: 0, marginLeft: 4, transform: contextoAberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
                                                 </div>
                                                 {contextoAberto && (
                                                     <div style={{ padding: '0 12px 10px' }}>
@@ -1316,9 +1310,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                     <button key={op} type="button"
                                                                         onClick={() => setNovoRegistro({ ...novoRegistro, contextoAula: ativo ? '' : op } as any)}
                                                                         style={{ fontSize: 12, padding: '5px 10px', borderRadius: 20, border: '1px solid', cursor: 'pointer', transition: 'all .15s',
-                                                                            background: ativo ? '#1e293b' : '#fff',
-                                                                            borderColor: ativo ? '#1e293b' : '#e2e8f0',
-                                                                            color: ativo ? '#fff' : '#64748b',
+                                                                            background: ativo ? '#1e293b' : c.inputBg,
+                                                                            borderColor: ativo ? '#1e293b' : c.border,
+                                                                            color: ativo ? '#fff' : c.textMed,
                                                                             fontWeight: ativo ? 600 : 400 }}>
                                                                         {op}
                                                                     </button>
@@ -1330,9 +1324,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                 value={(novoRegistro as any).contextoAulaDetalhe || ''}
                                                                 onChange={e => setNovoRegistro({ ...novoRegistro, contextoAulaDetalhe: e.target.value } as any)}
                                                                 rows={2} placeholder="Detalhe o que aconteceu... (opcional)"
-                                                                style={{ width: '100%', padding: '8px 36px 8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', background: '#fff' }}
+                                                                style={{ width: '100%', padding: '8px 36px 8px 10px', border: `1px solid ${c.border}`, borderRadius: 8, fontSize: 12, color: c.textMain, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', background: c.inputBg }}
                                                                 onFocus={e => (e.target.style.borderColor = '#94a3b8')}
-                                                                onBlur={e  => (e.target.style.borderColor = '#e2e8f0')}
+                                                                onBlur={e  => (e.target.style.borderColor = c.border)}
                                                             />
                                                             <button type="button" onClick={toggleVozContexto} title={gravandoContexto ? 'Parar' : 'Gravar por voz'}
                                                                 style={{ position: 'absolute', right: 6, top: 6, fontSize: 13, background: gravandoContexto ? '#fee2e2' : 'transparent', border: gravandoContexto ? '1px solid #fca5a5' : '1px solid transparent', borderRadius: 6, cursor: 'pointer', padding: '2px 5px', color: gravandoContexto ? '#ef4444' : '#94a3b8', outline: 'none' }}>
@@ -1381,10 +1375,10 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 const ausentes = chamadaAtual.filter(c => !c.presente).length
                                                 const total = todosAlunos.length
                                                 return (
-                                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                    <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
                                                             <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>✋</span>
-                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: '#64748b', flex: 1 }}>
+                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: c.textMed, flex: 1 }}>
                                                                 Chamada
                                                             </span>
                                                             {(presentes > 0 || ausentes > 0) && (
@@ -1403,9 +1397,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                             title="Presente"
                                                                             style={{
                                                                                 fontSize: 11, fontWeight: 600, padding: '4px 8px', borderRadius: '8px 0 0 8px', cursor: 'pointer', transition: 'all .15s',
-                                                                                background: estado === true ? '#22c55e' : '#f1f5f9',
-                                                                                color: estado === true ? '#fff' : '#64748b',
-                                                                                border: estado === true ? '1px solid #16a34a' : '1px solid #e2e8f0',
+                                                                                background: estado === true ? '#22c55e' : c.cardBgAlt,
+                                                                                color: estado === true ? '#fff' : c.textMed,
+                                                                                border: estado === true ? '1px solid #16a34a' : `1px solid ${c.border}`,
                                                                             }}>
                                                                             {al.nome.split(' ')[0]}
                                                                         </button>
@@ -1414,9 +1408,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                             title="Ausente"
                                                                             style={{
                                                                                 fontSize: 11, fontWeight: 600, padding: '4px 6px', borderRadius: '0 8px 8px 0', cursor: 'pointer', transition: 'all .15s',
-                                                                                background: estado === false ? '#ef4444' : '#f1f5f9',
-                                                                                color: estado === false ? '#fff' : '#94a3b8',
-                                                                                border: estado === false ? '1px solid #dc2626' : '1px solid #e2e8f0',
+                                                                                background: estado === false ? '#ef4444' : c.cardBgAlt,
+                                                                                color: estado === false ? '#fff' : c.textMuted,
+                                                                                border: estado === false ? '1px solid #dc2626' : `1px solid ${c.border}`,
                                                                             }}>
                                                                             ✕
                                                                         </button>
@@ -1471,15 +1465,15 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 }
 
                                                 return (
-                                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                                    <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}
                                                             onClick={() => setEvidenciaAberta(v => !v)}>
                                                             <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📎</span>
-                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: url ? '#334155' : '#64748b', flex: 1 }}>
+                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: url ? c.textMain : c.textMed, flex: 1 }}>
                                                                 Evidência de aula
                                                             </span>
                                                             {url && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
-                                                            <span style={{ fontSize: 10, color: '#cbd5e1', transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
+                                                            <span style={{ fontSize: 10, color: c.textMuted, transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
                                                         </div>
                                                         {aberto && (
                                                             <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -2032,7 +2026,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                             <div className="px-4 py-3 border-t border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] flex justify-end shrink-0">
                                 <button
                                     onClick={() => { salvarRegistro(); if (onVoltar) onVoltar() }}
-                                    className="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[13px] font-semibold hover:bg-slate-700 dark:hover:bg-white transition">
+                                    className="px-4 py-2 rounded-lg bg-[#5B5FEA] text-white text-[13px] font-semibold hover:bg-[#4f52d4] transition">
                                     ✓ {saveLabel || 'Salvar registro'}
                                 </button>
                             </div>
