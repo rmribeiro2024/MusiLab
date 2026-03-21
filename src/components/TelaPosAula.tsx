@@ -170,7 +170,7 @@ export default function TelaPosAula() {
                             <div
                                 key={t.aula.id}
                                 className="px-4 py-3 flex items-center gap-3 transition-opacity hover:bg-slate-50 dark:hover:bg-slate-800/30 transition"
-                                style={{ opacity: t.dimmed ? 0.4 : 1 }}>
+                                style={{ opacity: t.dimmed ? 0.55 : 1 }}>
                                 {/* Status dot */}
                                 <span className={`shrink-0 w-2 h-2 rounded-full ${t.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
 
