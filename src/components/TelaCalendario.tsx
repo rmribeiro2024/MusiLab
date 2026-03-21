@@ -521,7 +521,7 @@ export function TelaCalendario() {
         dataCalendario, setDataCalendario,
         ocultarFeriados, setOcultarFeriados,
         verificarEvento,
-        setModalRegistroRapido,
+        setModalRegistro,
         setRrData, setRrAnoSel, setRrEscolaSel, setRrPlanosSegmento, setRrTextos,
         setRrResultados, setRrRubricas, setRrEncaminhamentos,
         setRrTurmaId, setRrSegmentoId,
@@ -590,7 +590,7 @@ export function TelaCalendario() {
                                 setRrEscolaSel('');
                             }
                             setRrTextos({}); setRrPlanosSegmento({}); setRrResultados({}); setRrRubricas({}); setRrEncaminhamentos({}); setRrTurmaId(''); setRrSegmentoId('');
-                            setModalRegistroRapido(true);
+                            setModalRegistro(true);
                         }}
                         className="hidden sm:block opacity-0 group-hover:opacity-100 bg-amber-400 hover:bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded transition"
                         title="Registro rápido">📝+</button>
@@ -704,7 +704,7 @@ export default function TelaResumoDia() {
     const { planos, sugerirPlanoParaTurma, setPlanoSelecionado } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
     const { setViewMode } = useRepertorioContext()
-    const { setModalGradeSemanal, dataDia, diasExpandidos, modoResumo, semanaResumo, obterTurmasDoDia, setDataDia, setDiasExpandidos, setModalRegistroRapido, setModoResumo, setRrAnoSel, setRrData, setRrEscolaSel, setRrPlanosSegmento, setRrTextos, setRrResultados, setRrRubricas, setRrEncaminhamentos, setRrTurmaId, setRrSegmentoId, setSemanaResumo } = useCalendarioContext()
+    const { setModalGradeSemanal, dataDia, diasExpandidos, modoResumo, semanaResumo, obterTurmasDoDia, setDataDia, setDiasExpandidos, setModalRegistro, setModoResumo, setRrAnoSel, setRrData, setRrEscolaSel, setRrPlanosSegmento, setRrTextos, setRrResultados, setRrRubricas, setRrEncaminhamentos, setRrTurmaId, setRrSegmentoId, setSemanaResumo } = useCalendarioContext()
     const { aplicacoesPorData } = useAplicacoesContext()
     const [aulaAcaoAtiva, setAulaAcaoAtiva] = useState<AulaGrade | null>(null)
     const [extraMateriais, setExtraMateriais] = useState<Record<string, string[]>>({})
@@ -1043,7 +1043,7 @@ export default function TelaResumoDia() {
                                                                                 setRrTextos({}); setRrPlanosSegmento({}); setRrResultados({}); setRrRubricas({}); setRrEncaminhamentos({});
                                                                                 setRrTurmaId(String(t.aula.turmaId));
                                                                                 setRrSegmentoId(String(t.aula.segmentoId));
-                                                                                setModalRegistroRapido(true);
+                                                                                setModalRegistro(true);
                                                                                 setAulaAcaoAtiva(null);
                                                                             }}
                                                                             className="text-green-700 bg-green-50 border border-green-200 rounded-md px-1.5 py-0.5 text-[10px] font-bold hover:bg-green-100 transition"
@@ -1075,7 +1075,7 @@ export default function TelaResumoDia() {
                                                                         setRrTextos({}); setRrPlanosSegmento({}); setRrResultados({}); setRrRubricas({}); setRrEncaminhamentos({});
                                                                         setRrTurmaId(String(t.aula.turmaId));
                                                                         setRrSegmentoId(String(t.aula.segmentoId));
-                                                                        setModalRegistroRapido(true);
+                                                                        setModalRegistro(true);
                                                                         setAulaAcaoAtiva(null);
                                                                     }}
                                                                     className="w-full text-left px-3 py-2 bg-green-50 hover:bg-green-100 rounded-lg text-xs text-green-700 font-medium">
@@ -1241,7 +1241,7 @@ export default function TelaResumoDia() {
                                                             setRrAnoSel(primeira?.anoLetivoId||'');
                                                             setRrEscolaSel(primeira?.escolaId||'');
                                                             setRrTextos({}); setRrPlanosSegmento({}); setRrResultados({}); setRrRubricas({}); setRrEncaminhamentos({}); setRrTurmaId(''); setRrSegmentoId('');
-                                                            setModalRegistroRapido(true);
+                                                            setModalRegistro(true);
                                                         }} className="text-xs bg-amber-400 hover:bg-amber-500 text-white font-bold px-2.5 py-1 rounded-lg">
                                                             📝 Registrar
                                                         </button>

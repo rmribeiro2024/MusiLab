@@ -9,7 +9,7 @@ export default function TelaPosAula() {
     const { anosLetivos } = useAnoLetivoContext()
     const {
         obterTurmasDoDia,
-        setModalRegistroRapido,
+        setModalRegistro,
         setRrData, setRrAnoSel, setRrEscolaSel,
         setRrTextos, setRrPlanosSegmento, setRrResultados, setRrRubricas, setRrEncaminhamentos,
         setRrTurmaId, setRrSegmentoId,
@@ -64,7 +64,7 @@ export default function TelaPosAula() {
         setRrEncaminhamentos({})
         setRrTurmaId(String(t.aula.turmaId))
         setRrSegmentoId(String(t.aula.segmentoId))
-        setModalRegistroRapido(true)
+        setModalRegistro(true)
     }
 
     // Histórico: últimos 14 dias com pelo menos 1 registro

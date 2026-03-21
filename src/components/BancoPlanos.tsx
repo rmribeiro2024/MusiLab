@@ -45,7 +45,6 @@ import ModalNovaEscola from './modals/ModalNovaEscola'
 import ModalNovaFaixa from './modals/ModalNovaFaixa'
 import ModalTemplatesRoteiro from './modals/ModalTemplatesRoteiro'
 import ModalNovaMusicaInline from './modals/ModalNovaMusicaInline'
-import ModalRegistroRapido from './modals/ModalRegistroRapido'
 import ModalContextoNovaAula from './modals/ModalContextoNovaAula'
 import ModuloNovaAula from './ModuloNovaAula'
 import ModuleSidebar from './ModuleSidebar'
@@ -285,7 +284,6 @@ export default function BancoPlanos({ session }) {
                 periodoDias, setPeriodoDias,
                 dataInicioCustom, setDataInicioCustom,
                 dataFimCustom, setDataFimCustom,
-                modalRegistroRapido, setModalRegistroRapido,
                 rrData, setRrData,
                 rrAnoSel, setRrAnoSel,
                 rrEscolaSel, setRrEscolaSel,
@@ -543,7 +541,6 @@ export default function BancoPlanos({ session }) {
                     if (e.key === 'Escape') {
                         if (s.modalConfirm)          { s.setModalConfirm(null); return; }
                         if (s.modalRegistro)         { s.setModalRegistro(false); return; }
-                        if (s.modalRegistroRapido)   { s.setModalRegistroRapido(false); return; }
                         if (s.modalConfiguracoes)    { s.setModalConfiguracoes(false); return; }
                         if (s.modalNovaFaixa)        { s.setModalNovaFaixa(false); return; }
                         if (s.modalNovaEscola)       { s.setModalNovaEscola(false); return; }
@@ -560,7 +557,7 @@ export default function BancoPlanos({ session }) {
                     // N — novo plano (apenas fora de inputs e sem modal aberto)
                     if (e.key === 'n' || e.key === 'N') {
                         if (emInput) return;
-                        const algumModalAberto = s.modalRegistro || s.modalRegistroRapido || s.modalConfiguracoes ||
+                        const algumModalAberto = s.modalRegistro || s.modalConfiguracoes ||
                             s.modalNovaFaixa || s.modalNovaEscola || s.modalTemplates || s.modalGradeSemanal ||
                             s.modalEventos || s.modoEdicao || s.planoSelecionado || s.showModalContextoNovaAula;
                         if (algumModalAberto) return;
@@ -2009,7 +2006,7 @@ export default function BancoPlanos({ session }) {
                     if (totalNovos > 0 && totalAtualizados > 0) msg += ' + ';
                     if (totalAtualizados > 0) msg += `${totalAtualizados} atualizado${totalAtualizados > 1 ? 's' : ''}`;
                     showToast(msg, 'success');
-                    setModalRegistroRapido(false);
+                    setModalRegistro(false);
                 } else {
                     showToast('Preencha pelo menos um campo e vincule um plano.', 'error');
                 }
@@ -2025,11 +2022,11 @@ export default function BancoPlanos({ session }) {
             // ── Atualiza ref do teclado a cada render (sem stale closure) ──
             _kbRef.current = {
                 modoEdicao, planoEditando, planoSelecionado, modalConfirm,
-                modalRegistro, modalRegistroRapido, modalConfiguracoes, modalNovaFaixa,
+                modalRegistro, modalConfiguracoes, modalNovaFaixa,
                 modalNovaEscola, modalTemplates, modalGradeSemanal, modalEventos,
                 statusDropdownId, viewMode,
                 fecharModal, salvarPlano, triggerSalvo, novoPlano, restaurarVersao, sincronizarAgora,
-                setModalConfirm, setModalRegistro, setModalRegistroRapido, setModalConfiguracoes,
+                setModalConfirm, setModalRegistro, setModalConfiguracoes,
                 setModalNovaFaixa, setModalNovaEscola, setModalTemplates, setModalGradeSemanal,
                 setModalEventos, setStatusDropdownId, setShowBuscaGlobal,
                 showModalContextoNovaAula, setShowModalContextoNovaAula,
@@ -2217,7 +2214,6 @@ export default function BancoPlanos({ session }) {
         templatesRoteiro,
         setTemplatesRoteiro,
         modalRegistro,
-        modalRegistroRapido,
         modalTurmas,
         modalVincularPlano,
         modoEdicao,
@@ -2406,7 +2402,6 @@ export default function BancoPlanos({ session }) {
         setModalNovaFaixa,
         setModalNovaMusicaInline,
         setModalRegistro,
-        setModalRegistroRapido,
         setModalTemplates,
         setModalTurmas,
         setModalVincularPlano,
@@ -2941,7 +2936,6 @@ export default function BancoPlanos({ session }) {
                     <ModalImportarMusica />
                     <ModalGradeSemanal />
                     <ModalAdicionarAoPlano />
-                    <ModalRegistroRapido />
                     <ModalContextoNovaAula
                         isOpen={showModalContextoNovaAula}
                         preData={preDataModal}
