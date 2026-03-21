@@ -33,7 +33,6 @@ export default function TelaPosAula() {
         const d = new Date(dataSel + 'T12:00:00')
         d.setDate(d.getDate() + delta)
         setDataSel(toStr(d))
-        // Ao mudar de dia, volta para a lista
         setListaAberta(true)
         setTurmaIdx(-1)
         setModalRegistro(false)
@@ -89,7 +88,7 @@ export default function TelaPosAula() {
     const pendentes  = turmasEnriq.filter(t => !t.registrada).length
     const concluidas = turmasEnriq.filter(t =>  t.registrada).length
 
-    // Abre turma pelo índice
+    // Seleciona turma pelo índice — fecha a lista
     const abrirTurma = (idx: number) => {
         const t = turmasEnriq[idx]
         if (!t) return
@@ -101,33 +100,38 @@ export default function TelaPosAula() {
         setRegistroEditando(null)
         setVerRegistros(false)
         setTurmaIdx(idx)
-        setListaAberta(false)
+        setListaAberta(false)   // fecha a lista ao selecionar
     }
 
-    // Auto-abre a primeira turma pendente ao montar (só uma vez por dia selecionado)
-    const autoOpenedRef = useRef<string | null>(null)
+    // Pré-seleciona a primeira turma pendente ao montar (mantém lista aberta)
+    const autoInitRef = useRef<string | null>(null)
     useEffect(() => {
-        if (autoOpenedRef.current === dataSel || turmasEnriq.length === 0) return
+        if (autoInitRef.current === dataSel || turmasEnriq.length === 0) return
+        autoInitRef.current = dataSel
         const firstPending = turmasEnriq.findIndex(t => !t.registrada)
-        if (firstPending >= 0) {
-            autoOpenedRef.current = dataSel
-            abrirTurma(firstPending)
-        }
+        const firstIdx = firstPending >= 0 ? firstPending : 0
+        const t = turmasEnriq[firstIdx]
+        const plano = t.plano && typeof t.plano === 'object'
+            ? t.plano as any
+            : { id: `stub-${t.aula.id}`, titulo: '', escola: t.escNome, segmento: t.segNome, turma: t.turNome }
+        setPlanoParaRegistro(plano)
+        setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
+        setRegistroEditando(null)
+        setVerRegistros(false)
+        setTurmaIdx(firstIdx)
+        // NÃO fecha a lista — usuário escolhe a turma
     }, [turmasEnriq.length, dataSel]) // eslint-disable-line
 
     // Após salvar: avança para próxima pendente ou volta à lista
     const handleDepoisSalvar = () => {
-        // Busca próxima pendente após o índice atual
         const proxIdx = turmasEnriq.findIndex((t, i) => i > turmaIdx && !t.registrada)
         if (proxIdx >= 0) {
             abrirTurma(proxIdx)
         } else {
-            // Verifica se há pendentes antes do índice atual
             const proxAntes = turmasEnriq.findIndex((t, i) => i !== turmaIdx && !t.registrada)
             if (proxAntes >= 0) {
                 abrirTurma(proxAntes)
             } else {
-                // Tudo registrado — volta à lista
                 setListaAberta(true)
                 setTurmaIdx(-1)
                 setModalRegistro(false)
@@ -148,104 +152,105 @@ export default function TelaPosAula() {
     return (
         <div className="max-w-2xl mx-auto pb-24">
 
-            {/* ── TÍTULO (só quando lista aberta) ── */}
-            {listaAberta && (
-                <div className="mb-4">
-                    <h1 className="text-[17px] font-bold tracking-tight text-slate-800 dark:text-[#E5E7EB]">Pós-aula</h1>
-                    <p className="text-[12.5px] text-slate-500 dark:text-[#9CA3AF] mt-0.5">Registre o que aconteceu em cada aula</p>
-                </div>
-            )}
-
-            {/* ── CARD PRINCIPAL ── */}
+            {/* ── CARD ÚNICO ── */}
             <div className="v2-card rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] overflow-hidden border border-[#E6EAF0] dark:border-[#374151]">
 
-                {/* ══ HEADER — muda conforme estado ══ */}
+                {/* ══ CABEÇALHO ÚNICO (sempre compacto) ══ */}
                 <div className="sticky top-0 z-10 v2-card border-b border-[#E6EAF0] dark:border-[#374151]">
+                    <div
+                        className="px-4 py-3 flex items-center gap-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/20 transition select-none"
+                        onClick={() => setListaAberta(v => !v)}>
 
-                    {/* Lista aberta: data + setas de dia */}
-                    {listaAberta && (
-                        <div className="px-4 py-3 flex items-center justify-between">
-                            <button
-                                onClick={() => dateInputRef.current?.showPicker ? dateInputRef.current.showPicker() : dateInputRef.current?.click()}
-                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
-                                <div className="text-[13px] font-semibold text-slate-700 dark:text-[#E5E7EB] flex items-center gap-2">
-                                    {labelDataLonga(dataSel)}
-                                    {ehHoje && <span className="text-[11px] font-medium text-[#5B5FEA] dark:text-[#818cf8] bg-[#5B5FEA]/8 dark:bg-[#818cf8]/10 px-1.5 py-0.5 rounded">Hoje</span>}
+                        {/* Toggle lista */}
+                        <span className="text-[11px] text-slate-400 dark:text-[#6b7280] flex items-center gap-0.5 shrink-0 mr-1">
+                            <span>{listaAberta ? '▲' : '▼'}</span>
+                            <span className="ml-0.5">todas</span>
+                        </span>
+
+                        {/* Info da turma selecionada (ou data quando nenhuma) */}
+                        <div className="flex-1 min-w-0 flex items-center gap-[5px] text-[12px] overflow-hidden">
+                            {turmaAtual ? (
+                                <>
+                                    <span className="font-bold tabular-nums text-slate-800 dark:text-[#E5E7EB] shrink-0">{turmaAtual.aula.horario}</span>
+                                    <span className="text-slate-200 dark:text-slate-700">·</span>
+                                    <span className="text-slate-500 dark:text-[#9CA3AF] truncate">{turmaAtual.escNome}</span>
+                                    <span className="text-slate-200 dark:text-slate-700">·</span>
+                                    <span className="font-bold text-slate-800 dark:text-[#E5E7EB] shrink-0">{turmaAtual.turNome}</span>
+                                    <span className="text-slate-200 dark:text-slate-700">·</span>
+                                    <span className="text-[#5B5FEA] dark:text-[#818cf8] text-[11px] shrink-0">{labelDataCurta(dataSel)}</span>
+                                    <span className={`w-[7px] h-[7px] rounded-full shrink-0 ml-0.5 ${turmaAtual.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                                </>
+                            ) : (
+                                <div>
+                                    <span className="text-[13px] font-semibold text-slate-700 dark:text-[#E5E7EB]">{labelDataLonga(dataSel)}</span>
+                                    {ehHoje && <span className="ml-2 text-[11px] font-medium text-[#5B5FEA] dark:text-[#818cf8] bg-[#5B5FEA]/8 dark:bg-[#818cf8]/10 px-1.5 py-0.5 rounded">Hoje</span>}
                                 </div>
-                                {turmasEnriq.length > 0 && (
-                                    <div className="text-[11px] text-slate-400 dark:text-[#6b7280] mt-0.5">
-                                        {pendentes > 0
-                                            ? `${pendentes} pendente${pendentes > 1 ? 's' : ''}`
-                                            : <span className="text-emerald-500">Tudo registrado ✓</span>}
-                                        {concluidas > 0 && pendentes > 0 && ` · ${concluidas} registrada${concluidas > 1 ? 's' : ''}`}
-                                    </div>
-                                )}
+                            )}
+                        </div>
+
+                        {/* Controles direita: setas de turma ou de dia */}
+                        <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                            {turmaAtual ? (
+                                // Navegação entre turmas
+                                <>
+                                    <button
+                                        onClick={e => navTurma(-1, e)}
+                                        disabled={turmaIdx === 0}
+                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[13px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 transition hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer">
+                                        ‹
+                                    </button>
+                                    <span className="text-[11px] font-semibold text-slate-400 dark:text-[#6b7280] min-w-[28px] text-center tabular-nums">
+                                        {turmaIdx + 1}/{turmasEnriq.length}
+                                    </span>
+                                    <button
+                                        onClick={e => navTurma(1, e)}
+                                        disabled={turmaIdx === turmasEnriq.length - 1}
+                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] bg-[#5B5FEA] border-[#5B5FEA] flex items-center justify-center text-[13px] text-white disabled:opacity-30 transition hover:bg-[#4f46e5] cursor-pointer">
+                                        ›
+                                    </button>
+                                </>
+                            ) : (
+                                // Navegação entre dias (quando nenhuma turma pré-selecionada)
+                                <>
+                                    {!ehHoje && (
+                                        <button
+                                            onClick={() => { setDataSel(hojeStr); setListaAberta(true); setTurmaIdx(-1) }}
+                                            className="mr-1 px-[10px] py-[4px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] cursor-pointer transition hover:text-slate-700 dark:hover:text-[#E5E7EB]">
+                                            Hoje
+                                        </button>
+                                    )}
+                                    {[-1, 1].map(d => (
+                                        <button key={d} onClick={() => navDia(d)}
+                                            className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[13px] text-slate-400 dark:text-[#6b7280] transition hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer">
+                                            {d < 0 ? '‹' : '›'}
+                                        </button>
+                                    ))}
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Sub-linha de status (só quando lista aberta) */}
+                    {listaAberta && turmasEnriq.length > 0 && (
+                        <div className="px-4 pb-2 flex items-center gap-3 text-[11px] text-slate-400 dark:text-[#6b7280]">
+                            {pendentes > 0
+                                ? <span>{pendentes} pendente{pendentes > 1 ? 's' : ''}</span>
+                                : <span className="text-emerald-500">Tudo registrado ✓</span>}
+                            {concluidas > 0 && pendentes > 0 && <span>· {concluidas} registrada{concluidas > 1 ? 's' : ''}</span>}
+
+                            {/* Seletor de data (hidden input + texto clicável) */}
+                            <button
+                                onClick={e => { e.stopPropagation(); dateInputRef.current?.showPicker ? dateInputRef.current.showPicker() : dateInputRef.current?.click() }}
+                                className="ml-auto text-[11px] text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] underline underline-offset-2 cursor-pointer">
+                                {labelDataLonga(dataSel)}{ehHoje ? ' (Hoje)' : ''}
                             </button>
                             <input
                                 ref={dateInputRef}
                                 type="date"
                                 value={dataSel}
-                                onChange={e => { setDataSel(e.target.value); setListaAberta(true); setTurmaIdx(-1) }}
+                                onChange={e => { setDataSel(e.target.value); setTurmaIdx(-1) }}
                                 style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
                             />
-                            <div className="flex items-center gap-1.5 shrink-0">
-                                {!ehHoje && (
-                                    <button
-                                        onClick={() => { setDataSel(hojeStr); setListaAberta(true); setTurmaIdx(-1) }}
-                                        className="mr-1 px-[10px] py-[4px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] cursor-pointer transition hover:text-slate-700 dark:hover:text-[#E5E7EB]">
-                                        Hoje
-                                    </button>
-                                )}
-                                {/* Setas de dia */}
-                                {[-1, 1].map(d => (
-                                    <button key={d} onClick={() => navDia(d)}
-                                        className="w-[30px] h-[30px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center cursor-pointer text-slate-400 dark:text-[#6b7280] text-[13px] shrink-0 transition hover:text-[#5B5FEA] dark:hover:text-[#818cf8] hover:border-[#5B5FEA]/30">
-                                        {d < 0 ? '‹' : '›'}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Lista colapsada: turma atual + setas de turma */}
-                    {!listaAberta && turmaAtual && (
-                        <div
-                            className="px-4 py-3 flex items-center gap-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/20 transition"
-                            onClick={() => setListaAberta(true)}>
-                            {/* Toggle lista */}
-                            <span className="text-[11px] text-slate-400 dark:text-[#6b7280] flex items-center gap-1 shrink-0 mr-1">
-                                <span>▼</span>
-                                <span>todas</span>
-                            </span>
-                            {/* Info da turma atual */}
-                            <div className="flex-1 flex items-center gap-[5px] text-[12px] min-w-0 overflow-hidden">
-                                <span className="font-bold tabular-nums text-slate-800 dark:text-[#E5E7EB] shrink-0">{turmaAtual.aula.horario}</span>
-                                <span className="text-slate-200 dark:text-slate-700">·</span>
-                                <span className="text-slate-500 dark:text-[#9CA3AF] truncate">{turmaAtual.escNome}</span>
-                                <span className="text-slate-200 dark:text-slate-700">·</span>
-                                <span className="font-bold text-slate-800 dark:text-[#E5E7EB] shrink-0">{turmaAtual.turNome}</span>
-                                <span className="text-slate-200 dark:text-slate-700">·</span>
-                                <span className="text-[#5B5FEA] dark:text-[#818cf8] text-[11px] shrink-0">{labelDataCurta(dataSel)}</span>
-                                <span className={`w-[7px] h-[7px] rounded-full shrink-0 ml-0.5 ${turmaAtual.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-                            </div>
-                            {/* Setas de turma */}
-                            <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                                <button
-                                    onClick={e => navTurma(-1, e)}
-                                    disabled={turmaIdx === 0}
-                                    className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[13px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 transition hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer">
-                                    ‹
-                                </button>
-                                <span className="text-[11px] font-semibold text-slate-400 dark:text-[#6b7280] min-w-[28px] text-center tabular-nums">
-                                    {turmaIdx + 1}/{turmasEnriq.length}
-                                </span>
-                                <button
-                                    onClick={e => navTurma(1, e)}
-                                    disabled={turmaIdx === turmasEnriq.length - 1}
-                                    className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] bg-[#5B5FEA] border-[#5B5FEA] flex items-center justify-center text-[13px] text-white disabled:opacity-30 transition hover:bg-[#4f46e5] cursor-pointer">
-                                    ›
-                                </button>
-                            </div>
                         </div>
                     )}
                 </div>
@@ -267,7 +272,7 @@ export default function TelaPosAula() {
                                     key={t.aula.id}
                                     onClick={() => abrirTurma(i)}
                                     className={`px-4 py-3 flex items-center gap-3 transition cursor-pointer
-                                        ${turmaIdx === i && !listaAberta ? 'bg-[#EEF0FF] dark:bg-[#5B5FEA]/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'}`}
+                                        ${turmaIdx === i ? 'bg-[#EEF0FF] dark:bg-[#5B5FEA]/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'}`}
                                     style={{ opacity: t.dimmed ? 0.72 : 1 }}>
 
                                     <span className={`w-2 h-2 rounded-full shrink-0 ${t.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
@@ -291,7 +296,7 @@ export default function TelaPosAula() {
 
                                     {t.registrada
                                         ? <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full shrink-0">✓ registrada</span>
-                                        : <span className="text-[11px] shrink-0 text-slate-300 dark:text-slate-600">›</span>
+                                        : <span className={`text-[11px] shrink-0 ${turmaIdx === i ? 'text-[#5B5FEA] font-bold' : 'text-slate-300 dark:text-slate-600'}`}>›</span>
                                     }
                                 </div>
                             ))}
@@ -299,11 +304,9 @@ export default function TelaPosAula() {
                     )}
                 </div>
 
-                {/* ══ FORMULÁRIO INLINE (colapsável) ══ */}
-                <div
-                    className="overflow-hidden transition-all duration-300 ease-in-out"
-                    style={{ maxHeight: !listaAberta ? '4000px' : '0px', opacity: !listaAberta ? 1 : 0 }}>
-                    {!listaAberta && (
+                {/* ══ FORMULÁRIO INLINE ══ */}
+                {turmaIdx >= 0 && (
+                    <div className={listaAberta ? 'border-t border-[#E6EAF0] dark:border-[#374151]' : ''}>
                         <Suspense fallback={<div className="px-4 py-8 text-center text-[13px] text-slate-400">Carregando...</div>}>
                             <ModalRegistroPosAula
                                 inlineMode
@@ -312,8 +315,8 @@ export default function TelaPosAula() {
                                 saveLabel="Salvar e próxima"
                             />
                         </Suspense>
-                    )}
-                </div>
+                    </div>
+                )}
 
             </div>
         </div>
