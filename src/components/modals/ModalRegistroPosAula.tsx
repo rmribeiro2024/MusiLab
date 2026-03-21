@@ -483,6 +483,7 @@ export default function ModalRegistroPosAula() {
     const [uploadErro, setUploadErro] = React.useState('')
     const [driveConectado, setDriveConectado] = React.useState(() => hasValidToken() || checkRedirectToken())
     const fileInputRef = React.useRef<HTMLInputElement>(null)
+    const cameraInputRef = React.useRef<HTMLInputElement>(null)
     const [contextoAberto, setContextoAberto] = React.useState(false)
     const [seletorTurma, setSeletorTurma] = React.useState(false)
     const [seletorEscola, setSeletorEscola] = React.useState(false)
@@ -1411,10 +1412,20 @@ export default function ModalRegistroPosAula() {
                                                                 {/* Botão de upload — só aparece se Drive estiver configurado */}
                                                                 {driveConfigurado && (
                                                                     <>
+                                                                        {/* Input galeria/arquivo */}
                                                                         <input
                                                                             ref={fileInputRef}
                                                                             type="file"
                                                                             accept="image/*,video/*,audio/*"
+                                                                            style={{ display: 'none' }}
+                                                                            onChange={handleFileSelect}
+                                                                        />
+                                                                        {/* Input câmera direta (mobile) */}
+                                                                        <input
+                                                                            ref={cameraInputRef}
+                                                                            type="file"
+                                                                            accept="image/*"
+                                                                            capture="environment"
                                                                             style={{ display: 'none' }}
                                                                             onChange={handleFileSelect}
                                                                         />
@@ -1438,28 +1449,44 @@ export default function ModalRegistroPosAula() {
                                                                                 <span style={{ fontSize: 15 }}>🔗</span>
                                                                                 Conectar Google Drive
                                                                             </button>
+                                                                        ) : uploadandoEvidencia ? (
+                                                                            <div style={{
+                                                                                width: '100%', padding: '10px', borderRadius: 8, border: '1.5px dashed #c7d2fe',
+                                                                                background: '#f5f3ff', fontSize: 12, fontWeight: 600, color: '#6366f1',
+                                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                                                            }}>
+                                                                                <span style={{ fontSize: 13 }}>⏳</span>
+                                                                                Enviando para Google Drive... {uploadProgresso}%
+                                                                            </div>
                                                                         ) : (
-                                                                            <button type="button"
-                                                                                disabled={uploadandoEvidencia}
-                                                                                onClick={() => fileInputRef.current?.click()}
-                                                                                style={{
-                                                                                    width: '100%', padding: '10px', borderRadius: 8, border: '1.5px dashed #c7d2fe',
-                                                                                    background: uploadandoEvidencia ? '#f5f3ff' : '#fff', cursor: uploadandoEvidencia ? 'default' : 'pointer',
-                                                                                    fontSize: 12, fontWeight: 600, color: '#6366f1', transition: 'all .15s',
-                                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                                                                                }}>
-                                                                                {uploadandoEvidencia ? (
-                                                                                    <>
-                                                                                        <span style={{ fontSize: 13 }}>⏳</span>
-                                                                                        Enviando para Google Drive... {uploadProgresso}%
-                                                                                    </>
-                                                                                ) : (
-                                                                                    <>
+                                                                            <div style={{ display: 'flex', gap: 6 }}>
+                                                                                {/* Botão câmera — só no mobile */}
+                                                                                {isMobileDevice() && (
+                                                                                    <button type="button"
+                                                                                        onClick={() => cameraInputRef.current?.click()}
+                                                                                        style={{
+                                                                                            flex: 1, padding: '10px', borderRadius: 8, border: '1.5px dashed #c7d2fe',
+                                                                                            background: '#fff', cursor: 'pointer',
+                                                                                            fontSize: 12, fontWeight: 600, color: '#6366f1', transition: 'all .15s',
+                                                                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                                                                                        }}>
                                                                                         <span style={{ fontSize: 15 }}>📷</span>
-                                                                                        {url ? 'Trocar arquivo' : 'Foto ou vídeo — salva no seu Google Drive'}
-                                                                                    </>
+                                                                                        Tirar foto
+                                                                                    </button>
                                                                                 )}
-                                                                            </button>
+                                                                                {/* Botão galeria/arquivo */}
+                                                                                <button type="button"
+                                                                                    onClick={() => fileInputRef.current?.click()}
+                                                                                    style={{
+                                                                                        flex: 1, padding: '10px', borderRadius: 8, border: '1.5px dashed #c7d2fe',
+                                                                                        background: '#fff', cursor: 'pointer',
+                                                                                        fontSize: 12, fontWeight: 600, color: '#6366f1', transition: 'all .15s',
+                                                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                                                                                    }}>
+                                                                                    <span style={{ fontSize: 15 }}>🖼️</span>
+                                                                                    {isMobileDevice() ? 'Galeria' : (url ? 'Trocar arquivo' : 'Escolher arquivo')}
+                                                                                </button>
+                                                                            </div>
                                                                         )}
                                                                         {uploadandoEvidencia && (
                                                                             <div style={{ height: 4, borderRadius: 99, background: '#e0e7ff', overflow: 'hidden' }}>
