@@ -6,6 +6,31 @@ import { useEstrategiasContext } from '../../contexts'
 import { startRecording, stopRecording, blobToBase64, base64ToObjectUrl, base64SizeKb } from '../../lib/audioRecorder'
 import { uploadEvidencia, isGoogleDriveConfigured, isMobileDevice, hasValidToken, checkRedirectToken, redirectToGoogleAuth, initDriveAuth, requestDriveToken } from '../../lib/googleDrive'
 
+// ── Detecção de dark mode ──
+function useIsDark() {
+    const [isDark, setIsDark] = React.useState(() => document.documentElement.classList.contains('dark'))
+    React.useEffect(() => {
+        const obs = new MutationObserver(() => setIsDark(document.documentElement.classList.contains('dark')))
+        obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+        return () => obs.disconnect()
+    }, [])
+    return isDark
+}
+
+// ── Paleta de cores dark/light ──
+const dk = (isDark: boolean) => ({
+    cardBg:      isDark ? '#1F2937' : '#f8fafc',
+    cardBgSolid: isDark ? '#1F2937' : '#ffffff',
+    cardBgAlt:   isDark ? '#283040' : '#f1f5f9',
+    border:      isDark ? '#374151' : '#e2e8f0',
+    borderLight: isDark ? '#374151' : '#f1f5f9',
+    textMain:    isDark ? '#E5E7EB' : '#334155',
+    textMed:     isDark ? '#9CA3AF' : '#64748b',
+    textMuted:   isDark ? '#6b7280' : '#94a3b8',
+    inputBg:     isDark ? '#111827' : '#ffffff',
+    inputColor:  isDark ? '#E5E7EB' : '#0f172a',
+})
+
 // ── ACCORDION CHIP — campo colapsável genérico ──
 const AccordionChip = React.forwardRef<() => void, {
     id: string, icon: string, label: string, placeholder: string,
@@ -14,7 +39,8 @@ const AccordionChip = React.forwardRef<() => void, {
     onTabNext?: () => void,
     quickOptions?: string[],
     allowVoice?: boolean,
-}>(function AccordionChip({ id, icon, label, placeholder, value, filled, defaultOpen, onChange, onTabNext, quickOptions, allowVoice }, ref) {
+    isDark?: boolean,
+}>(function AccordionChip({ id, icon, label, placeholder, value, filled, defaultOpen, onChange, onTabNext, quickOptions, allowVoice, isDark = false }, ref) {
     const [open, setOpen] = React.useState(defaultOpen ?? false)
     const [gravando, setGravando] = React.useState(false)
     const [speechAtivo, setSpeechAtivo] = React.useState(false)
@@ -48,22 +74,23 @@ const AccordionChip = React.forwardRef<() => void, {
         setOpen(true)
     }
 
+    const c = dk(isDark)
     return (
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+        <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
             <div onClick={() => setOpen(o => !o)}
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
                 <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>{icon}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: filled ? '#334155' : '#64748b', flex: 1 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: filled ? c.textMain : c.textMed, flex: 1 }}>
                     {label}
                 </span>
                 {filled && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
                 {allowVoice && (
                     <button type="button" onClick={toggleVoz} title={gravando ? 'Parar gravação' : 'Gravar por voz'}
-                        style={{ fontSize: 13, background: gravando ? '#fee2e2' : 'transparent', border: gravando ? '1px solid #fca5a5' : '1px solid transparent', borderRadius: 6, cursor: 'pointer', padding: '2px 5px', flexShrink: 0, color: gravando ? '#ef4444' : '#94a3b8', outline: 'none' }}>
+                        style={{ fontSize: 13, background: gravando ? '#fee2e2' : 'transparent', border: gravando ? '1px solid #fca5a5' : '1px solid transparent', borderRadius: 6, cursor: 'pointer', padding: '2px 5px', flexShrink: 0, color: gravando ? '#ef4444' : c.textMuted, outline: 'none' }}>
                         {gravando ? '⏹' : '🎙'}
                     </button>
                 )}
-                <span style={{ fontSize: 9, color: '#94a3b8', flexShrink: 0, marginLeft: 4, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
+                <span style={{ fontSize: 9, color: c.textMuted, flexShrink: 0, marginLeft: 4, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
             </div>
             {open && (
                 <div style={{ padding: '0 12px 10px' }}>
@@ -81,9 +108,9 @@ const AccordionChip = React.forwardRef<() => void, {
                     <textarea id={id} value={value} onChange={e => onChange(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Tab') { e.preventDefault(); setOpen(false); onTabNext?.() } }}
                         rows={2} placeholder={placeholder} autoFocus
-                        style={{ width: '100%', padding: '9px 10px', border: `1px solid ${gravando ? (speechAtivo ? '#fca5a5' : '#e2e8f0') : '#e2e8f0'}`, borderRadius: 8, fontSize: 13, color: '#334155', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', transition: 'border-color .2s' }}
+                        style={{ width: '100%', padding: '9px 10px', border: `1px solid ${gravando ? (speechAtivo ? '#fca5a5' : c.border) : c.border}`, borderRadius: 8, fontSize: 13, color: c.textMain, background: c.inputBg, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', transition: 'border-color .2s' }}
                         onFocus={e => { if (!gravando) e.target.style.borderColor = '#94a3b8' }}
-                        onBlur={e  => { if (!gravando) e.target.style.borderColor = '#e2e8f0' }}
+                        onBlur={e  => { if (!gravando) e.target.style.borderColor = c.border }}
                     />
                     {gravando && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, fontSize: 11 }}>
@@ -347,6 +374,8 @@ function StatusAulaSelector({ value, onChange, onDone, firstRef }: StatusAulaSel
 // ──────────────────────────────────────────────────────────────────────────────
 
 export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hideHeader = false, saveLabel, verPlanoExterno }: { inlineMode?: boolean; onVoltar?: () => void; hideHeader?: boolean; saveLabel?: string; verPlanoExterno?: boolean }) {
+    const isDark = useIsDark()
+    const c = dk(isDark)
     const {
         modalRegistro, setModalRegistro,
         planoParaRegistro, setPlanoParaRegistro,
@@ -798,7 +827,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: -4 }}>
                                     <button type="button" onClick={() => setPlanejadoAberto(v => !v)}
                                         style={{ fontSize: 11, color: planejadoAberto ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1 }}>
-                                        {planejadoAberto ? '▲ fechar plano' : 'ver plano'}
+                                        ver plano
                                     </button>
                                 </div>
                             )}
@@ -1071,7 +1100,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
                                                     value={valor} filled={valor.trim().length > 0}
                                                     defaultOpen={deveAbrir}
-                                                    allowVoice
+                                                    allowVoice isDark={isDark}
                                                     onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v })}
                                                     onTabNext={() => { const next = chipOpenRefs.current[idx + 1]; if (next) next(); else salvarBtnRef.current?.focus() }}
                                                     ref={(fn: (() => void) | null) => { chipOpenRefs.current[idx] = fn }}
@@ -1088,12 +1117,12 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                             { value: 'revisao',   label: 'Retomar ou revisar — repetir de onde parei ou reforçar algo', emoji: '↻' },
                                         ]
                                         return (
-                                            <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                                                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase' as const, color: '#94a3b8', flex: 1 }}>E agora?</span>
+                                            <div style={{ border: `1.5px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBgSolid }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: c.cardBg, borderBottom: `1px solid ${c.borderLight}` }}>
+                                                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase' as const, color: c.textMuted, flex: 1 }}>E agora?</span>
                                                     {statusVal && (
                                                         <button tabIndex={-1} onClick={() => setNovoRegistro({ ...novoRegistro, statusAula: undefined } as any)}
-                                                            style={{ fontSize: 10, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}>
+                                                            style={{ fontSize: 10, color: c.textMuted, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}>
                                                             limpar
                                                         </button>
                                                     )}
@@ -1107,19 +1136,19 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                 style={{
                                                                     display: 'flex', alignItems: 'center', gap: 10,
                                                                     padding: '9px 12px',
-                                                                    background: sel ? '#f1f5f9' : '#fff',
-                                                                    color: sel ? '#1e293b' : '#64748b',
+                                                                    background: sel ? c.cardBgAlt : c.cardBgSolid,
+                                                                    color: sel ? c.textMain : c.textMed,
                                                                     fontWeight: sel ? 600 : 400,
                                                                     fontSize: 13, border: 'none',
-                                                                    borderTop: idx > 0 ? '1px solid #f1f5f9' : 'none',
-                                                                    borderLeft: sel ? '3px solid #334155' : '3px solid transparent',
+                                                                    borderTop: idx > 0 ? `1px solid ${c.borderLight}` : 'none',
+                                                                    borderLeft: sel ? `3px solid ${c.textMain}` : '3px solid transparent',
                                                                     cursor: 'pointer', textAlign: 'left' as const,
                                                                     width: '100%', transition: 'all .1s', outline: 'none',
                                                                 }}
-                                                                onMouseOver={e => { if (!sel) e.currentTarget.style.background = '#f8fafc' }}
-                                                                onMouseOut={e  => { if (!sel) e.currentTarget.style.background = '#fff' }}
+                                                                onMouseOver={e => { if (!sel) e.currentTarget.style.background = c.cardBg }}
+                                                                onMouseOut={e  => { if (!sel) e.currentTarget.style.background = c.cardBgSolid }}
                                                             >
-                                                                <span style={{ fontSize: 11, width: 16, textAlign: 'center' as const, flexShrink: 0, color: sel ? '#475569' : '#94a3b8' }}>{op.emoji}</span>
+                                                                <span style={{ fontSize: 11, width: 16, textAlign: 'center' as const, flexShrink: 0, color: sel ? c.textMed : c.textMuted }}>{op.emoji}</span>
                                                                 {op.label}
                                                             </button>
                                                         )
@@ -1142,11 +1171,11 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                             setNovoEnc('')
                                         }
                                         return (
-                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#f8fafc' }}>
+                                            <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}
                                                     onClick={() => setEncAberto(v => !v)}>
                                                     <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📌</span>
-                                                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: encaminhamentos.length > 0 ? '#334155' : '#64748b', flex: 1 }}>
+                                                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: encaminhamentos.length > 0 ? c.textMain : c.textMed, flex: 1 }}>
                                                         {isRevisao ? 'O que fazer na próxima aula?' : 'Algum lembrete para a próxima aula?'}
                                                     </span>
                                                     {encaminhamentos.length > 0 && (
@@ -1155,10 +1184,10 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                         </span>
                                                     )}
                                                     <button type="button" onClick={e => { e.stopPropagation(); toggleVozEnc() }} title={gravandoEnc ? 'Parar gravação' : 'Gravar por voz'}
-                                                        style={{ fontSize: 13, background: gravandoEnc ? '#fee2e2' : 'transparent', border: gravandoEnc ? '1px solid #fca5a5' : '1px solid transparent', borderRadius: 6, cursor: 'pointer', padding: '2px 5px', flexShrink: 0, color: gravandoEnc ? '#ef4444' : '#94a3b8', outline: 'none' }}>
+                                                        style={{ fontSize: 13, background: gravandoEnc ? '#fee2e2' : 'transparent', border: gravandoEnc ? '1px solid #fca5a5' : '1px solid transparent', borderRadius: 6, cursor: 'pointer', padding: '2px 5px', flexShrink: 0, color: gravandoEnc ? '#ef4444' : c.textMuted, outline: 'none' }}>
                                                         {gravandoEnc ? '⏹' : '🎙'}
                                                     </button>
-                                                    <span style={{ fontSize: 10, color: '#cbd5e1', transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
+                                                    <span style={{ fontSize: 10, color: c.textMuted, transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
                                                 </div>
                                                 {aberto && (
                                                     <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -1182,9 +1211,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                             <input type="text" value={novoEnc} onChange={e => setNovoEnc(e.target.value)}
                                                                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEnc() } }}
                                                                 placeholder="O que fazer na próxima aula... (Enter para adicionar)"
-                                                                style={{ flex: 1, minWidth: 0, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155', fontFamily: 'inherit', outline: 'none' }}
+                                                                style={{ flex: 1, minWidth: 0, padding: '7px 10px', border: `1px solid ${c.border}`, borderRadius: 8, fontSize: 12, color: c.textMain, background: c.inputBg, fontFamily: 'inherit', outline: 'none' }}
                                                                 onFocus={e => (e.target.style.borderColor = '#94a3b8')}
-                                                                onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
+                                                                onBlur={e => (e.target.style.borderColor = c.border)}
                                                             />
                                                             <button type="button" onClick={addEnc} disabled={!novoEnc.trim()}
                                                                 style={{ padding: '7px 12px', background: novoEnc.trim() ? '#6366f1' : '#e2e8f0', color: novoEnc.trim() ? '#fff' : '#94a3b8', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: novoEnc.trim() ? 'pointer' : 'default', transition: 'all .15s', flexShrink: 0 }}>
@@ -1200,9 +1229,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                     {/* ── Campos avançados ── */}
                                     <button type="button" onClick={() => setMostrarAvancados(m => !m)}
                                         style={{
-                                            width: '100%', padding: '8px 12px', background: mostrarAvancados ? '#f1f5f9' : '#f8fafc',
-                                            border: '1px dashed #cbd5e1', borderRadius: 10, fontSize: 11, fontWeight: 700,
-                                            color: '#64748b', cursor: 'pointer', textAlign: 'center', letterSpacing: '.06em',
+                                            width: '100%', padding: '8px 12px', background: mostrarAvancados ? c.cardBgAlt : c.cardBg,
+                                            border: `1px dashed ${c.border}`, borderRadius: 10, fontSize: 11, fontWeight: 700,
+                                            color: c.textMed, cursor: 'pointer', textAlign: 'center', letterSpacing: '.06em',
                                             textTransform: 'uppercase', transition: 'all .15s',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
                                         }}>
@@ -1323,7 +1352,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 const valor = (novoRegistro as any)[field] || ''
                                                 return (
                                                     <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
-                                                        value={valor} filled={valor.trim().length > 0} allowVoice
+                                                        value={valor} filled={valor.trim().length > 0} allowVoice isDark={isDark}
                                                         onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v } as any)} />
                                                 )
                                             })}
