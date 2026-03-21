@@ -192,13 +192,14 @@ export default function TelaPosAula() {
                         {turmasEnriq.map(t => (
                             <div
                                 key={t.aula.id}
-                                className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition"
+                                onClick={() => abrirRegistro(t)}
+                                className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition cursor-pointer"
                                 style={{ opacity: t.dimmed ? 0.72 : 1 }}>
 
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="text-[12px] font-semibold text-slate-700 dark:text-[#E5E7EB] shrink-0 tabular-nums">
+                                        <span className={`text-[12px] font-semibold shrink-0 tabular-nums ${t.registrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-[#E5E7EB]'}`}>
                                             {t.aula.horario}
                                         </span>
                                         <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
@@ -213,20 +214,8 @@ export default function TelaPosAula() {
                                     )}
                                 </div>
 
-                                {/* Botão de ação */}
-                                <button
-                                    onClick={() => abrirRegistro(t)}
-                                    style={{
-                                        padding: '5px 12px', borderRadius: '7px',
-                                        fontSize: '12px', fontWeight: 500,
-                                        fontFamily: 'inherit', cursor: 'pointer',
-                                        transition: 'all 120ms ease', flexShrink: 0,
-                                        background: 'transparent',
-                                        border: '1px solid #E6EAF0',
-                                        color: t.registrada ? '#64748b' : '#5B5FEA',
-                                    }}>
-                                    {t.registrada ? 'Ver' : 'Registrar'}
-                                </button>
+                                {/* Indicador de status sutil */}
+                                <span className="text-[11px] shrink-0 text-slate-300 dark:text-slate-600">›</span>
                             </div>
                         ))}
                     </div>
