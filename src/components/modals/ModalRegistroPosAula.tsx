@@ -1126,7 +1126,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                     display: 'flex', alignItems: 'center', gap: 10,
                                                                     padding: '9px 12px',
                                                                     background: sel ? c.cardBgAlt : c.cardBgSolid,
-                                                                    color: isConcluida ? '#22c55e' : (sel ? c.textMain : c.textMed),
+                                                                    color: (isConcluida && sel) ? '#22c55e' : (sel ? c.textMain : c.textMed),
                                                                     fontWeight: sel ? 600 : 400,
                                                                     fontSize: 13, border: 'none',
                                                                     borderTop: idx > 0 ? `1px solid ${c.borderLight}` : 'none',
@@ -1137,7 +1137,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                 onMouseOver={e => { if (!sel) e.currentTarget.style.background = c.cardBg }}
                                                                 onMouseOut={e  => { if (!sel) e.currentTarget.style.background = c.cardBgSolid }}
                                                             >
-                                                                <span style={{ fontSize: 11, width: 16, textAlign: 'center' as const, flexShrink: 0, color: isConcluida ? '#22c55e' : (sel ? c.textMed : c.textMuted) }}>
+                                                                <span style={{ fontSize: 11, width: 16, textAlign: 'center' as const, flexShrink: 0, color: (isConcluida && sel) ? '#22c55e' : (sel ? c.textMed : c.textMuted) }}>
                                                                     {isConcluida && checkFlash
                                                                         ? <span className="check-pop" style={{ display: 'inline-block' }}>✓</span>
                                                                         : op.emoji}
