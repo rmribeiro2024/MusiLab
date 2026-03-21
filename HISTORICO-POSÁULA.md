@@ -209,6 +209,47 @@ Categorias separadas:
 
 ## IDEIAS REGISTRADAS (não implementar ainda)
 
+### Ideias para o módulo Pós-Aula
+
+#### Tela de Registro
+1. **Fluxo de navegação entre turmas** — seta `›` já navega entre turmas, mas futuramente pode ter atalho de teclado (Tab / Enter para avançar)
+2. **Pré-preenchimento inteligente** — sugerir "E agora?" com base no histórico da turma (ex: se sempre avança, já marcar como sugestão)
+3. **Contagem de pendentes no header** — mostrar quantas turmas ainda não foram registradas no dia
+4. **Registro rápido** — modo ultra-compacto com apenas "E agora?" + botão salvar, sem campos avançados, para dias corridos
+5. **Encaminhamentos linkados ao plano** — o campo "encaminhamentos para a próxima aula" poderia auto-popular o campo de observações no próximo plano daquela turma
+6. **Histórico inline** — dentro do formulário, exibir o último registro daquela turma como referência antes de preencher o novo
+7. **Gravação de áudio no campo de observações** — microfone de 30s inline (infraestrutura já existe em B3)
+8. **Foto da lousa / evidência visual** — upload de imagem rápido no campo "Evidência de aula"
+9. **Timestamp automático no início do preenchimento** — registrar hora que o professor abriu o formulário (para métricas de tempo de preenchimento)
+10. **Modo offline-first robusto** — garantir que o registro salva localmente (IndexedDB) mesmo sem conexão, sincroniza quando voltar
+
+#### Tela de Histórico
+11. **Filtro por aluno específico** — além de turma/decisão/período, poder filtrar por nome do aluno mencionado em `alunoAtencao`
+12. **Vista por turma** — modo alternativo à vista por data: agrupado por turma, com mini-timeline de cada uma
+13. **Comparativo de turmas** — card extra no Pulso mostrando qual turma tem melhor/pior aproveitamento médio
+14. **Sparkline de tendência** — mini-gráfico de linha no card de aproveitamento (recharts já no projeto)
+15. **Padrão por dia da semana** — insight: "Suas sextas-feiras têm aproveitamento médio 0.8 menor que as terças"
+16. **Aluno recorrente com contagem cruzada** — cruzar `alunoAtencao` de múltiplos registros de turmas diferentes para ver se o mesmo aluno aparece em várias
+17. **Export PDF do histórico** — gerar PDF por turma com todos os registros do período (jsPDF já no projeto)
+18. **Insights via Gemini** — substituir regras locais por análise de linguagem natural (API key já configurada em `.env` e no GitHub Actions)
+19. **Turma sem registro há X dias** — alerta visual na lista: "GR3C não tem registro há 8 dias"
+20. **Modo comparativo mês a mês** — ver aproveitamento e taxa de retomar do mês atual vs. mês anterior lado a lado
+21. **Linha do tempo da turma** — ao clicar em uma turma no filtro, abrir painel lateral com histórico cronológico só daquela turma
+22. **Clima da turma agregado** — usar campo `comportamento` para gerar indicador de "clima geral" por turma ao longo do tempo
+23. **Marcador de marco** — professor pode marcar um registro específico como marco ("primeira vez que tocaram música completa") — aparece destacado na timeline
+
+#### Integração com outros módulos
+24. **Tela Hoje — insights automáticos** — na tela "Hoje", mostrar alertas sobre cada turma baseados no histórico pós-aula. Exemplos:
+    - "Prestar atenção em João (GR2B) — mencionado 3× esta semana"
+    - "GR3C: 3 aulas seguidas com retomar — considere revisar a abordagem"
+    - "GR1A: aproveitamento em queda nas últimas 2 semanas"
+    - Mesma engine de insights do Histórico (regras locais, sem API)
+    - Exibir como cards discretos ou badges no card de cada turma na tela Hoje
+25. **Encaminhamento → próxima aula automático** — o campo de encaminhamentos do pós-aula popula automaticamente um aviso no topo do próximo plano daquela turma ("Lembrete do pós-aula anterior: trabalhar postura")
+26. **Badge de "último registro"** no card de turma — mostrar quantos dias atrás foi o último pós-aula, direto na lista de turmas do módulo Hoje ou Planos
+27. **Aluno em atenção → AlunoDestaque** — se o mesmo aluno for mencionado em `alunoAtencao` 3+ vezes, sugerir criação de um AlunoDestaque para ele com as citações como anotações iniciais
+
+### Ideias de UX / nomenclatura (outros módulos)
 - Renomear módulo "Biblioteca" → **"Meu Repertório"**
 - Renomear "Repertório" na sidebar → **"Músicas"**
 - Ver arquivo `IDEIAS-FUTURAS.md` para lista completa

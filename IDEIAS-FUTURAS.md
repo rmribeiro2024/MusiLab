@@ -6,6 +6,14 @@
 
 ---
 
+## Módulo Hoje — Insights automáticos por turma
+- Mostrar na tela "Hoje" lembretes/insights importantes sobre cada turma
+- Exemplo: "Prestar atenção no aluno X" · "GR2B pedindo retomada 3 aulas seguidas"
+- Baseado no histórico pós-aula: alunoAtencao · statusAula · aproveitamentoAula
+- Mesma engine de insights do Histórico (regras locais, sem API)
+
+---
+
 ## Features pedagógicas (Nova Aula) — adiadas de 2026-03-17
 1. "Sugerir objetivo" via Gemini — passa atividades, gera objetivo automaticamente
 2. Alerta de tempo — roteiro > duração da aula, IA sugere cortes
