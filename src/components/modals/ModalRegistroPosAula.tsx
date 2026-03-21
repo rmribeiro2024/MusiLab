@@ -492,6 +492,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
     const [evidenciaAberta, setEvidenciaAberta] = React.useState(false)
     const [aprovAberto, setAprovAberto] = React.useState(false)
     const [checkFlash, setCheckFlash] = React.useState(false)
+    const [revisaoFlash, setRevisaoFlash] = React.useState(false)
     const [uploadandoEvidencia, setUploadandoEvidencia] = React.useState(false)
     const [uploadProgresso, setUploadProgresso] = React.useState(0)
     const [uploadErro, setUploadErro] = React.useState('')
@@ -1117,12 +1118,13 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                         const sel = statusVal === op.value
                                                         const isConcluida = op.value === 'concluida'
                                                         const isRevisao = op.value === 'revisao'
-                                                        const selColor = isConcluida ? '#6aab8a' : isRevisao ? '#a08a50' : c.textMain
+                                                        const selColor = isConcluida ? '#6aab8a' : isRevisao ? '#c4844a' : c.textMain
                                                         return (
                                                             <button key={op.value} type="button"
                                                                 onClick={() => {
                                                                     setNovoRegistro({ ...novoRegistro, statusAula: sel ? undefined : op.value } as any)
                                                                     if (isConcluida && !sel) { setCheckFlash(true); setTimeout(() => setCheckFlash(false), 900) }
+                                                                    if (isRevisao && !sel) { setRevisaoFlash(true); setTimeout(() => setRevisaoFlash(false), 900) }
                                                                 }}
                                                                 style={{
                                                                     display: 'flex', alignItems: 'center', gap: 10,
@@ -1142,7 +1144,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                 <span style={{ fontSize: 11, width: 16, textAlign: 'center' as const, flexShrink: 0, color: sel ? selColor : c.textMuted }}>
                                                                     {isConcluida && checkFlash
                                                                         ? <span className="check-pop" style={{ display: 'inline-block' }}>✓</span>
-                                                                        : op.emoji}
+                                                                        : isRevisao && revisaoFlash
+                                                                            ? <span className="spin-pop" style={{ display: 'inline-block' }}>↻</span>
+                                                                            : op.emoji}
                                                                 </span>
                                                                 {op.label}
                                                             </button>
