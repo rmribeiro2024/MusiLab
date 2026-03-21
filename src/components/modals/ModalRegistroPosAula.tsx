@@ -1118,7 +1118,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                         const sel = statusVal === op.value
                                                         const isConcluida = op.value === 'concluida'
                                                         const isRevisao = op.value === 'revisao'
-                                                        const revisaoColor = isDark ? '#a8a458' : '#c4bc40'
+                                                        const revisaoColor = isDark ? '#a8a458' : '#8a8418'
                                                         const selColor = isConcluida ? '#6aab8a' : isRevisao ? revisaoColor : c.textMain
                                                         return (
                                                             <button key={op.value} type="button"
