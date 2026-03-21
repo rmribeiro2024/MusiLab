@@ -114,7 +114,6 @@ export default function TelaPosAula() {
             <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] px-4 py-3 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 {/* Esquerda: dot + data + status */}
                 <div className="flex items-center gap-3 min-w-0">
-                    {ehHoje && <span className="w-2 h-2 rounded-full bg-[#5B5FEA] shrink-0" />}
                     {/* Clicável para abrir datepicker nativo */}
                     <button
                         onClick={() => dateInputRef.current?.showPicker?.() || dateInputRef.current?.click()}
