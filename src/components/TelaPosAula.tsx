@@ -191,8 +191,8 @@ export default function TelaPosAula() {
                         <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                             {turmaAtual ? (
                                 <>
-                                    {/* Ver plano */}
-                                    {turmaAtual.plano && (
+                                    {/* Ver plano — só quando formulário está aberto */}
+                                    {turmaAtual.plano && !listaAberta && (
                                         <button
                                             onClick={e => { e.stopPropagation(); setVerPlano(v => !v) }}
                                             className={`text-[11px] font-medium px-2 py-1 rounded-[6px] border transition cursor-pointer mr-1
