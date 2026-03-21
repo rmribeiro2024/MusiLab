@@ -100,8 +100,6 @@ export default function TelaPosAula() {
         setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
         setRegistroEditando(null)
         setVerRegistros(false)
-        // NÃO chamar setModalRegistro(true) — o useEffect de pré-seleção no
-        // ModalRegistroPosAula inlineMode depende de planoParaRegistro (já setado acima)
         setTurmaIdx(idx)
         setListaAberta(false)
     }
