@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, Suspense } from 'react'
+import React, { useState, useRef, Suspense } from 'react'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
@@ -102,25 +102,6 @@ export default function TelaPosAula() {
         setTurmaIdx(idx)
         setListaAberta(false)   // fecha a lista ao selecionar
     }
-
-    // Pré-seleciona a primeira turma pendente ao montar (mantém lista aberta)
-    const autoInitRef = useRef<string | null>(null)
-    useEffect(() => {
-        if (autoInitRef.current === dataSel || turmasEnriq.length === 0) return
-        autoInitRef.current = dataSel
-        const firstPending = turmasEnriq.findIndex(t => !t.registrada)
-        const firstIdx = firstPending >= 0 ? firstPending : 0
-        const t = turmasEnriq[firstIdx]
-        const plano = t.plano && typeof t.plano === 'object'
-            ? t.plano as any
-            : { id: `stub-${t.aula.id}`, titulo: '', escola: t.escNome, segmento: t.segNome, turma: t.turNome }
-        setPlanoParaRegistro(plano)
-        setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
-        setRegistroEditando(null)
-        setVerRegistros(false)
-        setTurmaIdx(firstIdx)
-        // NÃO fecha a lista — usuário escolhe a turma
-    }, [turmasEnriq.length, dataSel]) // eslint-disable-line
 
     // Após salvar: avança para próxima pendente ou volta à lista
     const handleDepoisSalvar = () => {
