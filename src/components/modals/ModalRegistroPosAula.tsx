@@ -798,7 +798,17 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                     {/* Turma + Data — linha compacta (sempre visível quando turma selecionada) */}
                                     {(regTurmaSel || modoCompacto) ? (
                                         <div ref={seletorRef} style={{ position: 'relative' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                                            {inlineMode && (
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+                                                    {planoParaRegistro && (
+                                                        <button type="button" onClick={() => setPlanejadoAberto(v => !v)}
+                                                            style={{ fontSize: 12, fontWeight: 500, color: planejadoAberto ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', lineHeight: 1 }}>
+                                                            Ver plano
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {!inlineMode && <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
                                                 {(() => {
                                                     const ano = anosLetivos.find(a => a.id == regAnoSel)
                                                     const esc = ano?.escolas.find(e => e.id == regEscolaSel)
@@ -870,7 +880,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                         onMouseOut={e  => (e.currentTarget.style.color = '#94a3b8')}
                                                         title="Cancelar edição">✕</button>
                                                 )}
-                                            </div>
+                                            </div>}
 
                                             {/* Faixa de dias da semana — abre ao clicar na data */}
                                             {editandoData && (() => {
