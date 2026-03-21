@@ -520,7 +520,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
 
     // Inicializa GIS e tenta auth silenciosa — se já autorizou antes, conecta sem mostrar nada
     React.useEffect(() => {
-        if (!isGoogleDriveConfigured() || isMobileDevice()) return
+        if (inlineMode || !isGoogleDriveConfigured() || isMobileDevice()) return
         initDriveAuth(
             import.meta.env.VITE_GOOGLE_CLIENT_ID,
             () => setDriveConectado(true),   // auth silenciosa ok → já conectado
@@ -578,7 +578,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
 
     // ── Pré-seleção de turma ao abrir ──
     React.useEffect(() => {
-        if (!modalRegistro || !planoParaRegistro || anosLetivos.length === 0) return
+        if ((!inlineMode && !modalRegistro) || !planoParaRegistro || anosLetivos.length === 0) return
         const escolaNomePlano   = planoParaRegistro.escola || ''
         const faixasPlano: string[] = planoParaRegistro.faixaEtaria || []
         const segmentoNomePlano = planoParaRegistro.segmento || faixasPlano[0] || ''
@@ -621,7 +621,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
         const maisProximo = anosLetivos.filter((a: any) => a.status !== 'arquivado').sort((a: any, b: any) => Math.abs((a.ano as number) - anoAtual) - Math.abs((b.ano as number) - anoAtual))[0]
         const selecionado = ativo || maisProximo
         if (selecionado) { setRegAnoSel(String(selecionado.id)); setFiltroRegAno(String(selecionado.id)) }
-    }, [modalRegistro]) // eslint-disable-line
+    }, [modalRegistro, inlineMode ? planoParaRegistro : null]) // eslint-disable-line
 
     // ── ARRASTAR pelo header ──
     const dragRef = React.useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null)

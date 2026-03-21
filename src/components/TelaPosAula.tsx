@@ -90,8 +90,11 @@ export default function TelaPosAula({ onAbrirRegistro }: { onAbrirRegistro?: () 
         setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
         setRegistroEditando(null)
         setVerRegistros(false)
-        setModalRegistro(true)  // sempre — ativa useEffect de pré-seleção de turma
-        if (onAbrirRegistro) onAbrirRegistro()
+        if (onAbrirRegistro) {
+            onAbrirRegistro()
+        } else {
+            setModalRegistro(true)
+        }
     }
 
     // Botão de navegação reutilizável
