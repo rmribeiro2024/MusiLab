@@ -196,6 +196,10 @@ export default function TelaPosAula({ onAbrirRegistro }: { onAbrirRegistro?: () 
                                         <span className="text-[12px] font-semibold shrink-0 tabular-nums text-slate-700 dark:text-[#E5E7EB]">
                                             {t.aula.horario}
                                         </span>
+                                        {t.escNome && (<>
+                                            <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
+                                            <span className="text-[12px] text-slate-400 dark:text-[#6b7280]">{t.escNome}</span>
+                                        </>)}
                                         <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
                                         <span className="text-[12px] font-medium text-slate-600 dark:text-[#9CA3AF]">{t.segNome}</span>
                                         <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
