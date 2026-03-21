@@ -70,7 +70,8 @@ export default function TelaPosAula({ onAbrirRegistro }: { onAbrirRegistro?: () 
             )
             const match = aula.horario?.match(/^(\d{1,2}):(\d{2})/)
             const minInicio = match ? parseInt(match[1]) * 60 + parseInt(match[2]) : null
-            const passou = ehHoje && minInicio !== null ? minAgora > minInicio + 50 : !ehHoje
+            const ehPassado = dataSel < hojeStr
+            const passou = ehHoje && minInicio !== null ? minAgora > minInicio + 50 : ehPassado
             const dimmed = passou
 
             return { aula, escNome: esc?.nome || '', segNome: seg?.nome || '?', turNome: tur?.nome || '?', plano, registrada, dimmed }
