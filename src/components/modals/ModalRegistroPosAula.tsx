@@ -2026,7 +2026,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                             <div className="px-4 py-3 border-t border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] flex justify-end shrink-0">
                                 <button
                                     onClick={() => { salvarRegistro(); if (onVoltar) onVoltar() }}
-                                    className="px-4 py-2 rounded-lg bg-[#5B5FEA] text-white text-[13px] font-semibold hover:bg-[#4f52d4] transition">
+                                    className="px-4 py-2 rounded-lg bg-[#334155] dark:bg-[#475569] text-white text-[13px] font-semibold hover:bg-[#475569] dark:hover:bg-[#64748b] transition">
                                     ✓ {saveLabel || 'Salvar registro'}
                                 </button>
                             </div>

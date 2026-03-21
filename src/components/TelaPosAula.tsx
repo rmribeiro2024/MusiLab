@@ -174,7 +174,7 @@ export default function TelaPosAula() {
                                         className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[13px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 transition hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer">‹</button>
                                     <span className="text-[11px] font-semibold text-slate-400 dark:text-[#6b7280] min-w-[28px] text-center tabular-nums">{turmaIdx + 1}/{turmasEnriq.length}</span>
                                     <button onClick={e => navTurma(1, e)} disabled={turmaIdx === turmasEnriq.length - 1}
-                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] bg-[#5B5FEA] border-[#5B5FEA] flex items-center justify-center text-[13px] text-white disabled:opacity-30 transition hover:bg-[#4f46e5] cursor-pointer">›</button>
+                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#334155] dark:border-[#475569] bg-[#334155] dark:bg-[#475569] flex items-center justify-center text-[13px] text-white disabled:opacity-30 transition hover:bg-[#475569] dark:hover:bg-[#64748b] cursor-pointer">›</button>
                                 </>
                             ) : (
                                 /* Setas de dia */
