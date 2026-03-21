@@ -733,6 +733,12 @@ export default function BancoPlanos({ session }) {
                     ? (dataDia ?? new Date().toISOString().slice(0, 10))
                     : undefined
 
+            // Badge pós-aula — turmas pendentes de registro hoje
+            const _hojeStr = new Date().toISOString().slice(0, 10)
+            const _turmasHoje = obterTurmasDoDia(_hojeStr)
+            const _todosRegs = planos.flatMap(p => (p.registrosPosAula || []).map(r => ({ data: r.data, turma: r.turma })))
+            const pendentesHoje = _turmasHoje.filter(a => !_todosRegs.some(r => r.data === _hojeStr && String(r.turma) === String(a.turmaId))).length
+
             // Mapa viewMode → grupo para detectar grupo ativo
             const VIEWMODE_TO_GROUP: Record<string, string> = {
                 resumoDia: 'agenda', agendaSemanal: 'agenda', calendario: 'agenda',
@@ -2556,6 +2562,14 @@ export default function BancoPlanos({ session }) {
                                             }}
                                         >
                                             {group.label}
+                                            {group.id === 'posAula' && pendentesHoje > 0 && (
+                                                <span style={{
+                                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                    marginLeft: '5px', minWidth: '16px', height: '16px', padding: '0 4px',
+                                                    borderRadius: '8px', fontSize: '10px', fontWeight: 700, lineHeight: 1,
+                                                    background: '#f59e0b', color: '#fff',
+                                                }}>{pendentesHoje}</span>
+                                            )}
                                         </button>
                                     )
                                 })}
@@ -2920,7 +2934,12 @@ export default function BancoPlanos({ session }) {
                                     onClick={() => { const first = group.items[0]; first.action() }}
                                     className={`flex flex-col items-center gap-0.5 px-1 py-2 transition active:scale-95 min-w-0 flex-1
                                         ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}>
-                                    <span className="text-lg leading-none">{group.icon}</span>
+                                    <span className="relative inline-flex">
+                                        <span className="text-lg leading-none">{group.icon}</span>
+                                        {group.id === 'posAula' && pendentesHoje > 0 && (
+                                            <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-[3px] rounded-full text-[9px] font-bold leading-[14px] text-center bg-amber-400 text-white">{pendentesHoje}</span>
+                                        )}
+                                    </span>
                                     <span className="text-[10px] font-medium">{group.short}</span>
                                 </button>
                             )
