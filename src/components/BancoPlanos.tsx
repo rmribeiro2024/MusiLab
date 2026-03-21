@@ -480,20 +480,18 @@ export default function BancoPlanos({ session }) {
                 return () => mq.removeEventListener('change', handler)
             }, [themeMode]);
 
-            // Tela inicial inteligente — abre Pós-aula se há aula em andamento ou recém-terminada (até 1h após)
+            // Tela inicial inteligente — abre Pós-aula a partir do início da primeira aula do dia até meia-noite
             useEffect(() => {
                 const hojeStr = new Date().toISOString().slice(0, 10)
                 const aulas = obterTurmasDoDia(hojeStr)
                 if (aulas.length === 0) return
-                const agora = new Date()
-                const minAgora = agora.getHours() * 60 + agora.getMinutes()
-                const emHorario = aulas.some(a => {
-                    const match = a.horario?.match(/^(\d{1,2}):(\d{2})/)
-                    if (!match) return false
-                    const inicio = parseInt(match[1]) * 60 + parseInt(match[2])
-                    return minAgora >= inicio && minAgora <= inicio + 110 // início até 1h50 depois (aula ~50min + 1h margem)
-                })
-                if (emHorario) setViewMode('posAula')
+                const minAgora = new Date().getHours() * 60 + new Date().getMinutes()
+                const inicios = aulas
+                    .map(a => { const m = a.horario?.match(/^(\d{1,2}):(\d{2})/); return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : null })
+                    .filter((v): v is number => v !== null)
+                if (inicios.length === 0) return
+                const primeiraAula = Math.min(...inicios)
+                if (minAgora >= primeiraAula) setViewMode('posAula')
             }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
             // Detectar link compartilhável na URL (#share=...)
