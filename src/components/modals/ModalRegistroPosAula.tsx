@@ -518,16 +518,16 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
         })
     }
 
-    // Inicializa GIS e tenta auth silenciosa — se já autorizou antes, conecta sem mostrar nada
+    // Inicializa GIS e tenta auth silenciosa — só quando o modal está realmente aberto
     React.useEffect(() => {
-        if (inlineMode || !isGoogleDriveConfigured() || isMobileDevice()) return
+        if (inlineMode || !modalRegistro || !isGoogleDriveConfigured() || isMobileDevice()) return
         initDriveAuth(
             import.meta.env.VITE_GOOGLE_CLIENT_ID,
             () => setDriveConectado(true),   // auth silenciosa ok → já conectado
             (msg) => setUploadErro(msg),      // erro real → mostra mensagem
             () => setDriveConectado(false)    // primeira vez → mostra botão "Conectar"
         ).catch(() => {})
-    }, []) // eslint-disable-line
+    }, [modalRegistro]) // eslint-disable-line
 
     // Reset upload states when turma changes (evidência is per-turma)
     React.useEffect(() => {
@@ -808,32 +808,42 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
                                                     const dataFmt = d && m && y ? `${d}/${m}/${y}` : novoRegistro.dataAula
                                                     return (
                                                         <span style={{ fontSize: 13, flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 0 }}>
-                                                            {/* Turma — abre só turmas */}
-                                                            <button type="button" onClick={() => { setSeletorTurma(v => !v); setSeletorEscola(false) }}
-                                                                style={{ fontWeight: 700, fontSize: 13, color: seletorTurma ? '#6366f1' : '#1e293b', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
-                                                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#6366f1' }}
-                                                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = seletorTurma ? '#6366f1' : '#1e293b' }}>
-                                                                {tur?.nome || 'Turma'}
-                                                                <span style={{ fontSize: 9, color: '#94a3b8', lineHeight: 1 }}>▾</span>
-                                                            </button>
-                                                            {esc && <>
-                                                                <span style={{ fontSize: 12, color: '#cbd5e1', margin: '0 4px' }}>·</span>
-                                                                {/* Escola — abre só escolas */}
-                                                                <button type="button" onClick={() => { setSeletorEscola(v => !v); setSeletorTurma(false) }}
-                                                                    style={{ fontWeight: 400, fontSize: 12, color: seletorEscola ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                                                                            {/* Turma */}
+                                                            {inlineMode ? (
+                                                                <span style={{ fontWeight: 700, fontSize: 13, color: '#1e293b', lineHeight: 1 }}>{tur?.nome || 'Turma'}</span>
+                                                            ) : (
+                                                                <button type="button" onClick={() => { setSeletorTurma(v => !v); setSeletorEscola(false) }}
+                                                                    style={{ fontWeight: 700, fontSize: 13, color: seletorTurma ? '#6366f1' : '#1e293b', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
                                                                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#6366f1' }}
-                                                                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = seletorEscola ? '#6366f1' : '#94a3b8' }}>
-                                                                    {esc.nome}
+                                                                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = seletorTurma ? '#6366f1' : '#1e293b' }}>
+                                                                    {tur?.nome || 'Turma'}
                                                                     <span style={{ fontSize: 9, color: '#94a3b8', lineHeight: 1 }}>▾</span>
                                                                 </button>
+                                                            )}
+                                                            {esc && <>
+                                                                <span style={{ fontSize: 12, color: '#cbd5e1', margin: '0 4px' }}>·</span>
+                                                                {/* Escola */}
+                                                                {inlineMode ? (
+                                                                    <span style={{ fontWeight: 400, fontSize: 12, color: '#94a3b8', lineHeight: 1 }}>{esc.nome}</span>
+                                                                ) : (
+                                                                    <button type="button" onClick={() => { setSeletorEscola(v => !v); setSeletorTurma(false) }}
+                                                                        style={{ fontWeight: 400, fontSize: 12, color: seletorEscola ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                                                                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#6366f1' }}
+                                                                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = seletorEscola ? '#6366f1' : '#94a3b8' }}>
+                                                                        {esc.nome}
+                                                                        <span style={{ fontSize: 9, color: '#94a3b8', lineHeight: 1 }}>▾</span>
+                                                                    </button>
+                                                                )}
                                                             </>}
                                                             <span style={{ fontSize: 12, color: '#cbd5e1', margin: '0 4px' }}>·</span>
-                                                            {/* Data — clicável, abre faixa de dias */}
+                                                            {/* Data */}
                                                             {(() => {
                                                                 const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
                                                                 const d = novoRegistro.dataAula ? new Date(novoRegistro.dataAula + 'T12:00') : null
                                                                 const label = d ? `${dias[d.getDay()]}, ${dataFmt}` : dataFmt
-                                                                return (
+                                                                return inlineMode ? (
+                                                                    <span style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1 }}>{label}</span>
+                                                                ) : (
                                                                     <button type="button" onClick={() => setEditandoData(v => !v)}
                                                                         style={{ fontSize: 12, color: editandoData ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
                                                                         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#6366f1' }}
@@ -993,8 +1003,14 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
                                             {!regAnoSel && <p className="text-xs text-slate-400">Cadastre anos letivos, escolas e turmas em <strong>🏫 Turmas</strong>.</p>}
                                             <div className="flex items-center gap-2 pt-1" style={{ borderTop: '1px solid #f1f5f9', marginTop: 4 }}>
                                                 <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', flex: 1 }}>Data da aula</span>
-                                                <input type="date" value={novoRegistro.dataAula} onChange={e => setNovoRegistro({ ...novoRegistro, dataAula: e.target.value })}
-                                                    className="bg-transparent outline-none border-none text-right" style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }} />
+                                                {inlineMode ? (
+                                                    <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>
+                                                        {novoRegistro.dataAula ? new Date(novoRegistro.dataAula + 'T12:00').toLocaleDateString('pt-BR') : '—'}
+                                                    </span>
+                                                ) : (
+                                                    <input type="date" value={novoRegistro.dataAula} onChange={e => setNovoRegistro({ ...novoRegistro, dataAula: e.target.value })}
+                                                        className="bg-transparent outline-none border-none text-right" style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }} />
+                                                )}
                                             </div>
                                         </div>
                                     )}
