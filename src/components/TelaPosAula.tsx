@@ -24,6 +24,11 @@ export default function TelaPosAula() {
 
     const [dataSel, setDataSel] = useState(hojeStr)
 
+    // Minutos desde meia-noite — para calcular se aula já passou
+    const agora = new Date()
+    const minAgora = agora.getHours() * 60 + agora.getMinutes()
+    const ehHoje = dataSel === hojeStr
+
     // Todos os registros de todos os planos
     const todosRegistros = planos.flatMap(p =>
         (p.registrosPosAula || []).map(r => ({ ...r, planoTitulo: p.titulo, planoId: p.id }))
@@ -47,7 +52,13 @@ export default function TelaPosAula() {
             const registrada = todosRegistros.some(
                 r => r.data === dataSel && String(r.turma) === String(aula.turmaId)
             )
-            return { aula, escNome: esc?.nome || '', segNome: seg?.nome || '?', turNome: tur?.nome || '?', plano, registrada }
+            // Aula já passou: só relevante quando é hoje e horário já passou
+            const match = aula.horario?.match(/^(\d{1,2}):(\d{2})/)
+            const minInicio = match ? parseInt(match[1]) * 60 + parseInt(match[2]) : null
+            const passou = ehHoje && minInicio !== null ? minAgora > minInicio + 50 : !ehHoje
+            const dimmed = passou && !registrada
+
+            return { aula, escNome: esc?.nome || '', segNome: seg?.nome || '?', turNome: tur?.nome || '?', plano, registrada, dimmed }
         })
 
     const pendentes = turmasEnriq.filter(t => !t.registrada).length
@@ -90,20 +101,18 @@ export default function TelaPosAula() {
         return tur?.nome || '?'
     }
 
-    const ehHoje = dataSel === hojeStr
-
     return (
         <div className="max-w-2xl mx-auto space-y-4 pb-24">
 
             {/* ── CABEÇALHO ── */}
             <div className="flex items-end justify-between">
                 <div>
-                    <h1 className="text-lg font-bold text-slate-800 dark:text-slate-100">Pós-aula</h1>
-                    <p className="text-xs text-slate-400 mt-0.5">Registre o que aconteceu em cada aula</p>
+                    <h1 className="text-[17px] font-bold tracking-tight text-slate-800 dark:text-[#E5E7EB]">Pós-aula</h1>
+                    <p className="text-[12.5px] text-slate-500 dark:text-[#9CA3AF] mt-0.5">Registre o que aconteceu em cada aula</p>
                 </div>
                 {pendentes > 0 && ehHoje && (
-                    <span className="text-[11px] bg-amber-100 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full font-bold">
-                        {pendentes} pendente{pendentes > 1 ? 's' : ''} hoje
+                    <span className="text-[11px] bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full font-semibold">
+                        {pendentes} pendente{pendentes > 1 ? 's' : ''}
                     </span>
                 )}
             </div>
@@ -112,79 +121,94 @@ export default function TelaPosAula() {
             <div className="flex items-center gap-2">
                 <button
                     onClick={() => setDataSel(hojeStr)}
-                    className={`shrink-0 font-bold text-sm px-4 py-2 rounded-xl transition ${
-                        ehHoje
-                            ? 'bg-indigo-500 text-white shadow-sm'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200'
-                    }`}>
+                    style={{
+                        padding: '6px 14px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        border: ehHoje ? 'none' : '1px solid #E6EAF0',
+                        fontFamily: 'inherit',
+                        cursor: 'pointer',
+                        transition: 'all 120ms ease',
+                        background: ehHoje ? '#5B5FEA' : 'var(--v2-card)',
+                        color: ehHoje ? '#fff' : '#64748b',
+                        boxShadow: ehHoje ? '0 1px 4px rgba(91,95,234,0.3)' : 'none',
+                    }}>
                     Hoje
                 </button>
                 <input
                     type="date"
                     value={dataSel}
                     onChange={e => setDataSel(e.target.value)}
-                    className="flex-1 border-2 border-[#E6EAF0] dark:border-[#374151] rounded-xl px-3 py-2 text-sm font-medium text-slate-700 dark:text-[#E5E7EB] bg-white dark:bg-[#111827] outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8]"
+                    className="flex-1 border border-[#E6EAF0] dark:border-[#374151] rounded-[8px] px-3 py-[7px] text-[13px] font-medium text-slate-700 dark:text-[#E5E7EB] v2-card outline-none focus:border-[#5B5FEA] dark:focus:border-[#818cf8] transition"
                 />
             </div>
 
             {/* ── TURMAS DO DIA ── */}
-            <div className="v2-card rounded-2xl shadow-sm overflow-hidden border border-[#E6EAF0] dark:border-[#374151]">
+            <div className="v2-card rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] overflow-hidden border border-[#E6EAF0] dark:border-[#374151]">
                 {/* Header */}
-                <div className="px-4 py-3 bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-100 dark:border-indigo-800/30 flex items-center justify-between">
-                    <span className="text-xs font-bold text-indigo-800 dark:text-indigo-300 uppercase tracking-wide">
-                        {ehHoje ? '📅 Turmas de hoje' : `📅 ${labelData(dataSel)}`}
+                <div className="px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151] flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-slate-400 dark:text-[#6b7280]">
+                        {ehHoje ? 'Turmas de hoje' : labelData(dataSel)}
                     </span>
-                    <div className="flex gap-1.5">
-                        {concluidas > 0 && (
-                            <span className="text-[11px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
-                                {concluidas} ✅
-                            </span>
-                        )}
-                        {pendentes > 0 && (
-                            <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-                                {pendentes} pendente{pendentes > 1 ? 's' : ''}
-                            </span>
-                        )}
-                    </div>
+                    {turmasEnriq.length > 0 && (
+                        <span className="text-[11px] text-slate-400 dark:text-[#6b7280]">
+                            {concluidas}/{turmasEnriq.length} registradas
+                        </span>
+                    )}
                 </div>
 
                 {/* Lista */}
                 {turmasEnriq.length === 0 ? (
                     <div className="px-4 py-10 text-center space-y-1">
-                        <p className="text-sm text-gray-400">Nenhuma aula na grade para este dia.</p>
-                        <p className="text-xs text-gray-300">Configure a grade em Configurações → Grade Semanal.</p>
+                        <p className="text-[13px] text-slate-400 dark:text-[#6b7280]">Nenhuma aula na grade para este dia.</p>
+                        <p className="text-[12px] text-slate-300 dark:text-[#4B5563]">Configure a grade em Configurações → Grade Semanal.</p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                    <div className="divide-y divide-[#F1F4F8] dark:divide-[#374151]/60">
                         {turmasEnriq.map(t => (
-                            <div key={t.aula.id} className="px-4 py-3 flex items-center gap-3">
+                            <div
+                                key={t.aula.id}
+                                className="px-4 py-3 flex items-center gap-3 transition-opacity"
+                                style={{ opacity: t.dimmed ? 0.4 : 1 }}>
                                 {/* Status dot */}
-                                <span className={`shrink-0 w-2.5 h-2.5 rounded-full ${t.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                                <span className={`shrink-0 w-2 h-2 rounded-full ${t.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
 
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs shrink-0">
+                                        <span className="text-[12px] font-semibold text-slate-700 dark:text-[#E5E7EB] shrink-0 tabular-nums">
                                             {t.aula.horario}
                                         </span>
-                                        <span className="text-gray-300 text-xs">•</span>
-                                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t.segNome}</span>
-                                        <span className="text-gray-300 text-xs">•</span>
-                                        <span className="text-xs text-slate-500 dark:text-slate-400">{t.turNome}</span>
+                                        <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
+                                        <span className="text-[12px] font-medium text-slate-600 dark:text-[#9CA3AF]">{t.segNome}</span>
+                                        <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
+                                        <span className="text-[12px] text-slate-400 dark:text-[#6b7280]">{t.turNome}</span>
                                     </div>
                                     {t.plano && typeof t.plano === 'object' && (
-                                        <p className="text-[11px] text-gray-400 mt-0.5 truncate">📄 {(t.plano as any).titulo}</p>
+                                        <p className="text-[11px] text-slate-400 dark:text-[#6b7280] mt-0.5 truncate">
+                                            {(t.plano as any).titulo}
+                                        </p>
                                     )}
                                 </div>
 
                                 {/* Botão de ação */}
                                 <button
                                     onClick={() => abrirRegistro(t)}
-                                    className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition ${
-                                        t.registrada
-                                            ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                            : 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-sm'
-                                    }`}>
+                                    style={{
+                                        padding: '5px 12px',
+                                        borderRadius: '7px',
+                                        fontSize: '12px',
+                                        fontWeight: 600,
+                                        fontFamily: 'inherit',
+                                        cursor: 'pointer',
+                                        transition: 'all 120ms ease',
+                                        flexShrink: 0,
+                                        ...(t.registrada
+                                            ? { background: 'transparent', border: '1px solid #E6EAF0', color: '#10b981' }
+                                            : { background: '#5B5FEA', border: '1px solid transparent', color: '#fff', boxShadow: '0 1px 3px rgba(91,95,234,0.25)' }
+                                        )
+                                    }}>
                                     {t.registrada ? '✓ Ver' : 'Registrar'}
                                 </button>
                             </div>
@@ -195,13 +219,13 @@ export default function TelaPosAula() {
 
             {/* ── HISTÓRICO RECENTE ── */}
             {historicoRecente.length > 0 && (
-                <div className="v2-card rounded-2xl shadow-sm overflow-hidden border border-[#E6EAF0] dark:border-[#374151]">
-                    <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700/50">
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                <div className="v2-card rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] overflow-hidden border border-[#E6EAF0] dark:border-[#374151]">
+                    <div className="px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151]">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-slate-400 dark:text-[#6b7280]">
                             Registros recentes
                         </span>
                     </div>
-                    <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                    <div className="divide-y divide-[#F1F4F8] dark:divide-[#374151]/60">
                         {historicoRecente.map(ds => {
                             const regs = todosRegistros.filter(r => r.data === ds)
                             return (
@@ -209,13 +233,13 @@ export default function TelaPosAula() {
                                     key={ds}
                                     onClick={() => setDataSel(ds)}
                                     className="px-4 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
-                                    <span className="text-xs font-medium text-slate-500 w-24 shrink-0">
+                                    <span className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF] w-24 shrink-0">
                                         {labelData(ds)}
                                     </span>
-                                    <span className="text-[11px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium shrink-0">
+                                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium shrink-0">
                                         {regs.length} reg.
                                     </span>
-                                    <span className="text-xs text-gray-400 truncate">
+                                    <span className="text-[11px] text-slate-400 dark:text-[#6b7280] truncate">
                                         {regs.map(r => nomeTurma(r)).join(', ')}
                                     </span>
                                 </div>
