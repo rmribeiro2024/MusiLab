@@ -145,15 +145,15 @@ export default function TelaPosAula({ onAbrirRegistro }: { onAbrirRegistro?: () 
 
                 {/* Direita: setas + botão Hoje */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                    <NavBtn delta={-1} />
-                    <NavBtn delta={+1} />
                     {!ehHoje && (
                         <button
                             onClick={() => setDataSel(hojeStr)}
-                            className="ml-1 px-[10px] py-[4px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] cursor-pointer transition hover:text-slate-700 dark:hover:text-[#E5E7EB]">
+                            className="mr-1 px-[10px] py-[4px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] cursor-pointer transition hover:text-slate-700 dark:hover:text-[#E5E7EB]">
                             Hoje
                         </button>
                     )}
+                    <NavBtn delta={-1} />
+                    <NavBtn delta={+1} />
                 </div>
             </div>
 
