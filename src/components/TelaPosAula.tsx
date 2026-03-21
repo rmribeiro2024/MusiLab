@@ -1,4 +1,4 @@
-import React, { useState, useRef, Suspense } from 'react'
+import React, { useState, useRef, useEffect, Suspense } from 'react'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
@@ -103,6 +103,17 @@ export default function TelaPosAula() {
         setTurmaIdx(idx)
         setListaAberta(false)
     }
+
+    // Auto-abre a primeira turma pendente ao montar (só uma vez por dia selecionado)
+    const autoOpenedRef = useRef<string | null>(null)
+    useEffect(() => {
+        if (autoOpenedRef.current === dataSel || turmasEnriq.length === 0) return
+        const firstPending = turmasEnriq.findIndex(t => !t.registrada)
+        if (firstPending >= 0) {
+            autoOpenedRef.current = dataSel
+            abrirTurma(firstPending)
+        }
+    }, [turmasEnriq.length, dataSel]) // eslint-disable-line
 
     // Após salvar: avança para próxima pendente ou volta à lista
     const handleDepoisSalvar = () => {
