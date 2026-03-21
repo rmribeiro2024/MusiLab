@@ -78,27 +78,11 @@ export default function TelaPosAula() {
         setModalRegistro(true)
     }
 
-    // Histórico: últimos 14 dias com pelo menos 1 registro
     const diasSemanaLabel = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
     const mesesLabel = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
-
-    const historicoRecente = Array.from({ length: 14 }, (_, i) => {
-        const d = new Date(hoje)
-        d.setDate(hoje.getDate() - i - 1)
-        return toStr(d)
-    }).filter(ds => todosRegistros.some(r => r.data === ds))
-
     const labelData = (ds: string) => {
         const d = new Date(ds + 'T12:00:00')
         return `${diasSemanaLabel[d.getDay()]}, ${d.getDate()} ${mesesLabel[d.getMonth()]}`
-    }
-
-    const nomeTurma = (r: any) => {
-        const ano = anosLetivos.find(a => a.id == r.anoLetivo)
-        const esc = ano?.escolas.find(e => e.id == r.escola)
-        const seg = esc?.segmentos.find(s => s.id == (r.segmento || r.serie))
-        const tur = seg?.turmas.find(t => t.id == r.turma)
-        return tur?.nome || '?'
     }
 
     return (
@@ -199,17 +183,16 @@ export default function TelaPosAula() {
                                         padding: '5px 12px',
                                         borderRadius: '7px',
                                         fontSize: '12px',
-                                        fontWeight: 600,
+                                        fontWeight: 500,
                                         fontFamily: 'inherit',
                                         cursor: 'pointer',
                                         transition: 'all 120ms ease',
                                         flexShrink: 0,
-                                        ...(t.registrada
-                                            ? { background: 'transparent', border: '1px solid #E6EAF0', color: '#10b981' }
-                                            : { background: '#5B5FEA', border: '1px solid transparent', color: '#fff', boxShadow: '0 1px 3px rgba(91,95,234,0.25)' }
-                                        )
+                                        background: 'transparent',
+                                        border: '1px solid #E6EAF0',
+                                        color: t.registrada ? '#64748b' : '#5B5FEA',
                                     }}>
-                                    {t.registrada ? '✓ Ver' : 'Registrar'}
+                                    {t.registrada ? 'Ver' : 'Registrar'}
                                 </button>
                             </div>
                         ))}
@@ -217,37 +200,6 @@ export default function TelaPosAula() {
                 )}
             </div>
 
-            {/* ── HISTÓRICO RECENTE ── */}
-            {historicoRecente.length > 0 && (
-                <div className="v2-card rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] overflow-hidden border border-[#E6EAF0] dark:border-[#374151]">
-                    <div className="px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151]">
-                        <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-slate-400 dark:text-[#6b7280]">
-                            Registros recentes
-                        </span>
-                    </div>
-                    <div className="divide-y divide-[#F1F4F8] dark:divide-[#374151]/60">
-                        {historicoRecente.map(ds => {
-                            const regs = todosRegistros.filter(r => r.data === ds)
-                            return (
-                                <div
-                                    key={ds}
-                                    onClick={() => setDataSel(ds)}
-                                    className="px-4 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
-                                    <span className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF] w-24 shrink-0">
-                                        {labelData(ds)}
-                                    </span>
-                                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium shrink-0">
-                                        {regs.length} reg.
-                                    </span>
-                                    <span className="text-[11px] text-slate-400 dark:text-[#6b7280] truncate">
-                                        {regs.map(r => nomeTurma(r)).join(', ')}
-                                    </span>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
-            )}
         </div>
     )
 }

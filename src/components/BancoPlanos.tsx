@@ -34,6 +34,7 @@ const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => (
 const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
 const AgendaSemanal          = lazy(() => import('./AgendaSemanal'))
 const TelaPosAula            = lazy(() => import('./TelaPosAula'))
+const TelaPosAulaHistorico   = lazy(() => import('./TelaPosAulaHistorico'))
 import { BancoPlanosContext } from './BancoPlanosContext'
 import { useModalContext, useEstrategiasContext, useRepertorioContext, useAtividadesContext, useSequenciasContext, useHistoricoContext, useAnoLetivoContext, useCalendarioContext, useAplicacoesContext, usePlanosContext, normalizePlano } from '../contexts'
 import ErrorBoundary from './ErrorBoundary'
@@ -756,7 +757,7 @@ export default function BancoPlanos({ session }) {
             // Mapa viewMode → grupo para detectar grupo ativo
             const VIEWMODE_TO_GROUP: Record<string, string> = {
                 resumoDia: 'agenda', agendaSemanal: 'agenda', calendario: 'agenda',
-                posAula: 'posAula',
+                posAula: 'posAula', posAulaHistorico: 'posAula',
                 lista: 'planejamento', nova: 'planejamento', sequencias: 'planejamento', visaoSemana: 'planejamento', porTurmas: 'planejamento',
                 turmas: 'turmas', historicoMusical: 'turmas',
                 repertorio: 'biblioteca', atividades: 'biblioteca', estrategias: 'biblioteca',
@@ -772,7 +773,8 @@ export default function BancoPlanos({ session }) {
                 {
                     id: 'posAula', label: 'Pós-aula', short: 'Pós-aula', icon: '📝', defaultMode: 'posAula',
                     items: [
-                        { label: 'Pós-aula', short: 'Pós-aula', icon: '📝', mode: 'posAula', action: () => setViewMode('posAula') },
+                        { label: 'Registro',  short: 'Reg.',  icon: '📝', mode: 'posAula',          action: () => setViewMode('posAula') },
+                        { label: 'Histórico', short: 'Hist.', icon: '🕓', mode: 'posAulaHistorico', action: () => setViewMode('posAulaHistorico') },
                     ]
                 },
                 {
@@ -2679,7 +2681,8 @@ export default function BancoPlanos({ session }) {
                             )}
 
                             <div className="w-full px-4 sm:px-[30px] py-6 sm:py-[26px] pb-20 sm:pb-[30px]">
-                                {viewMode==='posAula'   && <ErrorBoundary modulo="Pós-aula"><Suspense fallback={<CarregandoModulo />}><TelaPosAula /></Suspense></ErrorBoundary>}
+                                {viewMode==='posAula'          && <ErrorBoundary modulo="Pós-aula"><Suspense fallback={<CarregandoModulo />}><TelaPosAula /></Suspense></ErrorBoundary>}
+                                {viewMode==='posAulaHistorico' && <ErrorBoundary modulo="Histórico"><Suspense fallback={<CarregandoModulo />}><TelaPosAulaHistorico /></Suspense></ErrorBoundary>}
                                 {viewMode==='resumoDia' && <ErrorBoundary modulo="Resumo do Dia"><Suspense fallback={<CarregandoModulo />}><TelaResumoDia /></Suspense></ErrorBoundary>}
                                 {viewMode==='calendario' && <ErrorBoundary modulo="Calendário"><Suspense fallback={<CarregandoModulo />}><TelaCalendario /></Suspense></ErrorBoundary>}
                                 {viewMode==='agendaSemanal' && <ErrorBoundary modulo="Agenda Semanal"><Suspense fallback={<CarregandoModulo />}><AgendaSemanal /></Suspense></ErrorBoundary>}
