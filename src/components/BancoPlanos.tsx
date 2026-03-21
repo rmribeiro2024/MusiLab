@@ -480,6 +480,22 @@ export default function BancoPlanos({ session }) {
                 return () => mq.removeEventListener('change', handler)
             }, [themeMode]);
 
+            // Tela inicial inteligente — abre Pós-aula se há aula em andamento ou recém-terminada (até 1h após)
+            useEffect(() => {
+                const hojeStr = new Date().toISOString().slice(0, 10)
+                const aulas = obterTurmasDoDia(hojeStr)
+                if (aulas.length === 0) return
+                const agora = new Date()
+                const minAgora = agora.getHours() * 60 + agora.getMinutes()
+                const emHorario = aulas.some(a => {
+                    const match = a.horario?.match(/^(\d{1,2}):(\d{2})/)
+                    if (!match) return false
+                    const inicio = parseInt(match[1]) * 60 + parseInt(match[2])
+                    return minAgora >= inicio && minAgora <= inicio + 110 // início até 1h50 depois (aula ~50min + 1h margem)
+                })
+                if (emHorario) setViewMode('posAula')
+            }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
             // Detectar link compartilhável na URL (#share=...)
             useEffect(() => {
                 const hash = window.location.hash

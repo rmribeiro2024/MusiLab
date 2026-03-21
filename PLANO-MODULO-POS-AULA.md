@@ -47,8 +47,8 @@ Decisão: criar módulo dedicado "Pós-aula" com responsabilidade única — reg
 
 - [x] 4.1 Adicionar "Pós-aula" ao sidebar (primeiro item, antes de Agenda)
 - [x] 4.2 Ícone: 📝 — label: "Pós-aula" — mode: `posAula`
-- [ ] 4.3 Verificar bottom nav mobile — 1 toque para acessar
-- [ ] 4.4 Badge numérico de turmas pendentes (opcional — avaliar na hora)
+- [x] 4.3 Verificar bottom nav mobile — 1 toque para acessar
+- [x] 4.4 Badge numérico de turmas pendentes — commit `2d3733d`
 
 ---
 
@@ -69,10 +69,10 @@ Decisão: criar módulo dedicado "Pós-aula" com responsabilidade única — reg
 
 ## Etapa 7 — Build, testes e deploy
 
-- [ ] 7.1 `npx tsc --noEmit` — zero erros
-- [ ] 7.2 `npm run build` — deve passar
+- [x] 7.1 `npx tsc --noEmit` — zero erros
+- [x] 7.2 `npm run build` — deve passar
 - [ ] 7.3 Teste manual mobile: registrar turma via "Pós-aula", verificar status atualiza
-- [ ] 7.4 Commit + push → deploy automático
+- [x] 7.4 Commit + push → deploy automático
 
 ---
 
@@ -91,3 +91,5 @@ Decisão: criar módulo dedicado "Pós-aula" com responsabilidade única — reg
 | 2026-03-20 | — | Plano criado |
 | 2026-03-20 | Etapa 1 | Limpeza do "Hoje" concluída — commit `446f11d` |
 | 2026-03-20 | Etapas 2+3+4 | TelaPosAula criada + roteamento + sidebar — commit `723f9f7` |
+| 2026-03-20 | Extra | ModalRegistroRapido eliminado — registro vai direto ao formulário completo — commit `bbc0719` |
+| 2026-03-20 | Etapa 7 | Build + push concluídos |
