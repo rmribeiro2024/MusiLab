@@ -209,23 +209,18 @@ export default function TelaPosAula() {
                         </div>
                     </div>
 
-                    {/* Sub-linha de status (só quando lista aberta) */}
+                    {/* Sub-linha — instrução ou status */}
                     {listaAberta && turmasEnriq.length > 0 && (
-                        <div className="px-4 pb-2 flex items-center gap-3 text-[11px] text-slate-400 dark:text-[#6b7280]">
-                            {pendentes > 0
-                                ? <span>{pendentes} pendente{pendentes > 1 ? 's' : ''}</span>
-                                : <span className="text-emerald-500">Tudo registrado ✓</span>}
-                            {concluidas > 0 && pendentes > 0 && <span>· {concluidas} registrada{concluidas > 1 ? 's' : ''}</span>}
+                        <div className="px-4 pb-2 text-[11.5px] text-slate-400 dark:text-[#6b7280]">
+                            {turmaIdx === -1
+                                ? <span>Selecione uma turma para registrar o pós-aula</span>
+                                : pendentes > 0
+                                    ? <span>{pendentes} pendente{pendentes > 1 ? 's' : ''}{concluidas > 0 ? ` · ${concluidas} registrada${concluidas > 1 ? 's' : ''}` : ''}</span>
+                                    : <span className="text-emerald-500">Tudo registrado ✓</span>
+                            }
                         </div>
                     )}
                 </div>
-
-                {/* ══ INSTRUÇÃO — só quando nenhuma turma foi selecionada ainda ══ */}
-                {listaAberta && turmaIdx === -1 && turmasEnriq.length > 0 && (
-                    <div className="px-4 pt-3 pb-1">
-                        <p className="text-[12px] text-slate-400 dark:text-[#6b7280]">Selecione uma turma para registrar o pós-aula.</p>
-                    </div>
-                )}
 
                 {/* ══ LISTA DE TURMAS (colapsável) ══ */}
                 <div
