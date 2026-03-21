@@ -346,7 +346,7 @@ function StatusAulaSelector({ value, onChange, onDone, firstRef }: StatusAulaSel
 }
 // ──────────────────────────────────────────────────────────────────────────────
 
-export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hideHeader = false, saveLabel }: { inlineMode?: boolean; onVoltar?: () => void; hideHeader?: boolean; saveLabel?: string }) {
+export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hideHeader = false, saveLabel, verPlanoExterno }: { inlineMode?: boolean; onVoltar?: () => void; hideHeader?: boolean; saveLabel?: string; verPlanoExterno?: boolean }) {
     const {
         modalRegistro, setModalRegistro,
         planoParaRegistro, setPlanoParaRegistro,
@@ -510,6 +510,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
     }, [seletorTurma, seletorEscola])
     // Opcao A — painel "O que foi planejado" (header)
     const [planejadoAberto, setPlanejadoAberto] = React.useState(false)
+    React.useEffect(() => { if (verPlanoExterno !== undefined) setPlanejadoAberto(verPlanoExterno) }, [verPlanoExterno])
     // Painel inline no form (chip dentro do scroll)
     const [planejadoInlineAberto, setPlanejadoInlineAberto] = React.useState(false)
     function togglePlanejadoAberto() {
@@ -798,16 +799,6 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                     {/* Turma + Data — linha compacta (sempre visível quando turma selecionada) */}
                                     {(regTurmaSel || modoCompacto) ? (
                                         <div ref={seletorRef} style={{ position: 'relative' }}>
-                                            {inlineMode && (
-                                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
-                                                    {planoParaRegistro && (
-                                                        <button type="button" onClick={() => setPlanejadoAberto(v => !v)}
-                                                            style={{ fontSize: 12, fontWeight: 500, color: planejadoAberto ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', lineHeight: 1 }}>
-                                                            Ver plano
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            )}
                                             {!inlineMode && <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
                                                 {(() => {
                                                     const ano = anosLetivos.find(a => a.id == regAnoSel)

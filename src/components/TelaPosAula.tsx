@@ -27,6 +27,7 @@ export default function TelaPosAula() {
     const [dataSel, setDataSel] = useState(hojeStr)
     const [listaAberta, setListaAberta] = useState(true)
     const [turmaIdx, setTurmaIdx] = useState(-1)
+    const [verPlano, setVerPlano] = useState(false)
     const navDia = (delta: number) => {
         const d = new Date(dataSel + 'T12:00:00')
         d.setDate(d.getDate() + delta)
@@ -98,6 +99,7 @@ export default function TelaPosAula() {
         setRegistroEditando(null)
         setVerRegistros(false)
         setTurmaIdx(idx)
+        setVerPlano(false)      // fecha "ver plano" ao trocar de turma
         setListaAberta(false)   // fecha a lista ao selecionar
     }
 
@@ -146,7 +148,7 @@ export default function TelaPosAula() {
                             <span className="ml-0.5">todas</span>
                         </span>
 
-                        {/* Info da turma selecionada (ou data quando nenhuma) */}
+                        {/* Info — sempre compacto */}
                         <div className="flex-1 min-w-0 flex items-center gap-[5px] text-[12px] overflow-hidden">
                             {turmaAtual ? (
                                 <>
@@ -160,41 +162,39 @@ export default function TelaPosAula() {
                                     <span className={`w-[7px] h-[7px] rounded-full shrink-0 ml-0.5 ${turmaAtual.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
                                 </>
                             ) : (
-                                <div>
-                                    <span className="text-[13px] font-semibold text-slate-700 dark:text-[#E5E7EB]">{labelDataLonga(dataSel)}</span>
-                                    {ehHoje && <span className="ml-2 text-[11px] font-medium text-[#5B5FEA] dark:text-[#818cf8] bg-[#5B5FEA]/8 dark:bg-[#818cf8]/10 px-1.5 py-0.5 rounded">Hoje</span>}
-                                </div>
+                                /* Sem turma selecionada: só a data pequena */
+                                <span className="text-[12px] text-slate-500 dark:text-[#9CA3AF]">{labelDataCurta(dataSel)}{ehHoje ? ' · Hoje' : ''}</span>
                             )}
                         </div>
 
-                        {/* Controles direita: setas de turma ou de dia */}
+                        {/* Controles direita */}
                         <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                             {turmaAtual ? (
-                                // Navegação entre turmas
                                 <>
-                                    <button
-                                        onClick={e => navTurma(-1, e)}
-                                        disabled={turmaIdx === 0}
-                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[13px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 transition hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer">
-                                        ‹
-                                    </button>
-                                    <span className="text-[11px] font-semibold text-slate-400 dark:text-[#6b7280] min-w-[28px] text-center tabular-nums">
-                                        {turmaIdx + 1}/{turmasEnriq.length}
-                                    </span>
-                                    <button
-                                        onClick={e => navTurma(1, e)}
-                                        disabled={turmaIdx === turmasEnriq.length - 1}
-                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] bg-[#5B5FEA] border-[#5B5FEA] flex items-center justify-center text-[13px] text-white disabled:opacity-30 transition hover:bg-[#4f46e5] cursor-pointer">
-                                        ›
-                                    </button>
+                                    {/* Ver plano */}
+                                    {turmaAtual.plano && (
+                                        <button
+                                            onClick={e => { e.stopPropagation(); setVerPlano(v => !v) }}
+                                            className={`text-[11px] font-medium px-2 py-1 rounded-[6px] border transition cursor-pointer mr-1
+                                                ${verPlano
+                                                    ? 'text-[#5B5FEA] dark:text-[#818cf8] border-[#5B5FEA]/30 bg-[#5B5FEA]/5'
+                                                    : 'text-slate-400 dark:text-[#6b7280] border-[#E6EAF0] dark:border-[#374151] v2-card hover:text-slate-600'}`}>
+                                            Ver plano
+                                        </button>
+                                    )}
+                                    {/* Setas de turma */}
+                                    <button onClick={e => navTurma(-1, e)} disabled={turmaIdx === 0}
+                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[13px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 transition hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer">‹</button>
+                                    <span className="text-[11px] font-semibold text-slate-400 dark:text-[#6b7280] min-w-[28px] text-center tabular-nums">{turmaIdx + 1}/{turmasEnriq.length}</span>
+                                    <button onClick={e => navTurma(1, e)} disabled={turmaIdx === turmasEnriq.length - 1}
+                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] bg-[#5B5FEA] border-[#5B5FEA] flex items-center justify-center text-[13px] text-white disabled:opacity-30 transition hover:bg-[#4f46e5] cursor-pointer">›</button>
                                 </>
                             ) : (
-                                // Navegação entre dias (quando nenhuma turma pré-selecionada)
+                                /* Setas de dia */
                                 <>
                                     {!ehHoje && (
-                                        <button
-                                            onClick={() => { setDataSel(hojeStr); setListaAberta(true); setTurmaIdx(-1) }}
-                                            className="mr-1 px-[10px] py-[4px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] cursor-pointer transition hover:text-slate-700 dark:hover:text-[#E5E7EB]">
+                                        <button onClick={() => { setDataSel(hojeStr); setTurmaIdx(-1) }}
+                                            className="mr-1 px-[10px] py-[4px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] cursor-pointer transition hover:text-slate-700">
                                             Hoje
                                         </button>
                                     )}
@@ -278,6 +278,7 @@ export default function TelaPosAula() {
                                 hideHeader
                                 onVoltar={handleDepoisSalvar}
                                 saveLabel="Salvar e próxima"
+                                verPlanoExterno={verPlano}
                             />
                         </Suspense>
                     </div>
