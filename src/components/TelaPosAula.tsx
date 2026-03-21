@@ -196,10 +196,13 @@ export default function TelaPosAula() {
                                 className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition cursor-pointer"
                                 style={{ opacity: t.dimmed ? 0.72 : 1 }}>
 
+                                {/* Status dot */}
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${t.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className={`text-[12px] font-semibold shrink-0 tabular-nums ${t.registrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-[#E5E7EB]'}`}>
+                                        <span className="text-[12px] font-semibold shrink-0 tabular-nums text-slate-700 dark:text-[#E5E7EB]">
                                             {t.aula.horario}
                                         </span>
                                         <span className="text-slate-200 dark:text-slate-700 text-xs">·</span>
