@@ -2964,7 +2964,7 @@ export default function BancoPlanos({ session }) {
                     </nav>
 
                     <ModalConfiguracoes />
-                    <ModalRegistroPosAula />
+                    {viewMode !== 'posAula' && <ModalRegistroPosAula />}
                     <ModalGestaoTurmas />
                     <ModalEventosEscolares />
                     <ModalVincularMusica />

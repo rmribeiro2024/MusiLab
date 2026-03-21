@@ -1,10 +1,9 @@
-import React, { useState, useRef, lazy, Suspense } from 'react'
+import React, { useState, useRef, Suspense } from 'react'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
-
-const ModalRegistroPosAula = lazy(() => import('./modals/ModalRegistroPosAula'))
+import ModalRegistroPosAula from './modals/ModalRegistroPosAula'
 
 export default function TelaPosAula() {
     const { planos, sugerirPlanoParaTurma } = usePlanosContext()
@@ -101,7 +100,8 @@ export default function TelaPosAula() {
         setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
         setRegistroEditando(null)
         setVerRegistros(false)
-        setModalRegistro(true) // ativa pre-seleção no ModalRegistroPosAula
+        // NÃO chamar setModalRegistro(true) — o useEffect de pré-seleção no
+        // ModalRegistroPosAula inlineMode depende de planoParaRegistro (já setado acima)
         setTurmaIdx(idx)
         setListaAberta(false)
     }

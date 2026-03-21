@@ -752,7 +752,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                         onMouseOver={e => (e.currentTarget.style.color = '#475569')}
                                         onMouseOut={e  => (e.currentTarget.style.color = '#94a3b8')}>✕</button>
                                     {!temConteudo && (
-                                        <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Este plano não tem objetivo, roteiro ou critério preenchidos.</p>
+                                        <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Plano de aula não registrado.</p>
                                     )}
                                     {objetivo && (
                                         <div>
