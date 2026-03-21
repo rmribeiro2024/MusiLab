@@ -1,4 +1,4 @@
-import React, { useState, useRef, Suspense } from 'react'
+import React, { useState, Suspense } from 'react'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
@@ -27,8 +27,6 @@ export default function TelaPosAula() {
     const [dataSel, setDataSel] = useState(hojeStr)
     const [listaAberta, setListaAberta] = useState(true)
     const [turmaIdx, setTurmaIdx] = useState(-1)
-    const dateInputRef = useRef<HTMLInputElement>(null)
-
     const navDia = (delta: number) => {
         const d = new Date(dataSel + 'T12:00:00')
         d.setDate(d.getDate() + delta)
@@ -218,20 +216,6 @@ export default function TelaPosAula() {
                                 ? <span>{pendentes} pendente{pendentes > 1 ? 's' : ''}</span>
                                 : <span className="text-emerald-500">Tudo registrado ✓</span>}
                             {concluidas > 0 && pendentes > 0 && <span>· {concluidas} registrada{concluidas > 1 ? 's' : ''}</span>}
-
-                            {/* Seletor de data (hidden input + texto clicável) */}
-                            <button
-                                onClick={e => { e.stopPropagation(); dateInputRef.current?.showPicker ? dateInputRef.current.showPicker() : dateInputRef.current?.click() }}
-                                className="ml-auto text-[11px] text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] underline underline-offset-2 cursor-pointer">
-                                {labelDataLonga(dataSel)}{ehHoje ? ' (Hoje)' : ''}
-                            </button>
-                            <input
-                                ref={dateInputRef}
-                                type="date"
-                                value={dataSel}
-                                onChange={e => { setDataSel(e.target.value); setTurmaIdx(-1) }}
-                                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
-                            />
                         </div>
                     )}
                 </div>
