@@ -34,7 +34,8 @@ function getSemanaAtualInicio(): Date {
   const d = new Date()
   d.setHours(0, 0, 0, 0)
   const monday = getMondayOf(d)
-  return d.getDay() === 0 ? addDays(monday, 7) : monday
+  const day = d.getDay()
+  return (day === 0 || day === 6) ? addDays(monday, 7) : monday
 }
 
 function addDays(date: Date, n: number): Date {

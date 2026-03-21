@@ -20,6 +20,50 @@
 - [ ] **Nota rápida do dia** — campo sticky note no painel lateral (como LessonPlan) persistido por data no localStorage
 - [ ] **Onboarding para novos usuários** — tour guiado de 4 passos: criar ano letivo → grade semanal → primeiro plano → registro
 
+### 🗑️ Campos removidos do pós-aula — reavaliar se sentir falta
+
+| Campo | Pergunta original | Removido em | Motivo |
+|-------|-------------------|-------------|--------|
+| `vozAluno` | 💬 "O que os alunos disseram sobre a aula?" | 2026-03-20 | Exige recall + escrita criativa — fill rate provavelmente baixo na prática |
+
+---
+
+## 🗓️ Visão da Semana — Mini Dashboard de Preparo *(ideia 2026-03-21)*
+
+- [ ] **Painel de contexto rápido no topo da Visão da Semana** — antes do grid de dias, um bloco compacto mostra o resumo da semana em 2–3 números: quantas aulas novas preciso preparar (e quais séries: 1º, 2º, 3º anos…) + quantas aulas para retomar ou revisar. O professor bate o olho e já sabe: "preciso preparar 4 aulas novas (1º e 3º ano) e revisar 2".
+
+  **Por que é útil:** a Visão da Semana hoje exibe um grid denso com muita informação. O professor precisa varrer coluna por coluna para entender sua carga de preparo. O mini dashboard condensa isso em dados acionáveis: "o que preciso fazer hoje/esta semana antes das aulas".
+
+  **Dados já disponíveis para calcular:**
+  - `obterTurmasDoDia()` por cada dia da semana → lista de aulas
+  - `aplicacoesPorData` → sabe se tem plano aplicado (logo: aula planejada)
+  - `sugerirPlanoParaTurma()` → retorna `undefined` se não há plano sugerido (→ "nova aula") ou plano com `status === 'retomar'`/`'revisar'` (→ "revisar")
+  - A sugestão que já aparece nas células ("✓ avançar · nova aula" / "↺ retomar ou revisar") pode ser agregada
+
+  **Layout sugerido:** chips horizontais compactos no topo do módulo, por exemplo:
+  ```
+  ┌──────────────────────────────────────────────┐
+  │  📋 Esta semana   4 novas · 3 revisões · 1 sem plano  │
+  │  Novas: 1º ano (seg, qua) · 3º ano (ter, sex)         │
+  └──────────────────────────────────────────────┘
+  ```
+  Ou versão mais discreta: dois números com ícones, clicáveis para filtrar o grid abaixo.
+
+  **Variante útil:** ao clicar em "4 novas", destacar/filtrar só as células que precisam de plano novo — foco instantâneo.
+
+## 🗓️ Visão da Semana — Filtro por Escola / Turma *(ideia 2026-03-21)*
+
+- [ ] **Filtros no topo da Visão da Semana** — barra de filtros acima do grid para isolar por escola, turma ou período. Caso de uso principal: professor quer preparar primeiro as aulas do Colégio Andrews — hoje precisa caçar visualmente onde estão no grid denso. Com o filtro ativo, só as células daquela escola aparecem (ou ficam destacadas), o restante fica dimmed.
+
+  **Filtros úteis:**
+  - Por escola — mais comum (professor com 2–3 escolas)
+  - Por turma — isolar um segmento específico (ex: "só 1º ano")
+  - Por status de preparo — mostrar só "sem plano" ou só "revisar"
+
+  **Implementação sugerida:** chips clicáveis no topo (ex: `EMPAC · ANDREWS · Anísio Teixeira`), extraídos automaticamente das escolas presentes na semana. Ao clicar, os dias/aulas que não pertencem àquela escola ficam com opacidade reduzida. Sem filtro = comportamento atual.
+
+  **Alternativa mais simples:** um `select` dropdown "Filtrar por escola" — menos bonito, mas zero esforço de layout.
+
 ---
 
 ## 📅 Calendário e Agenda
@@ -124,6 +168,84 @@
 - [ ] **Virtualização de listas** — react-window para professores com 150+ planos ou músicas
 - [ ] **Context splitting do PlanosContext** — separar em PlanosCRUD + PlanosFilters + PlanosUI para reduzir re-renders
 - [ ] **IDs string|number → string** — migração automática com cobertura de testes (S6, alto risco)
+
+---
+
+## ☁️ Migração de Storage: Google Drive → Cloudflare R2 *(futuro, quando escalar)*
+
+> **Contexto:** hoje as evidências de aula (fotos/vídeos) são salvas no Google Drive de cada professor via OAuth. Funciona bem para uso individual, mas tem limitações para um produto multi-usuário.
+
+### Por que migrar para R2 no futuro?
+
+| Fator | Google Drive (atual) | Cloudflare R2 (futuro) |
+|-------|---------------------|----------------------|
+| Custo egress | Zero (Drive do prof.) | Zero egress entre R2 e Workers |
+| Espaço | 15 GB por professor | Ilimitado (pago por uso) |
+| Controle | App não controla os arquivos | App controla tudo |
+| Thumbnails | Google gera (nem sempre disponível) | App gera via Workers |
+| Multi-prof. | Cada um autentica separado | Transparente, uma conta |
+| Backup | Dependente do prof. não deletar | Gerenciado centralmente |
+| OAuth obrigatório | Sim (popup/redirect a cada sessão) | Não |
+
+### Quando migrar?
+
+Migrar quando houver **professores pagantes** ou necessidade de:
+- Compartilhar evidências entre professores da mesma escola
+- Álbum da Turma centralizado (não depende do Drive de um professor)
+- Controle de retenção/backup dos arquivos do app
+
+### Plano de migração (4 etapas)
+
+**Etapa 1 — Infraestrutura R2**
+- Criar bucket `musilab-evidencias` no Cloudflare R2
+- Criar Cloudflare Worker como proxy de upload (evita expor credenciais no client)
+- Worker recebe o arquivo + JWT do usuário → valida → faz upload para R2 → retorna URL pública
+
+**Etapa 2 — Backend (Supabase Functions ou Worker)**
+- Endpoint `POST /upload-evidencia` — recebe multipart, retorna `{ url, thumbnailUrl }`
+- Thumbnail gerado server-side (Sharp ou Cloudflare Image Resizing)
+- Metadados salvos no Supabase: `evidencias` table com `turmaId`, `planoId`, `data`, `url`, `thumbnailUrl`
+
+**Etapa 3 — Frontend**
+- Substituir `src/lib/googleDrive.ts` por `src/lib/storage.ts`
+- Remover OAuth Google Drive (manter apenas OAuth Google Sign In do Supabase)
+- Upload direto para o Worker: `fetch('/api/upload-evidencia', { method: 'POST', body: formData })`
+
+**Etapa 4 — Migração de dados existentes**
+- Script one-shot: para cada registro com `urlEvidencia` (Drive), baixar e re-upload para R2
+- Manter retrocompatibilidade: se URL começa com `drive.google.com`, renderiza como link externo
+
+### Custo estimado R2
+- **Armazenamento:** $0.015/GB/mês — 100 professores × 5 GB = ~$7.50/mês
+- **Operações:** 10M requisições grátis/mês — suficiente para uso educacional
+- **Egress:** $0 (Cloudflare não cobra saída para internet)
+
+---
+
+## 🔐 Google Drive — Conexão Permanente via Supabase Edge Functions *(futuro)*
+
+> **Contexto:** hoje o token Google Drive dura 1h. No PC renova silenciosamente, no celular pede reconexão. Com backend, professor conecta uma única vez para sempre.
+
+### Como funciona
+1. Frontend usa `response_type=code` + PKCE (em vez do token implícito atual)
+2. Google redireciona com `code` temporário
+3. Frontend envia `code` para Supabase Edge Function `exchange-drive-code`
+4. Edge Function troca o code por `access_token` + `refresh_token` (usando client_secret)
+5. `refresh_token` salvo na tabela `drive_tokens` (por usuário, criptografado)
+6. Quando `access_token` expira → Edge Function `refresh-drive-token` usa o refresh_token salvo → retorna novo access_token → transparente para o professor
+
+### O que precisa implementar
+- [ ] Tabela Supabase: `drive_tokens (user_id, refresh_token, updated_at)`
+- [ ] Edge Function: `exchange-drive-code` — recebe code+code_verifier, troca com Google, salva refresh_token
+- [ ] Edge Function: `refresh-drive-token` — usa refresh_token salvo, retorna novo access_token
+- [ ] Frontend: mudar `googleDrive.ts` de implicit flow para PKCE + chamadas às Edge Functions
+
+### Custo
+- Supabase Edge Functions: gratuito até 500k invocações/mês
+- Sem servidor separado — usa infraestrutura já existente
+
+### Resultado
+Professor conecta **uma única vez**. Nunca mais vê o botão "Conectar Google Drive".
 
 ---
 

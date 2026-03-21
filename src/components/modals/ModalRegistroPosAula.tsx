@@ -346,7 +346,7 @@ function StatusAulaSelector({ value, onChange, onDone, firstRef }: StatusAulaSel
 }
 // ──────────────────────────────────────────────────────────────────────────────
 
-export default function ModalRegistroPosAula() {
+export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: { inlineMode?: boolean; onVoltar?: () => void }) {
     const {
         modalRegistro, setModalRegistro,
         planoParaRegistro, setPlanoParaRegistro,
@@ -567,8 +567,9 @@ export default function ModalRegistroPosAula() {
         }
     }, [verRegistros, filtroRegTurma, filtroRegData]) // eslint-disable-line
 
-    // Centraliza ao abrir
+    // Centraliza ao abrir (só no modo flutuante)
     React.useEffect(() => {
+        if (inlineMode) return
         if (modalRegistro && pos === null) {
             setPos({ x: Math.max(0, Math.round(window.innerWidth / 2 - 256)), y: Math.max(0, Math.round(window.innerHeight / 2 - 300)) })
         }
@@ -659,10 +660,13 @@ export default function ModalRegistroPosAula() {
         window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp)
     }
 
-    if (!modalRegistro || !planoParaRegistro) return null
+    if (!planoParaRegistro) return null
+    if (!inlineMode && !modalRegistro) return null
 
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
-    const modalStyle: React.CSSProperties = (maximizado || isMobile)
+    const isMobile = !inlineMode && typeof window !== 'undefined' && window.innerWidth < 640
+    const modalStyle: React.CSSProperties = inlineMode
+        ? { width: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }
+        : (maximizado || isMobile)
         ? { position: 'fixed', inset: 0, width: '100vw', height: '100dvh', borderRadius: 0, zIndex: 50, display: 'flex', flexDirection: 'column' }
         : minimizado
         ? { position: 'fixed', bottom: 16, right: 16, width: 300, zIndex: 50, borderRadius: 16 }
@@ -677,44 +681,59 @@ export default function ModalRegistroPosAula() {
 
     return (
         <>
-            {!minimizado && !maximizado && (
+            {!inlineMode && !minimizado && !maximizado && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 49 }} onClick={() => setModalRegistro(false)} />
             )}
 
-            <div className="bg-white shadow-2xl overflow-hidden" style={modalStyle}>
+            <div className="bg-white dark:bg-[#1F2937] overflow-hidden" style={{ ...modalStyle, ...(inlineMode ? {} : { boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)' }) }}>
 
-                {!maximizado && !minimizado && RESIZE_HANDLES.map(({ dir, style }) => (
+                {!inlineMode && !maximizado && !minimizado && RESIZE_HANDLES.map(({ dir, style }) => (
                     <div key={dir} style={{ position: 'absolute', zIndex: 20, ...style }} onMouseDown={e => onResizeMouseDown(e, dir)} />
                 ))}
 
                 {/* ── HEADER ── */}
-                <div
-                    style={{ background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)', padding: '22px 20px 18px', borderRadius: maximizado ? 0 : minimizado ? 16 : '16px 16px 0 0', flexShrink: 0, cursor: maximizado || minimizado ? 'default' : 'grab', userSelect: 'none' }}
-                    onMouseDown={onHeaderMouseDown}
-                    onClick={minimizado ? () => setMinimizado(false) : undefined}
-                >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 4 }}>Registro Pós-Aula</p>
-                            <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{planoParaRegistro.titulo}</h2>
-                            {minimizado && <p style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Clique para restaurar</p>}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, flexShrink: 0 }}>
-                            {[
-                                { title: minimizado ? 'Restaurar' : 'Minimizar', label: '—', onClick: () => { setMinimizado(m => !m); setMaximizado(false) }, active: minimizado },
-                                { title: maximizado ? 'Restaurar tamanho' : 'Maximizar', label: maximizado ? '⊡' : '⤢', onClick: () => { setMaximizado(m => !m); setMinimizado(false) }, active: maximizado },
-                                { title: 'Fechar', label: '✕', onClick: () => setModalRegistro(false), active: false, danger: true },
-                            ].map(btn => (
-                                <button key={btn.title} title={btn.title}
-                                    onClick={e => { e.stopPropagation(); btn.onClick() }}
-                                    style={{ width: 28, height: 28, borderRadius: 8, background: btn.active ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)', border: 'none', color: '#cbd5e1', fontSize: btn.label === '⤢' || btn.label === '⊡' ? 13 : 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background .15s' }}
-                                    onMouseOver={e => (e.currentTarget.style.background = btn.danger ? 'rgba(239,68,68,.35)' : 'rgba(255,255,255,.22)')}
-                                    onMouseOut={e  => (e.currentTarget.style.background = btn.active ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)')}
-                                >{btn.label}</button>
-                            ))}
+                {inlineMode ? (
+                    // Header inline — limpo, sem gradient, com botão Voltar
+                    <div className="px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151] flex items-center gap-3 shrink-0 bg-white dark:bg-[#1F2937]">
+                        <button
+                            onClick={onVoltar ?? (() => setModalRegistro(false))}
+                            className="text-[13px] text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] transition shrink-0">
+                            ← Voltar
+                        </button>
+                        <span className="text-[14px] font-semibold text-slate-700 dark:text-[#E5E7EB] truncate flex-1">
+                            {planoParaRegistro.titulo || 'Registro Pós-Aula'}
+                        </span>
+                    </div>
+                ) : (
+                    // Header original — gradient + drag + min/max/fechar
+                    <div
+                        style={{ background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)', padding: '22px 20px 18px', borderRadius: maximizado ? 0 : minimizado ? 16 : '16px 16px 0 0', flexShrink: 0, cursor: maximizado || minimizado ? 'default' : 'grab', userSelect: 'none' }}
+                        onMouseDown={onHeaderMouseDown}
+                        onClick={minimizado ? () => setMinimizado(false) : undefined}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 4 }}>Registro Pós-Aula</p>
+                                <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{planoParaRegistro.titulo}</h2>
+                                {minimizado && <p style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Clique para restaurar</p>}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, flexShrink: 0 }}>
+                                {[
+                                    { title: minimizado ? 'Restaurar' : 'Minimizar', label: '—', onClick: () => { setMinimizado(m => !m); setMaximizado(false) }, active: minimizado },
+                                    { title: maximizado ? 'Restaurar tamanho' : 'Maximizar', label: maximizado ? '⊡' : '⤢', onClick: () => { setMaximizado(m => !m); setMinimizado(false) }, active: maximizado },
+                                    { title: 'Fechar', label: '✕', onClick: () => setModalRegistro(false), active: false, danger: true },
+                                ].map(btn => (
+                                    <button key={btn.title} title={btn.title}
+                                        onClick={e => { e.stopPropagation(); btn.onClick() }}
+                                        style={{ width: 28, height: 28, borderRadius: 8, background: btn.active ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)', border: 'none', color: '#cbd5e1', fontSize: btn.label === '⤢' || btn.label === '⊡' ? 13 : 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background .15s' }}
+                                        onMouseOver={e => (e.currentTarget.style.background = (btn as any).danger ? 'rgba(239,68,68,.35)' : 'rgba(255,255,255,.22)')}
+                                        onMouseOut={e  => (e.currentTarget.style.background = btn.active ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)')}
+                                    >{btn.label}</button>
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 {/* ── CONTEÚDO ── */}
                 {!minimizado && (

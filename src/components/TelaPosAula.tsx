@@ -4,7 +4,7 @@ import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 
-export default function TelaPosAula() {
+export default function TelaPosAula({ onAbrirRegistro }: { onAbrirRegistro?: () => void }) {
     const { planos, sugerirPlanoParaTurma } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
     const {
@@ -89,7 +89,11 @@ export default function TelaPosAula() {
         setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
         setRegistroEditando(null)
         setVerRegistros(false)
-        setModalRegistro(true)
+        if (onAbrirRegistro) {
+            onAbrirRegistro()
+        } else {
+            setModalRegistro(true)
+        }
     }
 
     // Botão de navegação reutilizável
@@ -116,7 +120,7 @@ export default function TelaPosAula() {
                 <div className="flex items-center gap-3 min-w-0">
                     {/* Clicável para abrir datepicker nativo */}
                     <button
-                        onClick={() => dateInputRef.current?.showPicker?.() || dateInputRef.current?.click()}
+                        onClick={() => dateInputRef.current?.showPicker ? dateInputRef.current.showPicker() : dateInputRef.current?.click()}
                         style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
                         <div className="text-[13px] font-semibold text-slate-700 dark:text-[#E5E7EB] flex items-center gap-2">
                             {labelDataLonga(dataSel)}

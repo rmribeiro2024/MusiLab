@@ -2088,35 +2088,35 @@ export default function TelaPrincipal() {
                                 {plano.destaque?'★':'☆'}
                             </button>
 
-                            {/* Status dot — sempre visível, sem texto */}
-                            <div className="relative mb-[9px]">
-                                <button
-                                    onClick={e=>{e.stopPropagation();setStatusDropdownId(statusDropdownId===plano.id?null:plano.id);}}
-                                    title={status}
-                                    className="w-2 h-2 rounded-full block p-0 hover:scale-150 transition-transform focus:outline-none"
-                                    style={{background:dotColor}}
-                                />
-                                {statusDropdownId === plano.id && (
-                                    <div className="v2-card absolute top-full left-0 mt-1 border border-[#E6EAF0] dark:border-[#374151] rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px] py-1"
-                                         onClick={e=>e.stopPropagation()}>
-                                        {(['A Fazer','Em Andamento','Concluído'] as const).map(s => (
-                                            <button key={s}
-                                                onClick={()=>{setPlanos(planos.map(p=>p.id===plano.id?{...p,statusPlanejamento:s}:p));setStatusDropdownId(null);}}
-                                                className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center gap-2 transition hover:bg-[#F6F8FB] dark:hover:bg-white/5 text-slate-700 dark:text-[#E5E7EB] ${status===s?'opacity-50 cursor-default':''}`}>
-                                                <span className="w-2 h-2 rounded-full shrink-0" style={{background: STATUS_CORES[s]}} />
-                                                {s}{status===s&&<span className="ml-auto text-slate-400">✓</span>}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
+                            {/* Título com dot de status inline */}
+                            <div className="flex items-start gap-2 mb-[6px]">
+                                <div className="relative shrink-0 mt-[5px]">
+                                    <button
+                                        onClick={e=>{e.stopPropagation();setStatusDropdownId(statusDropdownId===plano.id?null:plano.id);}}
+                                        title={status}
+                                        className="w-2 h-2 rounded-full block p-0 hover:scale-150 transition-transform focus:outline-none"
+                                        style={{background:dotColor}}
+                                    />
+                                    {statusDropdownId === plano.id && (
+                                        <div className="v2-card absolute top-full left-0 mt-1 border border-[#E6EAF0] dark:border-[#374151] rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px] py-1"
+                                             onClick={e=>e.stopPropagation()}>
+                                            {(['A Fazer','Em Andamento','Concluído'] as const).map(s => (
+                                                <button key={s}
+                                                    onClick={()=>{setPlanos(planos.map(p=>p.id===plano.id?{...p,statusPlanejamento:s}:p));setStatusDropdownId(null);}}
+                                                    className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center gap-2 transition hover:bg-[#F6F8FB] dark:hover:bg-white/5 text-slate-700 dark:text-[#E5E7EB] ${status===s?'opacity-50 cursor-default':''}`}>
+                                                    <span className="w-2 h-2 rounded-full shrink-0" style={{background: STATUS_CORES[s]}} />
+                                                    {s}{status===s&&<span className="ml-auto text-slate-400">✓</span>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <h3 className="font-semibold text-slate-900 dark:text-[#E5E7EB] text-[14px] leading-[1.35] tracking-[-0.01em] line-clamp-2 pr-[24px]">
+                                    {plano.titulo === plano.titulo.toUpperCase()
+                                        ? plano.titulo.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+                                        : plano.titulo}
+                                </h3>
                             </div>
-
-                            {/* Título — máx 2 linhas, normaliza ALL CAPS */}
-                            <h3 className="font-semibold text-slate-900 dark:text-[#E5E7EB] text-[14px] leading-[1.35] tracking-[-0.01em] mb-[6px] line-clamp-2 pr-[24px]">
-                                {plano.titulo === plano.titulo.toUpperCase()
-                                    ? plano.titulo.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
-                                    : plano.titulo}
-                            </h3>
 
                             {/* Meta — só renderiza se houver info */}
                             {[(plano.faixaEtaria||[])[0],(plano.unidades||[])[0]].filter(Boolean).length > 0 && (

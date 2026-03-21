@@ -757,7 +757,7 @@ export default function BancoPlanos({ session }) {
             // Mapa viewMode → grupo para detectar grupo ativo
             const VIEWMODE_TO_GROUP: Record<string, string> = {
                 resumoDia: 'agenda', agendaSemanal: 'agenda', calendario: 'agenda',
-                posAula: 'posAula', posAulaHistorico: 'posAula',
+                posAula: 'posAula', posAulaHistorico: 'posAula', posAulaRegistro: 'posAula',
                 lista: 'planejamento', nova: 'planejamento', sequencias: 'planejamento', visaoSemana: 'planejamento', porTurmas: 'planejamento',
                 turmas: 'turmas', historicoMusical: 'turmas',
                 repertorio: 'biblioteca', atividades: 'biblioteca', estrategias: 'biblioteca',
@@ -2681,8 +2681,9 @@ export default function BancoPlanos({ session }) {
                             )}
 
                             <div className="w-full px-4 sm:px-[30px] py-6 sm:py-[26px] pb-20 sm:pb-[30px]">
-                                {viewMode==='posAula'          && <ErrorBoundary modulo="Pós-aula"><Suspense fallback={<CarregandoModulo />}><TelaPosAula /></Suspense></ErrorBoundary>}
+                                {viewMode==='posAula'          && <ErrorBoundary modulo="Pós-aula"><Suspense fallback={<CarregandoModulo />}><TelaPosAula onAbrirRegistro={() => setViewMode('posAulaRegistro')} /></Suspense></ErrorBoundary>}
                                 {viewMode==='posAulaHistorico' && <ErrorBoundary modulo="Histórico"><Suspense fallback={<CarregandoModulo />}><TelaPosAulaHistorico /></Suspense></ErrorBoundary>}
+                                {viewMode==='posAulaRegistro'  && <ErrorBoundary modulo="Registro Pós-Aula"><ModalRegistroPosAula inlineMode onVoltar={() => { setViewMode('posAula') }} /></ErrorBoundary>}
                                 {viewMode==='resumoDia' && <ErrorBoundary modulo="Resumo do Dia"><Suspense fallback={<CarregandoModulo />}><TelaResumoDia /></Suspense></ErrorBoundary>}
                                 {viewMode==='calendario' && <ErrorBoundary modulo="Calendário"><Suspense fallback={<CarregandoModulo />}><TelaCalendario /></Suspense></ErrorBoundary>}
                                 {viewMode==='agendaSemanal' && <ErrorBoundary modulo="Agenda Semanal"><Suspense fallback={<CarregandoModulo />}><AgendaSemanal /></Suspense></ErrorBoundary>}
