@@ -793,6 +793,16 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                             {/* ════════════════════════════════
                                 NOVO REGISTRO
                                 ════════════════════════════════ */}
+                            {/* Ver plano — discreto, canto superior direito, só em inlineMode */}
+                            {inlineMode && !verRegistros && planoParaRegistro && (
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: -4 }}>
+                                    <button type="button" onClick={() => setPlanejadoAberto(v => !v)}
+                                        style={{ fontSize: 11, color: planejadoAberto ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1 }}>
+                                        {planejadoAberto ? '▲ fechar plano' : 'ver plano'}
+                                    </button>
+                                </div>
+                            )}
+
                             {!verRegistros ? (
                                 <>
 

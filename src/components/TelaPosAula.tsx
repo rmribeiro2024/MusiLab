@@ -27,7 +27,6 @@ export default function TelaPosAula() {
     const [dataSel, setDataSel] = useState(hojeStr)
     const [listaAberta, setListaAberta] = useState(true)
     const [turmaIdx, setTurmaIdx] = useState(-1)
-    const [verPlano, setVerPlano] = useState(false)
     const navDia = (delta: number) => {
         const d = new Date(dataSel + 'T12:00:00')
         d.setDate(d.getDate() + delta)
@@ -99,7 +98,6 @@ export default function TelaPosAula() {
         setRegistroEditando(null)
         setVerRegistros(false)
         setTurmaIdx(idx)
-        setVerPlano(false)      // fecha "ver plano" ao trocar de turma
         setListaAberta(false)   // fecha a lista ao selecionar
     }
 
@@ -171,17 +169,6 @@ export default function TelaPosAula() {
                         <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                             {turmaAtual ? (
                                 <>
-                                    {/* Ver plano — só quando formulário está aberto */}
-                                    {turmaAtual.plano && !listaAberta && (
-                                        <button
-                                            onClick={e => { e.stopPropagation(); setVerPlano(v => !v) }}
-                                            className={`text-[11px] font-medium px-2 py-1 rounded-[6px] border transition cursor-pointer mr-1
-                                                ${verPlano
-                                                    ? 'text-[#5B5FEA] dark:text-[#818cf8] border-[#5B5FEA]/30 bg-[#5B5FEA]/5'
-                                                    : 'text-slate-400 dark:text-[#6b7280] border-[#E6EAF0] dark:border-[#374151] v2-card hover:text-slate-600'}`}>
-                                            Ver plano
-                                        </button>
-                                    )}
                                     {/* Setas de turma */}
                                     <button onClick={e => navTurma(-1, e)} disabled={turmaIdx === 0}
                                         className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[13px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 transition hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer">‹</button>
@@ -280,7 +267,6 @@ export default function TelaPosAula() {
                                 hideHeader
                                 onVoltar={handleDepoisSalvar}
                                 saveLabel="Salvar e próxima"
-                                verPlanoExterno={verPlano}
                             />
                         </Suspense>
                     </div>
