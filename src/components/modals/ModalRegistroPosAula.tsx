@@ -693,7 +693,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
 
                 {/* ── HEADER ── */}
                 {inlineMode ? (
-                    // Header inline — limpo, sem gradient, com botão Voltar e Salvar
+                    // Header inline — limpo, sem gradient, com botão Voltar
                     <div className="px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151] flex items-center gap-3 shrink-0 bg-white dark:bg-[#1F2937]">
                         <button
                             onClick={onVoltar ?? (() => setModalRegistro(false))}
@@ -703,13 +703,6 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
                         <span className="text-[14px] font-semibold text-slate-700 dark:text-[#E5E7EB] truncate flex-1">
                             {planoParaRegistro.titulo || 'Registro Pós-Aula'}
                         </span>
-                        {!verRegistros && (
-                            <button
-                                onClick={() => { salvarRegistro(); if (onVoltar) onVoltar() }}
-                                className="shrink-0 px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[12px] font-semibold hover:bg-slate-700 dark:hover:bg-white transition">
-                                ✓ Salvar
-                            </button>
-                        )}
                     </div>
                 ) : (
                     // Header original — gradient + drag + min/max/fechar
@@ -1978,6 +1971,16 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar }: {
                             )}
                         </div>
 
+                        {/* ── Sticky save footer inline — compacto, alinhado à direita ── */}
+                        {inlineMode && !verRegistros && (
+                            <div className="px-4 py-3 border-t border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] flex justify-end shrink-0">
+                                <button
+                                    onClick={() => { salvarRegistro(); if (onVoltar) onVoltar() }}
+                                    className="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[13px] font-semibold hover:bg-slate-700 dark:hover:bg-white transition">
+                                    ✓ Salvar registro
+                                </button>
+                            </div>
+                        )}
                         {/* ── Sticky save footer (Novo registro) — só no modal flutuante ── */}
                         {!inlineMode && !verRegistros && (
                             <div style={{ padding: '10px 16px', borderTop: '1px solid #e2e8f0', background: '#fff', flexShrink: 0 }}>
