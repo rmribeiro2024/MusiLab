@@ -763,8 +763,23 @@ export default function TelaPosAulaHistorico() {
                         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 48,
                             opacity: painelVisible ? 1 : 0, transition: 'opacity 240ms ease' }}
                     />
-                    {/* painel — sobe de baixo */}
-                    <div style={{
+                    {/* painel — mobile: sobe de baixo / desktop: centro */}
+                    <div style={typeof window !== 'undefined' && window.innerWidth >= 768 ? {
+                        // desktop: centralizado
+                        position: 'fixed',
+                        top: '50%', left: '50%',
+                        width: Math.min(window.innerWidth - 48, 520),
+                        height: Math.min(window.innerHeight - 48, 820),
+                        zIndex: 49, display: 'flex', flexDirection: 'column',
+                        borderRadius: 16, overflow: 'hidden',
+                        transform: painelVisible
+                            ? 'translate(-50%, -50%) scale(1)'
+                            : 'translate(-50%, -50%) scale(0.96)',
+                        opacity: painelVisible ? 1 : 0,
+                        transition: 'transform 220ms cubic-bezier(.4,0,.2,1), opacity 220ms ease',
+                        boxShadow: '0 24px 64px rgba(0,0,0,0.28)',
+                    } : {
+                        // mobile: bottom sheet
                         position: 'fixed', left: 0, right: 0, bottom: 0,
                         height: '92dvh',
                         zIndex: 49, display: 'flex', flexDirection: 'column',
