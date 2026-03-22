@@ -82,6 +82,8 @@ export default function TelaPosAulaHistorico() {
     const [filtroEscola, setFiltroEscola] = useState('todas')
     const [filtroTurma, setFiltroTurma] = useState('todas')
     const [filtroPeriodo, setFiltroPeriodo] = useState('tudo')
+    const [filtroCustomDe, setFiltroCustomDe] = useState('')
+    const [filtroCustomAte, setFiltroCustomAte] = useState('')
 
     // F1.4 — filtro por badge
     const [filtroAlunoAtencao, setFiltroAlunoAtencao] = useState<string | null>(null)
@@ -144,21 +146,31 @@ export default function TelaPosAulaHistorico() {
     }, [todosRegistros, filtroEscola, anosLetivos])
 
     // F1.5 — período
-    const isInPeriodo = (dateStr: string, periodo: string) => {
+    const isInPeriodo = (dateStr: string, periodo: string): boolean => {
         if (periodo === 'tudo') return true
         const now = new Date()
         const d = new Date(dateStr + 'T12:00:00')
         if (periodo === 'semana') {
-            const start = new Date(now)
-            start.setDate(now.getDate() - now.getDay())
-            start.setHours(0, 0, 0, 0)
+            const start = new Date(now); start.setDate(now.getDate() - now.getDay()); start.setHours(0,0,0,0)
+            return d >= start
+        }
+        if (periodo === '3dias') {
+            const start = new Date(now); start.setDate(now.getDate() - 3); start.setHours(0,0,0,0)
+            return d >= start
+        }
+        if (periodo === '7dias') {
+            const start = new Date(now); start.setDate(now.getDate() - 7); start.setHours(0,0,0,0)
             return d >= start
         }
         if (periodo === 'mes') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
         if (periodo === '3meses') {
-            const start = new Date(now)
-            start.setMonth(now.getMonth() - 3)
+            const start = new Date(now); start.setMonth(now.getMonth() - 3)
             return d >= start
+        }
+        if (periodo === 'personalizado') {
+            if (filtroCustomDe && d < new Date(filtroCustomDe + 'T00:00:00')) return false
+            if (filtroCustomAte && d > new Date(filtroCustomAte + 'T23:59:59')) return false
+            return true
         }
         return true
     }
@@ -170,7 +182,7 @@ export default function TelaPosAulaHistorico() {
         if (filtroAlunoAtencao && (r as any).alunoAtencao !== filtroAlunoAtencao) return false
         if (filtroEngajamento && !(r as any).pontoQueda) return false
         return true
-    }), [todosRegistros, filtroEscola, filtroTurma, filtroPeriodo, filtroAlunoAtencao, filtroEngajamento])
+    }), [todosRegistros, filtroEscola, filtroTurma, filtroPeriodo, filtroCustomDe, filtroCustomAte, filtroAlunoAtencao, filtroEngajamento])
 
     // F2.1 — engine de insights (R2, R3, R5)
     const insight = useMemo((): string | null => {
@@ -263,13 +275,12 @@ export default function TelaPosAulaHistorico() {
     }, {})
     const datas = Object.keys(porData).sort((a, b) => b.localeCompare(a))
 
-    const [dataAberta, setDataAberta] = useState<string | null>(null)
-    useEffect(() => {
-        setDataAberta(prev => {
-            if (prev && datas.includes(prev)) return prev
-            return datas[0] ?? null
-        })
-    }, [datas.join(',')])
+    const [datasAbertas, setDatasAbertas] = useState<Set<string>>(new Set())
+    const toggleData = (ds: string) => setDatasAbertas(prev => {
+        const next = new Set(prev)
+        next.has(ds) ? next.delete(ds) : next.add(ds)
+        return next
+    })
 
     // F2.4 — agrupamento por turma
     const escolasParaVistaTurma = useMemo(() => {
@@ -325,6 +336,15 @@ export default function TelaPosAulaHistorico() {
         setTimeout(() => setPainelAberto(false), 240)
     }
 
+    // Auto-expand: quando período ativo, abre todos os cards automaticamente
+    const periodoAtivo = filtroPeriodo !== 'tudo'
+    useEffect(() => {
+        if (!periodoAtivo) return
+        setTurmasAbertas(new Set(turmasAgrupadas.map(g => g.key)))
+        setDatasAbertas(new Set(datas))
+    }, [periodoAtivo, filtroPeriodo, filtroCustomDe, filtroCustomAte,
+        turmasAgrupadas.map(g => g.key).join(','), datas.join(',')])
+
     const getTrecho = (r: any): string | null => {
         // Modo "todos": concatena todos os campos de trecho não-vazios
         if (campoTrecho === 'todos') {
@@ -356,6 +376,7 @@ export default function TelaPosAulaHistorico() {
     const filtrosAtivos = filtroEscola !== 'todas' || filtroTurma !== 'todas' || filtroPeriodo !== 'tudo' || !!filtroAlunoAtencao || filtroEngajamento
     const limparFiltros = () => {
         setFiltroEscola('todas'); setFiltroTurma('todas'); setFiltroPeriodo('tudo')
+        setFiltroCustomDe(''); setFiltroCustomAte('')
         setFiltroAlunoAtencao(null); setFiltroEngajamento(false)
     }
 
@@ -402,16 +423,6 @@ export default function TelaPosAulaHistorico() {
                         onChange: (v: string) => setFiltroTurma(v),
                         options: [{ value: 'todas', label: 'Todas as turmas' }, ...turmasUnicas.map(t => ({ value: t.id, label: t.nome }))],
                     },
-                    {
-                        value: filtroPeriodo,
-                        onChange: (v: string) => setFiltroPeriodo(v),
-                        options: [
-                            { value: 'tudo', label: 'Tudo' },
-                            { value: 'semana', label: 'Esta semana' },
-                            { value: 'mes', label: 'Este mês' },
-                            { value: '3meses', label: 'Últimos 3 meses' },
-                        ],
-                    },
                 ] as const).map((sel, idx) => (
                     <div key={idx} style={{ position: 'relative' }}>
                         <select value={sel.value} onChange={e => (sel.onChange as (v: string) => void)(e.target.value)} style={selStyle}>
@@ -420,12 +431,37 @@ export default function TelaPosAulaHistorico() {
                         <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
                     </div>
                 ))}
+                {/* select de período separado para poder adicionar custom inputs */}
+                <div style={{ position: 'relative' }}>
+                    <select value={filtroPeriodo} onChange={e => setFiltroPeriodo(e.target.value)} style={selStyle}>
+                        <option value="tudo">Todo o período</option>
+                        <option value="3dias">Últimos 3 dias</option>
+                        <option value="7dias">Últimos 7 dias</option>
+                        <option value="semana">Esta semana</option>
+                        <option value="mes">Este mês</option>
+                        <option value="3meses">Últimos 3 meses</option>
+                        <option value="personalizado">Personalizado…</option>
+                    </select>
+                    <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
+                </div>
                 {filtrosAtivos && (
                     <button onClick={limparFiltros} style={{ fontSize: '11px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', fontFamily: 'inherit' }}>
                         limpar
                     </button>
                 )}
             </div>
+
+            {/* Custom date range */}
+            {filtroPeriodo === 'personalizado' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>de</span>
+                    <input type="date" value={filtroCustomDe} onChange={e => setFiltroCustomDe(e.target.value)}
+                        style={{ fontSize: 12, padding: '3px 8px', borderRadius: 6, border: `1px solid ${c.border}`, background: c.selBg, color: c.selText, fontFamily: 'inherit', cursor: 'pointer' }} />
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>até</span>
+                    <input type="date" value={filtroCustomAte} onChange={e => setFiltroCustomAte(e.target.value)}
+                        style={{ fontSize: 12, padding: '3px 8px', borderRadius: 6, border: `1px solid ${c.border}`, background: c.selBg, color: c.selText, fontFamily: 'inherit', cursor: 'pointer' }} />
+                </div>
+            )}
 
             {/* F1.3 — Seletor de trecho */}
             <div className="flex items-center gap-2">
@@ -514,12 +550,12 @@ export default function TelaPosAulaHistorico() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 {datas.map(ds => {
                                     const regs = porData[ds]
-                                    const aberto = dataAberta === ds
+                                    const aberto = datasAbertas.has(ds)
                                     const d = new Date(ds + 'T12:00:00')
                                     return (
                                         <div key={ds} className="v2-card" style={{ borderRadius: 12, border: `1px solid ${c.border}`, overflow: 'hidden', boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.06)' }}>
                                             {/* cabeçalho com bloco de data */}
-                                            <div onClick={() => setDataAberta(aberto ? null : ds)}
+                                            <div onClick={() => toggleData(ds)}
                                                 style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', borderBottom: aberto ? `1px solid ${c.border}` : 'none', transition: 'background 100ms' }}
                                                 className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
                                                 {/* bloco de data */}
