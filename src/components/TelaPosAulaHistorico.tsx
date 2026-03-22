@@ -283,6 +283,20 @@ export default function TelaPosAulaHistorico() {
             .sort((a, b) => (b.regs[0]?.data || '').localeCompare(a.regs[0]?.data || ''))
     }, [modoVista, todosRegistros, filtroEscolaTurma, anosLetivos])
 
+    // Mapa consistente de cor por turma (usado em ambos os modos)
+    const turmaColorMap = useMemo(() => {
+        const map = new Map<string, string>()
+        let idx = 0
+        todosRegistros.forEach(r => {
+            const key = `${r.escola}__${r.turma}__${r.segmento || r.serie}`
+            if (!map.has(key)) {
+                map.set(key, TURMA_COLORS[idx % TURMA_COLORS.length])
+                idx++
+            }
+        })
+        return map
+    }, [todosRegistros])
+
     const labelData = (ds: string) => {
         const d = new Date(ds + 'T12:00:00')
         return `${diasSemanaLabel[d.getDay()]}, ${d.getDate()} de ${mesesLabel[d.getMonth()]}`
@@ -326,94 +340,6 @@ export default function TelaPosAulaHistorico() {
         cursor: 'pointer', fontFamily: 'inherit', appearance: 'none',
     }
 
-    const renderRegistroRow = (r: any, j: number, showDate = false) => {
-        const trecho = getTrecho(r)
-        const alunoAtencao = (r as any).alunoAtencao as string | undefined
-        const pontoQueda = (r as any).pontoQueda as string | undefined
-        const hasLine2 = trecho || alunoAtencao || pontoQueda
-        const regId = r.id ?? j
-        const isExpanded = expandedId === regId
-
-        const camposPreenchidos = CAMPOS_INLINE.filter(c => {
-            const val = (r as any)[c.key]
-            return val && typeof val === 'string' && val.trim()
-        })
-
-        return (
-            <div key={j} style={{ borderLeft: `4px solid ${c.leftBar}` }}>
-                {/* ── linha compacta ── */}
-                <div className="px-4 py-2.5 flex items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
-                    <div className="flex-1 min-w-0 pt-px">
-                        <div className="flex items-center">
-                            {showDate ? (
-                                <span className="text-[12px] font-medium text-slate-600 dark:text-[#9CA3AF]">{labelData(r.data)}</span>
-                            ) : (
-                                <>
-                                    <span className="text-[12px] font-medium text-slate-600 dark:text-[#9CA3AF]">{nomeSeg(r)}</span>
-                                    <span className="text-slate-200 dark:text-slate-700 mx-1.5 text-xs">·</span>
-                                    <span className="text-[12px] text-slate-400 dark:text-[#6b7280]">{nomeTurma(r)}</span>
-                                </>
-                            )}
-                        </div>
-                        {hasLine2 && !isExpanded && (
-                            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                                {trecho && (
-                                    <span className="text-[11px] italic" style={{ color: '#94a3b8', maxWidth: '210px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
-                                        "{trecho.length > 58 ? trecho.slice(0, 58) + '…' : trecho}"
-                                    </span>
-                                )}
-                                {alunoAtencao && (
-                                    <button onClick={() => setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao)}
-                                        style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
-                                        👤 {alunoAtencao}
-                                    </button>
-                                )}
-                                {pontoQueda && (
-                                    <button onClick={() => setFiltroEngajamento(!filtroEngajamento)}
-                                        style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
-                                        📉 engajamento
-                                    </button>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                    {/* Option C: explicit Ver + Editar buttons */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, paddingTop: 1 }}>
-                        <button onClick={() => setExpandedId(isExpanded ? null : regId)}
-                            style={{ fontSize: '11px', fontWeight: 500, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: isExpanded ? (isDark ? 'rgba(91,95,234,0.08)' : '#EEF0FF') : 'transparent', color: isExpanded ? (isDark ? '#818cf8' : '#5B5FEA') : c.btnText, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms' }}>
-                            {isExpanded ? '▲ Fechar' : 'Ver'}
-                        </button>
-                        <button onClick={() => abrirEditar(r)}
-                            style={{ fontSize: '11px', padding: '3px 7px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
-                            ✏️
-                        </button>
-                    </div>
-                </div>
-
-                {/* ── expansão inline ── */}
-                {isExpanded && (
-                    <div style={{ borderTop: `1px solid ${isDark ? '#374151' : '#F1F4F8'}`, padding: '12px 16px 14px', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)' }}>
-                        {camposPreenchidos.length === 0 ? (
-                            <p className="text-[12px]" style={{ color: '#94a3b8' }}>Nenhum campo preenchido.</p>
-                        ) : (
-                            <div className="space-y-3">
-                                {camposPreenchidos.map(campo => (
-                                    <div key={campo.key}>
-                                        <p className="text-[10.5px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: isDark ? '#4B5563' : '#94a3b8' }}>
-                                            {campo.icon} {campo.label}
-                                        </p>
-                                        <p className="text-[12.5px] leading-relaxed" style={{ color: isDark ? '#D1D5DB' : '#374151' }}>
-                                            {(r as any)[campo.key]}
-                                        </p>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-        )
-    }
 
     return (
         <div className="max-w-2xl mx-auto space-y-3 pb-24">
@@ -572,12 +498,99 @@ export default function TelaPosAulaHistorico() {
                                                 </span>
                                                 <span style={{ fontSize: 10, color: isDark ? '#4B5563' : '#cbd5e1', marginLeft: 4 }}>{aberto ? '▲' : '▼'}</span>
                                             </div>
-                                            {/* registros */}
-                                            {aberto && (
-                                                <div>
-                                                    {regs.map((r, j) => renderRegistroRow(r, j))}
-                                                </div>
-                                            )}
+                                            {/* registros — mesmo design V3 turma */}
+                                            {aberto && regs.map((r, j) => {
+                                                const turmaKey = `${r.escola}__${r.turma}__${r.segmento || r.serie}`
+                                                const turmaColor = turmaColorMap.get(turmaKey) || TURMA_COLORS[0]
+                                                const regId = r.id ?? `date-${ds}-${j}`
+                                                const isExpanded = expandedId === regId
+                                                const trecho = getTrecho(r)
+                                                const alunoAtencao = (r as any).alunoAtencao as string | undefined
+                                                const pontoQueda = (r as any).pontoQueda as string | undefined
+                                                const isLast = j === regs.length - 1
+                                                const camposPreenchidos = CAMPOS_INLINE.filter(campo => {
+                                                    const val = (r as any)[campo.key]
+                                                    return val && typeof val === 'string' && val.trim()
+                                                })
+                                                return (
+                                                    <div key={j}>
+                                                        {/* linha */}
+                                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '10px 16px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms' }}
+                                                            className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
+                                                            {/* dot colorido da turma */}
+                                                            <div style={{ width: 36, flexShrink: 0, display: 'flex', justifyContent: 'center', paddingTop: 5, marginRight: 10 }}>
+                                                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: turmaColor, flexShrink: 0 }} />
+                                                            </div>
+                                                            {/* conector vertical */}
+                                                            <div style={{ width: 1, background: isDark ? '#374151' : '#E6EAF0', flexShrink: 0, alignSelf: 'stretch', marginRight: 10, minHeight: 24, position: 'relative' }}>
+                                                                <div style={{ position: 'absolute', left: -2, top: 4, width: 5, height: 5, borderRadius: '50%', background: isDark ? '#374151' : '#CBD5E1', border: `1px solid ${isDark ? '#4B5563' : '#E6EAF0'}` }} />
+                                                            </div>
+                                                            {/* conteúdo */}
+                                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                                <div style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#E5E7EB' : '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                    {escolasUnicas.length > 1 && (
+                                                                        <span style={{ color: '#94a3b8', fontWeight: 400, marginRight: 4 }}>{nomeEscola(r)} ·</span>
+                                                                    )}
+                                                                    {nomeSeg(r)} · {nomeTurma(r)}
+                                                                </div>
+                                                                {trecho && (
+                                                                    <div style={{ fontSize: 11.5, fontStyle: 'italic', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+                                                                        "{trecho.length > 60 ? trecho.slice(0, 60) + '…' : trecho}"
+                                                                    </div>
+                                                                )}
+                                                                {(alunoAtencao || pontoQueda) && (
+                                                                    <div style={{ display: 'flex', gap: 4, marginTop: trecho ? 4 : 2, flexWrap: 'wrap' }}>
+                                                                        {alunoAtencao && (
+                                                                            <button onClick={() => setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao)}
+                                                                                style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                                👤 {alunoAtencao}
+                                                                            </button>
+                                                                        )}
+                                                                        {pontoQueda && (
+                                                                            <button onClick={() => setFiltroEngajamento(!filtroEngajamento)}
+                                                                                style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                                📉 engajamento
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            {/* Ver + ✏️ */}
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, alignSelf: 'flex-start' }}>
+                                                                <button onClick={() => setExpandedId(isExpanded ? null : regId)}
+                                                                    style={{ fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: isExpanded ? (isDark ? 'rgba(91,95,234,0.08)' : '#EEF0FF') : 'transparent', color: isExpanded ? (isDark ? '#818cf8' : '#5B5FEA') : c.btnText, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms' }}>
+                                                                    {isExpanded ? '▲' : 'Ver'}
+                                                                </button>
+                                                                <button onClick={() => abrirEditar(r)}
+                                                                    style={{ fontSize: 11, padding: '3px 7px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                    ✏️
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        {/* expansão inline */}
+                                                        {isExpanded && (
+                                                            <div style={{ borderBottom: !isLast ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', padding: '12px 16px 14px 62px', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)' }}>
+                                                                {camposPreenchidos.length === 0 ? (
+                                                                    <p style={{ fontSize: 12, color: '#94a3b8' }}>Nenhum campo preenchido.</p>
+                                                                ) : (
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                                                        {camposPreenchidos.map(campo => (
+                                                                            <div key={campo.key}>
+                                                                                <p style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: isDark ? '#4B5563' : '#94a3b8', marginBottom: 2 }}>
+                                                                                    {campo.icon} {campo.label}
+                                                                                </p>
+                                                                                <p style={{ fontSize: 12.5, lineHeight: 1.55, color: isDark ? '#D1D5DB' : '#374151' }}>
+                                                                                    {(r as any)[campo.key]}
+                                                                                </p>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })}
                                         </div>
                                     )
                                 })}
