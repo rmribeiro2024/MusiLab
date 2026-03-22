@@ -8,14 +8,16 @@ const ModalRegistroPosAula = lazy(() => import('./modals/ModalRegistroPosAula'))
 const TURMA_COLORS = ['#5B5FEA', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16']
 
 const CAMPOS_INLINE = [
-    { icon: '📋', label: 'Realizado',               key: 'resumoAula' },
-    { icon: '✅', label: 'O que aprenderam',         key: 'funcionouBem' },
-    { icon: '⭐', label: 'O que faria de novo',      key: 'repetiria' },
-    { icon: '💭', label: 'O que faria diferente',   key: 'naoFuncionou' },
-    { icon: '🔧', label: 'Poderia ter sido melhor', key: 'poderiaMelhorar' },
-    { icon: '💡', label: 'Próxima aula',             key: 'proximaAula' },
-    { icon: '👥', label: 'Comportamento',            key: 'comportamento' },
-    { icon: '📝', label: 'Anotações gerais',         key: 'anotacoesGerais' },
+    { icon: '📋', label: 'Realizado',                   key: 'resumoAula' },
+    { icon: '✅', label: 'O que aprenderam',             key: 'funcionouBem' },
+    { icon: '⭐', label: 'O que faria de novo',          key: 'repetiria' },
+    { icon: '💭', label: 'O que faria diferente',       key: 'naoFuncionou' },
+    { icon: '🎵', label: 'O que fizeram de inesperado', key: 'surpresaMusical' },
+    { icon: '📉', label: 'Queda de engajamento',        key: 'pontoQueda' },
+    { icon: '👤', label: 'Aluno com atenção',            key: 'alunoAtencao' },
+    { icon: '🏫', label: 'Como a aula aconteceu',       key: 'contextoAulaDetalhe' },
+    { icon: '💡', label: 'Próxima aula',                key: 'proximaAula' },
+    { icon: '👥', label: 'Comportamento',               key: 'comportamento' },
 ] as const
 
 function useIsDark() {
@@ -30,10 +32,13 @@ function useIsDark() {
 
 // F1.3 — campos disponíveis para exibir como trecho na linha 2
 const CAMPOS_TRECHO = [
-    { value: 'funcionouBem',    label: 'O que aprenderam' },
-    { value: 'repetiria',       label: 'O que funcionou' },
-    { value: 'naoFuncionou',    label: 'O que faria diferente' },
-    { value: 'surpresaMusical', label: 'O que fizeram de inesperado' },
+    { value: 'funcionouBem',        label: 'O que aprenderam' },
+    { value: 'repetiria',           label: 'O que funcionou' },
+    { value: 'naoFuncionou',        label: 'O que faria diferente' },
+    { value: 'surpresaMusical',     label: 'O que fizeram de inesperado' },
+    { value: 'pontoQueda',          label: 'Queda de engajamento' },
+    { value: 'alunoAtencao',        label: 'Aluno com atenção' },
+    { value: 'contextoAulaDetalhe', label: 'Como a aula aconteceu' },
 ] as const
 
 type CampoTrecho = typeof CAMPOS_TRECHO[number]['value'] | 'todos'
@@ -106,7 +111,6 @@ export default function TelaPosAulaHistorico() {
 
     // F2.4 — modo de vista (V3: padrão é 'turma')
     const [modoVista, setModoVista] = useState<'data' | 'turma'>('turma')
-    const [filtroEscolaTurma, setFiltroEscolaTurma] = useState('todas')
     const [turmasAbertas, setTurmasAbertas] = useState<Set<string>>(new Set())
 
     const toggleTurma = (key: string) => setTurmasAbertas(prev => {
@@ -310,6 +314,10 @@ export default function TelaPosAulaHistorico() {
         return next
     })
 
+    // índice da data ativa no carrossel (Por data)
+    const [dataIdx, setDataIdx] = useState(0)
+    useEffect(() => { setDataIdx(0) }, [datas.join(',')])
+
     // F2.4 — agrupamento por turma
     const escolasParaVistaTurma = useMemo(() => {
         const map = new Map<string, string>()
@@ -321,7 +329,6 @@ export default function TelaPosAulaHistorico() {
         if (modoVista !== 'turma') return []
         const map = new Map<string, { label: string; escola: string; regs: typeof registrosFiltrados }>()
         registrosFiltrados.forEach(r => {
-            if (filtroEscolaTurma !== 'todas' && String(r.escola) !== filtroEscolaTurma) return
             const key = `${r.escola}__${r.turma}__${r.segmento || r.serie}`
             if (!map.has(key)) {
                 map.set(key, { label: `${nomeSeg(r)} · ${nomeTurma(r)}`, escola: nomeEscola(r), regs: [] })
@@ -331,7 +338,7 @@ export default function TelaPosAulaHistorico() {
         return Array.from(map.entries())
             .map(([key, val]) => ({ key, ...val, regs: val.regs.sort((a, b) => b.data.localeCompare(a.data)) }))
             .sort((a, b) => (b.regs[0]?.data || '').localeCompare(a.regs[0]?.data || ''))
-    }, [modoVista, registrosFiltrados, filtroEscolaTurma, anosLetivos])
+    }, [modoVista, registrosFiltrados, anosLetivos])
 
     // Mapa consistente de cor por turma (usado em ambos os modos)
     const turmaColorMap = useMemo(() => {
@@ -429,9 +436,47 @@ export default function TelaPosAulaHistorico() {
                 <p className="text-[12.5px] text-slate-500 dark:text-[#9CA3AF] mt-0.5">Registros pós-aula anteriores</p>
             </div>
 
-            {/* F1.5 — Filtros */}
-            <div className="flex items-center gap-2 flex-wrap">
-                {/* Escola */}
+            {/* Linha 1: pills de período */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                {([
+                    { value: 'tudo',          label: 'Tudo' },
+                    { value: '7dias',         label: '7 dias' },
+                    { value: 'mes',           label: 'Este mês' },
+                    { value: '3meses',        label: '3 meses' },
+                    { value: 'personalizado', label: 'Personalizado' },
+                ] as const).map(p => {
+                    const active = filtroPeriodo === p.value
+                    return (
+                        <button key={p.value} onClick={() => setFiltroPeriodo(p.value)}
+                            style={{
+                                fontSize: 11.5, fontWeight: active ? 600 : 400, fontFamily: 'inherit',
+                                padding: '4px 11px', borderRadius: 999, cursor: 'pointer', transition: 'all 120ms',
+                                background: active ? (isDark ? '#818cf8' : '#5B5FEA') : 'transparent',
+                                color: active ? '#fff' : (isDark ? '#6B7280' : '#94a3b8'),
+                                border: active ? 'none' : `1px solid ${isDark ? '#374151' : '#E6EAF0'}`,
+                            }}>
+                            {p.label}
+                        </button>
+                    )
+                })}
+            </div>
+
+            {/* Custom date range */}
+            {filtroPeriodo === 'personalizado' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>de</span>
+                    <input type="date" value={filtroCustomDe} onChange={e => setFiltroCustomDe(e.target.value)}
+                        style={{ fontSize: 12, padding: '3px 8px', borderRadius: 6, border: `1px solid ${c.border}`, background: c.selBg, color: c.selText, fontFamily: 'inherit', cursor: 'pointer' }} />
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>até</span>
+                    <input type="date" value={filtroCustomAte} onChange={e => setFiltroCustomAte(e.target.value)}
+                        style={{ fontSize: 12, padding: '3px 8px', borderRadius: 6, border: `1px solid ${c.border}`, background: c.selBg, color: c.selText, fontFamily: 'inherit', cursor: 'pointer' }} />
+                </div>
+            )}
+
+            {/* Linha 2: filtros de localização */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                {/* Escola — oculta quando só há uma */}
+                {escolasUnicas.length > 1 && (
                 <div style={{ position: 'relative' }}>
                     <select value={filtroEscola} onChange={e => { setFiltroEscola(e.target.value); setFiltroSegmento('todos'); setFiltroTurma('todas') }} style={selStyle}>
                         <option value="todas">Escola</option>
@@ -439,6 +484,7 @@ export default function TelaPosAulaHistorico() {
                     </select>
                     <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
                 </div>
+                )}
 
                 {/* Série — optgroup por escola quando há múltiplas */}
                 {seriesUnicas.length > 1 && (() => {
@@ -497,80 +543,12 @@ export default function TelaPosAulaHistorico() {
                         </div>
                     )
                 })()}
-                {/* select de período separado para poder adicionar custom inputs */}
-                <div style={{ position: 'relative' }}>
-                    <select value={filtroPeriodo} onChange={e => setFiltroPeriodo(e.target.value)} style={selStyle}>
-                        <option value="tudo">Todo o período</option>
-                        <option value="3dias">Últimos 3 dias</option>
-                        <option value="7dias">Últimos 7 dias</option>
-                        <option value="semana">Esta semana</option>
-                        <option value="mes">Este mês</option>
-                        <option value="3meses">Últimos 3 meses</option>
-                        <option value="personalizado">Personalizado…</option>
-                    </select>
-                    <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
-                </div>
+
                 {filtrosAtivos && (
                     <button onClick={limparFiltros} style={{ fontSize: '11px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', fontFamily: 'inherit' }}>
                         limpar
                     </button>
                 )}
-            </div>
-
-            {/* Custom date range */}
-            {filtroPeriodo === 'personalizado' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>de</span>
-                    <input type="date" value={filtroCustomDe} onChange={e => setFiltroCustomDe(e.target.value)}
-                        style={{ fontSize: 12, padding: '3px 8px', borderRadius: 6, border: `1px solid ${c.border}`, background: c.selBg, color: c.selText, fontFamily: 'inherit', cursor: 'pointer' }} />
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>até</span>
-                    <input type="date" value={filtroCustomAte} onChange={e => setFiltroCustomAte(e.target.value)}
-                        style={{ fontSize: 12, padding: '3px 8px', borderRadius: 6, border: `1px solid ${c.border}`, background: c.selBg, color: c.selText, fontFamily: 'inherit', cursor: 'pointer' }} />
-                </div>
-            )}
-
-            {/* F1.3 — Multi-select de trecho */}
-            <div className="flex items-center gap-2">
-                <span className="text-[11px]" style={{ color: '#94a3b8' }}>Trecho:</span>
-                <div ref={trechoMenuRef} style={{ position: 'relative' }}>
-                    <button onClick={() => setTrechoMenuAberto(v => !v)}
-                        style={{ ...selStyle, display: 'flex', alignItems: 'center', gap: 6, paddingRight: 22, cursor: 'pointer', minWidth: 140 }}>
-                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {camposTrecho.size === 0
-                                ? 'Nenhum'
-                                : camposTrecho.size === 1
-                                    ? CAMPOS_TRECHO.find(c => camposTrecho.has(c.value))?.label ?? '1 campo'
-                                    : `${camposTrecho.size} campos`}
-                        </span>
-                    </button>
-                    <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
-                    {trechoMenuAberto && (
-                        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 50, background: isDark ? '#1F2937' : '#fff', border: `1px solid ${c.border}`, borderRadius: 8, boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)', minWidth: 210, padding: '4px 0' }}>
-                            {CAMPOS_TRECHO.map(campo => {
-                                const checked = camposTrecho.has(campo.value)
-                                return (
-                                    <label key={campo.value}
-                                        className="hover:bg-slate-50 dark:hover:bg-white/[0.04]"
-                                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, color: isDark ? '#D1D5DB' : '#374151', userSelect: 'none' }}>
-                                        <input type="checkbox" checked={checked}
-                                            onChange={() => setCamposTrecho(prev => {
-                                                const next = new Set(prev)
-                                                checked ? next.delete(campo.value) : next.add(campo.value)
-                                                return next
-                                            })}
-                                            style={{ accentColor: '#5B5FEA', cursor: 'pointer', width: 13, height: 13, flexShrink: 0 }} />
-                                        {campo.label}
-                                    </label>
-                                )
-                            })}
-                            <div style={{ borderTop: `1px solid ${c.border}`, margin: '4px 0' }} />
-                            <button onClick={() => setCamposTrecho(new Set())}
-                                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '5px 12px', fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                Limpar seleção
-                            </button>
-                        </div>
-                    )}
-                </div>
             </div>
 
             {/* F1.4 — chips de filtro ativo */}
@@ -600,176 +578,193 @@ export default function TelaPosAulaHistorico() {
                 </div>
             )}
 
-            {/* F2.4 — Toggle por data / por turma */}
-            <div className="flex items-center gap-4">
-                {(['data', 'turma'] as const).map(modo => (
-                    <button key={modo} onClick={() => setModoVista(modo)}
-                        style={{ fontSize: '12px', fontFamily: 'inherit', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', fontWeight: modoVista === modo ? 600 : 400, color: modoVista === modo ? c.toggleActive : c.toggleInactive, borderBottom: modoVista === modo ? `2px solid ${c.toggleActive}` : '2px solid transparent', transition: 'all 120ms' }}>
-                        {modo === 'data' ? 'Por data' : 'Por turma'}
-                    </button>
-                ))}
-                {/* seletor de escola no modo por turma (quando há mais de 1 escola) */}
-                {modoVista === 'turma' && escolasParaVistaTurma.length > 1 && (
-                    <div style={{ position: 'relative', marginLeft: 'auto' }}>
-                        <select value={filtroEscolaTurma} onChange={e => setFiltroEscolaTurma(e.target.value)} style={selStyle}>
-                            <option value="todas">Todas as escolas</option>
-                            {escolasParaVistaTurma.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
-                        </select>
+            {/* Linha 3: vista + trecho + contagem */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                {/* view toggle tabs */}
+                <div style={{ display: 'flex', gap: 16, flex: 1 }}>
+                    {(['data', 'turma'] as const).map(modo => (
+                        <button key={modo} onClick={() => setModoVista(modo)}
+                            style={{ fontSize: '12px', fontFamily: 'inherit', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', fontWeight: modoVista === modo ? 600 : 400, color: modoVista === modo ? c.toggleActive : c.toggleInactive, borderBottom: modoVista === modo ? `2px solid ${c.toggleActive}` : '2px solid transparent', transition: 'all 120ms' }}>
+                            {modo === 'data' ? 'Por data' : 'Por turma'}
+                        </button>
+                    ))}
+                </div>
+                {/* trecho multi-select + contagem */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, color: isDark ? '#4B5563' : '#cbd5e1' }}>Trecho:</span>
+                    <div ref={trechoMenuRef} style={{ position: 'relative' }}>
+                        <button onClick={() => setTrechoMenuAberto(v => !v)}
+                            style={{ ...selStyle, fontSize: '11px', display: 'flex', alignItems: 'center', gap: 6, paddingRight: 22, cursor: 'pointer', minWidth: 120 }}>
+                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {camposTrecho.size === 0
+                                    ? 'Nenhum'
+                                    : camposTrecho.size === 1
+                                        ? CAMPOS_TRECHO.find(ct => camposTrecho.has(ct.value))?.label ?? '1 campo'
+                                        : `${camposTrecho.size} campos`}
+                            </span>
+                        </button>
                         <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
+                        {trechoMenuAberto && (
+                            <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 50, background: isDark ? '#1F2937' : '#fff', border: `1px solid ${c.border}`, borderRadius: 8, boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)', minWidth: 210, padding: '4px 0' }}>
+                                {CAMPOS_TRECHO.map(campo => {
+                                    const checked = camposTrecho.has(campo.value)
+                                    return (
+                                        <label key={campo.value}
+                                            className="hover:bg-slate-50 dark:hover:bg-white/[0.04]"
+                                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, color: isDark ? '#D1D5DB' : '#374151', userSelect: 'none' }}>
+                                            <input type="checkbox" checked={checked}
+                                                onChange={() => setCamposTrecho(prev => {
+                                                    const next = new Set(prev)
+                                                    checked ? next.delete(campo.value) : next.add(campo.value)
+                                                    return next
+                                                })}
+                                                style={{ accentColor: '#5B5FEA', cursor: 'pointer', width: 13, height: 13, flexShrink: 0 }} />
+                                            {campo.label}
+                                        </label>
+                                    )
+                                })}
+                                <div style={{ borderTop: `1px solid ${c.border}`, margin: '4px 0' }} />
+                                <button onClick={() => setCamposTrecho(new Set())}
+                                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '5px 12px', fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                    Limpar seleção
+                                </button>
+                            </div>
+                        )}
                     </div>
-                )}
+                    <span style={{ fontSize: 11, color: isDark ? '#4B5563' : '#cbd5e1', minWidth: 20, textAlign: 'right' }}>{registrosFiltrados.length}</span>
+                </div>
             </div>
 
             {/* ── LISTA ── */}
             {modoVista === 'data' ? (
-                /* ── MODO POR DATA ── */
+                /* ── MODO POR DATA — carrossel ── */
                 datas.length === 0 && lacunas.length === 0 ? (
                     <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', padding: '20px 0' }}>
                         {filtrosAtivos ? 'Nenhum resultado para os filtros selecionados.' : 'Nenhum registro ainda.'}
                     </p>
-                ) : (
-                    <>
-                        {/* F2.2 — Lacunas */}
-                        {lacunas.length > 0 && (
-                            <div className="space-y-1">
-                                {lacunas.map(l => (
-                                    <div key={l.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
-                                        <div style={{ flex: 1, borderTop: `1px dashed ${c.lacunaBdr}` }} />
-                                        <span style={{ fontSize: '11px', color: c.lacunaText, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                                            {l.label} · sem registro há {l.dias} dias
-                                        </span>
-                                        <div style={{ flex: 1, borderTop: `1px dashed ${c.lacunaBdr}` }} />
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                ) : (() => {
+                    const safeIdx = Math.min(dataIdx, Math.max(0, datas.length - 1))
+                    const ds = datas[safeIdx] ?? ''
+                    const regs = ds ? porData[ds] : []
+                    const d = ds ? new Date(ds + 'T12:00:00') : null
+                    return (
+                        <>
+                            {/* F2.2 — Lacunas */}
+                            {lacunas.length > 0 && (
+                                <div className="space-y-1">
+                                    {lacunas.map(l => (
+                                        <div key={l.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
+                                            <div style={{ flex: 1, borderTop: `1px dashed ${c.lacunaBdr}` }} />
+                                            <span style={{ fontSize: '11px', color: c.lacunaText, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                                {l.label} · sem registro há {l.dias} dias
+                                            </span>
+                                            <div style={{ flex: 1, borderTop: `1px dashed ${c.lacunaBdr}` }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
 
-                        {datas.length > 0 && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {datas.map(ds => {
-                                    const regs = porData[ds]
-                                    const aberto = datasAbertas.has(ds)
-                                    const d = new Date(ds + 'T12:00:00')
-                                    return (
-                                        <div key={ds} className="v2-card" style={{ borderRadius: 12, border: `1px solid ${c.border}`, overflow: 'hidden', boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.06)' }}>
-                                            {/* cabeçalho com bloco de data */}
-                                            <div onClick={() => toggleData(ds)}
-                                                style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', borderBottom: aberto ? `1px solid ${c.border}` : 'none', transition: 'background 100ms' }}
-                                                className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
-                                                {/* bloco de data */}
-                                                <div style={{ width: 38, height: 38, borderRadius: 8, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: aberto ? (isDark ? 'rgba(91,95,234,0.1)' : '#EEF0FF') : (isDark ? '#111827' : '#F1F4F8'), border: `1px solid ${aberto ? (isDark ? 'rgba(91,95,234,0.3)' : '#c7d2fe') : (isDark ? '#374151' : '#E6EAF0')}` }}>
-                                                    <span style={{ fontSize: 15, fontWeight: 700, color: aberto ? (isDark ? '#818cf8' : '#5B5FEA') : (isDark ? '#9CA3AF' : '#475569'), lineHeight: 1 }}>{d.getDate()}</span>
-                                                    <span style={{ fontSize: 9.5, color: aberto ? (isDark ? '#818cf8' : '#5B5FEA') : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.3px', marginTop: 1 }}>{mesesLabel[d.getMonth()]}</span>
-                                                </div>
-                                                {/* dia da semana */}
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#E5E7EB' : '#334155' }}>{diasSemanaLabel[d.getDay()]}</div>
-                                                </div>
-                                                {/* count + chevron */}
-                                                <span style={{ fontSize: 11, color: isDark ? '#6B7280' : '#94a3b8', border: `1px solid ${c.border}`, padding: '2px 7px', borderRadius: 999 }}>
-                                                    {regs.length}
-                                                </span>
-                                                <span style={{ fontSize: 10, color: isDark ? '#4B5563' : '#cbd5e1', marginLeft: 4 }}>{aberto ? '▲' : '▼'}</span>
-                                            </div>
-                                            {/* registros — mesmo design V3 turma */}
-                                            {aberto && regs.map((r, j) => {
-                                                const turmaKey = `${r.escola}__${r.turma}__${r.segmento || r.serie}`
-                                                const turmaColor = turmaColorMap.get(turmaKey) || TURMA_COLORS[0]
-                                                const regId = r.id ?? `date-${ds}-${j}`
-                                                const isExpanded = expandedId === regId
-                                                const trecho = getTrecho(r)
-                                                const alunoAtencao = (r as any).alunoAtencao as string | undefined
-                                                const pontoQueda = (r as any).pontoQueda as string | undefined
-                                                const isLast = j === regs.length - 1
-                                                const camposPreenchidos = CAMPOS_INLINE.filter(campo => {
-                                                    const val = (r as any)[campo.key]
-                                                    return val && typeof val === 'string' && val.trim()
-                                                })
-                                                return (
-                                                    <div key={j}>
-                                                        {/* linha — clicável para expandir */}
-                                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '10px 16px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms', cursor: 'pointer' }}
-                                                            className="hover:bg-slate-50 dark:hover:bg-white/[0.02]"
-                                                            onClick={() => setExpandedId(isExpanded ? null : regId)}>
-                                                            {/* conector vertical */}
-                                                            <div style={{ width: 1, background: isDark ? '#374151' : '#E6EAF0', flexShrink: 0, alignSelf: 'stretch', marginRight: 10, minHeight: 24, position: 'relative' }}>
-                                                                <div style={{ position: 'absolute', left: -2, top: 4, width: 5, height: 5, borderRadius: '50%', background: isDark ? '#374151' : '#CBD5E1', border: `1px solid ${isDark ? '#4B5563' : '#E6EAF0'}` }} />
-                                                            </div>
-                                                            {/* conteúdo */}
-                                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                                <div style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#E5E7EB' : '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                                    {escolasUnicas.length > 1 && (
-                                                                        <span style={{ color: '#94a3b8', fontWeight: 400, marginRight: 4 }}>{nomeEscola(r)} ·</span>
-                                                                    )}
-                                                                    {nomeSeg(r)} · {nomeTurma(r)}
-                                                                </div>
-                                                                {trecho ? (
-                                                                    <div style={{ fontSize: 11.5, fontStyle: 'italic', color: '#94a3b8', marginTop: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                                                        "{trecho}"
-                                                                    </div>
-                                                                ) : (
-                                                                    <div style={{ fontSize: 11, fontStyle: 'italic', color: isDark ? '#374151' : '#cbd5e1', marginTop: 2 }}>
-                                                                        sem registro
-                                                                    </div>
-                                                                )}
-                                                                {(alunoAtencao || pontoQueda) && (
-                                                                    <div style={{ display: 'flex', gap: 4, marginTop: trecho ? 4 : 2, flexWrap: 'wrap' }}>
-                                                                        {alunoAtencao && (
-                                                                            <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
-                                                                                title="Aluno que precisa de atenção"
-                                                                                style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', color: '#d97706', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                                ! {alunoAtencao}
-                                                                            </button>
-                                                                        )}
-                                                                        {pontoQueda && (
-                                                                            <button onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }}
-                                                                                style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                                Engajamento ↓
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            {/* Editar + chevron */}
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, alignSelf: 'flex-start' }}>
-                                                                <button onClick={e => { e.stopPropagation(); abrirEditar(r) }}
-                                                                    style={{ fontSize: 11, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                    Editar
-                                                                </button>
-                                                                <span style={{ fontSize: 9, color: c.btnText, opacity: 0.5 }}>{isExpanded ? '▲' : '▼'}</span>
-                                                            </div>
+                            {/* ── Carrossel de datas ── */}
+                            {datas.length > 0 && d && (
+                                <div className="v2-card" style={{ borderRadius: 12, border: `1px solid ${c.border}`, overflow: 'hidden', boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.06)' }}>
+                                    {/* barra de navegação */}
+                                    <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: `1px solid ${c.border}`, background: isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)' }}>
+                                        <button
+                                            onClick={() => { setDataIdx(i => Math.min(datas.length - 1, i + 1)); setExpandedId(null) }}
+                                            disabled={safeIdx === datas.length - 1}
+                                            style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: safeIdx === datas.length - 1 ? (isDark ? '#374151' : '#e2e8f0') : c.btnText, cursor: safeIdx === datas.length - 1 ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 120ms' }}>
+                                            ←
+                                        </button>
+                                        <div style={{ width: 38, height: 38, borderRadius: 8, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: isDark ? 'rgba(91,95,234,0.1)' : '#EEF0FF', border: `1px solid ${isDark ? 'rgba(91,95,234,0.3)' : '#c7d2fe'}` }}>
+                                            <span style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#818cf8' : '#5B5FEA', lineHeight: 1 }}>{d.getDate()}</span>
+                                            <span style={{ fontSize: 9.5, color: isDark ? '#818cf8' : '#5B5FEA', textTransform: 'uppercase', letterSpacing: '0.3px', marginTop: 1 }}>{mesesLabel[d.getMonth()]}</span>
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#E5E7EB' : '#334155' }}>{diasSemanaLabel[d.getDay()]}</div>
+                                        </div>
+                                        <span style={{ fontSize: 11, color: isDark ? '#6B7280' : '#94a3b8', border: `1px solid ${c.border}`, padding: '2px 7px', borderRadius: 999 }}>{regs.length}</span>
+                                        <span style={{ fontSize: 10.5, color: isDark ? '#4B5563' : '#94a3b8', minWidth: 36, textAlign: 'center' }}>{safeIdx + 1} / {datas.length}</span>
+                                        <button
+                                            onClick={() => { setDataIdx(i => Math.max(0, i - 1)); setExpandedId(null) }}
+                                            disabled={safeIdx === 0}
+                                            style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: safeIdx === 0 ? (isDark ? '#374151' : '#e2e8f0') : c.btnText, cursor: safeIdx === 0 ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 120ms' }}>
+                                            →
+                                        </button>
+                                    </div>
+
+                                    {/* registros da data ativa */}
+                                    {regs.map((r, j) => {
+                                        const regId = r.id ?? `date-${ds}-${j}`
+                                        const isExpanded = regs.length === 1 || expandedId === regId
+                                        const podeToggle = regs.length > 1
+                                        const trecho = getTrecho(r)
+                                        const alunoAtencao = (r as any).alunoAtencao as string | undefined
+                                        const pontoQueda = (r as any).pontoQueda as string | undefined
+                                        const isLast = j === regs.length - 1
+                                        const camposPreenchidos = CAMPOS_INLINE.filter(campo => {
+                                            const val = (r as any)[campo.key]
+                                            return val && typeof val === 'string' && val.trim()
+                                        })
+                                        return (
+                                            <div key={j}>
+                                                <div
+                                                    style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '10px 16px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms', cursor: podeToggle ? 'pointer' : 'default' }}
+                                                    className={podeToggle ? 'hover:bg-slate-50 dark:hover:bg-white/[0.02]' : ''}
+                                                    onClick={() => podeToggle && setExpandedId(isExpanded ? null : regId)}>
+                                                    <div style={{ width: 1, background: isDark ? '#374151' : '#E6EAF0', flexShrink: 0, alignSelf: 'stretch', marginRight: 10, minHeight: 24, position: 'relative' }}>
+                                                        <div style={{ position: 'absolute', left: -2, top: 4, width: 5, height: 5, borderRadius: '50%', background: isDark ? '#374151' : '#CBD5E1', border: `1px solid ${isDark ? '#4B5563' : '#E6EAF0'}` }} />
+                                                    </div>
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#E5E7EB' : '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                            {escolasUnicas.length > 1 && <span style={{ color: '#94a3b8', fontWeight: 400, marginRight: 4 }}>{nomeEscola(r)} ·</span>}
+                                                            {nomeSeg(r)} · {nomeTurma(r)}
                                                         </div>
-                                                        {/* expansão inline */}
-                                                        {isExpanded && (
-                                                            <div style={{ borderBottom: !isLast ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', padding: '12px 16px 14px 62px', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)' }}>
-                                                                {camposPreenchidos.length === 0 ? (
-                                                                    <p style={{ fontSize: 12, color: '#94a3b8' }}>Nenhum campo preenchido.</p>
-                                                                ) : (
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                                                        {camposPreenchidos.map(campo => (
-                                                                            <div key={campo.key}>
-                                                                                <p style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: isDark ? '#4B5563' : '#94a3b8', marginBottom: 2 }}>
-                                                                                    {campo.icon} {campo.label}
-                                                                                </p>
-                                                                                <p style={{ fontSize: 12.5, lineHeight: 1.55, color: isDark ? '#D1D5DB' : '#374151' }}>
-                                                                                    {(r as any)[campo.key]}
-                                                                                </p>
-                                                                            </div>
-                                                                        ))}
+                                                        {!isExpanded && (trecho
+                                                            ? <div style={{ fontSize: 11.5, fontStyle: 'italic', color: '#94a3b8', marginTop: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>"{trecho}"</div>
+                                                            : <div style={{ fontSize: 11, fontStyle: 'italic', color: isDark ? '#374151' : '#cbd5e1', marginTop: 2 }}>sem registro</div>
+                                                        )}
+                                                        {!isExpanded && (alunoAtencao || pontoQueda) && (
+                                                            <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+                                                                {alunoAtencao && <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }} title="Aluno que precisa de atenção" style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', color: '#d97706', cursor: 'pointer', fontFamily: 'inherit' }}>! {alunoAtencao}</button>}
+                                                                {pontoQueda && <button onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }} style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>Engajamento ↓</button>}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, alignSelf: 'flex-start' }}>
+                                                        <button onClick={e => { e.stopPropagation(); abrirEditar(r) }} style={{ fontSize: 11, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>Editar</button>
+                                                        {podeToggle && <span style={{ fontSize: 9, color: c.btnText, opacity: 0.5 }}>{isExpanded ? '▲' : '▼'}</span>}
+                                                    </div>
+                                                </div>
+                                                {isExpanded && (
+                                                    <div style={{ borderBottom: !isLast ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', padding: '4px 16px 14px 27px', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)' }}>
+                                                        {camposPreenchidos.length === 0 ? (
+                                                            <p style={{ fontSize: 12, fontStyle: 'italic', color: isDark ? '#374151' : '#cbd5e1' }}>sem registro</p>
+                                                        ) : (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                                                {camposPreenchidos.map(campo => (
+                                                                    <div key={campo.key}>
+                                                                        <p style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: isDark ? '#4B5563' : '#94a3b8', marginBottom: 2 }}>{campo.icon} {campo.label}</p>
+                                                                        <p style={{ fontSize: 12.5, lineHeight: 1.55, color: isDark ? '#D1D5DB' : '#374151' }}>{(r as any)[campo.key]}</p>
+                                                                    </div>
+                                                                ))}
+                                                                {(alunoAtencao || pontoQueda) && (
+                                                                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', paddingTop: 2 }}>
+                                                                        {alunoAtencao && <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }} title="Aluno que precisa de atenção" style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', color: '#d97706', cursor: 'pointer', fontFamily: 'inherit' }}>! {alunoAtencao}</button>}
+                                                                        {pontoQueda && <button onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }} style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>Engajamento ↓</button>}
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         )}
                                                     </div>
-                                                )
-                                            })}
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        )}
-                    </>
-                )
+                                                )}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </>
+                    )
+                })()
             ) : (
                 /* ── MODO POR TURMA — V3: card por turma + mini-timeline ── */
                 turmasAgrupadas.length === 0 ? (
