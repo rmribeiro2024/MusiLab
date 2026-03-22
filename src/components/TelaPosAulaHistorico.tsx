@@ -817,12 +817,13 @@ export default function TelaPosAulaHistorico() {
                                         className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
                                         <div style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, flexShrink: 0, minHeight: 16, background: cor }} />
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: '13px', fontWeight: 600, color: isDark ? '#E5E7EB' : '#1e293b' }}>{grupo.label}</div>
-                                            {escolasParaVistaTurma.length > 1 && (
-                                                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: 1 }}>{grupo.escola}</div>
-                                            )}
+                                            <div style={{ fontSize: '12.5px', fontWeight: 600, color: isDark ? '#E5E7EB' : '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                <span style={{ color: isDark ? '#6B7280' : '#94a3b8', fontWeight: 400 }}>{grupo.escola}</span>
+                                                <span style={{ color: isDark ? '#374151' : '#cbd5e1', margin: '0 5px' }}>·</span>
+                                                {grupo.label}
+                                            </div>
                                             {criterioLabel && (
-                                                <div style={{ marginTop: 4 }}>
+                                                <div style={{ marginTop: 3 }}>
                                                     <span style={{ fontSize: '10.5px', color: isDark ? '#6B7280' : '#64748b', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E6EAF0'}`, padding: '1px 7px', borderRadius: 999, display: 'inline-block' }}>{criterioLabel}</span>
                                                 </div>
                                             )}
