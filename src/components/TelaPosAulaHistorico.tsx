@@ -763,14 +763,15 @@ export default function TelaPosAulaHistorico() {
                         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 48,
                             opacity: painelVisible ? 1 : 0, transition: 'opacity 240ms ease' }}
                     />
-                    {/* painel */}
+                    {/* painel — sobe de baixo */}
                     <div style={{
-                        position: 'fixed', top: 0, right: 0, bottom: 0,
-                        width: Math.min(typeof window !== 'undefined' ? window.innerWidth : 480, 480),
+                        position: 'fixed', left: 0, right: 0, bottom: 0,
+                        height: '92dvh',
                         zIndex: 49, display: 'flex', flexDirection: 'column',
-                        transform: painelVisible ? 'translateX(0)' : 'translateX(100%)',
-                        transition: 'transform 240ms cubic-bezier(.4,0,.2,1)',
-                        boxShadow: '-4px 0 32px rgba(0,0,0,0.18)',
+                        borderRadius: '16px 16px 0 0', overflow: 'hidden',
+                        transform: painelVisible ? 'translateY(0)' : 'translateY(100%)',
+                        transition: 'transform 280ms cubic-bezier(.4,0,.2,1)',
+                        boxShadow: '0 -8px 40px rgba(0,0,0,0.22)',
                     }}>
                         <Suspense fallback={
                             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
