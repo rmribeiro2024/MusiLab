@@ -588,7 +588,7 @@ export default function TelaPosAulaHistorico() {
                                                 </div>
                                                 {/* count + chevron */}
                                                 <span style={{ fontSize: 11, color: isDark ? '#6B7280' : '#94a3b8', border: `1px solid ${c.border}`, padding: '2px 7px', borderRadius: 999 }}>
-                                                    {regs.length} {regs.length === 1 ? 'registro' : 'registros'}
+                                                    {regs.length}
                                                 </span>
                                                 <span style={{ fontSize: 10, color: isDark ? '#4B5563' : '#cbd5e1', marginLeft: 4 }}>{aberto ? '▲' : '▼'}</span>
                                             </div>
@@ -735,7 +735,7 @@ export default function TelaPosAulaHistorico() {
                                                 </span>
                                             )}
                                             <span style={{ fontSize: 11, color: isDark ? '#6B7280' : '#94a3b8', border: `1px solid ${c.border}`, padding: '2px 7px', borderRadius: 999 }}>
-                                                {grupo.regs.length} {grupo.regs.length === 1 ? 'registro' : 'registros'}
+                                                {grupo.regs.length}
                                             </span>
                                         </div>
                                         <span style={{ fontSize: '10px', color: isDark ? '#4B5563' : '#cbd5e1', marginLeft: 4 }}>{isOpen ? '▲' : '▼'}</span>
