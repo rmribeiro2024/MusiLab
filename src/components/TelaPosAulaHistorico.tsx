@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react'
+import React, { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
@@ -75,8 +75,19 @@ export default function TelaPosAulaHistorico() {
     const diasSemanaLabel = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
     const mesesLabel = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
-    // F1.3
-    const [campoTrecho, setCampoTrecho] = useState<CampoTrecho>('funcionouBem')
+    // F1.3 — multi-select de campos para trecho
+    const [camposTrecho, setCamposTrecho] = useState<Set<string>>(new Set(['funcionouBem']))
+    const [trechoMenuAberto, setTrechoMenuAberto] = useState(false)
+    const trechoMenuRef = useRef<HTMLDivElement>(null)
+    useEffect(() => {
+        if (!trechoMenuAberto) return
+        const handler = (e: MouseEvent) => {
+            if (trechoMenuRef.current && !trechoMenuRef.current.contains(e.target as Node))
+                setTrechoMenuAberto(false)
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [trechoMenuAberto])
 
     // F1.5 — filtros
     const [filtroEscola, setFiltroEscola] = useState('todas')
@@ -133,29 +144,32 @@ export default function TelaPosAulaHistorico() {
         return Array.from(map.entries()).map(([id, nome]) => ({ id, nome }))
     }, [todosRegistros, anosLetivos])
 
-    // F1.5 — segmentos únicos filtrados por escola
-    const segmentosUnicos = useMemo(() => {
-        const map = new Map<string, string>()
+    // F1.5 — séries únicas filtradas por escola
+    const seriesUnicas = useMemo(() => {
+        const map = new Map<string, { nomeSimples: string; escolaId: string; escolaNome: string }>()
         todosRegistros.forEach(r => {
             if (filtroEscola !== 'todas' && String(r.escola) !== filtroEscola) return
             const segId = String(r.segmento || r.serie || '')
-            if (segId) map.set(`${r.escola}__${segId}`, nomeSeg(r))
+            if (segId) {
+                const key = `${r.escola}__${segId}`
+                if (!map.has(key)) map.set(key, { nomeSimples: nomeSeg(r), escolaId: String(r.escola), escolaNome: nomeEscola(r) })
+            }
         })
-        return Array.from(map.entries()).map(([id, nome]) => ({ id, nome }))
+        return Array.from(map.entries()).map(([id, val]) => ({ id, ...val }))
     }, [todosRegistros, filtroEscola, anosLetivos])
 
-    // F1.5 — turmas filtradas por escola e segmento
+    // F1.5 — turmas filtradas por escola e série
     const turmasUnicas = useMemo(() => {
-        const map = new Map<string, string>()
+        const map = new Map<string, { nomeSimples: string; escolaId: string; escolaNome: string }>()
         todosRegistros.forEach(r => {
             if (filtroEscola !== 'todas' && String(r.escola) !== filtroEscola) return
             if (filtroSegmento !== 'todos' && `${r.escola}__${r.segmento || r.serie}` !== filtroSegmento) return
             if (r.turma) {
                 const key = `${r.escola}__${r.turma}__${r.segmento || r.serie}`
-                if (!map.has(key)) map.set(key, nomeTurma(r))
+                if (!map.has(key)) map.set(key, { nomeSimples: nomeTurma(r), escolaId: String(r.escola), escolaNome: nomeEscola(r) })
             }
         })
-        return Array.from(map.entries()).map(([id, nome]) => ({ id, nome }))
+        return Array.from(map.entries()).map(([id, val]) => ({ id, ...val }))
     }, [todosRegistros, filtroEscola, filtroSegmento, anosLetivos])
 
     // F1.5 — período
@@ -360,27 +374,18 @@ export default function TelaPosAulaHistorico() {
         turmasAgrupadas.map(g => g.key).join(','), datas.join(',')])
 
     const getTrecho = (r: any): string | null => {
-        // Modo "todos": concatena todos os campos de trecho não-vazios
-        if (campoTrecho === 'todos') {
+        // Concatena os campos selecionados (multi-select)
+        if (camposTrecho.size > 0) {
             const parts = CAMPOS_TRECHO
+                .filter(c => camposTrecho.has(c.value))
                 .map(c => (r as any)[c.value])
                 .filter((v): v is string => typeof v === 'string' && !!v.trim())
                 .map(v => v.trim())
             if (parts.length > 0) return parts.join(' · ')
-            // fallback para demais campos se nenhum campo de trecho preenchido
         }
-        // Campo selecionado primeiro (skip se modo todos já tratado acima)
-        if (campoTrecho !== 'todos') {
-            const preferred = (r as any)[campoTrecho]
-            if (preferred && typeof preferred === 'string' && preferred.trim()) return preferred.trim()
-        }
-        // Fallback completo: todos os campos de texto conhecidos em ordem
-        const allTextKeys = [
-            ...CAMPOS_TRECHO.map(c => c.value),
-            ...CAMPOS_INLINE.map(c => c.key),
-        ]
+        // Fallback: primeiro campo de texto preenchido
+        const allTextKeys = [...CAMPOS_TRECHO.map(c => c.value), ...CAMPOS_INLINE.map(c => c.key)]
         for (const key of allTextKeys) {
-            if (key === campoTrecho) continue
             const val = (r as any)[key]
             if (val && typeof val === 'string' && val.trim()) return val.trim()
         }
@@ -426,30 +431,72 @@ export default function TelaPosAulaHistorico() {
 
             {/* F1.5 — Filtros */}
             <div className="flex items-center gap-2 flex-wrap">
-                {([
-                    {
-                        value: filtroEscola,
-                        onChange: (v: string) => { setFiltroEscola(v); setFiltroSegmento('todos'); setFiltroTurma('todas') },
-                        options: [{ value: 'todas', label: 'Todas as escolas' }, ...escolasUnicas.map(e => ({ value: e.id, label: e.nome }))],
-                    },
-                    {
-                        value: filtroSegmento,
-                        onChange: (v: string) => { setFiltroSegmento(v); setFiltroTurma('todas') },
-                        options: [{ value: 'todos', label: 'Todos os segmentos' }, ...segmentosUnicos.map(s => ({ value: s.id, label: s.nome }))],
-                    },
-                    {
-                        value: filtroTurma,
-                        onChange: (v: string) => setFiltroTurma(v),
-                        options: [{ value: 'todas', label: 'Todas as turmas' }, ...turmasUnicas.map(t => ({ value: t.id, label: t.nome }))],
-                    },
-                ] as const).map((sel, idx) => (
-                    <div key={idx} style={{ position: 'relative' }}>
-                        <select value={sel.value} onChange={e => (sel.onChange as (v: string) => void)(e.target.value)} style={selStyle}>
-                            {sel.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                        </select>
-                        <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
-                    </div>
-                ))}
+                {/* Escola */}
+                <div style={{ position: 'relative' }}>
+                    <select value={filtroEscola} onChange={e => { setFiltroEscola(e.target.value); setFiltroSegmento('todos'); setFiltroTurma('todas') }} style={selStyle}>
+                        <option value="todas">Escola</option>
+                        {escolasUnicas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                    </select>
+                    <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
+                </div>
+
+                {/* Série — optgroup por escola quando há múltiplas */}
+                {seriesUnicas.length > 1 && (() => {
+                    const useGroups = escolasUnicas.length > 1 && filtroEscola === 'todas'
+                    const byEscola = useGroups ? (() => {
+                        const m = new Map<string, { escolaNome: string; series: typeof seriesUnicas }>()
+                        seriesUnicas.forEach(s => {
+                            if (!m.has(s.escolaId)) m.set(s.escolaId, { escolaNome: s.escolaNome, series: [] })
+                            m.get(s.escolaId)!.series.push(s)
+                        })
+                        return m
+                    })() : null
+                    return (
+                        <div style={{ position: 'relative' }}>
+                            <select value={filtroSegmento} onChange={e => { setFiltroSegmento(e.target.value); setFiltroTurma('todas') }} style={selStyle}>
+                                <option value="todos">Série</option>
+                                {useGroups && byEscola
+                                    ? Array.from(byEscola.entries()).map(([eId, { escolaNome, series }]) => (
+                                        <optgroup key={eId} label={escolaNome}>
+                                            {series.map(s => <option key={s.id} value={s.id}>{s.nomeSimples}</option>)}
+                                        </optgroup>
+                                    ))
+                                    : seriesUnicas.map(s => <option key={s.id} value={s.id}>{s.nomeSimples}</option>)
+                                }
+                            </select>
+                            <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
+                        </div>
+                    )
+                })()}
+
+                {/* Turma — optgroup por escola quando há múltiplas */}
+                {turmasUnicas.length > 1 && (() => {
+                    const useGroups = escolasUnicas.length > 1 && filtroEscola === 'todas'
+                    const byEscola = useGroups ? (() => {
+                        const m = new Map<string, { escolaNome: string; turmas: typeof turmasUnicas }>()
+                        turmasUnicas.forEach(t => {
+                            if (!m.has(t.escolaId)) m.set(t.escolaId, { escolaNome: t.escolaNome, turmas: [] })
+                            m.get(t.escolaId)!.turmas.push(t)
+                        })
+                        return m
+                    })() : null
+                    return (
+                        <div style={{ position: 'relative' }}>
+                            <select value={filtroTurma} onChange={e => setFiltroTurma(e.target.value)} style={selStyle}>
+                                <option value="todas">Turma</option>
+                                {useGroups && byEscola
+                                    ? Array.from(byEscola.entries()).map(([eId, { escolaNome, turmas }]) => (
+                                        <optgroup key={eId} label={escolaNome}>
+                                            {turmas.map(t => <option key={t.id} value={t.id}>{t.nomeSimples}</option>)}
+                                        </optgroup>
+                                    ))
+                                    : turmasUnicas.map(t => <option key={t.id} value={t.id}>{t.nomeSimples}</option>)
+                                }
+                            </select>
+                            <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
+                        </div>
+                    )
+                })()}
                 {/* select de período separado para poder adicionar custom inputs */}
                 <div style={{ position: 'relative' }}>
                     <select value={filtroPeriodo} onChange={e => setFiltroPeriodo(e.target.value)} style={selStyle}>
@@ -482,15 +529,47 @@ export default function TelaPosAulaHistorico() {
                 </div>
             )}
 
-            {/* F1.3 — Seletor de trecho */}
+            {/* F1.3 — Multi-select de trecho */}
             <div className="flex items-center gap-2">
-                <span className="text-[11px]" style={{ color: '#94a3b8' }}>Mostrar como trecho:</span>
-                <div style={{ position: 'relative' }}>
-                    <select value={campoTrecho} onChange={e => setCampoTrecho(e.target.value as CampoTrecho)} style={selStyle}>
-                        <option value="todos">Todos</option>
-                        {CAMPOS_TRECHO.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                    </select>
+                <span className="text-[11px]" style={{ color: '#94a3b8' }}>Trecho:</span>
+                <div ref={trechoMenuRef} style={{ position: 'relative' }}>
+                    <button onClick={() => setTrechoMenuAberto(v => !v)}
+                        style={{ ...selStyle, display: 'flex', alignItems: 'center', gap: 6, paddingRight: 22, cursor: 'pointer', minWidth: 140 }}>
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {camposTrecho.size === 0
+                                ? 'Nenhum'
+                                : camposTrecho.size === 1
+                                    ? CAMPOS_TRECHO.find(c => camposTrecho.has(c.value))?.label ?? '1 campo'
+                                    : `${camposTrecho.size} campos`}
+                        </span>
+                    </button>
                     <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
+                    {trechoMenuAberto && (
+                        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 50, background: isDark ? '#1F2937' : '#fff', border: `1px solid ${c.border}`, borderRadius: 8, boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)', minWidth: 210, padding: '4px 0' }}>
+                            {CAMPOS_TRECHO.map(campo => {
+                                const checked = camposTrecho.has(campo.value)
+                                return (
+                                    <label key={campo.value}
+                                        className="hover:bg-slate-50 dark:hover:bg-white/[0.04]"
+                                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, color: isDark ? '#D1D5DB' : '#374151', userSelect: 'none' }}>
+                                        <input type="checkbox" checked={checked}
+                                            onChange={() => setCamposTrecho(prev => {
+                                                const next = new Set(prev)
+                                                checked ? next.delete(campo.value) : next.add(campo.value)
+                                                return next
+                                            })}
+                                            style={{ accentColor: '#5B5FEA', cursor: 'pointer', width: 13, height: 13, flexShrink: 0 }} />
+                                        {campo.label}
+                                    </label>
+                                )
+                            })}
+                            <div style={{ borderTop: `1px solid ${c.border}`, margin: '4px 0' }} />
+                            <button onClick={() => setCamposTrecho(new Set())}
+                                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '5px 12px', fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                Limpar seleção
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -679,12 +758,6 @@ export default function TelaPosAulaHistorico() {
                                                                         ))}
                                                                     </div>
                                                                 )}
-                                                                {campoTrecho !== 'todos' && (
-                                                                    <button onClick={() => setCampoTrecho('todos')}
-                                                                        style={{ marginTop: 10, fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}>
-                                                                        ver tudo nas linhas
-                                                                    </button>
-                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
@@ -827,12 +900,6 @@ export default function TelaPosAulaHistorico() {
                                                                     </div>
                                                                 ))}
                                                             </div>
-                                                        )}
-                                                        {campoTrecho !== 'todos' && (
-                                                            <button onClick={() => setCampoTrecho('todos')}
-                                                                style={{ marginTop: 10, fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}>
-                                                                ver tudo nas linhas
-                                                            </button>
                                                         )}
                                                     </div>
                                                 )}

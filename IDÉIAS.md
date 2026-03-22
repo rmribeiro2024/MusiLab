@@ -1,7 +1,13 @@
 # MusiLab — Idéias de Melhorias
 
-> Atualizado em: 2026-03-20
+> Atualizado em: 2026-03-22
 > Legenda: ✅ Feito · ⏸ Pausado · [ ] Pendente
+
+---
+
+## 🤖 Resumo por IA no Histórico *(ideia 2026-03-22)*
+
+- [ ] **Resumo com IA por campo + período** — no módulo Histórico, o professor seleciona um campo (ex: "O que aprenderam") e um período (ex: "Este mês"). A IA (Gemini) lê todos os registros daquele campo no período e gera um resumo narrativo do que aconteceu: padrões, evolução, pontos recorrentes. Ex: "Nas últimas 4 semanas, as turmas do Fundamental II demonstraram avanço na leitura rítmica. Houve menção frequente de dificuldades com células sincopadas em 3 turmas distintas." Seria um botão "Resumir com IA" ao lado do seletor de trecho — gera um painel expansível com o resumo gerado.
 
 ---
 
