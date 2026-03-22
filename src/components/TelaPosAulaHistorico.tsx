@@ -534,10 +534,6 @@ export default function TelaPosAulaHistorico() {
                                                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '10px 16px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms', cursor: 'pointer' }}
                                                             className="hover:bg-slate-50 dark:hover:bg-white/[0.02]"
                                                             onClick={() => setExpandedId(isExpanded ? null : regId)}>
-                                                            {/* dot colorido da turma */}
-                                                            <div style={{ width: 36, flexShrink: 0, display: 'flex', justifyContent: 'center', paddingTop: 5, marginRight: 10 }}>
-                                                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: turmaColor, flexShrink: 0 }} />
-                                                            </div>
                                                             {/* conector vertical */}
                                                             <div style={{ width: 1, background: isDark ? '#374151' : '#E6EAF0', flexShrink: 0, alignSelf: 'stretch', marginRight: 10, minHeight: 24, position: 'relative' }}>
                                                                 <div style={{ position: 'absolute', left: -2, top: 4, width: 5, height: 5, borderRadius: '50%', background: isDark ? '#374151' : '#CBD5E1', border: `1px solid ${isDark ? '#4B5563' : '#E6EAF0'}` }} />
@@ -560,7 +556,7 @@ export default function TelaPosAulaHistorico() {
                                                                         {alunoAtencao && (
                                                                             <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
                                                                                 style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                                Atenção · {alunoAtencao}
+                                                                                {alunoAtencao}
                                                                             </button>
                                                                         )}
                                                                         {pontoQueda && (
@@ -697,7 +693,7 @@ export default function TelaPosAulaHistorico() {
                                                                 {alunoAtencao && (
                                                                     <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
                                                                         style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                        Atenção · {alunoAtencao}
+                                                                        {alunoAtencao}
                                                                     </button>
                                                                 )}
                                                                 {pontoQueda && (
