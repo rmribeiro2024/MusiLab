@@ -3,6 +3,8 @@ import { usePlanosContext } from '../contexts/PlanosContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 
+const TURMA_COLORS = ['#5B5FEA', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16']
+
 const CAMPOS_INLINE = [
     { icon: '📋', label: 'Realizado',               key: 'resumoAula' },
     { icon: '✅', label: 'O que aprenderam',         key: 'funcionouBem' },
@@ -77,10 +79,16 @@ export default function TelaPosAulaHistorico() {
     // F2.1 — insight dispensado
     const [insightDismissed, setInsightDismissed] = useState(false)
 
-    // F2.4 — modo de vista
-    const [modoVista, setModoVista] = useState<'data' | 'turma'>('data')
+    // F2.4 — modo de vista (V3: padrão é 'turma')
+    const [modoVista, setModoVista] = useState<'data' | 'turma'>('turma')
     const [filtroEscolaTurma, setFiltroEscolaTurma] = useState('todas')
-    const [turmaAberta, setTurmaAberta] = useState<string | null>(null)
+    const [turmasAbertas, setTurmasAbertas] = useState<Set<string>>(new Set())
+
+    const toggleTurma = (key: string) => setTurmasAbertas(prev => {
+        const next = new Set(prev)
+        next.has(key) ? next.delete(key) : next.add(key)
+        return next
+    })
 
     const todosRegistros = useMemo(() =>
         planos.flatMap(p =>
@@ -569,44 +577,139 @@ export default function TelaPosAulaHistorico() {
                     </>
                 )
             ) : (
-                /* ── MODO POR TURMA ── */
+                /* ── MODO POR TURMA — V3: card por turma + mini-timeline ── */
                 turmasAgrupadas.length === 0 ? (
                     <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] px-4 py-10 text-center">
                         <p className="text-[13px] text-slate-400 dark:text-[#6b7280]">Nenhum registro encontrado.</p>
                     </div>
                 ) : (
-                    <div className="v2-card rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] overflow-hidden border border-[#E6EAF0] dark:border-[#374151]">
-                        {turmasAgrupadas.map((grupo, i) => {
-                            const aberto = turmaAberta === grupo.key
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {turmasAgrupadas.map((grupo, colorIdx) => {
+                            const isOpen = turmasAbertas.has(grupo.key)
                             const lacuna = lacunas.find(l => l.key === grupo.key)
+                            const cor = lacuna
+                                ? (isDark ? '#374151' : '#e2e8f0')
+                                : TURMA_COLORS[colorIdx % TURMA_COLORS.length]
+
                             return (
-                                <div key={grupo.key} className={i > 0 ? 'border-t border-[#E6EAF0] dark:border-[#374151]' : ''}>
-                                    <button
-                                        onClick={() => setTurmaAberta(aberto ? null : grupo.key)}
-                                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition text-left">
-                                        <span className="flex-1 text-[13px] font-medium text-slate-700 dark:text-[#E5E7EB]">
-                                            {grupo.label}
-                                        </span>
-                                        {escolasParaVistaTurma.length > 1 && filtroEscolaTurma === 'todas' && (
-                                            <span className="text-[11px] text-slate-400 dark:text-[#6b7280] shrink-0">{grupo.escola}</span>
-                                        )}
-                                        {lacuna && (
-                                            <span style={{ fontSize: '10px', color: c.lacunaText, border: `1px dashed ${c.lacunaBdr}`, borderRadius: '4px', padding: '1px 5px', flexShrink: 0 }}>
-                                                {lacuna.dias}d sem reg.
-                                            </span>
-                                        )}
-                                        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium shrink-0">
-                                            {grupo.regs.length} reg.
-                                        </span>
-                                        <span className="text-slate-300 dark:text-slate-600 text-xs ml-1">
-                                            {aberto ? '▲' : '▼'}
-                                        </span>
-                                    </button>
-                                    {aberto && (
-                                        <div className="border-t border-[#F1F4F8] dark:border-[#374151]/60 divide-y divide-[#F1F4F8] dark:divide-[#374151]/60">
-                                            {grupo.regs.map((r, j) => renderRegistroRow(r, j, true))}
+                                <div key={grupo.key} className="v2-card" style={{ borderRadius: '12px', border: `1px solid ${c.border}`, overflow: 'hidden', boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.06)' }}>
+                                    {/* ── Cabeçalho da turma ── */}
+                                    <div onClick={() => toggleTurma(grupo.key)}
+                                        style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', borderBottom: isOpen ? `1px solid ${c.border}` : 'none', transition: 'background 100ms' }}
+                                        className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
+                                        {/* barra de cor */}
+                                        <div style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, flexShrink: 0, minHeight: 16, background: cor }} />
+                                        {/* nome + escola */}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 600, color: isDark ? '#E5E7EB' : '#1e293b' }}>{grupo.label}</div>
+                                            {escolasParaVistaTurma.length > 1 && (
+                                                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: 1 }}>{grupo.escola}</div>
+                                            )}
                                         </div>
-                                    )}
+                                        {/* badges */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            {lacuna && (
+                                                <span style={{ fontSize: '10px', color: '#f97316', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)', padding: '2px 6px', borderRadius: 999, fontWeight: 600 }}>
+                                                    {lacuna.dias}d sem reg.
+                                                </span>
+                                            )}
+                                            <span style={{ fontSize: '11px', fontWeight: 600, color: isDark ? '#34d399' : '#059669', background: isDark ? 'rgba(16,185,129,0.08)' : '#ecfdf5', border: isDark ? '1px solid rgba(16,185,129,0.2)' : '1px solid #a7f3d0', padding: '2px 7px', borderRadius: 999 }}>
+                                                {grupo.regs.length} reg.
+                                            </span>
+                                        </div>
+                                        <span style={{ fontSize: '10px', color: isDark ? '#4B5563' : '#cbd5e1', marginLeft: 4 }}>{isOpen ? '▲' : '▼'}</span>
+                                    </div>
+
+                                    {/* ── Mini-timeline interna ── */}
+                                    {isOpen && grupo.regs.map((r, j) => {
+                                        const d = new Date(r.data + 'T12:00:00')
+                                        const regId = r.id ?? `${grupo.key}-${j}`
+                                        const isExpanded = expandedId === regId
+                                        const trecho = getTrecho(r)
+                                        const alunoAtencao = (r as any).alunoAtencao as string | undefined
+                                        const pontoQueda = (r as any).pontoQueda as string | undefined
+                                        const isLast = j === grupo.regs.length - 1
+                                        const camposPreenchidos = CAMPOS_INLINE.filter(campo => {
+                                            const val = (r as any)[campo.key]
+                                            return val && typeof val === 'string' && val.trim()
+                                        })
+
+                                        return (
+                                            <div key={j}>
+                                                {/* linha do registro */}
+                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '10px 16px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms', cursor: 'pointer' }}
+                                                    className="hover:bg-slate-50 dark:hover:bg-white/[0.02]"
+                                                    onClick={() => setExpandedId(isExpanded ? null : regId)}>
+                                                    {/* data */}
+                                                    <div style={{ width: 36, flexShrink: 0, textAlign: 'center', marginRight: 10, paddingTop: 1 }}>
+                                                        <span style={{ fontSize: 15, fontWeight: 700, color: '#94a3b8', display: 'block', lineHeight: 1 }}>{d.getDate()}</span>
+                                                        <span style={{ fontSize: 9.5, color: '#cbd5e1', textTransform: 'uppercase', display: 'block', marginTop: 1 }}>{mesesLabel[d.getMonth()]}</span>
+                                                    </div>
+                                                    {/* conector vertical */}
+                                                    <div style={{ width: 1, background: isDark ? '#374151' : '#E6EAF0', flexShrink: 0, alignSelf: 'stretch', marginRight: 10, minHeight: 24, position: 'relative' }}>
+                                                        <div style={{ position: 'absolute', left: -2, top: 4, width: 5, height: 5, borderRadius: '50%', background: isDark ? '#374151' : '#CBD5E1', border: `1px solid ${isDark ? '#4B5563' : '#E6EAF0'}` }} />
+                                                    </div>
+                                                    {/* conteúdo */}
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        {trecho && (
+                                                            <div style={{ fontSize: 11.5, fontStyle: 'italic', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                "{trecho.length > 60 ? trecho.slice(0, 60) + '…' : trecho}"
+                                                            </div>
+                                                        )}
+                                                        {(alunoAtencao || pontoQueda) && (
+                                                            <div style={{ display: 'flex', gap: 4, marginTop: trecho ? 4 : 0, flexWrap: 'wrap' }}>
+                                                                {alunoAtencao && (
+                                                                    <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
+                                                                        style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                        👤 {alunoAtencao}
+                                                                    </button>
+                                                                )}
+                                                                {pontoQueda && (
+                                                                    <button onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }}
+                                                                        style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                        📉 engajamento
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {/* ver / fechar */}
+                                                    <button onClick={e => { e.stopPropagation(); setExpandedId(isExpanded ? null : regId) }}
+                                                        style={{ fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0, alignSelf: 'flex-start', transition: 'all 120ms' }}>
+                                                        {isExpanded ? '▲' : 'Ver'}
+                                                    </button>
+                                                </div>
+
+                                                {/* expansão inline */}
+                                                {isExpanded && (
+                                                    <div style={{ borderBottom: !isLast ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', padding: '12px 16px 14px 62px', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)' }}>
+                                                        {camposPreenchidos.length === 0 ? (
+                                                            <p style={{ fontSize: 12, color: '#94a3b8' }}>Nenhum campo preenchido.</p>
+                                                        ) : (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                                                {camposPreenchidos.map(campo => (
+                                                                    <div key={campo.key}>
+                                                                        <p style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: isDark ? '#4B5563' : '#94a3b8', marginBottom: 2 }}>
+                                                                            {campo.icon} {campo.label}
+                                                                        </p>
+                                                                        <p style={{ fontSize: 12.5, lineHeight: 1.55, color: isDark ? '#D1D5DB' : '#374151' }}>
+                                                                            {(r as any)[campo.key]}
+                                                                        </p>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end' }}>
+                                                            <button onClick={e => { e.stopPropagation(); abrirEditar(r) }}
+                                                                style={{ fontSize: 11.5, padding: '5px 12px', borderRadius: 7, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500 }}>
+                                                                ✏️ Editar registro
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                             )
                         })}
