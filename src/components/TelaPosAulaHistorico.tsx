@@ -1,7 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
+
+const ModalRegistroPosAula = lazy(() => import('./modals/ModalRegistroPosAula'))
 
 const TURMA_COLORS = ['#5B5FEA', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16']
 
@@ -54,10 +56,19 @@ function diasUteis(from: Date, to: Date): number {
 export default function TelaPosAulaHistorico() {
     const { planos, editarRegistro } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
-    const { setModalRegistro, setPlanoParaRegistro } = useCalendarioContext()
+    const { setPlanoParaRegistro } = useCalendarioContext()
 
     // expansão inline por id do registro
     const [expandedId, setExpandedId] = useState<string | number | null>(null)
+
+    // painel lateral de edição
+    const [painelAberto, setPainelAberto] = useState(false)
+    const [painelVisible, setPainelVisible] = useState(false)
+
+    useEffect(() => {
+        if (painelAberto) requestAnimationFrame(() => setPainelVisible(true))
+        else setPainelVisible(false)
+    }, [painelAberto])
 
     const isDark = useIsDark()
 
@@ -306,7 +317,12 @@ export default function TelaPosAulaHistorico() {
         const plano = planos.find(p => p.id == r.planoId)
         if (plano) setPlanoParaRegistro(plano)
         editarRegistro(r)
-        setModalRegistro(true)
+        setPainelAberto(true)
+    }
+
+    const fecharPainel = () => {
+        setPainelVisible(false)
+        setTimeout(() => setPainelAberto(false), 240)
     }
 
     const getTrecho = (r: any): string | null => {
@@ -736,6 +752,39 @@ export default function TelaPosAulaHistorico() {
                         })}
                     </div>
                 )
+            )}
+
+            {/* ── Painel lateral de edição ── */}
+            {painelAberto && (
+                <>
+                    {/* backdrop */}
+                    <div
+                        onClick={fecharPainel}
+                        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 48,
+                            opacity: painelVisible ? 1 : 0, transition: 'opacity 240ms ease' }}
+                    />
+                    {/* painel */}
+                    <div style={{
+                        position: 'fixed', top: 0, right: 0, bottom: 0,
+                        width: Math.min(typeof window !== 'undefined' ? window.innerWidth : 480, 480),
+                        zIndex: 49, display: 'flex', flexDirection: 'column',
+                        transform: painelVisible ? 'translateX(0)' : 'translateX(100%)',
+                        transition: 'transform 240ms cubic-bezier(.4,0,.2,1)',
+                        boxShadow: '-4px 0 32px rgba(0,0,0,0.18)',
+                    }}>
+                        <Suspense fallback={
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: isDark ? '#1F2937' : '#fff', color: '#94a3b8', fontSize: 13 }}>
+                                Carregando...
+                            </div>
+                        }>
+                            <ModalRegistroPosAula
+                                inlineMode={true}
+                                onVoltar={fecharPainel}
+                            />
+                        </Suspense>
+                    </div>
+                </>
             )}
         </div>
     )
