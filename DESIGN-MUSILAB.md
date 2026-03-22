@@ -38,6 +38,13 @@ Linhas de lista **não são clicáveis como um todo**. Ações são sempre botõ
 
 ---
 
+### Sem decoração sem significado
+Elementos visuais só existem se comunicam algo que o texto não consegue sozinho.
+- Cor de turma na **lista de turmas** → faz sentido (diferencia cards)
+- Cor de turma em **row dentro de uma data** → ruído (turma já está no texto)
+- Badge de aluno `Atenção · marcos` → redundante (o contexto do campo já implica atenção)
+- Regra: se remover o elemento visual e a informação continuar clara = remover
+
 ### Modernidade vs. app infantil
 - Sem gradientes decorativos desnecessários
 - Sem sombras pesadas
