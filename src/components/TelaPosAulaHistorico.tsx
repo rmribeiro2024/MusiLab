@@ -76,12 +76,7 @@ export default function TelaPosAulaHistorico() {
     const mesesLabel = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
     // F1.3
-    const [camposTrecho, setCamposTrecho] = useState<Set<string>>(new Set(['funcionouBem']))
-    const toggleCampoTrecho = (key: string) => setCamposTrecho(prev => {
-        const next = new Set(prev)
-        next.has(key) ? next.delete(key) : next.add(key)
-        return next
-    })
+    const [campoTrecho, setCampoTrecho] = useState<CampoTrecho>('funcionouBem')
 
     // F1.5 — filtros
     const [filtroEscola, setFiltroEscola] = useState('todas')
@@ -351,20 +346,27 @@ export default function TelaPosAulaHistorico() {
         turmasAgrupadas.map(g => g.key).join(','), datas.join(',')])
 
     const getTrecho = (r: any): string | null => {
-        // Campos selecionados: tenta cada um e concatena os não-vazios
-        const selectedKeys = camposTrecho.size > 0
-            ? Array.from(camposTrecho)
-            : CAMPOS_TRECHO.map(c => c.value) // se nenhum selecionado, usa todos
-        const parts: string[] = []
-        for (const key of selectedKeys) {
-            const val = (r as any)[key]
-            if (val && typeof val === 'string' && val.trim()) parts.push(val.trim())
+        // Modo "todos": concatena todos os campos de trecho não-vazios
+        if (campoTrecho === 'todos') {
+            const parts = CAMPOS_TRECHO
+                .map(c => (r as any)[c.value])
+                .filter((v): v is string => typeof v === 'string' && !!v.trim())
+                .map(v => v.trim())
+            if (parts.length > 0) return parts.join(' · ')
+            // fallback para demais campos se nenhum campo de trecho preenchido
         }
-        if (parts.length > 0) return parts.join(' · ')
-        // Fallback: qualquer campo de texto preenchido que não esteja na seleção
-        const allTextKeys = [...CAMPOS_TRECHO.map(c => c.value), ...CAMPOS_INLINE.map(c => c.key)]
+        // Campo selecionado primeiro (skip se modo todos já tratado acima)
+        if (campoTrecho !== 'todos') {
+            const preferred = (r as any)[campoTrecho]
+            if (preferred && typeof preferred === 'string' && preferred.trim()) return preferred.trim()
+        }
+        // Fallback completo: todos os campos de texto conhecidos em ordem
+        const allTextKeys = [
+            ...CAMPOS_TRECHO.map(c => c.value),
+            ...CAMPOS_INLINE.map(c => c.key),
+        ]
         for (const key of allTextKeys) {
-            if (camposTrecho.has(key)) continue
+            if (key === campoTrecho) continue
             const val = (r as any)[key]
             if (val && typeof val === 'string' && val.trim()) return val.trim()
         }
@@ -461,27 +463,16 @@ export default function TelaPosAulaHistorico() {
                 </div>
             )}
 
-            {/* F1.3 — Seletor de trecho (multicheck) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>Trecho:</span>
-                {CAMPOS_TRECHO.map(campo => {
-                    const ativo = camposTrecho.has(campo.value)
-                    return (
-                        <button key={campo.value} onClick={() => toggleCampoTrecho(campo.value)}
-                            style={{ fontSize: 11, padding: '2px 9px', borderRadius: 999, border: `1px solid ${ativo ? (isDark ? '#818cf8' : '#5B5FEA') : c.border}`, background: ativo ? (isDark ? 'rgba(129,140,248,0.12)' : '#EEF0FF') : 'transparent', color: ativo ? (isDark ? '#818cf8' : '#5B5FEA') : c.btnText, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms', fontWeight: ativo ? 500 : 400 }}>
-                            {campo.label}
-                        </button>
-                    )
-                })}
-                <button
-                    onClick={() => setCamposTrecho(
-                        camposTrecho.size === CAMPOS_TRECHO.length
-                            ? new Set(['funcionouBem'])
-                            : new Set(CAMPOS_TRECHO.map(c => c.value))
-                    )}
-                    style={{ fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '2px 4px', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}>
-                    {camposTrecho.size === CAMPOS_TRECHO.length ? 'limpar' : 'todos'}
-                </button>
+            {/* F1.3 — Seletor de trecho */}
+            <div className="flex items-center gap-2">
+                <span className="text-[11px]" style={{ color: '#94a3b8' }}>Mostrar como trecho:</span>
+                <div style={{ position: 'relative' }}>
+                    <select value={campoTrecho} onChange={e => setCampoTrecho(e.target.value as CampoTrecho)} style={selStyle}>
+                        <option value="todos">Todos</option>
+                        {CAMPOS_TRECHO.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                    <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
+                </div>
             </div>
 
             {/* F1.4 — chips de filtro ativo */}
@@ -669,6 +660,12 @@ export default function TelaPosAulaHistorico() {
                                                                         ))}
                                                                     </div>
                                                                 )}
+                                                                {campoTrecho !== 'todos' && (
+                                                                    <button onClick={() => setCampoTrecho('todos')}
+                                                                        style={{ marginTop: 10, fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}>
+                                                                        ver tudo nas linhas
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
@@ -811,6 +808,12 @@ export default function TelaPosAulaHistorico() {
                                                                     </div>
                                                                 ))}
                                                             </div>
+                                                        )}
+                                                        {campoTrecho !== 'todos' && (
+                                                            <button onClick={() => setCampoTrecho('todos')}
+                                                                style={{ marginTop: 10, fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}>
+                                                                ver tudo nas linhas
+                                                            </button>
                                                         )}
                                                     </div>
                                                 )}
