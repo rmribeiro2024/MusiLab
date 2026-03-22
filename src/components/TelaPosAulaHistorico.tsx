@@ -804,10 +804,10 @@ export default function TelaPosAulaHistorico() {
                                 })
                             )
 
-                            // label do critério (só quando único selecionado)
-                            const criterioLabel = camposTrecho.size === 1
-                                ? CAMPOS_TRECHO.find(ct => camposTrecho.has(ct.value))?.label ?? null
-                                : null
+                            // labels dos critérios ativos
+                            const criterioLabels = camposTrecho.size > 0
+                                ? CAMPOS_TRECHO.filter(ct => camposTrecho.has(ct.value)).map(ct => ct.label)
+                                : []
 
                             return (
                                 <div key={grupo.key} className="v2-card" style={{ borderRadius: '12px', border: `1px solid ${c.border}`, overflow: 'hidden', boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.06)' }}>
@@ -826,9 +826,14 @@ export default function TelaPosAulaHistorico() {
                                                 )}
                                                 {grupo.label}
                                             </div>
-                                            {criterioLabel && (
-                                                <div style={{ marginTop: 3 }}>
-                                                    <span style={{ fontSize: '10.5px', color: isDark ? '#6B7280' : '#64748b', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E6EAF0'}`, padding: '1px 7px', borderRadius: 999, display: 'inline-block' }}>{criterioLabel}</span>
+                                            {criterioLabels.length > 0 && (
+                                                <div style={{ marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                                    {criterioLabels.slice(0, 2).map(lbl => (
+                                                        <span key={lbl} style={{ fontSize: '10.5px', color: isDark ? '#6B7280' : '#64748b', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E6EAF0'}`, padding: '1px 7px', borderRadius: 999 }}>{lbl}</span>
+                                                    ))}
+                                                    {criterioLabels.length > 2 && (
+                                                        <span style={{ fontSize: '10.5px', color: isDark ? '#6B7280' : '#64748b', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E6EAF0'}`, padding: '1px 7px', borderRadius: 999 }}>+{criterioLabels.length - 2}</span>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
