@@ -9,7 +9,7 @@ const TURMA_COLORS = ['#5B5FEA', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#0
 
 const CAMPOS_INLINE = [
     { icon: '📋', label: 'Realizado',                   key: 'resumoAula' },
-    { icon: '✅', label: 'O que aprenderam',             key: 'funcionouBem' },
+    { icon: '🎯', label: 'O que aprenderam',             key: 'funcionouBem' },
     { icon: '⭐', label: 'O que faria de novo',          key: 'repetiria' },
     { icon: '💭', label: 'O que faria diferente',       key: 'naoFuncionou' },
     { icon: '🎵', label: 'O que fizeram de inesperado', key: 'surpresaMusical' },
