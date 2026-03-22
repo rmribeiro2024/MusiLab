@@ -80,8 +80,8 @@ export default function TelaPosAulaHistorico() {
     const diasSemanaLabel = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
     const mesesLabel = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
-    // F1.3 — multi-select de campos para trecho
-    const [camposTrecho, setCamposTrecho] = useState<Set<string>>(new Set(['funcionouBem']))
+    // F1.3 — critério único para trecho
+    const [campoTrecho, setCampoTrecho] = useState<string>('funcionouBem')
     const [trechoMenuAberto, setTrechoMenuAberto] = useState(false)
     const trechoMenuRef = useRef<HTMLDivElement>(null)
     useEffect(() => {
@@ -380,19 +380,8 @@ export default function TelaPosAulaHistorico() {
     }, [filtroEscola, filtroSegmento, filtroTurma, filtroPeriodo, filtroCustomDe, filtroCustomAte])
 
     const getTrecho = (r: any): string | null => {
-        // Concatena os campos selecionados (multi-select)
-        if (camposTrecho.size > 0) {
-            const parts = CAMPOS_TRECHO
-                .filter(c => camposTrecho.has(c.value))
-                .map(c => (r as any)[c.value])
-                .filter((v): v is string => typeof v === 'string' && !!v.trim())
-                .map(v => v.trim())
-            if (parts.length > 0) return parts.join(' · ')
-        }
-        // Fallback: primeiro campo de texto preenchido
-        const allTextKeys = [...CAMPOS_TRECHO.map(c => c.value), ...CAMPOS_INLINE.map(c => c.key)]
-        for (const key of allTextKeys) {
-            const val = (r as any)[key]
+        if (campoTrecho) {
+            const val = (r as any)[campoTrecho]
             if (val && typeof val === 'string' && val.trim()) return val.trim()
         }
         return null
@@ -590,47 +579,16 @@ export default function TelaPosAulaHistorico() {
                         </button>
                     ))}
                 </div>
-                {/* trecho multi-select + contagem */}
+                {/* trecho — select único + contagem */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 11, color: isDark ? '#4B5563' : '#cbd5e1' }}>Trecho:</span>
-                    <div ref={trechoMenuRef} style={{ position: 'relative' }}>
-                        <button onClick={() => setTrechoMenuAberto(v => !v)}
-                            style={{ ...selStyle, fontSize: '11px', display: 'flex', alignItems: 'center', gap: 6, paddingRight: 22, cursor: 'pointer', minWidth: 120 }}>
-                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {camposTrecho.size === 0
-                                    ? 'Nenhum'
-                                    : camposTrecho.size === 1
-                                        ? CAMPOS_TRECHO.find(ct => camposTrecho.has(ct.value))?.label ?? '1 campo'
-                                        : `${camposTrecho.size} campos`}
-                            </span>
-                        </button>
+                    <div style={{ position: 'relative' }}>
+                        <select value={campoTrecho} onChange={e => setCampoTrecho(e.target.value)} style={{ ...selStyle, paddingRight: 24, minWidth: 160 }}>
+                            {CAMPOS_TRECHO.map(ct => (
+                                <option key={ct.value} value={ct.value}>{ct.label}</option>
+                            ))}
+                        </select>
                         <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
-                        {trechoMenuAberto && (
-                            <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 50, background: isDark ? '#1F2937' : '#fff', border: `1px solid ${c.border}`, borderRadius: 8, boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)', minWidth: 210, padding: '4px 0' }}>
-                                {CAMPOS_TRECHO.map(campo => {
-                                    const checked = camposTrecho.has(campo.value)
-                                    return (
-                                        <label key={campo.value}
-                                            className="hover:bg-slate-50 dark:hover:bg-white/[0.04]"
-                                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, color: isDark ? '#D1D5DB' : '#374151', userSelect: 'none' }}>
-                                            <input type="checkbox" checked={checked}
-                                                onChange={() => setCamposTrecho(prev => {
-                                                    const next = new Set(prev)
-                                                    checked ? next.delete(campo.value) : next.add(campo.value)
-                                                    return next
-                                                })}
-                                                style={{ accentColor: '#5B5FEA', cursor: 'pointer', width: 13, height: 13, flexShrink: 0 }} />
-                                            {campo.label}
-                                        </label>
-                                    )
-                                })}
-                                <div style={{ borderTop: `1px solid ${c.border}`, margin: '4px 0' }} />
-                                <button onClick={() => setCamposTrecho(new Set())}
-                                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '5px 12px', fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                    Limpar seleção
-                                </button>
-                            </div>
-                        )}
                     </div>
                     <span style={{ fontSize: 11, color: isDark ? '#4B5563' : '#cbd5e1', minWidth: 20, textAlign: 'right' }}>{registrosFiltrados.length}</span>
                 </div>
@@ -710,8 +668,8 @@ export default function TelaPosAulaHistorico() {
                                         const alunoAtencao = (r as any).alunoAtencao as string | undefined
                                         const pontoQueda = (r as any).pontoQueda as string | undefined
                                         const isLast = j === regsVisiveis.length - 1
-                                        const camposAExibir = camposTrecho.size > 0
-                                            ? CAMPOS_INLINE.filter(campo => camposTrecho.has(campo.key))
+                                        const camposAExibir = campoTrecho
+                                            ? CAMPOS_INLINE.filter(campo => campo.key === campoTrecho)
                                             : CAMPOS_INLINE
                                         const camposPreenchidos = camposAExibir.filter(campo => {
                                             const val = (r as any)[campo.key]
@@ -793,27 +751,15 @@ export default function TelaPosAulaHistorico() {
                                 ? (isDark ? '#374151' : '#e2e8f0')
                                 : TURMA_COLORS[colorIdx % TURMA_COLORS.length]
 
-                            // filtra registros sem conteúdo relevante
-                            const camposAExibir = camposTrecho.size > 0
-                                ? CAMPOS_INLINE.filter(campo => camposTrecho.has(campo.key))
-                                : CAMPOS_INLINE
-                            const regsComConteudo = grupo.regs.filter(r =>
-                                camposAExibir.some(campo => {
-                                    const val = (r as any)[campo.key]
-                                    return val && typeof val === 'string' && val.trim()
-                                })
-                            )
+                            // filtra registros sem conteúdo no critério selecionado
+                            const regsComConteudo = grupo.regs.filter(r => {
+                                const val = (r as any)[campoTrecho]
+                                return val && typeof val === 'string' && val.trim()
+                            })
 
-                            // label + ícone do critério ativo (só quando único)
-                            const criterioAtivo = camposTrecho.size === 1
-                                ? CAMPOS_TRECHO.find(ct => camposTrecho.has(ct.value)) ?? null
-                                : null
-                            const criterioLabels = camposTrecho.size > 0
-                                ? CAMPOS_TRECHO.filter(ct => camposTrecho.has(ct.value)).map(ct => ct.label)
-                                : []
-                            const criterioIcon = criterioAtivo
-                                ? CAMPOS_INLINE.find(c => c.key === criterioAtivo.value)?.icon ?? ''
-                                : ''
+                            // label + ícone do critério ativo
+                            const criterioAtivo = CAMPOS_TRECHO.find(ct => ct.value === campoTrecho) ?? null
+                            const criterioIcon = CAMPOS_INLINE.find(c => c.key === campoTrecho)?.icon ?? ''
 
                             return (
                                 <div key={grupo.key} className="v2-card" style={{ borderRadius: '12px', border: `1px solid ${c.border}`, overflow: 'hidden', boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.06)' }}>
@@ -870,32 +816,11 @@ export default function TelaPosAulaHistorico() {
                                                     const isHovered = hoveredId === regId
                                                     const isLast = j === regsComConteudo.length - 1
 
-                                                    // conteúdo a exibir
-                                                    const camposPreenchidos = camposAExibir.filter(campo => {
-                                                        const val = (r as any)[campo.key]
-                                                        return val && typeof val === 'string' && val.trim()
-                                                    })
+                                                    // conteúdo a exibir — critério único, texto direto
                                                     const textoNode: React.ReactNode = (() => {
-                                                        if (camposPreenchidos.length === 0) return null
-                                                        // critério único: texto direto
-                                                        if (camposTrecho.size <= 1) {
-                                                            const key = camposPreenchidos[0].key
-                                                            return (r as any)[key] as string
-                                                        }
-                                                        // múltiplos critérios: micro-label acima + valor abaixo (Variação B)
-                                                        return (
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                                                                {camposPreenchidos.map(campo => {
-                                                                    const lbl = CAMPOS_TRECHO.find(ct => ct.value === campo.key)?.label ?? campo.label
-                                                                    return (
-                                                                        <div key={campo.key} style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                                                            <span style={{ fontSize: '9.5px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: isDark ? '#4B5563' : '#b0bac9' }}>{lbl}</span>
-                                                                            <span style={{ fontSize: 12.5, color: isDark ? '#D1D5DB' : '#374151', lineHeight: 1.45 }}>{((r as any)[campo.key] as string).trim()}</span>
-                                                                        </div>
-                                                                    )
-                                                                })}
-                                                            </div>
-                                                        )
+                                                        const val = (r as any)[campoTrecho]
+                                                        if (val && typeof val === 'string' && val.trim()) return val.trim()
+                                                        return null
                                                     })()
 
                                                     const isExpanded = expandedId === regId
@@ -927,7 +852,7 @@ export default function TelaPosAulaHistorico() {
                                                                     <button
                                                                         onClick={() => setExpandedId(isExpanded ? null : regId)}
                                                                         style={{ fontSize: 11, padding: '2px 9px', borderRadius: 6, border: `1px solid ${isExpanded ? '#c7d2fe' : c.border}`, background: isExpanded ? '#EEF0FF' : 'transparent', color: isExpanded ? '#5B5FEA' : c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                        {isExpanded ? 'Fechar' : 'Ver'}
+                                                                        {isExpanded ? 'Fechar' : 'Registro completo'}
                                                                     </button>
                                                                     <button
                                                                         onClick={() => abrirEditar(r)}
