@@ -821,6 +821,9 @@ export default function TelaPosAulaHistorico() {
                                             {escolasParaVistaTurma.length > 1 && (
                                                 <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: 1 }}>{grupo.escola}</div>
                                             )}
+                                            {criterioLabel && (
+                                                <div style={{ fontSize: '10.5px', color: isDark ? '#4B5563' : '#94a3b8', marginTop: 2 }}>{criterioLabel}</div>
+                                            )}
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                             {lacuna && (
@@ -843,14 +846,6 @@ export default function TelaPosAulaHistorico() {
                                             </p>
                                         ) : (
                                             <>
-                                                {/* faixa de critério — só quando um campo selecionado */}
-                                                {criterioLabel && (
-                                                    <div style={{ padding: '4px 14px', borderBottom: `1px solid ${c.border}`, background: isDark ? 'rgba(255,255,255,0.01)' : '#FAFBFC' }}>
-                                                        <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: isDark ? '#4B5563' : '#94a3b8' }}>
-                                                            {criterioLabel}
-                                                        </span>
-                                                    </div>
-                                                )}
 
                                                 {/* linhas */}
                                                 {regsComConteudo.map((r, j) => {
