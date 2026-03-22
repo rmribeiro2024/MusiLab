@@ -871,7 +871,7 @@ export default function TelaPosAulaHistorico() {
                                                                     <button
                                                                         onClick={() => setExpandedId(isExpanded ? null : regId)}
                                                                         style={{ fontSize: 11, padding: '2px 9px', borderRadius: 6, border: `1px solid ${isExpanded ? '#c7d2fe' : c.border}`, background: isExpanded ? '#EEF0FF' : 'transparent', color: isExpanded ? '#5B5FEA' : c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                        {isExpanded ? 'Fechar' : 'Completo'}
+                                                                        {isExpanded ? 'fechar' : 'ver +'}
                                                                     </button>
                                                                     <button
                                                                         onClick={() => abrirEditar(r)}
