@@ -242,3 +242,8 @@ background: transparent;
 | 2026-03-22 | Badge "aluno atenção": `! nome` em âmbar | Cor + `!` comunicam contexto sem emoji |
 | 2026-03-22 | Linhas de lista não são clicáveis como todo | Evitar contradição com elementos interativos inline |
 | 2026-03-22 | "Por data" idêntico ao "Por turma" | Consistência entre modos de vista |
+| 2026-03-22 | Badge de contagem: só o número, sem label | Contexto já é claro; label é ruído |
+| 2026-03-22 | Estado vazio: texto inline, sem card | Card branco ocupa tela sem necessidade |
+| 2026-03-22 | Trecho com fallback completo + "sem registro" | Linha nunca fica totalmente em branco |
+| 2026-03-22 | Período personalizado + auto-expand | Filtro ativo abre todos os cards automaticamente |
+| 2026-03-22 | Filtro em cascata: escola → segmento → turma | Coerência com estrutura pedagógica |
