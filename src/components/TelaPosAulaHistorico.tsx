@@ -326,8 +326,19 @@ export default function TelaPosAulaHistorico() {
     }
 
     const getTrecho = (r: any): string | null => {
-        const val = (r as any)[campoTrecho]
-        return val && typeof val === 'string' && val.trim() ? val.trim() : null
+        // Tenta o campo selecionado primeiro
+        const preferred = (r as any)[campoTrecho]
+        if (preferred && typeof preferred === 'string' && preferred.trim()) return preferred.trim()
+        // Fallback: primeiro campo não-vazio entre os campos de trecho disponíveis
+        for (const campo of CAMPOS_TRECHO) {
+            if (campo.value === campoTrecho) continue
+            const val = (r as any)[campo.value]
+            if (val && typeof val === 'string' && val.trim()) return val.trim()
+        }
+        // Último fallback: resumo da aula
+        const resumo = (r as any).resumoAula
+        if (resumo && typeof resumo === 'string' && resumo.trim()) return resumo.trim()
+        return null
     }
 
     const filtrosAtivos = filtroEscola !== 'todas' || filtroTurma !== 'todas' || filtroPeriodo !== 'tudo' || !!filtroAlunoAtencao || filtroEngajamento
@@ -509,7 +520,7 @@ export default function TelaPosAulaHistorico() {
                                                 </div>
                                                 {/* count + chevron */}
                                                 <span style={{ fontSize: 11, fontWeight: 600, color: isDark ? '#34d399' : '#059669', background: isDark ? 'rgba(16,185,129,0.08)' : '#ecfdf5', border: isDark ? '1px solid rgba(16,185,129,0.2)' : '1px solid #a7f3d0', padding: '2px 7px', borderRadius: 999 }}>
-                                                    {regs.length} reg.
+                                                    {regs.length} {regs.length === 1 ? 'aula' : 'aulas'}
                                                 </span>
                                                 <span style={{ fontSize: 10, color: isDark ? '#4B5563' : '#cbd5e1', marginLeft: 4 }}>{aberto ? '▲' : '▼'}</span>
                                             </div>
@@ -642,11 +653,11 @@ export default function TelaPosAulaHistorico() {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                             {lacuna && (
                                                 <span style={{ fontSize: '10px', color: '#f97316', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)', padding: '2px 6px', borderRadius: 999, fontWeight: 600 }}>
-                                                    {lacuna.dias}d sem reg.
+                                                    {lacuna.dias}d sem aula
                                                 </span>
                                             )}
                                             <span style={{ fontSize: '11px', fontWeight: 600, color: isDark ? '#34d399' : '#059669', background: isDark ? 'rgba(16,185,129,0.08)' : '#ecfdf5', border: isDark ? '1px solid rgba(16,185,129,0.2)' : '1px solid #a7f3d0', padding: '2px 7px', borderRadius: 999 }}>
-                                                {grupo.regs.length} reg.
+                                                {grupo.regs.length} {grupo.regs.length === 1 ? 'aula' : 'aulas'}
                                             </span>
                                         </div>
                                         <span style={{ fontSize: '10px', color: isDark ? '#4B5563' : '#cbd5e1', marginLeft: 4 }}>{isOpen ? '▲' : '▼'}</span>
