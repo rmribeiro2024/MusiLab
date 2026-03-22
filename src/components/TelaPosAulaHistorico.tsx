@@ -36,7 +36,7 @@ const CAMPOS_TRECHO = [
     { value: 'surpresaMusical', label: 'O que fizeram de inesperado' },
 ] as const
 
-type CampoTrecho = typeof CAMPOS_TRECHO[number]['value']
+type CampoTrecho = typeof CAMPOS_TRECHO[number]['value'] | 'todos'
 
 // F2.1 — calcula dias úteis entre duas datas
 function diasUteis(from: Date, to: Date): number {
@@ -326,18 +326,30 @@ export default function TelaPosAulaHistorico() {
     }
 
     const getTrecho = (r: any): string | null => {
-        // Tenta o campo selecionado primeiro
-        const preferred = (r as any)[campoTrecho]
-        if (preferred && typeof preferred === 'string' && preferred.trim()) return preferred.trim()
-        // Fallback: primeiro campo não-vazio entre os campos de trecho disponíveis
-        for (const campo of CAMPOS_TRECHO) {
-            if (campo.value === campoTrecho) continue
-            const val = (r as any)[campo.value]
+        // Modo "todos": concatena todos os campos de trecho não-vazios
+        if (campoTrecho === 'todos') {
+            const parts = CAMPOS_TRECHO
+                .map(c => (r as any)[c.value])
+                .filter((v): v is string => typeof v === 'string' && !!v.trim())
+                .map(v => v.trim())
+            if (parts.length > 0) return parts.join(' · ')
+            // fallback para demais campos se nenhum campo de trecho preenchido
+        }
+        // Campo selecionado primeiro (skip se modo todos já tratado acima)
+        if (campoTrecho !== 'todos') {
+            const preferred = (r as any)[campoTrecho]
+            if (preferred && typeof preferred === 'string' && preferred.trim()) return preferred.trim()
+        }
+        // Fallback completo: todos os campos de texto conhecidos em ordem
+        const allTextKeys = [
+            ...CAMPOS_TRECHO.map(c => c.value),
+            ...CAMPOS_INLINE.map(c => c.key),
+        ]
+        for (const key of allTextKeys) {
+            if (key === campoTrecho) continue
+            const val = (r as any)[key]
             if (val && typeof val === 'string' && val.trim()) return val.trim()
         }
-        // Último fallback: resumo da aula
-        const resumo = (r as any).resumoAula
-        if (resumo && typeof resumo === 'string' && resumo.trim()) return resumo.trim()
         return null
     }
 
@@ -420,6 +432,7 @@ export default function TelaPosAulaHistorico() {
                 <span className="text-[11px]" style={{ color: '#94a3b8' }}>Mostrar como trecho:</span>
                 <div style={{ position: 'relative' }}>
                     <select value={campoTrecho} onChange={e => setCampoTrecho(e.target.value as CampoTrecho)} style={selStyle}>
+                        <option value="todos">Todos</option>
                         {CAMPOS_TRECHO.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                     </select>
                     <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
@@ -556,9 +569,13 @@ export default function TelaPosAulaHistorico() {
                                                                     )}
                                                                     {nomeSeg(r)} · {nomeTurma(r)}
                                                                 </div>
-                                                                {trecho && (
+                                                                {trecho ? (
                                                                     <div style={{ fontSize: 11.5, fontStyle: 'italic', color: '#94a3b8', marginTop: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                                                         "{trecho}"
+                                                                    </div>
+                                                                ) : (
+                                                                    <div style={{ fontSize: 11, fontStyle: 'italic', color: isDark ? '#374151' : '#cbd5e1', marginTop: 2 }}>
+                                                                        sem registro
                                                                     </div>
                                                                 )}
                                                                 {(alunoAtencao || pontoQueda) && (
@@ -606,6 +623,12 @@ export default function TelaPosAulaHistorico() {
                                                                             </div>
                                                                         ))}
                                                                     </div>
+                                                                )}
+                                                                {campoTrecho !== 'todos' && (
+                                                                    <button onClick={() => setCampoTrecho('todos')}
+                                                                        style={{ marginTop: 10, fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}>
+                                                                        ver tudo nas linhas
+                                                                    </button>
                                                                 )}
                                                             </div>
                                                         )}
@@ -694,9 +717,13 @@ export default function TelaPosAulaHistorico() {
                                                     </div>
                                                     {/* conteúdo */}
                                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                                        {trecho && (
+                                                        {trecho ? (
                                                             <div style={{ fontSize: 11.5, fontStyle: 'italic', color: '#94a3b8', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                                                 "{trecho}"
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ fontSize: 11, fontStyle: 'italic', color: isDark ? '#374151' : '#cbd5e1' }}>
+                                                                sem registro
                                                             </div>
                                                         )}
                                                         {(alunoAtencao || pontoQueda) && (
@@ -745,6 +772,12 @@ export default function TelaPosAulaHistorico() {
                                                                     </div>
                                                                 ))}
                                                             </div>
+                                                        )}
+                                                        {campoTrecho !== 'todos' && (
+                                                            <button onClick={() => setCampoTrecho('todos')}
+                                                                style={{ marginTop: 10, fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}>
+                                                                ver tudo nas linhas
+                                                            </button>
                                                         )}
                                                     </div>
                                                 )}
