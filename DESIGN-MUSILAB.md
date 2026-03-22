@@ -17,7 +17,10 @@ Botões de ação usam **texto**, não ícones nem emoji.
 | `▲ Fechar` | `Fechar` |
 
 **Exceção aceita:** emoji como *marcador de dado* (não de ação).
-Ex.: `👤 João`, `📉 engajamento`, `💡 Próxima aula` — esses identificam o tipo de informação, não executam uma ação.
+Ex.: `💡 Próxima aula`, `✅ O que aprenderam` — labels de campos que identificam tipo de informação.
+
+**Não é exceção:** chips/badges clicáveis que filtram ou executam ação — mesmo que exibam dados, são botões e devem ser texto.
+Ex.: `Atenção: marcos ×`, `Engajamento ×` — sem emoji.
 
 **Referência:** Notion, Linear, Vercel — todos usam labels de texto em botões.
 
@@ -227,5 +230,6 @@ background: transparent;
 | 2026-03-14 | Design System v2 — tokens, Inter, theme toggle | Padronização visual |
 | 2026-03-17 | Mini-timeline V3 para Histórico | Substituir lista plana por agrupamento visual |
 | 2026-03-22 | Text-first UI — sem emoji em botões de ação | Clareza, profissionalismo, modernidade |
+| 2026-03-22 | Chips/badges clicáveis também sem emoji | São botões — regra text-first se aplica |
 | 2026-03-22 | Linhas de lista não são clicáveis como todo | Evitar contradição com elementos interativos inline |
 | 2026-03-22 | "Por data" idêntico ao "Por turma" | Consistência entre modos de vista |
