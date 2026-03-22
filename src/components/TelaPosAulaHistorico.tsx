@@ -119,11 +119,8 @@ export default function TelaPosAulaHistorico() {
         return next
     })
 
-    // índice selecionado por turma (0 = mais recente)
-    const [turmaSelIdx, setTurmaSelIdx] = useState<Record<string, number>>({})
-    const getSelIdx = (key: string) => turmaSelIdx[key] ?? 0
-    const setSelIdx = (key: string, idx: number) =>
-        setTurmaSelIdx(prev => ({ ...prev, [key]: idx }))
+    // hover por linha — controla visibilidade do botão Editar
+    const [hoveredId, setHoveredId] = useState<string | null>(null)
 
     const todosRegistros = useMemo(() =>
         planos.flatMap(p =>
@@ -377,10 +374,9 @@ export default function TelaPosAulaHistorico() {
         setTimeout(() => setPainelAberto(false), 240)
     }
 
-    // Cards por turma são abertos por padrão — ao filtrar, reseta fechamentos e seleção
+    // Cards por turma são abertos por padrão — ao filtrar, reseta fechamentos
     useEffect(() => {
         setTurmasFechadas(new Set())
-        setTurmaSelIdx({})
     }, [filtroEscola, filtroSegmento, filtroTurma, filtroPeriodo, filtroCustomDe, filtroCustomAte])
 
     const getTrecho = (r: any): string | null => {
@@ -797,36 +793,21 @@ export default function TelaPosAulaHistorico() {
                                 ? (isDark ? '#374151' : '#e2e8f0')
                                 : TURMA_COLORS[colorIdx % TURMA_COLORS.length]
 
-                            // filtra registros sem conteúdo
+                            // filtra registros sem conteúdo relevante
+                            const camposAExibir = camposTrecho.size > 0
+                                ? CAMPOS_INLINE.filter(campo => camposTrecho.has(campo.key))
+                                : CAMPOS_INLINE
                             const regsComConteudo = grupo.regs.filter(r =>
-                                CAMPOS_INLINE.some(campo => {
+                                camposAExibir.some(campo => {
                                     const val = (r as any)[campo.key]
                                     return val && typeof val === 'string' && val.trim()
                                 })
                             )
 
-                            // registro selecionado no índice
-                            const selIdx = Math.min(getSelIdx(grupo.key), Math.max(0, regsComConteudo.length - 1))
-                            const selReg = regsComConteudo[selIdx] ?? null
-
-                            // campos do registro selecionado
-                            const camposAExibir = camposTrecho.size > 0
-                                ? CAMPOS_INLINE.filter(campo => camposTrecho.has(campo.key))
-                                : CAMPOS_INLINE
-                            const camposDoSel = selReg
-                                ? camposAExibir.filter(campo => {
-                                    const val = (selReg as any)[campo.key]
-                                    return val && typeof val === 'string' && val.trim()
-                                })
-                                : []
-
-                            const navBtnStyle = (enabled: boolean): React.CSSProperties => ({
-                                width: 22, height: 22, border: `1px solid ${c.border}`, borderRadius: 4,
-                                background: 'transparent', fontSize: 11, fontFamily: 'inherit',
-                                cursor: enabled ? 'pointer' : 'default', transition: 'all 120ms',
-                                color: enabled ? c.btnText : (isDark ? '#374151' : '#e2e8f0'),
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            })
+                            // label do critério (só quando único selecionado)
+                            const criterioLabel = camposTrecho.size === 1
+                                ? CAMPOS_TRECHO.find(ct => camposTrecho.has(ct.value))?.label ?? null
+                                : null
 
                             return (
                                 <div key={grupo.key} className="v2-card" style={{ borderRadius: '12px', border: `1px solid ${c.border}`, overflow: 'hidden', boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.06)' }}>
@@ -854,77 +835,74 @@ export default function TelaPosAulaHistorico() {
                                         <span style={{ fontSize: '10px', color: isDark ? '#4B5563' : '#cbd5e1', marginLeft: 4 }}>{isOpen ? '▲' : '▼'}</span>
                                     </div>
 
-                                    {/* ── Corpo: índice à esquerda + painel de conteúdo à direita ── */}
+                                    {/* ── Lista de registros ── */}
                                     {isOpen && (
                                         regsComConteudo.length === 0 ? (
                                             <p style={{ padding: '12px 16px', fontSize: 12, fontStyle: 'italic', color: isDark ? '#4B5563' : '#94a3b8' }}>
                                                 Nenhum registro preenchido.
                                             </p>
                                         ) : (
-                                            <div style={{ display: 'grid', gridTemplateColumns: '54px 1fr' }}>
-
-                                                {/* ── Índice de datas ── */}
-                                                <div style={{ borderRight: `1px solid ${c.border}`, maxHeight: 320, overflowY: 'auto' }}>
-                                                    {regsComConteudo.map((r, idx) => {
-                                                        const d = new Date(r.data + 'T12:00:00')
-                                                        const isActive = idx === selIdx
-                                                        return (
-                                                            <div key={idx}
-                                                                onClick={() => setSelIdx(grupo.key, idx)}
-                                                                style={{
-                                                                    padding: '10px 0', textAlign: 'center', cursor: 'pointer',
-                                                                    borderBottom: idx < regsComConteudo.length - 1 ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none',
-                                                                    background: isActive ? (isDark ? 'rgba(91,95,234,0.1)' : '#EEF0FF') : 'transparent',
-                                                                    transition: 'background 100ms',
-                                                                }}>
-                                                                <span style={{ fontSize: 14, fontWeight: 700, display: 'block', lineHeight: 1, color: isActive ? (isDark ? '#818cf8' : '#5B5FEA') : '#94a3b8', transition: 'color 120ms' }}>
-                                                                    {d.getDate()}
-                                                                </span>
-                                                                <span style={{ fontSize: 8.5, textTransform: 'uppercase', display: 'block', marginTop: 1, color: isActive ? (isDark ? '#818cf8' : '#818cf8') : (isDark ? '#374151' : '#e2e8f0'), transition: 'color 120ms' }}>
-                                                                    {mesesLabel[d.getMonth()]}
-                                                                </span>
-                                                            </div>
-                                                        )
-                                                    })}
-                                                </div>
-
-                                                {/* ── Painel de conteúdo ── */}
-                                                <div style={{ display: 'flex', flexDirection: 'column', minHeight: 80 }}>
-                                                    {/* campos do registro selecionado */}
-                                                    <div style={{ padding: '12px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                                        {camposDoSel.length === 0 ? (
-                                                            <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Nenhum campo preenchido.</p>
-                                                        ) : camposDoSel.map(campo => (
-                                                            <div key={campo.key}>
-                                                                <p style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: isDark ? '#4B5563' : '#94a3b8', marginBottom: 2 }}>
-                                                                    {campo.icon} {campo.label}
-                                                                </p>
-                                                                <p style={{ fontSize: 12.5, lineHeight: 1.55, color: isDark ? '#D1D5DB' : '#374151' }}>
-                                                                    {(selReg as any)[campo.key]}
-                                                                </p>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-
-                                                    {/* rodapé: ↑↓ + Editar */}
-                                                    <div style={{ borderTop: `1px solid ${c.border}`, padding: '5px 12px', display: 'flex', alignItems: 'center', gap: 5, background: isDark ? 'rgba(255,255,255,0.01)' : '#FAFBFC' }}>
-                                                        <button onClick={() => setSelIdx(grupo.key, Math.max(0, selIdx - 1))}
-                                                            disabled={selIdx === 0}
-                                                            style={navBtnStyle(selIdx > 0)}>↑</button>
-                                                        <span style={{ fontSize: 10, color: isDark ? '#4B5563' : '#94a3b8' }}>
-                                                            {selIdx + 1} / {regsComConteudo.length}
+                                            <>
+                                                {/* faixa de critério — só quando um campo selecionado */}
+                                                {criterioLabel && (
+                                                    <div style={{ padding: '4px 14px', borderBottom: `1px solid ${c.border}`, background: isDark ? 'rgba(255,255,255,0.01)' : '#FAFBFC' }}>
+                                                        <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: isDark ? '#4B5563' : '#94a3b8' }}>
+                                                            {criterioLabel}
                                                         </span>
-                                                        <button onClick={() => setSelIdx(grupo.key, Math.min(regsComConteudo.length - 1, selIdx + 1))}
-                                                            disabled={selIdx === regsComConteudo.length - 1}
-                                                            style={navBtnStyle(selIdx < regsComConteudo.length - 1)}>↓</button>
-                                                        <button onClick={() => selReg && abrirEditar(selReg)}
-                                                            style={{ marginLeft: 'auto', fontSize: 11, padding: '3px 10px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms' }}>
-                                                            Editar
-                                                        </button>
                                                     </div>
-                                                </div>
+                                                )}
 
-                                            </div>
+                                                {/* linhas */}
+                                                {regsComConteudo.map((r, j) => {
+                                                    const d = new Date(r.data + 'T12:00:00')
+                                                    const regId = String(r.id ?? `${grupo.key}-${j}`)
+                                                    const isHovered = hoveredId === regId
+                                                    const isLast = j === regsComConteudo.length - 1
+
+                                                    // texto a exibir
+                                                    const texto = (() => {
+                                                        const camposPreenchidos = camposAExibir.filter(campo => {
+                                                            const val = (r as any)[campo.key]
+                                                            return val && typeof val === 'string' && val.trim()
+                                                        })
+                                                        if (camposPreenchidos.length === 0) return null
+                                                        // critério único: só esse campo
+                                                        if (camposTrecho.size === 1) {
+                                                            const key = [...camposTrecho][0] as string
+                                                            return (r as any)[key] as string ?? null
+                                                        }
+                                                        // múltiplos: juntos separados por ·
+                                                        return camposPreenchidos
+                                                            .map(c => ((r as any)[c.key] as string).trim())
+                                                            .join(' · ')
+                                                    })()
+
+                                                    return (
+                                                        <div key={j}
+                                                            onMouseEnter={() => setHoveredId(regId)}
+                                                            onMouseLeave={() => setHoveredId(null)}
+                                                            style={{ display: 'flex', alignItems: 'flex-start', padding: '9px 14px', gap: 10, borderBottom: isLast ? 'none' : `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}`, transition: 'background 100ms', background: isHovered ? (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)') : 'transparent' }}>
+                                                            {/* data */}
+                                                            <div style={{ width: 30, flexShrink: 0, textAlign: 'center', paddingTop: 1 }}>
+                                                                <span style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', display: 'block', lineHeight: 1 }}>{d.getDate()}</span>
+                                                                <span style={{ fontSize: 8.5, color: isDark ? '#374151' : '#e2e8f0', textTransform: 'uppercase', display: 'block', marginTop: 1 }}>{mesesLabel[d.getMonth()]}</span>
+                                                            </div>
+                                                            {/* separador */}
+                                                            <div style={{ width: 1, alignSelf: 'stretch', background: isDark ? '#374151' : '#F1F4F8', flexShrink: 0, minHeight: 16 }} />
+                                                            {/* texto */}
+                                                            <div style={{ flex: 1, fontSize: 12.5, color: isDark ? '#D1D5DB' : '#374151', lineHeight: 1.5, minWidth: 0 }}>
+                                                                {texto ?? <span style={{ color: isDark ? '#374151' : '#e2e8f0', fontStyle: 'italic' }}>—</span>}
+                                                            </div>
+                                                            {/* editar — só no hover */}
+                                                            <button
+                                                                onClick={() => abrirEditar(r)}
+                                                                style={{ fontSize: 11, padding: '2px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0, opacity: isHovered ? 1 : 0, transition: 'opacity 120ms', pointerEvents: isHovered ? 'auto' : 'none' }}>
+                                                                Editar
+                                                            </button>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </>
                                         )
                                     )}
                                 </div>
