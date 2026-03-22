@@ -873,14 +873,17 @@ export default function TelaPosAulaHistorico() {
                                                             const key = camposPreenchidos[0].key
                                                             return (r as any)[key] as string
                                                         }
-                                                        // múltiplos critérios: label acima do valor por bloco
+                                                        // múltiplos critérios: label só quando a linha tem 2+ campos preenchidos
+                                                        const mostrarLabels = camposPreenchidos.length > 1
                                                         return (
                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                                                 {camposPreenchidos.map(campo => {
                                                                     const lbl = CAMPOS_TRECHO.find(ct => ct.value === campo.key)?.label ?? campo.label
                                                                     return (
                                                                         <div key={campo.key} style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                                                            <span style={{ fontSize: '9.5px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: isDark ? '#4B5563' : '#b0bac9' }}>{lbl}</span>
+                                                                            {mostrarLabels && (
+                                                                                <span style={{ fontSize: '9.5px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: isDark ? '#4B5563' : '#b0bac9' }}>{lbl}</span>
+                                                                            )}
                                                                             <span style={{ fontSize: 12.5, color: isDark ? '#D1D5DB' : '#374151', lineHeight: 1.45 }}>{((r as any)[campo.key] as string).trim()}</span>
                                                                         </div>
                                                                     )
