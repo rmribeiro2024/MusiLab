@@ -466,10 +466,9 @@ export default function TelaPosAulaHistorico() {
             {modoVista === 'data' ? (
                 /* ── MODO POR DATA ── */
                 datas.length === 0 && lacunas.length === 0 ? (
-                    <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] px-4 py-10 text-center space-y-1">
-                        <p className="text-[13px] text-slate-400 dark:text-[#6b7280]">Nenhum registro encontrado.</p>
-                        <p className="text-[12px] text-slate-300 dark:text-[#4B5563]">Os registros aparecerão aqui após a primeira aula registrada.</p>
-                    </div>
+                    <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', padding: '20px 0' }}>
+                        {filtrosAtivos ? 'Nenhum resultado para os filtros selecionados.' : 'Nenhum registro ainda.'}
+                    </p>
                 ) : (
                     <>
                         {/* F2.2 — Lacunas */}
@@ -555,6 +554,7 @@ export default function TelaPosAulaHistorico() {
                                                                     <div style={{ display: 'flex', gap: 4, marginTop: trecho ? 4 : 2, flexWrap: 'wrap' }}>
                                                                         {alunoAtencao && (
                                                                             <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
+                                                                                title="Aluno que precisa de atenção"
                                                                                 style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', color: '#d97706', cursor: 'pointer', fontFamily: 'inherit' }}>
                                                                                 ! {alunoAtencao}
                                                                             </button>
@@ -611,9 +611,9 @@ export default function TelaPosAulaHistorico() {
             ) : (
                 /* ── MODO POR TURMA — V3: card por turma + mini-timeline ── */
                 turmasAgrupadas.length === 0 ? (
-                    <div className="v2-card rounded-xl border border-[#E6EAF0] dark:border-[#374151] px-4 py-10 text-center">
-                        <p className="text-[13px] text-slate-400 dark:text-[#6b7280]">Nenhum registro encontrado.</p>
-                    </div>
+                    <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', padding: '20px 0' }}>
+                        {filtrosAtivos ? 'Nenhum resultado para os filtros selecionados.' : 'Nenhum registro ainda.'}
+                    </p>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {turmasAgrupadas.map((grupo, colorIdx) => {
@@ -692,6 +692,7 @@ export default function TelaPosAulaHistorico() {
                                                             <div style={{ display: 'flex', gap: 4, marginTop: trecho ? 4 : 0, flexWrap: 'wrap' }}>
                                                                 {alunoAtencao && (
                                                                     <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
+                                                                        title="Aluno que precisa de atenção"
                                                                         style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', color: '#d97706', cursor: 'pointer', fontFamily: 'inherit' }}>
                                                                         ! {alunoAtencao}
                                                                     </button>
