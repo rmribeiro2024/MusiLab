@@ -421,13 +421,13 @@ export default function TelaPosAulaHistorico() {
                     {filtroAlunoAtencao && (
                         <button onClick={() => setFiltroAlunoAtencao(null)}
                             style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                            👤 {filtroAlunoAtencao} ×
+                            Atenção: {filtroAlunoAtencao} ×
                         </button>
                     )}
                     {filtroEngajamento && (
                         <button onClick={() => setFiltroEngajamento(false)}
                             style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                            📉 engajamento ×
+                            Engajamento ×
                         </button>
                     )}
                 </div>
@@ -559,19 +559,19 @@ export default function TelaPosAulaHistorico() {
                                                                         {alunoAtencao && (
                                                                             <button onClick={() => setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao)}
                                                                                 style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                                👤 Atenção · {alunoAtencao}
+                                                                                Atenção · {alunoAtencao}
                                                                             </button>
                                                                         )}
                                                                         {pontoQueda && (
                                                                             <button onClick={() => setFiltroEngajamento(!filtroEngajamento)}
                                                                                 style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                                📉 engajamento
+                                                                                Engajamento ↓
                                                                             </button>
                                                                         )}
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            {/* Ver + ✏️ */}
+                                                            {/* Ver + Editar */}
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, alignSelf: 'flex-start' }}>
                                                                 <button onClick={() => setExpandedId(isExpanded ? null : regId)}
                                                                     style={{ fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: isExpanded ? (isDark ? 'rgba(91,95,234,0.08)' : '#EEF0FF') : 'transparent', color: isExpanded ? (isDark ? '#818cf8' : '#5B5FEA') : c.btnText, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms' }}>
@@ -698,13 +698,13 @@ export default function TelaPosAulaHistorico() {
                                                                 {alunoAtencao && (
                                                                     <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
                                                                         style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                        👤 Atenção · {alunoAtencao}
+                                                                        Atenção · {alunoAtencao}
                                                                     </button>
                                                                 )}
                                                                 {pontoQueda && (
                                                                     <button onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }}
                                                                         style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                        📉 engajamento
+                                                                        Engajamento ↓
                                                                     </button>
                                                                 )}
                                                             </div>
@@ -717,8 +717,8 @@ export default function TelaPosAulaHistorico() {
                                                             {isExpanded ? 'Fechar' : 'Ver'}
                                                         </button>
                                                         <button onClick={() => abrirEditar(r)}
-                                                            style={{ fontSize: 11, padding: '3px 7px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                            ✏️
+                                                            style={{ fontSize: 11, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                            Editar
                                                         </button>
                                                     </div>
                                                 </div>
