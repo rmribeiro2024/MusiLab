@@ -804,10 +804,16 @@ export default function TelaPosAulaHistorico() {
                                 })
                             )
 
-                            // labels dos critérios ativos
+                            // label + ícone do critério ativo (só quando único)
+                            const criterioAtivo = camposTrecho.size === 1
+                                ? CAMPOS_TRECHO.find(ct => camposTrecho.has(ct.value)) ?? null
+                                : null
                             const criterioLabels = camposTrecho.size > 0
                                 ? CAMPOS_TRECHO.filter(ct => camposTrecho.has(ct.value)).map(ct => ct.label)
                                 : []
+                            const criterioIcon = criterioAtivo
+                                ? CAMPOS_INLINE.find(c => c.key === criterioAtivo.value)?.icon ?? ''
+                                : ''
 
                             return (
                                 <div key={grupo.key} className="v2-card" style={{ borderRadius: '12px', border: `1px solid ${c.border}`, overflow: 'hidden', boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.06)' }}>
@@ -826,9 +832,12 @@ export default function TelaPosAulaHistorico() {
                                                 )}
                                                 {grupo.label}
                                             </div>
-                                            {criterioLabels.length === 1 && (
+                                            {criterioAtivo && (
                                                 <div style={{ marginTop: 3 }}>
-                                                    <span style={{ fontSize: '10.5px', color: isDark ? '#6B7280' : '#64748b', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E6EAF0'}`, padding: '1px 7px', borderRadius: 999 }}>{criterioLabels[0]}</span>
+                                                    <span style={{ fontSize: '10.5px', color: isDark ? '#6B7280' : '#64748b', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E6EAF0'}`, padding: '1px 7px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                        {criterioIcon && <span style={{ fontSize: 11 }}>{criterioIcon}</span>}
+                                                        {criterioAtivo.label}
+                                                    </span>
                                                 </div>
                                             )}
                                         </div>
