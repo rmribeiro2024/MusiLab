@@ -80,6 +80,7 @@ export default function TelaPosAulaHistorico() {
 
     // F1.5 — filtros
     const [filtroEscola, setFiltroEscola] = useState('todas')
+    const [filtroSegmento, setFiltroSegmento] = useState('todos')
     const [filtroTurma, setFiltroTurma] = useState('todas')
     const [filtroPeriodo, setFiltroPeriodo] = useState('tudo')
     const [filtroCustomDe, setFiltroCustomDe] = useState('')
@@ -132,18 +133,30 @@ export default function TelaPosAulaHistorico() {
         return Array.from(map.entries()).map(([id, nome]) => ({ id, nome }))
     }, [todosRegistros, anosLetivos])
 
-    // F1.5 — turmas filtradas por escola
+    // F1.5 — segmentos únicos filtrados por escola
+    const segmentosUnicos = useMemo(() => {
+        const map = new Map<string, string>()
+        todosRegistros.forEach(r => {
+            if (filtroEscola !== 'todas' && String(r.escola) !== filtroEscola) return
+            const segId = String(r.segmento || r.serie || '')
+            if (segId) map.set(`${r.escola}__${segId}`, nomeSeg(r))
+        })
+        return Array.from(map.entries()).map(([id, nome]) => ({ id, nome }))
+    }, [todosRegistros, filtroEscola, anosLetivos])
+
+    // F1.5 — turmas filtradas por escola e segmento
     const turmasUnicas = useMemo(() => {
         const map = new Map<string, string>()
         todosRegistros.forEach(r => {
             if (filtroEscola !== 'todas' && String(r.escola) !== filtroEscola) return
+            if (filtroSegmento !== 'todos' && `${r.escola}__${r.segmento || r.serie}` !== filtroSegmento) return
             if (r.turma) {
                 const key = `${r.escola}__${r.turma}__${r.segmento || r.serie}`
-                if (!map.has(key)) map.set(key, `${nomeSeg(r)} · ${nomeTurma(r)}`)
+                if (!map.has(key)) map.set(key, nomeTurma(r))
             }
         })
         return Array.from(map.entries()).map(([id, nome]) => ({ id, nome }))
-    }, [todosRegistros, filtroEscola, anosLetivos])
+    }, [todosRegistros, filtroEscola, filtroSegmento, anosLetivos])
 
     // F1.5 — período
     const isInPeriodo = (dateStr: string, periodo: string): boolean => {
@@ -177,12 +190,13 @@ export default function TelaPosAulaHistorico() {
 
     const registrosFiltrados = useMemo(() => todosRegistros.filter(r => {
         if (filtroEscola !== 'todas' && String(r.escola) !== filtroEscola) return false
+        if (filtroSegmento !== 'todos' && `${r.escola}__${r.segmento || r.serie}` !== filtroSegmento) return false
         if (filtroTurma !== 'todas' && `${r.escola}__${r.turma}__${r.segmento || r.serie}` !== filtroTurma) return false
         if (!isInPeriodo(r.data, filtroPeriodo)) return false
         if (filtroAlunoAtencao && (r as any).alunoAtencao !== filtroAlunoAtencao) return false
         if (filtroEngajamento && !(r as any).pontoQueda) return false
         return true
-    }), [todosRegistros, filtroEscola, filtroTurma, filtroPeriodo, filtroCustomDe, filtroCustomAte, filtroAlunoAtencao, filtroEngajamento])
+    }), [todosRegistros, filtroEscola, filtroSegmento, filtroTurma, filtroPeriodo, filtroCustomDe, filtroCustomAte, filtroAlunoAtencao, filtroEngajamento])
 
     // F2.1 — engine de insights (R2, R3, R5)
     const insight = useMemo((): string | null => {
@@ -373,9 +387,9 @@ export default function TelaPosAulaHistorico() {
         return null
     }
 
-    const filtrosAtivos = filtroEscola !== 'todas' || filtroTurma !== 'todas' || filtroPeriodo !== 'tudo' || !!filtroAlunoAtencao || filtroEngajamento
+    const filtrosAtivos = filtroEscola !== 'todas' || filtroSegmento !== 'todos' || filtroTurma !== 'todas' || filtroPeriodo !== 'tudo' || !!filtroAlunoAtencao || filtroEngajamento
     const limparFiltros = () => {
-        setFiltroEscola('todas'); setFiltroTurma('todas'); setFiltroPeriodo('tudo')
+        setFiltroEscola('todas'); setFiltroSegmento('todos'); setFiltroTurma('todas'); setFiltroPeriodo('tudo')
         setFiltroCustomDe(''); setFiltroCustomAte('')
         setFiltroAlunoAtencao(null); setFiltroEngajamento(false)
     }
@@ -415,8 +429,13 @@ export default function TelaPosAulaHistorico() {
                 {([
                     {
                         value: filtroEscola,
-                        onChange: (v: string) => { setFiltroEscola(v); setFiltroTurma('todas') },
+                        onChange: (v: string) => { setFiltroEscola(v); setFiltroSegmento('todos'); setFiltroTurma('todas') },
                         options: [{ value: 'todas', label: 'Todas as escolas' }, ...escolasUnicas.map(e => ({ value: e.id, label: e.nome }))],
+                    },
+                    {
+                        value: filtroSegmento,
+                        onChange: (v: string) => { setFiltroSegmento(v); setFiltroTurma('todas') },
+                        options: [{ value: 'todos', label: 'Todos os segmentos' }, ...segmentosUnicos.map(s => ({ value: s.id, label: s.nome }))],
                     },
                     {
                         value: filtroTurma,
@@ -568,8 +587,8 @@ export default function TelaPosAulaHistorico() {
                                                     <div style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#E5E7EB' : '#334155' }}>{diasSemanaLabel[d.getDay()]}</div>
                                                 </div>
                                                 {/* count + chevron */}
-                                                <span style={{ fontSize: 11, fontWeight: 600, color: isDark ? '#34d399' : '#059669', background: isDark ? 'rgba(16,185,129,0.08)' : '#ecfdf5', border: isDark ? '1px solid rgba(16,185,129,0.2)' : '1px solid #a7f3d0', padding: '2px 7px', borderRadius: 999 }}>
-                                                    {regs.length} {regs.length === 1 ? 'aula' : 'aulas'}
+                                                <span style={{ fontSize: 11, color: isDark ? '#6B7280' : '#94a3b8', border: `1px solid ${c.border}`, padding: '2px 7px', borderRadius: 999 }}>
+                                                    {regs.length} {regs.length === 1 ? 'registro' : 'registros'}
                                                 </span>
                                                 <span style={{ fontSize: 10, color: isDark ? '#4B5563' : '#cbd5e1', marginLeft: 4 }}>{aberto ? '▲' : '▼'}</span>
                                             </div>
@@ -715,8 +734,8 @@ export default function TelaPosAulaHistorico() {
                                                     {lacuna.dias}d sem aula
                                                 </span>
                                             )}
-                                            <span style={{ fontSize: '11px', fontWeight: 600, color: isDark ? '#34d399' : '#059669', background: isDark ? 'rgba(16,185,129,0.08)' : '#ecfdf5', border: isDark ? '1px solid rgba(16,185,129,0.2)' : '1px solid #a7f3d0', padding: '2px 7px', borderRadius: 999 }}>
-                                                {grupo.regs.length} {grupo.regs.length === 1 ? 'aula' : 'aulas'}
+                                            <span style={{ fontSize: 11, color: isDark ? '#6B7280' : '#94a3b8', border: `1px solid ${c.border}`, padding: '2px 7px', borderRadius: 999 }}>
+                                                {grupo.regs.length} {grupo.regs.length === 1 ? 'registro' : 'registros'}
                                             </span>
                                         </div>
                                         <span style={{ fontSize: '10px', color: isDark ? '#4B5563' : '#cbd5e1', marginLeft: 4 }}>{isOpen ? '▲' : '▼'}</span>
