@@ -898,28 +898,62 @@ export default function TelaPosAulaHistorico() {
                                                         )
                                                     })()
 
+                                                    const isExpanded = expandedId === regId
+                                                    const todosCampos = CAMPOS_INLINE.filter(campo => {
+                                                        const val = (r as any)[campo.key]
+                                                        return val && typeof val === 'string' && val.trim()
+                                                    })
+
                                                     return (
-                                                        <div key={j}
-                                                            onMouseEnter={() => setHoveredId(regId)}
-                                                            onMouseLeave={() => setHoveredId(null)}
-                                                            style={{ display: 'flex', alignItems: 'flex-start', padding: '9px 14px', gap: 10, borderBottom: isLast ? 'none' : `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}`, transition: 'background 100ms', background: isHovered ? (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)') : 'transparent' }}>
-                                                            {/* data */}
-                                                            <div style={{ width: 30, flexShrink: 0, textAlign: 'center', paddingTop: 1 }}>
-                                                                <span style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', display: 'block', lineHeight: 1 }}>{d.getDate()}</span>
-                                                                <span style={{ fontSize: 8.5, color: isDark ? '#374151' : '#e2e8f0', textTransform: 'uppercase', display: 'block', marginTop: 1 }}>{mesesLabel[d.getMonth()]}</span>
+                                                        <div key={j} style={{ borderBottom: isLast && !isExpanded ? 'none' : `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` }}>
+                                                            {/* linha principal */}
+                                                            <div
+                                                                onMouseEnter={() => setHoveredId(regId)}
+                                                                onMouseLeave={() => setHoveredId(null)}
+                                                                style={{ display: 'flex', alignItems: 'flex-start', padding: '9px 14px', gap: 10, transition: 'background 100ms', background: isHovered || isExpanded ? (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)') : 'transparent' }}>
+                                                                {/* data */}
+                                                                <div style={{ width: 30, flexShrink: 0, textAlign: 'center', paddingTop: 1 }}>
+                                                                    <span style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', display: 'block', lineHeight: 1 }}>{d.getDate()}</span>
+                                                                    <span style={{ fontSize: 8.5, color: isDark ? '#374151' : '#e2e8f0', textTransform: 'uppercase', display: 'block', marginTop: 1 }}>{mesesLabel[d.getMonth()]}</span>
+                                                                </div>
+                                                                {/* separador */}
+                                                                <div style={{ width: 1, alignSelf: 'stretch', background: isDark ? '#374151' : '#F1F4F8', flexShrink: 0, minHeight: 16 }} />
+                                                                {/* texto */}
+                                                                <div style={{ flex: 1, fontSize: 12.5, color: isDark ? '#D1D5DB' : '#374151', lineHeight: 1.5, minWidth: 0 }}>
+                                                                    {textoNode ?? <span style={{ color: isDark ? '#374151' : '#e2e8f0', fontStyle: 'italic' }}>—</span>}
+                                                                </div>
+                                                                {/* botões — só no hover ou expandido */}
+                                                                <div style={{ display: 'flex', gap: 4, flexShrink: 0, opacity: isHovered || isExpanded ? 1 : 0, transition: 'opacity 120ms', pointerEvents: isHovered || isExpanded ? 'auto' : 'none' }}>
+                                                                    <button
+                                                                        onClick={() => setExpandedId(isExpanded ? null : regId)}
+                                                                        style={{ fontSize: 11, padding: '2px 9px', borderRadius: 6, border: `1px solid ${isExpanded ? '#c7d2fe' : c.border}`, background: isExpanded ? '#EEF0FF' : 'transparent', color: isExpanded ? '#5B5FEA' : c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                        {isExpanded ? 'Fechar' : 'Ver'}
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => abrirEditar(r)}
+                                                                        style={{ fontSize: 11, padding: '2px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                        Editar
+                                                                    </button>
+                                                                </div>
                                                             </div>
-                                                            {/* separador */}
-                                                            <div style={{ width: 1, alignSelf: 'stretch', background: isDark ? '#374151' : '#F1F4F8', flexShrink: 0, minHeight: 16 }} />
-                                                            {/* texto */}
-                                                            <div style={{ flex: 1, fontSize: 12.5, color: isDark ? '#D1D5DB' : '#374151', lineHeight: 1.5, minWidth: 0 }}>
-                                                                {textoNode ?? <span style={{ color: isDark ? '#374151' : '#e2e8f0', fontStyle: 'italic' }}>—</span>}
-                                                            </div>
-                                                            {/* editar — só no hover */}
-                                                            <button
-                                                                onClick={() => abrirEditar(r)}
-                                                                style={{ fontSize: 11, padding: '2px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0, opacity: isHovered ? 1 : 0, transition: 'opacity 120ms', pointerEvents: isHovered ? 'auto' : 'none' }}>
-                                                                Editar
-                                                            </button>
+                                                            {/* expansão inline — todos os campos */}
+                                                            {isExpanded && (
+                                                                <div style={{ padding: '10px 14px 14px 55px', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)', borderTop: `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                                                        {todosCampos.map(campo => (
+                                                                            <div key={campo.key}>
+                                                                                <div style={{ fontSize: '10.5px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: isDark ? '#4B5563' : '#94a3b8', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                                                    <span>{campo.icon}</span>
+                                                                                    <span>{campo.label}</span>
+                                                                                </div>
+                                                                                <div style={{ fontSize: 12.5, color: isDark ? '#D1D5DB' : '#374151', lineHeight: 1.5 }}>
+                                                                                    {((r as any)[campo.key] as string).trim()}
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )
                                                 })}
