@@ -3,6 +3,17 @@ import { usePlanosContext } from '../contexts/PlanosContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 
+const CAMPOS_INLINE = [
+    { icon: '📋', label: 'Realizado',               key: 'resumoAula' },
+    { icon: '✅', label: 'O que aprenderam',         key: 'funcionouBem' },
+    { icon: '⭐', label: 'O que faria de novo',      key: 'repetiria' },
+    { icon: '💭', label: 'O que faria diferente',   key: 'naoFuncionou' },
+    { icon: '🔧', label: 'Poderia ter sido melhor', key: 'poderiaMelhorar' },
+    { icon: '💡', label: 'Próxima aula',             key: 'proximaAula' },
+    { icon: '👥', label: 'Comportamento',            key: 'comportamento' },
+    { icon: '📝', label: 'Anotações gerais',         key: 'anotacoesGerais' },
+] as const
+
 function useIsDark() {
     const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
     useEffect(() => {
@@ -39,11 +50,12 @@ function diasUteis(from: Date, to: Date): number {
 }
 
 export default function TelaPosAulaHistorico() {
-    const { planos } = usePlanosContext()
+    const { planos, editarRegistro } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
-    const { setModalRegistro, setRrData, setRrAnoSel, setRrEscolaSel,
-        setRrTextos, setRrPlanosSegmento, setRrResultados, setRrRubricas, setRrEncaminhamentos,
-        setRrTurmaId, setRrSegmentoId } = useCalendarioContext()
+    const { setModalRegistro, setPlanoParaRegistro } = useCalendarioContext()
+
+    // expansão inline por id do registro
+    const [expandedId, setExpandedId] = useState<string | number | null>(null)
 
     const isDark = useIsDark()
 
@@ -268,17 +280,10 @@ export default function TelaPosAulaHistorico() {
         return `${diasSemanaLabel[d.getDay()]}, ${d.getDate()} de ${mesesLabel[d.getMonth()]}`
     }
 
-    const abrirRegistro = (r: any) => {
-        setRrData(r.data)
-        setRrAnoSel(r.anoLetivo)
-        setRrEscolaSel(r.escola)
-        setRrTextos({})
-        setRrPlanosSegmento({})
-        setRrResultados({})
-        setRrRubricas({})
-        setRrEncaminhamentos({})
-        setRrTurmaId(String(r.turma))
-        setRrSegmentoId(String(r.segmento || r.serie))
+    const abrirEditar = (r: any) => {
+        const plano = planos.find(p => p.id == r.planoId)
+        if (plano) setPlanoParaRegistro(plano)
+        editarRegistro(r)
         setModalRegistro(true)
     }
 
@@ -318,12 +323,20 @@ export default function TelaPosAulaHistorico() {
         const alunoAtencao = (r as any).alunoAtencao as string | undefined
         const pontoQueda = (r as any).pontoQueda as string | undefined
         const hasLine2 = trecho || alunoAtencao || pontoQueda
+        const regId = r.id ?? j
+        const isExpanded = expandedId === regId
+
+        const camposPreenchidos = CAMPOS_INLINE.filter(c => {
+            const val = (r as any)[c.key]
+            return val && typeof val === 'string' && val.trim()
+        })
+
         return (
-            <div key={j} className="px-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition"
-                style={{ borderLeft: `4px solid ${c.leftBar}` }}>
-                <div className="py-2.5 flex items-start gap-3">
+            <div key={j} style={{ borderLeft: `4px solid ${c.leftBar}` }}>
+                {/* ── linha compacta ── */}
+                <div className="px-4 py-2.5 flex items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition cursor-pointer"
+                    onClick={() => setExpandedId(isExpanded ? null : regId)}>
                     <div className="flex-1 min-w-0 pt-px">
-                        {/* linha 1 */}
                         <div className="flex items-center">
                             {showDate ? (
                                 <span className="text-[12px] font-medium text-slate-600 dark:text-[#9CA3AF]">{labelData(r.data)}</span>
@@ -335,8 +348,7 @@ export default function TelaPosAulaHistorico() {
                                 </>
                             )}
                         </div>
-                        {/* linha 2 — F1.3 + F1.4 */}
-                        {hasLine2 && (
+                        {hasLine2 && !isExpanded && (
                             <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                                 {trecho && (
                                     <span className="text-[11px] italic" style={{ color: '#94a3b8', maxWidth: '210px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
@@ -344,15 +356,13 @@ export default function TelaPosAulaHistorico() {
                                     </span>
                                 )}
                                 {alunoAtencao && (
-                                    <button
-                                        onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
+                                    <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
                                         style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
                                         👤 {alunoAtencao}
                                     </button>
                                 )}
                                 {pontoQueda && (
-                                    <button
-                                        onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }}
+                                    <button onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }}
                                         style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
                                         📉 engajamento
                                     </button>
@@ -360,10 +370,38 @@ export default function TelaPosAulaHistorico() {
                             </div>
                         )}
                     </div>
-                    <button onClick={() => abrirRegistro(r)} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, transition: 'all 120ms ease', flexShrink: 0 }}>
-                        Ver
-                    </button>
+                    <span style={{ fontSize: '10px', color: c.btnText, flexShrink: 0, marginTop: '2px' }}>
+                        {isExpanded ? '▲' : '▼'}
+                    </span>
                 </div>
+
+                {/* ── expansão inline ── */}
+                {isExpanded && (
+                    <div style={{ borderTop: `1px solid ${isDark ? '#374151' : '#F1F4F8'}`, padding: '12px 16px 14px', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)' }}>
+                        {camposPreenchidos.length === 0 ? (
+                            <p className="text-[12px]" style={{ color: '#94a3b8' }}>Nenhum campo preenchido.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {camposPreenchidos.map(campo => (
+                                    <div key={campo.key}>
+                                        <p className="text-[10.5px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: isDark ? '#4B5563' : '#94a3b8' }}>
+                                            {campo.icon} {campo.label}
+                                        </p>
+                                        <p className="text-[12.5px] leading-relaxed" style={{ color: isDark ? '#D1D5DB' : '#374151' }}>
+                                            {(r as any)[campo.key]}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="mt-4 flex justify-end">
+                            <button onClick={e => { e.stopPropagation(); abrirEditar(r) }}
+                                style={{ fontSize: '11.5px', padding: '5px 12px', borderRadius: '7px', border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500 }}>
+                                ✏️ Editar registro
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         )
     }
