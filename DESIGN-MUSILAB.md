@@ -92,6 +92,7 @@ Sequência usada para identificar turmas visualmente. Atribuída por ordem de ap
 | Estado aberto/selecionado | `#5B5FEA` (light) / `#818cf8` (dark) | Botão "Ver" ativo, data block ativa |
 | Contagem de registros | `#059669` (light) / `#34d399` (dark) | Badge "N reg." |
 | Lacuna / alerta | `#f97316` | "N dias sem registro" |
+| Aluno que precisa de atenção | `#d97706` (âmbar) + fundo `rgba(249,115,22,0.06)` | Badge `! nome` |
 | Texto secundário | `#94a3b8` | Labels, trechos, meta-info |
 | Borda padrão | `#E6EAF0` (light) / `#374151` (dark) | Cards, inputs, separadores |
 
@@ -238,5 +239,6 @@ background: transparent;
 | 2026-03-17 | Mini-timeline V3 para Histórico | Substituir lista plana por agrupamento visual |
 | 2026-03-22 | Text-first UI — sem emoji em botões de ação | Clareza, profissionalismo, modernidade |
 | 2026-03-22 | Chips/badges clicáveis também sem emoji | São botões — regra text-first se aplica |
+| 2026-03-22 | Badge "aluno atenção": `! nome` em âmbar | Cor + `!` comunicam contexto sem emoji |
 | 2026-03-22 | Linhas de lista não são clicáveis como todo | Evitar contradição com elementos interativos inline |
 | 2026-03-22 | "Por data" idêntico ao "Por turma" | Consistência entre modos de vista |
