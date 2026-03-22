@@ -866,22 +866,29 @@ export default function TelaPosAulaHistorico() {
                                                     const isHovered = hoveredId === regId
                                                     const isLast = j === regsComConteudo.length - 1
 
-                                                    // texto a exibir
-                                                    const texto = (() => {
-                                                        const camposPreenchidos = camposAExibir.filter(campo => {
-                                                            const val = (r as any)[campo.key]
-                                                            return val && typeof val === 'string' && val.trim()
-                                                        })
+                                                    // conteúdo a exibir
+                                                    const camposPreenchidos = camposAExibir.filter(campo => {
+                                                        const val = (r as any)[campo.key]
+                                                        return val && typeof val === 'string' && val.trim()
+                                                    })
+                                                    const textoNode: React.ReactNode = (() => {
                                                         if (camposPreenchidos.length === 0) return null
-                                                        // critério único: só esse campo
-                                                        if (camposTrecho.size === 1) {
-                                                            const key = [...camposTrecho][0] as string
-                                                            return (r as any)[key] as string ?? null
+                                                        // critério único: texto direto
+                                                        if (camposTrecho.size <= 1) {
+                                                            const key = camposPreenchidos[0].key
+                                                            return (r as any)[key] as string
                                                         }
-                                                        // múltiplos: juntos separados por ·
-                                                        return camposPreenchidos
-                                                            .map(c => ((r as any)[c.key] as string).trim())
-                                                            .join(' · ')
+                                                        // múltiplos critérios: label + valor por linha
+                                                        return (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                                                                {camposPreenchidos.map(campo => (
+                                                                    <div key={campo.key}>
+                                                                        <span style={{ fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: isDark ? '#4B5563' : '#94a3b8', marginRight: 5 }}>{campo.label}</span>
+                                                                        <span style={{ fontSize: 12.5, color: isDark ? '#D1D5DB' : '#374151' }}>{((r as any)[campo.key] as string).trim()}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )
                                                     })()
 
                                                     return (
@@ -898,7 +905,7 @@ export default function TelaPosAulaHistorico() {
                                                             <div style={{ width: 1, alignSelf: 'stretch', background: isDark ? '#374151' : '#F1F4F8', flexShrink: 0, minHeight: 16 }} />
                                                             {/* texto */}
                                                             <div style={{ flex: 1, fontSize: 12.5, color: isDark ? '#D1D5DB' : '#374151', lineHeight: 1.5, minWidth: 0 }}>
-                                                                {texto ?? <span style={{ color: isDark ? '#374151' : '#e2e8f0', fontStyle: 'italic' }}>—</span>}
+                                                                {textoNode ?? <span style={{ color: isDark ? '#374151' : '#e2e8f0', fontStyle: 'italic' }}>—</span>}
                                                             </div>
                                                             {/* editar — só no hover */}
                                                             <button
