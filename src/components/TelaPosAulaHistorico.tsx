@@ -547,8 +547,8 @@ export default function TelaPosAulaHistorico() {
                                                                     {nomeSeg(r)} · {nomeTurma(r)}
                                                                 </div>
                                                                 {trecho && (
-                                                                    <div style={{ fontSize: 11.5, fontStyle: 'italic', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
-                                                                        "{trecho.length > 60 ? trecho.slice(0, 60) + '…' : trecho}"
+                                                                    <div style={{ fontSize: 11.5, fontStyle: 'italic', color: '#94a3b8', marginTop: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                                        "{trecho}"
                                                                     </div>
                                                                 )}
                                                                 {(alunoAtencao || pontoQueda) && (
@@ -684,8 +684,8 @@ export default function TelaPosAulaHistorico() {
                                                     {/* conteúdo */}
                                                     <div style={{ flex: 1, minWidth: 0 }}>
                                                         {trecho && (
-                                                            <div style={{ fontSize: 11.5, fontStyle: 'italic', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                                "{trecho.length > 60 ? trecho.slice(0, 60) + '…' : trecho}"
+                                                            <div style={{ fontSize: 11.5, fontStyle: 'italic', color: '#94a3b8', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                                "{trecho}"
                                                             </div>
                                                         )}
                                                         {(alunoAtencao || pontoQueda) && (
