@@ -291,8 +291,8 @@ export default function TelaPosAulaHistorico() {
 
     const turmasAgrupadas = useMemo(() => {
         if (modoVista !== 'turma') return []
-        const map = new Map<string, { label: string; escola: string; regs: typeof todosRegistros }>()
-        todosRegistros.forEach(r => {
+        const map = new Map<string, { label: string; escola: string; regs: typeof registrosFiltrados }>()
+        registrosFiltrados.forEach(r => {
             if (filtroEscolaTurma !== 'todas' && String(r.escola) !== filtroEscolaTurma) return
             const key = `${r.escola}__${r.turma}__${r.segmento || r.serie}`
             if (!map.has(key)) {
@@ -303,7 +303,7 @@ export default function TelaPosAulaHistorico() {
         return Array.from(map.entries())
             .map(([key, val]) => ({ key, ...val, regs: val.regs.sort((a, b) => b.data.localeCompare(a.data)) }))
             .sort((a, b) => (b.regs[0]?.data || '').localeCompare(a.regs[0]?.data || ''))
-    }, [modoVista, todosRegistros, filtroEscolaTurma, anosLetivos])
+    }, [modoVista, registrosFiltrados, filtroEscolaTurma, anosLetivos])
 
     // Mapa consistente de cor por turma (usado em ambos os modos)
     const turmaColorMap = useMemo(() => {
