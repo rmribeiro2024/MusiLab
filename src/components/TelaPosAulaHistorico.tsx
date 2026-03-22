@@ -545,27 +545,35 @@ export default function TelaPosAulaHistorico() {
                         )}
 
                         {datas.length > 0 && (
-                            <div className="v2-card rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] overflow-hidden border border-[#E6EAF0] dark:border-[#374151]">
-                                {datas.map((ds, i) => {
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {datas.map(ds => {
                                     const regs = porData[ds]
                                     const aberto = dataAberta === ds
+                                    const d = new Date(ds + 'T12:00:00')
                                     return (
-                                        <div key={ds} className={i > 0 ? 'border-t border-[#E6EAF0] dark:border-[#374151]' : ''}>
-                                            <button
-                                                onClick={() => setDataAberta(aberto ? null : ds)}
-                                                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition text-left">
-                                                <span className="flex-1 text-[13px] font-medium text-slate-700 dark:text-[#E5E7EB]">
-                                                    {labelData(ds)}
-                                                </span>
-                                                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium shrink-0">
+                                        <div key={ds} className="v2-card" style={{ borderRadius: 12, border: `1px solid ${c.border}`, overflow: 'hidden', boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.06)' }}>
+                                            {/* cabeçalho com bloco de data */}
+                                            <div onClick={() => setDataAberta(aberto ? null : ds)}
+                                                style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', borderBottom: aberto ? `1px solid ${c.border}` : 'none', transition: 'background 100ms' }}
+                                                className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
+                                                {/* bloco de data */}
+                                                <div style={{ width: 38, height: 38, borderRadius: 8, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: aberto ? (isDark ? 'rgba(91,95,234,0.1)' : '#EEF0FF') : (isDark ? '#111827' : '#F1F4F8'), border: `1px solid ${aberto ? (isDark ? 'rgba(91,95,234,0.3)' : '#c7d2fe') : (isDark ? '#374151' : '#E6EAF0')}` }}>
+                                                    <span style={{ fontSize: 15, fontWeight: 700, color: aberto ? (isDark ? '#818cf8' : '#5B5FEA') : (isDark ? '#9CA3AF' : '#475569'), lineHeight: 1 }}>{d.getDate()}</span>
+                                                    <span style={{ fontSize: 9.5, color: aberto ? (isDark ? '#818cf8' : '#5B5FEA') : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.3px', marginTop: 1 }}>{mesesLabel[d.getMonth()]}</span>
+                                                </div>
+                                                {/* dia da semana */}
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#E5E7EB' : '#334155' }}>{diasSemanaLabel[d.getDay()]}</div>
+                                                </div>
+                                                {/* count + chevron */}
+                                                <span style={{ fontSize: 11, fontWeight: 600, color: isDark ? '#34d399' : '#059669', background: isDark ? 'rgba(16,185,129,0.08)' : '#ecfdf5', border: isDark ? '1px solid rgba(16,185,129,0.2)' : '1px solid #a7f3d0', padding: '2px 7px', borderRadius: 999 }}>
                                                     {regs.length} reg.
                                                 </span>
-                                                <span className="text-slate-300 dark:text-slate-600 text-xs ml-1">
-                                                    {aberto ? '▲' : '▼'}
-                                                </span>
-                                            </button>
+                                                <span style={{ fontSize: 10, color: isDark ? '#4B5563' : '#cbd5e1', marginLeft: 4 }}>{aberto ? '▲' : '▼'}</span>
+                                            </div>
+                                            {/* registros */}
                                             {aberto && (
-                                                <div className="border-t border-[#F1F4F8] dark:border-[#374151]/60 divide-y divide-[#F1F4F8] dark:divide-[#374151]/60">
+                                                <div>
                                                     {regs.map((r, j) => renderRegistroRow(r, j))}
                                                 </div>
                                             )}
