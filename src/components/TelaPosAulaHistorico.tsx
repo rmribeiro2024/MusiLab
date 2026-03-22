@@ -903,12 +903,16 @@ export default function TelaPosAulaHistorico() {
                                                     return val && typeof val === 'string' && val.trim()
                                                 })
 
+                                                // expansão só faz sentido quando texto não coube (>90 chars) ou há múltiplos campos
+                                                const needsExpand = (textoInline != null && textoInline.length > 90)
+                                                    || (camposTrecho.size !== 1 && camposPreenchidos.length > 0)
+
                                                 return (
                                                     <div key={j}>
                                                         <div
-                                                            style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '9px 14px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms', cursor: 'pointer' }}
-                                                            className="hover:bg-slate-50 dark:hover:bg-white/[0.02]"
-                                                            onClick={() => setExpandedId(isExpanded ? null : regId)}>
+                                                            style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '9px 14px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms', cursor: needsExpand ? 'pointer' : 'default' }}
+                                                            className={needsExpand ? 'hover:bg-slate-50 dark:hover:bg-white/[0.02]' : ''}
+                                                            onClick={() => needsExpand && setExpandedId(isExpanded ? null : regId)}>
                                                             {/* coluna de data */}
                                                             <div style={{ width: 32, flexShrink: 0, textAlign: 'center', paddingTop: 1, marginRight: 8 }}>
                                                                 <span style={{ fontSize: 14, fontWeight: 700, color: isExpanded ? (isDark ? '#818cf8' : '#5B5FEA') : '#94a3b8', display: 'block', lineHeight: 1, transition: 'color 120ms' }}>{d.getDate()}</span>
@@ -919,40 +923,41 @@ export default function TelaPosAulaHistorico() {
                                                             {/* texto visível */}
                                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                                 {textoInline ? (
-                                                                    <div style={{ fontSize: 12.5, color: isDark ? '#D1D5DB' : '#374151', lineHeight: 1.5, display: isExpanded ? 'block' : '-webkit-box', WebkitLineClamp: isExpanded ? undefined : 3, WebkitBoxOrient: 'vertical' as any, overflow: isExpanded ? 'visible' : 'hidden' }}>
+                                                                    <div style={{ fontSize: 12.5, color: isDark ? '#D1D5DB' : '#374151', lineHeight: 1.5, display: (!needsExpand || isExpanded) ? 'block' : '-webkit-box', WebkitLineClamp: (!needsExpand || isExpanded) ? undefined : 3, WebkitBoxOrient: 'vertical' as any, overflow: (!needsExpand || isExpanded) ? 'visible' : 'hidden' }}>
                                                                         {textoInline}
                                                                     </div>
                                                                 ) : (
                                                                     <span style={{ fontSize: 11, color: isDark ? '#374151' : '#e2e8f0', fontStyle: 'italic' }}>—</span>
                                                                 )}
-                                                                {!isExpanded && (alunoAtencao || pontoQueda) && (
-                                                                    <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
-                                                                        {alunoAtencao && (
-                                                                            <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
-                                                                                title="Aluno que precisa de atenção"
-                                                                                style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', color: '#d97706', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                                ! {alunoAtencao}
-                                                                            </button>
-                                                                        )}
-                                                                        {pontoQueda && (
-                                                                            <button onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }}
-                                                                                style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                                Engajamento ↓
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
+                                                            </div>
+                                                            {/* direita: ··· editar + chevron (só se precisar expandir) */}
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, alignSelf: 'flex-start', paddingTop: 2, marginLeft: 6 }}>
+                                                                <button
+                                                                    onClick={e => { e.stopPropagation(); abrirEditar(r) }}
+                                                                    title="Editar registro"
+                                                                    style={{ fontSize: 13, lineHeight: 1, padding: '2px 5px', borderRadius: 5, border: 'none', background: 'transparent', color: isDark ? '#374151' : '#cbd5e1', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: 1, transition: 'color 120ms' }}
+                                                                    onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#6B7280' : '#94a3b8')}
+                                                                    onMouseLeave={e => (e.currentTarget.style.color = isDark ? '#374151' : '#cbd5e1')}>
+                                                                    ···
+                                                                </button>
+                                                                {needsExpand && (
+                                                                    <span style={{ fontSize: 9, color: isDark ? '#4B5563' : '#cbd5e1' }}>{isExpanded ? '▲' : '▼'}</span>
                                                                 )}
                                                             </div>
-                                                            {/* indicador de estado */}
-                                                            <span style={{ fontSize: 9, color: isDark ? '#4B5563' : '#cbd5e1', flexShrink: 0, alignSelf: 'flex-start', paddingTop: 4, marginLeft: 4 }}>{isExpanded ? '▲' : '▼'}</span>
                                                         </div>
 
-                                                        {/* ── Expansão: todos os campos selecionados + Editar ── */}
-                                                        {isExpanded && (
+                                                        {/* ── Expansão: texto completo (sem repetir label) ── */}
+                                                        {isExpanded && needsExpand && (
                                                             <div style={{ borderBottom: !isLast ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', padding: '10px 14px 14px 50px', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.012)' }}>
-                                                                {camposPreenchidos.length === 0 ? (
+                                                                {camposTrecho.size === 1 ? (
+                                                                    /* critério único: só o texto completo, sem label repetida */
+                                                                    <p style={{ fontSize: 12.5, lineHeight: 1.6, color: isDark ? '#D1D5DB' : '#374151' }}>
+                                                                        {textoInline}
+                                                                    </p>
+                                                                ) : camposPreenchidos.length === 0 ? (
                                                                     <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Nenhum campo preenchido.</p>
                                                                 ) : (
+                                                                    /* múltiplos critérios: mostra cada um com label */
                                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                                                         {camposPreenchidos.map(campo => (
                                                                             <div key={campo.key}>
@@ -964,29 +969,8 @@ export default function TelaPosAulaHistorico() {
                                                                                 </p>
                                                                             </div>
                                                                         ))}
-                                                                        {(alunoAtencao || pontoQueda) && (
-                                                                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', paddingTop: 2 }}>
-                                                                                {alunoAtencao && (
-                                                                                    <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
-                                                                                        title="Aluno que precisa de atenção"
-                                                                                        style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', color: '#d97706', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                                        ! {alunoAtencao}
-                                                                                    </button>
-                                                                                )}
-                                                                                {pontoQueda && (
-                                                                                    <button onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }}
-                                                                                        style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                                        Engajamento ↓
-                                                                                    </button>
-                                                                                )}
-                                                                            </div>
-                                                                        )}
                                                                     </div>
                                                                 )}
-                                                                <button onClick={e => { e.stopPropagation(); abrirEditar(r) }}
-                                                                    style={{ marginTop: 10, fontSize: 11, padding: '4px 11px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                    Editar
-                                                                </button>
                                                             </div>
                                                         )}
                                                     </div>
