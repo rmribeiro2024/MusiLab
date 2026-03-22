@@ -342,8 +342,7 @@ export default function TelaPosAulaHistorico() {
         return (
             <div key={j} style={{ borderLeft: `4px solid ${c.leftBar}` }}>
                 {/* ── linha compacta ── */}
-                <div className="px-4 py-2.5 flex items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition cursor-pointer"
-                    onClick={() => setExpandedId(isExpanded ? null : regId)}>
+                <div className="px-4 py-2.5 flex items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
                     <div className="flex-1 min-w-0 pt-px">
                         <div className="flex items-center">
                             {showDate ? (
@@ -364,13 +363,13 @@ export default function TelaPosAulaHistorico() {
                                     </span>
                                 )}
                                 {alunoAtencao && (
-                                    <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
+                                    <button onClick={() => setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao)}
                                         style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
                                         👤 {alunoAtencao}
                                     </button>
                                 )}
                                 {pontoQueda && (
-                                    <button onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }}
+                                    <button onClick={() => setFiltroEngajamento(!filtroEngajamento)}
                                         style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
                                         📉 engajamento
                                     </button>
@@ -378,9 +377,17 @@ export default function TelaPosAulaHistorico() {
                             </div>
                         )}
                     </div>
-                    <span style={{ fontSize: '10px', color: c.btnText, flexShrink: 0, marginTop: '2px' }}>
-                        {isExpanded ? '▲' : '▼'}
-                    </span>
+                    {/* Option C: explicit Ver + Editar buttons */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, paddingTop: 1 }}>
+                        <button onClick={() => setExpandedId(isExpanded ? null : regId)}
+                            style={{ fontSize: '11px', fontWeight: 500, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: isExpanded ? (isDark ? 'rgba(91,95,234,0.08)' : '#EEF0FF') : 'transparent', color: isExpanded ? (isDark ? '#818cf8' : '#5B5FEA') : c.btnText, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms' }}>
+                            {isExpanded ? '▲ Fechar' : 'Ver'}
+                        </button>
+                        <button onClick={() => abrirEditar(r)}
+                            style={{ fontSize: '11px', padding: '3px 7px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
+                            ✏️
+                        </button>
+                    </div>
                 </div>
 
                 {/* ── expansão inline ── */}
@@ -402,12 +409,6 @@ export default function TelaPosAulaHistorico() {
                                 ))}
                             </div>
                         )}
-                        <div className="mt-4 flex justify-end">
-                            <button onClick={e => { e.stopPropagation(); abrirEditar(r) }}
-                                style={{ fontSize: '11.5px', padding: '5px 12px', borderRadius: '7px', border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500 }}>
-                                ✏️ Editar registro
-                            </button>
-                        </div>
                     </div>
                 )}
             </div>
@@ -645,9 +646,8 @@ export default function TelaPosAulaHistorico() {
                                         return (
                                             <div key={j}>
                                                 {/* linha do registro */}
-                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '10px 16px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms', cursor: 'pointer' }}
-                                                    className="hover:bg-slate-50 dark:hover:bg-white/[0.02]"
-                                                    onClick={() => setExpandedId(isExpanded ? null : regId)}>
+                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '10px 16px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms' }}
+                                                    className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
                                                     {/* data */}
                                                     <div style={{ width: 36, flexShrink: 0, textAlign: 'center', marginRight: 10, paddingTop: 1 }}>
                                                         <span style={{ fontSize: 15, fontWeight: 700, color: '#94a3b8', display: 'block', lineHeight: 1 }}>{d.getDate()}</span>
@@ -681,11 +681,17 @@ export default function TelaPosAulaHistorico() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    {/* ver / fechar */}
-                                                    <button onClick={e => { e.stopPropagation(); setExpandedId(isExpanded ? null : regId) }}
-                                                        style={{ fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0, alignSelf: 'flex-start', transition: 'all 120ms' }}>
-                                                        {isExpanded ? '▲' : 'Ver'}
-                                                    </button>
+                                                    {/* Ver + Editar (Option C) */}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, alignSelf: 'flex-start' }}>
+                                                        <button onClick={() => setExpandedId(isExpanded ? null : regId)}
+                                                            style={{ fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: isExpanded ? (isDark ? 'rgba(91,95,234,0.08)' : '#EEF0FF') : 'transparent', color: isExpanded ? (isDark ? '#818cf8' : '#5B5FEA') : c.btnText, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms' }}>
+                                                            {isExpanded ? '▲' : 'Ver'}
+                                                        </button>
+                                                        <button onClick={() => abrirEditar(r)}
+                                                            style={{ fontSize: 11, padding: '3px 7px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                            ✏️
+                                                        </button>
+                                                    </div>
                                                 </div>
 
                                                 {/* expansão inline */}
@@ -707,12 +713,6 @@ export default function TelaPosAulaHistorico() {
                                                                 ))}
                                                             </div>
                                                         )}
-                                                        <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end' }}>
-                                                            <button onClick={e => { e.stopPropagation(); abrirEditar(r) }}
-                                                                style={{ fontSize: 11.5, padding: '5px 12px', borderRadius: 7, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500 }}>
-                                                                ✏️ Editar registro
-                                                            </button>
-                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
