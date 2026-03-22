@@ -427,6 +427,8 @@ export default function TelaPosAulaHistorico() {
         fontSize: '12px', padding: '4px 20px 4px 8px', borderRadius: '6px',
         border: `1px solid ${c.border}`, background: c.selBg, color: c.selText,
         cursor: 'pointer', fontFamily: 'inherit', appearance: 'none',
+        outline: 'none', WebkitAppearance: 'none', MozAppearance: 'none' as any,
+        boxShadow: 'none',
     }
 
 
