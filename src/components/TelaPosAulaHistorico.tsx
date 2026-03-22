@@ -818,8 +818,12 @@ export default function TelaPosAulaHistorico() {
                                         <div style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, flexShrink: 0, minHeight: 16, background: cor }} />
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ fontSize: '12.5px', fontWeight: 600, color: isDark ? '#E5E7EB' : '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                <span style={{ color: isDark ? '#6B7280' : '#94a3b8', fontWeight: 400 }}>{grupo.escola}</span>
-                                                <span style={{ color: isDark ? '#374151' : '#cbd5e1', margin: '0 5px' }}>·</span>
+                                                {escolasParaVistaTurma.length > 1 && (
+                                                    <>
+                                                        <span style={{ color: isDark ? '#6B7280' : '#94a3b8', fontWeight: 400 }}>{grupo.escola}</span>
+                                                        <span style={{ color: isDark ? '#374151' : '#cbd5e1', margin: '0 5px' }}>·</span>
+                                                    </>
+                                                )}
                                                 {grupo.label}
                                             </div>
                                             {criterioLabel && (
