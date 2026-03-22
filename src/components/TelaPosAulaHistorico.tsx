@@ -113,6 +113,18 @@ export default function TelaPosAulaHistorico() {
     const [modoVista, setModoVista] = useState<'data' | 'turma'>('turma')
     // cards abertos por padrão — só rastreia os que o usuário fechou explicitamente
     const [turmasFechadas, setTurmasFechadas] = useState<Set<string>>(new Set())
+    // paginação por turma — page index (0 = mais recentes)
+    const PAGE_SIZE = 5
+    const [paginaTurma, setPaginaTurma] = useState<Map<string, number>>(new Map())
+    const setPagina = (key: string, delta: number, total: number) => {
+        setPaginaTurma(prev => {
+            const next = new Map(prev)
+            const atual = next.get(key) ?? 0
+            const maxPage = Math.ceil(total / PAGE_SIZE) - 1
+            next.set(key, Math.max(0, Math.min(maxPage, atual + delta)))
+            return next
+        })
+    }
     const toggleTurma = (key: string) => setTurmasFechadas(prev => {
         const next = new Set(prev)
         next.has(key) ? next.delete(key) : next.add(key)
@@ -377,6 +389,7 @@ export default function TelaPosAulaHistorico() {
     // Cards por turma são abertos por padrão — ao filtrar, reseta fechamentos
     useEffect(() => {
         setTurmasFechadas(new Set())
+        setPaginaTurma(new Map())
     }, [filtroEscola, filtroSegmento, filtroTurma, filtroPeriodo, filtroCustomDe, filtroCustomAte])
 
     const getTrecho = (r: any): string | null => {
@@ -757,6 +770,12 @@ export default function TelaPosAulaHistorico() {
                                 return val && typeof val === 'string' && val.trim()
                             })
 
+                            // paginação
+                            const paginaAtual = paginaTurma.get(grupo.key) ?? 0
+                            const totalPaginas = Math.ceil(regsComConteudo.length / PAGE_SIZE)
+                            const regsVisiveis = regsComConteudo.slice(paginaAtual * PAGE_SIZE, (paginaAtual + 1) * PAGE_SIZE)
+                            const temPaginacao = regsComConteudo.length > PAGE_SIZE
+
                             // label + ícone do critério ativo
                             const criterioAtivo = CAMPOS_TRECHO.find(ct => ct.value === campoTrecho) ?? null
                             const criterioIcon = CAMPOS_INLINE.find(c => c.key === campoTrecho)?.icon ?? ''
@@ -809,12 +828,12 @@ export default function TelaPosAulaHistorico() {
                                         ) : (
                                             <>
 
-                                                {/* linhas */}
-                                                {regsComConteudo.map((r, j) => {
+                                                {/* linhas paginadas */}
+                                                {regsVisiveis.map((r, j) => {
                                                     const d = new Date(r.data + 'T12:00:00')
                                                     const regId = String(r.id ?? `${grupo.key}-${j}`)
                                                     const isHovered = hoveredId === regId
-                                                    const isLast = j === regsComConteudo.length - 1
+                                                    const isLast = j === regsVisiveis.length - 1
 
                                                     // conteúdo a exibir — critério único, texto direto
                                                     const textoNode: React.ReactNode = (() => {
@@ -852,7 +871,7 @@ export default function TelaPosAulaHistorico() {
                                                                     <button
                                                                         onClick={() => setExpandedId(isExpanded ? null : regId)}
                                                                         style={{ fontSize: 11, padding: '2px 9px', borderRadius: 6, border: `1px solid ${isExpanded ? '#c7d2fe' : c.border}`, background: isExpanded ? '#EEF0FF' : 'transparent', color: isExpanded ? '#5B5FEA' : c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                        {isExpanded ? 'Fechar' : 'Registro completo'}
+                                                                        {isExpanded ? 'Fechar' : 'Completo'}
                                                                     </button>
                                                                     <button
                                                                         onClick={() => abrirEditar(r)}
@@ -882,6 +901,29 @@ export default function TelaPosAulaHistorico() {
                                                         </div>
                                                     )
                                                 })}
+
+                                                {/* barra de paginação */}
+                                                {temPaginacao && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 14px', borderTop: `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` }}>
+                                                        <span style={{ fontSize: 11, color: isDark ? '#4B5563' : '#94a3b8' }}>
+                                                            {paginaAtual * PAGE_SIZE + 1}–{Math.min((paginaAtual + 1) * PAGE_SIZE, regsComConteudo.length)} de {regsComConteudo.length}
+                                                        </span>
+                                                        <div style={{ display: 'flex', gap: 4 }}>
+                                                            <button
+                                                                onClick={e => { e.stopPropagation(); setPagina(grupo.key, -1, regsComConteudo.length) }}
+                                                                disabled={paginaAtual === 0}
+                                                                style={{ fontSize: 12, padding: '2px 8px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: paginaAtual === 0 ? (isDark ? '#374151' : '#e2e8f0') : c.btnText, cursor: paginaAtual === 0 ? 'default' : 'pointer', fontFamily: 'inherit' }}>
+                                                                ▲
+                                                            </button>
+                                                            <button
+                                                                onClick={e => { e.stopPropagation(); setPagina(grupo.key, 1, regsComConteudo.length) }}
+                                                                disabled={paginaAtual >= totalPaginas - 1}
+                                                                style={{ fontSize: 12, padding: '2px 8px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: paginaAtual >= totalPaginas - 1 ? (isDark ? '#374151' : '#e2e8f0') : c.btnText, cursor: paginaAtual >= totalPaginas - 1 ? 'default' : 'pointer', fontFamily: 'inherit' }}>
+                                                                ▼
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </>
                                         )
                                     )}
