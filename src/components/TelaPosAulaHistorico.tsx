@@ -646,6 +646,10 @@ export default function TelaPosAulaHistorico() {
                     const safeIdx = Math.min(dataIdx, Math.max(0, datas.length - 1))
                     const ds = datas[safeIdx] ?? ''
                     const regs = ds ? porData[ds] : []
+                    const regsVisiveis = regs.filter(r => CAMPOS_INLINE.some(campo => {
+                        const val = (r as any)[campo.key]
+                        return val && typeof val === 'string' && val.trim()
+                    }))
                     const d = ds ? new Date(ds + 'T12:00:00') : null
                     return (
                         <>
@@ -682,7 +686,7 @@ export default function TelaPosAulaHistorico() {
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#E5E7EB' : '#334155' }}>{diasSemanaLabel[d.getDay()]}</div>
                                         </div>
-                                        <span style={{ fontSize: 11, color: isDark ? '#6B7280' : '#94a3b8', border: `1px solid ${c.border}`, padding: '2px 7px', borderRadius: 999 }}>{regs.length}</span>
+                                        <span style={{ fontSize: 11, color: isDark ? '#6B7280' : '#94a3b8', border: `1px solid ${c.border}`, padding: '2px 7px', borderRadius: 999 }}>{regsVisiveis.length}</span>
                                         <span style={{ fontSize: 10.5, color: isDark ? '#4B5563' : '#94a3b8', minWidth: 36, textAlign: 'center' }}>{safeIdx + 1} / {datas.length}</span>
                                         <button
                                             onClick={() => { setDataIdx(i => Math.max(0, i - 1)); setExpandedId(null) }}
@@ -692,15 +696,19 @@ export default function TelaPosAulaHistorico() {
                                         </button>
                                     </div>
 
-                                    {/* registros da data ativa */}
-                                    {regs.map((r, j) => {
+                                    {/* registros da data ativa — sem conteúdo são omitidos */}
+                                    {regsVisiveis.length === 0 ? (
+                                        <p style={{ padding: '12px 16px', fontSize: 12, fontStyle: 'italic', color: isDark ? '#4B5563' : '#94a3b8' }}>
+                                            Nenhum registro preenchido nesta data.
+                                        </p>
+                                    ) : regsVisiveis.map((r, j) => {
                                         const regId = r.id ?? `date-${ds}-${j}`
-                                        const isExpanded = regs.length === 1 || expandedId === regId
-                                        const podeToggle = regs.length > 1
+                                        const isExpanded = regsVisiveis.length === 1 || expandedId === regId
+                                        const podeToggle = regsVisiveis.length > 1
                                         const trecho = getTrecho(r)
                                         const alunoAtencao = (r as any).alunoAtencao as string | undefined
                                         const pontoQueda = (r as any).pontoQueda as string | undefined
-                                        const isLast = j === regs.length - 1
+                                        const isLast = j === regsVisiveis.length - 1
                                         const camposAExibir = camposTrecho.size > 0
                                             ? CAMPOS_INLINE.filter(campo => camposTrecho.has(campo.key))
                                             : CAMPOS_INLINE
@@ -767,6 +775,7 @@ export default function TelaPosAulaHistorico() {
                             )}
                         </>
                     )
+
                 })()
             ) : (
                 /* ── MODO POR TURMA — V3: card por turma + mini-timeline ── */
