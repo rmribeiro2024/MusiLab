@@ -822,7 +822,9 @@ export default function TelaPosAulaHistorico() {
                                                 <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: 1 }}>{grupo.escola}</div>
                                             )}
                                             {criterioLabel && (
-                                                <div style={{ fontSize: '10.5px', color: isDark ? '#4B5563' : '#94a3b8', marginTop: 2 }}>{criterioLabel}</div>
+                                                <div style={{ marginTop: 4 }}>
+                                                    <span style={{ fontSize: '10.5px', color: isDark ? '#6B7280' : '#64748b', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E6EAF0'}`, padding: '1px 7px', borderRadius: 999, display: 'inline-block' }}>{criterioLabel}</span>
+                                                </div>
                                             )}
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
