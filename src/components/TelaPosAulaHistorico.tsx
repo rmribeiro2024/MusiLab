@@ -111,13 +111,20 @@ export default function TelaPosAulaHistorico() {
 
     // F2.4 — modo de vista (V3: padrão é 'turma')
     const [modoVista, setModoVista] = useState<'data' | 'turma'>('turma')
-    const [turmasAbertas, setTurmasAbertas] = useState<Set<string>>(new Set())
-
-    const toggleTurma = (key: string) => setTurmasAbertas(prev => {
+    // cards abertos por padrão — só rastreia os que o usuário fechou explicitamente
+    const [turmasFechadas, setTurmasFechadas] = useState<Set<string>>(new Set())
+    const toggleTurma = (key: string) => setTurmasFechadas(prev => {
         const next = new Set(prev)
         next.has(key) ? next.delete(key) : next.add(key)
         return next
     })
+
+    // paginação por turma (5 registros por página)
+    const REGS_POR_PAG = 5
+    const [turmasOffset, setTurmasOffset] = useState<Record<string, number>>({})
+    const getOffset = (key: string) => turmasOffset[key] ?? 0
+    const setOffset = (key: string, val: number) =>
+        setTurmasOffset(prev => ({ ...prev, [key]: val }))
 
     const todosRegistros = useMemo(() =>
         planos.flatMap(p =>
@@ -371,14 +378,11 @@ export default function TelaPosAulaHistorico() {
         setTimeout(() => setPainelAberto(false), 240)
     }
 
-    // Auto-expand: quando período ativo, abre todos os cards automaticamente
-    const periodoAtivo = filtroPeriodo !== 'tudo'
+    // Cards por turma são abertos por padrão — ao filtrar, reseta fechamentos e offsets
     useEffect(() => {
-        if (!periodoAtivo) return
-        setTurmasAbertas(new Set(turmasAgrupadas.map(g => g.key)))
-        setDatasAbertas(new Set(datas))
-    }, [periodoAtivo, filtroPeriodo, filtroCustomDe, filtroCustomAte,
-        turmasAgrupadas.map(g => g.key).join(','), datas.join(',')])
+        setTurmasFechadas(new Set())
+        setTurmasOffset({})
+    }, [filtroEscola, filtroSegmento, filtroTurma, filtroPeriodo, filtroCustomDe, filtroCustomAte])
 
     const getTrecho = (r: any): string | null => {
         // Concatena os campos selecionados (multi-select)
@@ -778,7 +782,7 @@ export default function TelaPosAulaHistorico() {
 
                 })()
             ) : (
-                /* ── MODO POR TURMA — V3: card por turma + mini-timeline ── */
+                /* ── MODO POR TURMA — V4: cards abertos, sem botões inline, paginação ── */
                 turmasAgrupadas.length === 0 ? (
                     <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', padding: '20px 0' }}>
                         {filtrosAtivos ? 'Nenhum resultado para os filtros selecionados.' : 'Nenhum registro ainda.'}
@@ -786,28 +790,46 @@ export default function TelaPosAulaHistorico() {
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {turmasAgrupadas.map((grupo, colorIdx) => {
-                            const isOpen = turmasAbertas.has(grupo.key)
+                            const isOpen = !turmasFechadas.has(grupo.key)
                             const lacuna = lacunas.find(l => l.key === grupo.key)
                             const cor = lacuna
                                 ? (isDark ? '#374151' : '#e2e8f0')
                                 : TURMA_COLORS[colorIdx % TURMA_COLORS.length]
 
+                            // filtra registros sem conteúdo
+                            const regsComConteudo = grupo.regs.filter(r =>
+                                CAMPOS_INLINE.some(campo => {
+                                    const val = (r as any)[campo.key]
+                                    return val && typeof val === 'string' && val.trim()
+                                })
+                            )
+
+                            // paginação
+                            const offset = getOffset(grupo.key)
+                            const regsPage = regsComConteudo.slice(offset, offset + REGS_POR_PAG)
+                            const temMaisAntigas = offset + REGS_POR_PAG < regsComConteudo.length
+                            const temMaisRecentes = offset > 0
+
+                            // label do critério selecionado
+                            const criterioLabel = camposTrecho.size === 1
+                                ? (CAMPOS_TRECHO.find(ct => camposTrecho.has(ct.value))?.label ?? '').toUpperCase()
+                                : camposTrecho.size > 1
+                                    ? `${camposTrecho.size} CRITÉRIOS`
+                                    : null
+
                             return (
                                 <div key={grupo.key} className="v2-card" style={{ borderRadius: '12px', border: `1px solid ${c.border}`, overflow: 'hidden', boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.06)' }}>
                                     {/* ── Cabeçalho da turma ── */}
                                     <div onClick={() => toggleTurma(grupo.key)}
-                                        style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', borderBottom: isOpen ? `1px solid ${c.border}` : 'none', transition: 'background 100ms' }}
+                                        style={{ padding: '11px 16px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', borderBottom: isOpen ? `1px solid ${c.border}` : 'none', transition: 'background 100ms' }}
                                         className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
-                                        {/* barra de cor */}
                                         <div style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, flexShrink: 0, minHeight: 16, background: cor }} />
-                                        {/* nome + escola */}
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ fontSize: '13px', fontWeight: 600, color: isDark ? '#E5E7EB' : '#1e293b' }}>{grupo.label}</div>
                                             {escolasParaVistaTurma.length > 1 && (
                                                 <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: 1 }}>{grupo.escola}</div>
                                             )}
                                         </div>
-                                        {/* badges */}
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                             {lacuna && (
                                                 <span style={{ fontSize: '10px', color: '#f97316', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)', padding: '2px 6px', borderRadius: 999, fontWeight: 600 }}>
@@ -815,107 +837,163 @@ export default function TelaPosAulaHistorico() {
                                                 </span>
                                             )}
                                             <span style={{ fontSize: 11, color: isDark ? '#6B7280' : '#94a3b8', border: `1px solid ${c.border}`, padding: '2px 7px', borderRadius: 999 }}>
-                                                {grupo.regs.length}
+                                                {regsComConteudo.length}
                                             </span>
                                         </div>
                                         <span style={{ fontSize: '10px', color: isDark ? '#4B5563' : '#cbd5e1', marginLeft: 4 }}>{isOpen ? '▲' : '▼'}</span>
                                     </div>
 
-                                    {/* ── Mini-timeline interna ── */}
-                                    {isOpen && grupo.regs.map((r, j) => {
-                                        const d = new Date(r.data + 'T12:00:00')
-                                        const regId = r.id ?? `${grupo.key}-${j}`
-                                        const isExpanded = expandedId === regId
-                                        const trecho = getTrecho(r)
-                                        const alunoAtencao = (r as any).alunoAtencao as string | undefined
-                                        const pontoQueda = (r as any).pontoQueda as string | undefined
-                                        const isLast = j === grupo.regs.length - 1
-                                        const camposAExibir = camposTrecho.size > 0
-                                            ? CAMPOS_INLINE.filter(campo => camposTrecho.has(campo.key))
-                                            : CAMPOS_INLINE
-                                        const camposPreenchidos = camposAExibir.filter(campo => {
-                                            const val = (r as any)[campo.key]
-                                            return val && typeof val === 'string' && val.trim()
-                                        })
-
-                                        return (
-                                            <div key={j}>
-                                                {/* linha do registro — clicável para expandir */}
-                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '10px 16px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms', cursor: 'pointer' }}
-                                                    className="hover:bg-slate-50 dark:hover:bg-white/[0.02]"
-                                                    onClick={() => setExpandedId(isExpanded ? null : regId)}>
-                                                    {/* data */}
-                                                    <div style={{ width: 36, flexShrink: 0, textAlign: 'center', marginRight: 10, paddingTop: 1 }}>
-                                                        <span style={{ fontSize: 15, fontWeight: 700, color: '#94a3b8', display: 'block', lineHeight: 1 }}>{d.getDate()}</span>
-                                                        <span style={{ fontSize: 9.5, color: '#cbd5e1', textTransform: 'uppercase', display: 'block', marginTop: 1 }}>{mesesLabel[d.getMonth()]}</span>
-                                                    </div>
-                                                    {/* conector vertical */}
-                                                    <div style={{ width: 1, background: isDark ? '#374151' : '#E6EAF0', flexShrink: 0, alignSelf: 'stretch', marginRight: 10, minHeight: 24, position: 'relative' }}>
-                                                        <div style={{ position: 'absolute', left: -2, top: 4, width: 5, height: 5, borderRadius: '50%', background: isDark ? '#374151' : '#CBD5E1', border: `1px solid ${isDark ? '#4B5563' : '#E6EAF0'}` }} />
-                                                    </div>
-                                                    {/* conteúdo */}
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        {trecho ? (
-                                                            <div style={{ fontSize: 11.5, fontStyle: 'italic', color: '#94a3b8', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                                                "{trecho}"
-                                                            </div>
-                                                        ) : (
-                                                            <div style={{ fontSize: 11, fontStyle: 'italic', color: isDark ? '#374151' : '#cbd5e1' }}>
-                                                                sem registro
-                                                            </div>
-                                                        )}
-                                                        {(alunoAtencao || pontoQueda) && (
-                                                            <div style={{ display: 'flex', gap: 4, marginTop: trecho ? 4 : 0, flexWrap: 'wrap' }}>
-                                                                {alunoAtencao && (
-                                                                    <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
-                                                                        title="Aluno que precisa de atenção"
-                                                                        style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', color: '#d97706', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                        ! {alunoAtencao}
-                                                                    </button>
-                                                                )}
-                                                                {pontoQueda && (
-                                                                    <button onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }}
-                                                                        style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                        Engajamento ↓
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    {/* Editar + chevron */}
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, alignSelf: 'flex-start' }}>
-                                                        <button onClick={e => { e.stopPropagation(); abrirEditar(r) }}
-                                                            style={{ fontSize: 11, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                            Editar
+                                    {isOpen && (
+                                        <>
+                                            {/* ── Faixa de critério + navegação ── */}
+                                            <div style={{ padding: '5px 14px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: `1px solid ${c.border}`, background: isDark ? 'rgba(255,255,255,0.015)' : '#FAFBFC' }}>
+                                                <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', flex: 1 }}>
+                                                    {criterioLabel ?? 'RESUMO'}
+                                                </span>
+                                                {regsComConteudo.length > REGS_POR_PAG && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                        <button
+                                                            onClick={e => { e.stopPropagation(); if (temMaisRecentes) { setOffset(grupo.key, Math.max(0, offset - REGS_POR_PAG)); setExpandedId(null) } }}
+                                                            disabled={!temMaisRecentes}
+                                                            style={{ width: 22, height: 22, border: `1px solid ${c.border}`, borderRadius: 4, background: 'transparent', cursor: temMaisRecentes ? 'pointer' : 'default', color: temMaisRecentes ? c.btnText : (isDark ? '#374151' : '#e2e8f0'), fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', transition: 'all 120ms' }}>
+                                                            ↑
                                                         </button>
-                                                        <span style={{ fontSize: 9, color: c.btnText, opacity: 0.5 }}>{isExpanded ? '▲' : '▼'}</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* expansão inline */}
-                                                {isExpanded && (
-                                                    <div style={{ borderBottom: !isLast ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', padding: '12px 16px 14px 62px', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)' }}>
-                                                        {camposPreenchidos.length === 0 ? (
-                                                            <p style={{ fontSize: 12, color: '#94a3b8' }}>Nenhum campo preenchido.</p>
-                                                        ) : (
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                                                {camposPreenchidos.map(campo => (
-                                                                    <div key={campo.key}>
-                                                                        <p style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: isDark ? '#4B5563' : '#94a3b8', marginBottom: 2 }}>
-                                                                            {campo.icon} {campo.label}
-                                                                        </p>
-                                                                        <p style={{ fontSize: 12.5, lineHeight: 1.55, color: isDark ? '#D1D5DB' : '#374151' }}>
-                                                                            {(r as any)[campo.key]}
-                                                                        </p>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
+                                                        <span style={{ fontSize: 10, color: isDark ? '#4B5563' : '#94a3b8', minWidth: 32, textAlign: 'center' }}>
+                                                            {offset + 1}–{Math.min(offset + REGS_POR_PAG, regsComConteudo.length)}
+                                                        </span>
+                                                        <button
+                                                            onClick={e => { e.stopPropagation(); if (temMaisAntigas) { setOffset(grupo.key, offset + REGS_POR_PAG); setExpandedId(null) } }}
+                                                            disabled={!temMaisAntigas}
+                                                            style={{ width: 22, height: 22, border: `1px solid ${c.border}`, borderRadius: 4, background: 'transparent', cursor: temMaisAntigas ? 'pointer' : 'default', color: temMaisAntigas ? c.btnText : (isDark ? '#374151' : '#e2e8f0'), fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', transition: 'all 120ms' }}>
+                                                            ↓
+                                                        </button>
                                                     </div>
                                                 )}
                                             </div>
-                                        )
-                                    })}
+
+                                            {/* ── Linhas de registro ── */}
+                                            {regsPage.length === 0 ? (
+                                                <p style={{ padding: '12px 16px', fontSize: 12, fontStyle: 'italic', color: isDark ? '#4B5563' : '#94a3b8' }}>
+                                                    Nenhum registro preenchido.
+                                                </p>
+                                            ) : regsPage.map((r, j) => {
+                                                const d = new Date(r.data + 'T12:00:00')
+                                                const regId = r.id ?? `${grupo.key}-${offset}-${j}`
+                                                const isExpanded = expandedId === regId
+                                                const isLast = j === regsPage.length - 1
+                                                const alunoAtencao = (r as any).alunoAtencao as string | undefined
+                                                const pontoQueda = (r as any).pontoQueda as string | undefined
+
+                                                // conteúdo a mostrar: campo selecionado ou fallback
+                                                const textoInline = (() => {
+                                                    if (camposTrecho.size === 1) {
+                                                        const key = [...camposTrecho][0] as string
+                                                        const val = (r as any)[key]
+                                                        return (val && typeof val === 'string' && val.trim()) ? val.trim() : null
+                                                    }
+                                                    return getTrecho(r)
+                                                })()
+
+                                                // campos expandidos: só os selecionados (ou todos se nenhum)
+                                                const camposAExibir = camposTrecho.size > 0
+                                                    ? CAMPOS_INLINE.filter(campo => camposTrecho.has(campo.key))
+                                                    : CAMPOS_INLINE
+                                                const camposPreenchidos = camposAExibir.filter(campo => {
+                                                    const val = (r as any)[campo.key]
+                                                    return val && typeof val === 'string' && val.trim()
+                                                })
+
+                                                return (
+                                                    <div key={j}>
+                                                        <div
+                                                            style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '9px 14px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms', cursor: 'pointer' }}
+                                                            className="hover:bg-slate-50 dark:hover:bg-white/[0.02]"
+                                                            onClick={() => setExpandedId(isExpanded ? null : regId)}>
+                                                            {/* coluna de data */}
+                                                            <div style={{ width: 32, flexShrink: 0, textAlign: 'center', paddingTop: 1, marginRight: 8 }}>
+                                                                <span style={{ fontSize: 14, fontWeight: 700, color: isExpanded ? (isDark ? '#818cf8' : '#5B5FEA') : '#94a3b8', display: 'block', lineHeight: 1, transition: 'color 120ms' }}>{d.getDate()}</span>
+                                                                <span style={{ fontSize: 9, color: isExpanded ? (isDark ? '#818cf8' : '#5B5FEA') : '#cbd5e1', textTransform: 'uppercase', display: 'block', marginTop: 1, transition: 'color 120ms' }}>{mesesLabel[d.getMonth()]}</span>
+                                                            </div>
+                                                            {/* separador vertical fino */}
+                                                            <div style={{ width: 1, alignSelf: 'stretch', background: isDark ? '#374151' : '#F1F4F8', flexShrink: 0, marginRight: 10, minHeight: 20 }} />
+                                                            {/* texto visível */}
+                                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                                {textoInline ? (
+                                                                    <div style={{ fontSize: 12.5, color: isDark ? '#D1D5DB' : '#374151', lineHeight: 1.5, display: isExpanded ? 'block' : '-webkit-box', WebkitLineClamp: isExpanded ? undefined : 3, WebkitBoxOrient: 'vertical' as any, overflow: isExpanded ? 'visible' : 'hidden' }}>
+                                                                        {textoInline}
+                                                                    </div>
+                                                                ) : (
+                                                                    <span style={{ fontSize: 11, color: isDark ? '#374151' : '#e2e8f0', fontStyle: 'italic' }}>—</span>
+                                                                )}
+                                                                {!isExpanded && (alunoAtencao || pontoQueda) && (
+                                                                    <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+                                                                        {alunoAtencao && (
+                                                                            <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
+                                                                                title="Aluno que precisa de atenção"
+                                                                                style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', color: '#d97706', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                                ! {alunoAtencao}
+                                                                            </button>
+                                                                        )}
+                                                                        {pontoQueda && (
+                                                                            <button onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }}
+                                                                                style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                                Engajamento ↓
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            {/* indicador de estado */}
+                                                            <span style={{ fontSize: 9, color: isDark ? '#4B5563' : '#cbd5e1', flexShrink: 0, alignSelf: 'flex-start', paddingTop: 4, marginLeft: 4 }}>{isExpanded ? '▲' : '▼'}</span>
+                                                        </div>
+
+                                                        {/* ── Expansão: todos os campos selecionados + Editar ── */}
+                                                        {isExpanded && (
+                                                            <div style={{ borderBottom: !isLast ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', padding: '10px 14px 14px 50px', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.012)' }}>
+                                                                {camposPreenchidos.length === 0 ? (
+                                                                    <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Nenhum campo preenchido.</p>
+                                                                ) : (
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                                                        {camposPreenchidos.map(campo => (
+                                                                            <div key={campo.key}>
+                                                                                <p style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: isDark ? '#4B5563' : '#94a3b8', marginBottom: 2 }}>
+                                                                                    {campo.icon} {campo.label}
+                                                                                </p>
+                                                                                <p style={{ fontSize: 12.5, lineHeight: 1.55, color: isDark ? '#D1D5DB' : '#374151' }}>
+                                                                                    {(r as any)[campo.key]}
+                                                                                </p>
+                                                                            </div>
+                                                                        ))}
+                                                                        {(alunoAtencao || pontoQueda) && (
+                                                                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', paddingTop: 2 }}>
+                                                                                {alunoAtencao && (
+                                                                                    <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
+                                                                                        title="Aluno que precisa de atenção"
+                                                                                        style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', color: '#d97706', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                                        ! {alunoAtencao}
+                                                                                    </button>
+                                                                                )}
+                                                                                {pontoQueda && (
+                                                                                    <button onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }}
+                                                                                        style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                                        Engajamento ↓
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                                <button onClick={e => { e.stopPropagation(); abrirEditar(r) }}
+                                                                    style={{ marginTop: 10, fontSize: 11, padding: '4px 11px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                    Editar
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })}
+                                        </>
+                                    )}
                                 </div>
                             )
                         })}
