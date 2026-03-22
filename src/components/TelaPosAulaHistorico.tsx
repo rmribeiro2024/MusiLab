@@ -543,7 +543,7 @@ export default function TelaPosAulaHistorico() {
                                                                         {alunoAtencao && (
                                                                             <button onClick={() => setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao)}
                                                                                 style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                                👤 {alunoAtencao}
+                                                                                👤 Atenção · {alunoAtencao}
                                                                             </button>
                                                                         )}
                                                                         {pontoQueda && (
@@ -682,7 +682,7 @@ export default function TelaPosAulaHistorico() {
                                                                 {alunoAtencao && (
                                                                     <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
                                                                         style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                        👤 {alunoAtencao}
+                                                                        👤 Atenção · {alunoAtencao}
                                                                     </button>
                                                                 )}
                                                                 {pontoQueda && (

@@ -534,16 +534,17 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
         })
     }
 
-    // Inicializa GIS e tenta auth silenciosa — só quando o modal está realmente aberto
+    // Inicializa GIS e tenta auth silenciosa — SOMENTE quando o professor abre a seção
+    // de evidências (lazy init). Não disparar no mount do modal para evitar popup Google.
     React.useEffect(() => {
-        if (inlineMode || !modalRegistro || !isGoogleDriveConfigured() || isMobileDevice()) return
+        if (!evidenciaAberta || driveConectado || !isGoogleDriveConfigured() || isMobileDevice()) return
         initDriveAuth(
             import.meta.env.VITE_GOOGLE_CLIENT_ID,
             () => setDriveConectado(true),   // auth silenciosa ok → já conectado
             (msg) => setUploadErro(msg),      // erro real → mostra mensagem
             () => setDriveConectado(false)    // primeira vez → mostra botão "Conectar"
         ).catch(() => {})
-    }, [modalRegistro]) // eslint-disable-line
+    }, [evidenciaAberta]) // eslint-disable-line
 
     // Reset upload states when turma changes (evidência is per-turma)
     React.useEffect(() => {
