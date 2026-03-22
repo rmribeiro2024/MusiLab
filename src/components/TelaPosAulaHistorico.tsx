@@ -559,11 +559,11 @@ export default function TelaPosAulaHistorico() {
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, alignSelf: 'flex-start' }}>
                                                                 <button onClick={() => setExpandedId(isExpanded ? null : regId)}
                                                                     style={{ fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: isExpanded ? (isDark ? 'rgba(91,95,234,0.08)' : '#EEF0FF') : 'transparent', color: isExpanded ? (isDark ? '#818cf8' : '#5B5FEA') : c.btnText, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms' }}>
-                                                                    {isExpanded ? '▲' : 'Ver'}
+                                                                    {isExpanded ? 'Fechar' : 'Ver'}
                                                                 </button>
                                                                 <button onClick={() => abrirEditar(r)}
-                                                                    style={{ fontSize: 11, padding: '3px 7px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                    ✏️
+                                                                    style={{ fontSize: 11, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                    Editar
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -698,7 +698,7 @@ export default function TelaPosAulaHistorico() {
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, alignSelf: 'flex-start' }}>
                                                         <button onClick={() => setExpandedId(isExpanded ? null : regId)}
                                                             style={{ fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: isExpanded ? (isDark ? 'rgba(91,95,234,0.08)' : '#EEF0FF') : 'transparent', color: isExpanded ? (isDark ? '#818cf8' : '#5B5FEA') : c.btnText, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms' }}>
-                                                            {isExpanded ? '▲' : 'Ver'}
+                                                            {isExpanded ? 'Fechar' : 'Ver'}
                                                         </button>
                                                         <button onClick={() => abrirEditar(r)}
                                                             style={{ fontSize: 11, padding: '3px 7px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
