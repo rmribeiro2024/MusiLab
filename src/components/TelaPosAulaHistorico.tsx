@@ -701,7 +701,10 @@ export default function TelaPosAulaHistorico() {
                                         const alunoAtencao = (r as any).alunoAtencao as string | undefined
                                         const pontoQueda = (r as any).pontoQueda as string | undefined
                                         const isLast = j === regs.length - 1
-                                        const camposPreenchidos = CAMPOS_INLINE.filter(campo => {
+                                        const camposAExibir = camposTrecho.size > 0
+                                            ? CAMPOS_INLINE.filter(campo => camposTrecho.has(campo.key))
+                                            : CAMPOS_INLINE
+                                        const camposPreenchidos = camposAExibir.filter(campo => {
                                             const val = (r as any)[campo.key]
                                             return val && typeof val === 'string' && val.trim()
                                         })
@@ -818,7 +821,10 @@ export default function TelaPosAulaHistorico() {
                                         const alunoAtencao = (r as any).alunoAtencao as string | undefined
                                         const pontoQueda = (r as any).pontoQueda as string | undefined
                                         const isLast = j === grupo.regs.length - 1
-                                        const camposPreenchidos = CAMPOS_INLINE.filter(campo => {
+                                        const camposAExibir = camposTrecho.size > 0
+                                            ? CAMPOS_INLINE.filter(campo => camposTrecho.has(campo.key))
+                                            : CAMPOS_INLINE
+                                        const camposPreenchidos = camposAExibir.filter(campo => {
                                             const val = (r as any)[campo.key]
                                             return val && typeof val === 'string' && val.trim()
                                         })
