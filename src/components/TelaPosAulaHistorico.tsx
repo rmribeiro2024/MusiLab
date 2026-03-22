@@ -530,9 +530,10 @@ export default function TelaPosAulaHistorico() {
                                                 })
                                                 return (
                                                     <div key={j}>
-                                                        {/* linha */}
-                                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '10px 16px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms' }}
-                                                            className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
+                                                        {/* linha — clicável para expandir */}
+                                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '10px 16px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms', cursor: 'pointer' }}
+                                                            className="hover:bg-slate-50 dark:hover:bg-white/[0.02]"
+                                                            onClick={() => setExpandedId(isExpanded ? null : regId)}>
                                                             {/* dot colorido da turma */}
                                                             <div style={{ width: 36, flexShrink: 0, display: 'flex', justifyContent: 'center', paddingTop: 5, marginRight: 10 }}>
                                                                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: turmaColor, flexShrink: 0 }} />
@@ -557,13 +558,13 @@ export default function TelaPosAulaHistorico() {
                                                                 {(alunoAtencao || pontoQueda) && (
                                                                     <div style={{ display: 'flex', gap: 4, marginTop: trecho ? 4 : 2, flexWrap: 'wrap' }}>
                                                                         {alunoAtencao && (
-                                                                            <button onClick={() => setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao)}
+                                                                            <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
                                                                                 style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
                                                                                 Atenção · {alunoAtencao}
                                                                             </button>
                                                                         )}
                                                                         {pontoQueda && (
-                                                                            <button onClick={() => setFiltroEngajamento(!filtroEngajamento)}
+                                                                            <button onClick={e => { e.stopPropagation(); setFiltroEngajamento(!filtroEngajamento) }}
                                                                                 style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
                                                                                 Engajamento ↓
                                                                             </button>
@@ -571,16 +572,13 @@ export default function TelaPosAulaHistorico() {
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            {/* Ver + Editar */}
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, alignSelf: 'flex-start' }}>
-                                                                <button onClick={() => setExpandedId(isExpanded ? null : regId)}
-                                                                    style={{ fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: isExpanded ? (isDark ? 'rgba(91,95,234,0.08)' : '#EEF0FF') : 'transparent', color: isExpanded ? (isDark ? '#818cf8' : '#5B5FEA') : c.btnText, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms' }}>
-                                                                    {isExpanded ? 'Fechar' : 'Ver'}
-                                                                </button>
-                                                                <button onClick={() => abrirEditar(r)}
+                                                            {/* Editar + chevron */}
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, alignSelf: 'flex-start' }}>
+                                                                <button onClick={e => { e.stopPropagation(); abrirEditar(r) }}
                                                                     style={{ fontSize: 11, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
                                                                     Editar
                                                                 </button>
+                                                                <span style={{ fontSize: 9, color: c.btnText, opacity: 0.5 }}>{isExpanded ? '▲' : '▼'}</span>
                                                             </div>
                                                         </div>
                                                         {/* expansão inline */}
@@ -674,9 +672,10 @@ export default function TelaPosAulaHistorico() {
 
                                         return (
                                             <div key={j}>
-                                                {/* linha do registro */}
-                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '10px 16px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms' }}
-                                                    className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
+                                                {/* linha do registro — clicável para expandir */}
+                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '10px 16px', borderBottom: (!isLast || isExpanded) ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none', transition: 'background 100ms', cursor: 'pointer' }}
+                                                    className="hover:bg-slate-50 dark:hover:bg-white/[0.02]"
+                                                    onClick={() => setExpandedId(isExpanded ? null : regId)}>
                                                     {/* data */}
                                                     <div style={{ width: 36, flexShrink: 0, textAlign: 'center', marginRight: 10, paddingTop: 1 }}>
                                                         <span style={{ fontSize: 15, fontWeight: 700, color: '#94a3b8', display: 'block', lineHeight: 1 }}>{d.getDate()}</span>
@@ -710,16 +709,13 @@ export default function TelaPosAulaHistorico() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    {/* Ver + Editar (Option C) */}
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, alignSelf: 'flex-start' }}>
-                                                        <button onClick={() => setExpandedId(isExpanded ? null : regId)}
-                                                            style={{ fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: isExpanded ? (isDark ? 'rgba(91,95,234,0.08)' : '#EEF0FF') : 'transparent', color: isExpanded ? (isDark ? '#818cf8' : '#5B5FEA') : c.btnText, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms' }}>
-                                                            {isExpanded ? 'Fechar' : 'Ver'}
-                                                        </button>
-                                                        <button onClick={() => abrirEditar(r)}
+                                                    {/* Editar + chevron */}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, alignSelf: 'flex-start' }}>
+                                                        <button onClick={e => { e.stopPropagation(); abrirEditar(r) }}
                                                             style={{ fontSize: 11, padding: '3px 9px', borderRadius: 6, border: `1px solid ${c.border}`, background: 'transparent', color: c.btnText, cursor: 'pointer', fontFamily: 'inherit' }}>
                                                             Editar
                                                         </button>
+                                                        <span style={{ fontSize: 9, color: c.btnText, opacity: 0.5 }}>{isExpanded ? '▲' : '▼'}</span>
                                                     </div>
                                                 </div>
 
