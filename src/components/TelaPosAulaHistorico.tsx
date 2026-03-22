@@ -420,8 +420,8 @@ export default function TelaPosAulaHistorico() {
                 <div className="flex items-center gap-2 flex-wrap">
                     {filtroAlunoAtencao && (
                         <button onClick={() => setFiltroAlunoAtencao(null)}
-                            style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                            Atenção: {filtroAlunoAtencao} ×
+                            style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', border: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', color: '#d97706', cursor: 'pointer', fontFamily: 'inherit' }}>
+                            ! {filtroAlunoAtencao} ×
                         </button>
                     )}
                     {filtroEngajamento && (
@@ -555,8 +555,8 @@ export default function TelaPosAulaHistorico() {
                                                                     <div style={{ display: 'flex', gap: 4, marginTop: trecho ? 4 : 2, flexWrap: 'wrap' }}>
                                                                         {alunoAtencao && (
                                                                             <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
-                                                                                style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                                {alunoAtencao}
+                                                                                style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', color: '#d97706', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                                ! {alunoAtencao}
                                                                             </button>
                                                                         )}
                                                                         {pontoQueda && (
@@ -692,8 +692,8 @@ export default function TelaPosAulaHistorico() {
                                                             <div style={{ display: 'flex', gap: 4, marginTop: trecho ? 4 : 0, flexWrap: 'wrap' }}>
                                                                 {alunoAtencao && (
                                                                     <button onClick={e => { e.stopPropagation(); setFiltroAlunoAtencao(filtroAlunoAtencao === alunoAtencao ? null : alunoAtencao) }}
-                                                                        style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: `1px solid ${c.badgeBdr}`, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                                                        {alunoAtencao}
+                                                                        style={{ fontSize: 10.5, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', color: '#d97706', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                                        ! {alunoAtencao}
                                                                     </button>
                                                                 )}
                                                                 {pontoQueda && (
