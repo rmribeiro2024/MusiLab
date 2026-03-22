@@ -826,14 +826,9 @@ export default function TelaPosAulaHistorico() {
                                                 )}
                                                 {grupo.label}
                                             </div>
-                                            {criterioLabels.length > 0 && (
-                                                <div style={{ marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                                                    {criterioLabels.slice(0, 2).map(lbl => (
-                                                        <span key={lbl} style={{ fontSize: '10.5px', color: isDark ? '#6B7280' : '#64748b', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E6EAF0'}`, padding: '1px 7px', borderRadius: 999 }}>{lbl}</span>
-                                                    ))}
-                                                    {criterioLabels.length > 2 && (
-                                                        <span style={{ fontSize: '10.5px', color: isDark ? '#6B7280' : '#64748b', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E6EAF0'}`, padding: '1px 7px', borderRadius: 999 }}>+{criterioLabels.length - 2}</span>
-                                                    )}
+                                            {criterioLabels.length === 1 && (
+                                                <div style={{ marginTop: 3 }}>
+                                                    <span style={{ fontSize: '10.5px', color: isDark ? '#6B7280' : '#64748b', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E6EAF0'}`, padding: '1px 7px', borderRadius: 999 }}>{criterioLabels[0]}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -878,14 +873,18 @@ export default function TelaPosAulaHistorico() {
                                                             const key = camposPreenchidos[0].key
                                                             return (r as any)[key] as string
                                                         }
-                                                        // múltiplos critérios: só os valores empilhados (badges no cabeçalho já dão contexto)
+                                                        // múltiplos critérios: label acima do valor por bloco
                                                         return (
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                                                {camposPreenchidos.map((campo, idx) => (
-                                                                    <span key={campo.key} style={{ fontSize: 12.5, color: isDark ? '#D1D5DB' : '#374151', lineHeight: 1.45, paddingTop: idx > 0 ? 2 : 0, borderTop: idx > 0 ? `1px solid ${isDark ? 'rgba(55,65,81,0.4)' : '#F1F4F8'}` : 'none' }}>
-                                                                        {((r as any)[campo.key] as string).trim()}
-                                                                    </span>
-                                                                ))}
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                                {camposPreenchidos.map(campo => {
+                                                                    const lbl = CAMPOS_TRECHO.find(ct => ct.value === campo.key)?.label ?? campo.label
+                                                                    return (
+                                                                        <div key={campo.key} style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                                            <span style={{ fontSize: '9.5px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: isDark ? '#4B5563' : '#b0bac9' }}>{lbl}</span>
+                                                                            <span style={{ fontSize: 12.5, color: isDark ? '#D1D5DB' : '#374151', lineHeight: 1.45 }}>{((r as any)[campo.key] as string).trim()}</span>
+                                                                        </div>
+                                                                    )
+                                                                })}
                                                             </div>
                                                         )
                                                     })()
