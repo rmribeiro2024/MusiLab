@@ -802,12 +802,6 @@ export default function TelaPosAulaHistorico() {
                                                     {lacuna.dias}d sem aula
                                                 </span>
                                             )}
-                                            {criterioAtivo && (
-                                                <span style={{ fontSize: '10.5px', color: isDark ? '#6B7280' : '#64748b', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E6EAF0'}`, padding: '1px 7px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
-                                                    {criterioIcon && <span style={{ fontSize: 11 }}>{criterioIcon}</span>}
-                                                    {criterioAtivo.label}
-                                                </span>
-                                            )}
                                             <span style={{ fontSize: 11, color: isDark ? '#6B7280' : '#94a3b8', border: `1px solid ${c.border}`, padding: '2px 7px', borderRadius: 999 }}>
                                                 {regsComConteudo.length}
                                             </span>
