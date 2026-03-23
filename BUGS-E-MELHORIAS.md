@@ -1,6 +1,7 @@
-# MusiLab — Bugs Conhecidos
+# MusiLab — Bugs e Melhorias
 
 > Criado em: 2026-03-17
+> Última atualização: **2026-03-22**
 > Legenda: 🔴 Crítico · 🟡 Moderado · 🟢 Baixo · ✅ Resolvido
 
 ---
@@ -56,7 +57,15 @@
 
 ---
 
-## ✅ Bugs Resolvidos — Sessão 2026-03-22
+## 🟡 Abertos / Em fila
+
+| # | Descrição | Módulo | Prioridade |
+|---|-----------|--------|------------|
+| BUG-017 | Seletor de escola no Histórico Pós-Aula não permite selecionar múltiplas escolas | `TelaPosAulaHistorico.tsx` | Alta |
+
+---
+
+## ✅ Bugs e Melhorias Resolvidos — 2026-03-22
 
 ### Estratégias — Biblioteca (commit `fcfe26c`)
 
@@ -95,10 +104,11 @@
 | BUG-015 ✅ | Plano salvo via "Adaptar da aula anterior" ficava invisível — `ConteudoTurma` não consumia `planejamentosDaTurma` | `ModuloPorTurmas.tsx` | `3101fb9` |
 | BUG-016 ✅ | Ao salvar plano não perguntava se deveria ir para o banco de aulas | `ModuloPorTurmas.tsx` | `17435f6` |
 
----
+### Módulo Aula por Turma + Banco de Aulas + Editor Rich Text (commit `4377085`)
 
-## 🟡 Abertos / Em fila
-
-| # | Descrição | Módulo | Prioridade |
-|---|-----------|--------|------------|
-| BUG-017 | Seletor de escola no Histórico Pós-Aula não permite selecionar múltiplas escolas | `TelaPosAulaHistorico.tsx` | Alta |
+| # | Descrição | Arquivo(s) |
+|---|-----------|------------|
+| BUG-018 ✅ | "ver / editar" na aula por turma não abria o formulário — `editarPlanejamento()` atualizava contexto mas `modoAtivo` local nunca era setado | `ModuloPorTurmas.tsx` |
+| BUG-019 ✅ | Filtro escola no banco de aulas omitia escolas sem campo `escola` explícito nos planos — Julia Cortines, Anísio Teixeira, EMPAC não apareciam | `PlanosContext.tsx` |
+| BUG-020 ✅ | Campos de avaliação iniciavam sempre vazios — `initialValue` passado mas a prop interna chama-se `value` | `TipTapEditor.tsx` |
+| MELHORIA ✅ | Bubble menu B/I/U ao selecionar texto nos campos de avaliação (estilo Notion) — nova prop `toolbarMode="lists-only"` | `TipTapEditor.tsx`, `FormularioAulaPlena.tsx`, `TelaPrincipal.tsx` |
