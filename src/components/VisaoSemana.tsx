@@ -435,11 +435,6 @@ export default function VisaoSemana() {
                             <div className="text-[13px] font-bold tracking-tight leading-tight text-slate-800 dark:text-[#E5E7EB]">
                               {turmaNome}
                             </div>
-                            {temPlano && (
-                              <span title="Próxima aula já planejada" className="shrink-0 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-100 dark:border-emerald-500/25 rounded-full px-1.5 py-px leading-tight">
-                                ✓
-                              </span>
-                            )}
                           </div>
                           {escolaNome && (
                             <div className="escola-label text-[10px] font-medium mt-[3px] truncate">

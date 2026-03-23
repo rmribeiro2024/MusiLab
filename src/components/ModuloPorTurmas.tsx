@@ -586,11 +586,88 @@ function FormPlanoTurma({
     )
 }
 
+// ─── Sub-componente: Picker de aulas do banco ────────────────────────────────
+
+function BancoPicker({ planos, onSelect, onCancelar }: {
+    planos: Plano[]
+    onSelect: (p: Plano) => void
+    onCancelar: () => void
+}) {
+    const [busca, setBusca] = useState('')
+    const filtrados = useMemo(() => {
+        const q = busca.trim().toLowerCase()
+        return planos
+            .filter(p => {
+                if (!q) return true
+                const titulo = (p.titulo || p.objetivoGeral || '').toLowerCase()
+                const escola = (p.escola || '').toLowerCase()
+                return titulo.includes(q) || escola.includes(q)
+            })
+            .sort((a, b) => {
+                const da = a.updatedAt ?? a.createdAt ?? ''
+                const db = b.updatedAt ?? b.createdAt ?? ''
+                return db.localeCompare(da)
+            })
+    }, [planos, busca])
+
+    return (
+        <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151] flex items-center justify-between flex-shrink-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[.7px] text-[#94A3B8] dark:text-[#6B7280]">
+                    🏛 Escolher aula do banco
+                </p>
+                <button
+                    onClick={onCancelar}
+                    title="Cancelar"
+                    className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#374151] transition text-base leading-none"
+                >×</button>
+            </div>
+            {/* Busca */}
+            <div className="px-4 py-2.5 border-b border-[#E6EAF0] dark:border-[#374151]">
+                <input
+                    type="text"
+                    autoFocus
+                    placeholder="Buscar por título ou escola…"
+                    value={busca}
+                    onChange={e => setBusca(e.target.value)}
+                    className="w-full text-[12.5px] px-3 py-1.5 rounded-lg border border-[#E6EAF0] dark:border-[#374151] bg-transparent text-slate-700 dark:text-slate-200 placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-500 transition"
+                />
+            </div>
+            {/* Lista */}
+            <div className="flex flex-col divide-y divide-[#E6EAF0] dark:divide-[#374151] max-h-72 overflow-y-auto">
+                {filtrados.length === 0 ? (
+                    <p className="text-[12px] text-slate-400 text-center py-6 italic">
+                        {busca ? 'Nenhuma aula encontrada' : 'Banco vazio'}
+                    </p>
+                ) : (
+                    filtrados.map(p => (
+                        <button
+                            key={p.id}
+                            onClick={() => onSelect(p)}
+                            className="text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-[#273344] transition group"
+                        >
+                            <p className="text-[13px] font-semibold text-slate-700 dark:text-slate-200 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
+                                {p.titulo || p.objetivoGeral || 'Sem título'}
+                            </p>
+                            {(p.escola || p.updatedAt) && (
+                                <p className="text-[10.5px] text-slate-400 mt-0.5 truncate">
+                                    {[p.escola, p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }) : ''].filter(Boolean).join(' · ')}
+                                </p>
+                            )}
+                        </button>
+                    ))
+                )}
+            </div>
+        </div>
+    )
+}
+
 // ─── Sub-componente: Conteúdo da turma selecionada ───────────────────────────
 
 function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: TurmaSelecionada; dataPrevista: string }) {
     const { ultimoRegistroDaTurma, fecharForm, salvarPlanejamento, planejamentosDaTurma, editarPlanejamento, excluirPlanejamento } = usePlanejamentoTurmaContext()
-    const { setPlanos } = usePlanosContext()
+    const { planos, setPlanos } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
 
     // Resolve nome da escola a partir do contexto (para popular filtro no banco)
@@ -673,7 +750,14 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
             <BlocoAulaAnterior registro={ultimoRegistroDaTurma} />
 
             {/* Bloco: Planejamento da próxima aula */}
-            {modoAtivo ? (
+            {/* Picker: escolher do banco (importar sem plano ainda selecionado) */}
+            {modoAtivo === 'importar' && !planoParaEditar ? (
+                <BancoPicker
+                    planos={planos}
+                    onSelect={p => setPlanoParaEditar(p)}
+                    onCancelar={() => { setModoAtivo(null); setMostrarBotoesAdicionar(false) }}
+                />
+            ) : modoAtivo ? (
                 <FormPlanoTurma
                     key={`${turmaSelecionada.anoLetivoId}|${turmaSelecionada.turmaId}|${modoAtivo}|${(planoParaEditar as any)?.id ?? ''}`}
                     modo={modoAtivo}
