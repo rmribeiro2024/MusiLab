@@ -483,6 +483,36 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
         rec.onerror = () => setGravandoEnc(false)
         recognitionEncRef.current = rec; rec.start(); setGravandoEnc(true)
     }
+    // ── Importar campos de registro anterior (mesmo plano, outra turma, últimos 7 dias) ──
+    const [importBannerDismissed, setImportBannerDismissed] = React.useState(false)
+    React.useEffect(() => { setImportBannerDismissed(false) }, [regTurmaSel, planoParaRegistro?.id])
+
+    const registroImportavel = React.useMemo(() => {
+        if (!planoParaRegistro || registroEditando) return null
+        const hoje = new Date()
+        const limiteMs = 7 * 24 * 60 * 60 * 1000
+        const regs = (planoParaRegistro.registrosPosAula || [])
+            .filter((r: any) => {
+                if (String(r.turma) === String(regTurmaSel)) return false
+                const diff = hoje.getTime() - new Date(r.data + 'T12:00:00').getTime()
+                return diff >= 0 && diff <= limiteMs
+            })
+            .sort((a: any, b: any) => b.data.localeCompare(a.data))
+        return regs[0] ?? null
+    }, [planoParaRegistro, regTurmaSel, registroEditando])
+
+    function resolverTurmaNome(turmaId: unknown): string {
+        for (const a of anosLetivos) {
+            for (const esc of (a.escolas ?? [])) {
+                for (const seg of (esc.segmentos ?? [])) {
+                    const tur = (seg.turmas ?? []).find((t: any) => t.id == turmaId)
+                    if (tur) return tur.nome
+                }
+            }
+        }
+        return 'outra turma'
+    }
+
     const [showEstrategiasFuncionaram, setShowEstrategiasFuncionaram] = React.useState(false)
     const [buscaEstrategiaPos, setBuscaEstrategiaPos] = React.useState('')
     // ── estados de áudio (B3) ──
@@ -1107,6 +1137,52 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                         )
                                     })()}
 
+
+{/* ── Banner: importar campos de registro anterior ── */}
+                                        {registroImportavel && !importBannerDismissed && (
+                                            <div style={{
+                                                display: 'flex', alignItems: 'center', gap: 10,
+                                                padding: '9px 12px', borderRadius: 10,
+                                                background: isDark ? 'rgba(99,102,241,.12)' : 'rgba(99,102,241,.07)',
+                                                border: `1.5px solid ${isDark ? 'rgba(129,140,248,.3)' : 'rgba(99,102,241,.25)'}`,
+                                                marginBottom: 2,
+                                            }}>
+                                                <span style={{ fontSize: 16, flexShrink: 0 }}>📋</span>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: 12, fontWeight: 700, color: '#818cf8' }}>
+                                                        {resolverTurmaNome(registroImportavel.turma)} · {registroImportavel.data?.split('-').reverse().join('/')}
+                                                    </div>
+                                                    <div style={{ fontSize: 10.5, color: isDark ? '#6B7280' : '#94a3b8', marginTop: 1 }}>
+                                                        Mesmo plano — importar campos?
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setNovoRegistro((prev: any) => ({
+                                                            ...prev,
+                                                            funcionouBem: registroImportavel.funcionouBem || '',
+                                                            repetiria:    (registroImportavel as any).repetiria || '',
+                                                            fariadiferente: registroImportavel.fariadiferente || (registroImportavel as any).naoFuncionou || '',
+                                                        }))
+                                                        setImportBannerDismissed(true)
+                                                    }}
+                                                    style={{
+                                                        padding: '6px 12px', borderRadius: 8,
+                                                        background: '#5B5FEA', border: 'none',
+                                                        color: '#fff', fontSize: 11, fontWeight: 700,
+                                                        cursor: 'pointer', flexShrink: 0,
+                                                    }}>
+                                                    Importar ↓
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setImportBannerDismissed(true)}
+                                                    style={{ fontSize: 13, color: '#4B5563', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', flexShrink: 0 }}>
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        )}
 
 {/* Chips de anotação */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
