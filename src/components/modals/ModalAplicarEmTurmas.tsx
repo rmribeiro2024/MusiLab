@@ -13,12 +13,23 @@ function toStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function getSegunda(d: Date): Date {
+function getMondayOf(d: Date): Date {
   const day = d.getDay()
   const diff = day === 0 ? -6 : 1 - day
   const mon = new Date(d)
+  mon.setHours(0, 0, 0, 0)
   mon.setDate(d.getDate() + diff)
   return mon
+}
+
+// Mesma lógica do VisaoSemana.getSemanaAtualInicio():
+// Sábado/Domingo → avança para a próxima segunda (semana de planejamento)
+function getSemanaAtualInicio(): Date {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  const monday = getMondayOf(d)
+  const day = d.getDay()
+  return (day === 0 || day === 6) ? (() => { const n = new Date(monday); n.setDate(monday.getDate() + 7); return n })() : monday
 }
 
 function makeKey(dataStr: string, aulaId: number): string {
@@ -92,7 +103,7 @@ export default function ModalAplicarEmTurmas({ plano, onClose }: Props) {
   const { anosLetivos } = useAnoLetivoContext()
   const { aplicacoes, criarAplicacoes } = useAplicacoesContext()
 
-  const hoje = useMemo(() => getSegunda(new Date()), [])
+  const hoje = useMemo(() => getSemanaAtualInicio(), [])
   const [semana, setSemana] = useState<Date>(hoje)
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
   // key = `${dataStr}:${aulaId}` — identifica unicamente turma+dia
@@ -114,8 +125,8 @@ export default function ModalAplicarEmTurmas({ plano, onClose }: Props) {
       a =>
         String(a.planoId) === String(plano.id) &&
         a.data === dataStr &&
-        a.turmaId === aula.turmaId &&
-        a.anoLetivoId === (aula.anoLetivoId ?? '')
+        String(a.turmaId) === String(aula.turmaId) &&
+        String(a.anoLetivoId) === String(aula.anoLetivoId ?? '')
     )
   }
 
