@@ -153,62 +153,68 @@ export default function TelaPosAula() {
                 {/* ══ CABEÇALHO ÚNICO (sempre compacto) ══ */}
                 <div className="sticky top-0 z-10 v2-card border-b border-[#E6EAF0] dark:border-[#374151]">
                     <div
-                        className="px-4 py-3 flex items-center gap-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/20 transition select-none"
-                        onClick={() => setListaAberta(v => !v)}>
+                        className={`px-4 py-3 flex items-center gap-2 select-none ${turmaAtual && !listaAberta ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/20 transition' : ''}`}
+                        onClick={turmaAtual && !listaAberta ? () => { setListaAberta(true); setTurmaIdx(-1) } : undefined}>
 
-                        {/* Toggle lista */}
-                        <span className="text-[11px] text-slate-400 dark:text-[#6b7280] flex items-center gap-0.5 shrink-0 mr-1">
-                            <span>{listaAberta ? '▲' : '▼'}</span>
-                            <span className="ml-0.5">todas</span>
-                        </span>
+                        {/* Voltar / toggle lista */}
+                        {turmaAtual && !listaAberta ? (
+                            <button
+                                onClick={() => { setListaAberta(true); setTurmaIdx(-1) }}
+                                className="text-[11px] text-slate-400 dark:text-[#6b7280] flex items-center gap-0.5 shrink-0 mr-1 cursor-pointer hover:text-slate-600 dark:hover:text-[#9CA3AF] transition">
+                                <span>←</span>
+                                <span className="ml-0.5">voltar</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => setListaAberta(v => !v)}
+                                className="text-[11px] text-slate-400 dark:text-[#6b7280] flex items-center gap-0.5 shrink-0 mr-1 cursor-pointer hover:text-slate-600 dark:hover:text-[#9CA3AF] transition">
+                                <span>{listaAberta ? '▲' : '▼'}</span>
+                                <span className="ml-0.5">todas</span>
+                            </button>
+                        )}
 
-                        {/* Info — sempre compacto */}
+                        {/* Centro: data só / ou dot + turma quando selecionada */}
                         <div className="flex-1 min-w-0 flex items-center gap-[5px] text-[12px] overflow-hidden">
                             {turmaAtual ? (
                                 <>
-                                    <span className="font-bold tabular-nums text-slate-800 dark:text-[#E5E7EB] shrink-0">{turmaAtual.aula.horario}</span>
-                                    <span className="text-slate-200 dark:text-slate-700">·</span>
-                                    <span className="text-slate-500 dark:text-[#9CA3AF] truncate">{turmaAtual.escNome}</span>
-                                    <span className="text-slate-200 dark:text-slate-700">·</span>
-                                    <span className="font-bold text-slate-800 dark:text-[#E5E7EB] shrink-0">{turmaAtual.turNome}</span>
-                                    <span className="text-slate-200 dark:text-slate-700">·</span>
-                                    <span className="text-[#5B5FEA] dark:text-[#818cf8] text-[11px] shrink-0">{labelDataCurta(dataSel)}</span>
-                                    <span className={`w-[7px] h-[7px] rounded-full shrink-0 ml-0.5 ${turmaAtual.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                                    <span className={`w-[7px] h-[7px] rounded-full shrink-0 ${turmaAtual.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                                    <span className="font-semibold tabular-nums text-slate-700 dark:text-[#E5E7EB] shrink-0">{turmaAtual.aula.horario}</span>
+                                    <span className="text-slate-300 dark:text-slate-600">·</span>
+                                    <span className="text-slate-400 dark:text-[#6b7280] truncate">{turmaAtual.escNome}</span>
+                                    <span className="text-slate-300 dark:text-slate-600">·</span>
+                                    <span className="font-bold text-slate-700 dark:text-[#E5E7EB] shrink-0">{turmaAtual.turNome}</span>
                                 </>
                             ) : (
-                                /* Sem turma selecionada: só a data pequena */
-                                <span className="text-[12px] text-slate-500 dark:text-[#9CA3AF]">{labelDataCurta(dataSel)}{ehHoje ? ' · Hoje' : ''}</span>
+                                <span className="text-slate-500 dark:text-[#9CA3AF]">
+                                    {labelDataCurta(dataSel)}{ehHoje ? ' · Hoje' : ''}
+                                </span>
                             )}
                         </div>
 
-                        {/* Controles direita */}
+                        {/* Direita: ↑↓ turma (quando selecionada) + ‹ › dia (sempre) */}
                         <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                            {turmaAtual ? (
+                            {turmaAtual && (
                                 <>
-                                    {/* Setas de turma — ↑ ↓ para diferenciar das setas de dia ‹ › */}
                                     <button onClick={e => navTurma(-1, e)} disabled={turmaIdx === 0}
-                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[13px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 transition hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer">↑</button>
+                                        className="w-[26px] h-[26px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[12px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer transition">↑</button>
                                     <span className="text-[11px] font-semibold text-slate-400 dark:text-[#6b7280] min-w-[28px] text-center tabular-nums">{turmaIdx + 1}/{turmasEnriq.length}</span>
                                     <button onClick={e => navTurma(1, e)} disabled={turmaIdx === turmasEnriq.length - 1}
-                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#cbd5e1] dark:border-[#374151] bg-transparent flex items-center justify-center text-[13px] text-slate-500 dark:text-[#9CA3AF] disabled:opacity-30 transition hover:border-[#94a3b8] dark:hover:border-[#6b7280] hover:text-slate-700 dark:hover:text-[#E5E7EB] cursor-pointer">↓</button>
-                                </>
-                            ) : (
-                                /* Setas de dia */
-                                <>
-                                    {!ehHoje && (
-                                        <button onClick={() => { setDataSel(hojeStr); setTurmaIdx(-1) }}
-                                            className="mr-1 px-[10px] py-[4px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] cursor-pointer transition hover:text-slate-700">
-                                            Hoje
-                                        </button>
-                                    )}
-                                    {[-1, 1].map(d => (
-                                        <button key={d} onClick={() => navDia(d)}
-                                            className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[13px] text-slate-400 dark:text-[#6b7280] transition hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer">
-                                            {d < 0 ? '‹' : '›'}
-                                        </button>
-                                    ))}
+                                        className="w-[26px] h-[26px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[12px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer transition">↓</button>
+                                    <div className="w-px h-4 bg-[#E6EAF0] dark:bg-[#374151] mx-0.5" />
                                 </>
                             )}
+                            {!ehHoje && !turmaAtual && (
+                                <button onClick={() => { setDataSel(hojeStr); setTurmaIdx(-1) }}
+                                    className="mr-1 px-[10px] py-[4px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] cursor-pointer transition hover:text-slate-700">
+                                    Hoje
+                                </button>
+                            )}
+                            {[-1, 1].map(d => (
+                                <button key={d} onClick={() => navDia(d)}
+                                    className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[13px] text-slate-400 dark:text-[#6b7280] transition hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer">
+                                    {d < 0 ? '‹' : '›'}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
@@ -275,18 +281,16 @@ export default function TelaPosAula() {
                     )}
                 </div>
 
-                {/* ══ FORMULÁRIO INLINE — só aparece quando o professor clicou numa turma ══ */}
-                {!listaAberta && turmaIdx >= 0 && (
-                    <div className={listaAberta ? 'border-t border-[#E6EAF0] dark:border-[#374151]' : ''}>
-                        <Suspense fallback={<div className="px-4 py-8 text-center text-[13px] text-slate-400">Carregando...</div>}>
-                            <ModalRegistroPosAula
-                                inlineMode
-                                hideHeader
-                                onVoltar={handleDepoisSalvar}
-                                saveLabel="Salvar"
-                            />
-                        </Suspense>
-                    </div>
+                {/* ══ FORMULÁRIO INLINE ══ */}
+                {!listaAberta && turmaIdx >= 0 && turmaAtual && (
+                    <Suspense fallback={<div className="px-4 py-8 text-center text-[13px] text-slate-400">Carregando...</div>}>
+                        <ModalRegistroPosAula
+                            inlineMode
+                            hideHeader
+                            onVoltar={handleDepoisSalvar}
+                            saveLabel="Salvar"
+                        />
+                    </Suspense>
                 )}
 
             </div>
