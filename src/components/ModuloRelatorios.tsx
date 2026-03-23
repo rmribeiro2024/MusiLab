@@ -59,7 +59,7 @@ Responda em português. Não use markdown, apenas texto simples.`
 
 function buildPromptTurma(data: RelatorioTurmaData, inicio: string, fim: string): string {
     const obsLinhas = truncar(data.registrosResumidos.slice(-5).map(r =>
-        [r.funcionouBem && `Funcionou: ${truncar(r.funcionouBem, 200)}`, r.naoFuncionou && `Não funcionou: ${truncar(r.naoFuncionou, 200)}`].filter(Boolean).join(' | ')
+        [r.funcionouBem && `Funcionou: ${truncar(r.funcionouBem, 200)}`, (r.fariadiferente || (r as any).naoFuncionou) && `Faria diferente: ${truncar(r.fariadiferente || (r as any).naoFuncionou, 200)}`].filter(Boolean).join(' | ')
     ).filter(Boolean).join('\n'))
     const conceitos = truncar(data.conceitos.slice(0,5).map(c=>`${JSON.stringify(c.label)}(${c.count}x)`).join(', '))
     const repertorio = truncar(data.repertorio.slice(0,5).map(r=>`${JSON.stringify(r.label)}(${r.count}x)`).join(', '))
@@ -364,7 +364,7 @@ function RelatorioTurmaView({ data, inicio, fim }: { data: RelatorioTurmaData; i
                                             )}
                                         </div>
                                         {r.funcionouBem  && <p className="text-xs text-slate-600"><span className="font-semibold text-emerald-600">✅</span> {r.funcionouBem}</p>}
-                                        {r.naoFuncionou  && <p className="text-xs text-slate-600"><span className="font-semibold text-amber-600">⚠️</span> {r.naoFuncionou}</p>}
+                                        {(r.fariadiferente || (r as any).naoFuncionou) && <p className="text-xs text-slate-600"><span className="font-semibold text-amber-600">⚠️</span> {r.fariadiferente || (r as any).naoFuncionou}</p>}
                                         {r.comportamento && <p className="text-xs text-slate-500 italic"><span className="font-semibold text-slate-400">👥</span> {r.comportamento}</p>}
                                     </div>
                                 ))}
@@ -386,7 +386,7 @@ function PainelTendenciaView({ data }: { data: PainelTendenciaData }) {
         nao:     'bg-red-100 text-red-700 border-red-200',
     }
     const RESULTADO_LABEL: Record<string, string> = {
-        bem: 'Funcionou bem', parcial: 'Parcial', nao: 'Não funcionou',
+        bem: 'Funcionou bem', parcial: 'Parcial', nao: 'Faria diferente',
     }
 
     return (
@@ -438,10 +438,10 @@ function PainelTendenciaView({ data }: { data: PainelTendenciaData }) {
                         </Section>
                     )}
 
-                    {data.naoFuncionou.length > 0 && (
+                    {data.fariadiferente.length > 0 && (
                         <Section titulo="⚠️ Desafios recorrentes">
                             <ul className="space-y-2">
-                                {data.naoFuncionou.map((t, i) => (
+                                {data.fariadiferente.map((t, i) => (
                                     <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
                                         <span className="text-amber-500 mt-0.5 shrink-0">•</span>{t}
                                     </li>

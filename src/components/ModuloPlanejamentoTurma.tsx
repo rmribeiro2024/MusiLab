@@ -66,7 +66,7 @@ function labelResultado(valor: string): string {
   const mapa: Record<string, string> = {
     bem:     '✅ Funcionou bem',
     parcial: '⚠️ Parcial',
-    nao:     '❌ Não funcionou',
+    nao:     '❌ Faria diferente',
   }
   return mapa[valor] ?? valor
 }
@@ -999,7 +999,7 @@ function FormPlanejamentoInline({
     ultimoRegistro?.proximaAula?.trim() ||
     ultimoRegistro?.poderiaMelhorar?.trim() ||
     ultimoRegistro?.resumoAula?.trim() ||
-    ultimoRegistro?.naoFuncionou?.trim() ||
+    ultimoRegistro?.fariadiferente?.trim() ||
     (ultimoRegistro as any)?.encaminhamentos?.some((e: any) => !e.concluido)
   )
 
@@ -1598,8 +1598,8 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
               {registroExibido.funcionouBem && (
                 <InfoRow icon="✅" label="O que funcionou bem" valor={registroExibido.funcionouBem} />
               )}
-              {registroExibido.naoFuncionou && (
-                <InfoRow icon="⚠️" label="O que não funcionou" valor={registroExibido.naoFuncionou} />
+              {(registroExibido.fariadiferente || (registroExibido as any).naoFuncionou) && (
+                <InfoRow icon="⚠️" label="O que faria diferente" valor={registroExibido.fariadiferente || (registroExibido as any).naoFuncionou} />
               )}
               {registroExibido.poderiaMelhorar && (
                 <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />

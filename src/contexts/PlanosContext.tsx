@@ -993,7 +993,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const abrirModalRegistro = useCallback((plano: Plano, e?: React.MouseEvent) => {
         if (e) e.stopPropagation()
         setPlanoParaRegistro(plano)
-        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' })
+        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', fariadiferente: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' })
         setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('')
         setFiltroRegAno('')
         setFiltroRegData('')
@@ -1003,7 +1003,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     }, [setPlanoParaRegistro, setNovoRegistro, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel, setFiltroRegAno, setFiltroRegData, setRegistroEditando, setVerRegistros, setModalRegistro])
 
     const salvarRegistro = useCallback(() => {
-        if (!novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.naoFuncionou && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
+        if (!novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.fariadiferente && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
             showToast('Preencha ao menos um campo!', 'error'); return
         }
         const agora = new Date()
@@ -1048,7 +1048,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                         if (planoSelecionado && planoSelecionado.id === atualizado.id) setPlanoSelecionado(atualizado)
                         setPlanoParaRegistro(atualizado)
                         setRegistroEditando(null); setVerRegistros(true)
-                        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' })
+                        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', fariadiferente: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' })
                         setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('')
                     }
                 })
@@ -1067,7 +1067,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             setPlanoParaRegistro(atualizado)
         }
         setRegistroEditando(null); setVerRegistros(true)
-        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' })
+        setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', fariadiferente: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' })
         setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('')
     }, [novoRegistro, _regEdit, planoParaRegistro, regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel, planos, planoSelecionado, setModalConfirm, setPlanoParaRegistro, setRegistroEditando, setVerRegistros, setNovoRegistro, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel])
 
@@ -1086,7 +1086,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         setNovoRegistro({
             dataAula: reg.data || new Date().toISOString().split('T')[0],
             resumoAula: reg.resumoAula || '', funcionouBem: reg.funcionouBem || '',
-            naoFuncionou: reg.naoFuncionou || '', proximaAula: reg.proximaAula || '',
+            fariadiferente: reg.fariadiferente || '', proximaAula: reg.proximaAula || '',
             comportamento: reg.comportamento || '', poderiaMelhorar: reg.poderiaMelhorar || '',
             resultadoAula: reg.resultadoAula || '', anotacoesGerais: reg.anotacoesGerais || '',
             proximaAulaOpcao: reg.proximaAulaOpcao || '',
@@ -1154,7 +1154,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                         registroExistente.dataEdicao = agora.toISOString().split('T')[0]
                         planoModificado = true; totalAtualizados++
                     } else {
-                        novosRegistros.push({ id: gerarIdSeguro() as unknown as number, data: rrData, dataRegistro: agora.toISOString().split('T')[0], hora: agora.toTimeString().slice(0, 5), anoLetivo: rrAnoSel, escola: rrEscolaSel, segmento: segmentoId!, turma: turmaId, resumoAula: texto, funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '' })
+                        novosRegistros.push({ id: gerarIdSeguro() as unknown as number, data: rrData, dataRegistro: agora.toISOString().split('T')[0], hora: agora.toTimeString().slice(0, 5), anoLetivo: rrAnoSel, escola: rrEscolaSel, segmento: segmentoId!, turma: turmaId, resumoAula: texto, funcionouBem: '', fariadiferente: '', proximaAula: '', comportamento: '' })
                         planoModificado = true; totalNovos++
                     }
                 })

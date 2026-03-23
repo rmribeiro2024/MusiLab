@@ -391,10 +391,10 @@ function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
 
     // ── Campos recolhidos ──
     const funcionouBem    = registro.funcionouBem?.trim()
-    const naoFuncionou    = registro.naoFuncionou?.trim()
+    const fariadiferente    = (registro.fariadiferente || (registro as any).naoFuncionou)?.trim()
     const poderiaMelhorar = registro.poderiaMelhorar?.trim()
     const anotacoesGerais = registro.anotacoesGerais?.trim()
-    const temDetalhes     = !!(funcionouBem || naoFuncionou || poderiaMelhorar || anotacoesGerais || comportamento)
+    const temDetalhes     = !!(funcionouBem || fariadiferente || poderiaMelhorar || anotacoesGerais || comportamento)
 
     return (
         <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
@@ -489,10 +489,10 @@ function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
                                         <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed">{funcionouBem}</p>
                                     </div>
                                 )}
-                                {naoFuncionou && (
+                                {fariadiferente && (
                                     <div>
-                                        <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">✗ O que não funcionou</p>
-                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed">{naoFuncionou}</p>
+                                        <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">✗ O que faria diferente</p>
+                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed">{fariadiferente}</p>
                                     </div>
                                 )}
                                 {poderiaMelhorar && (

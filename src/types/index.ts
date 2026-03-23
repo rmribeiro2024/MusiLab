@@ -113,7 +113,8 @@ export interface RegistroPosAula {
   dataAula?: string
   resumoAula?: string
   funcionouBem?: string
-  naoFuncionou?: string
+  fariadiferente?: string
+  naoFuncionou?: string // @deprecated — usar fariadiferente
   proximaAula?: string
   comportamento?: string
   anoLetivo?: string

@@ -11,7 +11,7 @@ const CAMPOS_INLINE = [
     { icon: '📋', label: 'Realizado',                   key: 'resumoAula' },
     { icon: '🎯', label: 'O que aprenderam',             key: 'funcionouBem' },
     { icon: '⭐', label: 'O que faria de novo',          key: 'repetiria' },
-    { icon: '💭', label: 'O que faria diferente',       key: 'naoFuncionou' },
+    { icon: '💭', label: 'O que faria diferente',       key: 'fariadiferente' },
     { icon: '🎵', label: 'O que fizeram de inesperado', key: 'surpresaMusical' },
     { icon: '📉', label: 'Queda de engajamento',        key: 'pontoQueda' },
     { icon: '👤', label: 'Aluno com atenção',            key: 'alunoAtencao' },
@@ -34,7 +34,7 @@ function useIsDark() {
 const CAMPOS_TRECHO = [
     { value: 'funcionouBem',        label: 'O que aprenderam' },
     { value: 'repetiria',           label: 'O que funcionou' },
-    { value: 'naoFuncionou',        label: 'O que faria diferente' },
+    { value: 'fariadiferente',        label: 'O que faria diferente' },
     { value: 'surpresaMusical',     label: 'O que fizeram de inesperado' },
     { value: 'pontoQueda',          label: 'Queda de engajamento' },
     { value: 'alunoAtencao',        label: 'Aluno com atenção' },

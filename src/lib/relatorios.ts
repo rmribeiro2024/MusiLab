@@ -42,7 +42,7 @@ export interface RelatorioTurmaData {
         data: string
         resumoAula?: string
         funcionouBem?: string
-        naoFuncionou?: string
+        fariadiferente?: string
         comportamento?: string
         urlEvidencia?: string
     }[]
@@ -58,7 +58,7 @@ export interface PainelTendenciaData {
     periodoFim: string
     humor: ItemContagem[]
     funcionouBem: string[]
-    naoFuncionou: string[]
+    fariadiferente: string[]
     comportamentos: string[]
     proximosPassos: string[]
     evidencias: { url: string; data: string }[]
@@ -368,7 +368,7 @@ export function buildRelatorioTurma(
                 data,
                 resumoAula: reg.resumoAula,
                 funcionouBem: reg.funcionouBem,
-                naoFuncionou: reg.naoFuncionou,
+                fariadiferente: reg.fariadiferente || (reg as any).naoFuncionou,
                 comportamento: reg.comportamento,
                 urlEvidencia: (reg as any).urlEvidencia,
             })
@@ -406,7 +406,7 @@ export function buildPainelTendencia(
 ): PainelTendenciaData {
     const contagemHumor: Record<string, number> = {}
     const funcionouBem: string[] = []
-    const naoFuncionou: string[] = []
+    const fariadiferente: string[] = []
     const comportamentos: string[] = []
     const proximosPassos: string[] = []
     const evidencias: { url: string; data: string }[] = []
@@ -421,7 +421,8 @@ export function buildPainelTendencia(
                 contagemHumor[reg.resultadoAula] = (contagemHumor[reg.resultadoAula] ?? 0) + 1
             }
             if (reg.funcionouBem?.trim())  funcionouBem.push(reg.funcionouBem.trim())
-            if (reg.naoFuncionou?.trim())  naoFuncionou.push(reg.naoFuncionou.trim())
+            const _fd = reg.fariadiferente || (reg as any).naoFuncionou
+            if (_fd?.trim()) fariadiferente.push(_fd.trim())
             if (reg.comportamento?.trim()) comportamentos.push(reg.comportamento.trim())
             if (reg.proximaAula?.trim())   proximosPassos.push(reg.proximaAula.trim())
             const url = (reg as any).urlEvidencia
@@ -435,14 +436,14 @@ export function buildPainelTendencia(
 
     return {
         turmaNome,
-        totalRegistros: funcionouBem.length + naoFuncionou.length > 0
-            ? Math.max(funcionouBem.length, naoFuncionou.length, comportamentos.length)
+        totalRegistros: funcionouBem.length + fariadiferente.length > 0
+            ? Math.max(funcionouBem.length, fariadiferente.length, comportamentos.length)
             : humor.reduce((s, h) => s + h.count, 0),
         periodoInicio: filtros.inicio,
         periodoFim: filtros.fim,
         humor,
         funcionouBem: funcionouBem.slice(-10),
-        naoFuncionou: naoFuncionou.slice(-10),
+        fariadiferente: fariadiferente.slice(-10),
         comportamentos: comportamentos.slice(-10),
         proximosPassos: proximosPassos.slice(-5),
         evidencias,
@@ -458,7 +459,7 @@ export function buildPromptTendencia(data: PainelTendenciaData): string {
         `Total de registros: ${data.totalRegistros}.`,
         `Resultado das aulas: ${resultado}.`,
         data.funcionouBem.length > 0 ? `O que funcionou bem (registros): ${data.funcionouBem.join(' | ')}` : '',
-        data.naoFuncionou.length > 0 ? `O que não funcionou (registros): ${data.naoFuncionou.join(' | ')}` : '',
+        data.fariadiferente.length > 0 ? `O que faria diferente (registros): ${data.fariadiferente.join(' | ')}` : '',
         data.comportamentos.length > 0 ? `Comportamento observado: ${data.comportamentos.join(' | ')}` : '',
         data.proximosPassos.length > 0 ? `Ideias para próximas aulas: ${data.proximosPassos.join(' | ')}` : '',
         ``,

@@ -1434,7 +1434,7 @@ export default function BancoPlanos({ session }) {
             const abrirModalRegistro = useCallback((plano, e?) => {
                 if(e) e.stopPropagation();
                 setPlanoParaRegistro(plano);
-                setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' });
+                setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', fariadiferente: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' });
                 setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('');
                 setFiltroRegAno(''); setFiltroRegEscola(''); setFiltroRegSegmento(''); setFiltroRegTurma('');
                 setRegistroEditando(null);
@@ -1443,7 +1443,7 @@ export default function BancoPlanos({ session }) {
             }, []);
 
             const salvarRegistro = () => {
-                if (!novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.naoFuncionou && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
+                if (!novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.fariadiferente && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
                     showToast('Preencha ao menos um campo!', 'error'); return;
                 }
                 const agora = new Date();
@@ -1486,7 +1486,7 @@ export default function BancoPlanos({ session }) {
 
                 setRegistroEditando(null);
                 setVerRegistros(true);
-                setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' });
+                setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', fariadiferente: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' });
                 setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('');
             };
 
@@ -1508,7 +1508,7 @@ export default function BancoPlanos({ session }) {
                     dataAula: reg.data || new Date().toISOString().split('T')[0],
                     resumoAula: reg.resumoAula || '',
                     funcionouBem: reg.funcionouBem || '',
-                    naoFuncionou: reg.naoFuncionou || '',
+                    fariadiferente: reg.fariadiferente || '',
                     proximaAula: reg.proximaAula || '',
                     comportamento: reg.comportamento || '',
                     poderiaMelhorar: reg.poderiaMelhorar || '',
@@ -2003,7 +2003,7 @@ export default function BancoPlanos({ session }) {
                                 rubrica: rubrica.length > 0 ? rubrica : undefined,
                                 encaminhamentos: encaminhamentos.length > 0 ? encaminhamentos : undefined,
                                 funcionouBem: '',
-                                naoFuncionou: '',
+                                fariadiferente: '',
                                 proximaAula: '',
                                 comportamento: '',
                             });

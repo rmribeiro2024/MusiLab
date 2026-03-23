@@ -756,7 +756,7 @@ export default function TelaPrincipal() {
                                         <div className="bg-white rounded-xl border border-blue-100 p-3 text-xs space-y-1.5">
                                             {ultimoReg.resumoAula && <p className="text-slate-700"><span className="font-semibold text-slate-500">Resumo:</span> {ultimoReg.resumoAula}</p>}
                                             {ultimoReg.funcionouBem && <p className="text-emerald-700"><span className="font-semibold">✓ Funcionou:</span> {ultimoReg.funcionouBem}</p>}
-                                            {ultimoReg.naoFuncionou && <p className="text-red-600"><span className="font-semibold">✗ Não funcionou:</span> {ultimoReg.naoFuncionou}</p>}
+                                            {(ultimoReg.fariadiferente || (ultimoReg as any).naoFuncionou) && <p className="text-red-600"><span className="font-semibold">✗ Faria diferente:</span> {ultimoReg.fariadiferente || (ultimoReg as any).naoFuncionou}</p>}
                                             {ultimoReg.proximaAula && <p className="text-indigo-700"><span className="font-semibold">→ Próxima aula:</span> {ultimoReg.proximaAula}</p>}
                                             {registros.length > 1 && <p className="text-slate-400 pt-1">{registros.length} registros no total</p>}
                                         </div>

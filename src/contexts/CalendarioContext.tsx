@@ -70,8 +70,8 @@ export interface CalendarioContextValue {
   setModalRegistro: React.Dispatch<React.SetStateAction<boolean>>
   planoParaRegistro: Plano | null
   setPlanoParaRegistro: React.Dispatch<React.SetStateAction<Plano | null>>
-  novoRegistro: { dataAula: string; resumoAula: string; funcionouBem: string; naoFuncionou: string; proximaAula: string; comportamento: string; poderiaMelhorar: string; resultadoAula?: string; anotacoesGerais: string; proximaAulaOpcao?: string; urlEvidencia: string; statusAula?: 'concluida' | 'revisao' | 'incompleta' | 'nao_houve' | 'parcial' }
-  setNovoRegistro: React.Dispatch<React.SetStateAction<{ dataAula: string; resumoAula: string; funcionouBem: string; naoFuncionou: string; proximaAula: string; comportamento: string; poderiaMelhorar: string; resultadoAula?: string; anotacoesGerais: string; proximaAulaOpcao?: string; urlEvidencia: string; statusAula?: 'concluida' | 'revisao' | 'incompleta' | 'nao_houve' | 'parcial' }>>
+  novoRegistro: { dataAula: string; resumoAula: string; funcionouBem: string; fariadiferente: string; proximaAula: string; comportamento: string; poderiaMelhorar: string; resultadoAula?: string; anotacoesGerais: string; proximaAulaOpcao?: string; urlEvidencia: string; statusAula?: 'concluida' | 'revisao' | 'incompleta' | 'nao_houve' | 'parcial' }
+  setNovoRegistro: React.Dispatch<React.SetStateAction<{ dataAula: string; resumoAula: string; funcionouBem: string; fariadiferente: string; proximaAula: string; comportamento: string; poderiaMelhorar: string; resultadoAula?: string; anotacoesGerais: string; proximaAulaOpcao?: string; urlEvidencia: string; statusAula?: 'concluida' | 'revisao' | 'incompleta' | 'nao_houve' | 'parcial' }>>
   verRegistros: boolean
   setVerRegistros: React.Dispatch<React.SetStateAction<boolean>>
   registroEditando: RegistroPosAula | null
@@ -189,7 +189,7 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
     dataAula: new Date().toISOString().split('T')[0],
     resumoAula: '',
     funcionouBem: '',
-    naoFuncionou: '',
+    fariadiferente: '',
     proximaAula: '',
     comportamento: '',
     poderiaMelhorar: '',

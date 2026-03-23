@@ -322,7 +322,7 @@ export default function FormularioAulaPlena({
       const campos: string[] = []
       if (ultimoRegistro.resumoAula) campos.push(`Resumo: ${ultimoRegistro.resumoAula}`)
       if (ultimoRegistro.funcionouBem) campos.push(`O que funcionou: ${ultimoRegistro.funcionouBem}`)
-      if (ultimoRegistro.naoFuncionou) campos.push(`O que não funcionou: ${ultimoRegistro.naoFuncionou}`)
+      if (ultimoRegistro.fariadiferente) campos.push(`O que faria diferente: ${ultimoRegistro.fariadiferente}`)
       if (ultimoRegistro.poderiaMelhorar) campos.push(`Poderia melhorar: ${ultimoRegistro.poderiaMelhorar}`)
       if (ultimoRegistro.proximaAula) campos.push(`Ideia para próxima aula: ${ultimoRegistro.proximaAula}`)
       const encaminhamentos = (ultimoRegistro as any)?.encaminhamentos as { texto: string; concluido: boolean }[] | undefined
