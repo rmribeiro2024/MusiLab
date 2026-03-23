@@ -671,7 +671,7 @@ Responda APENAS com JSON: {"habilidades": ["EF15AR14", "EF69AR16"]}`
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {/* ⚡📋🔬 */}
           <div className="flex bg-slate-100 dark:bg-[#374151] rounded-xl p-0.5 gap-0.5">
             {([
@@ -686,6 +686,15 @@ Responda APENAS com JSON: {"habilidades": ["EF15AR14", "EF69AR16"]}`
               </button>
             ))}
           </div>
+          {/* Fechar / cancelar — visível imediatamente sem precisar rolar */}
+          <button
+            type="button"
+            onClick={onCancelar}
+            title="Fechar sem salvar"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#374151] transition-all text-base leading-none"
+          >
+            ×
+          </button>
         </div>
       </div>
 
