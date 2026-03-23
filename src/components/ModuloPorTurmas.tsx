@@ -589,7 +589,7 @@ function FormPlanoTurma({
 // ─── Sub-componente: Conteúdo da turma selecionada ───────────────────────────
 
 function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: TurmaSelecionada; dataPrevista: string }) {
-    const { ultimoRegistroDaTurma, fecharForm, salvarPlanejamento, planejamentosDaTurma, editarPlanejamento } = usePlanejamentoTurmaContext()
+    const { ultimoRegistroDaTurma, fecharForm, salvarPlanejamento, planejamentosDaTurma, editarPlanejamento, excluirPlanejamento } = usePlanejamentoTurmaContext()
     const { setPlanos } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
 
@@ -600,6 +600,7 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
     }, [anosLetivos, turmaSelecionada])
     const [modoAtivo, setModoAtivo] = useState<ModoForm | null>(null)
     const [planoParaEditar, setPlanoParaEditar] = useState<any>(null)
+    const [mostrarBotoesAdicionar, setMostrarBotoesAdicionar] = useState(false)
     const [pendingSave, setPendingSave] = useState<{ plano: any; origemAula: 'banco' | 'adaptacao' | 'livre' } | null>(null)
 
     // Garante que qualquer edição pendente de outro módulo seja descartada ao montar
@@ -640,23 +641,23 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
         setPlanoParaEditar(null)
     }
 
-    const BotoesPlanejar = () => (
+    const BotoesPlanejar = ({ onSelect }: { onSelect?: () => void } = {}) => (
         <div className="flex flex-col sm:flex-row gap-2">
             <button
-                onClick={() => setModoAtivo('adaptar')}
+                onClick={() => { setModoAtivo('adaptar'); onSelect?.() }}
                 disabled={!temUltimoRegistro}
                 className="flex items-center gap-2 px-4 py-3 sm:py-2 text-[12.5px] font-medium rounded-lg border border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:bg-slate-50 dark:hover:bg-[#273344] disabled:opacity-40 disabled:cursor-not-allowed transition"
             >
                 🔄 <span>Adaptar da aula anterior</span>
             </button>
             <button
-                onClick={() => setModoAtivo('criar')}
+                onClick={() => { setModoAtivo('criar'); onSelect?.() }}
                 className="flex items-center gap-2 px-4 py-3 sm:py-2 text-[12.5px] font-medium rounded-lg border border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
             >
                 ✏️ <span>Nova aula</span>
             </button>
             <button
-                onClick={() => setModoAtivo('importar')}
+                onClick={() => { setModoAtivo('importar'); onSelect?.() }}
                 className="flex items-center gap-2 px-4 py-3 sm:py-2 text-[12.5px] font-medium rounded-lg border border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
             >
                 🏛 <span>Importar do banco de aulas</span>
@@ -678,7 +679,7 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
                     modo={modoAtivo}
                     ultimoRegistro={ultimoRegistroDaTurma}
                     onSalvar={handleFormSalvar}
-                    onCancelar={() => { setModoAtivo(null); setPlanoParaEditar(null); fecharForm() }}
+                    onCancelar={() => { setModoAtivo(null); setPlanoParaEditar(null); setMostrarBotoesAdicionar(false); fecharForm() }}
                     initialPlanoOverride={planoParaEditar ?? undefined}
                 />
             ) : temPlanos ? (
@@ -708,18 +709,49 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
                                         {plano.oQuePretendoFazer || plano.planoData?.titulo || 'Sem título'}
                                     </span>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        editarPlanejamento(plano)  // marca planejamentoEditando no contexto (update, não create)
-                                        setPlanoParaEditar(plano.planoData ?? {})
-                                        setModoAtivo('criar')
-                                    }}
-                                    className="text-[11px] text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition flex-shrink-0 font-medium"
-                                >
-                                    ver / editar
-                                </button>
+                                <div className="flex items-center gap-3 flex-shrink-0">
+                                    <button
+                                        onClick={() => {
+                                            editarPlanejamento(plano)
+                                            setPlanoParaEditar(plano.planoData ?? {})
+                                            setModoAtivo('criar')
+                                        }}
+                                        className="text-[11px] text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition font-medium"
+                                    >
+                                        ver / editar
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('Remover este planejamento?')) {
+                                                excluirPlanejamento(plano.id)
+                                            }
+                                        }}
+                                        className="text-[11px] text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition"
+                                        title="Remover planejamento"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
                             </div>
                         ))}
+                    </div>
+                    {/* Adicionar outra aula */}
+                    <div className="px-5 py-3 border-t border-[#E6EAF0] dark:border-[#374151]">
+                        {mostrarBotoesAdicionar ? (
+                            <div className="flex flex-col gap-2">
+                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-[#94A3B8] dark:text-[#6B7280] mb-1">
+                                    Adicionar outra aula
+                                </p>
+                                <BotoesPlanejar onSelect={() => setMostrarBotoesAdicionar(false)} />
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setMostrarBotoesAdicionar(true)}
+                                className="text-[11px] text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition flex items-center gap-1"
+                            >
+                                <span className="text-base leading-none">+</span> adicionar outra aula
+                            </button>
+                        )}
                     </div>
                 </div>
             ) : (
