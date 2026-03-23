@@ -255,6 +255,19 @@ export default function VisaoSemana() {
     return map
   }, [planos])
 
+  // Set de "turmaId-ymd" de turmas que têm registro pós-aula naquele dia específico
+  const turmasRegistradas = useMemo(() => {
+    const s = new Set<string>()
+    planos.forEach(plano => {
+      (plano.registrosPosAula ?? []).forEach(r => {
+        const data = (r as any).dataAula ?? (r as any).data ?? ''
+        const tid = String((r as any).turma ?? '')
+        if (tid && data) s.add(`${tid}-${data}`)
+      })
+    })
+    return s
+  }, [planos])
+
   // ── Rótulo do intervalo da semana ─────────────────────────────────────────
   const semanaLabel = useMemo(() => {
     const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
@@ -267,6 +280,9 @@ export default function VisaoSemana() {
   const isHoje  = (d: Date) => toYMD(d) === toYMD(hoje)
   const isPast  = (d: Date) => d < hoje && !isHoje(d)
   const isSemanaAtual = toYMD(semanaInicio) === toYMD(getSemanaAtualInicio())
+  const todayYmd = toYMD(hoje)
+  const agoraMin = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes() })()
+
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
@@ -365,6 +381,12 @@ export default function VisaoSemana() {
                     const eArrastavel = !past && turmasArrastaveis.has(tidStr) // arrastar (qualquer plano)
                     const isDragSrc   = dragSrcId === tidYmd
                     const isDragOver  = dragOverId === tidYmd && dragSrcId !== tidYmd
+                    // Aula "ao vivo": hoje, dentro da janela de 50min a partir do horário
+                    const match = aula.horario?.match(/^(\d{1,2}):(\d{2})/)
+                    const minInicio = match ? parseInt(match[1]) * 60 + parseInt(match[2]) : null
+                    const aoVivo = ymd === todayYmd && minInicio !== null && agoraMin >= minInicio && agoraMin <= minInicio + 50
+                    // Aula concluída neste dia: opacidade reduzida
+                    const foiRegistrada = turmasRegistradas.has(tidYmd)
                     const cardStyle  = escolaCor
                       ? { '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties
                       : undefined
@@ -422,13 +444,19 @@ export default function VisaoSemana() {
                             : !past
                             ? 'shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:-translate-y-px hover:opacity-100'
                             : 'shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-default'
-                        } ${temPlano && !past && !isDragSrc ? 'opacity-[0.72]' : ''}`}
+                        } ${foiRegistrada && !isDragSrc ? 'opacity-[0.72]' : ''}`}
                       >
                         {/* card body */}
                         <div className="px-[10px] pt-[8px] pb-[7px]">
                           {aula.horario && (
-                            <div className="text-[10.5px] font-semibold text-slate-500 dark:text-[#9CA3AF] mb-[3px]">
+                            <div className="text-[10.5px] font-semibold text-slate-500 dark:text-[#9CA3AF] mb-[3px] flex items-center gap-1.5">
                               {formatHorario(aula.horario)}
+                              {aoVivo && (
+                                <span className="inline-flex items-center gap-[3px]">
+                                  <span className="w-[5px] h-[5px] rounded-full bg-red-500 animate-pulse" />
+                                  <span className="text-[9px] font-bold text-red-500 tracking-wide">AO VIVO</span>
+                                </span>
+                              )}
                             </div>
                           )}
                           <div className="flex items-center justify-between gap-1">

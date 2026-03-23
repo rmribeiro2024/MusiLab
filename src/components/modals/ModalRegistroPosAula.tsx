@@ -4,6 +4,7 @@ import { useAnoLetivoContext, RUBRICAS_PADRAO } from '../../contexts/AnoLetivoCo
 import { usePlanosContext, useAplicacoesContext } from '../../contexts'
 import { useEstrategiasContext } from '../../contexts'
 import { startRecording, stopRecording, blobToBase64, base64ToObjectUrl, base64SizeKb } from '../../lib/audioRecorder'
+import { showToast } from '../../lib/toast'
 import { uploadEvidencia, isGoogleDriveConfigured, isMobileDevice, hasValidToken, checkRedirectToken, redirectToGoogleAuth, initDriveAuth, requestDriveToken } from '../../lib/googleDrive'
 
 // ── Detecção de dark mode ──
@@ -356,6 +357,198 @@ function StatusAulaSelector({ value, onChange, onDone, firstRef }: StatusAulaSel
     );
 }
 // ──────────────────────────────────────────────────────────────────────────────
+// ── WhatsApp-style Audio Recorder (Bug 14) ──
+
+type AudioFase = 'idle' | 'recording' | 'locked' | 'preview'
+
+function WppAudioRecorder({
+    onSave, onDelete, existingAudio, existingDuration, existingMime, isDark,
+}: {
+    onSave: (base64: string, duracao: number, mime: string) => void
+    onDelete: () => void
+    existingAudio?: string
+    existingDuration?: number
+    existingMime?: string
+    isDark: boolean
+}) {
+    const [fase, setFase] = React.useState<AudioFase>(() => existingAudio ? 'preview' : 'idle')
+    const [segundos, setSegundos] = React.useState(0)
+    const [cancelando, setCancelando] = React.useState(false)
+    const [locked, setLocked] = React.useState(false)
+    const [audioB64, setAudioB64] = React.useState(existingAudio || '')
+    const [audioDur, setAudioDur] = React.useState(existingDuration || 0)
+    const [audioMime, setAudioMime] = React.useState(existingMime || 'audio/webm')
+    const [playingAudio, setPlayingAudio] = React.useState(false)
+    const [playPos, setPlayPos] = React.useState(0)
+    const timerRef = React.useRef<any>(null)
+    const audioRef = React.useRef<HTMLAudioElement>(null)
+    const ptrStartRef = React.useRef<{ x: number; y: number; t: number } | null>(null)
+    const faseRef = React.useRef(fase)
+    React.useEffect(() => { faseRef.current = fase }, [fase])
+
+    const c = dk(isDark)
+
+    const startTimer = () => { setSegundos(0); timerRef.current = setInterval(() => setSegundos(s => s + 1), 1000) }
+    const stopTimer = () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null } }
+    const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+
+    const cancelRec = async () => {
+        stopTimer(); setSegundos(0); setFase('idle'); setCancelando(false); setLocked(false)
+        try { await stopRecording() } catch {}
+    }
+
+    const finishRec = async (dur: number) => {
+        try {
+            const blob = await stopRecording()
+            if (blob.size < 200) { setFase('idle'); return }
+            const b64 = await blobToBase64(blob)
+            const mime = blob.type || 'audio/webm'
+            setAudioB64(b64); setAudioDur(dur); setAudioMime(mime)
+            setFase('preview')
+            onSave(b64, dur, mime)
+        } catch { setFase('idle') }
+    }
+
+    const handlePointerDown = async (e: React.PointerEvent<HTMLDivElement>) => {
+        if (fase !== 'idle') return
+        e.preventDefault()
+        ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+        ptrStartRef.current = { x: e.clientX, y: e.clientY, t: Date.now() }
+        setCancelando(false); setLocked(false); setFase('recording'); startTimer()
+        try { await startRecording() }
+        catch { stopTimer(); setFase('idle'); alert('Microfone não disponível. Verifique as permissões do navegador.') }
+    }
+
+    const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (faseRef.current !== 'recording' || !ptrStartRef.current) return
+        const dx = e.clientX - ptrStartRef.current.x
+        const dy = e.clientY - ptrStartRef.current.y
+        if (dx < -80) { setCancelando(true) } else { setCancelando(false) }
+        if (dy < -60) { setLocked(true); setFase('locked') }
+    }
+
+    const handlePointerUp = async (e: React.PointerEvent<HTMLDivElement>) => {
+        if (faseRef.current !== 'recording') return
+        e.preventDefault()
+        const elapsed = Date.now() - (ptrStartRef.current?.t ?? 0)
+        ptrStartRef.current = null
+        stopTimer()
+        const dur = segundos
+        if (cancelando || elapsed < 300) { await cancelRec(); return }
+        setCancelando(false)
+        await finishRec(dur)
+    }
+
+    const handleLockedStop = async () => {
+        if (fase !== 'locked') return
+        stopTimer(); const dur = segundos
+        await finishRec(dur)
+        setLocked(false)
+    }
+
+    const handleDelete = () => {
+        setAudioB64(''); setAudioDur(0); setFase('idle'); setPlayingAudio(false); onDelete()
+    }
+
+    const togglePlay = () => {
+        if (!audioRef.current) return
+        if (playingAudio) { audioRef.current.pause(); setPlayingAudio(false) }
+        else { audioRef.current.play(); setPlayingAudio(true) }
+    }
+
+    React.useEffect(() => () => stopTimer(), [])
+
+    if (fase === 'preview' && audioB64) {
+        const audioUrl = base64ToObjectUrl(audioB64, audioMime)
+        const totalDur = audioDur || 1
+        return (
+            <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, padding: '10px 12px', background: c.cardBg, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <audio ref={audioRef} src={audioUrl}
+                    onEnded={() => { setPlayingAudio(false); setPlayPos(0) }}
+                    onTimeUpdate={() => { if (audioRef.current) setPlayPos(audioRef.current.currentTime) }}
+                    style={{ display: 'none' }} />
+                <button type="button" onClick={togglePlay}
+                    style={{ width: 34, height: 34, borderRadius: '50%', background: '#22c55e', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff', fontSize: 12 }}>
+                    {playingAudio ? '⏸' : '▶'}
+                </button>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2, height: 18 }}>
+                        {Array.from({ length: 24 }).map((_, i) => {
+                            const h = 3 + Math.round(Math.abs(Math.sin(i * 1.2)) * 11)
+                            const progress = playPos / totalDur
+                            const filled = i / 24 < progress
+                            return <div key={i} style={{ width: 3, height: h, borderRadius: 2, background: filled ? '#22c55e' : c.border, transition: 'background .1s', flexShrink: 0 }} />
+                        })}
+                    </div>
+                    <span style={{ fontSize: 11, color: c.textMuted, fontVariantNumeric: 'tabular-nums' }}>
+                        {playingAudio && audioRef.current ? fmt(Math.round(playPos)) : fmt(audioDur)}
+                    </span>
+                </div>
+                <button type="button" onClick={handleDelete}
+                    style={{ color: c.textMuted, background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, padding: '2px 4px', flexShrink: 0 }}>
+                    🗑
+                </button>
+            </div>
+        )
+    }
+
+    if (fase === 'recording' || fase === 'locked') {
+        return (
+            <div style={{ border: `1px solid ${cancelando ? '#fca5a5' : c.border}`, borderRadius: 10, padding: '10px 12px', background: cancelando ? (isDark ? '#2d1515' : '#fef2f2') : c.cardBg, display: 'flex', alignItems: 'center', gap: 10, userSelect: 'none' }}>
+                <span style={{ fontSize: 13, opacity: cancelando ? 1 : 0.25, transition: 'opacity .15s', flexShrink: 0, color: '#ef4444' }}>🗑</span>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+                    {fase === 'locked'
+                        ? <span style={{ fontSize: 12, color: c.textMed, flex: 1 }}>🔒 Gravando — toque ■ para parar</span>
+                        : cancelando
+                        ? <span style={{ fontSize: 12, color: '#ef4444', flex: 1 }}>Solte para cancelar ×</span>
+                        : <span style={{ fontSize: 11, color: c.textMuted, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            ← Deslize para cancelar · ↑ para travar
+                          </span>
+                    }
+                    <span style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums', color: '#ef4444', fontWeight: 600, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', display: 'inline-block', animation: 'micPulse 1s ease-in-out infinite' }} />
+                        {fmt(segundos)}
+                    </span>
+                </div>
+                {fase === 'locked'
+                    ? <button type="button" onClick={handleLockedStop}
+                        style={{ width: 40, height: 40, borderRadius: '50%', background: '#ef4444', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <span style={{ width: 12, height: 12, background: '#fff', borderRadius: 2, display: 'block' }} />
+                      </button>
+                    : <div onPointerMove={handlePointerMove} onPointerUp={handlePointerUp}
+                        style={{ width: 40, height: 40, borderRadius: '50%', background: cancelando ? c.border : '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'default' }}>
+                        <span style={{ color: '#fff', fontSize: 16 }}>🎙</span>
+                      </div>
+                }
+            </div>
+        )
+    }
+
+    return (
+        <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px' }}>
+                <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>🎙</span>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: c.textMed, flex: 1 }}>
+                    Nota de voz
+                </span>
+                <span style={{ fontSize: 11, color: c.textMuted }}>Segure para gravar</span>
+                <div
+                    onPointerDown={handlePointerDown}
+                    style={{
+                        width: 36, height: 36, borderRadius: '50%',
+                        background: isDark ? '#374151' : '#f1f5f9',
+                        border: `1.5px solid ${c.border}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', flexShrink: 0, touchAction: 'none', userSelect: 'none',
+                    }}>
+                    <span style={{ fontSize: 16 }}>🎙</span>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 
 export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hideHeader = false, saveLabel, verPlanoExterno }: { inlineMode?: boolean; onVoltar?: () => void; hideHeader?: boolean; saveLabel?: string; verPlanoExterno?: boolean }) {
     const isDark = useIsDark()
@@ -523,6 +716,36 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
         document.addEventListener('mousedown', handler)
         return () => document.removeEventListener('mousedown', handler)
     }, [seletorTurma, seletorEscola])
+    // ── Auto-save (Bug 5) ──
+    const [autoSaveStatus, setAutoSaveStatus] = React.useState<'idle' | 'saved'>('idle')
+    const autoSaveTimerRef = React.useRef<any>(null)
+    // Salva rascunho no localStorage após 2s de inatividade
+    React.useEffect(() => {
+        if (!regTurmaSel || !novoRegistro.dataAula || registroEditando) return
+        const temConteudo = Object.entries(novoRegistro).some(([k, v]) => k !== 'dataAula' && v && v !== '' && v !== undefined)
+        if (!temConteudo) return
+        if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+        autoSaveTimerRef.current = setTimeout(() => {
+            const key = `posAulaDraft-${regTurmaSel}-${novoRegistro.dataAula}`
+            localStorage.setItem(key, JSON.stringify(novoRegistro))
+            setAutoSaveStatus('saved')
+            setTimeout(() => setAutoSaveStatus('idle'), 1500)
+        }, 2000)
+        return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current) }
+    }, [novoRegistro, regTurmaSel, registroEditando]) // eslint-disable-line
+    // Restaura rascunho ao selecionar turma (somente para novos registros)
+    React.useEffect(() => {
+        if (!regTurmaSel || !novoRegistro.dataAula || registroEditando) return
+        const key = `posAulaDraft-${regTurmaSel}-${novoRegistro.dataAula}`
+        const saved = localStorage.getItem(key)
+        if (!saved) return
+        try {
+            const draft = JSON.parse(saved) as any
+            const temConteudo = Object.entries(draft).some(([k, v]) => k !== 'dataAula' && v && v !== '' && v !== undefined)
+            if (temConteudo) setNovoRegistro((prev: any) => ({ ...draft, dataAula: prev.dataAula }))
+        } catch {}
+    }, [regTurmaSel]) // eslint-disable-line
+
     // Opcao A — painel "O que foi planejado" (header)
     const [planejadoAberto, setPlanejadoAberto] = React.useState(false)
     React.useEffect(() => { if (verPlanoExterno !== undefined) setPlanejadoAberto(verPlanoExterno) }, [verPlanoExterno])
@@ -596,6 +819,8 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
     // ── Pré-seleção de turma ao abrir ──
     React.useEffect(() => {
         if ((!inlineMode && !modalRegistro) || !planoParaRegistro || anosLetivos.length === 0) return
+        // Bug 3: inline mode com turma já definida externamente — não re-inferir
+        if (inlineMode && regTurmaSel) return
         const escolaNomePlano   = planoParaRegistro.escola || ''
         const faixasPlano: string[] = planoParaRegistro.faixaEtaria || []
         const segmentoNomePlano = planoParaRegistro.segmento || faixasPlano[0] || ''
@@ -764,7 +989,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                             const criterio = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
                             const temConteudo = objetivo || roteiro.length > 0 || criterio
                             return (
-                                <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, position: 'relative' }}>
+                                <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, position: 'relative', maxHeight: 220, overflowY: 'auto' }}>
                                     <button onClick={() => setPlanejadoAberto(false)} title="Fechar" style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#94a3b8', lineHeight: 1, padding: 2 }}
                                         onMouseOver={e => (e.currentTarget.style.color = '#475569')}
                                         onMouseOut={e  => (e.currentTarget.style.color = '#94a3b8')}>✕</button>
@@ -1096,12 +1321,23 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                         })}
                                     </div>
 
+                                    {/* ── Nota de voz (WhatsApp-style) ── */}
+                                    <WppAudioRecorder
+                                        isDark={isDark}
+                                        existingAudio={(novoRegistro as any).audioNotaDeVoz}
+                                        existingDuration={(novoRegistro as any).audioDuracao}
+                                        existingMime={(novoRegistro as any).audioMime}
+                                        onSave={(b64: string, dur: number, mime: string) => setNovoRegistro({ ...novoRegistro, audioNotaDeVoz: b64, audioDuracao: dur, audioMime: mime } as any)}
+                                        onDelete={() => setNovoRegistro({ ...novoRegistro, audioNotaDeVoz: undefined, audioDuracao: 0 } as any)}
+                                    />
+
                                     {/* Como foi a aula? — seletor estilo lista */}
                                     {(() => {
                                         const statusVal = ((novoRegistro as any).statusAula || inferStatusLegado((novoRegistro as any).resultadoAula, (novoRegistro as any).proximaAulaOpcao, (novoRegistro as any).statusAula)) as StatusAula
                                         const ops: { value: StatusAula; label: string; emoji: string }[] = [
-                                            { value: 'concluida', label: 'Avançar — seguir em frente',  emoji: '✓' },
-                                            { value: 'revisao',   label: 'Retomar ou revisar — repetir de onde parei ou reforçar algo', emoji: '↻' },
+                                            { value: 'concluida',  label: 'Avançar — novo conteúdo na próxima',    emoji: '✓' },
+                                            { value: 'incompleta', label: 'Retomar de onde parei',                 emoji: '↩' },
+                                            { value: 'revisao',    label: 'Revisar — reforçar conteúdo desta aula', emoji: '↻' },
                                         ]
                                         return (
                                             <div style={{ border: `1.5px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBgSolid }}>
@@ -1118,9 +1354,11 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                     {ops.map((op, idx) => {
                                                         const sel = statusVal === op.value
                                                         const isConcluida = op.value === 'concluida'
+                                                        const isIncompleta = op.value === 'incompleta'
                                                         const isRevisao = op.value === 'revisao'
                                                         const revisaoColor = isDark ? '#908e50' : '#8a8418'
-                                                        const selColor = isConcluida ? '#6aab8a' : isRevisao ? revisaoColor : c.textMain
+                                                        const incompletaColor = isDark ? '#7ea0c9' : '#3b7dc2'
+                                                        const selColor = isConcluida ? '#6aab8a' : isIncompleta ? incompletaColor : isRevisao ? revisaoColor : c.textMain
                                                         return (
                                                             <button key={op.value} type="button"
                                                                 onClick={() => {
@@ -1194,14 +1432,8 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                     <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                                                         {encaminhamentos.map((enc, idx) => (
                                                             <div key={enc.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                                <input type="checkbox" checked={enc.concluido}
-                                                                    onChange={() => {
-                                                                        const nova = encaminhamentos.map((e, i) => i === idx ? { ...e, concluido: !e.concluido } : e)
-                                                                        setNovoRegistro({ ...novoRegistro, encaminhamentos: nova } as any)
-                                                                    }}
-                                                                    style={{ accentColor: '#6366f1', flexShrink: 0 }}
-                                                                />
-                                                                <span style={{ fontSize: 12, color: enc.concluido ? '#94a3b8' : '#334155', flex: 1, textDecoration: enc.concluido ? 'line-through' : 'none' }}>{enc.texto}</span>
+                                                                <span style={{ color: '#94a3b8', fontSize: 14, flexShrink: 0, lineHeight: 1 }}>·</span>
+                                                                <span style={{ fontSize: 12, color: c.textMain, flex: 1 }}>{enc.texto}</span>
                                                                 <button type="button" onClick={() => {
                                                                     const nova = encaminhamentos.filter((_, i) => i !== idx)
                                                                     setNovoRegistro({ ...novoRegistro, encaminhamentos: nova } as any)
@@ -2031,9 +2263,19 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
 
                         {/* ── Sticky save footer inline — compacto, alinhado à direita ── */}
                         {inlineMode && !verRegistros && (
-                            <div className="px-4 py-3 border-t border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] flex justify-end shrink-0">
+                            <div className="px-4 py-3 border-t border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] flex items-center justify-end gap-3 shrink-0">
+                                {autoSaveStatus === 'saved' && (
+                                    <span className="text-[11px] text-slate-400 dark:text-[#6b7280]">rascunho salvo</span>
+                                )}
                                 <button
-                                    onClick={() => { salvarRegistro(); if (onVoltar) onVoltar() }}
+                                    onClick={() => {
+                                        salvarRegistro()
+                                        // Limpa rascunho
+                                        if (regTurmaSel && novoRegistro.dataAula)
+                                            localStorage.removeItem(`posAulaDraft-${regTurmaSel}-${novoRegistro.dataAula}`)
+                                        showToast('Registro salvo ✓')
+                                        if (onVoltar) onVoltar()
+                                    }}
                                     className="px-4 py-2 rounded-lg border border-[#cbd5e1] dark:border-[#374151] bg-transparent text-[#64748b] dark:text-[#9CA3AF] text-[13px] font-semibold hover:border-[#94a3b8] dark:hover:border-[#6b7280] hover:text-[#475569] dark:hover:text-[#E5E7EB] transition">
                                     ✓ {saveLabel || 'Salvar registro'}
                                 </button>

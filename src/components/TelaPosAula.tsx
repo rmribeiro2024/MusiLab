@@ -4,9 +4,10 @@ import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import ModalRegistroPosAula from './modals/ModalRegistroPosAula'
+import { showToast } from '../lib/toast'
 
 export default function TelaPosAula() {
-    const { planos, sugerirPlanoParaTurma } = usePlanosContext()
+    const { planos, sugerirPlanoParaTurma, editarRegistro } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
     const {
         obterTurmasDoDia,
@@ -98,8 +99,23 @@ export default function TelaPosAula() {
             ? t.plano as any
             : { id: `stub-${t.aula.id}`, titulo: '', escola: t.escNome, segmento: t.segNome, turma: t.turNome }
         setPlanoParaRegistro(plano)
-        setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
-        setRegistroEditando(null)
+
+        // Bug 7: se turma já registrada, abre com dados preenchidos
+        if (t.registrada) {
+            const reg = todosRegistros.find(
+                r => r.data === dataSel && String(r.turma) === String(t.aula.turmaId)
+            )
+            if (reg) {
+                editarRegistro(reg)
+            } else {
+                setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
+                setRegistroEditando(null)
+            }
+        } else {
+            setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
+            setRegistroEditando(null)
+        }
+
         setVerRegistros(false)
         // Pré-seleciona escola/turma diretamente pelos IDs da grade — sem depender do campo plano.escola
         setRegAnoSel(String(t.aula.anoLetivoId ?? ''))
@@ -110,21 +126,12 @@ export default function TelaPosAula() {
         setListaAberta(false)   // fecha a lista ao selecionar
     }
 
-    // Após salvar: avança para próxima pendente ou volta à lista
+    // Bug 6: após salvar, sempre volta à lista de turmas
     const handleDepoisSalvar = () => {
-        const proxIdx = turmasEnriq.findIndex((t, i) => i > turmaIdx && !t.registrada)
-        if (proxIdx >= 0) {
-            abrirTurma(proxIdx)
-        } else {
-            const proxAntes = turmasEnriq.findIndex((t, i) => i !== turmaIdx && !t.registrada)
-            if (proxAntes >= 0) {
-                abrirTurma(proxAntes)
-            } else {
-                setListaAberta(true)
-                setTurmaIdx(-1)
-                setModalRegistro(false)
-            }
-        }
+        showToast('Registro salvo ✓')
+        setListaAberta(true)
+        setTurmaIdx(-1)
+        setModalRegistro(false)
     }
 
     // Navegar entre turmas com ‹ ›
@@ -242,7 +249,16 @@ export default function TelaPosAula() {
 
                                     <div className="flex-1 min-w-0">
                                         <div style={{ display: 'grid', gridTemplateColumns: '54px minmax(0, 110px) auto 1fr', columnGap: '6px', alignItems: 'center' }}>
-                                            <span className="text-[12px] font-semibold tabular-nums text-slate-700 dark:text-[#E5E7EB]">{t.aula.horario}</span>
+                                            <span className="text-[12px] font-semibold tabular-nums text-slate-700 dark:text-[#E5E7EB] flex items-center gap-1">
+                                                {t.aula.horario}
+                                                {ehHoje && (() => {
+                                                    const m = t.aula.horario?.match(/^(\d{1,2}):(\d{2})/)
+                                                    const minI = m ? parseInt(m[1]) * 60 + parseInt(m[2]) : null
+                                                    return minI !== null && minAgora >= minI && minAgora <= minI + 50
+                                                        ? <span className="w-[5px] h-[5px] rounded-full bg-red-500 animate-pulse shrink-0" title="Ao vivo" />
+                                                        : null
+                                                })()}
+                                            </span>
                                             <span className="text-[12px] text-slate-400 dark:text-[#6b7280] truncate">{t.escNome || ''}</span>
                                             <span className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF] shrink-0">{t.segNome}</span>
                                             <span className="text-[12px] font-bold text-slate-700 dark:text-[#E5E7EB] truncate">{t.turNome}</span>

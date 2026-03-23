@@ -98,13 +98,19 @@ export default function TelaPosAulaHistorico() {
     const [filtroEscola, setFiltroEscola] = useState('todas')
     const [filtroSegmento, setFiltroSegmento] = useState('todos')
     const [filtroTurma, setFiltroTurma] = useState('todas')
-    const [filtroPeriodo, setFiltroPeriodo] = useState('tudo')
+    const [filtroPeriodo, setFiltroPeriodo] = useState('7dias')
     const [filtroCustomDe, setFiltroCustomDe] = useState('')
     const [filtroCustomAte, setFiltroCustomAte] = useState('')
 
     // F1.4 — filtro por badge
     const [filtroAlunoAtencao, setFiltroAlunoAtencao] = useState<string | null>(null)
     const [filtroEngajamento, setFiltroEngajamento] = useState(false)
+
+    // Bug 10 — filtro por status da aula
+    const [filtroStatus, setFiltroStatus] = useState('todos')
+
+    // Bug 9 — mobile: filtros de localização collapsíveis
+    const [filtrosMobileAbertos, setFiltrosMobileAbertos] = useState(false)
 
     // F2.1 — insight dispensado
     const [insightDismissed, setInsightDismissed] = useState(false)
@@ -228,8 +234,9 @@ export default function TelaPosAulaHistorico() {
         if (!isInPeriodo(r.data, filtroPeriodo)) return false
         if (filtroAlunoAtencao && (r as any).alunoAtencao !== filtroAlunoAtencao) return false
         if (filtroEngajamento && !(r as any).pontoQueda) return false
+        if (filtroStatus !== 'todos' && (r as any).statusAula !== filtroStatus) return false
         return true
-    }), [todosRegistros, filtroEscola, filtroSegmento, filtroTurma, filtroPeriodo, filtroCustomDe, filtroCustomAte, filtroAlunoAtencao, filtroEngajamento])
+    }), [todosRegistros, filtroEscola, filtroSegmento, filtroTurma, filtroPeriodo, filtroCustomDe, filtroCustomAte, filtroAlunoAtencao, filtroEngajamento, filtroStatus])
 
     // F2.1 — engine de insights (R2, R3, R5)
     const insight = useMemo((): string | null => {
@@ -400,11 +407,11 @@ export default function TelaPosAulaHistorico() {
         return null
     }
 
-    const filtrosAtivos = filtroEscola !== 'todas' || filtroSegmento !== 'todos' || filtroTurma !== 'todas' || filtroPeriodo !== 'tudo' || !!filtroAlunoAtencao || filtroEngajamento
+    const filtrosAtivos = filtroEscola !== 'todas' || filtroSegmento !== 'todos' || filtroTurma !== 'todas' || filtroPeriodo !== '7dias' || !!filtroAlunoAtencao || filtroEngajamento || filtroStatus !== 'todos'
     const limparFiltros = () => {
-        setFiltroEscola('todas'); setFiltroSegmento('todos'); setFiltroTurma('todas'); setFiltroPeriodo('tudo')
+        setFiltroEscola('todas'); setFiltroSegmento('todos'); setFiltroTurma('todas'); setFiltroPeriodo('7dias')
         setFiltroCustomDe(''); setFiltroCustomAte('')
-        setFiltroAlunoAtencao(null); setFiltroEngajamento(false)
+        setFiltroAlunoAtencao(null); setFiltroEngajamento(false); setFiltroStatus('todos')
     }
 
     const c = {
@@ -476,82 +483,118 @@ export default function TelaPosAulaHistorico() {
                 </div>
             )}
 
-            {/* Linha 2: filtros de localização */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                {/* Escola — oculta quando só há uma */}
-                {escolasUnicas.length > 1 && (
-                <div style={{ position: 'relative' }}>
-                    <select value={filtroEscola} onChange={e => { setFiltroEscola(e.target.value); setFiltroSegmento('todos'); setFiltroTurma('todas') }} style={selStyle}>
-                        <option value="todas">Escola</option>
-                        {escolasUnicas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
-                    </select>
-                    <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
-                </div>
-                )}
-
-                {/* Série — optgroup por escola quando há múltiplas */}
-                {seriesUnicas.length > 1 && (() => {
-                    const useGroups = escolasUnicas.length > 1 && filtroEscola === 'todas'
-                    const byEscola = useGroups ? (() => {
-                        const m = new Map<string, { escolaNome: string; series: typeof seriesUnicas }>()
-                        seriesUnicas.forEach(s => {
-                            if (!m.has(s.escolaId)) m.set(s.escolaId, { escolaNome: s.escolaNome, series: [] })
-                            m.get(s.escolaId)!.series.push(s)
-                        })
-                        return m
-                    })() : null
-                    return (
-                        <div style={{ position: 'relative' }}>
-                            <select value={filtroSegmento} onChange={e => { setFiltroSegmento(e.target.value); setFiltroTurma('todas') }} style={selStyle}>
-                                <option value="todos">Série</option>
-                                {useGroups && byEscola
-                                    ? Array.from(byEscola.entries()).map(([eId, { escolaNome, series }]) => (
-                                        <optgroup key={eId} label={escolaNome}>
-                                            {series.map(s => <option key={s.id} value={s.id}>{s.nomeSimples}</option>)}
-                                        </optgroup>
-                                    ))
-                                    : seriesUnicas.map(s => <option key={s.id} value={s.id}>{s.nomeSimples}</option>)
-                                }
-                            </select>
-                            <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
-                        </div>
-                    )
-                })()}
-
-                {/* Turma — optgroup por escola quando há múltiplas */}
-                {turmasUnicas.length > 1 && (() => {
-                    const useGroups = escolasUnicas.length > 1 && filtroEscola === 'todas'
-                    const byEscola = useGroups ? (() => {
-                        const m = new Map<string, { escolaNome: string; turmas: typeof turmasUnicas }>()
-                        turmasUnicas.forEach(t => {
-                            if (!m.has(t.escolaId)) m.set(t.escolaId, { escolaNome: t.escolaNome, turmas: [] })
-                            m.get(t.escolaId)!.turmas.push(t)
-                        })
-                        return m
-                    })() : null
-                    return (
-                        <div style={{ position: 'relative' }}>
-                            <select value={filtroTurma} onChange={e => setFiltroTurma(e.target.value)} style={selStyle}>
-                                <option value="todas">Turma</option>
-                                {useGroups && byEscola
-                                    ? Array.from(byEscola.entries()).map(([eId, { escolaNome, turmas }]) => (
-                                        <optgroup key={eId} label={escolaNome}>
-                                            {turmas.map(t => <option key={t.id} value={t.id}>{t.nomeSimples}</option>)}
-                                        </optgroup>
-                                    ))
-                                    : turmasUnicas.map(t => <option key={t.id} value={t.id}>{t.nomeSimples}</option>)
-                                }
-                            </select>
-                            <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
-                        </div>
-                    )
-                })()}
-
-                {filtrosAtivos && (
-                    <button onClick={limparFiltros} style={{ fontSize: '11px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', fontFamily: 'inherit' }}>
-                        limpar
+            {/* Linha 2: filtros de localização + status (Bug 9: collapsível no mobile) */}
+            <div>
+                {/* Mobile: botão para abrir/fechar filtros */}
+                <div className="sm:hidden" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: filtrosMobileAbertos ? 8 : 0 }}>
+                    <button onClick={() => setFiltrosMobileAbertos(v => !v)}
+                        style={{
+                            fontSize: 11.5, fontWeight: filtrosAtivos ? 600 : 400, fontFamily: 'inherit',
+                            padding: '4px 11px', borderRadius: 999, cursor: 'pointer',
+                            background: filtrosAtivos ? (isDark ? '#374151' : '#e2e8f0') : 'transparent',
+                            color: filtrosAtivos ? (isDark ? '#E5E7EB' : '#334155') : (isDark ? '#6B7280' : '#94a3b8'),
+                            border: `1px solid ${c.border}`, display: 'flex', alignItems: 'center', gap: 5,
+                        }}>
+                        Filtros {filtrosMobileAbertos ? '▴' : '▾'}
+                        {filtrosAtivos && <span style={{ fontSize: 9, background: isDark ? '#5B5FEA' : '#5B5FEA', color: '#fff', borderRadius: 999, padding: '1px 5px', fontWeight: 700 }}>!</span>}
                     </button>
-                )}
+                    {filtrosAtivos && (
+                        <button onClick={limparFiltros} style={{ fontSize: '11px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', fontFamily: 'inherit' }}>
+                            limpar
+                        </button>
+                    )}
+                </div>
+
+                {/* Filtros: sempre visíveis no desktop, collapsíveis no mobile */}
+                <div className={`${filtrosMobileAbertos ? 'flex' : 'hidden'} sm:flex`}
+                    style={{ alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
+                    {/* Escola — oculta quando só há uma */}
+                    {escolasUnicas.length > 1 && (
+                    <div style={{ position: 'relative' }}>
+                        <select value={filtroEscola} onChange={e => { setFiltroEscola(e.target.value); setFiltroSegmento('todos'); setFiltroTurma('todas') }} style={selStyle}>
+                            <option value="todas">Escola</option>
+                            {escolasUnicas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                        </select>
+                        <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
+                    </div>
+                    )}
+
+                    {/* Série — optgroup por escola quando há múltiplas */}
+                    {seriesUnicas.length > 1 && (() => {
+                        const useGroups = escolasUnicas.length > 1 && filtroEscola === 'todas'
+                        const byEscola = useGroups ? (() => {
+                            const m = new Map<string, { escolaNome: string; series: typeof seriesUnicas }>()
+                            seriesUnicas.forEach(s => {
+                                if (!m.has(s.escolaId)) m.set(s.escolaId, { escolaNome: s.escolaNome, series: [] })
+                                m.get(s.escolaId)!.series.push(s)
+                            })
+                            return m
+                        })() : null
+                        return (
+                            <div style={{ position: 'relative' }}>
+                                <select value={filtroSegmento} onChange={e => { setFiltroSegmento(e.target.value); setFiltroTurma('todas') }} style={selStyle}>
+                                    <option value="todos">Série</option>
+                                    {useGroups && byEscola
+                                        ? Array.from(byEscola.entries()).map(([eId, { escolaNome, series }]) => (
+                                            <optgroup key={eId} label={escolaNome}>
+                                                {series.map(s => <option key={s.id} value={s.id}>{s.nomeSimples}</option>)}
+                                            </optgroup>
+                                        ))
+                                        : seriesUnicas.map(s => <option key={s.id} value={s.id}>{s.nomeSimples}</option>)
+                                    }
+                                </select>
+                                <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
+                            </div>
+                        )
+                    })()}
+
+                    {/* Turma — optgroup por escola quando há múltiplas */}
+                    {turmasUnicas.length > 1 && (() => {
+                        const useGroups = escolasUnicas.length > 1 && filtroEscola === 'todas'
+                        const byEscola = useGroups ? (() => {
+                            const m = new Map<string, { escolaNome: string; turmas: typeof turmasUnicas }>()
+                            turmasUnicas.forEach(t => {
+                                if (!m.has(t.escolaId)) m.set(t.escolaId, { escolaNome: t.escolaNome, turmas: [] })
+                                m.get(t.escolaId)!.turmas.push(t)
+                            })
+                            return m
+                        })() : null
+                        return (
+                            <div style={{ position: 'relative' }}>
+                                <select value={filtroTurma} onChange={e => setFiltroTurma(e.target.value)} style={selStyle}>
+                                    <option value="todas">Turma</option>
+                                    {useGroups && byEscola
+                                        ? Array.from(byEscola.entries()).map(([eId, { escolaNome, turmas }]) => (
+                                            <optgroup key={eId} label={escolaNome}>
+                                                {turmas.map(t => <option key={t.id} value={t.id}>{t.nomeSimples}</option>)}
+                                            </optgroup>
+                                        ))
+                                        : turmasUnicas.map(t => <option key={t.id} value={t.id}>{t.nomeSimples}</option>)
+                                    }
+                                </select>
+                                <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
+                            </div>
+                        )
+                    })()}
+
+                    {/* Bug 10 — Filtro por status da aula */}
+                    <div style={{ position: 'relative' }}>
+                        <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={selStyle}>
+                            <option value="todos">Status</option>
+                            <option value="concluida">✓ Avançar</option>
+                            <option value="incompleta">↩ Retomar</option>
+                            <option value="revisao">↻ Revisar</option>
+                            <option value="nao_houve">— Não houve</option>
+                        </select>
+                        <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
+                    </div>
+
+                    {filtrosAtivos && (
+                        <button onClick={limparFiltros} className="hidden sm:block" style={{ fontSize: '11px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', fontFamily: 'inherit' }}>
+                            limpar
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* F1.4 — chips de filtro ativo */}
