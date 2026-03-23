@@ -106,9 +106,6 @@ export default function TelaPosAulaHistorico() {
     const [filtroAlunoAtencao, setFiltroAlunoAtencao] = useState<string | null>(null)
     const [filtroEngajamento, setFiltroEngajamento] = useState(false)
 
-    // Bug 10 — filtro por status da aula
-    const [filtroStatus, setFiltroStatus] = useState('todos')
-
     // Bug 9 — mobile: filtros de localização collapsíveis
     const [filtrosMobileAbertos, setFiltrosMobileAbertos] = useState(false)
 
@@ -234,9 +231,8 @@ export default function TelaPosAulaHistorico() {
         if (!isInPeriodo(r.data, filtroPeriodo)) return false
         if (filtroAlunoAtencao && (r as any).alunoAtencao !== filtroAlunoAtencao) return false
         if (filtroEngajamento && !(r as any).pontoQueda) return false
-        if (filtroStatus !== 'todos' && (r as any).statusAula !== filtroStatus) return false
         return true
-    }), [todosRegistros, filtroEscola, filtroSegmento, filtroTurma, filtroPeriodo, filtroCustomDe, filtroCustomAte, filtroAlunoAtencao, filtroEngajamento, filtroStatus])
+    }), [todosRegistros, filtroEscola, filtroSegmento, filtroTurma, filtroPeriodo, filtroCustomDe, filtroCustomAte, filtroAlunoAtencao, filtroEngajamento])
 
     // F2.1 — engine de insights (R2, R3, R5)
     const insight = useMemo((): string | null => {
@@ -407,11 +403,11 @@ export default function TelaPosAulaHistorico() {
         return null
     }
 
-    const filtrosAtivos = filtroEscola !== 'todas' || filtroSegmento !== 'todos' || filtroTurma !== 'todas' || filtroPeriodo !== '7dias' || !!filtroAlunoAtencao || filtroEngajamento || filtroStatus !== 'todos'
+    const filtrosAtivos = filtroEscola !== 'todas' || filtroSegmento !== 'todos' || filtroTurma !== 'todas' || filtroPeriodo !== '7dias' || !!filtroAlunoAtencao || filtroEngajamento
     const limparFiltros = () => {
         setFiltroEscola('todas'); setFiltroSegmento('todos'); setFiltroTurma('todas'); setFiltroPeriodo('7dias')
         setFiltroCustomDe(''); setFiltroCustomAte('')
-        setFiltroAlunoAtencao(null); setFiltroEngajamento(false); setFiltroStatus('todos')
+        setFiltroAlunoAtencao(null); setFiltroEngajamento(false)
     }
 
     const c = {
@@ -576,17 +572,6 @@ export default function TelaPosAulaHistorico() {
                             </div>
                         )
                     })()}
-
-                    {/* Bug 10 — Filtro por status da aula */}
-                    <div style={{ position: 'relative' }}>
-                        <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={selStyle}>
-                            <option value="todos">Como foi?</option>
-                            <option value="concluida">✓ Concluída</option>
-                            <option value="incompleta">◑ Parcial</option>
-                            <option value="nao_houve">— Não houve</option>
-                        </select>
-                        <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
-                    </div>
 
                     {filtrosAtivos && (
                         <button onClick={limparFiltros} className="hidden sm:block" style={{ fontSize: '11px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', fontFamily: 'inherit' }}>
