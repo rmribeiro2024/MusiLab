@@ -580,9 +580,16 @@ function FormPlanoTurma({
 
 // ─── Sub-componente: Conteúdo da turma selecionada ───────────────────────────
 
-function ConteudoTurma({ turmaSelecionada }: { turmaSelecionada: TurmaSelecionada }) {
+function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: TurmaSelecionada; dataPrevista: string }) {
     const { ultimoRegistroDaTurma, fecharForm, salvarPlanejamento, planejamentosDaTurma, editarPlanejamento } = usePlanejamentoTurmaContext()
     const { setPlanos } = usePlanosContext()
+    const { anosLetivos } = useAnoLetivoContext()
+
+    // Resolve nome da escola a partir do contexto (para popular filtro no banco)
+    const escolaNomeDaTurma = useMemo(() => {
+        const ano = anosLetivos.find(a => String(a.id) === turmaSelecionada.anoLetivoId)
+        return ano?.escolas.find((e: any) => String(e.id) === turmaSelecionada.escolaId)?.nome ?? ''
+    }, [anosLetivos, turmaSelecionada])
     const [modoAtivo, setModoAtivo] = useState<ModoForm | null>(null)
     const [pendingSave, setPendingSave] = useState<{ plano: any; origemAula: 'banco' | 'adaptacao' | 'livre' } | null>(null)
 
@@ -604,12 +611,18 @@ function ConteudoTurma({ turmaSelecionada }: { turmaSelecionada: TurmaSelecionad
         salvarPlanejamento({
             oQuePretendoFazer: plano.objetivoGeral || plano.titulo || '',
             origemAula,
+            dataPrevista,                                       // Bug 6: garante ✓ na visão da semana
             materiais: plano.materiais?.length ? plano.materiais : [],
             planosRelacionadosIds: [],
             planoData: plano,
         })
         if (salvarNoBanco) {
-            const planoParaBanco = normalizePlano({ ...plano, id: gerarIdSeguro() })
+            // Bug 7: popula escola para aparecer no filtro do banco de aulas
+            const planoParaBanco = normalizePlano({
+                ...plano,
+                id: gerarIdSeguro(),
+                escola: plano.escola || escolaNomeDaTurma,
+            })
             setPlanos(prev => [...prev, planoParaBanco])
             showToast('Salvo no banco de aulas ✅')
         }
@@ -658,49 +671,40 @@ function ConteudoTurma({ turmaSelecionada }: { turmaSelecionada: TurmaSelecionad
                     onCancelar={() => setModoAtivo(null)}
                 />
             ) : temPlanos ? (
-                /* ── Planos salvos + botão compacto ── */
+                /* ── Aula planejada: exibição compacta ── */
                 <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
-                    <div className="px-5 pt-4 pb-3 border-b border-[#E6EAF0] dark:border-[#374151] flex items-center justify-between">
-                        <p className="text-[10px] font-semibold uppercase tracking-[.7px] text-[#94A3B8] dark:text-[#6B7280]">
-                            Próxima aula planejada
+                    <div className="px-5 pt-4 pb-3 border-b border-[#E6EAF0] dark:border-[#374151] flex items-center gap-2">
+                        <span className="text-[11px] text-emerald-500 font-bold">✓</span>
+                        <p className="text-[10px] font-semibold uppercase tracking-[.7px] text-[#94A3B8] dark:text-[#6B7280] flex-1">
+                            Aula planejada
                         </p>
-                        <span className="text-[10px] text-[#94a3b8] border border-[#E6EAF0] dark:border-[#374151] px-2 py-0.5 rounded-full">
-                            {planejamentosDaTurma.length}
-                        </span>
+                        {planejamentosDaTurma.length > 1 && (
+                            <span className="text-[10px] text-[#94a3b8] border border-[#E6EAF0] dark:border-[#374151] px-2 py-0.5 rounded-full">
+                                {planejamentosDaTurma.length}
+                            </span>
+                        )}
                     </div>
                     <div className="flex flex-col divide-y divide-[#E6EAF0] dark:divide-[#374151]">
                         {planejamentosDaTurma.map(plano => (
-                            <div key={plano.id} className="flex items-start justify-between gap-3 px-5 py-3">
-                                <div className="flex-1 min-w-0">
+                            <div key={plano.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
                                     {plano.dataPrevista && (
-                                        <p className="text-[10.5px] text-[#94a3b8] mb-0.5">
-                                            {new Date(plano.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                                        </p>
+                                        <span className="text-[11px] text-[#94a3b8] flex-shrink-0">
+                                            {new Date(plano.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
+                                        </span>
                                     )}
-                                    <p className="text-[12.5px] text-[#374151] dark:text-[#D1D5DB] leading-snug line-clamp-2">
+                                    <span className="text-[12px] text-[#374151] dark:text-[#D1D5DB] truncate">
                                         {plano.oQuePretendoFazer || plano.planoData?.titulo || 'Sem título'}
-                                    </p>
-                                    {plano.origemAula === 'adaptacao' && (
-                                        <span className="text-[10px] text-[#94a3b8] mt-0.5 inline-block">Adaptação da aula anterior</span>
-                                    )}
+                                    </span>
                                 </div>
                                 <button
                                     onClick={() => editarPlanejamento(plano)}
-                                    className="text-[11px] px-3 py-1 rounded-md border border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:bg-white dark:hover:bg-[#1F2937] transition flex-shrink-0"
+                                    className="text-[11px] text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition flex-shrink-0 font-medium"
                                 >
-                                    Editar
+                                    ver / editar
                                 </button>
                             </div>
                         ))}
-                    </div>
-                    {/* Adicionar outro planejamento — compacto */}
-                    <div className="px-5 py-3 border-t border-[#E6EAF0] dark:border-[#374151]">
-                        <button
-                            onClick={() => setModoAtivo('criar')}
-                            className="text-[11.5px] text-[#94A3B8] dark:text-[#6B7280] hover:text-indigo-500 dark:hover:text-indigo-400 transition flex items-center gap-1.5"
-                        >
-                            <span className="text-[13px] leading-none">+</span> Adicionar planejamento
-                        </button>
                     </div>
                 </div>
             ) : (
@@ -812,7 +816,7 @@ export default function ModuloPorTurmas() {
                 />
 
                 {turmaSelecionada
-                    ? <ConteudoTurma key={`${turmaSelecionada.turmaId}-${ymd}`} turmaSelecionada={turmaSelecionada} />
+                    ? <ConteudoTurma key={`${turmaSelecionada.turmaId}-${ymd}`} turmaSelecionada={turmaSelecionada} dataPrevista={ymd} />
                     : <EstadoVazio dataYmd={ymd} />
                 }
             </div>

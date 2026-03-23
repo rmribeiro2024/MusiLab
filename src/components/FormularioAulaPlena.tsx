@@ -160,6 +160,7 @@ function detectarTipoRecurso(url: string): string {
   if (/youtube\.com|youtu\.be/.test(url)) return 'video'
   if (/spotify\.com\/playlist/.test(url)) return 'playlist'
   if (/spotify\.com/.test(url)) return 'musica'
+  if (/drive\.google\.com|docs\.google\.com/.test(url)) return 'drive'
   if (/\.pdf(\?|$)/i.test(url)) return 'pdf'
   if (/\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url)) return 'imagem'
   if (/gstatic\.com|googleusercontent\.com|imgur\.com|i\.pinimg\.com/.test(url)) return 'imagem'
@@ -173,12 +174,13 @@ const RECURSO_TIPOS = [
   { value: 'musica', label: 'Música', icone: '🎵' },
   { value: 'video', label: 'Vídeo', icone: '▶️' },
   { value: 'pdf', label: 'PDF / Partitura', icone: '📄' },
+  { value: 'drive', label: 'Google Drive', icone: '📁' },
   { value: 'imagem', label: 'Imagem', icone: '🖼️' },
   { value: 'link', label: 'Link externo', icone: '🔗' },
   { value: 'playlist', label: 'Playlist', icone: '🎶' },
 ]
 function getRecursoMeta(tipo: string): { label: string; icone: string; cor: string } {
-  const t = tipo === 'youtube' ? 'video' : (tipo === 'spotify' || tipo === 'drive') ? 'musica' : tipo
+  const t = tipo === 'youtube' ? 'video' : tipo === 'spotify' ? 'musica' : tipo
   const found = RECURSO_TIPOS.find(r => r.value === t)
   const icone = found?.icone ?? '🔗'
   const label = found?.label ?? 'Link'
@@ -186,6 +188,7 @@ function getRecursoMeta(tipo: string): { label: string; icone: string; cor: stri
     t === 'musica' ? 'bg-green-50 border-green-100 text-green-700' :
     t === 'video' ? 'bg-red-50 border-red-100 text-red-600' :
     t === 'pdf' ? 'bg-orange-50 border-orange-100 text-orange-600' :
+    t === 'drive' ? 'bg-blue-50 border-blue-100 text-blue-600' :
     t === 'imagem' ? 'bg-violet-50 border-violet-100 text-violet-600' :
     t === 'playlist' ? 'bg-teal-50 border-teal-100 text-teal-700' :
     'bg-slate-50 border-slate-100 text-slate-500'
@@ -1172,27 +1175,36 @@ Responda APENAS com JSON: {"habilidades": ["EF15AR14", "EF69AR16"]}`
               <div className="px-5 pt-4 pb-5 space-y-4">
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">📊 O que observarei para saber se funcionou?</label>
-                  <textarea value={plano.avaliacaoEvidencia ?? ''}
-                    onChange={e => setPlano(p => ({ ...p, avaliacaoEvidencia: e.target.value }))}
-                    placeholder="Ex: alunos conseguem tocar o ritmo sem apoio visual, participam da improvisação…"
-                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
-                    rows={2} />
+                  <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
+                    <TipTapEditor
+                      key={`avaliacao-evidencia-${plano.id}`}
+                      initialValue={plano.avaliacaoEvidencia ?? ''}
+                      onChange={val => setPlano(p => ({ ...p, avaliacaoEvidencia: val }))}
+                      placeholder="Ex: alunos conseguem tocar o ritmo sem apoio visual, participam da improvisação…"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">❓ Qual pergunta farei no fechamento?</label>
-                  <textarea value={plano.avaliacaoFechamento ?? ''}
-                    onChange={e => setPlano(p => ({ ...p, avaliacaoFechamento: e.target.value }))}
-                    placeholder="Ex: O que foi mais difícil? O que vocês notaram sobre o ritmo?"
-                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
-                    rows={2} />
+                  <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
+                    <TipTapEditor
+                      key={`avaliacao-fechamento-${plano.id}`}
+                      initialValue={plano.avaliacaoFechamento ?? ''}
+                      onChange={val => setPlano(p => ({ ...p, avaliacaoFechamento: val }))}
+                      placeholder="Ex: O que foi mais difícil? O que vocês notaram sobre o ritmo?"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">⚡ Se não funcionar, o que farei? <span className="font-normal text-slate-400">(opcional)</span></label>
-                  <textarea value={plano.avaliacaoContingencia ?? ''}
-                    onChange={e => setPlano(p => ({ ...p, avaliacaoContingencia: e.target.value }))}
-                    placeholder="Ex: simplificar o ritmo, trocar pela atividade de eco…"
-                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
-                    rows={2} />
+                  <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
+                    <TipTapEditor
+                      key={`avaliacao-contingencia-${plano.id}`}
+                      initialValue={plano.avaliacaoContingencia ?? ''}
+                      onChange={val => setPlano(p => ({ ...p, avaliacaoContingencia: val }))}
+                      placeholder="Ex: simplificar o ritmo, trocar pela atividade de eco…"
+                    />
+                  </div>
                 </div>
               </div>
             )}

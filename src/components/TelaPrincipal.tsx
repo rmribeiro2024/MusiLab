@@ -434,7 +434,10 @@ export default function TelaPrincipal() {
                         const existentes = (planoEditando.atividadesRoteiro || []).flatMap(a => a.conceitos || [])
                         const novos = resultados.flat()
                         const merged = [...new Set([...existentes, ...novos])].filter(Boolean)
-                        if (merged.length > 0) setModalConceitosPlano({ planoId: String(planoId), conceitos: merged })
+                        // Só abre o modal se houver conceitos ainda não salvos no plano
+                        const conceitosJaSalvos = planoEditando.conceitos ?? []
+                        const temNovos = merged.some(c => !conceitosJaSalvos.includes(c))
+                        if (merged.length > 0 && temNovos) setModalConceitosPlano({ planoId: String(planoId), conceitos: merged })
                     })
                     .catch(() => {/* silencioso */})
                     .finally(() => setDetectandoConceitos(false))

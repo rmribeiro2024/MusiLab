@@ -57,14 +57,21 @@ export async function exportarPlanoPDF(plano) {
     const RULE   = [220, 224, 230];    // linha divisória
     const LS     = 6.2;               // espaçamento entre linhas (mm)
 
-    // ── Conversor HTML → texto limpo (apenas ASCII safe) ──
+    // ── Conversor HTML → texto limpo ──
+    const decodeEntities = (str: string): string => {
+        try {
+            const txt = document.createElement('textarea')
+            txt.innerHTML = str
+            return txt.value
+        } catch { return str }
+    }
     const htmlToText = (html) => {
         if (!html) return '';
         // Iframes de YouTube/Spotify → texto descritivo
         let result = html
             .replace(/<iframe[^>]*src="([^"]*youtube[^"]*)"[^>]*>(<\/iframe>)?/gi, '[YouTube: $1]')
             .replace(/<iframe[^>]*src="([^"]*spotify[^"]*)"[^>]*>(<\/iframe>)?/gi, '[Spotify: $1]');
-        return result
+        const stripped = result
             .replace(/<\/p>\s*<p>/gi, '\n')
             .replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n')
             .replace(/<br\s*\/?>/gi, '\n')
@@ -73,8 +80,7 @@ export async function exportarPlanoPDF(plano) {
             .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '')
             .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '$2 ($1)')
             .replace(/<[^>]*>/g, '')
-            .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
-            .replace(/\n{3,}/g, '\n\n').trim();
+        return decodeEntities(stripped).replace(/\n{3,}/g, '\n\n').trim();
     };
 
     let y = 0;
@@ -578,18 +584,20 @@ export async function exportarAtividadePDF(ativ) {
     const LABEL  = [100, 110, 125];
     const RULE   = [220, 224, 230];
 
+    const decodeEntities2 = (str: string): string => {
+        try { const t = document.createElement('textarea'); t.innerHTML = str; return t.value } catch { return str }
+    }
     const htmlToText = (html) => {
         if (!html) return '';
         let result = html
             .replace(/<iframe[^>]*src="([^"]*youtube[^"]*)"[^>]*>(<\/iframe>)?/gi, '[YouTube: $1]')
             .replace(/<iframe[^>]*src="([^"]*spotify[^"]*)"[^>]*>(<\/iframe>)?/gi, '[Spotify: $1]');
-        return result
+        const stripped = result
             .replace(/<\/p>\s*<p>/gi, '\n').replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n')
             .replace(/<br\s*\/?>/gi, '\n').replace(/<\/li>/gi, '\n').replace(/<li[^>]*>/gi, '- ')
             .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '$2 ($1)')
             .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '').replace(/<[^>]*>/g, '')
-            .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
-            .replace(/\n{3,}/g, '\n\n').trim();
+        return decodeEntities2(stripped).replace(/\n{3,}/g, '\n\n').trim();
     };
 
     let y = 0;
