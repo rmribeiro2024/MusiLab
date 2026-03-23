@@ -787,29 +787,25 @@ export default function TelaPosAulaHistorico() {
                                         style={{ padding: '11px 16px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', borderBottom: isOpen ? `1px solid ${c.border}` : 'none', transition: 'background 100ms' }}
                                         className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
                                         <div style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, flexShrink: 0, minHeight: 16, background: cor }} />
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: '12.5px', fontWeight: 600, color: isDark ? '#E5E7EB' : '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {escolasParaVistaTurma.length > 1 && (
-                                                    <>
-                                                        <span style={{ color: isDark ? '#6B7280' : '#94a3b8', fontWeight: 400 }}>{grupo.escola}</span>
-                                                        <span style={{ color: isDark ? '#374151' : '#cbd5e1', margin: '0 5px' }}>·</span>
-                                                    </>
-                                                )}
-                                                {grupo.label}
-                                            </div>
-                                            {criterioAtivo && (
-                                                <div style={{ marginTop: 3 }}>
-                                                    <span style={{ fontSize: '10.5px', color: isDark ? '#6B7280' : '#64748b', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E6EAF0'}`, padding: '1px 7px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                                        {criterioIcon && <span style={{ fontSize: 11 }}>{criterioIcon}</span>}
-                                                        {criterioAtivo.label}
-                                                    </span>
-                                                </div>
+                                        {/* turma à esquerda */}
+                                        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px' }}>
+                                            {escolasParaVistaTurma.length > 1 && (
+                                                <span style={{ color: isDark ? '#4B5563' : '#94a3b8', fontWeight: 400 }}>{grupo.escola} · </span>
                                             )}
+                                            <span style={{ color: isDark ? '#6B7280' : '#94a3b8', fontWeight: 400 }}>{grupo.label.split(' · ')[0]} · </span>
+                                            <span style={{ color: isDark ? '#E5E7EB' : '#1e293b', fontWeight: 600 }}>{grupo.label.split(' · ')[1] ?? grupo.label}</span>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        {/* critério + lacuna + contagem à direita */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                                             {lacuna && (
                                                 <span style={{ fontSize: '10px', color: '#f97316', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)', padding: '2px 6px', borderRadius: 999, fontWeight: 600 }}>
                                                     {lacuna.dias}d sem aula
+                                                </span>
+                                            )}
+                                            {criterioAtivo && (
+                                                <span style={{ fontSize: '10.5px', color: isDark ? '#6B7280' : '#64748b', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E6EAF0'}`, padding: '1px 7px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
+                                                    {criterioIcon && <span style={{ fontSize: 11 }}>{criterioIcon}</span>}
+                                                    {criterioAtivo.label}
                                                 </span>
                                             )}
                                             <span style={{ fontSize: 11, color: isDark ? '#6B7280' : '#94a3b8', border: `1px solid ${c.border}`, padding: '2px 7px', borderRadius: 999 }}>
