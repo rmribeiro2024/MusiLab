@@ -37,9 +37,9 @@ export default function Toast() {
     if (toasts.length === 0) return null
 
     return (
-        // bottom-20 em mobile = acima da bottom nav (h-16); bottom-6 em desktop
+        // mobile: topo (evita teclado virtual iOS + bottom nav); desktop: rodapé
         <div
-            className="fixed bottom-20 sm:bottom-6 right-4 z-[9999] flex flex-col gap-2 w-full max-w-xs pointer-events-none"
+            className="fixed top-4 left-4 right-4 sm:top-auto sm:bottom-6 sm:left-auto sm:right-4 sm:max-w-xs z-[9999] flex flex-col gap-2 w-auto pointer-events-none"
             aria-live="assertive"
             aria-atomic="false"
         >
