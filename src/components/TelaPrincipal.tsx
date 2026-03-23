@@ -1305,10 +1305,12 @@ export default function TelaPrincipal() {
                                                                     if (!expId) { showToast('Expanda uma atividade primeiro!', 'error'); return }
                                                                     const idx = (planoEditando.atividadesRoteiro || []).findIndex((a: any) => String(a.id) === expId)
                                                                     if (idx < 0) { showToast('Expanda uma atividade primeiro!', 'error'); return }
-                                                                    const jaVinculada = (planoEditando.atividadesRoteiro[idx].estrategiasVinculadas || []).includes(est.nome)
+                                                                    const vinculadas = planoEditando.atividadesRoteiro[idx].estrategiasVinculadas || []
+                                                                    // Checa por ID (novo) ou por nome (dados legados)
+                                                                    const jaVinculada = vinculadas.some((v: string) => v === est.id || v === est.nome)
                                                                     if (jaVinculada) { showToast('Estratégia já vinculada!', 'error'); return }
                                                                     const arr = [...planoEditando.atividadesRoteiro]
-                                                                    arr[idx] = { ...arr[idx], estrategiasVinculadas: [...(arr[idx].estrategiasVinculadas || []), est.nome] }
+                                                                    arr[idx] = { ...arr[idx], estrategiasVinculadas: [...(arr[idx].estrategiasVinculadas || []), est.id] }
                                                                     setPlanoEditando({ ...planoEditando, atividadesRoteiro: arr })
                                                                     showToast(`"${est.nome}" vinculada!`, 'success')
                                                                 }}

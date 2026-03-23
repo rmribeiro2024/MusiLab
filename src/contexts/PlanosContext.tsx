@@ -592,9 +592,13 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         ;(planoParaSalvar.atividadesRoteiro || []).forEach((ativ: any) => {
             ;(ativ.estrategiasVinculadas || []).forEach((nome: string) => nomesEstrategias.add(nome))
         })
-        nomesEstrategias.forEach(nome => {
-            const nomeNorm = nome.trim().toLowerCase()
-            const estr = estrategias.find(e => e.nome.trim().toLowerCase() === nomeNorm)
+        nomesEstrategias.forEach(idOrNome => {
+            // Suporte a dados novos (ID) e legados (nome direto)
+            const nomeNorm = idOrNome.trim().toLowerCase()
+            const estr = estrategias.find(e =>
+                e.id === idOrNome ||
+                e.nome.trim().toLowerCase() === nomeNorm
+            )
             if (estr) registrarUsoEstrategia(estr.id, planoParaSalvar.id, planoParaSalvar.titulo || 'Plano sem título')
         })
 

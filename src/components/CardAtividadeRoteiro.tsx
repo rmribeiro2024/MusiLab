@@ -224,7 +224,7 @@ function ModalSalvarNaBiblioteca({ nome, chips, isLoading, onChipRemove, onChipA
 
 // ── Panel slide-in de salvar estratégia ─────────────────────────────────────
 
-const CATEGORIAS_ESTRATEGIA = ['Engajamento', 'Avaliação', 'Criação', 'Apreciação']
+const CATEGORIAS_ESTRATEGIA_PADRAO = ['Engajamento', 'Avaliação', 'Criação', 'Apreciação']
 
 interface SlideInEstrategiaProps {
   textoCapturado: string
@@ -233,6 +233,8 @@ interface SlideInEstrategiaProps {
 }
 
 function SlideInEstrategia({ textoCapturado, onSalvar, onCancelar }: SlideInEstrategiaProps) {
+  const { categoriasEstrategia } = useEstrategiasContext()
+  const categorias = categoriasEstrategia.length > 0 ? categoriasEstrategia : CATEGORIAS_ESTRATEGIA_PADRAO
   const [nome, setNome] = useState(textoCapturado.slice(0, 80))
   const [categoria, setCategoria] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -308,7 +310,7 @@ function SlideInEstrategia({ textoCapturado, onSalvar, onCancelar }: SlideInEstr
               Categoria
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {CATEGORIAS_ESTRATEGIA.map(cat => (
+              {categorias.map(cat => (
                 <button
                   key={cat}
                   type="button"
@@ -381,7 +383,7 @@ const CardAtividadeRoteiro = memo(function CardAtividadeRoteiro({
 }: CardAtividadeRoteiroProps) {
 
   // ── Contextos ────────────────────────────────────────────────
-  const { adicionarEstrategiaRapida } = useEstrategiasContext()
+  const { adicionarEstrategiaRapida, estrategias } = useEstrategiasContext()
 
   // ── Estado local ─────────────────────────────────────────────
   const [menuOpen, setMenuOpen] = useState(false)
@@ -858,9 +860,12 @@ Responda com uma palavra apenas.`
                       >×</button>
                     </span>
                   ))}
-                  {(atividade.estrategiasVinculadas || []).map((nome, ei) => (
+                  {(atividade.estrategiasVinculadas || []).map((idOrNome, ei) => {
+                    // Resolve ID → nome (compatível com dados legados que guardavam nome direto)
+                    const nomeExibido = estrategias.find(e => e.id === idOrNome)?.nome ?? idOrNome
+                    return (
                     <span key={ei} className="inline-flex items-center gap-1 bg-violet-50 dark:bg-violet-400/10 text-violet-600 dark:text-violet-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
-                      🧩 {nome}
+                      🧩 {nomeExibido}
                       <button
                         type="button"
                         onClick={() => updateArr(arr => {
@@ -870,7 +875,8 @@ Responda com uma palavra apenas.`
                         className="hover:text-rose-500 ml-0.5 leading-none"
                       >×</button>
                     </span>
-                  ))}
+                    )
+                  })}
                   {(atividade.conceitos || []).map((c, ci) => (
                     <span key={ci} className="inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-400/10 text-purple-600 dark:text-purple-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
                       🎓 {c}

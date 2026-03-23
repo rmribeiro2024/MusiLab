@@ -191,6 +191,14 @@ export function EstrategiasProvider({ children, userId }: EstrategiasProviderPro
   function adicionarEstrategiaRapida(nome: string, categoria?: string) {
     const texto = nome.trim()
     if (!texto) return
+    // Evita duplicatas: ignora se já existe estratégia ativa com mesmo nome
+    const jaExiste = estrategias.some(
+      e => !e.arquivada && e.nome.trim().toLowerCase() === texto.toLowerCase()
+    )
+    if (jaExiste) {
+      showToast('Esta estratégia já existe na biblioteca.', 'info')
+      return
+    }
     const agora = new Date().toISOString()
     const item: Estrategia = {
       id: gerarIdSeguro(),

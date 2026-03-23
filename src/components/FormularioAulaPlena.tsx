@@ -1023,10 +1023,12 @@ Responda APENAS com JSON: {"habilidades": ["EF15AR14", "EF69AR16"]}`
                                 if (!expId) { showToast('Expanda uma atividade primeiro!', 'error'); return }
                                 const idx = (plano.atividadesRoteiro || []).findIndex(a => String(a.id) === expId)
                                 if (idx < 0) return
-                                const jaVinculada = ((plano.atividadesRoteiro[idx].estrategiasVinculadas || []) as string[]).includes(est.nome)
+                                const vinculadas = (plano.atividadesRoteiro[idx].estrategiasVinculadas || []) as string[]
+                                // Checa por ID (novo) ou por nome (dados legados)
+                                const jaVinculada = vinculadas.some(v => v === est.id || v === est.nome)
                                 if (jaVinculada) { showToast('Estratégia já vinculada!', 'error'); return }
                                 const arr = [...plano.atividadesRoteiro]
-                                arr[idx] = { ...arr[idx], estrategiasVinculadas: [...(arr[idx].estrategiasVinculadas || []), est.nome] }
+                                arr[idx] = { ...arr[idx], estrategiasVinculadas: [...(arr[idx].estrategiasVinculadas || []), est.id] }
                                 setPlano(p => ({ ...p, atividadesRoteiro: arr }))
                                 showToast(`"${est.nome}" vinculada!`, 'success')
                               }}
