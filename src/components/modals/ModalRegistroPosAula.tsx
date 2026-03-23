@@ -1335,14 +1335,14 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                     {(() => {
                                         const statusVal = ((novoRegistro as any).statusAula || inferStatusLegado((novoRegistro as any).resultadoAula, (novoRegistro as any).proximaAulaOpcao, (novoRegistro as any).statusAula)) as StatusAula
                                         const ops: { value: StatusAula; label: string; emoji: string }[] = [
-                                            { value: 'concluida',  label: 'Avançar — novo conteúdo na próxima',    emoji: '✓' },
-                                            { value: 'incompleta', label: 'Retomar de onde parei',                 emoji: '↩' },
-                                            { value: 'revisao',    label: 'Revisar — reforçar conteúdo desta aula', emoji: '↻' },
+                                            { value: 'concluida',  label: 'Conteúdo concluído',              emoji: '✓' },
+                                            { value: 'incompleta', label: 'Conteúdo parcialmente trabalhado', emoji: '◑' },
+                                            { value: 'nao_houve',  label: 'Não houve aula',                  emoji: '—' },
                                         ]
                                         return (
                                             <div style={{ border: `1.5px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBgSolid }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: c.cardBg, borderBottom: `1px solid ${c.borderLight}` }}>
-                                                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase' as const, color: c.textMuted, flex: 1 }}>E agora?</span>
+                                                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase' as const, color: c.textMuted, flex: 1 }}>Como foi?</span>
                                                     {statusVal && (
                                                         <button tabIndex={-1} onClick={() => setNovoRegistro({ ...novoRegistro, statusAula: undefined } as any)}
                                                             style={{ fontSize: 10, color: c.textMuted, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}>
@@ -1355,16 +1355,13 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                         const sel = statusVal === op.value
                                                         const isConcluida = op.value === 'concluida'
                                                         const isIncompleta = op.value === 'incompleta'
-                                                        const isRevisao = op.value === 'revisao'
-                                                        const revisaoColor = isDark ? '#908e50' : '#8a8418'
                                                         const incompletaColor = isDark ? '#7ea0c9' : '#3b7dc2'
-                                                        const selColor = isConcluida ? '#6aab8a' : isIncompleta ? incompletaColor : isRevisao ? revisaoColor : c.textMain
+                                                        const selColor = isConcluida ? '#6aab8a' : isIncompleta ? incompletaColor : c.textMed
                                                         return (
                                                             <button key={op.value} type="button"
                                                                 onClick={() => {
                                                                     setNovoRegistro({ ...novoRegistro, statusAula: sel ? undefined : op.value } as any)
                                                                     if (isConcluida && !sel) { setCheckFlash(true); setTimeout(() => setCheckFlash(false), 900) }
-                                                                    if (isRevisao && !sel) { setRevisaoFlash(true); setTimeout(() => setRevisaoFlash(false), 900) }
                                                                 }}
                                                                 style={{
                                                                     display: 'flex', alignItems: 'center', gap: 10,
@@ -1384,9 +1381,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                 <span style={{ fontSize: 11, width: 16, textAlign: 'center' as const, flexShrink: 0, color: sel ? selColor : c.textMuted }}>
                                                                     {isConcluida && checkFlash
                                                                         ? <span className="check-pop" style={{ display: 'inline-block' }}>✓</span>
-                                                                        : isRevisao && revisaoFlash
-                                                                            ? <span className="spin-pop" style={{ display: 'inline-block' }}>↻</span>
-                                                                            : op.emoji}
+                                                                        : op.emoji}
                                                                 </span>
                                                                 {op.label}
                                                             </button>

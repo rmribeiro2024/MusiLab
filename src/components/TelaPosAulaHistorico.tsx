@@ -580,10 +580,9 @@ export default function TelaPosAulaHistorico() {
                     {/* Bug 10 — Filtro por status da aula */}
                     <div style={{ position: 'relative' }}>
                         <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={selStyle}>
-                            <option value="todos">Status</option>
-                            <option value="concluida">✓ Avançar</option>
-                            <option value="incompleta">↩ Retomar</option>
-                            <option value="revisao">↻ Revisar</option>
+                            <option value="todos">Como foi?</option>
+                            <option value="concluida">✓ Concluída</option>
+                            <option value="incompleta">◑ Parcial</option>
                             <option value="nao_houve">— Não houve</option>
                         </select>
                         <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
