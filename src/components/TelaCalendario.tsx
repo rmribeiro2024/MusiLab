@@ -953,7 +953,15 @@ export default function TelaResumoDia() {
                             const totalRegistradas = turmasEnriq.filter(t => t.status === 'realizada').length;
                             const totalPendentes = totalTurmas - totalRegistradas;
                             const totalSemPlano = turmasEnriq.filter(t => t.status === 'sem-plano').length;
-                            const proximaAula = turmasEnriq.find(t => t.status !== 'realizada') ?? null;
+                            const minAgora = ehHoje ? (new Date().getHours() * 60 + new Date().getMinutes()) : -1;
+                            const proximaAula = turmasEnriq.find(t => {
+                                if (t.status === 'realizada') return false;
+                                if (ehHoje) {
+                                    const m = t.aula.horario?.match(/^(\d{1,2}):(\d{2})/);
+                                    if (m) return parseInt(m[1]) * 60 + parseInt(m[2]) > minAgora;
+                                }
+                                return true;
+                            }) ?? null;
 
                             const materiaisSet = new Set<string>();
                             turmasEnriq.forEach(t => {
@@ -1004,7 +1012,11 @@ export default function TelaResumoDia() {
                                     )}
 
                                     {/* Lista por escola */}
-                                    {Object.keys(porEscola).sort().map(escolaNome => (
+                                    {Object.keys(porEscola).sort((a, b) => {
+                                        const ha = porEscola[a][0]?.aula.horario || '';
+                                        const hb = porEscola[b][0]?.aula.horario || '';
+                                        return ha.localeCompare(hb);
+                                    }).map(escolaNome => (
                                         <div key={escolaNome} className="v2-card rounded-lg border border-purple-200 dark:border-purple-800/50 p-2">
                                             <p className="text-xs font-bold text-purple-900 mb-2">🏫 {escolaNome}</p>
                                             <div className="space-y-0.5">

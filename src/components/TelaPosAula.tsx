@@ -263,13 +263,10 @@ export default function TelaPosAula() {
                                             <span className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF] shrink-0">{t.segNome}</span>
                                             <span className="text-[12px] font-bold text-slate-700 dark:text-[#E5E7EB] truncate">{t.turNome}</span>
                                         </div>
-                                        {t.plano && typeof t.plano === 'object' && (
-                                            <p className="text-[11px] text-slate-400 dark:text-[#9CA3AF] mt-0.5 truncate">{(t.plano as any).titulo}</p>
-                                        )}
                                     </div>
 
                                     {t.registrada
-                                        ? <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full shrink-0">✓ registrada</span>
+                                        ? <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">✓ registrada</span>
                                         : <span className={`text-[11px] shrink-0 ${turmaIdx === i ? 'text-[#5B5FEA] font-bold' : 'text-slate-300 dark:text-slate-600'}`}>›</span>
                                     }
                                 </div>
