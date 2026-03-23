@@ -15,6 +15,10 @@ export default function TelaPosAula() {
         setNovoRegistro,
         setRegistroEditando,
         setVerRegistros,
+        setRegAnoSel,
+        setRegEscolaSel,
+        setRegSegmentoSel,
+        setRegTurmaSel,
     } = useCalendarioContext()
     const { aplicacoesPorData } = useAplicacoesContext()
 
@@ -97,6 +101,11 @@ export default function TelaPosAula() {
         setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', naoFuncionou: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
         setRegistroEditando(null)
         setVerRegistros(false)
+        // Pré-seleciona escola/turma diretamente pelos IDs da grade — sem depender do campo plano.escola
+        setRegAnoSel(String(t.aula.anoLetivoId ?? ''))
+        setRegEscolaSel(String(t.aula.escolaId ?? ''))
+        setRegSegmentoSel(String(t.aula.segmentoId ?? ''))
+        setRegTurmaSel(String(t.aula.turmaId ?? ''))
         setTurmaIdx(idx)
         setListaAberta(false)   // fecha a lista ao selecionar
     }
