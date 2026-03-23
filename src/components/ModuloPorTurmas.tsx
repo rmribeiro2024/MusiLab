@@ -7,7 +7,7 @@ import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
-import { usePlanosContext } from '../contexts/PlanosContext'
+import { usePlanosContext, normalizePlano } from '../contexts/PlanosContext'
 import type { TurmaSelecionada } from '../contexts/PlanejamentoTurmaContext'
 import { showToast } from '../lib/toast'
 import type { AnoLetivo, RegistroPosAula, Plano, Turma } from '../types'
@@ -521,13 +521,15 @@ type ModoForm = 'adaptar' | 'importar' | 'criar'
 function FormPlanoTurma({
     modo,
     ultimoRegistro,
-    onClose,
+    onSalvar,
+    onCancelar,
 }: {
     modo: ModoForm
     ultimoRegistro: RegistroPosAula | null
-    onClose: () => void
+    onSalvar: (plano: any, origemAula: 'banco' | 'adaptacao' | 'livre') => void
+    onCancelar: () => void
 }) {
-    const { salvarPlanejamento, turmaSelecionada } = usePlanejamentoTurmaContext()
+    const { turmaSelecionada } = usePlanejamentoTurmaContext()
     const { planos } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
 
@@ -569,16 +571,9 @@ function FormPlanoTurma({
                 const origemAula: 'banco' | 'adaptacao' | 'livre' =
                     modo === 'adaptar' ? 'adaptacao' :
                     modo === 'importar' ? 'banco' : 'livre'
-                salvarPlanejamento({
-                    oQuePretendoFazer: plano.objetivoGeral || plano.titulo || '',
-                    origemAula,
-                    materiais: plano.materiais?.length ? plano.materiais : [],
-                    planosRelacionadosIds: [],
-                    planoData: plano,
-                })
-                onClose()
+                onSalvar(plano, origemAula)
             }}
-            onCancelar={onClose}
+            onCancelar={onCancelar}
         />
     )
 }
@@ -586,29 +581,96 @@ function FormPlanoTurma({
 // ─── Sub-componente: Conteúdo da turma selecionada ───────────────────────────
 
 function ConteudoTurma({ turmaSelecionada }: { turmaSelecionada: TurmaSelecionada }) {
-    const { ultimoRegistroDaTurma, fecharForm, planejamentosDaTurma, editarPlanejamento } = usePlanejamentoTurmaContext()
+    const { ultimoRegistroDaTurma, fecharForm, salvarPlanejamento, planejamentosDaTurma, editarPlanejamento } = usePlanejamentoTurmaContext()
+    const { setPlanos } = usePlanosContext()
     const [modoAtivo, setModoAtivo] = useState<ModoForm | null>(null)
+    const [pendingSave, setPendingSave] = useState<{ plano: any; origemAula: 'banco' | 'adaptacao' | 'livre' } | null>(null)
 
     // Garante que qualquer edição pendente de outro módulo seja descartada ao montar
     useEffect(() => { fecharForm() }, []) // eslint-disable-line
 
     const temUltimoRegistro = !!ultimoRegistroDaTurma
+    const temPlanos = planejamentosDaTurma.length > 0
+
+    // Recebe o plano do form e abre dialog de destino
+    const handleFormSalvar = (plano: any, origemAula: 'banco' | 'adaptacao' | 'livre') => {
+        setPendingSave({ plano, origemAula })
+    }
+
+    // Efetiva o salvamento após escolha do professor
+    const confirmarSalvar = (salvarNoBanco: boolean) => {
+        if (!pendingSave) return
+        const { plano, origemAula } = pendingSave
+        salvarPlanejamento({
+            oQuePretendoFazer: plano.objetivoGeral || plano.titulo || '',
+            origemAula,
+            materiais: plano.materiais?.length ? plano.materiais : [],
+            planosRelacionadosIds: [],
+            planoData: plano,
+        })
+        if (salvarNoBanco) {
+            const planoParaBanco = normalizePlano({ ...plano, id: gerarIdSeguro() })
+            setPlanos(prev => [...prev, planoParaBanco])
+            showToast('Salvo no banco de aulas ✅')
+        }
+        setPendingSave(null)
+        setModoAtivo(null)
+    }
+
+    const BotoesPlanejar = () => (
+        <div className="flex flex-col sm:flex-row gap-2">
+            <button
+                onClick={() => setModoAtivo('adaptar')}
+                disabled={!temUltimoRegistro}
+                className="flex items-center gap-2 px-4 py-3 sm:py-2 text-[12.5px] font-medium rounded-lg border border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:bg-slate-50 dark:hover:bg-[#273344] disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+                🔄 <span>Adaptar da aula anterior</span>
+            </button>
+            <button
+                onClick={() => setModoAtivo('criar')}
+                className="flex items-center gap-2 px-4 py-3 sm:py-2 text-[12.5px] font-medium rounded-lg border border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
+            >
+                ✏️ <span>Nova aula</span>
+            </button>
+            <button
+                onClick={() => setModoAtivo('importar')}
+                className="flex items-center gap-2 px-4 py-3 sm:py-2 text-[12.5px] font-medium rounded-lg border border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
+            >
+                🏛 <span>Importar do banco de aulas</span>
+            </button>
+        </div>
+    )
 
     return (
+        <>
         <div className="flex-1 min-w-0 flex flex-col gap-4">
 
             {/* Bloco: Aula anterior */}
             <BlocoAulaAnterior registro={ultimoRegistroDaTurma} />
 
-            {/* Bloco: Planos salvos para esta turma */}
-            {planejamentosDaTurma.length > 0 && !modoAtivo && (
-                <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-5 py-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-[.7px] text-[#94A3B8] dark:text-[#6B7280] mb-3">
-                        Planejamentos salvos ({planejamentosDaTurma.length})
-                    </p>
-                    <div className="flex flex-col gap-2">
+            {/* Bloco: Planejamento da próxima aula */}
+            {modoAtivo ? (
+                <FormPlanoTurma
+                    key={`${turmaSelecionada.anoLetivoId}|${turmaSelecionada.turmaId}|${modoAtivo}`}
+                    modo={modoAtivo}
+                    ultimoRegistro={ultimoRegistroDaTurma}
+                    onSalvar={handleFormSalvar}
+                    onCancelar={() => setModoAtivo(null)}
+                />
+            ) : temPlanos ? (
+                /* ── Planos salvos + botão compacto ── */
+                <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
+                    <div className="px-5 pt-4 pb-3 border-b border-[#E6EAF0] dark:border-[#374151] flex items-center justify-between">
+                        <p className="text-[10px] font-semibold uppercase tracking-[.7px] text-[#94A3B8] dark:text-[#6B7280]">
+                            Próxima aula planejada
+                        </p>
+                        <span className="text-[10px] text-[#94a3b8] border border-[#E6EAF0] dark:border-[#374151] px-2 py-0.5 rounded-full">
+                            {planejamentosDaTurma.length}
+                        </span>
+                    </div>
+                    <div className="flex flex-col divide-y divide-[#E6EAF0] dark:divide-[#374151]">
                         {planejamentosDaTurma.map(plano => (
-                            <div key={plano.id} className="flex items-start justify-between gap-3 p-3 rounded-lg border border-[#E6EAF0] dark:border-[#374151] bg-[#F8FAFC] dark:bg-[#111827]">
+                            <div key={plano.id} className="flex items-start justify-between gap-3 px-5 py-3">
                                 <div className="flex-1 min-w-0">
                                     {plano.dataPrevista && (
                                         <p className="text-[10.5px] text-[#94a3b8] mb-0.5">
@@ -631,48 +693,62 @@ function ConteudoTurma({ turmaSelecionada }: { turmaSelecionada: TurmaSelecionad
                             </div>
                         ))}
                     </div>
+                    {/* Adicionar outro planejamento — compacto */}
+                    <div className="px-5 py-3 border-t border-[#E6EAF0] dark:border-[#374151]">
+                        <button
+                            onClick={() => setModoAtivo('criar')}
+                            className="text-[11.5px] text-[#94A3B8] dark:text-[#6B7280] hover:text-indigo-500 dark:hover:text-indigo-400 transition flex items-center gap-1.5"
+                        >
+                            <span className="text-[13px] leading-none">+</span> Adicionar planejamento
+                        </button>
+                    </div>
                 </div>
-            )}
-
-            {/* Bloco: Planejamento da próxima aula */}
-            {modoAtivo ? (
-                <FormPlanoTurma
-                    key={`${turmaSelecionada.anoLetivoId}|${turmaSelecionada.turmaId}|${modoAtivo}`}
-                    modo={modoAtivo}
-                    ultimoRegistro={ultimoRegistroDaTurma}
-                    onClose={() => setModoAtivo(null)}
-                />
             ) : (
+                /* ── Sem planos: exibe os 3 botões ── */
                 <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-5 py-4">
                     <p className="text-[10px] font-semibold uppercase tracking-[.7px] text-[#94A3B8] dark:text-[#6B7280] mb-3">
                         Planejar próxima aula
                     </p>
-                    {/* py-3 garante 44px de área de toque no mobile */}
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <button
-                            onClick={() => setModoAtivo('adaptar')}
-                            disabled={!temUltimoRegistro}
-                            className="flex items-center gap-2 px-4 py-3 sm:py-2 text-[12.5px] font-medium rounded-lg border border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:bg-slate-50 dark:hover:bg-[#273344] disabled:opacity-40 disabled:cursor-not-allowed transition"
-                        >
-                            🔄 <span>Adaptar da aula anterior</span>
-                        </button>
-                        <button
-                            onClick={() => setModoAtivo('criar')}
-                            className="flex items-center gap-2 px-4 py-3 sm:py-2 text-[12.5px] font-medium rounded-lg border border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
-                        >
-                            ✏️ <span>Nova aula</span>
-                        </button>
-                        <button
-                            onClick={() => setModoAtivo('importar')}
-                            className="flex items-center gap-2 px-4 py-3 sm:py-2 text-[12.5px] font-medium rounded-lg border border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
-                        >
-                            🏛 <span>Importar do banco de aulas</span>
-                        </button>
-                    </div>
+                    <BotoesPlanejar />
                 </div>
             )}
 
         </div>
+
+        {/* ── Dialog: Salvar como aula base? ── */}
+        {pendingSave && (
+            <div
+                className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+                onClick={() => setPendingSave(null)}
+            >
+                <div
+                    className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl p-6 max-w-sm w-full"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <p className="text-[14px] font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                        Salvar como aula base?
+                    </p>
+                    <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
+                        Você pode manter este planejamento só para esta turma, ou também salvá-lo no banco de aulas para reutilizar com outras turmas.
+                    </p>
+                    <div className="flex flex-col gap-2">
+                        <button
+                            onClick={() => confirmarSalvar(true)}
+                            className="w-full text-[13px] font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-4 py-2.5 transition"
+                        >
+                            Sim, salvar no banco de aulas
+                        </button>
+                        <button
+                            onClick={() => confirmarSalvar(false)}
+                            className="w-full text-[13px] border border-[#E6EAF0] dark:border-[#374151] rounded-xl px-4 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.05] transition"
+                        >
+                            Não, apenas para esta turma
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     )
 }
 
