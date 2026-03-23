@@ -1495,26 +1495,28 @@ export default function TelaPrincipal() {
                                 <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
                                     📊 O que observarei para saber se funcionou?
                                 </label>
-                                <textarea
-                                    value={planoEditando.avaliacaoEvidencia ?? ((!planoEditando.avaliacaoEvidencia && !planoEditando.avaliacaoFechamento && planoEditando.avaliacaoObservacoes) ? planoEditando.avaliacaoObservacoes : '')}
-                                    onChange={(e) => setPlanoEditando({ ...planoEditando, avaliacaoEvidencia: e.target.value })}
-                                    placeholder="Ex: alunos conseguem tocar o ritmo sem apoio visual, participam da improvisação…"
-                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
-                                    rows={2}
-                                />
+                                <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
+                                    <TipTapEditor
+                                        key={`tp-ev-${planoEditando.id}`}
+                                        initialValue={planoEditando.avaliacaoEvidencia ?? ((!planoEditando.avaliacaoEvidencia && !planoEditando.avaliacaoFechamento && planoEditando.avaliacaoObservacoes) ? planoEditando.avaliacaoObservacoes : '') ?? ''}
+                                        onChange={val => setPlanoEditando({ ...planoEditando, avaliacaoEvidencia: val })}
+                                        placeholder="Ex: alunos conseguem tocar o ritmo sem apoio visual, participam da improvisação…"
+                                    />
+                                </div>
                             </div>
                             {/* Field 2 — Fechamento */}
                             <div>
                                 <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
                                     ❓ Qual pergunta farei no fechamento?
                                 </label>
-                                <textarea
-                                    value={planoEditando.avaliacaoFechamento ?? ''}
-                                    onChange={(e) => setPlanoEditando({ ...planoEditando, avaliacaoFechamento: e.target.value })}
-                                    placeholder="Ex: O que foi mais difícil? O que vocês notaram sobre o ritmo?"
-                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
-                                    rows={2}
-                                />
+                                <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
+                                    <TipTapEditor
+                                        key={`tp-fech-${planoEditando.id}`}
+                                        initialValue={planoEditando.avaliacaoFechamento ?? ''}
+                                        onChange={val => setPlanoEditando({ ...planoEditando, avaliacaoFechamento: val })}
+                                        placeholder="Ex: O que foi mais difícil? O que vocês notaram sobre o ritmo?"
+                                    />
+                                </div>
                             </div>
                             {/* Field 3 — Contingência (opcional) */}
                             <div>
@@ -1522,13 +1524,14 @@ export default function TelaPrincipal() {
                                     ⚡ Se não funcionar, o que farei?
                                     <span className="font-normal text-[#94A3B8] ml-1">(opcional)</span>
                                 </label>
-                                <textarea
-                                    value={planoEditando.avaliacaoContingencia ?? ''}
-                                    onChange={(e) => setPlanoEditando({ ...planoEditando, avaliacaoContingencia: e.target.value })}
-                                    placeholder="Ex: simplificar o ritmo para colcheia/semínima, trocar a atividade pelo jogo de eco…"
-                                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:border-indigo-400 outline-none bg-white dark:bg-[var(--v2-card)] dark:text-white resize-none"
-                                    rows={2}
-                                />
+                                <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
+                                    <TipTapEditor
+                                        key={`tp-cont-${planoEditando.id}`}
+                                        initialValue={planoEditando.avaliacaoContingencia ?? ''}
+                                        onChange={val => setPlanoEditando({ ...planoEditando, avaliacaoContingencia: val })}
+                                        placeholder="Ex: simplificar o ritmo para colcheia/semínima, trocar a atividade pelo jogo de eco…"
+                                    />
+                                </div>
                             </div>
                         </div>
                     )}
