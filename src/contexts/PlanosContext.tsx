@@ -10,6 +10,7 @@ import { useCalendarioContext } from './CalendarioContext'
 import { useAtividadesContext } from './AtividadesContext'
 import { useSequenciasContext } from './SequenciasContext'
 import { useEstrategiasContext } from './EstrategiasContext'
+import { useAplicacoesContext } from './AplicacoesContext'
 import { dbGet, dbSet, dbDel } from '../lib/db'
 import { sanitizeUrl, gerarIdSeguro, validarBackup } from '../lib/utils'
 import { carimbарTimestamp, marcarPendente } from '../lib/offlineSync' // [offlineSync]
@@ -283,6 +284,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         faixas, setFaixas, tagsGlobais, setTagsGlobais,
         eventosEscolares, setEventosEscolares,
     } = useAnoLetivoContext()
+    const { aplicacoes } = useAplicacoesContext()
     const {
         modalRegistro, setModalRegistro,
         planoParaRegistro, setPlanoParaRegistro,
@@ -487,6 +489,15 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                     }
                     return false
                 })
+                // Agendamentos via "Agendar" no banco — verificar escolaId das aplicações
+                || aplicacoes.some(a => {
+                    if (String(a.planoId) !== String(plano.id)) return false
+                    for (const ano of anosLetivos) {
+                        const esc = (ano.escolas ?? []).find((e: any) => String(e.id) === String(a.escolaId))
+                        if (esc?.nome?.trim() === filtroEscola) return true
+                    }
+                    return false
+                })
             const matchTag      = filtroTag      === 'Todas'  || (plano.tags && plano.tags.includes(filtroTag))
             const matchSegmento = filtroSegmento === 'Todos'  || (plano.segmentos ?? []).includes(filtroSegmento)
             const matchFavorito = !filtroFavorito || plano.destaque
@@ -501,7 +512,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             if (ordenacaoCards === 'favoritos') return (b.destaque ? 1 : 0) - (a.destaque ? 1 : 0)
             return b.id - a.id
         })
-    }, [planos, buscaDebounced, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, ordenacaoCards, anosLetivos])
+    }, [planos, buscaDebounced, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, ordenacaoCards, anosLetivos, aplicacoes])
 
     // ── FUNÇÕES: PLANOS ───────────────────────────────────────────────────
     const _abrirNovoPlano = () => {
