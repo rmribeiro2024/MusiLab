@@ -122,11 +122,24 @@ const ESCOLA_COLORS: { light: string; dark: string }[] = [
   { light: '#1a9090', dark: '#7dd8d8' },  // teal suave
 ]
 
-// ─── Sub-componente: seção "Última aula" ─────────────────────────────────────
+// ─── Sub-componente: seção "Última aula" / "Aula planejada" ──────────────────
 
-function UltimaAulaSection({ registro }: { registro: RegistroPosAula | null }) {
+function UltimaAulaSection({ registro, temPlano }: { registro: RegistroPosAula | null; temPlano?: boolean }) {
   const status = registro ? inferStatus(registro) : null
   const cfg = status ? STATUS_CFG[status] : null
+
+  // Quando há plano para esta data: mostra confirmação, não a sugestão
+  if (temPlano) {
+    return (
+      <div className="px-[10px] pt-[5px] pb-[8px] border-t border-emerald-100 dark:border-emerald-500/20">
+        <div className="flex items-center gap-[5px]">
+          <span className="text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400">
+            ✓ Aula planejada
+          </span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="px-[10px] pt-[5px] pb-[8px] border-t border-[#E6EAF0] dark:border-[#2D3748]">
@@ -435,8 +448,8 @@ export default function VisaoSemana() {
                           )}
                         </div>
 
-                        {/* seção última aula */}
-                        <UltimaAulaSection registro={ultimoReg} />
+                        {/* seção última aula / aula planejada */}
+                        <UltimaAulaSection registro={ultimoReg} temPlano={temPlano} />
                       </div>
                     )
                   })
