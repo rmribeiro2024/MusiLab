@@ -124,7 +124,7 @@ const ESCOLA_COLORS: { light: string; dark: string }[] = [
 
 // ─── Sub-componente: seção "Última aula" / "Aula planejada" ──────────────────
 
-function UltimaAulaSection({ registro, temPlano }: { registro: RegistroPosAula | null; temPlano?: boolean }) {
+function UltimaAulaSection({ registro, temPlano, foiRegistrada }: { registro: RegistroPosAula | null; temPlano?: boolean; foiRegistrada?: boolean }) {
   const status = registro ? inferStatus(registro) : null
   const cfg = status ? STATUS_CFG[status] : null
 
@@ -134,7 +134,7 @@ function UltimaAulaSection({ registro, temPlano }: { registro: RegistroPosAula |
       <div className="px-[10px] pt-[5px] pb-[8px] border-t border-emerald-100 dark:border-emerald-500/20">
         <div className="flex items-center gap-[5px]">
           <span className="text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400">
-            ✓ Aula planejada
+            {foiRegistrada ? '✓ Aula concluída' : '✓ Aula planejada'}
           </span>
         </div>
       </div>
@@ -472,7 +472,7 @@ export default function VisaoSemana() {
                         </div>
 
                         {/* seção última aula / aula planejada */}
-                        <UltimaAulaSection registro={ultimoReg} temPlano={temPlano} />
+                        <UltimaAulaSection registro={ultimoReg} temPlano={temPlano} foiRegistrada={foiRegistrada} />
                       </div>
                     )
                   })
