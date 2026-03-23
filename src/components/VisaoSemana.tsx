@@ -422,7 +422,7 @@ export default function VisaoSemana() {
                             : !past
                             ? 'shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:-translate-y-px hover:opacity-100'
                             : 'shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-default'
-                        } ${temPlano && !past && !isDragSrc ? 'opacity-[0.55]' : ''}`}
+                        } ${temPlano && !past && !isDragSrc ? 'opacity-[0.72]' : ''}`}
                       >
                         {/* card body */}
                         <div className="px-[10px] pt-[8px] pb-[7px]">

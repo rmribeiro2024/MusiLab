@@ -8,6 +8,7 @@ import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { usePlanosContext, normalizePlano } from '../contexts/PlanosContext'
+import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import type { TurmaSelecionada } from '../contexts/PlanejamentoTurmaContext'
 import { showToast } from '../lib/toast'
 import type { AnoLetivo, RegistroPosAula, Plano, Turma } from '../types'
@@ -124,6 +125,7 @@ function SeletorTurma({ dataSelecionada, onDataChange, turmaSelecionada, onSelec
     const { obterTurmasDoDia } = useCalendarioContext()
     const { anosLetivos } = useAnoLetivoContext()
     const { planejamentos, copiarPlanejamento } = usePlanejamentoTurmaContext()
+    const { aplicacoes } = useAplicacoesContext()
     const escolaColorMap = useMemo(() => buildEscolaColorMap(anosLetivos), [anosLetivos])
 
     // ── Drag-drop: copiar planejamento entre turmas ──
@@ -211,7 +213,9 @@ function SeletorTurma({ dataSelecionada, onDataChange, turmaSelecionada, onSelec
                                 // eslint-disable-next-line eqeqeq
                                 ? String(turmaSelecionada.turmaId) == String(aula.turmaId)
                                 : false
-                            const temPlano  = planejamentos.some(p => String(p.turmaId) === String(aula.turmaId))
+                            const temPlano  =
+                                planejamentos.some(p => String(p.turmaId) === String(aula.turmaId) && p.dataPrevista === ymd) ||
+                                aplicacoes.some(a => String(a.turmaId) === String(aula.turmaId) && a.data === ymd && a.status !== 'cancelada')
                             const isDragSrc = dragSrcId === String(aula.turmaId)
                             const isDragOver = dragOverId === String(aula.turmaId)
 
@@ -668,7 +672,17 @@ function BancoPicker({ planos, onSelect, onCancelar }: {
 function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: TurmaSelecionada; dataPrevista: string }) {
     const { ultimoRegistroDaTurma, fecharForm, salvarPlanejamento, planejamentosDaTurma, editarPlanejamento, excluirPlanejamento } = usePlanejamentoTurmaContext()
     const { planos, setPlanos } = usePlanosContext()
+    const { aplicacoes } = useAplicacoesContext()
     const { anosLetivos } = useAnoLetivoContext()
+
+    // Aplicações do banco agendadas para esta turma+data específica
+    const aplicacoesDaAula = useMemo(() =>
+        aplicacoes.filter(a =>
+            String(a.turmaId) === String(turmaSelecionada.turmaId) &&
+            a.data === dataPrevista &&
+            a.status !== 'cancelada'
+        )
+    , [aplicacoes, turmaSelecionada.turmaId, dataPrevista])
 
     // Resolve nome da escola a partir do contexto (para popular filtro no banco)
     const escolaNomeDaTurma = useMemo(() => {
@@ -685,6 +699,7 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
 
     const temUltimoRegistro = !!ultimoRegistroDaTurma
     const temPlanos = planejamentosDaTurma.length > 0
+    const temAlgo = temPlanos || aplicacoesDaAula.length > 0  // planejamentos próprios OU do banco
 
     // Recebe o plano do form e abre dialog de destino
     const handleFormSalvar = (plano: any, origemAula: 'banco' | 'adaptacao' | 'livre') => {
@@ -766,51 +781,54 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
                     onCancelar={() => { setModoAtivo(null); setPlanoParaEditar(null); setMostrarBotoesAdicionar(false); fecharForm() }}
                     initialPlanoOverride={planoParaEditar ?? undefined}
                 />
-            ) : temPlanos ? (
-                /* ── Aula planejada: exibição compacta ── */
+            ) : temAlgo ? (
+                /* ── Aula planejada: exibição compacta (planejamentos próprios + agendamentos do banco) ── */
                 <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
                     <div className="px-5 pt-4 pb-3 border-b border-[#E6EAF0] dark:border-[#374151] flex items-center gap-2">
                         <span className="text-[11px] text-emerald-500 font-bold">✓</span>
                         <p className="text-[10px] font-semibold uppercase tracking-[.7px] text-[#94A3B8] dark:text-[#6B7280] flex-1">
                             Aula planejada
                         </p>
-                        {planejamentosDaTurma.length > 1 && (
+                        {(planejamentosDaTurma.length + aplicacoesDaAula.length) > 1 && (
                             <span className="text-[10px] text-[#94a3b8] border border-[#E6EAF0] dark:border-[#374151] px-2 py-0.5 rounded-full">
-                                {planejamentosDaTurma.length}
+                                {planejamentosDaTurma.length + aplicacoesDaAula.length}
                             </span>
                         )}
                     </div>
                     <div className="flex flex-col divide-y divide-[#E6EAF0] dark:divide-[#374151]">
+                        {/* Planejamentos criados diretamente nesta turma */}
                         {planejamentosDaTurma.map(plano => (
-                            <div key={plano.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                            <div
+                                key={plano.id}
+                                onClick={() => {
+                                    editarPlanejamento(plano)
+                                    setPlanoParaEditar(plano.planoData ?? {})
+                                    setModoAtivo('criar')
+                                }}
+                                className="flex items-center justify-between gap-3 px-5 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-[#273344] transition group"
+                            >
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                     {plano.dataPrevista && (
                                         <span className="text-[11px] text-[#94a3b8] flex-shrink-0">
                                             {new Date(plano.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
                                         </span>
                                     )}
-                                    <span className="text-[12px] text-[#374151] dark:text-[#D1D5DB] truncate">
+                                    <span className="text-[12px] text-[#374151] dark:text-[#D1D5DB] truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
                                         {plano.oQuePretendoFazer || plano.planoData?.titulo || 'Sem título'}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-3 flex-shrink-0">
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="text-[10px] text-slate-300 dark:text-slate-600 group-hover:text-indigo-400 dark:group-hover:text-indigo-500 transition">
+                                        ver
+                                    </span>
                                     <button
-                                        onClick={() => {
-                                            editarPlanejamento(plano)
-                                            setPlanoParaEditar(plano.planoData ?? {})
-                                            setModoAtivo('criar')
-                                        }}
-                                        className="text-[11px] text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition font-medium"
-                                    >
-                                        ver / editar
-                                    </button>
-                                    <button
-                                        onClick={() => {
+                                        onClick={e => {
+                                            e.stopPropagation()
                                             if (window.confirm('Remover este planejamento?')) {
                                                 excluirPlanejamento(plano.id)
                                             }
                                         }}
-                                        className="text-[11px] text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition"
+                                        className="text-[11px] text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 transition"
                                         title="Remover planejamento"
                                     >
                                         ×
@@ -818,6 +836,29 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
                                 </div>
                             </div>
                         ))}
+                        {/* Agendamentos vindos do banco de planos */}
+                        {aplicacoesDaAula.map(ap => {
+                            const planoBase = planos.find(p => String(p.id) === String(ap.planoId))
+                            return (
+                                <div
+                                    key={ap.id}
+                                    onClick={() => { if (planoBase) { setPlanoParaEditar(planoBase); setModoAtivo('importar') } }}
+                                    className={`flex items-center justify-between gap-3 px-5 py-3 transition group ${planoBase ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-[#273344]' : ''}`}
+                                >
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="text-[10px] text-indigo-400 dark:text-indigo-500 shrink-0" title="Importada do banco">🏛</span>
+                                        <span className={`text-[12px] text-[#374151] dark:text-[#D1D5DB] truncate ${planoBase ? 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition' : ''}`}>
+                                            {planoBase?.titulo || planoBase?.objetivoGeral || 'Aula do banco'}
+                                        </span>
+                                    </div>
+                                    {planoBase && (
+                                        <span className="text-[10px] text-slate-300 dark:text-slate-600 group-hover:text-indigo-400 dark:group-hover:text-indigo-500 transition flex-shrink-0">
+                                            ver
+                                        </span>
+                                    )}
+                                </div>
+                            )
+                        })}
                     </div>
                     {/* Adicionar outra aula */}
                     <div className="px-5 py-3 border-t border-[#E6EAF0] dark:border-[#374151]">
