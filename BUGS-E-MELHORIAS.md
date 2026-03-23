@@ -1,7 +1,7 @@
 # MusiLab — Bugs e Melhorias
 
 > Criado em: 2026-03-17
-> Última atualização: **2026-03-22**
+> Última atualização: **2026-03-23**
 > Legenda: 🔴 Crítico · 🟡 Moderado · 🟢 Baixo · ✅ Resolvido
 
 ---
@@ -103,6 +103,15 @@
 |---|-----------|------------|--------|
 | BUG-015 ✅ | Plano salvo via "Adaptar da aula anterior" ficava invisível — `ConteudoTurma` não consumia `planejamentosDaTurma` | `ModuloPorTurmas.tsx` | `3101fb9` |
 | BUG-016 ✅ | Ao salvar plano não perguntava se deveria ir para o banco de aulas | `ModuloPorTurmas.tsx` | `17435f6` |
+
+### Modal Agendar em Turmas + Visão da Semana (commit `2fae533`)
+
+| # | Descrição | Arquivo(s) |
+|---|-----------|------------|
+| BUG-021 ✅ | ✓ não aparecia na Visão da Semana para aulas agendadas via banco de planos — modal usava semana atual (inclusive passada) enquanto Visão da Semana avançava para próxima semana em sáb/dom | `ModalAplicarEmTurmas.tsx`, `VisaoSemana.tsx` |
+| BUG-022 ✅ | `getAplicacaoExistente` podia falhar se `turmaId`/`anoLetivoId` fossem número vs string (grade os armazena como `Number`); corrigido com `String()` | `ModalAplicarEmTurmas.tsx` |
+
+---
 
 ### Módulo Aula por Turma + Banco de Aulas + Editor Rich Text (commit `4377085`)
 
