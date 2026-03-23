@@ -185,12 +185,12 @@ export default function TelaPosAula() {
                         <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                             {turmaAtual ? (
                                 <>
-                                    {/* Setas de turma */}
+                                    {/* Setas de turma — ↑ ↓ para diferenciar das setas de dia ‹ › */}
                                     <button onClick={e => navTurma(-1, e)} disabled={turmaIdx === 0}
-                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[13px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 transition hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer">‹</button>
+                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[13px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 transition hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer">↑</button>
                                     <span className="text-[11px] font-semibold text-slate-400 dark:text-[#6b7280] min-w-[28px] text-center tabular-nums">{turmaIdx + 1}/{turmasEnriq.length}</span>
                                     <button onClick={e => navTurma(1, e)} disabled={turmaIdx === turmasEnriq.length - 1}
-                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#cbd5e1] dark:border-[#374151] bg-transparent flex items-center justify-center text-[13px] text-slate-500 dark:text-[#9CA3AF] disabled:opacity-30 transition hover:border-[#94a3b8] dark:hover:border-[#6b7280] hover:text-slate-700 dark:hover:text-[#E5E7EB] cursor-pointer">›</button>
+                                        className="w-[28px] h-[28px] rounded-[7px] border border-[#cbd5e1] dark:border-[#374151] bg-transparent flex items-center justify-center text-[13px] text-slate-500 dark:text-[#9CA3AF] disabled:opacity-30 transition hover:border-[#94a3b8] dark:hover:border-[#6b7280] hover:text-slate-700 dark:hover:text-[#E5E7EB] cursor-pointer">↓</button>
                                 </>
                             ) : (
                                 /* Setas de dia */
