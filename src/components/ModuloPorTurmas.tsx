@@ -586,7 +586,7 @@ function FormPlanoTurma({
 // ─── Sub-componente: Conteúdo da turma selecionada ───────────────────────────
 
 function ConteudoTurma({ turmaSelecionada }: { turmaSelecionada: TurmaSelecionada }) {
-    const { ultimoRegistroDaTurma, fecharForm } = usePlanejamentoTurmaContext()
+    const { ultimoRegistroDaTurma, fecharForm, planejamentosDaTurma, editarPlanejamento } = usePlanejamentoTurmaContext()
     const [modoAtivo, setModoAtivo] = useState<ModoForm | null>(null)
 
     // Garante que qualquer edição pendente de outro módulo seja descartada ao montar
@@ -599,6 +599,40 @@ function ConteudoTurma({ turmaSelecionada }: { turmaSelecionada: TurmaSelecionad
 
             {/* Bloco: Aula anterior */}
             <BlocoAulaAnterior registro={ultimoRegistroDaTurma} />
+
+            {/* Bloco: Planos salvos para esta turma */}
+            {planejamentosDaTurma.length > 0 && !modoAtivo && (
+                <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-5 py-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[.7px] text-[#94A3B8] dark:text-[#6B7280] mb-3">
+                        Planejamentos salvos ({planejamentosDaTurma.length})
+                    </p>
+                    <div className="flex flex-col gap-2">
+                        {planejamentosDaTurma.map(plano => (
+                            <div key={plano.id} className="flex items-start justify-between gap-3 p-3 rounded-lg border border-[#E6EAF0] dark:border-[#374151] bg-[#F8FAFC] dark:bg-[#111827]">
+                                <div className="flex-1 min-w-0">
+                                    {plano.dataPrevista && (
+                                        <p className="text-[10.5px] text-[#94a3b8] mb-0.5">
+                                            {new Date(plano.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                        </p>
+                                    )}
+                                    <p className="text-[12.5px] text-[#374151] dark:text-[#D1D5DB] leading-snug line-clamp-2">
+                                        {plano.oQuePretendoFazer || plano.planoData?.titulo || 'Sem título'}
+                                    </p>
+                                    {plano.origemAula === 'adaptacao' && (
+                                        <span className="text-[10px] text-[#94a3b8] mt-0.5 inline-block">Adaptação da aula anterior</span>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => editarPlanejamento(plano)}
+                                    className="text-[11px] px-3 py-1 rounded-md border border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:bg-white dark:hover:bg-[#1F2937] transition flex-shrink-0"
+                                >
+                                    Editar
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Bloco: Planejamento da próxima aula */}
             {modoAtivo ? (
