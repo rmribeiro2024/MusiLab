@@ -8,6 +8,7 @@ import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContext'
+import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import type { AnoLetivo, RegistroPosAula } from '../types'
 import { showToast } from '../lib/toast'
 
@@ -153,6 +154,7 @@ export default function VisaoSemana() {
   const { planos } = usePlanosContext()
   const { setViewMode } = useRepertorioContext()
   const { selecionarTurma, setDataNavegacao, planejamentos, copiarPlanejamento } = usePlanejamentoTurmaContext()
+  const { aplicacoes } = useAplicacoesContext()
 
   // ── Drag-drop entre cards ──────────────────────────────────────────────────
   const [dragSrcId, setDragSrcId] = useState<string | null>(null)   // "${turmaId}-${ymd}"
@@ -204,13 +206,18 @@ export default function VisaoSemana() {
   }, [anosLetivos])
 
   // Set de "turmaId-ymd" para badge ✓ (dia-específico)
+  // Inclui: planejamentos do módulo "Aula por Turma" + aplicações do banco de planos
   const turmasComPlano = useMemo(() => {
     const s = new Set<string>()
     planejamentos.forEach(p => {
       if (p.dataPrevista) s.add(`${p.turmaId}-${p.dataPrevista}`)
     })
+    // Aplicações criadas via "Agendar" no banco de planos
+    aplicacoes.forEach(a => {
+      if (a.data && a.status !== 'cancelada') s.add(`${a.turmaId}-${a.data}`)
+    })
     return s
-  }, [planejamentos])
+  }, [planejamentos, aplicacoes])
 
   // Set de turmaId para arrastar (qualquer plano da turma, independente de data)
   const turmasArrastaveis = useMemo(() => {
