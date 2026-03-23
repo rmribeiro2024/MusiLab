@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import ReactDOM from 'react-dom'
-import { useEditor, EditorContent } from '@tiptap/react'
+import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -174,7 +174,9 @@ export function FloatingPlayer({ url, title, kind, onClose }: FloatingPlayerProp
 // ── Componente principal ─────────────────────────────────────────────────────
 
 interface TipTapEditorProps {
-    value: string
+    value?: string
+    /** Alias de value — aceito para compatibilidade com campos que usam semântica de valor inicial */
+    initialValue?: string
     onChange: (value: string) => void
     placeholder?: string
     className?: string
@@ -182,10 +184,13 @@ interface TipTapEditorProps {
     onHashCancel?: () => void
     onSaveAsStrategy?: (text: string) => void
     onEditorBlur?: () => void
+    /** 'full' = barra completa (padrão) | 'lists-only' = só listas na barra, B/I/U em popup flutuante ao selecionar */
+    toolbarMode?: 'full' | 'lists-only'
 }
 
 export default function TipTapEditor({
-    value,
+    value: valueProp,
+    initialValue,
     onChange,
     placeholder = 'Descreva a atividade...',
     className = '',
@@ -193,7 +198,10 @@ export default function TipTapEditor({
     onHashCancel,
     onSaveAsStrategy,
     onEditorBlur,
+    toolbarMode = 'full',
 }: TipTapEditorProps) {
+    // Suporta tanto value quanto initialValue (backward compat)
+    const value = valueProp ?? initialValue ?? ''
     const hashState = useRef({ active: false, buffer: '' })
     const [previews, setPreviews] = useState<MediaPreview[]>([])
     const [floatingPlayer, setFloatingPlayer] = useState<MediaPreview | null>(null)
@@ -311,36 +319,47 @@ export default function TipTapEditor({
             ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300'
             : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.08]'}`
 
+    // SVGs de listas (reutilizados em toolbar fixa e bubble)
+    const svgBullet = (
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="2" cy="4" r="1.5" fill="currentColor"/>
+            <rect x="5" y="3" width="9" height="2" rx="1" fill="currentColor"/>
+            <circle cx="2" cy="8" r="1.5" fill="currentColor"/>
+            <rect x="5" y="7" width="9" height="2" rx="1" fill="currentColor"/>
+            <circle cx="2" cy="12" r="1.5" fill="currentColor"/>
+            <rect x="5" y="11" width="9" height="2" rx="1" fill="currentColor"/>
+        </svg>
+    )
+    const svgOrdered = (
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="5" fontSize="5" fill="currentColor" fontWeight="600">1.</text>
+            <rect x="5" y="3" width="9" height="2" rx="1" fill="currentColor"/>
+            <text x="0" y="9.5" fontSize="5" fill="currentColor" fontWeight="600">2.</text>
+            <rect x="5" y="7" width="9" height="2" rx="1" fill="currentColor"/>
+            <text x="0" y="14" fontSize="5" fill="currentColor" fontWeight="600">3.</text>
+            <rect x="5" y="11" width="9" height="2" rx="1" fill="currentColor"/>
+        </svg>
+    )
+
     return (
         <div className={`relative tiptap-wrapper ${className}`}>
-            {/* Barra de formatação fixa — sempre visível */}
+            {/* Barra de formatação fixa */}
             {editor && (
                 <div className="flex items-center gap-0.5 px-2 pt-1.5 pb-1 border-b border-slate-100 dark:border-white/[0.06]">
-                    <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBold().run() }} className={btn(editor.isActive('bold'))} title="Negrito"><strong>B</strong></button>
-                    <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleItalic().run() }} className={btn(editor.isActive('italic'))} title="Itálico"><em>I</em></button>
-                    <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleUnderline().run() }} className={btn(editor.isActive('underline'))} title="Sublinhado"><u>U</u></button>
-                    <div className="w-px h-3 bg-slate-200 dark:bg-slate-600 mx-0.5" />
-                    <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBulletList().run() }} className={btn(editor.isActive('bulletList'))} title="Lista com marcadores">
-                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="2" cy="4" r="1.5" fill="currentColor"/>
-                            <rect x="5" y="3" width="9" height="2" rx="1" fill="currentColor"/>
-                            <circle cx="2" cy="8" r="1.5" fill="currentColor"/>
-                            <rect x="5" y="7" width="9" height="2" rx="1" fill="currentColor"/>
-                            <circle cx="2" cy="12" r="1.5" fill="currentColor"/>
-                            <rect x="5" y="11" width="9" height="2" rx="1" fill="currentColor"/>
-                        </svg>
-                    </button>
-                    <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleOrderedList().run() }} className={btn(editor.isActive('orderedList'))} title="Lista numerada">
-                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <text x="0" y="5" fontSize="5" fill="currentColor" fontWeight="600">1.</text>
-                            <rect x="5" y="3" width="9" height="2" rx="1" fill="currentColor"/>
-                            <text x="0" y="9.5" fontSize="5" fill="currentColor" fontWeight="600">2.</text>
-                            <rect x="5" y="7" width="9" height="2" rx="1" fill="currentColor"/>
-                            <text x="0" y="14" fontSize="5" fill="currentColor" fontWeight="600">3.</text>
-                            <rect x="5" y="11" width="9" height="2" rx="1" fill="currentColor"/>
-                        </svg>
-                    </button>
-                    {onSaveAsStrategy && (
+                    {/* Modo completo: B / I / U + separador + listas */}
+                    {toolbarMode === 'full' && (
+                        <>
+                            <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBold().run() }} className={btn(editor.isActive('bold'))} title="Negrito"><strong>B</strong></button>
+                            <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleItalic().run() }} className={btn(editor.isActive('italic'))} title="Itálico"><em>I</em></button>
+                            <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleUnderline().run() }} className={btn(editor.isActive('underline'))} title="Sublinhado"><u>U</u></button>
+                            <div className="w-px h-3 bg-slate-200 dark:bg-slate-600 mx-0.5" />
+                        </>
+                    )}
+                    {/* Listas (sempre visíveis) */}
+                    <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBulletList().run() }} className={btn(editor.isActive('bulletList'))} title="Lista com marcadores">{svgBullet}</button>
+                    <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleOrderedList().run() }} className={btn(editor.isActive('orderedList'))} title="Lista numerada">{svgOrdered}</button>
+                    {/* Botão 💡 (modo completo apenas) */}
+                    {toolbarMode === 'full' && onSaveAsStrategy && (
                         <>
                             <div className="w-px h-3 bg-slate-200 dark:bg-slate-600 mx-0.5" />
                             <button
@@ -356,6 +375,20 @@ export default function TipTapEditor({
                         </>
                     )}
                 </div>
+            )}
+
+            {/* Bubble menu — B/I/U flutuante ao selecionar texto (modo lists-only) */}
+            {editor && toolbarMode === 'lists-only' && (
+                <BubbleMenu
+                    editor={editor}
+                    tippyOptions={{ duration: 120, placement: 'top' }}
+                >
+                    <div className="flex items-center gap-0.5 px-1.5 py-1 rounded-lg shadow-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#1F2937]">
+                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleBold().run() }} className={btnBubble(editor.isActive('bold'))} title="Negrito"><strong>B</strong></button>
+                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleItalic().run() }} className={btnBubble(editor.isActive('italic'))} title="Itálico"><em>I</em></button>
+                        <button onMouseDown={e => { e.preventDefault(); editor.chain().focus().toggleUnderline().run() }} className={btnBubble(editor.isActive('underline'))} title="Sublinhado"><u>U</u></button>
+                    </div>
+                </BubbleMenu>
             )}
 
             {/* Editor */}

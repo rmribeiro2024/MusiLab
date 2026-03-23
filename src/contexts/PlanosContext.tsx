@@ -438,8 +438,14 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const escolas = useMemo(() => {
         const s = new Set<string>()
         planos.forEach(p => { if (p.escola && p.escola.trim()) s.add(p.escola.trim()) })
+        // Inclui escolas configuradas no AnoLetivo (mesmo sem planos com campo escola explícito)
+        anosLetivos.forEach((a: any) => {
+            ;(a.escolas ?? []).forEach((e: any) => {
+                if (e.nome?.trim()) s.add(e.nome.trim())
+            })
+        })
         return ['Todas', ...Array.from(s).sort()]
-    }, [planos])
+    }, [planos, anosLetivos])
 
     const segmentosPlanos = useMemo(() => {
         const s = new Set<string>()
@@ -471,7 +477,16 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             const matchUnidade  = filtroUnidade  === 'Todos'  || (plano.unidade && plano.unidade.trim() === filtroUnidade.trim())
             const matchFaixa    = filtroFaixa    === 'Todos'  || (plano.faixaEtaria && plano.faixaEtaria.includes(filtroFaixa))
             const matchNivel    = filtroNivel    === 'Todos'  || plano.nivel === filtroNivel
-            const matchEscola   = filtroEscola   === 'Todas'  || plano.escola === filtroEscola
+            const matchEscola   = filtroEscola === 'Todas'
+                || plano.escola?.trim() === filtroEscola
+                || (plano.registrosPosAula ?? []).some((r: any) => {
+                    // r.escola armazena o ID da escola — resolver para nome
+                    for (const ano of anosLetivos) {
+                        const esc = (ano.escolas ?? []).find((e: any) => String(e.id) === String(r.escola))
+                        if (esc?.nome?.trim() === filtroEscola) return true
+                    }
+                    return false
+                })
             const matchTag      = filtroTag      === 'Todas'  || (plano.tags && plano.tags.includes(filtroTag))
             const matchSegmento = filtroSegmento === 'Todos'  || (plano.segmentos ?? []).includes(filtroSegmento)
             const matchFavorito = !filtroFavorito || plano.destaque
@@ -486,7 +501,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             if (ordenacaoCards === 'favoritos') return (b.destaque ? 1 : 0) - (a.destaque ? 1 : 0)
             return b.id - a.id
         })
-    }, [planos, buscaDebounced, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, ordenacaoCards])
+    }, [planos, buscaDebounced, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, ordenacaoCards, anosLetivos])
 
     // ── FUNÇÕES: PLANOS ───────────────────────────────────────────────────
     const _abrirNovoPlano = () => {

@@ -523,11 +523,13 @@ function FormPlanoTurma({
     ultimoRegistro,
     onSalvar,
     onCancelar,
+    initialPlanoOverride,
 }: {
     modo: ModoForm
     ultimoRegistro: RegistroPosAula | null
     onSalvar: (plano: any, origemAula: 'banco' | 'adaptacao' | 'livre') => void
     onCancelar: () => void
+    initialPlanoOverride?: any
 }) {
     const { turmaSelecionada } = usePlanejamentoTurmaContext()
     const { planos } = usePlanosContext()
@@ -551,6 +553,8 @@ function FormPlanoTurma({
     }, [turmaSelecionada, anosLetivos])
 
     const initialPlano = useMemo(() => {
+        // Override tem prioridade (edição de plano existente)
+        if (initialPlanoOverride && Object.keys(initialPlanoOverride).length > 0) return initialPlanoOverride
         if (modo === 'adaptar' && ultimoRegistro) {
             const planoBase = planos.find(p =>
                 (p.registrosPosAula ?? []).some(r => String(r.id) === String(ultimoRegistro.id))
@@ -558,11 +562,15 @@ function FormPlanoTurma({
             return planoBase ? { ...planoBase, id: gerarIdSeguro() } : {}
         }
         return {}
-    }, [modo, ultimoRegistro, planos])
+    }, [modo, ultimoRegistro, planos, initialPlanoOverride])
+
+    const editKey = initialPlanoOverride
+        ? `fpt-edit-${(initialPlanoOverride as any).id ?? 'x'}`
+        : `fpt-${turmaSelecionada?.turmaId ?? 'none'}-${modo}`
 
     return (
         <FormularioAulaPlena
-            key={`fpt-${turmaSelecionada?.turmaId ?? 'none'}-${modo}`}
+            key={editKey}
             initialPlano={initialPlano}
             modo={modo}
             ultimoRegistro={ultimoRegistro}
@@ -591,6 +599,7 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
         return ano?.escolas.find((e: any) => String(e.id) === turmaSelecionada.escolaId)?.nome ?? ''
     }, [anosLetivos, turmaSelecionada])
     const [modoAtivo, setModoAtivo] = useState<ModoForm | null>(null)
+    const [planoParaEditar, setPlanoParaEditar] = useState<any>(null)
     const [pendingSave, setPendingSave] = useState<{ plano: any; origemAula: 'banco' | 'adaptacao' | 'livre' } | null>(null)
 
     // Garante que qualquer edição pendente de outro módulo seja descartada ao montar
@@ -628,6 +637,7 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
         }
         setPendingSave(null)
         setModoAtivo(null)
+        setPlanoParaEditar(null)
     }
 
     const BotoesPlanejar = () => (
@@ -664,11 +674,12 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
             {/* Bloco: Planejamento da próxima aula */}
             {modoAtivo ? (
                 <FormPlanoTurma
-                    key={`${turmaSelecionada.anoLetivoId}|${turmaSelecionada.turmaId}|${modoAtivo}`}
+                    key={`${turmaSelecionada.anoLetivoId}|${turmaSelecionada.turmaId}|${modoAtivo}|${(planoParaEditar as any)?.id ?? ''}`}
                     modo={modoAtivo}
                     ultimoRegistro={ultimoRegistroDaTurma}
                     onSalvar={handleFormSalvar}
-                    onCancelar={() => setModoAtivo(null)}
+                    onCancelar={() => { setModoAtivo(null); setPlanoParaEditar(null); fecharForm() }}
+                    initialPlanoOverride={planoParaEditar ?? undefined}
                 />
             ) : temPlanos ? (
                 /* ── Aula planejada: exibição compacta ── */
@@ -698,7 +709,11 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
                                     </span>
                                 </div>
                                 <button
-                                    onClick={() => editarPlanejamento(plano)}
+                                    onClick={() => {
+                                        editarPlanejamento(plano)  // marca planejamentoEditando no contexto (update, não create)
+                                        setPlanoParaEditar(plano.planoData ?? {})
+                                        setModoAtivo('criar')
+                                    }}
                                     className="text-[11px] text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition flex-shrink-0 font-medium"
                                 >
                                     ver / editar

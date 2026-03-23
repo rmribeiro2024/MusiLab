@@ -1501,6 +1501,7 @@ export default function TelaPrincipal() {
                                         initialValue={planoEditando.avaliacaoEvidencia ?? ((!planoEditando.avaliacaoEvidencia && !planoEditando.avaliacaoFechamento && planoEditando.avaliacaoObservacoes) ? planoEditando.avaliacaoObservacoes : '') ?? ''}
                                         onChange={val => setPlanoEditando({ ...planoEditando, avaliacaoEvidencia: val })}
                                         placeholder="Ex: alunos conseguem tocar o ritmo sem apoio visual, participam da improvisação…"
+                                        toolbarMode="lists-only"
                                     />
                                 </div>
                             </div>
@@ -1515,6 +1516,7 @@ export default function TelaPrincipal() {
                                         initialValue={planoEditando.avaliacaoFechamento ?? ''}
                                         onChange={val => setPlanoEditando({ ...planoEditando, avaliacaoFechamento: val })}
                                         placeholder="Ex: O que foi mais difícil? O que vocês notaram sobre o ritmo?"
+                                        toolbarMode="lists-only"
                                     />
                                 </div>
                             </div>
@@ -1530,6 +1532,7 @@ export default function TelaPrincipal() {
                                         initialValue={planoEditando.avaliacaoContingencia ?? ''}
                                         onChange={val => setPlanoEditando({ ...planoEditando, avaliacaoContingencia: val })}
                                         placeholder="Ex: simplificar o ritmo para colcheia/semínima, trocar a atividade pelo jogo de eco…"
+                                        toolbarMode="lists-only"
                                     />
                                 </div>
                             </div>

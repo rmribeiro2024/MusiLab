@@ -1181,6 +1181,7 @@ Responda APENAS com JSON: {"habilidades": ["EF15AR14", "EF69AR16"]}`
                       initialValue={plano.avaliacaoEvidencia ?? ''}
                       onChange={val => setPlano(p => ({ ...p, avaliacaoEvidencia: val }))}
                       placeholder="Ex: alunos conseguem tocar o ritmo sem apoio visual, participam da improvisação…"
+                      toolbarMode="lists-only"
                     />
                   </div>
                 </div>
@@ -1192,6 +1193,7 @@ Responda APENAS com JSON: {"habilidades": ["EF15AR14", "EF69AR16"]}`
                       initialValue={plano.avaliacaoFechamento ?? ''}
                       onChange={val => setPlano(p => ({ ...p, avaliacaoFechamento: val }))}
                       placeholder="Ex: O que foi mais difícil? O que vocês notaram sobre o ritmo?"
+                      toolbarMode="lists-only"
                     />
                   </div>
                 </div>
@@ -1203,6 +1205,7 @@ Responda APENAS com JSON: {"habilidades": ["EF15AR14", "EF69AR16"]}`
                       initialValue={plano.avaliacaoContingencia ?? ''}
                       onChange={val => setPlano(p => ({ ...p, avaliacaoContingencia: val }))}
                       placeholder="Ex: simplificar o ritmo, trocar pela atividade de eco…"
+                      toolbarMode="lists-only"
                     />
                   </div>
                 </div>
