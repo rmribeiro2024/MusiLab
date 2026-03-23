@@ -11,6 +11,7 @@ import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContex
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import type { AnoLetivo, RegistroPosAula } from '../types'
 import { showToast } from '../lib/toast'
+import ModalCardHero, { type ModalCardHeroProps } from './modals/ModalCardHero'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -164,7 +165,11 @@ function UltimaAulaSection({ registro, temPlano, foiRegistrada }: { registro: Re
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function VisaoSemana() {
-  const { obterTurmasDoDia } = useCalendarioContext()
+  const {
+    obterTurmasDoDia,
+    setPlanoParaRegistro, setNovoRegistro, setRegistroEditando,
+    setVerRegistros, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel,
+  } = useCalendarioContext()
   const { anosLetivos } = useAnoLetivoContext()
   const { planos } = usePlanosContext()
   const { setViewMode } = useRepertorioContext()
@@ -176,6 +181,11 @@ export default function VisaoSemana() {
   const [dragOverId, setDragOverId] = useState<string | null>(null) // "${turmaId}-${ymd}"
   type CopyConfirm = { srcPlanoId: string; srcNome: string; dst: { anoLetivoId: string; escolaId: string; segmentoId: string; turmaId: string }; dstNome: string; dataPrevista: string }
   const [copyConfirm, setCopyConfirm] = useState<CopyConfirm | null>(null)
+
+  type HeroCardData = Omit<ModalCardHeroProps, 'onClose' | 'onEditar' | 'onRegistrar' | 'onCriarPlano'> & {
+    navParams: { anoLetivoId: string; escolaId: string; segmentoId: string; turmaId: string; date: Date }
+  }
+  const [heroCard, setHeroCard] = useState<HeroCardData | null>(null)
 
   // Estado local de navegação — não interfere com AgendaSemanal
   const [semanaInicio, setSemanaInicio] = useState<Date>(() => getSemanaAtualInicio())
@@ -398,15 +408,53 @@ export default function VisaoSemana() {
                         key={`${aula.turmaId}-${aula.horario}-${i}`}
                         style={cardStyle}
                         draggable={eArrastavel}
-                        onClick={!past ? () => {
-                          selecionarTurma({
-                            anoLetivoId: String(aula.anoLetivoId ?? ''),
-                            escolaId:    String(aula.escolaId ?? ''),
-                            segmentoId:  String(aula.segmentoId),
-                            turmaId:     tidStr,
+                        onClick={(!past || foiRegistrada) ? (e: React.MouseEvent) => {
+                          e.stopPropagation()
+
+                          const cardState: HeroCardData['cardState'] = foiRegistrada ? 'registrada'
+                            : temPlano ? 'comPlano'
+                            : ultimoReg ? 'sugestao'
+                            : 'vazio'
+
+                          // Planejamento do dia
+                          const planejamentoDoDia = planejamentos.find(
+                            p => String(p.turmaId) === tidStr && p.dataPrevista === ymd
+                          ) ?? null
+
+                          // Plano completo: via planejamento.planoData ou via aplicacoes
+                          let planoDataObj: any = planejamentoDoDia?.planoData ?? null
+                          if (!planoDataObj) {
+                            const ap = aplicacoes.find(a => String(a.turmaId) === tidStr && a.data === ymd && a.status !== 'cancelada')
+                            if (ap) planoDataObj = planos.find(p => String(p.id) === String((ap as any).planoId)) ?? null
+                          }
+
+                          // Registro específico do dia
+                          const registroDoDia = foiRegistrada
+                            ? planos.flatMap(p => (p as any).registrosPosAula ?? []).find((r: any) => {
+                                const d = r.dataAula ?? r.data ?? ''
+                                return d === ymd && String(r.turma) === tidStr
+                              }) ?? null
+                            : null
+
+                          const planoTitulo = planoDataObj?.titulo || planejamentoDoDia?.oQuePretendoFazer || null
+                          const objetivo = planoDataObj?.objetivoGeral || planejamentoDoDia?.objetivo || null
+
+                          const regData = ultimoReg ? ((ultimoReg as any).dataAula ?? (ultimoReg as any).data ?? '') : null
+                          const ultimoRegData = regData ? regData.slice(8, 10) + '/' + regData.slice(5, 7) : null
+
+                          setHeroCard({
+                            turmaNome, escolaNome, escolaCor, ymd,
+                            horario: aula.horario ?? '', diaSemanaShort: short,
+                            cardState, planoTitulo, objetivo,
+                            registro: registroDoDia as any, ultimoReg, ultimoRegData,
+                            navParams: {
+                              anoLetivoId: String(aula.anoLetivoId ?? ''),
+                              escolaId:    String(aula.escolaId ?? ''),
+                              segmentoId:  String(aula.segmentoId),
+                              turmaId:     tidStr,
+                              date,
+                            },
                           })
-                          setDataNavegacao(date)
-                          setViewMode('porTurmas')
                         } : undefined}
                         onDragStart={e => { e.dataTransfer.effectAllowed = 'copy'; setDragSrcId(tidYmd) }}
                         onDragOver={e => { if (dragSrcId && dragSrcId !== tidYmd) { e.preventDefault(); setDragOverId(tidYmd) } }}
@@ -445,6 +493,8 @@ export default function VisaoSemana() {
                             ? 'opacity-50 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'
                             : !past
                             ? 'shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:-translate-y-px hover:opacity-100'
+                            : foiRegistrada
+                            ? 'shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:-translate-y-px hover:opacity-90'
                             : 'shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-default'
                         } ${foiRegistrada && !isDragSrc ? 'opacity-[0.72]' : ''}`}
                       >
@@ -509,6 +559,49 @@ export default function VisaoSemana() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Modal: Card Hero ─────────────────────────────────────────────── */}
+      {heroCard && (
+        <ModalCardHero
+          {...heroCard}
+          onClose={() => setHeroCard(null)}
+          onEditar={() => {
+            setHeroCard(null)
+            selecionarTurma({
+              anoLetivoId: heroCard.navParams.anoLetivoId,
+              escolaId:    heroCard.navParams.escolaId,
+              segmentoId:  heroCard.navParams.segmentoId,
+              turmaId:     heroCard.navParams.turmaId,
+            })
+            setDataNavegacao(heroCard.navParams.date)
+            setViewMode('porTurmas')
+          }}
+          onRegistrar={() => {
+            setHeroCard(null)
+            const stub = { id: `stub-${heroCard.navParams.turmaId}`, titulo: heroCard.planoTitulo ?? '' }
+            setPlanoParaRegistro(stub as any)
+            setNovoRegistro({ dataAula: heroCard.ymd, resumoAula: '', funcionouBem: '', fariadiferente: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
+            setRegistroEditando(null)
+            setVerRegistros(false)
+            setRegAnoSel(heroCard.navParams.anoLetivoId)
+            setRegEscolaSel(heroCard.navParams.escolaId)
+            setRegSegmentoSel(heroCard.navParams.segmentoId)
+            setRegTurmaSel(heroCard.navParams.turmaId)
+            setViewMode('posAula')
+          }}
+          onCriarPlano={() => {
+            setHeroCard(null)
+            selecionarTurma({
+              anoLetivoId: heroCard.navParams.anoLetivoId,
+              escolaId:    heroCard.navParams.escolaId,
+              segmentoId:  heroCard.navParams.segmentoId,
+              turmaId:     heroCard.navParams.turmaId,
+            })
+            setDataNavegacao(heroCard.navParams.date)
+            setViewMode('porTurmas')
+          }}
+        />
       )}
 
     </div>
