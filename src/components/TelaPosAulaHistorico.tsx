@@ -592,16 +592,39 @@ export default function TelaPosAulaHistorico() {
                         </button>
                     ))}
                 </div>
-                {/* trecho — select único + contagem */}
+                {/* trecho — chip customizado + contagem */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 11, color: isDark ? '#4B5563' : '#cbd5e1' }}>Trecho:</span>
-                    <div style={{ position: 'relative' }}>
-                        <select value={campoTrecho} onChange={e => setCampoTrecho(e.target.value)} style={{ ...selStyle, paddingRight: 24, minWidth: 160 }}>
-                            {CAMPOS_TRECHO.map(ct => (
-                                <option key={ct.value} value={ct.value}>{ct.label}</option>
-                            ))}
-                        </select>
-                        <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '9px', color: '#94a3b8' }}>▾</span>
+                    <div ref={trechoMenuRef} style={{ position: 'relative' }}>
+                        {/* chip ativo */}
+                        <button
+                            onClick={() => setTrechoMenuAberto(v => !v)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px 3px 8px', borderRadius: 999, border: `1px solid ${trechoMenuAberto ? '#c7d2fe' : (isDark ? '#374151' : '#E6EAF0')}`, background: trechoMenuAberto ? (isDark ? 'rgba(91,95,234,0.15)' : '#EEF0FF') : (isDark ? 'rgba(255,255,255,0.04)' : '#fff'), cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms' }}>
+                            <span style={{ fontSize: 13 }}>{CAMPOS_INLINE.find(c => c.key === campoTrecho)?.icon ?? ''}</span>
+                            <span style={{ fontSize: '11.5px', fontWeight: 500, color: trechoMenuAberto ? (isDark ? '#818cf8' : '#5B5FEA') : (isDark ? '#D1D5DB' : '#374151'), whiteSpace: 'nowrap' }}>
+                                {CAMPOS_TRECHO.find(ct => ct.value === campoTrecho)?.label ?? ''}
+                            </span>
+                            <span style={{ fontSize: '8px', color: isDark ? '#4B5563' : '#94a3b8', marginLeft: 1 }}>▾</span>
+                        </button>
+
+                        {/* dropdown */}
+                        {trechoMenuAberto && (
+                            <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 50, background: isDark ? '#1F2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#E6EAF0'}`, borderRadius: 10, boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.4)' : '0 8px 24px rgba(0,0,0,0.1)', minWidth: 220, padding: '4px 0', overflow: 'hidden' }}>
+                                {CAMPOS_TRECHO.map(ct => {
+                                    const icon = CAMPOS_INLINE.find(c => c.key === ct.value)?.icon ?? ''
+                                    const ativo = campoTrecho === ct.value
+                                    return (
+                                        <button key={ct.value}
+                                            onClick={() => { setCampoTrecho(ct.value); setTrechoMenuAberto(false) }}
+                                            style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 12px', background: ativo ? (isDark ? 'rgba(91,95,234,0.15)' : '#EEF0FF') : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'background 80ms' }}
+                                            className="hover:bg-slate-50 dark:hover:bg-white/[0.04]">
+                                            <span style={{ fontSize: 14, width: 20, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                                            <span style={{ fontSize: '12px', fontWeight: ativo ? 600 : 400, color: ativo ? (isDark ? '#818cf8' : '#5B5FEA') : (isDark ? '#D1D5DB' : '#374151'), flex: 1 }}>{ct.label}</span>
+                                            {ativo && <span style={{ fontSize: 10, color: isDark ? '#818cf8' : '#5B5FEA' }}>✓</span>}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        )}
                     </div>
                     <span style={{ fontSize: 11, color: isDark ? '#4B5563' : '#cbd5e1', minWidth: 20, textAlign: 'right' }}>{registrosFiltrados.length}</span>
                 </div>
