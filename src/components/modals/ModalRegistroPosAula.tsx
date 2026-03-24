@@ -63,7 +63,7 @@ const AccordionChip = React.forwardRef<() => void, {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: `Você é um assistente de transcrição para um professor de música brasileiro. Corrija apenas erros óbvios de transcrição de voz no texto abaixo, mantendo o sentido e as palavras originais. Vocabulário esperado: turma, escola, segmento, engajamento, ritmo, melodia, harmonia, dinâmica, compasso, timbre, pós-aula, planejamento, atividade, aluno, ensino, percussão, flauta, violão, canto. Retorne APENAS o texto corrigido, sem explicações, sem aspas.\n\nTexto: ${texto}` }] }],
-                    generationConfig: { temperature: 0.1, maxOutputTokens: 512 },
+                    generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
                 }),
             })
             const data = await res.json()
@@ -88,12 +88,12 @@ const AccordionChip = React.forwardRef<() => void, {
         rec.onresult = (ev: any) => {
             let interim = ''
             let final = ''
-            for (let i = ev.resultIndex; i < ev.results.length; i++) {
+            for (let i = 0; i < ev.results.length; i++) {
                 const t = ev.results[i][0].transcript
                 if (ev.results[i].isFinal) final += t + ' '
                 else interim += t
             }
-            if (final) finalTranscriptRef.current += final
+            finalTranscriptRef.current = final
             setInterimText(interim)
         }
         rec.onend = async () => {
@@ -101,12 +101,11 @@ const AccordionChip = React.forwardRef<() => void, {
             const raw = finalTranscriptRef.current.trim()
             if (!raw) return
             const base = valueRef.current
-            const combined = base ? base + ' ' + raw : raw
-            onChange(combined) // mostra imediatamente
+            onChange(base ? base + ' ' + raw : raw) // mostra imediatamente
             setCorrigindo(true)
-            const corrigido = await corrigirComGemini(combined)
+            const corrigido = await corrigirComGemini(raw) // só o trecho novo
             setCorrigindo(false)
-            onChange(corrigido)
+            onChange(base ? base + ' ' + corrigido : corrigido)
         }
         rec.onerror = () => { setGravando(false); setSpeechAtivo(false); setInterimText('') }
         recognitionRef.current = rec
@@ -513,8 +512,12 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
         rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = false
         const cur = (novoRegistro as any).contextoAulaDetalhe || ''
         rec.onresult = (ev: any) => {
-            const t = Array.from(ev.results).slice(ev.resultIndex).map((r: any) => r[0].transcript).join(' ')
-            setNovoRegistro({ ...novoRegistro, contextoAulaDetalhe: cur ? cur + ' ' + t : t } as any)
+            let final = ''
+            for (let i = 0; i < ev.results.length; i++) {
+                if (ev.results[i].isFinal) final += ev.results[i][0].transcript + ' '
+            }
+            const textoFinal = final.trim()
+            setNovoRegistro((prev: any) => ({ ...prev, contextoAulaDetalhe: cur ? cur + ' ' + textoFinal : textoFinal }))
         }
         rec.onend = () => setGravandoContexto(false)
         rec.onerror = () => setGravandoContexto(false)
@@ -526,7 +529,13 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
         if (!SR) { alert('Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge.'); return }
         const rec = new SR()
         rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = false
-        rec.onresult = (ev: any) => { const t = Array.from(ev.results).slice(ev.resultIndex).map((r: any) => r[0].transcript).join(' '); setNovoEnc(t) }
+        rec.onresult = (ev: any) => {
+            let final = ''
+            for (let i = 0; i < ev.results.length; i++) {
+                if (ev.results[i].isFinal) final += ev.results[i][0].transcript + ' '
+            }
+            setNovoEnc(final.trim())
+        }
         rec.onend = () => setGravandoEnc(false)
         rec.onerror = () => setGravandoEnc(false)
         recognitionEncRef.current = rec; rec.start(); setGravandoEnc(true)
