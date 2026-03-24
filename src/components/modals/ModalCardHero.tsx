@@ -23,7 +23,7 @@ function useIsDark() {
 // ── Status helpers ────────────────────────────────────────────────────────────
 type StatusEfetivo = 'concluida' | 'revisao' | 'incompleta' | 'nao_houve' | null
 
-function inferStatus(r: RegistroPosAula): StatusEfetivo {
+export function inferStatus(r: RegistroPosAula): StatusEfetivo {
   if ((r as any).statusAula === 'parcial') return 'incompleta'
   if ((r as any).statusAula) return (r as any).statusAula
   if ((r as any).proximaAulaOpcao === 'nova')         return 'concluida'
@@ -35,14 +35,14 @@ function inferStatus(r: RegistroPosAula): StatusEfetivo {
   return null
 }
 
-const STATUS_ACAO: Record<NonNullable<StatusEfetivo>, string> = {
+export const STATUS_ACAO: Record<NonNullable<StatusEfetivo>, string> = {
   concluida:  'Avançar conteúdo',
   incompleta: 'Retomar conteúdo',
   revisao:    'Retomar conteúdo',
   nao_houve:  'Reaplicar aula',
 }
 
-const STATUS_LABEL: Record<NonNullable<StatusEfetivo>, string> = {
+export const STATUS_LABEL: Record<NonNullable<StatusEfetivo>, string> = {
   concluida:  'Conteúdo concluído',
   incompleta: 'Parcialmente trabalhado',
   revisao:    'Parcialmente trabalhado',
@@ -73,7 +73,7 @@ export interface ModalCardHeroProps {
 }
 
 // ── Sub-componentes ───────────────────────────────────────────────────────────
-function RegistroField({ icon, label, text }: { icon: string; label: string; text: string }) {
+export function RegistroField({ icon, label, text }: { icon: string; label: string; text: string }) {
   return (
     <div className="flex items-start gap-1.5">
       <span className="text-[11px] shrink-0 mt-[1px]">{icon}</span>
@@ -89,7 +89,7 @@ function RegistroField({ icon, label, text }: { icon: string; label: string; tex
   )
 }
 
-function ActionButton({
+export function ActionButton({
   onClick, label, variant, fullWidth = false,
 }: {
   onClick: () => void

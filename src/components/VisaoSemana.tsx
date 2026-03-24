@@ -11,7 +11,7 @@ import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContex
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import type { AnoLetivo, RegistroPosAula } from '../types'
 import { showToast } from '../lib/toast'
-import ModalCardHero, { type ModalCardHeroProps } from './modals/ModalCardHero'
+import ModalCardHero, { type ModalCardHeroProps, inferStatus, STATUS_LABEL, STATUS_ACAO, RegistroField, ActionButton } from './modals/ModalCardHero'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -162,6 +162,151 @@ function UltimaAulaSection({ registro, temPlano, foiRegistrada }: { registro: Re
   )
 }
 
+// ─── Inline Card Drawer (4º modo de visualização) ────────────────────────────
+
+interface InlineCardDrawerProps {
+  heroCard: {
+    turmaNome: string; escolaNome: string; escolaCor: { light: string; dark: string } | null
+    ymd: string; horario: string; diaSemanaShort: string
+    cardState: 'comPlano' | 'registrada' | 'sugestao' | 'vazio'
+    planoTitulo: string | null; objetivo: string | null
+    registro: any; ultimoReg: any; ultimoRegData: string | null
+  }
+  onClose: () => void
+  onEditar: () => void
+  onRegistrar: () => void
+  onCriarPlano: () => void
+}
+
+function InlineCardDrawer({ heroCard, onClose, onEditar, onRegistrar, onCriarPlano }: InlineCardDrawerProps) {
+  const [visible, setVisible] = React.useState(false)
+  React.useEffect(() => { requestAnimationFrame(() => setVisible(true)) }, [])
+
+  const { turmaNome, escolaNome, escolaCor, ymd, horario, diaSemanaShort,
+    cardState, planoTitulo, objetivo, registro, ultimoReg, ultimoRegData } = heroCard
+
+  const dataLabel    = `${diaSemanaShort}, ${ymd.slice(8, 10)}/${ymd.slice(5, 7)}`
+  const horarioLabel = horario ? horario.replace(/:00$/, 'h').replace(/:(\d{2})$/, 'h$1') : ''
+
+  const funcionouBem   = registro?.funcionouBem || null
+  const repetiria      = registro?.repetiria || null
+  const fariadiferente = registro?.fariadiferente || registro?.naoFuncionou || null
+  const statusReg      = registro ? inferStatus(registro) : null
+  const statusLabel    = statusReg ? STATUS_LABEL[statusReg] : null
+  const temConteudoReg = !!(funcionouBem || repetiria || fariadiferente || statusLabel)
+
+  const ultRepetiria      = ultimoReg?.repetiria || ultimoReg?.funcionouBem || null
+  const ultFariadiferente = ultimoReg?.fariadiferente || ultimoReg?.naoFuncionou || null
+  const ultStatus         = ultimoReg ? inferStatus(ultimoReg) : null
+  const ultStatusLabel    = ultStatus ? STATUS_LABEL[ultStatus] : null
+  const ultAcao           = ultStatus ? STATUS_ACAO[ultStatus] : 'Planejar próxima aula'
+
+  const escolaVar = escolaCor
+    ? ({ '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties)
+    : undefined
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateRows: visible ? '1fr' : '0fr',
+      transition: 'grid-template-rows 240ms cubic-bezier(0.34, 1.2, 0.64, 1)',
+    }}>
+      <div style={{ overflow: 'hidden' }}>
+        <div
+          className="mt-1 rounded-[8px] border border-[#E6EAF0] dark:border-[#2d3748] bg-white dark:bg-[#1a2234] shadow-md overflow-hidden"
+          style={{ borderLeft: '3px solid var(--escola-l, #5B5FEA)', ...escolaVar }}
+        >
+          {/* Header */}
+          <div className="px-3 pt-2.5 pb-2 border-b border-[#F1F3F8] dark:border-[#2d3748] flex items-start justify-between gap-1">
+            <div className="min-w-0">
+              <div className="text-[12px] font-bold text-slate-800 dark:text-[#E5E7EB] leading-tight truncate">{turmaNome}</div>
+              <div className="text-[10px] text-slate-400 dark:text-[#6B7280] mt-0.5">
+                {escolaNome && <><span className="escola-label font-medium">{escolaNome}</span> · </>}
+                {dataLabel}{horarioLabel && ` · ${horarioLabel}`}
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="shrink-0 w-5 h-5 flex items-center justify-center rounded-full text-slate-300 dark:text-[#4B5563] hover:text-slate-500 dark:hover:text-[#9CA3AF] hover:bg-slate-100 dark:hover:bg-white/[0.08] transition text-[12px]"
+            >✕</button>
+          </div>
+
+          {/* Body */}
+          <div className="px-3 py-2 space-y-2">
+            {cardState === 'comPlano' && (
+              planoTitulo
+                ? <div className="flex items-start gap-1.5">
+                    <span className="text-[11px] shrink-0 mt-0.5">📋</span>
+                    <div>
+                      <p className="text-[11.5px] font-semibold text-slate-800 dark:text-[#E5E7EB] leading-snug">{planoTitulo}</p>
+                      {objetivo && <p className="text-[10.5px] text-slate-500 dark:text-[#9CA3AF] mt-0.5 line-clamp-2">{objetivo}</p>}
+                    </div>
+                  </div>
+                : <p className="text-[11px] text-slate-400 dark:text-[#6B7280] italic">Aula planejada para este dia.</p>
+            )}
+
+            {cardState === 'registrada' && (
+              <div className="space-y-1.5">
+                {planoTitulo && <p className="text-[11px] font-semibold text-slate-700 dark:text-[#D1D5DB] pb-1.5 border-b border-[#F1F3F8] dark:border-[#2d3748] line-clamp-1">📋 {planoTitulo}</p>}
+                <p className="text-[9.5px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">✓ O que aconteceu</p>
+                {temConteudoReg ? (
+                  <>
+                    {funcionouBem && <RegistroField icon="⭐" label="Funcionou" text={funcionouBem} />}
+                    {repetiria && !funcionouBem && <RegistroField icon="⭐" label="Funcionou" text={repetiria} />}
+                    {fariadiferente && <RegistroField icon="🔄" label="Faria diferente" text={fariadiferente} />}
+                    {statusLabel && <p className="text-[10px] text-slate-400 dark:text-[#6B7280]">Como foi: <span className="font-medium">{statusLabel}</span></p>}
+                  </>
+                ) : (
+                  <p className="text-[10.5px] text-slate-400 dark:text-[#6B7280] italic">Sem detalhes preenchidos.</p>
+                )}
+              </div>
+            )}
+
+            {cardState === 'sugestao' && (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px]">💡</span>
+                  <p className="text-[11.5px] font-semibold text-slate-700 dark:text-[#D1D5DB]">Sugestão: {ultAcao}</p>
+                </div>
+                <div className="pt-1.5 border-t border-[#F1F3F8] dark:border-[#2d3748] space-y-1">
+                  <p className="text-[9.5px] font-semibold text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">📋 Última aula{ultimoRegData ? ` · ${ultimoRegData}` : ''}</p>
+                  {ultRepetiria && <RegistroField icon="⭐" label="Funcionou" text={ultRepetiria} />}
+                  {ultFariadiferente && <RegistroField icon="🔄" label="Faria diferente" text={ultFariadiferente} />}
+                  {ultStatusLabel && <p className="text-[10px] text-slate-400 dark:text-[#6B7280]">Como foi: <span className="font-medium">{ultStatusLabel}</span></p>}
+                  {!ultRepetiria && !ultFariadiferente && !ultStatusLabel && <p className="text-[10.5px] text-slate-400 dark:text-[#6B7280] italic">Sem detalhes no último registro.</p>}
+                </div>
+              </div>
+            )}
+
+            {cardState === 'vazio' && (
+              <p className="text-[11px] text-slate-400 dark:text-[#6B7280] text-center py-0.5 italic">Nenhum plano para esta aula.</p>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="px-3 pb-3 pt-1 flex gap-1.5">
+            {cardState === 'comPlano' && (
+              <>
+                <ActionButton onClick={onEditar} label="✏️ Editar" variant="secondary" />
+                <ActionButton onClick={onRegistrar} label="📝 Registrar" variant="primary" fullWidth />
+              </>
+            )}
+            {cardState === 'registrada' && (
+              <ActionButton onClick={onEditar} label="✏️ Ver planejamento" variant="secondary" fullWidth />
+            )}
+            {cardState === 'sugestao' && (
+              <ActionButton onClick={onCriarPlano} label="+ Planejar" variant="primary" fullWidth />
+            )}
+            {cardState === 'vazio' && (
+              <ActionButton onClick={onCriarPlano} label="+ Criar plano" variant="primary" fullWidth />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function VisaoSemana() {
@@ -182,7 +327,8 @@ export default function VisaoSemana() {
   type CopyConfirm = { srcPlanoId: string; srcNome: string; dst: { anoLetivoId: string; escolaId: string; segmentoId: string; turmaId: string }; dstNome: string; dataPrevista: string }
   const [copyConfirm, setCopyConfirm] = useState<CopyConfirm | null>(null)
 
-  type HeroCardData = Omit<ModalCardHeroProps, 'onClose' | 'onEditar' | 'onRegistrar' | 'onCriarPlano'> & {
+  type HeroCardData = Omit<ModalCardHeroProps, 'onClose' | 'onEditar' | 'onRegistrar' | 'onCriarPlano' | 'animStyle'> & {
+    animStyle: 'center' | 'bottomSheet' | 'sharedElement' | 'inlineDrawer'
     navParams: { anoLetivoId: string; escolaId: string; segmentoId: string; turmaId: string; date: Date }
   }
   const [heroCard, setHeroCard] = useState<HeroCardData | null>(null)
@@ -191,7 +337,7 @@ export default function VisaoSemana() {
   const isMobile = 'ontouchstart' in window
 
   // Estilo de animação do Card Hero — persiste no localStorage (desktop) / sempre bottomSheet no mobile
-  type HeroAnimStyle = 'center' | 'bottomSheet' | 'sharedElement'
+  type HeroAnimStyle = 'center' | 'bottomSheet' | 'sharedElement' | 'inlineDrawer'
   const [heroAnimStyle, setHeroAnimStyle] = useState<HeroAnimStyle>(
     () => (localStorage.getItem('heroAnimStyle') as HeroAnimStyle | null) ?? 'center'
   )
@@ -400,6 +546,7 @@ export default function VisaoSemana() {
               { key: 'center',        icon: '⊡', label: 'Modal central' },
               { key: 'bottomSheet',   icon: '▽', label: 'Bottom sheet' },
               { key: 'sharedElement', icon: '⊕', label: 'Cresce do card' },
+              { key: 'inlineDrawer',  icon: '⊟', label: 'Gaveta inline' },
             ] as const).map(({ key, icon, label }, i) => (
               <button
                 key={key}
@@ -509,8 +656,8 @@ export default function VisaoSemana() {
                       : undefined
 
                     return (
+                      <React.Fragment key={`${aula.turmaId}-${aula.horario}-${i}`}>
                       <div
-                        key={`${aula.turmaId}-${aula.horario}-${i}`}
                         style={cardStyle}
                         draggable={eArrastavel}
                         onClick={(!past || foiRegistrada) ? (e: React.MouseEvent) => {
@@ -637,6 +784,38 @@ export default function VisaoSemana() {
                         {/* seção última aula / aula planejada */}
                         <UltimaAulaSection registro={ultimoReg} temPlano={temPlano} foiRegistrada={foiRegistrada} />
                       </div>
+
+                      {/* ── Gaveta inline (4º modo) ── */}
+                      {effectiveAnimStyle === 'inlineDrawer' && heroCard &&
+                        heroCard.navParams.turmaId === tidStr && heroCard.ymd === ymd && (
+                        <InlineCardDrawer
+                          heroCard={heroCard}
+                          onClose={() => setHeroCard(null)}
+                          onEditar={() => {
+                            setHeroCard(null)
+                            selecionarTurma({ anoLetivoId: heroCard.navParams.anoLetivoId, escolaId: heroCard.navParams.escolaId, segmentoId: heroCard.navParams.segmentoId, turmaId: heroCard.navParams.turmaId })
+                            setDataNavegacao(heroCard.navParams.date)
+                            setViewMode('porTurmas')
+                          }}
+                          onRegistrar={() => {
+                            setHeroCard(null)
+                            const stub = { id: `stub-${heroCard.navParams.turmaId}`, titulo: heroCard.planoTitulo ?? '' }
+                            setPlanoParaRegistro(stub as any)
+                            setNovoRegistro({ dataAula: heroCard.ymd, resumoAula: '', funcionouBem: '', fariadiferente: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
+                            setRegistroEditando(null); setVerRegistros(false)
+                            setRegAnoSel(heroCard.navParams.anoLetivoId); setRegEscolaSel(heroCard.navParams.escolaId)
+                            setRegSegmentoSel(heroCard.navParams.segmentoId); setRegTurmaSel(heroCard.navParams.turmaId)
+                            setViewMode('posAula')
+                          }}
+                          onCriarPlano={() => {
+                            setHeroCard(null)
+                            selecionarTurma({ anoLetivoId: heroCard.navParams.anoLetivoId, escolaId: heroCard.navParams.escolaId, segmentoId: heroCard.navParams.segmentoId, turmaId: heroCard.navParams.turmaId })
+                            setDataNavegacao(heroCard.navParams.date)
+                            setViewMode('porTurmas')
+                          }}
+                        />
+                      )}
+                      </React.Fragment>
                     )
                   })
                 )}
@@ -672,10 +851,11 @@ export default function VisaoSemana() {
         </div>
       )}
 
-      {/* ── Modal: Card Hero ─────────────────────────────────────────────── */}
-      {heroCard && (
+      {/* ── Modal: Card Hero (modos 1–3 apenas) ──────────────────────────── */}
+      {heroCard && heroCard.animStyle !== 'inlineDrawer' && (
         <ModalCardHero
           {...heroCard}
+          animStyle={heroCard.animStyle as 'center' | 'bottomSheet' | 'sharedElement'}
           onClose={() => setHeroCard(null)}
           onEditar={() => {
             setHeroCard(null)
