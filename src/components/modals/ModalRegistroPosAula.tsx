@@ -166,7 +166,7 @@ const AccordionChip = React.forwardRef<() => void, {
                     {corrigindo && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, fontSize: 11 }}>
                             <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#818cf8', flexShrink: 0, animation: 'pulse 1s infinite' }} />
-                            <span style={{ color: '#818cf8', fontWeight: 500 }}>Corrigindo transcrição...</span>
+                            <span style={{ color: '#818cf8', fontWeight: 500 }}>Revisando transcrição...</span>
                         </div>
                     )}
                 </div>
