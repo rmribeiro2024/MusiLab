@@ -120,6 +120,35 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
     requestAnimationFrame(() => setVisible(true))
   }, [])
 
+  // Drag
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  const dragging = React.useRef(false)
+  const dragStart = React.useRef({ mx: 0, my: 0, px: 0, py: 0 })
+
+  const onDragStart = (e: React.MouseEvent) => {
+    dragging.current = true
+    const startPos = pos ?? { x: 0, y: 0 }
+    dragStart.current = { mx: e.clientX, my: e.clientY, px: startPos.x, py: startPos.y }
+    e.preventDefault()
+  }
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragging.current) return
+      setPos({
+        x: dragStart.current.px + e.clientX - dragStart.current.mx,
+        y: dragStart.current.py + e.clientY - dragStart.current.my,
+      })
+    }
+    const onUp = () => { dragging.current = false }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+  }, [])
+
   // Dismiss por Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -153,19 +182,28 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 dark:bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 bg-black/40 dark:bg-black/60 z-50 backdrop-blur-[2px]"
       onClick={onClose}
     >
       <div
-        className={`bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden
+        className={`absolute bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl w-[340px] overflow-hidden
           transition-all duration-200 ease-out
           ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-        style={cardStyle}
+        style={{
+          ...cardStyle,
+          top: pos ? `calc(50% + ${pos.y}px)` : '50%',
+          left: pos ? `calc(50% + ${pos.x}px)` : '50%',
+          transform: `translate(-50%, -50%) ${visible ? 'scale(1)' : 'scale(0.95)'}`,
+          pointerEvents: 'auto',
+        }}
         onClick={e => e.stopPropagation()}
       >
 
         {/* ── HEADER ─────────────────────────────────────────────────────── */}
-        <div className="px-5 pt-5 pb-4 border-b border-[#E6EAF0] dark:border-[#374151]">
+        <div
+          className="px-5 pt-5 pb-4 border-b border-[#E6EAF0] dark:border-[#374151] cursor-grab active:cursor-grabbing select-none"
+          onMouseDown={onDragStart}
+        >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
               {/* Turma em destaque */}
