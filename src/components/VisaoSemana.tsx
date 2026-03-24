@@ -2,7 +2,7 @@
 // Etapa 4 — Visão da Semana (Planejamento)
 // Mostra o grid SEG–SEX com turmas agendadas. Foco: preparação (não registro).
 
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { usePlanosContext } from '../contexts/PlanosContext'
@@ -460,7 +460,13 @@ export default function VisaoSemana() {
   const isPast  = (d: Date) => d < hoje && !isHoje(d)
   const isSemanaAtual = toYMD(semanaInicio) === toYMD(getSemanaAtualInicio())
   const todayYmd = toYMD(hoje)
-  const agoraMin = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes() })()
+
+  // Tempo atual em minutos — atualiza a cada 30s para evitar flashing no badge "AO VIVO"
+  const [agoraMin, setAgoraMin] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes() })
+  useEffect(() => {
+    const t = setInterval(() => { const n = new Date(); setAgoraMin(n.getHours() * 60 + n.getMinutes()) }, 30_000)
+    return () => clearInterval(t)
+  }, [])
 
 
   // ─── Render ───────────────────────────────────────────────────────────────

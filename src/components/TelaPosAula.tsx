@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
@@ -41,8 +41,12 @@ export default function TelaPosAula() {
         setModalRegistro(false)
     }
 
-    const agora = new Date()
-    const minAgora = agora.getHours() * 60 + agora.getMinutes()
+    // Tempo atual em minutos — state estável para evitar flashing no badge "AO VIVO"
+    const [minAgora, setMinAgora] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes() })
+    useEffect(() => {
+        const t = setInterval(() => { const n = new Date(); setMinAgora(n.getHours() * 60 + n.getMinutes()) }, 30_000)
+        return () => clearInterval(t)
+    }, [])
     const ehHoje = dataSel === hojeStr
 
     const diasSemanaLabel = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']

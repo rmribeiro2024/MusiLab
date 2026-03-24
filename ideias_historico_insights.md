@@ -6,33 +6,34 @@
 
 ### Visão geral — Prioridade, Complexidade, Urgência e Impacto
 
-| # | Ideia | Tipo | Prioridade | Urgência | Complexidade | Impacto |
-|---|---|---|---|---|---|---|
-| 5 | Bug — botão "Aula ao vivo" piscando/sumindo | Bug | Alta | Alta | Baixa | Alto |
-| 7 | Bug — botão "aula em andamento" inconsistente | Bug | Alta | Alta | Baixa | Alto |
-| 3 | Experiência mobile otimizada | UX | Alta | Alta | Média | Alto |
-| 16 | Resumo diário das aulas | Feature | Alta | Média | Baixa | Alto |
-| 8 | Sugestões automáticas de atividades (IA) | IA | Alta | Média | Média | Alto |
-| 18 | Registro pós-aula como ferramenta analítica | IA/Analytics | Alta | Média | Alta | Alto |
-| 4 | Cadastro e acompanhamento de alunos | Feature | Alta | Baixa | Alta | Alto |
-| 9 | Organização por Unidades temáticas | Estrutura | Média | Média | Alta | Médio |
-| 17 | Perguntas ao sistema no pós-aula (IA conversacional) | IA | Média | Baixa | Alta | Alto |
-| 6 | Exportação e impressão (PDF) | Feature | Média | Baixa | Média | Médio |
-| 12 | Colaboração em equipe | Feature | Média | Baixa | Alta | Alto |
-| 1 | Métricas de uso (analytics interno) | Analytics | Média | Baixa | Média | Médio |
-| 2 | Comunidade entre professores | Social | Média | Baixa | Alta | Alto |
-| 10 | Upload de imagens no plano de aula | Feature | Baixa | Baixa | Média | Médio |
-| 13 | Metas e conquistas do professor | Engajamento | Baixa | Baixa | Baixa | Médio |
-| 15 | "Powered by MusiLab" nos exports | Branding | Baixa | Baixa | Baixa | Baixo |
-| 14 | Integração com redes sociais | Marketing | Baixa | Baixa | Média | Baixo |
-| 11 | Editor de partitura integrado | Feature | Baixa | Baixa | Alta | Médio |
+| Status | # | Ideia | Tipo | Prioridade | Urgência | Complexidade | Impacto |
+|---|---|---|---|---|---|---|---|
+| ✅ | 5 | Bug — botão "Aula ao vivo" piscando/sumindo | Bug | Alta | Alta | Baixa | Alto |
+| ✅ | 7 | Bug — botão "aula em andamento" inconsistente | Bug | Alta | Alta | Baixa | Alto |
+| [ ] | 3 | Experiência mobile otimizada | UX | Alta | Alta | Média | Alto |
+| [ ] | 16 | Resumo diário das aulas | Feature | Alta | Média | Baixa | Alto |
+| [ ] | 8 | Sugestões automáticas de atividades (IA) | IA | Alta | Média | Média | Alto |
+| [ ] | 19 | Chat com IA no pós-aula (baseado nos registros) | IA | Alta | Média | Média | Alto |
+| [ ] | 18 | Registro pós-aula como ferramenta analítica | IA/Analytics | Alta | Média | Alta | Alto |
+| [ ] | 4 | Cadastro e acompanhamento de alunos | Feature | Alta | Baixa | Alta | Alto |
+| [ ] | 9 | Organização por Unidades temáticas | Estrutura | Média | Média | Alta | Médio |
+| [ ] | 17 | Perguntas ao sistema no pós-aula (IA conversacional) | IA | Média | Baixa | Alta | Alto |
+| [ ] | 6 | Exportação e impressão (PDF) | Feature | Média | Baixa | Média | Médio |
+| [ ] | 12 | Colaboração em equipe | Feature | Média | Baixa | Alta | Alto |
+| [ ] | 1 | Métricas de uso (analytics interno) | Analytics | Média | Baixa | Média | Médio |
+| [ ] | 2 | Comunidade entre professores | Social | Média | Baixa | Alta | Alto |
+| [ ] | 10 | Upload de imagens no plano de aula | Feature | Baixa | Baixa | Média | Médio |
+| [ ] | 13 | Metas e conquistas do professor | Engajamento | Baixa | Baixa | Baixa | Médio |
+| [ ] | 15 | "Powered by MusiLab" nos exports | Branding | Baixa | Baixa | Baixa | Baixo |
+| [ ] | 14 | Integração com redes sociais | Marketing | Baixa | Baixa | Média | Baixo |
+| [ ] | 11 | Editor de partitura integrado | Feature | Baixa | Baixa | Alta | Médio |
 
 ---
 
 ### Ordem de ataque sugerida
 
 **Fase 1 — Estabilidade e confiança (curto prazo)**
-- #5 e #7 primeiro — bugs que quebram a experiência durante a aula, complexidade baixa, resolver em conjunto
+- ~~#5 e #7~~ ✅ corrigidos — badge "AO VIVO" estabilizado com useState + setInterval (30s)
 - #3 — mobile é onde o professor mais usa; "modo aula" enxuto resolve vários problemas de uma vez
 
 **Fase 2 — Valor percebido (médio prazo)**
