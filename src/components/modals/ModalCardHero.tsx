@@ -1,10 +1,11 @@
 // src/components/modals/ModalCardHero.tsx
 // Modal Card Hero — abre ao clicar em um card da Visão da Semana
+// Suporta 3 estilos de animação: 'center' | 'bottomSheet' | 'sharedElement'
 
 import React, { useState, useEffect } from 'react'
 import type { RegistroPosAula } from '../../types'
 
-// ── Dark mode (mesmo padrão de ModalRegistroPosAula) ─────────────────────────
+// ── Dark mode ─────────────────────────────────────────────────────────────────
 function useIsDark() {
   const [isDark, setIsDark] = React.useState(
     () => document.documentElement.classList.contains('dark')
@@ -19,7 +20,7 @@ function useIsDark() {
   return isDark
 }
 
-// ── Status helpers (mesma lógica de VisaoSemana) ──────────────────────────────
+// ── Status helpers ────────────────────────────────────────────────────────────
 type StatusEfetivo = 'concluida' | 'revisao' | 'incompleta' | 'nao_houve' | null
 
 function inferStatus(r: RegistroPosAula): StatusEfetivo {
@@ -62,6 +63,9 @@ export interface ModalCardHeroProps {
   registro: RegistroPosAula | null
   ultimoReg: RegistroPosAula | null
   ultimoRegData: string | null
+  // Estilo de abertura
+  animStyle?: 'center' | 'bottomSheet' | 'sharedElement'
+  triggerRect?: { top: number; left: number; width: number; height: number }
   onClose: () => void
   onEditar: () => void
   onRegistrar: () => void
@@ -109,6 +113,8 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
     turmaNome, escolaNome, escolaCor, ymd, horario, diaSemanaShort,
     cardState, planoTitulo, objetivo,
     registro, ultimoReg, ultimoRegData,
+    animStyle = 'center',
+    triggerRect,
     onClose, onEditar, onRegistrar, onCriarPlano,
   } = props
 
@@ -120,14 +126,14 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
     requestAnimationFrame(() => setVisible(true))
   }, [])
 
-  // Drag
+  // Drag — só funciona no modo 'center'
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   const dragging = React.useRef(false)
   const dragStart = React.useRef({ mx: 0, my: 0, px: 0, py: 0 })
-
   const [isDragging, setIsDragging] = useState(false)
 
   const onDragStart = (e: React.MouseEvent) => {
+    if (animStyle !== 'center') return
     dragging.current = true
     setIsDragging(true)
     const startPos = pos ?? { x: 0, y: 0 }
@@ -159,11 +165,11 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
     return () => document.removeEventListener('keydown', handler)
   }, [onClose])
 
-  // Formatação de data e horário
+  // Formatação
   const dataLabel = `${diaSemanaShort}, ${ymd.slice(8, 10)}/${ymd.slice(5, 7)}`
   const horarioLabel = horario ? horario.replace(/:00$/, 'h').replace(/:(\d{2})$/, 'h$1') : ''
 
-  // Campos do registro do dia
+  // Campos do registro
   const funcionouBem   = registro?.funcionouBem || null
   const repetiria      = (registro as any)?.repetiria || null
   const fariadiferente = registro?.fariadiferente || (registro as any)?.naoFuncionou || null
@@ -178,185 +184,235 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
   const ultStatusLabel    = ultStatus ? STATUS_LABEL[ultStatus] : null
   const ultAcao           = ultStatus ? STATUS_ACAO[ultStatus] : 'Planejar próxima aula'
 
-  // Cor da escola como CSS vars
+  // CSS vars cor da escola
   const cardStyle = escolaCor
     ? ({ '--escola-l': escolaCor.light, '--escola-d': isDark ? escolaCor.dark : escolaCor.light } as React.CSSProperties)
     : undefined
 
-  return (
-    <div
-      className="fixed inset-0 bg-black/40 dark:bg-black/60 z-50 backdrop-blur-[2px]"
-      onClick={onClose}
-    >
-      <div
-        className={`absolute bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl w-[340px] overflow-hidden
-          ${isDragging ? '' : 'transition-all duration-200 ease-out'}
-          ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-        style={{
-          ...cardStyle,
-          top: pos ? `calc(50% + ${pos.y}px)` : '50%',
-          left: pos ? `calc(50% + ${pos.x}px)` : '50%',
-          transform: `translate(-50%, -50%) ${visible ? 'scale(1)' : 'scale(0.95)'}`,
-          pointerEvents: 'auto',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
+  // ── Cálculo do offset para Shared Element ─────────────────────────────────
+  const sharedDx = triggerRect
+    ? (triggerRect.left + triggerRect.width / 2) - window.innerWidth / 2
+    : 0
+  const sharedDy = triggerRect
+    ? (triggerRect.top + triggerRect.height / 2) - window.innerHeight / 2
+    : 0
 
-        {/* ── HEADER ─────────────────────────────────────────────────────── */}
-        <div
-          className="px-5 pt-5 pb-4 border-b border-[#E6EAF0] dark:border-[#374151] cursor-grab active:cursor-grabbing select-none"
-          onMouseDown={onDragStart}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              {/* Turma em destaque */}
-              <div className="text-[15px] font-bold text-slate-800 dark:text-[#E5E7EB] leading-tight mb-1">
-                {turmaNome}
-              </div>
-              {/* Escola · data · horário */}
-              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-slate-400 dark:text-[#6B7280]">
-                {escolaNome && (
-                  <>
-                    <span className="escola-label font-medium text-[11px]">{escolaNome}</span>
-                    <span>·</span>
-                  </>
-                )}
-                <span>{dataLabel}</span>
-                {horarioLabel && (
-                  <>
-                    <span>·</span>
-                    <span>{horarioLabel}</span>
-                  </>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-slate-300 dark:text-[#4B5563] hover:text-slate-500 dark:hover:text-[#9CA3AF] hover:bg-slate-100 dark:hover:bg-white/[0.08] transition text-[16px] leading-none"
-            >
-              ✕
-            </button>
-          </div>
+  // ── Backdrop ──────────────────────────────────────────────────────────────
+  const backdropClass = animStyle === 'center'
+    ? 'fixed inset-0 bg-black/40 dark:bg-black/60 z-50 backdrop-blur-[2px]'
+    : 'fixed inset-0 bg-black/35 dark:bg-black/55 z-50'
+
+  // ── Painel: classe e estilo por modo ─────────────────────────────────────
+  const panelContentClass = 'bg-white dark:bg-[#1F2937] shadow-2xl overflow-hidden'
+
+  let panelClass = ''
+  let panelStyle: React.CSSProperties = {}
+
+  if (animStyle === 'bottomSheet') {
+    panelClass = `${panelContentClass} absolute bottom-0 left-0 right-0 rounded-t-2xl`
+    panelStyle = {
+      ...cardStyle,
+      transform: `translateY(${visible ? '0' : '100%'})`,
+      transition: 'transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+    }
+  } else if (animStyle === 'sharedElement') {
+    panelClass = `${panelContentClass} absolute rounded-2xl w-[340px]`
+    panelStyle = {
+      ...cardStyle,
+      top: '50%',
+      left: '50%',
+      opacity: visible ? 1 : 0,
+      transform: visible
+        ? 'translate(-50%, -50%) scale(1)'
+        : `translate(calc(-50% + ${sharedDx}px), calc(-50% + ${sharedDy}px)) scale(0.08)`,
+      transition: visible
+        ? 'transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease'
+        : 'none',
+    }
+  } else {
+    // center (padrão)
+    panelClass = `${panelContentClass} absolute rounded-2xl w-[340px]
+      ${isDragging ? '' : 'transition-all duration-200 ease-out'}
+      ${visible ? 'opacity-100' : 'opacity-0'}`
+    panelStyle = {
+      ...cardStyle,
+      top: pos ? `calc(50% + ${pos.y}px)` : '50%',
+      left: pos ? `calc(50% + ${pos.x}px)` : '50%',
+      transform: `translate(-50%, -50%) ${visible ? 'scale(1)' : 'scale(0.95)'}`,
+      pointerEvents: 'auto',
+    }
+  }
+
+  // ── Conteúdo do painel (compartilhado entre todos os modos) ──────────────
+  const panelContent = (
+    <>
+      {/* Drag handle — só no bottom sheet */}
+      {animStyle === 'bottomSheet' && (
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-9 h-[3px] bg-slate-200 dark:bg-[#374151] rounded-full" />
         </div>
+      )}
 
-        {/* ── BODY ───────────────────────────────────────────────────────── */}
-        <div className="px-5 py-4 space-y-3">
-
-          {/* ── Estado: comPlano ── */}
-          {cardState === 'comPlano' && (
-            <div className="space-y-2">
-              {planoTitulo ? (
-                <div className="flex items-start gap-2">
-                  <span className="text-[14px] shrink-0 mt-0.5">📋</span>
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-slate-800 dark:text-[#E5E7EB] leading-snug">
-                      {planoTitulo}
-                    </p>
-                    {objetivo && (
-                      <p className="text-[11.5px] text-slate-500 dark:text-[#9CA3AF] mt-1 line-clamp-2 leading-relaxed">
-                        {objetivo}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-[12px] text-slate-400 dark:text-[#6B7280] italic">
-                  Aula planejada para este dia.
-                </p>
+      {/* ── HEADER ─────────────────────────────────────────────────────── */}
+      <div
+        className={`px-5 ${animStyle === 'bottomSheet' ? 'pt-3' : 'pt-5'} pb-4 border-b border-[#E6EAF0] dark:border-[#374151]
+          ${animStyle === 'center' ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
+        onMouseDown={animStyle === 'center' ? onDragStart : undefined}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="text-[15px] font-bold text-slate-800 dark:text-[#E5E7EB] leading-tight mb-1">
+              {turmaNome}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-slate-400 dark:text-[#6B7280]">
+              {escolaNome && (
+                <>
+                  <span className="escola-label font-medium text-[11px]">{escolaNome}</span>
+                  <span>·</span>
+                </>
+              )}
+              <span>{dataLabel}</span>
+              {horarioLabel && (
+                <>
+                  <span>·</span>
+                  <span>{horarioLabel}</span>
+                </>
               )}
             </div>
-          )}
+          </div>
+          <button
+            onClick={onClose}
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-slate-300 dark:text-[#4B5563] hover:text-slate-500 dark:hover:text-[#9CA3AF] hover:bg-slate-100 dark:hover:bg-white/[0.08] transition text-[16px] leading-none"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
 
-          {/* ── Estado: registrada ── */}
-          {cardState === 'registrada' && (
-            <div className="space-y-2">
-              {planoTitulo && (
-                <div className="flex items-start gap-2 pb-2 border-b border-[#E6EAF0] dark:border-[#374151]">
-                  <span className="text-[14px] shrink-0 mt-0.5">📋</span>
-                  <p className="text-[13px] font-semibold text-slate-700 dark:text-[#D1D5DB] leading-snug line-clamp-2">
+      {/* ── BODY ───────────────────────────────────────────────────────── */}
+      <div className="px-5 py-4 space-y-3">
+
+        {cardState === 'comPlano' && (
+          <div className="space-y-2">
+            {planoTitulo ? (
+              <div className="flex items-start gap-2">
+                <span className="text-[14px] shrink-0 mt-0.5">📋</span>
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold text-slate-800 dark:text-[#E5E7EB] leading-snug">
                     {planoTitulo}
                   </p>
-                </div>
-              )}
-              <p className="text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
-                ✓ O que aconteceu
-              </p>
-              {temConteudoReg ? (
-                <div className="space-y-1.5">
-                  {funcionouBem && <RegistroField icon="⭐" label="Funcionou" text={funcionouBem} />}
-                  {repetiria && !funcionouBem && <RegistroField icon="⭐" label="Funcionou" text={repetiria} />}
-                  {fariadiferente && <RegistroField icon="🔄" label="Faria diferente" text={fariadiferente} />}
-                  {statusLabel && (
-                    <p className="text-[11px] text-slate-400 dark:text-[#6B7280]">
-                      Como foi: <span className="font-medium">{statusLabel}</span>
+                  {objetivo && (
+                    <p className="text-[11.5px] text-slate-500 dark:text-[#9CA3AF] mt-1 line-clamp-2 leading-relaxed">
+                      {objetivo}
                     </p>
                   )}
                 </div>
-              ) : (
+              </div>
+            ) : (
+              <p className="text-[12px] text-slate-400 dark:text-[#6B7280] italic">
+                Aula planejada para este dia.
+              </p>
+            )}
+          </div>
+        )}
+
+        {cardState === 'registrada' && (
+          <div className="space-y-2">
+            {planoTitulo && (
+              <div className="flex items-start gap-2 pb-2 border-b border-[#E6EAF0] dark:border-[#374151]">
+                <span className="text-[14px] shrink-0 mt-0.5">📋</span>
+                <p className="text-[13px] font-semibold text-slate-700 dark:text-[#D1D5DB] leading-snug line-clamp-2">
+                  {planoTitulo}
+                </p>
+              </div>
+            )}
+            <p className="text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
+              ✓ O que aconteceu
+            </p>
+            {temConteudoReg ? (
+              <div className="space-y-1.5">
+                {funcionouBem && <RegistroField icon="⭐" label="Funcionou" text={funcionouBem} />}
+                {repetiria && !funcionouBem && <RegistroField icon="⭐" label="Funcionou" text={repetiria} />}
+                {fariadiferente && <RegistroField icon="🔄" label="Faria diferente" text={fariadiferente} />}
+                {statusLabel && (
+                  <p className="text-[11px] text-slate-400 dark:text-[#6B7280]">
+                    Como foi: <span className="font-medium">{statusLabel}</span>
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-[11.5px] text-slate-400 dark:text-[#6B7280] italic">
+                Registro sem detalhes preenchidos.
+              </p>
+            )}
+          </div>
+        )}
+
+        {cardState === 'sugestao' && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[14px]">💡</span>
+              <p className="text-[13px] font-semibold text-slate-700 dark:text-[#D1D5DB]">
+                Sugestão: {ultAcao}
+              </p>
+            </div>
+            <div className="pt-2 border-t border-[#E6EAF0] dark:border-[#374151] space-y-1.5">
+              <p className="text-[10.5px] font-semibold text-slate-400 dark:text-[#6B7280] uppercase tracking-wide mb-1.5">
+                📋 Última aula{ultimoRegData ? ` · ${ultimoRegData}` : ''}
+              </p>
+              {ultRepetiria && <RegistroField icon="⭐" label="Funcionou" text={ultRepetiria} />}
+              {ultFariadiferente && <RegistroField icon="🔄" label="Faria diferente" text={ultFariadiferente} />}
+              {ultStatusLabel && (
+                <p className="text-[11px] text-slate-400 dark:text-[#6B7280]">
+                  Como foi: <span className="font-medium">{ultStatusLabel}</span>
+                </p>
+              )}
+              {!ultRepetiria && !ultFariadiferente && !ultStatusLabel && (
                 <p className="text-[11.5px] text-slate-400 dark:text-[#6B7280] italic">
-                  Registro sem detalhes preenchidos.
+                  Sem detalhes no último registro.
                 </p>
               )}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ── Estado: sugestao ── */}
-          {cardState === 'sugestao' && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[14px]">💡</span>
-                <p className="text-[13px] font-semibold text-slate-700 dark:text-[#D1D5DB]">
-                  Sugestão: {ultAcao}
-                </p>
-              </div>
-              <div className="pt-2 border-t border-[#E6EAF0] dark:border-[#374151] space-y-1.5">
-                <p className="text-[10.5px] font-semibold text-slate-400 dark:text-[#6B7280] uppercase tracking-wide mb-1.5">
-                  📋 Última aula{ultimoRegData ? ` · ${ultimoRegData}` : ''}
-                </p>
-                {ultRepetiria && <RegistroField icon="⭐" label="Funcionou" text={ultRepetiria} />}
-                {ultFariadiferente && <RegistroField icon="🔄" label="Faria diferente" text={ultFariadiferente} />}
-                {ultStatusLabel && (
-                  <p className="text-[11px] text-slate-400 dark:text-[#6B7280]">
-                    Como foi: <span className="font-medium">{ultStatusLabel}</span>
-                  </p>
-                )}
-                {!ultRepetiria && !ultFariadiferente && !ultStatusLabel && (
-                  <p className="text-[11.5px] text-slate-400 dark:text-[#6B7280] italic">
-                    Sem detalhes no último registro.
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
+        {cardState === 'vazio' && (
+          <p className="text-[12.5px] text-slate-400 dark:text-[#6B7280] text-center py-1">
+            Nenhum plano para esta aula.
+          </p>
+        )}
 
-          {/* ── Estado: vazio ── */}
-          {cardState === 'vazio' && (
-            <p className="text-[12.5px] text-slate-400 dark:text-[#6B7280] text-center py-1">
-              Nenhum plano para esta aula.
-            </p>
-          )}
+      </div>
 
-        </div>
+      {/* ── FOOTER ─────────────────────────────────────────────────────── */}
+      <div className="px-5 pb-5 pt-0 flex gap-2">
+        {cardState === 'comPlano' && (
+          <>
+            <ActionButton onClick={onEditar} label="✏️  Editar" variant="secondary" />
+            <ActionButton onClick={onRegistrar} label="📝  Registrar" variant="primary" fullWidth />
+          </>
+        )}
+        {cardState === 'registrada' && (
+          <ActionButton onClick={onEditar} label="✏️  Ver planejamento" variant="secondary" fullWidth />
+        )}
+        {cardState === 'sugestao' && (
+          <ActionButton onClick={onCriarPlano} label="+ Planejar com base nisso" variant="primary" fullWidth />
+        )}
+        {cardState === 'vazio' && (
+          <ActionButton onClick={onCriarPlano} label="+ Criar plano" variant="primary" fullWidth />
+        )}
+      </div>
+    </>
+  )
 
-        {/* ── FOOTER ─────────────────────────────────────────────────────── */}
-        <div className="px-5 pb-5 pt-0 flex gap-2">
-          {cardState === 'comPlano' && (
-            <>
-              <ActionButton onClick={onEditar} label="✏️  Editar" variant="secondary" />
-              <ActionButton onClick={onRegistrar} label="📝  Registrar" variant="primary" fullWidth />
-            </>
-          )}
-          {cardState === 'registrada' && (
-            <ActionButton onClick={onEditar} label="✏️  Ver planejamento" variant="secondary" fullWidth />
-          )}
-          {cardState === 'sugestao' && (
-            <ActionButton onClick={onCriarPlano} label="+ Planejar com base nisso" variant="primary" fullWidth />
-          )}
-          {cardState === 'vazio' && (
-            <ActionButton onClick={onCriarPlano} label="+ Criar plano" variant="primary" fullWidth />
-          )}
-        </div>
-
+  return (
+    <div className={backdropClass} onClick={onClose}>
+      <div
+        className={panelClass}
+        style={panelStyle}
+        onClick={e => e.stopPropagation()}
+      >
+        {panelContent}
       </div>
     </div>
   )

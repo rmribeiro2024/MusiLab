@@ -187,6 +187,16 @@ export default function VisaoSemana() {
   }
   const [heroCard, setHeroCard] = useState<HeroCardData | null>(null)
 
+  // Estilo de animação do Card Hero — persiste no localStorage
+  type HeroAnimStyle = 'center' | 'bottomSheet' | 'sharedElement'
+  const [heroAnimStyle, setHeroAnimStyle] = useState<HeroAnimStyle>(
+    () => (localStorage.getItem('heroAnimStyle') as HeroAnimStyle | null) ?? 'center'
+  )
+  const setAndSaveAnimStyle = (s: HeroAnimStyle) => {
+    setHeroAnimStyle(s)
+    localStorage.setItem('heroAnimStyle', s)
+  }
+
   // Estado local de navegação — não interfere com AgendaSemanal
   const [semanaInicio, setSemanaInicio] = useState<Date>(() => getSemanaAtualInicio())
 
@@ -344,6 +354,29 @@ export default function VisaoSemana() {
               Hoje
             </button>
           )}
+
+          {/* Separador + toggle de estilo de abertura do Card Hero */}
+          <div className="w-px h-4 bg-[#E6EAF0] dark:bg-[#374151] self-center" />
+          <div className="flex rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden v2-card" title="Estilo de abertura do card">
+            {([
+              { key: 'center',        icon: '⊡', label: 'Modal central' },
+              { key: 'bottomSheet',   icon: '▽', label: 'Bottom sheet' },
+              { key: 'sharedElement', icon: '⊕', label: 'Cresce do card' },
+            ] as const).map(({ key, icon, label }, i) => (
+              <button
+                key={key}
+                onClick={() => setAndSaveAnimStyle(key)}
+                title={label}
+                className={`w-[26px] h-[26px] flex items-center justify-center text-[11px] transition-all
+                  ${heroAnimStyle === key
+                    ? 'bg-[#5B5FEA] dark:bg-[#818cf8] text-white'
+                    : 'text-slate-400 dark:text-[#6B7280] hover:bg-slate-100 dark:hover:bg-white/[0.05]'}
+                  ${i > 0 ? 'border-l border-[#E6EAF0] dark:border-[#374151]' : ''}`}
+              >
+                {icon}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -411,6 +444,10 @@ export default function VisaoSemana() {
                         onClick={(!past || foiRegistrada) ? (e: React.MouseEvent) => {
                           e.stopPropagation()
 
+                          // Captura posição do card para o Shared Element
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                          const capturedRect = { top: rect.top, left: rect.left, width: rect.width, height: rect.height }
+
                           const cardState: HeroCardData['cardState'] = foiRegistrada ? 'registrada'
                             : temPlano ? 'comPlano'
                             : ultimoReg ? 'sugestao'
@@ -447,6 +484,8 @@ export default function VisaoSemana() {
                             horario: aula.horario ?? '', diaSemanaShort: short,
                             cardState, planoTitulo, objetivo,
                             registro: registroDoDia as any, ultimoReg, ultimoRegData,
+                            animStyle: heroAnimStyle,
+                            triggerRect: capturedRect,
                             navParams: {
                               anoLetivoId: String(aula.anoLetivoId ?? ''),
                               escolaId:    String(aula.escolaId ?? ''),
