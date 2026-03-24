@@ -99,6 +99,7 @@ const AccordionChip = React.forwardRef<() => void, {
         rec.onend = async () => {
             setGravando(false); setSpeechAtivo(false); setInterimText('')
             const raw = finalTranscriptRef.current.trim()
+            finalTranscriptRef.current = '' // limpa imediatamente para evitar duplo processamento
             if (!raw) return
             const base = valueRef.current
             onChange(base ? base + ' ' + raw : raw) // mostra imediatamente
