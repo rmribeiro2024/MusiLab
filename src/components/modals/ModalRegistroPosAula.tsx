@@ -63,7 +63,7 @@ const AccordionChip = React.forwardRef<() => void, {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: `Você é um assistente de transcrição para um professor de música brasileiro. Corrija apenas erros óbvios de transcrição de voz no texto abaixo, mantendo o sentido e as palavras originais. Vocabulário esperado: turma, escola, segmento, engajamento, ritmo, melodia, harmonia, dinâmica, compasso, timbre, pós-aula, planejamento, atividade, aluno, ensino, percussão, flauta, violão, canto. Retorne APENAS o texto corrigido, sem explicações, sem aspas.\n\nTexto: ${texto}` }] }],
-                    generationConfig: { temperature: 0.1, maxOutputTokens: 512 },
+                    generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
                 }),
             })
             const data = await res.json()
@@ -101,12 +101,11 @@ const AccordionChip = React.forwardRef<() => void, {
             const raw = finalTranscriptRef.current.trim()
             if (!raw) return
             const base = valueRef.current
-            const combined = base ? base + ' ' + raw : raw
-            onChange(combined) // mostra imediatamente
+            onChange(base ? base + ' ' + raw : raw) // mostra imediatamente
             setCorrigindo(true)
-            const corrigido = await corrigirComGemini(combined)
+            const corrigido = await corrigirComGemini(raw) // só o trecho novo
             setCorrigindo(false)
-            onChange(corrigido)
+            onChange(base ? base + ' ' + corrigido : corrigido)
         }
         rec.onerror = () => { setGravando(false); setSpeechAtivo(false); setInterimText('') }
         recognitionRef.current = rec
