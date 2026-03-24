@@ -187,7 +187,10 @@ export default function VisaoSemana() {
   }
   const [heroCard, setHeroCard] = useState<HeroCardData | null>(null)
 
-  // Estilo de animação do Card Hero — persiste no localStorage
+  // Mobile detection
+  const isMobile = 'ontouchstart' in window
+
+  // Estilo de animação do Card Hero — persiste no localStorage (desktop) / sempre bottomSheet no mobile
   type HeroAnimStyle = 'center' | 'bottomSheet' | 'sharedElement'
   const [heroAnimStyle, setHeroAnimStyle] = useState<HeroAnimStyle>(
     () => (localStorage.getItem('heroAnimStyle') as HeroAnimStyle | null) ?? 'center'
@@ -196,6 +199,7 @@ export default function VisaoSemana() {
     setHeroAnimStyle(s)
     localStorage.setItem('heroAnimStyle', s)
   }
+  const effectiveAnimStyle: HeroAnimStyle = isMobile ? 'bottomSheet' : heroAnimStyle
 
   // Estado local de navegação — não interfere com AgendaSemanal
   const [semanaInicio, setSemanaInicio] = useState<Date>(() => getSemanaAtualInicio())
@@ -374,9 +378,9 @@ export default function VisaoSemana() {
             </button>
           )}
 
-          {/* Separador + toggle de estilo de abertura do Card Hero */}
-          <div className="w-px h-4 bg-[#E6EAF0] dark:bg-[#374151] self-center" />
-          <div className="flex rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden v2-card" title="Estilo de abertura do card">
+          {/* Separador + toggle de estilo de abertura do Card Hero — só no desktop */}
+          {!isMobile && <div className="w-px h-4 bg-[#E6EAF0] dark:bg-[#374151] self-center" />}
+          {!isMobile && <div className="flex rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden v2-card" title="Estilo de abertura do card">
             {([
               { key: 'center',        icon: '⊡', label: 'Modal central' },
               { key: 'bottomSheet',   icon: '▽', label: 'Bottom sheet' },
@@ -395,7 +399,7 @@ export default function VisaoSemana() {
                 {icon}
               </button>
             ))}
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -503,7 +507,7 @@ export default function VisaoSemana() {
                             horario: aula.horario ?? '', diaSemanaShort: short,
                             cardState, planoTitulo, objetivo,
                             registro: registroDoDia as any, ultimoReg, ultimoRegData,
-                            animStyle: heroAnimStyle,
+                            animStyle: effectiveAnimStyle,
                             triggerRect: capturedRect,
                             navParams: {
                               anoLetivoId: String(aula.anoLetivoId ?? ''),
