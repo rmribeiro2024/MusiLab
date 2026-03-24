@@ -150,7 +150,7 @@ const AccordionChip = React.forwardRef<() => void, {
                         value={gravando && interimText ? (value ? value + ' ' + interimText : interimText) : value}
                         onChange={e => { if (!gravando) onChange(e.target.value) }}
                         onKeyDown={e => { if (e.key === 'Tab') { e.preventDefault(); setOpen(false); onTabNext?.() } }}
-                        rows={2} placeholder={placeholder} autoFocus
+                        rows={2} placeholder={placeholder} autoFocus={!('ontouchstart' in window)}
                         style={{ width: '100%', padding: '9px 10px', border: `1px solid ${gravando ? (speechAtivo ? '#fca5a5' : '#f97316') : corrigindo ? '#818cf8' : c.border}`, borderRadius: 8, fontSize: 13, color: gravando && interimText ? '#94a3b8' : c.textMain, background: c.inputBg, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', transition: 'border-color .2s, color .2s' }}
                         onFocus={e => { if (!gravando && !corrigindo) e.target.style.borderColor = '#94a3b8' }}
                         onBlur={e  => { if (!gravando && !corrigindo) e.target.style.borderColor = c.border }}
@@ -1150,26 +1150,6 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                             </div>
                                         </div>
                                     )}
-
-                                    {/* ⚠️ Alunos com flag de atenção */}
-                                    {regTurmaSel && regAnoSel && regEscolaSel && regSegmentoSel && (() => {
-                                        const flagged = alunosGetByTurma(regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel).filter(a => a.flag)
-                                        if (flagged.length === 0) return null
-                                        return (
-                                            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '10px 12px' }}>
-                                                <p className="text-[11px] font-bold text-amber-700 mb-1.5 uppercase tracking-wide">⚠️ Atenção especial</p>
-                                                <div className="flex flex-col gap-1">
-                                                    {flagged.map(al => (
-                                                        <div key={al.id} className="flex items-start gap-1.5">
-                                                            <span className="text-amber-500 text-xs shrink-0 mt-0.5">•</span>
-                                                            <span className="text-xs text-amber-800 font-semibold">{al.nome}</span>
-                                                            {al.nota && <span className="text-xs text-amber-600 italic">— {al.nota}</span>}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )
-                                    })()}
 
                                     {/* 📌 Nota de adaptação da turma */}
                                     {regTurmaSel && planoParaRegistro?.notasAdaptacao && (() => {

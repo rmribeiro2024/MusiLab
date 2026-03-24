@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ── FONTE INTER (igual ao preview) ── */
-body { font-family: 'Inter', system-ui, sans-serif; }
+body { font-family: 'Inter', system-ui, sans-serif; overscroll-behavior-y: none; }
 
 /* ── INPUTS — fundo igual ao card container, invisível contra o fundo ── */
 html { color-scheme: light; }

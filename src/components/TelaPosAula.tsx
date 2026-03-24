@@ -134,13 +134,6 @@ export default function TelaPosAula() {
         setModalRegistro(false)
     }
 
-    // Navegar entre turmas com ‹ ›
-    const navTurma = (delta: number, e: React.MouseEvent) => {
-        e.stopPropagation()
-        const prox = turmaIdx + delta
-        if (prox < 0 || prox >= turmasEnriq.length) return
-        abrirTurma(prox)
-    }
 
     const turmaAtual = turmasEnriq[turmaIdx]
 
@@ -191,17 +184,10 @@ export default function TelaPosAula() {
                             )}
                         </div>
 
-                        {/* Direita: ↑↓ turma (quando selecionada) + ‹ › dia (sempre) */}
+                        {/* Direita: ‹ › dia (sempre) */}
                         <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                             {turmaAtual && (
-                                <>
-                                    <button onClick={e => navTurma(-1, e)} disabled={turmaIdx === 0}
-                                        className="w-[26px] h-[26px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[12px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer transition">↑</button>
-                                    <span className="text-[11px] font-semibold text-slate-400 dark:text-[#6b7280] min-w-[28px] text-center tabular-nums">{turmaIdx + 1}/{turmasEnriq.length}</span>
-                                    <button onClick={e => navTurma(1, e)} disabled={turmaIdx === turmasEnriq.length - 1}
-                                        className="w-[26px] h-[26px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card flex items-center justify-center text-[12px] text-slate-400 dark:text-[#6b7280] disabled:opacity-30 hover:text-[#5B5FEA] hover:border-[#5B5FEA]/30 cursor-pointer transition">↓</button>
-                                    <div className="w-px h-4 bg-[#E6EAF0] dark:bg-[#374151] mx-0.5" />
-                                </>
+                                <div className="w-px h-4 bg-[#E6EAF0] dark:bg-[#374151] mx-0.5" />
                             )}
                             {!ehHoje && !turmaAtual && (
                                 <button onClick={() => { setDataSel(hojeStr); setTurmaIdx(-1) }}

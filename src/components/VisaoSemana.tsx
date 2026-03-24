@@ -200,6 +200,21 @@ export default function VisaoSemana() {
   // Estado local de navegação — não interfere com AgendaSemanal
   const [semanaInicio, setSemanaInicio] = useState<Date>(() => getSemanaAtualInicio())
 
+  // Swipe horizontal para navegar entre semanas
+  const swipeTouchStartX = React.useRef(0)
+  const swipeTouchStartTime = React.useRef(0)
+  const onSwipeTouchStart = (e: React.TouchEvent) => {
+    swipeTouchStartX.current = e.touches[0].clientX
+    swipeTouchStartTime.current = Date.now()
+  }
+  const onSwipeTouchEnd = (e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - swipeTouchStartX.current
+    const deltaTime = Date.now() - swipeTouchStartTime.current
+    if (Math.abs(deltaX) > 55 && deltaTime < 450) {
+      setSemanaInicio(prev => addDays(prev, deltaX < 0 ? 7 : -7))
+    }
+  }
+
   const hoje = useMemo(() => {
     const d = new Date()
     d.setHours(0, 0, 0, 0)
@@ -308,7 +323,11 @@ export default function VisaoSemana() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col min-h-0">
+    <div
+      className="flex flex-col min-h-0"
+      onTouchStart={onSwipeTouchStart}
+      onTouchEnd={onSwipeTouchEnd}
+    >
 
       {/* ── Cabeçalho: título + navegação de semana ── */}
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">

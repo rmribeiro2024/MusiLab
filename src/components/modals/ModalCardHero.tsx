@@ -126,6 +126,21 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
     requestAnimationFrame(() => setVisible(true))
   }, [])
 
+  // Touch drag-to-close (bottom sheet)
+  const touchStartY = React.useRef(0)
+  const [sheetDragY, setSheetDragY] = useState(0)
+  const onSheetTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY
+  }
+  const onSheetTouchMove = (e: React.TouchEvent) => {
+    const delta = e.touches[0].clientY - touchStartY.current
+    if (delta > 0) setSheetDragY(delta)
+  }
+  const onSheetTouchEnd = () => {
+    if (sheetDragY > 100) onClose()
+    else setSheetDragY(0)
+  }
+
   // Drag — só funciona no modo 'center'
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   const dragging = React.useRef(false)
@@ -212,8 +227,9 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
     panelClass = `${panelContentClass} absolute bottom-0 left-0 right-0 rounded-t-2xl`
     panelStyle = {
       ...cardStyle,
-      transform: `translateY(${visible ? '0' : '100%'})`,
-      transition: 'transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+      maxHeight: '85vh',
+      transform: `translateY(${visible ? (sheetDragY > 0 ? `${sheetDragY}px` : '0') : '100%'})`,
+      transition: sheetDragY > 0 ? 'none' : 'transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
     }
   } else if (animStyle === 'sharedElement') {
     panelClass = `${panelContentClass} absolute rounded-2xl w-[340px]`
@@ -248,7 +264,12 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
     <>
       {/* Drag handle — só no bottom sheet */}
       {animStyle === 'bottomSheet' && (
-        <div className="flex justify-center pt-3 pb-1">
+        <div
+          className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing"
+          onTouchStart={onSheetTouchStart}
+          onTouchMove={onSheetTouchMove}
+          onTouchEnd={onSheetTouchEnd}
+        >
           <div className="w-9 h-[3px] bg-slate-200 dark:bg-[#374151] rounded-full" />
         </div>
       )}
@@ -290,7 +311,7 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
       </div>
 
       {/* ── BODY ───────────────────────────────────────────────────────── */}
-      <div className="px-5 py-4 space-y-3">
+      <div className="px-5 py-4 space-y-3 overflow-y-auto" style={{ maxHeight: animStyle === 'bottomSheet' ? '55vh' : undefined }}>
 
         {cardState === 'comPlano' && (
           <div className="space-y-2">
