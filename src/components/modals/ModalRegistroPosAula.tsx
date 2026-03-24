@@ -88,12 +88,12 @@ const AccordionChip = React.forwardRef<() => void, {
         rec.onresult = (ev: any) => {
             let interim = ''
             let final = ''
-            for (let i = ev.resultIndex; i < ev.results.length; i++) {
+            for (let i = 0; i < ev.results.length; i++) {
                 const t = ev.results[i][0].transcript
                 if (ev.results[i].isFinal) final += t + ' '
                 else interim += t
             }
-            if (final) finalTranscriptRef.current += final
+            finalTranscriptRef.current = final
             setInterimText(interim)
         }
         rec.onend = async () => {
@@ -513,8 +513,12 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
         rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = false
         const cur = (novoRegistro as any).contextoAulaDetalhe || ''
         rec.onresult = (ev: any) => {
-            const t = Array.from(ev.results).slice(ev.resultIndex).map((r: any) => r[0].transcript).join(' ')
-            setNovoRegistro({ ...novoRegistro, contextoAulaDetalhe: cur ? cur + ' ' + t : t } as any)
+            let final = ''
+            for (let i = 0; i < ev.results.length; i++) {
+                if (ev.results[i].isFinal) final += ev.results[i][0].transcript + ' '
+            }
+            const textoFinal = final.trim()
+            setNovoRegistro((prev: any) => ({ ...prev, contextoAulaDetalhe: cur ? cur + ' ' + textoFinal : textoFinal }))
         }
         rec.onend = () => setGravandoContexto(false)
         rec.onerror = () => setGravandoContexto(false)
@@ -526,7 +530,13 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
         if (!SR) { alert('Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge.'); return }
         const rec = new SR()
         rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = false
-        rec.onresult = (ev: any) => { const t = Array.from(ev.results).slice(ev.resultIndex).map((r: any) => r[0].transcript).join(' '); setNovoEnc(t) }
+        rec.onresult = (ev: any) => {
+            let final = ''
+            for (let i = 0; i < ev.results.length; i++) {
+                if (ev.results[i].isFinal) final += ev.results[i][0].transcript + ' '
+            }
+            setNovoEnc(final.trim())
+        }
         rec.onend = () => setGravandoEnc(false)
         rec.onerror = () => setGravandoEnc(false)
         recognitionEncRef.current = rec; rec.start(); setGravandoEnc(true)
