@@ -204,7 +204,11 @@ export default function VisaoSemana() {
   // Estado local de navegação — não interfere com AgendaSemanal
   const [semanaInicio, setSemanaInicio] = useState<Date>(() => getSemanaAtualInicio())
 
-  // Swipe horizontal para navegar entre semanas
+  // Mobile: índice do dia visível (0=Seg … 4=Sex)
+  const todayDayIdx = (() => { const d = new Date().getDay(); return (d >= 1 && d <= 5) ? d - 1 : 0 })()
+  const [mobileDayIdx, setMobileDayIdx] = useState(todayDayIdx)
+
+  // Swipe horizontal — no mobile navega dias, no desktop navega semanas
   const swipeTouchStartX = React.useRef(0)
   const swipeTouchStartTime = React.useRef(0)
   const onSwipeTouchStart = (e: React.TouchEvent) => {
@@ -214,7 +218,18 @@ export default function VisaoSemana() {
   const onSwipeTouchEnd = (e: React.TouchEvent) => {
     const deltaX = e.changedTouches[0].clientX - swipeTouchStartX.current
     const deltaTime = Date.now() - swipeTouchStartTime.current
-    if (Math.abs(deltaX) > 55 && deltaTime < 450) {
+    if (Math.abs(deltaX) < 55 || deltaTime > 450) return
+    if (isMobile) {
+      if (deltaX < 0) {
+        // swipe esquerda → próximo dia
+        if (mobileDayIdx < 4) setMobileDayIdx(i => i + 1)
+        else { setSemanaInicio(prev => addDays(prev, 7)); setMobileDayIdx(0) }
+      } else {
+        // swipe direita → dia anterior
+        if (mobileDayIdx > 0) setMobileDayIdx(i => i - 1)
+        else { setSemanaInicio(prev => addDays(prev, -7)); setMobileDayIdx(4) }
+      }
+    } else {
       setSemanaInicio(prev => addDays(prev, deltaX < 0 ? 7 : -7))
     }
   }
@@ -403,9 +418,43 @@ export default function VisaoSemana() {
         </div>
       </div>
 
-      {/* ── Grid semanal ── */}
-      <div className="grid grid-cols-5 gap-2">
+      {/* ── Mobile: indicador de dia atual ── */}
+      {isMobile && (
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => {
+              if (mobileDayIdx > 0) setMobileDayIdx(i => i - 1)
+              else { setSemanaInicio(prev => addDays(prev, -7)); setMobileDayIdx(4) }
+            }}
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-[#E6EAF0] dark:border-[#374151] v2-card text-slate-500 dark:text-[#9CA3AF] text-[16px]"
+          >‹</button>
+          <div className="flex gap-1.5">
+            {diasDaSemana.map(({ short, date }, i) => {
+              const isActive = i === mobileDayIdx
+              const isToday = isHoje(date)
+              return (
+                <button key={i} onClick={() => setMobileDayIdx(i)}
+                  className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-all ${isActive ? 'bg-[#5B5FEA] dark:bg-[#818cf8]' : 'bg-transparent'}`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wide ${isActive ? 'text-white' : isToday ? 'text-[#5B5FEA] dark:text-[#818cf8]' : 'text-slate-400 dark:text-[#6B7280]'}`}>{short}</span>
+                  <span className={`text-[13px] font-semibold ${isActive ? 'text-white' : isToday ? 'text-[#5B5FEA] dark:text-[#818cf8]' : 'text-slate-500 dark:text-[#9CA3AF]'}`}>{date.getDate()}</span>
+                </button>
+              )
+            })}
+          </div>
+          <button
+            onClick={() => {
+              if (mobileDayIdx < 4) setMobileDayIdx(i => i + 1)
+              else { setSemanaInicio(prev => addDays(prev, 7)); setMobileDayIdx(0) }
+            }}
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-[#E6EAF0] dark:border-[#374151] v2-card text-slate-500 dark:text-[#9CA3AF] text-[16px]"
+          >›</button>
+        </div>
+      )}
+
+      {/* ── Grid semanal (desktop) / Dia único (mobile) ── */}
+      <div className={isMobile ? '' : 'grid grid-cols-5 gap-2'}>
         {diasDaSemana.map(({ key, short, date, ymd }, idx) => {
+          if (isMobile && idx !== mobileDayIdx) return null
           const aulas = aulasPorDia[idx]?.aulas ?? []
           const past  = isPast(date)
           const today = isHoje(date)
@@ -415,8 +464,8 @@ export default function VisaoSemana() {
               key={key}
               className={`flex flex-col ${today ? 'bg-[#5B5FEA]/[0.04] dark:bg-[#818cf8]/[0.06] rounded-[10px] px-[2px]' : ''}`}
             >
-              {/* Header do dia */}
-              <div className="flex flex-col items-center pb-3 mb-1.5 border-b border-[#E6EAF0] dark:border-[#2d3748]">
+              {/* Header do dia — só no desktop */}
+              {!isMobile && <div className="flex flex-col items-center pb-3 mb-1.5 border-b border-[#E6EAF0] dark:border-[#2d3748]">
                 <span className={`text-[10.5px] font-bold tracking-[.7px] uppercase mb-[5px] ${
                   today ? 'text-[#5B5FEA] dark:text-[#818cf8]' : 'text-slate-400 dark:text-[#6B7280]'
                 }`}>
@@ -431,10 +480,10 @@ export default function VisaoSemana() {
                 }`}>
                   {date.getDate()}
                 </span>
-              </div>
+              </div>}
 
               {/* Blocos de aula */}
-              <div className={`flex flex-col gap-1 ${past ? 'opacity-[0.42]' : ''}`}>
+              <div className={`flex flex-col ${isMobile ? 'gap-3' : 'gap-1'} ${past ? 'opacity-[0.42]' : ''}`}>
                 {aulas.length === 0 ? (
                   <div className="text-center py-5 text-[11.5px] text-slate-300 dark:text-[#374151]">—</div>
                 ) : (
@@ -561,9 +610,9 @@ export default function VisaoSemana() {
                         } ${foiRegistrada && !isDragSrc ? 'opacity-[0.72]' : ''}`}
                       >
                         {/* card body */}
-                        <div className="px-[10px] pt-[8px] pb-[7px]">
+                        <div className={isMobile ? 'px-4 pt-3 pb-3' : 'px-[10px] pt-[8px] pb-[7px]'}>
                           {aula.horario && (
-                            <div className="text-[10.5px] font-semibold text-slate-500 dark:text-[#9CA3AF] mb-[3px] flex items-center gap-1.5">
+                            <div className={`font-semibold text-slate-500 dark:text-[#9CA3AF] mb-[3px] flex items-center gap-1.5 ${isMobile ? 'text-[12px]' : 'text-[10.5px]'}`}>
                               {formatHorario(aula.horario)}
                               {aoVivo && (
                                 <span className="inline-flex items-center gap-[3px]">
@@ -574,12 +623,12 @@ export default function VisaoSemana() {
                             </div>
                           )}
                           <div className="flex items-center justify-between gap-1">
-                            <div className="text-[13px] font-bold tracking-tight leading-tight text-slate-800 dark:text-[#E5E7EB]">
+                            <div className={`font-bold tracking-tight leading-tight text-slate-800 dark:text-[#E5E7EB] ${isMobile ? 'text-[17px]' : 'text-[13px]'}`}>
                               {turmaNome}
                             </div>
                           </div>
                           {escolaNome && (
-                            <div className="escola-label text-[10px] font-medium mt-[3px] truncate">
+                            <div className={`escola-label font-medium mt-[3px] truncate ${isMobile ? 'text-[12px]' : 'text-[10px]'}`}>
                               {escolaNome}
                             </div>
                           )}
