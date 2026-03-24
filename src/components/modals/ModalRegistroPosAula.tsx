@@ -1217,7 +1217,8 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                         {camposConfig.map(({ id, icon, label, field, placeholder }, idx) => {
                                             const valor = (novoRegistro as any)[field] || ''
                                             // Campo 1 abre sempre; campo 2 só abre se já tem conteúdo
-                                            const deveAbrir = idx === 0 ? (!registroEditando || valor.trim().length > 0) : valor.trim().length > 0
+                                            const isMobile = 'ontouchstart' in window
+                                            const deveAbrir = valor.trim().length > 0 || (!isMobile && idx === 0 && !registroEditando)
                                             return (
                                                 <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
                                                     value={valor} filled={valor.trim().length > 0}
