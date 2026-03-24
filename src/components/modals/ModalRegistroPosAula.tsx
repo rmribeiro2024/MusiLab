@@ -46,32 +46,12 @@ const AccordionChip = React.forwardRef<() => void, {
     const [gravando, setGravando] = React.useState(false)
     const [speechAtivo, setSpeechAtivo] = React.useState(false)
     const [interimText, setInterimText] = React.useState('')
-    const [corrigindo, setCorrigindo] = React.useState(false)
     const recognitionRef = React.useRef<any>(null)
     const valueRef = React.useRef(value)
     const finalTranscriptRef = React.useRef('')
     React.useEffect(() => { valueRef.current = value }, [value])
     React.useImperativeHandle(ref, () => () => setOpen(true))
     React.useEffect(() => { if (filled) setOpen(true) }, [filled])
-
-    const corrigirComGemini = async (texto: string): Promise<string> => {
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-        if (!apiKey || !texto.trim()) return texto
-        try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: `Você é um assistente de transcrição para um professor de música brasileiro. Corrija apenas erros óbvios de transcrição de voz no texto abaixo, mantendo o sentido e as palavras originais. Vocabulário esperado: turma, escola, segmento, engajamento, ritmo, melodia, harmonia, dinâmica, compasso, timbre, pós-aula, planejamento, atividade, aluno, ensino, percussão, flauta, violão, canto. Retorne APENAS o texto corrigido, sem explicações, sem aspas.\n\nTexto: ${texto}` }] }],
-                    generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
-                }),
-            })
-            const data = await res.json()
-            return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || texto
-        } catch {
-            return texto
-        }
-    }
 
     const toggleVoz = (e: React.MouseEvent) => {
         e.stopPropagation()
@@ -96,17 +76,13 @@ const AccordionChip = React.forwardRef<() => void, {
             finalTranscriptRef.current = final
             setInterimText(interim)
         }
-        rec.onend = async () => {
+        rec.onend = () => {
             setGravando(false); setSpeechAtivo(false); setInterimText('')
             const raw = finalTranscriptRef.current.trim()
-            finalTranscriptRef.current = '' // limpa imediatamente para evitar duplo processamento
+            finalTranscriptRef.current = ''
             if (!raw) return
             const base = valueRef.current
-            onChange(base ? base + ' ' + raw : raw) // mostra imediatamente
-            setCorrigindo(true)
-            const corrigido = await corrigirComGemini(raw) // só o trecho novo
-            setCorrigindo(false)
-            onChange(base ? base + ' ' + corrigido : corrigido)
+            onChange(base ? base + ' ' + raw : raw)
         }
         rec.onerror = () => { setGravando(false); setSpeechAtivo(false); setInterimText('') }
         recognitionRef.current = rec
@@ -151,9 +127,9 @@ const AccordionChip = React.forwardRef<() => void, {
                         onChange={e => { if (!gravando) onChange(e.target.value) }}
                         onKeyDown={e => { if (e.key === 'Tab') { e.preventDefault(); setOpen(false); onTabNext?.() } }}
                         rows={2} placeholder={placeholder} autoFocus={!('ontouchstart' in window)}
-                        style={{ width: '100%', padding: '9px 10px', border: `1px solid ${gravando ? (speechAtivo ? '#fca5a5' : '#f97316') : corrigindo ? '#818cf8' : c.border}`, borderRadius: 8, fontSize: 13, color: gravando && interimText ? '#94a3b8' : c.textMain, background: c.inputBg, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', transition: 'border-color .2s, color .2s' }}
-                        onFocus={e => { if (!gravando && !corrigindo) e.target.style.borderColor = '#94a3b8' }}
-                        onBlur={e  => { if (!gravando && !corrigindo) e.target.style.borderColor = c.border }}
+                        style={{ width: '100%', padding: '9px 10px', border: `1px solid ${gravando ? (speechAtivo ? '#fca5a5' : '#f97316') : c.border}`, borderRadius: 8, fontSize: 13, color: gravando && interimText ? '#94a3b8' : c.textMain, background: c.inputBg, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', transition: 'border-color .2s, color .2s' }}
+                        onFocus={e => { if (!gravando) e.target.style.borderColor = '#94a3b8' }}
+                        onBlur={e  => { if (!gravando) e.target.style.borderColor = c.border }}
                     />
                     {gravando && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, fontSize: 11 }}>
@@ -161,12 +137,6 @@ const AccordionChip = React.forwardRef<() => void, {
                             <span style={{ color: speechAtivo ? '#ef4444' : '#94a3b8', fontWeight: 500 }}>
                                 {speechAtivo ? 'Ouvindo...' : 'Aguardando — pode continuar falando ou pressionar ⏹'}
                             </span>
-                        </div>
-                    )}
-                    {corrigindo && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, fontSize: 11 }}>
-                            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#818cf8', flexShrink: 0, animation: 'pulse 1s infinite' }} />
-                            <span style={{ color: '#818cf8', fontWeight: 500 }}>Revisando transcrição...</span>
                         </div>
                     )}
                 </div>
