@@ -4,6 +4,55 @@
 
 ## 2026-03-24
 
+### Visão geral — Prioridade, Complexidade, Urgência e Impacto
+
+| # | Ideia | Tipo | Prioridade | Urgência | Complexidade | Impacto |
+|---|---|---|---|---|---|---|
+| 5 | Bug — botão "Aula ao vivo" piscando/sumindo | Bug | Alta | Alta | Baixa | Alto |
+| 7 | Bug — botão "aula em andamento" inconsistente | Bug | Alta | Alta | Baixa | Alto |
+| 3 | Experiência mobile otimizada | UX | Alta | Alta | Média | Alto |
+| 16 | Resumo diário das aulas | Feature | Alta | Média | Baixa | Alto |
+| 8 | Sugestões automáticas de atividades (IA) | IA | Alta | Média | Média | Alto |
+| 18 | Registro pós-aula como ferramenta analítica | IA/Analytics | Alta | Média | Alta | Alto |
+| 4 | Cadastro e acompanhamento de alunos | Feature | Alta | Baixa | Alta | Alto |
+| 9 | Organização por Unidades temáticas | Estrutura | Média | Média | Alta | Médio |
+| 17 | Perguntas ao sistema no pós-aula (IA conversacional) | IA | Média | Baixa | Alta | Alto |
+| 6 | Exportação e impressão (PDF) | Feature | Média | Baixa | Média | Médio |
+| 12 | Colaboração em equipe | Feature | Média | Baixa | Alta | Alto |
+| 1 | Métricas de uso (analytics interno) | Analytics | Média | Baixa | Média | Médio |
+| 2 | Comunidade entre professores | Social | Média | Baixa | Alta | Alto |
+| 10 | Upload de imagens no plano de aula | Feature | Baixa | Baixa | Média | Médio |
+| 13 | Metas e conquistas do professor | Engajamento | Baixa | Baixa | Baixa | Médio |
+| 15 | "Powered by MusiLab" nos exports | Branding | Baixa | Baixa | Baixa | Baixo |
+| 14 | Integração com redes sociais | Marketing | Baixa | Baixa | Média | Baixo |
+| 11 | Editor de partitura integrado | Feature | Baixa | Baixa | Alta | Médio |
+
+---
+
+### Ordem de ataque sugerida
+
+**Fase 1 — Estabilidade e confiança (curto prazo)**
+- #5 e #7 primeiro — bugs que quebram a experiência durante a aula, complexidade baixa, resolver em conjunto
+- #3 — mobile é onde o professor mais usa; "modo aula" enxuto resolve vários problemas de uma vez
+
+**Fase 2 — Valor percebido (médio prazo)**
+- #16 — resumo diário gerado por IA, baixa complexidade, alto impacto imediato
+- #8 — sugestões de atividades enriquecem o planejamento com o que já existe de IA
+- #18 + #17 — construir juntos: o analítico vira a base, o conversacional vira a interface
+
+**Fase 3 — Expansão e retenção (longo prazo)**
+- #4 — gestão de alunos requer estrutura cuidadosa (privacidade, modelo de dados)
+- #9 — hierarquia Unidade → Plano → Aula é uma mudança estrutural significativa
+- #6 + #15 — exportação + branding saem juntos
+- #12 — colaboração exige modelo de permissões robusto
+
+**Fase 4 — Nice to have**
+- #1, #2, #10, #13, #14, #11
+
+---
+
+## Detalhamento das ideias
+
 ### 1. Métricas de uso
 Implementar um sistema interno de analytics para rastrear quais funcionalidades são mais usadas, com que frequência e por quem, permitindo identificar padrões de comportamento dos usuários.
 
@@ -98,7 +147,7 @@ Criar um painel de progresso do professor mostrando metas atingidas (ex: número
 ### 14. Integração com redes sociais
 Permitir que o professor compartilhe resultados, atividades realizadas ou marcos do seu trabalho diretamente em redes sociais, ampliando a visibilidade do trabalho e do app.
 
-**Melhoria sugerida:** Focar em conteúdo visual e inspirador (ex: "Hoje trabalhei ritmo com 3 turmas 🎵") em vez de dados brutos — mais atrativo para compartilhamento orgânico.
+**Melhoria sugerida:** Focar em conteúdo visual e inspirador (ex: "Hoje trabalhei ritmo com 3 turmas") em vez de dados brutos — mais atrativo para compartilhamento orgânico.
 
 ---
 
