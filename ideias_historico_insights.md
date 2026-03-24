@@ -13,6 +13,7 @@
 | 3 | Experiência mobile otimizada | UX | Alta | Alta | Média | Alto |
 | 16 | Resumo diário das aulas | Feature | Alta | Média | Baixa | Alto |
 | 8 | Sugestões automáticas de atividades (IA) | IA | Alta | Média | Média | Alto |
+| 19 | Chat com IA no pós-aula (baseado nos registros) | IA | Alta | Média | Média | Alto |
 | 18 | Registro pós-aula como ferramenta analítica | IA/Analytics | Alta | Média | Alta | Alto |
 | 4 | Cadastro e acompanhamento de alunos | Feature | Alta | Baixa | Alta | Alto |
 | 9 | Organização por Unidades temáticas | Estrutura | Média | Média | Alta | Médio |
@@ -38,6 +39,7 @@
 **Fase 2 — Valor percebido (médio prazo)**
 - #16 — resumo diário gerado por IA, baixa complexidade, alto impacto imediato
 - #8 — sugestões de atividades enriquecem o planejamento com o que já existe de IA
+- #19 — chat com IA dentro do pós-aula; começa simples, entrega valor imediato
 - #18 + #17 — construir juntos: o analítico vira a base, o conversacional vira a interface
 
 **Fase 3 — Expansão e retenção (longo prazo)**
@@ -169,6 +171,20 @@ Criar uma visão consolidada do dia com resumo das aulas realizadas, principais 
 Adicionar no módulo de registro pós-aula uma interface de perguntas onde o professor pode consultar o sistema livremente, e a IA responde com base nos dados já registrados (histórico da turma, planos anteriores etc.).
 
 **Melhoria sugerida:** Essa funcionalidade se conecta diretamente com a #18 — juntas formam um "assistente pedagógico" baseado nos dados do professor.
+
+---
+
+### 19. Chat com IA no pós-aula (baseado nos registros)
+Adicionar dentro do modal de registro pós-aula um campo de texto livre onde o professor digita uma pergunta ou comentário, e a IA responde com base em todos os dados de registros pós-aula já salvos no sistema — histórico de turmas, conteúdos trabalhados, dificuldades registradas, engajamento etc.
+
+**Exemplos de uso:**
+- "O 4º ano está tendo dificuldade com ritmo há 3 semanas, o que você sugere?"
+- "Quais turmas tiveram melhor engajamento esse mês?"
+- "Resuma o que trabalhei com o 6º ano no último mês."
+
+**Melhoria sugerida:** Começar enviando ao Gemini apenas os registros da turma em questão (filtrando pelo contexto da aula aberta) para evitar prompts gigantes — e expandir para cruzamento entre turmas numa versão futura.
+
+**Relação com outras ideias:** Esta é uma versão focada e prática da #17, mas com escopo mais claro — o chat fica dentro do próprio modal de pós-aula, não é uma tela separada. Pode ser o ponto de entrada antes de construir o assistente completo da #17 e #18.
 
 ---
 
