@@ -224,7 +224,7 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
   let panelStyle: React.CSSProperties = {}
 
   if (animStyle === 'bottomSheet') {
-    panelClass = `${panelContentClass} absolute bottom-0 left-0 right-0 rounded-t-2xl`
+    panelClass = `bg-white dark:bg-[#1F2937] shadow-2xl flex flex-col absolute bottom-0 left-0 right-0 rounded-t-2xl overflow-hidden`
     panelStyle = {
       ...cardStyle,
       maxHeight: '85vh',
@@ -311,7 +311,11 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
       </div>
 
       {/* ── BODY ───────────────────────────────────────────────────────── */}
-      <div className="px-5 py-4 space-y-3 overflow-y-auto" style={{ maxHeight: animStyle === 'bottomSheet' ? '55vh' : undefined }}>
+      <div
+        className="px-5 py-4 space-y-3 overflow-y-auto flex-1"
+        style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+        onTouchMove={e => e.stopPropagation()}
+      >
 
         {cardState === 'comPlano' && (
           <div className="space-y-2">
