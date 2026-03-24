@@ -125,8 +125,11 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
   const dragging = React.useRef(false)
   const dragStart = React.useRef({ mx: 0, my: 0, px: 0, py: 0 })
 
+  const [isDragging, setIsDragging] = useState(false)
+
   const onDragStart = (e: React.MouseEvent) => {
     dragging.current = true
+    setIsDragging(true)
     const startPos = pos ?? { x: 0, y: 0 }
     dragStart.current = { mx: e.clientX, my: e.clientY, px: startPos.x, py: startPos.y }
     e.preventDefault()
@@ -140,7 +143,7 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
         y: dragStart.current.py + e.clientY - dragStart.current.my,
       })
     }
-    const onUp = () => { dragging.current = false }
+    const onUp = () => { dragging.current = false; setIsDragging(false) }
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
     return () => {
@@ -187,7 +190,7 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
     >
       <div
         className={`absolute bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl w-[340px] overflow-hidden
-          transition-all duration-200 ease-out
+          ${isDragging ? '' : 'transition-all duration-200 ease-out'}
           ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
         style={{
           ...cardStyle,
