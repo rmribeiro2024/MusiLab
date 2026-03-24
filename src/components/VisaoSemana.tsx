@@ -11,7 +11,7 @@ import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContex
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import type { AnoLetivo, RegistroPosAula } from '../types'
 import { showToast } from '../lib/toast'
-import ModalCardHero, { type ModalCardHeroProps, inferStatus, STATUS_LABEL, STATUS_ACAO, RegistroField, ActionButton } from './modals/ModalCardHero'
+import ModalCardHero, { type ModalCardHeroProps, RegistroField, ActionButton } from './modals/ModalCardHero'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -189,17 +189,17 @@ function InlineCardDrawer({ heroCard, onClose, onEditar, onRegistrar, onCriarPla
   const horarioLabel = horario ? horario.replace(/:00$/, 'h').replace(/:(\d{2})$/, 'h$1') : ''
 
   const funcionouBem   = registro?.funcionouBem || null
-  const repetiria      = registro?.repetiria || null
-  const fariadiferente = registro?.fariadiferente || registro?.naoFuncionou || null
+  const repetiria      = (registro as any)?.repetiria || null
+  const fariadiferente = registro?.fariadiferente || (registro as any)?.naoFuncionou || null
   const statusReg      = registro ? inferStatus(registro) : null
-  const statusLabel    = statusReg ? STATUS_LABEL[statusReg] : null
+  const statusLabel    = statusReg ? STATUS_CFG[statusReg].label : null
   const temConteudoReg = !!(funcionouBem || repetiria || fariadiferente || statusLabel)
 
-  const ultRepetiria      = ultimoReg?.repetiria || ultimoReg?.funcionouBem || null
-  const ultFariadiferente = ultimoReg?.fariadiferente || ultimoReg?.naoFuncionou || null
+  const ultRepetiria      = (ultimoReg as any)?.repetiria || ultimoReg?.funcionouBem || null
+  const ultFariadiferente = ultimoReg?.fariadiferente || (ultimoReg as any)?.naoFuncionou || null
   const ultStatus         = ultimoReg ? inferStatus(ultimoReg) : null
-  const ultStatusLabel    = ultStatus ? STATUS_LABEL[ultStatus] : null
-  const ultAcao           = ultStatus ? STATUS_ACAO[ultStatus] : 'Planejar próxima aula'
+  const ultStatusLabel    = ultStatus ? STATUS_CFG[ultStatus].label : null
+  const ultAcao           = ultStatus ? STATUS_CFG[ultStatus].acao : 'Planejar próxima aula'
 
   const escolaVar = escolaCor
     ? ({ '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties)
