@@ -161,7 +161,7 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onRemover }: R
       <div className="flex-1 bg-slate-50 dark:bg-gray-700/60 rounded-md px-3 py-2">
         <div className="flex items-center gap-2">
           <input
-            className="flex-1 bg-transparent text-sm font-medium text-slate-800 dark:text-slate-100 outline-none min-w-0"
+            className="flex-1 bg-transparent text-sm font-medium text-slate-800 dark:text-slate-100 outline-none min-w-0 cursor-text rounded px-1 -mx-1 hover:bg-white/70 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-gray-600/40 focus:ring-1 focus:ring-blue-400/50 transition-colors"
             value={valor}
             onChange={e => { setValor(e.target.value); onEditar(ativ.id, e.target.value) }}
             onClick={e => e.stopPropagation()}
@@ -181,7 +181,7 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onRemover }: R
 
       {temAplicacao && (
         <button
-          className="mt-[6px] w-6 h-6 flex items-center justify-center rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0 sm:opacity-0 sm:group-hover:opacity-100"
+          className="mt-[6px] w-6 h-6 flex items-center justify-center rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
           onClick={e => { e.stopPropagation(); onRemover(ativ.id, valor) }}
           onMouseDown={e => e.stopPropagation()}
           title="Remover desta aula"
