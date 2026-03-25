@@ -114,7 +114,7 @@ interface RepertorioProviderProps {
 export function RepertorioProvider({ children, userId }: RepertorioProviderProps) {
 
   // ── Navegação global ───────────────────────────────────────────────────────
-  const [viewMode, setViewMode] = useState('resumoDia')
+  const [viewMode, setViewMode] = useState('agenda')
 
   // ── Edição de música ───────────────────────────────────────────────────────
   const [musicaEditando, setMusicaEditando] = useState<Musica | null>(null)

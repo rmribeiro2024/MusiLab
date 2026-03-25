@@ -33,6 +33,7 @@ const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
 const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
 const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
 const AgendaSemanal          = lazy(() => import('./AgendaSemanal'))
+const AgendaView             = lazy(() => import('./AgendaView'))
 const TelaPosAula            = lazy(() => import('./TelaPosAula'))
 const TelaPosAulaHistorico   = lazy(() => import('./TelaPosAulaHistorico'))
 import { BancoPlanosContext } from './BancoPlanosContext'
@@ -756,7 +757,7 @@ export default function BancoPlanos({ session }) {
 
             // Mapa viewMode → grupo para detectar grupo ativo
             const VIEWMODE_TO_GROUP: Record<string, string> = {
-                resumoDia: 'agenda', agendaSemanal: 'agenda', calendario: 'agenda',
+                agenda: 'agenda', resumoDia: 'agenda', agendaSemanal: 'agenda', calendario: 'agenda',
                 posAula: 'posAula', posAulaHistorico: 'posAula',
                 lista: 'planejamento', nova: 'planejamento', sequencias: 'planejamento', visaoSemana: 'planejamento', porTurmas: 'planejamento',
                 turmas: 'turmas', historicoMusical: 'turmas',
@@ -778,11 +779,9 @@ export default function BancoPlanos({ session }) {
                     ]
                 },
                 {
-                    id: 'agenda', label: 'Agenda', short: 'Agenda', icon: '📅', defaultMode: 'resumoDia',
+                    id: 'agenda', label: 'Agenda', short: 'Agenda', icon: '📅', defaultMode: 'agenda',
                     items: [
-                        { label: 'Hoje',       short: 'Hoje', icon: '☀️', mode: 'resumoDia',     action: () => setViewMode('resumoDia') },
-                        { label: 'Semana',     short: 'Sem.', icon: '📆', mode: 'agendaSemanal', action: () => setViewMode('agendaSemanal') },
-                        { label: 'Calendário', short: 'Cal.', icon: '📅', mode: 'calendario',    action: () => setViewMode('calendario') },
+                        { label: 'Agenda', short: 'Agenda', icon: '📅', mode: 'agenda', action: () => setViewMode('agenda') },
                     ]
                 },
                 {
@@ -2683,6 +2682,7 @@ export default function BancoPlanos({ session }) {
                             <div className="w-full px-4 sm:px-[30px] py-6 sm:py-[26px] pb-20 sm:pb-[30px]">
                                 {viewMode==='posAula'          && <ErrorBoundary modulo="Pós-aula"><Suspense fallback={<CarregandoModulo />}><TelaPosAula /></Suspense></ErrorBoundary>}
                                 {viewMode==='posAulaHistorico' && <ErrorBoundary modulo="Histórico"><Suspense fallback={<CarregandoModulo />}><TelaPosAulaHistorico /></Suspense></ErrorBoundary>}
+                                {viewMode==='agenda' && <ErrorBoundary modulo="Agenda"><Suspense fallback={<CarregandoModulo />}><AgendaView /></Suspense></ErrorBoundary>}
                                 {viewMode==='resumoDia' && <ErrorBoundary modulo="Resumo do Dia"><Suspense fallback={<CarregandoModulo />}><TelaResumoDia /></Suspense></ErrorBoundary>}
                                 {viewMode==='calendario' && <ErrorBoundary modulo="Calendário"><Suspense fallback={<CarregandoModulo />}><TelaCalendario /></Suspense></ErrorBoundary>}
                                 {viewMode==='agendaSemanal' && <ErrorBoundary modulo="Agenda Semanal"><Suspense fallback={<CarregandoModulo />}><AgendaSemanal /></Suspense></ErrorBoundary>}
