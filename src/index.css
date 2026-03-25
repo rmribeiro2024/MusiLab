@@ -65,6 +65,16 @@ input, textarea, select {
 .tiptap-editor div[data-spotify] { margin: 8px 0; border-radius: 12px; overflow: hidden; }
 .dark .tiptap-editor p.is-editor-empty:first-child::before { color: #4b5563; }
 
+/* ── Agenda — descrição de atividade (TipTap HTML renderizado readonly) ── */
+.agenda-descricao p { margin: 0 0 0.2rem 0; }
+.agenda-descricao p:last-child { margin-bottom: 0; }
+.agenda-descricao ul { list-style: disc; padding-left: 1.25rem; margin: 0.15rem 0; }
+.agenda-descricao ol { list-style: decimal; padding-left: 1.25rem; margin: 0.15rem 0; }
+.agenda-descricao li { margin: 0.1rem 0; }
+.agenda-descricao a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.agenda-descricao strong { font-weight: 600; }
+.agenda-descricao em { font-style: italic; }
+
 /* ── MODO ESCURO — v2 palette ── */
 .dark body { background: #0F172A; color: #E5E7EB; }
 /* Shell surfaces */

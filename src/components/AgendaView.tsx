@@ -4,11 +4,13 @@
 // Design: cards por turma, expandem com roteiro (Option C — inline edit),
 //         materiais do dia no rodapé da página.
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react'
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import { usePlanosContext } from '../contexts/PlanosContext'
+import { sanitizarRich } from '../lib/utils'
+import { showToast } from '../lib/toast'
 import type { AulaGrade, AplicacaoAula, Plano, AnoLetivo, AtividadeRoteiro } from '../types'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -68,9 +70,6 @@ function formatHorario(h: string): string {
   return mm === '00' ? `${hh}h` : `${hh}h${mm}`
 }
 
-function stripHTML(html: string): string {
-  return html.replace(/<[^>]*>/g, '').trim()
-}
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -86,6 +85,9 @@ const ESCOLA_COLORS: { light: string; dark: string }[] = [
   { light: '#b8860e', dark: '#e6be6a' },
   { light: '#c2623b', dark: '#f0b49d' },
 ]
+
+// Ref global: armazena o último undo da Agenda para o Ctrl+Z
+const ultimoUndoAgenda: { fn: (() => void) | null } = { fn: null }
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
@@ -141,41 +143,66 @@ interface AulaCardProps {
 function AulaCard({ slot, isDarkMode }: AulaCardProps) {
   const { setAplicacoes } = useAplicacoesContext()
   const [aberto, setAberto] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Roteiro local — inicializado do plano, editável inline (Opção C)
-  const [roteiroLocal, setRoteiroLocal] = useState<AtividadeRoteiro[]>(
-    slot.plano?.atividadesRoteiro ?? [],
-  )
+  const roteiro = slot.plano?.atividadesRoteiro ?? []
 
-  // Sincroniza quando muda o plano/aplicação (dia diferente selecionado)
-  useEffect(() => {
-    setRoteiroLocal(slot.plano?.atividadesRoteiro ?? [])
-    setAberto(false)
-  }, [slot.plano?.id, slot.aplicacao?.id])
-
-  // Filtra atividades ocultas nesta aplicação específica
-  const roteiroVisivel = useMemo(
-    () => roteiroLocal.filter(a => !slot.aplicacao?.atividadesOcultas?.includes(String(a.id))),
-    [roteiroLocal, slot.aplicacao?.atividadesOcultas],
-  )
+  // Filtra atividades ocultas e aplica nomes editados desta aplicação
+  const roteiroVisivel = useMemo(() => {
+    const ocultas = new Set(slot.aplicacao?.atividadesOcultas ?? [])
+    const nomes = slot.aplicacao?.roteiroNomes ?? {}
+    return roteiro
+      .filter(a => !ocultas.has(String(a.id)))
+      .map(a => ({ ...a, nome: nomes[String(a.id)] ?? a.nome }))
+  }, [roteiro, slot.aplicacao?.atividadesOcultas, slot.aplicacao?.roteiroNomes])
 
   const cor = ESCOLA_COLORS[slot.escolaColorIdx % ESCOLA_COLORS.length]
   const borderColor = isDarkMode ? cor.dark : cor.light
 
-  const removerAtividade = useCallback((atividadeId: string | number) => {
+  const removerAtividade = useCallback((atividadeId: string | number, nomeAtiv: string) => {
     if (!slot.aplicacao) return
+    const id = String(atividadeId)
+    const aplicacaoId = slot.aplicacao.id
+
+    const desfazer = () => {
+      setAplicacoes(prev =>
+        prev.map(a =>
+          a.id === aplicacaoId
+            ? { ...a, atividadesOcultas: (a.atividadesOcultas ?? []).filter(x => x !== id) }
+            : a,
+        ),
+      )
+      ultimoUndoAgenda.fn = null
+    }
+
     setAplicacoes(prev =>
       prev.map(a =>
-        a.id === slot.aplicacao!.id
-          ? { ...a, atividadesOcultas: [...(a.atividadesOcultas ?? []), String(atividadeId)] }
+        a.id === aplicacaoId
+          ? { ...a, atividadesOcultas: [...(a.atividadesOcultas ?? []), id] }
           : a,
       ),
     )
+
+    ultimoUndoAgenda.fn = desfazer
+
+    showToast(`"${nomeAtiv}" removida desta aula`, 'info', 5000, desfazer)
   }, [slot.aplicacao, setAplicacoes])
 
   const editarItem = useCallback((id: string | number, novoNome: string) => {
-    setRoteiroLocal(prev => prev.map(a => String(a.id) === String(id) ? { ...a, nome: novoNome } : a))
-  }, [])
+    if (!slot.aplicacao) return
+    const aplicacaoId = slot.aplicacao.id
+    // Salva debounced em roteiroNomes da aplicação
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setAplicacoes(prev =>
+        prev.map(a =>
+          a.id === aplicacaoId
+            ? { ...a, roteiroNomes: { ...(a.roteiroNomes ?? {}), [String(id)]: novoNome } }
+            : a,
+        ),
+      )
+    }, 400)
+  }, [slot.aplicacao, setAplicacoes])
 
   const statusBadge = slot.aplicacao ? (
     <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
@@ -266,9 +293,10 @@ function AulaCard({ slot, isDarkMode }: AulaCardProps) {
                         )}
                       </div>
                       {ativ.descricao && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                          {stripHTML(ativ.descricao)}
-                        </p>
+                        <div
+                          className="agenda-descricao text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: sanitizarRich(ativ.descricao) }}
+                        />
                       )}
                     </div>
 
@@ -276,7 +304,7 @@ function AulaCard({ slot, isDarkMode }: AulaCardProps) {
                     {slot.aplicacao && (
                       <button
                         className="mt-[6px] w-6 h-6 flex items-center justify-center rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0 sm:opacity-0 sm:group-hover:opacity-100"
-                        onClick={e => { e.stopPropagation(); removerAtividade(ativ.id) }}
+                        onClick={e => { e.stopPropagation(); removerAtividade(ativ.id, ativ.nome) }}
                         title="Remover desta aula"
                         aria-label="Remover atividade"
                       >
@@ -322,6 +350,138 @@ function MateriaisDia({ slots }: { slots: AulaSlot[] }) {
           </span>
         ))}
       </div>
+    </div>
+  )
+}
+
+// ─── CardSemana — card compacto para a view Semana (não expande) ─────────────
+
+function CardSemana({ slot, isDarkMode }: { slot: AulaSlot; isDarkMode: boolean }) {
+  const cor = ESCOLA_COLORS[slot.escolaColorIdx % ESCOLA_COLORS.length]
+  const borderColor = isDarkMode ? cor.dark : cor.light
+  const semPlano = !slot.plano
+
+  return (
+    <div
+      className="rounded-lg bg-white dark:bg-gray-800 p-2.5 text-left w-full"
+      style={{ borderLeft: `3px solid ${semPlano ? '#f59e0b' : borderColor}` }}
+    >
+      <p className="text-[11px] font-mono text-slate-400 dark:text-slate-500 mb-0.5">
+        {formatHorario(slot.aulaGrade.horario ?? '')}
+      </p>
+      <p className="text-[13px] font-bold text-slate-800 dark:text-slate-100 leading-tight truncate">
+        {slot.nomeTurma}
+      </p>
+      {slot.nomeEscola && (
+        <p className="text-[11px] mt-0.5 truncate" style={{ color: semPlano ? '#f59e0b' : borderColor }}>
+          {slot.nomeEscola}
+        </p>
+      )}
+      <p className={`text-[11px] mt-1 flex items-center gap-1 truncate ${
+        semPlano ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'
+      }`}>
+        {semPlano ? '⚠ Sem plano' : `📋 ${slot.plano!.titulo}`}
+      </p>
+    </div>
+  )
+}
+
+// ─── ColunaDia — coluna de um dia no grid semanal ────────────────────────────
+
+interface ColunaDiaProps {
+  dataStr: string
+  short: string
+  diaNum: number
+  isHoje: boolean
+  escolaColorMap: Map<string, number>
+  isDarkMode: boolean
+}
+
+function ColunaDia({ dataStr, short, diaNum, isHoje, escolaColorMap, isDarkMode }: ColunaDiaProps) {
+  const slots = useAgendaSlotsForDay(dataStr, escolaColorMap)
+
+  return (
+    <div className={`flex flex-col min-w-0 rounded-xl p-2 ${
+      isHoje ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-gray-900 bg-blue-50/40 dark:bg-blue-900/10' : ''
+    }`}>
+      {/* Cabeçalho */}
+      <div className="text-center mb-2">
+        <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
+          {short}
+        </p>
+        <div className="flex items-center justify-center gap-1.5">
+          <span className={`text-xl font-bold leading-tight ${
+            isHoje ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-200'
+          }`}>
+            {diaNum}
+          </span>
+          {isHoje && (
+            <span className="text-[9px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded-full uppercase tracking-wide">
+              hoje
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Cards ou vazio */}
+      <div className="flex flex-col gap-1.5 flex-1">
+        {slots.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center py-4">
+            <p className="text-[11px] text-slate-300 dark:text-slate-600 text-center">— sem aulas —</p>
+          </div>
+        ) : (
+          slots.map(slot => (
+            <CardSemana
+              key={`${slot.aulaGrade.id}-${slot.dataStr}`}
+              slot={slot}
+              isDarkMode={isDarkMode}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── LegendaEscolas ───────────────────────────────────────────────────────────
+
+interface LegendaProps {
+  anosLetivos: AnoLetivo[]
+  escolaColorMap: Map<string, number>
+  isDarkMode: boolean
+}
+
+function LegendaEscolas({ anosLetivos, escolaColorMap, isDarkMode }: LegendaProps) {
+  const escolas = useMemo(() => {
+    const vistas = new Set<string>()
+    const lista: { nome: string; color: string }[] = []
+    anosLetivos.forEach(ano =>
+      ano.escolas.forEach(esc => {
+        if (!vistas.has(esc.id)) {
+          vistas.add(esc.id)
+          const idx = escolaColorMap.get(esc.id) ?? 0
+          const cor = ESCOLA_COLORS[idx % ESCOLA_COLORS.length]
+          lista.push({ nome: esc.nome, color: isDarkMode ? cor.dark : cor.light })
+        }
+      }),
+    )
+    return lista
+  }, [anosLetivos, escolaColorMap, isDarkMode])
+
+  if (escolas.length === 0) return null
+
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-4 justify-center">
+      {escolas.map(e => (
+        <span key={e.nome} className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: e.color }} />
+          {e.nome}
+        </span>
+      ))}
+      <span className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+        <span className="w-2 h-2 rounded-full shrink-0 bg-amber-400" />
+        Sem plano
+      </span>
     </div>
   )
 }
@@ -384,6 +544,23 @@ export default function AgendaView() {
     return () => observer.disconnect()
   }, [])
 
+  // Ctrl+Z — desfaz última remoção de atividade na Agenda
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        const target = e.target as HTMLElement
+        const emInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+        if (emInput) return
+        if (ultimoUndoAgenda.fn) {
+          e.preventDefault()
+          ultimoUndoAgenda.fn()
+        }
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
   // Mapa escola → índice de cor (estável por ordem de aparição)
   const escolaColorMap = useMemo(() => {
     const map = new Map<string, number>()
@@ -441,7 +618,7 @@ export default function AgendaView() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pb-10">
+    <div className={`mx-auto px-4 pb-10 ${tab === 'semana' ? 'max-w-5xl' : 'max-w-2xl'}`}>
 
       {/* ── Tabs ── */}
       <div className="flex gap-1 bg-slate-100 dark:bg-gray-800 p-1 rounded-xl mb-6">
@@ -494,28 +671,23 @@ export default function AgendaView() {
             </button>
           </div>
 
-          {/* Strip de dias */}
-          <div className="grid grid-cols-5 gap-1.5 mb-6">
+          {/* Grid 5 colunas */}
+          <div className="grid grid-cols-5 gap-2">
             {diasSemana.map(dia => (
-              <button
+              <ColunaDia
                 key={dia.dataStr}
-                onClick={() => setDiaSelecionado(dia.dataStr)}
-                className={`flex flex-col items-center py-2.5 px-1 rounded-xl text-sm transition-all ${
-                  diaSelecionado === dia.dataStr
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : dia.isHoje
-                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                    : 'bg-slate-50 dark:bg-gray-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                <span className="text-[11px] font-medium opacity-80">{dia.short}</span>
-                <span className="text-xl font-bold leading-tight">{dia.dia}</span>
-              </button>
+                dataStr={dia.dataStr}
+                short={dia.short}
+                diaNum={dia.dia}
+                isHoje={dia.isHoje}
+                escolaColorMap={escolaColorMap}
+                isDarkMode={isDarkMode}
+              />
             ))}
           </div>
 
-          <p className="text-sm text-slate-400 dark:text-slate-500 capitalize mb-5">{labelDia}</p>
-          <AgendaDia dataStr={diaSelecionado} escolaColorMap={escolaColorMap} isDarkMode={isDarkMode} />
+          {/* Legenda escolas */}
+          <LegendaEscolas anosLetivos={anosLetivos} escolaColorMap={escolaColorMap} isDarkMode={isDarkMode} />
         </>
       )}
 
