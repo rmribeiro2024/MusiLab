@@ -294,19 +294,6 @@ function AulaCard({ slot, isDarkMode }: AulaCardProps) {
     }, 400)
   }, [slot.aplicacao, setAplicacoes])
 
-  const statusBadge = slot.aplicacao ? (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
-      slot.aplicacao.status === 'realizada'
-        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-        : slot.aplicacao.status === 'cancelada'
-        ? 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
-        : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-    }`}>
-      {slot.aplicacao.status === 'realizada' ? '✓ Realizada'
-       : slot.aplicacao.status === 'cancelada' ? '✕ Cancelada'
-       : 'Planejada'}
-    </span>
-  ) : null
 
   return (
     <div
@@ -340,9 +327,8 @@ function AulaCard({ slot, isDarkMode }: AulaCardProps) {
           )}
         </div>
 
-        {/* Badge status + chevron */}
-        <div className="flex items-center gap-2 shrink-0">
-          {statusBadge}
+        {/* Chevron */}
+        <div className="flex items-center shrink-0">
           <svg
             className={`w-4 h-4 text-slate-400 transition-transform ${aberto ? 'rotate-180' : ''}`}
             viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"
