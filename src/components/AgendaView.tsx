@@ -163,25 +163,16 @@ function stripHTMLToText(html: string): string {
 
 function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onRemover }: RoteiroItemProps) {
   const [titulo, setTitulo] = useState(ativ.nome)
-  const [editandoDesc, setEditandoDesc] = useState(false)
-  const [descTexto, setDescTexto] = useState(() => ativ.descricao ? stripHTMLToText(ativ.descricao) : '')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const descRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { setTitulo(ativ.nome) }, [ativ.nome])
 
-  function abrirEdicaoDesc(e: React.MouseEvent) {
-    e.stopPropagation()
-    setEditandoDesc(true)
-    setTimeout(() => {
-      const ta = textareaRef.current
-      if (ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; ta.focus() }
-    }, 0)
-  }
-
-  function autoResize() {
-    const ta = textareaRef.current
-    if (ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px' }
-  }
+  // Inicializa o HTML do contentEditable sem sobrescrever o cursor durante edição
+  useEffect(() => {
+    if (descRef.current && document.activeElement !== descRef.current) {
+      descRef.current.innerHTML = sanitizarRich(ativ.descricao ?? '')
+    }
+  }, [ativ.descricao])
 
   return (
     <div className="flex items-start gap-2">
@@ -204,26 +195,16 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onRemover }: R
           )}
         </div>
 
-        {/* Descrição — HTML formatado por padrão, textarea ao clicar */}
-        {ativ.descricao && !editandoDesc && (
+        {/* Descrição — contentEditable mantém formatação ao editar */}
+        {ativ.descricao && (
           <div
-            className="agenda-descricao text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed cursor-text hover:bg-white/60 dark:hover:bg-white/5 rounded px-1 -mx-1 transition-colors"
-            dangerouslySetInnerHTML={{ __html: sanitizarRich(ativ.descricao) }}
-            onClick={abrirEdicaoDesc}
-            onMouseDown={e => e.stopPropagation()}
-            title="Clique para editar"
-          />
-        )}
-        {editandoDesc && (
-          <textarea
-            ref={textareaRef}
-            className="w-full mt-1.5 bg-white dark:bg-gray-600/40 text-xs text-slate-600 dark:text-slate-300 outline-none resize-none leading-relaxed rounded px-1 -mx-1 ring-1 ring-blue-400/50 transition-colors overflow-hidden"
-            value={descTexto}
-            onChange={e => { setDescTexto(e.target.value); autoResize() }}
+            ref={descRef}
+            contentEditable
+            suppressContentEditableWarning
+            className="agenda-descricao agenda-descricao-edit text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed outline-none rounded px-1 -mx-1 hover:bg-white/60 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-gray-600/40 focus:ring-1 focus:ring-blue-400/50 transition-colors cursor-text"
             onClick={e => e.stopPropagation()}
             onMouseDown={e => e.stopPropagation()}
-            onBlur={() => setEditandoDesc(false)}
-            rows={1}
+            onKeyDown={e => e.stopPropagation()}
           />
         )}
       </div>
