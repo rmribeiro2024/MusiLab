@@ -135,6 +135,68 @@ function useAgendaSlotsForDay(dataStr: string, escolaColorMap: Map<string, numbe
 
 // ─── AulaCard ─────────────────────────────────────────────────────────────────
 
+// ─── RoteiroItemEditavel ──────────────────────────────────────────────────────
+// Estado local para a digitação — evita o input controlado reverter cada tecla
+
+interface RoteiroItemProps {
+  ativ: AtividadeRoteiro & { nome: string }
+  idx: number
+  temAplicacao: boolean
+  onEditar: (id: string | number, nome: string) => void
+  onRemover: (id: string | number, nome: string) => void
+}
+
+function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onRemover }: RoteiroItemProps) {
+  const [valor, setValor] = useState(ativ.nome)
+
+  // Sincroniza se o nome mudar externamente (ex: desfazer)
+  useEffect(() => { setValor(ativ.nome) }, [ativ.nome])
+
+  return (
+    <div className="flex items-start gap-2 group">
+      <span className="text-xs font-mono text-slate-400 mt-[10px] w-5 shrink-0 text-right">
+        {idx + 1}
+      </span>
+
+      <div className="flex-1 bg-slate-50 dark:bg-gray-700/60 rounded-md px-3 py-2">
+        <div className="flex items-center gap-2">
+          <input
+            className="flex-1 bg-transparent text-sm font-medium text-slate-800 dark:text-slate-100 outline-none min-w-0"
+            value={valor}
+            onChange={e => { setValor(e.target.value); onEditar(ativ.id, e.target.value) }}
+            onClick={e => e.stopPropagation()}
+            onMouseDown={e => e.stopPropagation()}
+          />
+          {ativ.duracao && (
+            <span className="text-xs text-slate-400 shrink-0">{ativ.duracao}</span>
+          )}
+        </div>
+        {ativ.descricao && (
+          <div
+            className="agenda-descricao text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: sanitizarRich(ativ.descricao) }}
+          />
+        )}
+      </div>
+
+      {temAplicacao && (
+        <button
+          className="mt-[6px] w-6 h-6 flex items-center justify-center rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0 sm:opacity-0 sm:group-hover:opacity-100"
+          onClick={e => { e.stopPropagation(); onRemover(ativ.id, valor) }}
+          onMouseDown={e => e.stopPropagation()}
+          title="Remover desta aula"
+        >
+          <svg viewBox="0 0 12 12" width="11" height="11" fill="currentColor">
+            <rect x="1" y="5.5" width="10" height="1" rx="0.5"/>
+          </svg>
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface AulaCardProps {
   slot: AulaSlot
   isDarkMode: boolean
@@ -273,47 +335,14 @@ function AulaCard({ slot, isDarkMode }: AulaCardProps) {
             ) : (
               <div className="space-y-2">
                 {roteiroVisivel.map((ativ, idx) => (
-                  <div key={String(ativ.id)} className="flex items-start gap-2 group">
-                    {/* Número */}
-                    <span className="text-xs font-mono text-slate-400 mt-[10px] w-5 shrink-0 text-right">
-                      {idx + 1}
-                    </span>
-
-                    {/* Bloco editável */}
-                    <div className="flex-1 bg-slate-50 dark:bg-gray-700/60 rounded-md px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <input
-                          className="flex-1 bg-transparent text-sm font-medium text-slate-800 dark:text-slate-100 outline-none min-w-0"
-                          value={ativ.nome}
-                          onChange={e => editarItem(ativ.id, e.target.value)}
-                          onClick={e => e.stopPropagation()}
-                        />
-                        {ativ.duracao && (
-                          <span className="text-xs text-slate-400 shrink-0">{ativ.duracao}</span>
-                        )}
-                      </div>
-                      {ativ.descricao && (
-                        <div
-                          className="agenda-descricao text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: sanitizarRich(ativ.descricao) }}
-                        />
-                      )}
-                    </div>
-
-                    {/* Botão remover — sempre visível no mobile, hover no desktop */}
-                    {slot.aplicacao && (
-                      <button
-                        className="mt-[6px] w-6 h-6 flex items-center justify-center rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0 sm:opacity-0 sm:group-hover:opacity-100"
-                        onClick={e => { e.stopPropagation(); removerAtividade(ativ.id, ativ.nome) }}
-                        title="Remover desta aula"
-                        aria-label="Remover atividade"
-                      >
-                        <svg viewBox="0 0 12 12" width="11" height="11" fill="currentColor">
-                          <rect x="1" y="5.5" width="10" height="1" rx="0.5"/>
-                        </svg>
-                      </button>
-                    )}
-                  </div>
+                  <RoteiroItemEditavel
+                    key={String(ativ.id)}
+                    ativ={ativ}
+                    idx={idx}
+                    temAplicacao={!!slot.aplicacao}
+                    onEditar={editarItem}
+                    onRemover={removerAtividade}
+                  />
                 ))}
               </div>
             )}
