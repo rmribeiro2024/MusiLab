@@ -46,10 +46,14 @@ const AccordionChip = React.forwardRef<() => void, {
     const [gravando, setGravando] = React.useState(false)
     const [speechAtivo, setSpeechAtivo] = React.useState(false)
     const [interimText, setInterimText] = React.useState('')
-    const recognitionRef = React.useRef<any>(null)
-    const valueRef = React.useRef(value)
-    const finalTranscriptRef = React.useRef('')
-    const isRecordingRef = React.useRef(false)
+    const recognitionRef  = React.useRef<any>(null)
+    const valueRef        = React.useRef(value)
+    // sessaoRef: transcript da sessão atual, SEMPRE SUBSTITUÍDO a cada evento
+    // (evita pirâmide causada por múltiplos isFinal no mesmo índice no mobile)
+    const sessaoRef       = React.useRef('')
+    // acumuladoRef: texto de sessões já encerradas (acumula entre reinícios)
+    const acumuladoRef    = React.useRef('')
+    const isRecordingRef  = React.useRef(false)
     React.useEffect(() => { valueRef.current = value }, [value])
     React.useImperativeHandle(ref, () => () => setOpen(true))
     React.useEffect(() => { if (filled) setOpen(true) }, [filled])
@@ -58,31 +62,40 @@ const AccordionChip = React.forwardRef<() => void, {
         if (!isRecordingRef.current) return
         const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
         const rec = new SR()
-        rec.lang = 'pt-BR'
-        rec.continuous = false   // cada sessão independente → sem transcrição cumulativa
+        rec.lang    = 'pt-BR'
+        rec.continuous     = false  // sessões curtas e independentes
         rec.interimResults = true
+        sessaoRef.current  = ''
         rec.onspeechstart = () => setSpeechAtivo(true)
-        rec.onspeechend  = () => setSpeechAtivo(false)
+        rec.onspeechend   = () => setSpeechAtivo(false)
         rec.onresult = (ev: any) => {
-            let interim = ''
-            for (let i = ev.resultIndex; i < ev.results.length; i++) {
-                const t = ev.results[i][0].transcript
-                if (ev.results[i].isFinal) finalTranscriptRef.current += t + ' '
-                else interim += t
+            // Reconstrói o transcript desta sessão do zero a cada evento.
+            // Isso descarta versões anteriores do mesmo trecho (padrão pirâmide mobile).
+            let finalSessao = ''
+            let interim     = ''
+            for (let i = 0; i < ev.results.length; i++) {
+                if (ev.results[i].isFinal) finalSessao += ev.results[i][0].transcript + ' '
+                else interim += ev.results[i][0].transcript
             }
+            sessaoRef.current = finalSessao   // substitui, nunca acumula
             setInterimText(interim)
         }
         rec.onend = () => {
             setSpeechAtivo(false)
             setInterimText('')
+            const textoSessao = sessaoRef.current.trim()
+            sessaoRef.current = ''
+            if (textoSessao) {
+                acumuladoRef.current = acumuladoRef.current
+                    ? acumuladoRef.current + ' ' + textoSessao
+                    : textoSessao
+            }
             if (isRecordingRef.current) {
-                // usuário ainda quer gravar → reinicia sessão limpa
-                setTimeout(iniciarUtterancia, 80)
+                setTimeout(iniciarUtterancia, 80)   // reinicia sessão limpa
             } else {
-                // usuário parou → salva tudo acumulado
                 setGravando(false)
-                const raw = finalTranscriptRef.current.trim()
-                finalTranscriptRef.current = ''
+                const raw = acumuladoRef.current.trim()
+                acumuladoRef.current = ''
                 if (!raw) return
                 const base = valueRef.current
                 onChange(base ? base + ' ' + raw : raw)
@@ -90,8 +103,7 @@ const AccordionChip = React.forwardRef<() => void, {
         }
         rec.onerror = (ev: any) => {
             setSpeechAtivo(false)
-            if (ev.error === 'aborted') return  // parada intencional
-            if (ev.error === 'no-speech') return // silêncio → onend vai reiniciar
+            if (ev.error === 'aborted' || ev.error === 'no-speech') return
             isRecordingRef.current = false
             setGravando(false)
             setInterimText('')
@@ -109,7 +121,8 @@ const AccordionChip = React.forwardRef<() => void, {
         }
         const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
         if (!SR) { alert('Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge.'); return }
-        finalTranscriptRef.current = ''
+        sessaoRef.current    = ''
+        acumuladoRef.current = ''
         isRecordingRef.current = true
         setGravando(true)
         setOpen(true)
