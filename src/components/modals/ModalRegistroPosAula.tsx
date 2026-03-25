@@ -67,13 +67,11 @@ const AccordionChip = React.forwardRef<() => void, {
         rec.onspeechend = () => setSpeechAtivo(false)
         rec.onresult = (ev: any) => {
             let interim = ''
-            let final = ''
-            for (let i = 0; i < ev.results.length; i++) {
+            for (let i = ev.resultIndex; i < ev.results.length; i++) {
                 const t = ev.results[i][0].transcript
-                if (ev.results[i].isFinal) final += t + ' '
+                if (ev.results[i].isFinal) finalTranscriptRef.current += t + ' '
                 else interim += t
             }
-            finalTranscriptRef.current = final
             setInterimText(interim)
         }
         rec.onend = () => {
