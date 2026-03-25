@@ -49,22 +49,20 @@ const AccordionChip = React.forwardRef<() => void, {
     const recognitionRef = React.useRef<any>(null)
     const valueRef = React.useRef(value)
     const finalTranscriptRef = React.useRef('')
+    const isRecordingRef = React.useRef(false)
     React.useEffect(() => { valueRef.current = value }, [value])
     React.useImperativeHandle(ref, () => () => setOpen(true))
     React.useEffect(() => { if (filled) setOpen(true) }, [filled])
 
-    const toggleVoz = (e: React.MouseEvent) => {
-        e.stopPropagation()
-        if (gravando) { recognitionRef.current?.stop(); setGravando(false); setSpeechAtivo(false); return }
+    const iniciarUtterancia = React.useCallback(() => {
+        if (!isRecordingRef.current) return
         const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        if (!SR) { alert('Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge.'); return }
         const rec = new SR()
         rec.lang = 'pt-BR'
-        rec.continuous = true
+        rec.continuous = false   // cada sessão independente → sem transcrição cumulativa
         rec.interimResults = true
-        finalTranscriptRef.current = ''
         rec.onspeechstart = () => setSpeechAtivo(true)
-        rec.onspeechend = () => setSpeechAtivo(false)
+        rec.onspeechend  = () => setSpeechAtivo(false)
         rec.onresult = (ev: any) => {
             let interim = ''
             for (let i = ev.resultIndex; i < ev.results.length; i++) {
@@ -75,18 +73,47 @@ const AccordionChip = React.forwardRef<() => void, {
             setInterimText(interim)
         }
         rec.onend = () => {
-            setGravando(false); setSpeechAtivo(false); setInterimText('')
-            const raw = finalTranscriptRef.current.trim()
-            finalTranscriptRef.current = ''
-            if (!raw) return
-            const base = valueRef.current
-            onChange(base ? base + ' ' + raw : raw)
+            setSpeechAtivo(false)
+            setInterimText('')
+            if (isRecordingRef.current) {
+                // usuário ainda quer gravar → reinicia sessão limpa
+                setTimeout(iniciarUtterancia, 80)
+            } else {
+                // usuário parou → salva tudo acumulado
+                setGravando(false)
+                const raw = finalTranscriptRef.current.trim()
+                finalTranscriptRef.current = ''
+                if (!raw) return
+                const base = valueRef.current
+                onChange(base ? base + ' ' + raw : raw)
+            }
         }
-        rec.onerror = () => { setGravando(false); setSpeechAtivo(false); setInterimText('') }
+        rec.onerror = (ev: any) => {
+            setSpeechAtivo(false)
+            if (ev.error === 'aborted') return  // parada intencional
+            if (ev.error === 'no-speech') return // silêncio → onend vai reiniciar
+            isRecordingRef.current = false
+            setGravando(false)
+            setInterimText('')
+        }
         recognitionRef.current = rec
         rec.start()
+    }, [onChange])
+
+    const toggleVoz = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        if (isRecordingRef.current) {
+            isRecordingRef.current = false
+            recognitionRef.current?.stop()
+            return
+        }
+        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        if (!SR) { alert('Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge.'); return }
+        finalTranscriptRef.current = ''
+        isRecordingRef.current = true
         setGravando(true)
         setOpen(true)
+        iniciarUtterancia()
     }
 
     const c = dk(isDark)
