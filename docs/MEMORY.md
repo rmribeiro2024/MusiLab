@@ -1,0 +1,205 @@
+# MusiLab — Histórico de Mudanças
+
+> Sessão: 2026-03-06
+
+---
+
+## Bugs Corrigidos
+
+### 1. Botão ⚙️ Configurações não abria
+**Arquivo:** `src/components/modals/ModalConfiguracoes.tsx`
+**Causa:** O modal lia `modalConfiguracoes` de `usePlanosContext()`, mas esse estado está no `useBancoPlanos()` (contexto antigo).
+**Correção:** Trocado `usePlanosContext` por `useBancoPlanos` para `modalConfiguracoes`, `setModalConfiguracoes`, `baixarBackup` e `restaurarBackup`.
+
+---
+
+### 2. Indicador "Salvando" ficava preso
+**Arquivo:** `src/components/BancoPlanos.tsx`
+**Causa:** O `triggerSalvo()` com usuário logado dependia 100% do `onSyncStatus` do Supabase para resolver. Se a rede estivesse lenta ou o callback não chegasse, ficava preso em "salvando" para sempre.
+**Correção:** Adicionado timeout de fallback de 16s que resolve o status automaticamente caso o Supabase não responda.
+
+---
+
+### 3. Consumo excessivo de Disk I/O no Supabase
+**Arquivo:** `src/components/BancoPlanos.tsx`
+**Causa:** O `syncDelay` enviava dados ao Supabase a cada 2 segundos, gerando muitas escritas e esgotando o budget de Disk I/O do plano gratuito.
+**Correção:** Delay aumentado de **2s → 15s**. Dados continuam salvos imediatamente no IndexedDB local — a nuvem sincroniza após 15s de inatividade.
+
+---
+
+### 4. ModalTemplatesRoteiro com contexto errado
+**Arquivo:** `src/components/modals/ModalTemplatesRoteiro.tsx`
+**Causa:** `modalTemplates`, `setModalTemplates`, `templatesRoteiro`, `setTemplatesRoteiro`, `nomeNovoTemplate`, `setNomeNovoTemplate` eram buscados de `usePlanosContext()` mas estão no `useBancoPlanos()`.
+**Correção:** Esses estados movidos para `useBancoPlanos`. `planoEditando` e `setPlanoEditando` mantidos no `usePlanosContext`.
+
+---
+
+### 5. ModalRegistroRapido com contexto errado
+**Arquivo:** `src/components/modals/ModalRegistroRapido.tsx`
+**Causa:** `sugerirPlanoParaTurma` e `salvarRegistroRapido` eram buscados de `usePlanosContext()` mas estão no `useBancoPlanos()`.
+**Correção:** Essas funções movidas para `useBancoPlanos`. `planos` mantido no `usePlanosContext`.
+
+---
+
+## Melhorias Implementadas
+
+### Módulo Estratégias — Fase 1 (dimensões + mielinização + modal + dashboard)
+**Data:** 2026-03-11
+**Commit:** `863ae6f`
+**Arquivos:**
+- `src/types/index.ts` — novos campos + interface `HistoricoUsoEstrategia`
+- `src/contexts/EstrategiasContext.tsx` — `filtroDimensaoEstrategia` + `registrarUsoEstrategia`
+- `src/contexts/PlanosContext.tsx` — importa `useEstrategiasContext`, chama registro ao salvar
+- `src/components/ModuloEstrategias.tsx` — formulário, cards, filtros, modal, dashboard
+
+**Novos campos na interface `Estrategia` (retrocompatíveis — campos originais preservados):**
+- `dimensoes?: string[]` — `'Musical'`, `'Condução'`, `'Cultura de Sala de Aula'`
+- `origem?: string` — referência pedagógica (Kodály, RCPPM...)
+- `variacoes?: string` — campo separado da descrição, em destaque na modal
+- `tempoEstimado?: string` — duração estimada
+- `contadorUso?: number` — incrementa a cada plano salvo que use a estratégia
+- `historicoUso?: HistoricoUsoEstrategia[]` — `{ planoId, planoTitulo, data }`
+
+**Formulário:** 3 botões visuais clicáveis para dimensões (multi-seleção, cores distintas) + campos tempo estimado + origem + variações. Campos originais categoria/função/objetivos mantidos abaixo.
+
+**Cards:** badges coloridos de dimensão + badge 🕐 tempo estimado + rodapé `Usada N×` / `Não usada ainda` + ✨ quando tem variações + botão 👁 Detalhes.
+
+**Filtros:** select "Dimensão" adicionado ao lado dos existentes (não substituiu). Busca inclui `origem` e `variacoes`.
+
+**Modal de detalhes (👁):** abre sem edição — variações em destaque, descrição HTML sanitizada, histórico de uso com datas pt-BR, botões Fechar/Editar.
+
+**Dashboard colapsável (📊 Ver painel):** grid por dimensão + top 3 mais usadas + lista nunca usadas. Cálculo no render, sem estado extra.
+
+**Contador automático:** `PlanosContext.salvarPlano` coleta `estrategiasVinculadas` de todas as atividades do roteiro → chama `registrarUsoEstrategia` (anti-duplicata por planoId).
+
+---
+
+### 6. Campo "O que poderia ter sido melhor" no Registro Pós-Aula
+**Arquivo:** `src/components/modals/ModalRegistroPosAula.tsx`
+**O que foi feito:**
+- Adicionado textarea com borda laranja entre "❌ O que não funcionou" e "💡 Ideias para a próxima aula"
+- Campo exibido no histórico de registros
+- Campo incluído na busca textual do histórico
+- Armazenado em `novoRegistro.poderiaMelhorar`
+
+---
+
+### 7. Ano letivo auto-selecionado ao abrir o Registro Pós-Aula
+**Arquivo:** `src/components/modals/ModalRegistroPosAula.tsx`
+**O que foi feito:**
+- Ao abrir o modal, busca automaticamente o ano letivo com `status: 'ativo'`
+- Se não encontrar, seleciona o mais próximo do ano atual
+- Evita que o professor tenha que selecionar o ano manualmente toda vez
+
+---
+
+### 8. Escola, segmento e turma pré-selecionados no Registro Pós-Aula
+**Arquivo:** `src/components/modals/ModalRegistroPosAula.tsx`
+**O que foi feito:**
+- Ao abrir o registro de um plano, o sistema cruza `plano.escola` com os nomes das escolas cadastradas nos anos letivos
+- Cruza `plano.faixaEtaria` (array) com os nomes dos segmentos cadastrados
+- Pré-seleciona automaticamente: ano letivo → escola → segmento → turma
+- Fallback: se não encontrar a escola, seleciona só o ano letivo ativo
+
+---
+
+### Módulo Relatórios — Passos 6-9: PDF, IA e visual
+**Data:** 2026-03-11
+**Arquivos:**
+- `src/lib/exportarPDF.ts` — criado (geração programática com jsPDF, sem html2canvas)
+- `src/components/ModuloRelatorios.tsx` — exportação PDF + síntese IA + visual refinado
+**O que foi feito:**
+- **Passo 6**: Estrutura separada controles vs. conteúdo; `RelatorioCabecalho`, `Section`, `CardMetrica` isolados; pronto para PDF
+- **Passo 7**: `exportarPDF.ts` com classe `PdfWriter` (jsPDF programático): título, cards, barras de progresso, tags, linha do tempo, caixa IA, rodapé com paginação; botão "⬇ Exportar PDF" no componente
+- **Passo 8**: Síntese pedagógica com Gemini (`gemini-1.5-flash`); prompts específicos para mensal e por turma; seção claramente marcada como "sugerida por IA — não é dado absoluto"; botão "✨ Síntese pedagógica com IA"
+- **Passo 9**: Cards coloridos por métrica (âmbar/esmeralda/índigo/violeta), lista com numeração e ranking, gradiente no resumo da turma, espaçamento e tipografia refinados
+
+---
+
+### Módulo Relatórios — Passo 5: Filtros em cascata
+**Data:** 2026-03-11
+**Arquivos:**
+- `src/lib/relatorios.ts` — adicionados `listarEscolas()`, `listarSegmentos()`, `escolaId`/`segmentoId` em `filtrarAplicacoes` e `buildRelatorioMensal`
+- `src/components/ModuloRelatorios.tsx` — filtros em cascata escola → segmento → turma
+**O que foi feito:**
+- Filtros: Período (obrigatório) + Escola + Segmento + Turma (turma obrigatória só no relatório por turma)
+- Seleção em cascata: mudar escola limpa segmento e turma; mudar segmento limpa turma
+- Listas de opções filtradas dinamicamente por escola/segmento selecionados
+- Componentes `CampoFiltro` e `SelectFiltro` reutilizáveis com badge "obrigatório/opcional"
+- Relatório mensal aceita qualquer combinação de filtros opcionais
+
+---
+
+### Módulo Relatórios — Passo 4: Refatoração de agregação de dados
+**Data:** 2026-03-11
+**Arquivos:**
+- `src/lib/relatorios.ts` — criado (helpers puros e reutilizáveis)
+- `src/components/ModuloRelatorios.tsx` — refatorado para usar os helpers
+**O que foi feito:**
+- Criado `src/lib/relatorios.ts` com funções puras separadas por responsabilidade:
+  - `filtrarAplicacoes()` — filtra por período, turma e status
+  - `contarAulas/Turmas/PlanosUnicos/RegistrosPosAula()` — contadores individuais
+  - `agregarPlanos/Conceitos/Repertorio/Turmas()` — agregações com ordenação
+  - `buildLinhaDoTempo()` — lista cronológica para relatório por turma
+  - `buildRelatorioMensal/Turma()` — builders completos que compõem os helpers
+  - `listarTurmas/getNomeTurma()` — lookups de hierarquia ano/escola/segmento/turma
+- `ModuloRelatorios.tsx` reduzido a lógica de UI pura (sem cálculos inline)
+- Views separadas: `RelatorioMensalView`, `RelatorioTurmaView`
+
+---
+
+### Módulo Relatórios — Passo 3: Relatório por Turma
+**Data:** 2026-03-11
+**Arquivo:** `src/components/ModuloRelatorios.tsx`
+**O que foi feito:**
+- Implementado Relatório por Turma completo com dados reais
+- Filtros: dropdown com todas as turmas do sistema + período
+- Seções: Resumo (nome da turma, total aulas), Linha do tempo cronológica, Conceitos musicais, Repertório, Planos aplicados
+- Linha do tempo: data (DD/MM/YYYY) + nome do plano + badge "realizada"
+- Turmas carregadas de `useAnoLetivoContext` → `anosLetivos` (hierarquia ano → escola → segmento → turma)
+
+---
+
+### Módulo Relatórios — Passo 2: Relatório Mensal Geral
+**Data:** 2026-03-11
+**Arquivo:** `src/components/ModuloRelatorios.tsx`
+**O que foi feito:**
+- Implementado cálculo completo usando dados reais: `useAplicacoesContext`, `usePlanosContext`, `useAnoLetivoContext`
+- Filtra aplicações com `status === 'realizada'` no período selecionado
+- Seções: Resumo (4 cards), Planos mais usados, Conceitos musicais, Repertório, Turmas atendidas
+- Barras de progresso relativas ao maior valor de cada seção
+- Sem IA — 100% dados objetivos do sistema
+- Relatório por Turma marcado como "em breve"
+
+---
+
+### Módulo Relatórios — Passo 1: Estrutura e Navegação
+**Data:** 2026-03-11
+**Arquivos:**
+- `src/components/ModuloRelatorios.tsx` — criado (novo módulo)
+- `src/components/BancoPlanos.tsx` — adicionado item na navbar e lazy import
+**O que foi feito:**
+- Criado componente `ModuloRelatorios` com tela inicial do módulo
+- Dois tipos de relatório: Relatório Mensal Geral e Relatório por Turma
+- Filtros básicos: período (data início/fim) e turma (visível só no tipo "por turma")
+- Botão "Gerar relatório" desabilitado até filtros preenchidos (placeholder para próximos passos)
+- Adicionado aba 📋 Relatórios no Grupo 1 da navbar
+- Lazy loading via `React.lazy` igual aos outros módulos
+
+---
+
+## Pendências Futuras
+
+### Migração: Faixa Etária → Segmento
+**Decisão:** Faixa etária e segmento são na prática o mesmo campo ("1º ano", "Infantil", etc.). Decidido manter os dois por enquanto e migrar futuramente.
+**Impacto:** Formulário de criação de plano, filtros, registros, relatórios.
+**Ação necessária:** Script de migração que copia `faixaEtaria` para `segmento` em todos os planos existentes antes de remover o campo `faixaEtaria`.
+
+---
+
+## Observações Técnicas
+
+- **Contexto antigo (`useBancoPlanos`)** ainda é a fonte de vários estados enquanto a migração para contextos por domínio não termina. Ao criar novos modais, verificar sempre se o estado está no `usePlanosContext` ou no `useBancoPlanos`.
+- **IndexedDB** é o armazenamento local principal (migrado do localStorage). Dados persistem entre sessões do navegador. Limite ~50MB.
+- **Supabase** sincroniza após 15s de inatividade. Com usuário logado, o `onSyncStatus` confirma o sync. Sem usuário, o fallback local resolve em 400ms.
+- **Branch de trabalho:** `claude/add-usestate-comments-evQWg` — mergear para `main` após cada sessão.

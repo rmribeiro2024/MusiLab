@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview — Pós-Aula Tela Única</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #F6F8FB; min-height: 100vh; }
+
+/* Layout */
+.app { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+.page-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 20px; }
+
+.module { background: #fff; border-radius: 16px; border: 1px solid #E6EAF0; overflow: hidden; }
+
+/* ── HEADER STICKY ── */
+.header {
+  position: sticky; top: 0; z-index: 10;
+  background: #fff;
+  border-bottom: 1px solid #E6EAF0;
+  transition: all .25s ease;
+}
+
+/* Estado: lista aberta */
+.header-open { padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; }
+.header-open-left { display: flex; flex-direction: column; gap: 2px; }
+.header-date { font-size: 15px; font-weight: 700; color: #1e293b; }
+.header-sub { font-size: 12px; color: #94a3b8; }
+.header-pending { font-size: 12px; color: #f59e0b; font-weight: 600; }
+
+/* Estado: lista colapsada (formulário aberto) */
+.header-collapsed {
+  padding: 11px 16px;
+  display: flex; align-items: center; gap: 0;
+  cursor: pointer;
+  transition: background .15s;
+}
+.header-collapsed:hover { background: #f8fafc; }
+.hc-toggle { font-size: 11px; color: #94a3b8; margin-right: 12px; display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.hc-toggle-icon { font-size: 9px; transition: transform .2s; }
+.hc-meta { flex: 1; display: flex; align-items: center; gap: 5px; font-size: 12px; overflow: hidden; }
+.hc-time { font-weight: 700; color: #1e293b; font-variant-numeric: tabular-nums; font-size: 13px; }
+.hc-sep { color: #d1d5db; font-size: 11px; }
+.hc-escola { color: #64748b; }
+.hc-turma { font-weight: 700; color: #1e293b; }
+.hc-date { color: #5B5FEA; font-size: 11px; }
+.hc-dot-pend { width: 7px; height: 7px; border-radius: 50%; background: #fbbf24; flex-shrink: 0; }
+.hc-dot-ok { width: 7px; height: 7px; border-radius: 50%; background: #34d399; flex-shrink: 0; }
+.hc-nav { display: flex; align-items: center; gap: 4px; margin-left: 10px; flex-shrink: 0; }
+.hc-btn { width: 28px; height: 28px; border-radius: 7px; border: 1px solid #E6EAF0; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #64748b; cursor: pointer; transition: all .15s; user-select: none; }
+.hc-btn:hover { border-color: #5B5FEA; color: #5B5FEA; }
+.hc-btn.next { background: #5B5FEA; border-color: #5B5FEA; color: #fff; }
+.hc-btn.next:hover { background: #4f46e5; }
+.hc-cnt { font-size: 11px; font-weight: 600; color: #94a3b8; min-width: 22px; text-align: center; }
+
+/* ── LISTA ── */
+.lista { overflow: hidden; transition: max-height .3s ease, opacity .25s ease; }
+.lista.open { max-height: 600px; opacity: 1; }
+.lista.closed { max-height: 0; opacity: 0; }
+
+.turma-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background .15s;
+  user-select: none;
+}
+.turma-row:last-child { border-bottom: none; }
+.turma-row:hover { background: #f8fafc; }
+.turma-row.active { background: #EEF0FF; }
+
+.t-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.t-dot.pend { background: #fbbf24; }
+.t-dot.ok { background: #34d399; }
+
+.t-info { flex: 1; display: flex; align-items: center; gap: 6px; }
+.t-time { font-size: 13px; font-weight: 700; color: #1e293b; font-variant-numeric: tabular-nums; }
+.t-sep { color: #d1d5db; font-size: 11px; }
+.t-escola { font-size: 12px; color: #64748b; font-weight: 500; }
+.t-turma { font-size: 13px; font-weight: 700; color: #1e293b; }
+
+.t-status-ok { font-size: 10px; font-weight: 700; color: #059669; background: #d1fae5; padding: 2px 7px; border-radius: 20px; }
+.t-arrow { color: #d1d5db; font-size: 12px; margin-left: 4px; }
+
+/* ── FORMULÁRIO ── */
+.form-wrap { overflow: hidden; transition: max-height .35s ease, opacity .3s ease; }
+.form-wrap.open { max-height: 2000px; opacity: 1; }
+.form-wrap.closed { max-height: 0; opacity: 0; }
+
+.form-body { padding: 20px 18px; background: #f8fafc; border-top: 1px solid #f1f5f9; }
+
+.accordion-field {
+  background: #fff; border: 1px solid #E6EAF0; border-radius: 12px;
+  margin-bottom: 10px; overflow: hidden;
+}
+.acc-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 16px; cursor: pointer;
+  transition: background .15s;
+}
+.acc-header:hover { background: #f8fafc; }
+.acc-icon { font-size: 16px; }
+.acc-label { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: .08em; text-transform: uppercase; flex: 1; }
+.acc-chevron { font-size: 10px; color: #cbd5e1; transition: transform .2s; }
+.acc-chevron.open { transform: rotate(180deg); }
+.acc-body { padding: 0 16px 14px; }
+.acc-textarea {
+  width: 100%; border: none; outline: none; resize: none;
+  font-size: 13px; color: #1e293b; line-height: 1.6;
+  background: transparent; font-family: inherit;
+  min-height: 60px;
+}
+.acc-textarea::placeholder { color: #cbd5e1; }
+
+.field-status {
+  background: #fff; border: 1px solid #E6EAF0; border-radius: 12px;
+  margin-bottom: 10px; padding: 14px 16px;
+}
+.field-status-label { font-size: 10px; font-weight: 700; color: #94a3b8; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
+.status-opts { display: flex; gap: 8px; }
+.sopt { flex: 1; padding: 8px 10px; border-radius: 9px; border: 1px solid #E6EAF0; text-align: center; cursor: pointer; font-size: 12px; font-weight: 600; color: #64748b; transition: all .15s; }
+.sopt:hover { border-color: #5B5FEA; color: #5B5FEA; }
+.sopt.sel-avancar { background: #EEF0FF; border-color: #5B5FEA; color: #5B5FEA; }
+.sopt.sel-retomar { background: #fef3c7; border-color: #f59e0b; color: #d97706; }
+
+.save-row { padding: 14px 18px; border-top: 1px solid #E6EAF0; display: flex; justify-content: flex-end; background: #fff; }
+.btn-save {
+  padding: 9px 20px; background: #1e293b; color: #fff;
+  border: none; border-radius: 9px; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: background .15s; display: flex; align-items: center; gap: 6px;
+}
+.btn-save:hover { background: #334155; }
+
+/* Nota */
+.nota { font-size: 11px; color: #64748b; margin-top: 10px; padding: 8px 12px; background: #fff; border-radius: 8px; border: 1px solid #E6EAF0; }
+.nota strong { color: #5B5FEA; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="page-title">Preview — Pós-Aula Tela Única (interativo)</div>
+
+  <div class="module" id="module">
+
+    <!-- HEADER — muda conforme estado -->
+    <div class="header" id="header">
+
+      <!-- Lista aberta: mostra data e sumário -->
+      <div class="header-open" id="hdr-open">
+        <div class="header-open-left">
+          <span class="header-date">Segunda, 23/03/2026</span>
+          <span class="header-sub">
+            <span class="header-pending">4 pendentes</span>
+            &nbsp;·&nbsp; 2 registradas
+          </span>
+        </div>
+        <input type="date" id="date-picker" style="opacity:0;position:absolute;pointer-events:none;width:0;height:0;" />
+        <button onclick="document.getElementById('date-picker').showPicker?.()" style="font-size:12px;color:#5B5FEA;background:#EEF0FF;padding:5px 12px;border-radius:20px;border:none;cursor:pointer;font-weight:500;">
+          Mudar data ▾
+        </button>
+      </div>
+
+      <!-- Lista colapsada: mostra turma atual + navegação -->
+      <div class="header-collapsed" id="hdr-collapsed" style="display:none;" onclick="toggleLista()">
+        <span class="hc-toggle">
+          <span class="hc-toggle-icon" id="toggle-icon">▼</span>
+          todas
+        </span>
+        <div class="hc-meta" id="hc-meta">
+          <span class="hc-time" id="hc-time">08:00</span>
+          <span class="hc-sep">·</span>
+          <span class="hc-escola" id="hc-escola">EMPAC</span>
+          <span class="hc-sep">·</span>
+          <span class="hc-turma" id="hc-turma">GR3A</span>
+          <span class="hc-sep">·</span>
+          <span class="hc-date">Seg, 23/03</span>
+          <span class="hc-dot-pend" id="hc-status"></span>
+        </div>
+        <div class="hc-nav" onclick="event.stopPropagation()">
+          <div class="hc-btn" onclick="navTurma(-1)">‹</div>
+          <span class="hc-cnt" id="hc-cnt">1/6</span>
+          <div class="hc-btn next" onclick="navTurma(1)">›</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTA DE TURMAS -->
+    <div class="lista open" id="lista">
+      <div class="turma-row" onclick="abrirTurma(0)" data-idx="0">
+        <span class="t-dot pend"></span>
+        <div class="t-info">
+          <span class="t-time">08:00</span>
+          <span class="t-sep">·</span>
+          <span class="t-escola">EMPAC</span>
+          <span class="t-sep">·</span>
+          <span class="t-turma">GR3A</span>
+        </div>
+        <span class="t-arrow">›</span>
+      </div>
+      <div class="turma-row" onclick="abrirTurma(1)" data-idx="1">
+        <span class="t-dot ok"></span>
+        <div class="t-info">
+          <span class="t-time">09:30</span>
+          <span class="t-sep">·</span>
+          <span class="t-escola">EMPAC</span>
+          <span class="t-sep">·</span>
+          <span class="t-turma">GR2B</span>
+        </div>
+        <span class="t-status-ok">✓ registrada</span>
+        <span class="t-arrow">›</span>
+      </div>
+      <div class="turma-row" onclick="abrirTurma(2)" data-idx="2">
+        <span class="t-dot pend"></span>
+        <div class="t-info">
+          <span class="t-time">11:00</span>
+          <span class="t-sep">·</span>
+          <span class="t-escola">CEFET</span>
+          <span class="t-sep">·</span>
+          <span class="t-turma">GR1A</span>
+        </div>
+        <span class="t-arrow">›</span>
+      </div>
+      <div class="turma-row" onclick="abrirTurma(3)" data-idx="3">
+        <span class="t-dot ok"></span>
+        <div class="t-info">
+          <span class="t-time">13:00</span>
+          <span class="t-sep">·</span>
+          <span class="t-escola">CEFET</span>
+          <span class="t-sep">·</span>
+          <span class="t-turma">GR1B</span>
+        </div>
+        <span class="t-status-ok">✓ registrada</span>
+        <span class="t-arrow">›</span>
+      </div>
+      <div class="turma-row" onclick="abrirTurma(4)" data-idx="4">
+        <span class="t-dot pend"></span>
+        <div class="t-info">
+          <span class="t-time">14:30</span>
+          <span class="t-sep">·</span>
+          <span class="t-escola">CEFET</span>
+          <span class="t-sep">·</span>
+          <span class="t-turma">GR2A</span>
+        </div>
+        <span class="t-arrow">›</span>
+      </div>
+      <div class="turma-row" onclick="abrirTurma(5)" data-idx="5">
+        <span class="t-dot pend"></span>
+        <div class="t-info">
+          <span class="t-time">16:00</span>
+          <span class="t-sep">·</span>
+          <span class="t-escola">CEFET</span>
+          <span class="t-sep">·</span>
+          <span class="t-turma">GR3B</span>
+        </div>
+        <span class="t-arrow">›</span>
+      </div>
+    </div>
+
+    <!-- FORMULÁRIO -->
+    <div class="form-wrap closed" id="form-wrap">
+      <div class="form-body">
+
+        <div class="accordion-field" id="acc0">
+          <div class="acc-header" onclick="toggleAcc(0)">
+            <span class="acc-icon">🎯</span>
+            <span class="acc-label">O que os alunos demonstraram aprender?</span>
+            <span class="acc-chevron open" id="chev0">▲</span>
+          </div>
+          <div class="acc-body" id="abody0">
+            <textarea class="acc-textarea" placeholder="Ex: 3 alunos tocaram a cadência completa sem parar..." rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="accordion-field" id="acc1">
+          <div class="acc-header" onclick="toggleAcc(1)">
+            <span class="acc-icon">⭐</span>
+            <span class="acc-label">O que funcionou e você faria de novo?</span>
+            <span class="acc-chevron" id="chev1">▼</span>
+          </div>
+          <div class="acc-body" id="abody1" style="display:none;">
+            <textarea class="acc-textarea" placeholder="O que deu certo nessa aula..." rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="accordion-field" id="acc2">
+          <div class="acc-header" onclick="toggleAcc(2)">
+            <span class="acc-icon">💬</span>
+            <span class="acc-label">O que faria diferente?</span>
+            <span class="acc-chevron" id="chev2">▼</span>
+          </div>
+          <div class="acc-body" id="abody2" style="display:none;">
+            <textarea class="acc-textarea" placeholder="O que mudaria na próxima vez..." rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="field-status">
+          <div class="field-status-label">E agora?</div>
+          <div class="status-opts">
+            <div class="sopt sel-avancar" id="opt-avancar" onclick="selOpt('avancar')">✓ Avançar</div>
+            <div class="sopt" id="opt-retomar" onclick="selOpt('retomar')">↺ Retomar</div>
+          </div>
+        </div>
+
+        <div class="accordion-field" id="acc3">
+          <div class="acc-header" onclick="toggleAcc(3)">
+            <span class="acc-icon">📌</span>
+            <span class="acc-label">Lembrete para a próxima aula</span>
+            <span class="acc-chevron" id="chev3">▼</span>
+          </div>
+          <div class="acc-body" id="abody3" style="display:none;">
+            <textarea class="acc-textarea" placeholder="O que não pode esquecer..." rows="2"></textarea>
+          </div>
+        </div>
+
+      </div>
+      <div class="save-row">
+        <button class="btn-save" onclick="salvar()">✓ Salvar e próxima</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="nota" style="margin-top:12px;">
+    <strong>Como funciona:</strong> clique em qualquer turma → lista colapsa, formulário abre.
+    Clique em "▼ todas" no header para ver a lista novamente. Setas <strong>‹ ›</strong> navegam entre turmas sem abrir a lista.
+    Botão <strong>"Salvar e próxima"</strong> salva e avança automaticamente.
+  </div>
+</div>
+
+<script>
+const turmas = [
+  { time: '08:00', escola: 'EMPAC', turma: 'GR3A', ok: false },
+  { time: '09:30', escola: 'EMPAC', turma: 'GR2B', ok: true  },
+  { time: '11:00', escola: 'CEFET', turma: 'GR1A', ok: false },
+  { time: '13:00', escola: 'CEFET', turma: 'GR1B', ok: true  },
+  { time: '14:30', escola: 'CEFET', turma: 'GR2A', ok: false },
+  { time: '16:00', escola: 'CEFET', turma: 'GR3B', ok: false },
+]
+
+let listaAberta = true
+let turmaAtual = -1
+
+function abrirTurma(idx) {
+  turmaAtual = idx
+  listaAberta = false
+  atualizarUI()
+}
+
+function toggleLista() {
+  listaAberta = !listaAberta
+  atualizarUI()
+}
+
+function navTurma(delta) {
+  const prox = turmaAtual + delta
+  if (prox < 0 || prox >= turmas.length) return
+  turmaAtual = prox
+  atualizarUI()
+}
+
+function atualizarUI() {
+  const lista = document.getElementById('lista')
+  const form = document.getElementById('form-wrap')
+  const hdrOpen = document.getElementById('hdr-open')
+  const hdrCollapsed = document.getElementById('hdr-collapsed')
+  const icon = document.getElementById('toggle-icon')
+
+  if (listaAberta || turmaAtual < 0) {
+    // Lista aberta
+    lista.className = 'lista open'
+    form.className = 'form-wrap closed'
+    hdrOpen.style.display = 'flex'
+    hdrCollapsed.style.display = 'none'
+    // remove active das linhas
+    document.querySelectorAll('.turma-row').forEach(r => r.classList.remove('active'))
+  } else {
+    // Formulário aberto
+    const t = turmas[turmaAtual]
+    lista.className = 'lista closed'
+    form.className = 'form-wrap open'
+    hdrOpen.style.display = 'none'
+    hdrCollapsed.style.display = 'flex'
+
+    // Atualiza header colapsado
+    document.getElementById('hc-time').textContent = t.time
+    document.getElementById('hc-escola').textContent = t.escola
+    document.getElementById('hc-turma').textContent = t.turma
+    document.getElementById('hc-cnt').textContent = `${turmaAtual+1}/${turmas.length}`
+
+    const statusEl = document.getElementById('hc-status')
+    statusEl.className = t.ok ? 'hc-dot-ok' : 'hc-dot-pend'
+
+    icon.textContent = listaAberta ? '▲' : '▼'
+
+    // Marca linha ativa
+    document.querySelectorAll('.turma-row').forEach((r,i) => {
+      r.classList.toggle('active', i === turmaAtual)
+    })
+  }
+}
+
+function toggleAcc(n) {
+  const body = document.getElementById('abody'+n)
+  const chev = document.getElementById('chev'+n)
+  const isOpen = body.style.display !== 'none'
+  body.style.display = isOpen ? 'none' : 'block'
+  chev.className = isOpen ? 'acc-chevron' : 'acc-chevron open'
+  chev.textContent = isOpen ? '▼' : '▲'
+}
+
+function selOpt(opt) {
+  document.getElementById('opt-avancar').className = 'sopt' + (opt==='avancar' ? ' sel-avancar' : '')
+  document.getElementById('opt-retomar').className = 'sopt' + (opt==='retomar' ? ' sel-retomar' : '')
+}
+
+function salvar() {
+  if (turmaAtual < 0) return
+  // Marca como registrada
+  turmas[turmaAtual].ok = true
+  const rows = document.querySelectorAll('.turma-row')
+  const dot = rows[turmaAtual].querySelector('.t-dot')
+  dot.className = 't-dot ok'
+  let statusOk = rows[turmaAtual].querySelector('.t-status-ok')
+  if (!statusOk) {
+    statusOk = document.createElement('span')
+    statusOk.className = 't-status-ok'
+    rows[turmaAtual].insertBefore(statusOk, rows[turmaAtual].querySelector('.t-arrow'))
+  }
+  statusOk.textContent = '✓ registrada'
+
+  // Vai para próxima pendente
+  let prox = turmaAtual + 1
+  while (prox < turmas.length && turmas[prox].ok) prox++
+  if (prox < turmas.length) {
+    turmaAtual = prox
+  } else {
+    // Todas registradas → abre lista
+    listaAberta = true
+    turmaAtual = -1
+    document.querySelector('.header-pending').textContent = '0 pendentes'
+    document.querySelector('.header-pending').style.color = '#34d399'
+    document.querySelector('.header-pending').textContent = 'Todas registradas ✓'
+  }
+  atualizarUI()
+
+  // Limpa campos
+  document.querySelectorAll('.acc-textarea').forEach(t => t.value = '')
+}
+</script>
+</body>
+</html>

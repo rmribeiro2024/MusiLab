@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview Header Registro</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #F6F8FB; color: #0f172a; padding: 28px 20px; }
+h1 { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 28px; }
+.section { margin-bottom: 36px; }
+.lbl { font-size: 11px; font-weight: 700; color: #5B5FEA; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.lbl::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
+.card { background: #fff; border-radius: 14px; border: 1px solid #E6EAF0; overflow: hidden; margin-bottom: 8px; }
+.nota { font-size: 11px; color: #64748b; margin-top: 6px; padding: 8px 12px; background: #f8fafc; border-radius: 8px; border-left: 3px solid #E6EAF0; }
+.sep { height: 1px; background: #f1f5f9; margin: 0 16px; }
+.sep2 { height: 2px; background: #E6EAF0; }
+
+/* === OPCAO 1 === */
+.o1-row { display: flex; align-items: center; gap: 0; padding: 12px 18px; }
+.o1-back { font-size: 12px; color: #94a3b8; margin-right: 14px; padding: 3px 8px; border-radius: 6px; border: 1px solid #E6EAF0; cursor: pointer; }
+.o1-meta { flex: 1; display: flex; align-items: center; gap: 5px; font-size: 12px; flex-wrap: nowrap; overflow: hidden; }
+.o1-time { font-weight: 700; color: #1e293b; font-variant-numeric: tabular-nums; }
+.o1-sep { color: #d1d5db; }
+.o1-escola { color: #64748b; }
+.o1-turma { font-weight: 700; color: #1e293b; }
+.o1-date { color: #5B5FEA; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
+.o1-dot-pend { width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; margin-left: 4px; flex-shrink: 0; }
+.o1-check { width: 18px; height: 18px; border-radius: 50%; background: #d1fae5; color: #059669; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-left: 4px; flex-shrink: 0; }
+.o1-nav { display: flex; align-items: center; gap: 5px; margin-left: 12px; }
+.o1-btn { width: 27px; height: 27px; border-radius: 7px; border: 1px solid #E6EAF0; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #64748b; cursor: pointer; }
+.o1-cnt { font-size: 11px; font-weight: 600; color: #94a3b8; min-width: 24px; text-align: center; }
+
+/* === OPCAO 2 === */
+.o2-top { display: flex; align-items: center; gap: 10px; padding: 10px 18px; }
+.o2-back { font-size: 12px; color: #94a3b8; cursor: pointer; }
+.o2-badge-pend { background: #fef3c7; color: #d97706; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+.o2-badge-ok { background: #d1fae5; color: #059669; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+.o2-flex { flex: 1; }
+.o2-dots { display: flex; gap: 4px; align-items: center; }
+.o2-d { width: 7px; height: 7px; border-radius: 50%; background: #e2e8f0; }
+.o2-d.ok { background: #34d399; }
+.o2-d.active { background: #5B5FEA; width: 9px; height: 9px; }
+.o2-d.pend { background: #fbbf24; }
+.o2-strip { display: flex; align-items: center; gap: 12px; padding: 10px 18px 13px; background: #F8FAFC; border-top: 1px solid #F1F5F9; }
+.o2-time { font-size: 24px; font-weight: 800; color: #1e293b; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
+.o2-info { flex: 1; }
+.o2-turma { font-size: 15px; font-weight: 700; color: #1e293b; }
+.o2-escola { font-size: 12px; color: #64748b; }
+.o2-right { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
+.o2-datebtn { font-size: 11px; color: #5B5FEA; background: #EEF0FF; padding: 3px 9px; border-radius: 20px; cursor: pointer; border: none; font-weight: 500; }
+.o2-nav { display: flex; gap: 5px; }
+.o2-nbtn { height: 27px; padding: 0 10px; border-radius: 7px; border: 1px solid #E6EAF0; background: #fff; font-size: 12px; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 3px; }
+
+/* === OPCAO 3 === */
+.o3-bar { display: flex; align-items: center; padding: 10px 18px; gap: 10px; }
+.o3-back { font-size: 12px; color: #94a3b8; cursor: pointer; flex-shrink: 0; }
+.o3-progress { flex: 1; display: flex; gap: 3px; }
+.o3-seg { height: 4px; border-radius: 2px; flex: 1; }
+.o3-seg.done { background: #34d399; }
+.o3-seg.active { background: #5B5FEA; }
+.o3-seg.todo { background: #e2e8f0; }
+.o3-cnt { font-size: 11px; color: #94a3b8; font-weight: 600; flex-shrink: 0; }
+.o3-main { display: flex; align-items: center; gap: 10px; padding: 11px 18px 13px; border-top: 1px solid #f1f5f9; }
+.o3-left { flex: 1; }
+.o3-r1 { display: flex; align-items: center; gap: 6px; }
+.o3-time { font-size: 13px; font-weight: 700; color: #1e293b; font-variant-numeric: tabular-nums; }
+.o3-escola { font-size: 12px; color: #64748b; }
+.o3-turma { font-size: 16px; font-weight: 800; color: #1e293b; margin-top: 2px; display: flex; align-items: center; gap: 6px; }
+.o3-tag-pend { width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; }
+.o3-tag-ok { display: inline-flex; align-items: center; gap: 3px; background: #d1fae5; color: #059669; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 20px; }
+.o3-date { font-size: 12px; color: #5B5FEA; cursor: pointer; margin-top: 2px; }
+.o3-nav { display: flex; gap: 5px; }
+.o3-btn { width: 31px; height: 31px; border-radius: 8px; border: 1px solid #E6EAF0; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #64748b; cursor: pointer; }
+
+/* === OPCAO 4 === */
+.o4-header { display: flex; align-items: center; padding: 11px 18px; gap: 10px; }
+.o4-back { font-size: 12px; color: #94a3b8; cursor: pointer; }
+.o4-title { font-size: 13px; font-weight: 600; color: #64748b; flex: 1; }
+.o4-ver { font-size: 12px; color: #94a3b8; cursor: pointer; }
+.o4-card { margin: 0 14px; background: #f8fafc; border-radius: 10px; border: 1px solid #E6EAF0; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+.o4-tcol { text-align: center; flex-shrink: 0; }
+.o4-tbig { font-size: 20px; font-weight: 800; color: #1e293b; font-variant-numeric: tabular-nums; line-height: 1; }
+.o4-tday { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+.o4-divider { width: 1px; height: 36px; background: #E6EAF0; flex-shrink: 0; }
+.o4-info { flex: 1; }
+.o4-turma { font-size: 14px; font-weight: 700; color: #1e293b; }
+.o4-escola { font-size: 12px; color: #64748b; }
+.o4-date { font-size: 11px; color: #5B5FEA; margin-top: 3px; cursor: pointer; }
+.o4-status { flex-shrink: 0; }
+.o4-ok { background: #d1fae5; color: #059669; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.o4-pend { background: #fef3c7; color: #d97706; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.o4-nav { display: flex; align-items: center; gap: 8px; padding: 10px 14px 14px; justify-content: center; }
+.o4-nbtn { height: 30px; padding: 0 14px; border-radius: 8px; border: 1px solid #E6EAF0; background: #fff; font-size: 12px; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+.o4-ncnt { font-size: 12px; color: #94a3b8; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Preview — Header Registro Pos-Aula (4 opcoes)</h1>
+
+<!-- OPCAO 1 -->
+<div class="section">
+  <div class="lbl">Opcao 1 — Linha compacta (estilo atual, so com navegacao)</div>
+  <div class="card">
+    <div class="o1-row">
+      <span class="o1-back">← Voltar</span>
+      <div class="o1-meta">
+        <span class="o1-time">08:00</span>
+        <span class="o1-sep">·</span>
+        <span class="o1-escola">EMPAC</span>
+        <span class="o1-sep">·</span>
+        <span class="o1-turma">GR3A</span>
+        <span class="o1-sep">·</span>
+        <span class="o1-date">Seg, 23/03 ▾</span>
+        <span class="o1-dot-pend" title="Pendente"></span>
+      </div>
+      <div class="o1-nav">
+        <div class="o1-btn">‹</div>
+        <span class="o1-cnt">2/6</span>
+        <div class="o1-btn">›</div>
+      </div>
+    </div>
+    <div class="sep2"></div>
+    <div class="o1-row">
+      <span class="o1-back">← Voltar</span>
+      <div class="o1-meta">
+        <span class="o1-time">10:00</span>
+        <span class="o1-sep">·</span>
+        <span class="o1-escola">EMPAC</span>
+        <span class="o1-sep">·</span>
+        <span class="o1-turma">GR2B</span>
+        <span class="o1-sep">·</span>
+        <span class="o1-date">Seg, 23/03 ▾</span>
+        <span class="o1-check">✓</span>
+      </div>
+      <div class="o1-nav">
+        <div class="o1-btn">‹</div>
+        <span class="o1-cnt">3/6</span>
+        <div class="o1-btn">›</div>
+      </div>
+    </div>
+  </div>
+  <div class="nota">Linha unica, minimal. Bolinha ambar = pendente | circulo verde = registrada. Setas + contador. Data clicavel.</div>
+</div>
+
+<!-- OPCAO 2 -->
+<div class="section">
+  <div class="lbl">Opcao 2 — Header duplo com dots de progresso</div>
+  <div class="card">
+    <div class="o2-top">
+      <span class="o2-back">← Voltar</span>
+      <span class="o2-badge-pend">● Pendente</span>
+      <div class="o2-flex"></div>
+      <div class="o2-dots">
+        <div class="o2-d ok"></div>
+        <div class="o2-d active"></div>
+        <div class="o2-d pend"></div>
+        <div class="o2-d"></div>
+        <div class="o2-d"></div>
+        <div class="o2-d"></div>
+      </div>
+    </div>
+    <div class="o2-strip">
+      <div class="o2-time">08:00</div>
+      <div class="o2-info">
+        <div class="o2-turma">GR3A</div>
+        <div class="o2-escola">EMPAC · 3 Ano</div>
+      </div>
+      <div class="o2-right">
+        <button class="o2-datebtn">Seg, 23/03 ▾</button>
+        <div class="o2-nav">
+          <div class="o2-nbtn">‹ Ant.</div>
+          <div class="o2-nbtn">Prox. ›</div>
+        </div>
+      </div>
+    </div>
+    <div class="sep2"></div>
+    <div class="o2-top">
+      <span class="o2-back">← Voltar</span>
+      <span class="o2-badge-ok">✓ Registrada</span>
+      <div class="o2-flex"></div>
+      <div class="o2-dots">
+        <div class="o2-d ok"></div>
+        <div class="o2-d ok"></div>
+        <div class="o2-d ok" style="width:9px;height:9px;outline:2px solid #059669;outline-offset:1px;"></div>
+        <div class="o2-d pend"></div>
+        <div class="o2-d"></div>
+        <div class="o2-d"></div>
+      </div>
+    </div>
+    <div class="o2-strip">
+      <div class="o2-time">10:00</div>
+      <div class="o2-info">
+        <div class="o2-turma">GR2B</div>
+        <div class="o2-escola">EMPAC · 2 Ano</div>
+      </div>
+      <div class="o2-right">
+        <button class="o2-datebtn">Seg, 23/03 ▾</button>
+        <div class="o2-nav">
+          <div class="o2-nbtn">‹ Ant.</div>
+          <div class="o2-nbtn">Prox. ›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="nota">Badge de status + horario grande + dots mostrando todas as turmas do dia (verde=ok, ambar=pend, azul=atual, cinza=futuro).</div>
+</div>
+
+<!-- OPCAO 3 -->
+<div class="section">
+  <div class="lbl">Opcao 3 — Barra de progresso segmentada</div>
+  <div class="card">
+    <div class="o3-bar">
+      <span class="o3-back">← Voltar</span>
+      <div class="o3-progress">
+        <div class="o3-seg done"></div>
+        <div class="o3-seg active"></div>
+        <div class="o3-seg todo"></div>
+        <div class="o3-seg todo"></div>
+        <div class="o3-seg todo"></div>
+        <div class="o3-seg todo"></div>
+      </div>
+      <span class="o3-cnt">2 / 6</span>
+    </div>
+    <div class="o3-main">
+      <div class="o3-left">
+        <div class="o3-r1">
+          <span class="o3-time">08:00</span>
+          <span style="color:#d1d5db;font-size:11px;">·</span>
+          <span class="o3-escola">EMPAC</span>
+        </div>
+        <div class="o3-turma">GR3A <span class="o3-tag-pend"></span></div>
+        <div class="o3-date">📅 Seg, 23/03/2026 ▾</div>
+      </div>
+      <div class="o3-nav">
+        <div class="o3-btn">‹</div>
+        <div class="o3-btn">›</div>
+      </div>
+    </div>
+    <div class="sep2"></div>
+    <div class="o3-bar">
+      <span class="o3-back">← Voltar</span>
+      <div class="o3-progress">
+        <div class="o3-seg done"></div>
+        <div class="o3-seg done"></div>
+        <div class="o3-seg" style="background:#34d399;"></div>
+        <div class="o3-seg todo"></div>
+        <div class="o3-seg todo"></div>
+        <div class="o3-seg todo"></div>
+      </div>
+      <span class="o3-cnt">3 / 6</span>
+    </div>
+    <div class="o3-main">
+      <div class="o3-left">
+        <div class="o3-r1">
+          <span class="o3-time">10:00</span>
+          <span style="color:#d1d5db;font-size:11px;">·</span>
+          <span class="o3-escola">EMPAC</span>
+        </div>
+        <div class="o3-turma">GR2B <span class="o3-tag-ok">✓ registrada</span></div>
+        <div class="o3-date">📅 Seg, 23/03/2026 ▾</div>
+      </div>
+      <div class="o3-nav">
+        <div class="o3-btn">‹</div>
+        <div class="o3-btn">›</div>
+      </div>
+    </div>
+  </div>
+  <div class="nota">Barra linear segmentada = visual de progresso claro. Verde=concluida, azul=atual, cinza=pendente. Turma em destaque no centro.</div>
+</div>
+
+<!-- OPCAO 4 -->
+<div class="section">
+  <div class="lbl">Opcao 4 — Card contextual com navegacao embaixo</div>
+  <div class="card">
+    <div class="o4-header">
+      <span class="o4-back">← Dia</span>
+      <span class="o4-title">Registro Pos-Aula</span>
+      <span class="o4-ver">Ver plano</span>
+    </div>
+    <div style="border-top:1px solid #f1f5f9;"></div>
+    <div style="padding: 12px 0;">
+      <div class="o4-card">
+        <div class="o4-tcol">
+          <div class="o4-tbig">08:00</div>
+          <div class="o4-tday">Seg</div>
+        </div>
+        <div class="o4-divider"></div>
+        <div class="o4-info">
+          <div class="o4-turma">GR3A</div>
+          <div class="o4-escola">EMPAC · 3 Ano</div>
+          <div class="o4-date">📅 23/03/2026 ▾</div>
+        </div>
+        <div class="o4-status"><span class="o4-pend">● Pendente</span></div>
+      </div>
+      <div class="o4-nav">
+        <div class="o4-nbtn">‹ Anterior</div>
+        <span class="o4-ncnt">2 de 6</span>
+        <div class="o4-nbtn">Proxima ›</div>
+      </div>
+    </div>
+    <div class="sep2"></div>
+    <div class="o4-header">
+      <span class="o4-back">← Dia</span>
+      <span class="o4-title">Registro Pos-Aula</span>
+      <span class="o4-ver">Ver plano</span>
+    </div>
+    <div style="border-top:1px solid #f1f5f9;"></div>
+    <div style="padding: 12px 0;">
+      <div class="o4-card">
+        <div class="o4-tcol">
+          <div class="o4-tbig">10:00</div>
+          <div class="o4-tday">Seg</div>
+        </div>
+        <div class="o4-divider"></div>
+        <div class="o4-info">
+          <div class="o4-turma">GR2B</div>
+          <div class="o4-escola">EMPAC · 2 Ano</div>
+          <div class="o4-date">📅 23/03/2026 ▾</div>
+        </div>
+        <div class="o4-status"><span class="o4-ok">✓ Registrada</span></div>
+      </div>
+      <div class="o4-nav">
+        <div class="o4-nbtn">‹ Anterior</div>
+        <span class="o4-ncnt">3 de 6</span>
+        <div class="o4-nbtn">Proxima ›</div>
+      </div>
+    </div>
+  </div>
+  <div class="nota">Card destacado com horario grande, badge de status e navegacao textual embaixo. Mais espaco, leitura facil, ideal mobile.</div>
+</div>
+
+</body>
+</html>
