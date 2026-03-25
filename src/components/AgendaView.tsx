@@ -312,14 +312,14 @@ function AulaCard({ slot, isDarkMode }: AulaCardProps) {
 
         {/* Info turma */}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate">
-            {slot.nomeTurma}
-          </p>
           {slot.nomeEscola && (
-            <p className="text-xs mt-0.5 font-medium" style={{ color: borderColor }}>
+            <p className="text-xs font-medium truncate" style={{ color: borderColor }}>
               {slot.nomeEscola}
             </p>
           )}
+          <p className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate">
+            {slot.nomeTurma}
+          </p>
           {slot.plano && (
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 truncate">
               {slot.plano.titulo}
