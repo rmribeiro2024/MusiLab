@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MusiLab — Agenda Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --indigo: #5B5FEA;
+    --indigo-light: #EEF0FD;
+    --indigo-dark: #4347c7;
+    --slate-900: #0F172A;
+    --slate-700: #334155;
+    --slate-500: #64748B;
+    --slate-400: #94A3B8;
+    --slate-200: #E2E8F0;
+    --slate-100: #F1F5F9;
+    --slate-50: #F8FAFC;
+    --emerald: #10B981;
+    --emerald-light: #ECFDF5;
+    --amber: #F59E0B;
+    --amber-light: #FFFBEB;
+    --blue: #3B82F6;
+    --blue-light: #EFF6FF;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 4px 24px rgba(15,23,42,0.08), 0 1px 4px rgba(15,23,42,0.04);
+    --shadow-lg: 0 12px 48px rgba(15,23,42,0.14), 0 2px 8px rgba(15,23,42,0.06);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #F0F2FF;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+    color: var(--slate-900);
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .page-header .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--indigo);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .page-header .logo svg { width: 20px; height: 20px; }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--slate-900);
+    letter-spacing: -.03em;
+    margin-bottom: 6px;
+  }
+  .page-header p {
+    font-size: 14px;
+    color: var(--slate-500);
+  }
+
+  /* ── DEVICE TOGGLE ── */
+  .device-toggle {
+    display: flex;
+    gap: 8px;
+    background: white;
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 28px;
+  }
+  .device-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--slate-500);
+    cursor: pointer;
+    transition: all .18s;
+  }
+  .device-btn.active {
+    background: var(--indigo);
+    color: white;
+  }
+  .device-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* ── FRAME ── */
+  .frame-wrap { transition: all .3s cubic-bezier(.4,0,.2,1); }
+
+  .frame-mobile {
+    width: 390px;
+    max-width: 100%;
+    background: white;
+    border-radius: 44px;
+    box-shadow: 0 32px 80px rgba(15,23,42,.22), 0 0 0 1px rgba(15,23,42,.06);
+    overflow: hidden;
+    position: relative;
+  }
+  .frame-mobile .notch {
+    height: 48px;
+    background: var(--slate-900);
+    border-radius: 44px 44px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .frame-mobile .notch-pill {
+    width: 120px;
+    height: 34px;
+    background: #111;
+    border-radius: 20px;
+  }
+  .frame-mobile .screen {
+    background: var(--slate-50);
+    overflow: hidden;
+    height: 720px;
+    position: relative;
+  }
+  .frame-mobile .home-bar {
+    height: 32px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0 0 44px 44px;
+    background: var(--slate-900);
+  }
+  .frame-mobile .home-bar-pill {
+    width: 120px;
+    height: 5px;
+    background: rgba(255,255,255,.25);
+    border-radius: 3px;
+  }
+
+  .frame-desktop {
+    width: 820px;
+    max-width: calc(100vw - 32px);
+    background: white;
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+  .frame-desktop .titlebar {
+    height: 40px;
+    background: #F5F5F5;
+    border-bottom: 1px solid #E0E0E0;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 8px;
+  }
+  .titlebar-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .titlebar-url {
+    flex: 1;
+    margin: 0 16px;
+    background: white;
+    border: 1px solid #E0E0E0;
+    border-radius: 6px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 11px;
+    color: #888;
+    font-family: 'DM Mono', monospace;
+  }
+  .frame-desktop .screen {
+    background: var(--slate-50);
+    overflow: hidden;
+    display: flex;
+    height: 600px;
+  }
+
+  /* ── SIDEBAR (desktop only) ── */
+  .sidebar {
+    width: 200px;
+    flex-shrink: 0;
+    background: white;
+    border-right: 1px solid var(--slate-200);
+    padding: 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px 16px;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--slate-900);
+    border-bottom: 1px solid var(--slate-100);
+    margin-bottom: 8px;
+  }
+  .sidebar-logo-icon {
+    width: 28px; height: 28px;
+    background: var(--indigo);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 14px;
+  }
+  .sidebar-section {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--slate-400);
+    padding: 10px 10px 4px;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--slate-600, #475569);
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .sidebar-item:hover { background: var(--slate-100); }
+  .sidebar-item.active {
+    background: var(--indigo-light);
+    color: var(--indigo);
+    font-weight: 600;
+  }
+  .sidebar-item .icon { font-size: 14px; width: 18px; text-align: center; }
+
+  /* ── MAIN CONTENT ── */
+  .main-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── APP INNER (both mobile and desktop share this) ── */
+  .app-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Top bar */
+  .topbar {
+    background: white;
+    border-bottom: 1px solid var(--slate-200);
+    padding: 14px 20px 0;
+    flex-shrink: 0;
+  }
+  .topbar-row1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .topbar-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--slate-900);
+    letter-spacing: -.02em;
+  }
+  .topbar-hoje-btn {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--indigo);
+    background: var(--indigo-light);
+    border: none;
+    border-radius: 20px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: background .15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--slate-400);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .18s;
+    font-family: 'DM Sans', sans-serif;
+    text-align: center;
+  }
+  .tab.active {
+    color: var(--indigo);
+    border-bottom-color: var(--indigo);
+  }
+
+  /* Scroll area */
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--slate-200) transparent;
+  }
+  .scroll-area::-webkit-scrollbar { width: 4px; }
+  .scroll-area::-webkit-scrollbar-thumb { background: var(--slate-200); border-radius: 2px; }
+
+  /* ── VIEW: HOJE ── */
+  .day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .day-header-date {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--slate-900);
+    letter-spacing: -.01em;
+  }
+  .day-header-count {
+    font-size: 12px;
+    color: var(--slate-500);
+    background: var(--slate-100);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  .aula-card {
+    background: white;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--slate-200);
+    border-left-width: 3px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(15,23,42,.05);
+    transition: box-shadow .18s, transform .18s;
+    cursor: pointer;
+  }
+  .aula-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .aula-card.planejada { border-left-color: var(--blue); }
+  .aula-card.sem-plano { border-left-color: var(--amber); }
+  .aula-card.realizada { border-left-color: var(--emerald); opacity: .72; }
+
+  .aula-card-body { padding: 12px 14px 10px; }
+
+  .aula-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .aula-horario {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--slate-500);
+    font-family: 'DM Mono', monospace;
+    background: var(--slate-100);
+    padding: 2px 7px;
+    border-radius: 6px;
+  }
+  .aula-turma {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--slate-900);
+  }
+  .aula-escola {
+    font-size: 11px;
+    color: var(--slate-400);
+    font-weight: 500;
+  }
+  .aula-realizada-badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--emerald);
+    background: var(--emerald-light);
+    padding: 2px 8px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .aula-plano-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .aula-plano-icon { font-size: 12px; }
+  .aula-plano-nome {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--slate-700);
+  }
+  .aula-sem-plano {
+    font-size: 12px;
+    color: var(--amber);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 6px;
+  }
+
+  .aula-materiais {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .material-chip {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--slate-600, #475569);
+    background: var(--slate-100);
+    padding: 2px 8px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .material-icon { font-size: 9px; }
+
+  .aula-actions {
+    display: flex;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px solid var(--slate-100);
+  }
+  .btn-ver-plano {
+    flex: 1;
+    padding: 7px 12px;
+    background: var(--indigo);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background .15s;
+  }
+  .btn-ver-plano:hover { background: var(--indigo-dark); }
+  .btn-planejar {
+    flex: 1;
+    padding: 7px 12px;
+    background: #FEF3C7;
+    color: #92400E;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background .15s;
+  }
+  .btn-registrar {
+    padding: 7px 12px;
+    background: var(--emerald-light);
+    color: #065F46;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── VIEW: SEMANA MOBILE ── */
+  .week-strip {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: white;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+  }
+  .week-day-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 4px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .week-day-btn.active {
+    background: var(--indigo);
+    color: white;
+  }
+  .week-day-btn:not(.active):hover { background: var(--slate-100); }
+  .week-day-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: inherit; }
+  .week-day-btn:not(.active) .week-day-label { color: var(--slate-400); }
+  .week-day-num { font-size: 15px; font-weight: 700; color: inherit; }
+  .week-day-btn:not(.active) .week-day-num { color: var(--slate-700); }
+  .week-day-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .6; }
+  .week-day-btn:not(.active) .week-day-dot { background: var(--indigo); }
+  .week-day-empty .week-day-dot { opacity: 0; }
+
+  /* ── VIEW: SEMANA DESKTOP ── */
+  .semana-desktop-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+  }
+  .semana-col-header {
+    text-align: center;
+    padding: 8px 4px 10px;
+    border-radius: 9px 9px 0 0;
+  }
+  .semana-col-header.hoje-col {
+    background: var(--indigo-light);
+  }
+  .semana-col-day { font-size: 10px; font-weight: 600; color: var(--slate-400); text-transform: uppercase; letter-spacing: .05em; }
+  .semana-col-header.hoje-col .semana-col-day { color: var(--indigo); }
+  .semana-col-num { font-size: 20px; font-weight: 700; color: var(--slate-700); }
+  .semana-col-header.hoje-col .semana-col-num { color: var(--indigo); }
+  .semana-col-badge { font-size: 10px; background: var(--indigo); color: white; border-radius: 20px; padding: 1px 6px; }
+
+  .semana-card {
+    background: white;
+    border: 1px solid var(--slate-200);
+    border-left-width: 3px;
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    font-size: 11px;
+    box-shadow: 0 1px 3px rgba(15,23,42,.04);
+  }
+  .semana-card.planejada { border-left-color: var(--blue); }
+  .semana-card.realizada { border-left-color: var(--emerald); opacity: .7; }
+  .semana-card.sem-plano { border-left-color: var(--amber); }
+  .semana-card-hora { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--slate-400); margin-bottom: 3px; }
+  .semana-card-turma { font-weight: 700; color: var(--slate-800); line-height: 1.3; }
+  .semana-card-plano { color: var(--slate-500); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .semana-card-empty { border-style: dashed; border-left-color: var(--slate-200); color: var(--slate-300); font-size: 11px; text-align: center; padding: 12px; }
+
+  /* ── VIEW: MÊS ── */
+  .mes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .mes-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--slate-900);
+  }
+  .mes-nav {
+    display: flex;
+    gap: 4px;
+  }
+  .mes-nav-btn {
+    width: 28px; height: 28px;
+    border: 1px solid var(--slate-200);
+    background: white;
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--slate-500);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .mes-nav-btn:hover { background: var(--slate-50); }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
+  .cal-weekday {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--slate-400);
+    padding: 4px 0 8px;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 5px 3px 3px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--slate-600, #475569);
+    cursor: pointer;
+    transition: background .12s;
+    gap: 3px;
+  }
+  .cal-day:hover { background: var(--slate-100); }
+  .cal-day.empty { cursor: default; }
+  .cal-day.empty:hover { background: transparent; }
+  .cal-day.other-month { color: var(--slate-300); }
+  .cal-day.hoje-day {
+    background: var(--indigo);
+    color: white;
+    font-weight: 700;
+  }
+  .cal-day.has-aulas .cal-day-num { font-weight: 700; color: var(--slate-800); }
+  .cal-day.hoje-day .cal-day-num { color: white; }
+  .cal-day-num { line-height: 1; }
+  .cal-dots { display: flex; gap: 2px; justify-content: center; }
+  .cal-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+  }
+  .cal-dot.blue { background: var(--blue); }
+  .cal-dot.emerald { background: var(--emerald); }
+  .cal-dot.amber { background: var(--amber); }
+  .cal-day.hoje-day .cal-dot { background: rgba(255,255,255,.7); }
+
+  /* ── VIEW TRANSITIONS ── */
+  .tab-view { display: none; animation: fadeSlide .2s ease; }
+  .tab-view.active { display: block; }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── DESKTOP SEMANA VIEW ── */
+  .desktop-semana-wrap { padding: 0; }
+
+  /* ── EMPTY COL ── */
+  .semana-col-empty { font-size: 11px; color: var(--slate-300); text-align: center; padding: 16px 8px; }
+
+  /* responsive */
+  @media (max-width: 480px) {
+    .frame-mobile { width: 100%; border-radius: 24px; }
+    .frame-desktop { display: none; }
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 24px;
+    font-size: 12px;
+    color: var(--slate-500);
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+    MusiLab
+  </div>
+  <h1>Agenda — Preview</h1>
+  <p>Proposta de design unificado · [Hoje] [Semana] [Mês]</p>
+</div>
+
+<div class="device-toggle">
+  <button class="device-btn active" id="btn-mobile" onclick="setDevice('mobile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>
+    Mobile
+  </button>
+  <button class="device-btn" id="btn-desktop" onclick="setDevice('desktop')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    Desktop
+  </button>
+</div>
+
+<!-- ═══════════════════════════════════ MOBILE FRAME ═══════════════════════ -->
+<div class="frame-wrap" id="frame-mobile">
+  <div class="frame-mobile">
+    <div class="notch"><div class="notch-pill"></div></div>
+    <div class="screen">
+      <div class="app-inner">
+
+        <div class="topbar">
+          <div class="topbar-row1">
+            <span class="topbar-title">Agenda</span>
+            <button class="topbar-hoje-btn" onclick="switchTab('hoje')">☀ Hoje</button>
+          </div>
+          <div class="tabs">
+            <button class="tab active" id="tab-hoje" onclick="switchTab('hoje')">Hoje</button>
+            <button class="tab" id="tab-semana" onclick="switchTab('semana')">Semana</button>
+            <button class="tab" id="tab-mes" onclick="switchTab('mes')">Mês</button>
+          </div>
+        </div>
+
+        <div class="scroll-area">
+
+          <!-- ── TAB HOJE ── -->
+          <div class="tab-view active" id="view-hoje">
+            <div class="day-header">
+              <span class="day-header-date">Terça, 25 mar</span>
+              <span class="day-header-count">3 aulas</span>
+            </div>
+
+            <!-- Card 1: com plano, futura -->
+            <div class="aula-card planejada">
+              <div class="aula-card-body">
+                <div class="aula-meta">
+                  <span class="aula-horario">08h30</span>
+                  <div>
+                    <div class="aula-turma">Turma 7A</div>
+                    <div class="aula-escola">Escola Norte</div>
+                  </div>
+                </div>
+                <div class="aula-plano-row">
+                  <span class="aula-plano-icon">📋</span>
+                  <span class="aula-plano-nome">Ritmo e Pulsação</span>
+                </div>
+                <div class="aula-materiais">
+                  <span class="material-chip"><span class="material-icon">🥁</span> Pandeiro</span>
+                  <span class="material-chip"><span class="material-icon">🎵</span> Metrônomo</span>
+                  <span class="material-chip"><span class="material-icon">📄</span> Fichas A4</span>
+                </div>
+                <div class="aula-actions">
+                  <button class="btn-ver-plano">Ver plano →</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: sem plano -->
+            <div class="aula-card sem-plano">
+              <div class="aula-card-body">
+                <div class="aula-meta">
+                  <span class="aula-horario">10h00</span>
+                  <div>
+                    <div class="aula-turma">Turma 5B</div>
+                    <div class="aula-escola">Escola Norte</div>
+                  </div>
+                </div>
+                <div class="aula-sem-plano">⚠ Sem plano para hoje</div>
+                <div class="aula-actions">
+                  <button class="btn-planejar">+ Planejar agora</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: realizada -->
+            <div class="aula-card realizada">
+              <div class="aula-card-body">
+                <div class="aula-meta">
+                  <span class="aula-horario">14h30</span>
+                  <div>
+                    <div class="aula-turma">Turma 9C</div>
+                    <div class="aula-escola">Escola Sul</div>
+                  </div>
+                  <span class="aula-realizada-badge">✓ Realizada</span>
+                </div>
+                <div class="aula-plano-row">
+                  <span class="aula-plano-icon">📋</span>
+                  <span class="aula-plano-nome">Harmonia Básica</span>
+                </div>
+                <div class="aula-materiais">
+                  <span class="material-chip">🎹 Teclado</span>
+                  <span class="material-chip">🎼 Partitura Dó maior</span>
+                </div>
+                <div class="aula-actions">
+                  <button class="btn-ver-plano" style="background:#E2E8F0;color:#64748B">Ver plano →</button>
+                  <button class="btn-registrar">✍ Registrar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── TAB SEMANA (mobile) ── -->
+          <div class="tab-view" id="view-semana">
+            <div class="week-strip">
+              <button class="week-day-btn week-day-empty" onclick="selectWeekDay(this)">
+                <span class="week-day-label">Seg</span>
+                <span class="week-day-num">23</span>
+                <span class="week-day-dot"></span>
+              </button>
+              <button class="week-day-btn active" onclick="selectWeekDay(this)">
+                <span class="week-day-label">Ter</span>
+                <span class="week-day-num">24</span>
+                <span class="week-day-dot"></span>
+              </button>
+              <button class="week-day-btn" onclick="selectWeekDay(this)">
+                <span class="week-day-label">Qua</span>
+                <span class="week-day-num">25</span>
+                <span class="week-day-dot"></span>
+              </button>
+              <button class="week-day-btn week-day-empty" onclick="selectWeekDay(this)">
+                <span class="week-day-label">Qui</span>
+                <span class="week-day-num">26</span>
+                <span class="week-day-dot"></span>
+              </button>
+              <button class="week-day-btn" onclick="selectWeekDay(this)">
+                <span class="week-day-label">Sex</span>
+                <span class="week-day-num">27</span>
+                <span class="week-day-dot"></span>
+              </button>
+            </div>
+
+            <div class="day-header">
+              <span class="day-header-date">Terça, 25 mar</span>
+              <span class="day-header-count">2 aulas</span>
+            </div>
+
+            <div class="aula-card planejada">
+              <div class="aula-card-body">
+                <div class="aula-meta">
+                  <span class="aula-horario">08h30</span>
+                  <div>
+                    <div class="aula-turma">Turma 7A</div>
+                    <div class="aula-escola">Escola Norte</div>
+                  </div>
+                </div>
+                <div class="aula-plano-row">
+                  <span class="aula-plano-icon">📋</span>
+                  <span class="aula-plano-nome">Ritmo e Pulsação</span>
+                </div>
+                <div class="aula-actions">
+                  <button class="btn-ver-plano">Ver plano →</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="aula-card sem-plano">
+              <div class="aula-card-body">
+                <div class="aula-meta">
+                  <span class="aula-horario">10h00</span>
+                  <div>
+                    <div class="aula-turma">Turma 5B</div>
+                    <div class="aula-escola">Escola Norte</div>
+                  </div>
+                </div>
+                <div class="aula-sem-plano">⚠ Sem plano para hoje</div>
+                <div class="aula-actions">
+                  <button class="btn-planejar">+ Planejar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── TAB MÊS ── -->
+          <div class="tab-view" id="view-mes">
+            <div class="mes-header">
+              <span class="mes-title">Março 2026</span>
+              <div class="mes-nav">
+                <button class="mes-nav-btn">◀</button>
+                <button class="mes-nav-btn">▶</button>
+              </div>
+            </div>
+            <div class="cal-grid" id="cal-grid"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <div class="home-bar"><div class="home-bar-pill"></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ DESKTOP FRAME ═══════════════════════ -->
+<div class="frame-wrap" id="frame-desktop" style="display:none">
+  <div class="frame-desktop">
+    <div class="titlebar">
+      <div class="titlebar-dot" style="background:#FF5F57"></div>
+      <div class="titlebar-dot" style="background:#FFBD2E"></div>
+      <div class="titlebar-dot" style="background:#28C840"></div>
+      <div class="titlebar-url">app.musilab.com.br/agenda</div>
+    </div>
+    <div class="screen">
+      <div class="sidebar">
+        <div class="sidebar-logo">
+          <div class="sidebar-logo-icon">🎵</div>
+          MusiLab
+        </div>
+        <div class="sidebar-section">Agenda</div>
+        <div class="sidebar-item active"><span class="icon">📅</span> Agenda</div>
+        <div class="sidebar-section" style="margin-top:8px">Planejamento</div>
+        <div class="sidebar-item"><span class="icon">📚</span> Banco de Aulas</div>
+        <div class="sidebar-item"><span class="icon">🗓</span> Visão da Semana</div>
+        <div class="sidebar-item"><span class="icon">👥</span> Por Turma</div>
+        <div class="sidebar-section" style="margin-top:8px">Turmas</div>
+        <div class="sidebar-item"><span class="icon">🏫</span> Ano Letivo</div>
+        <div class="sidebar-item"><span class="icon">📊</span> Relatórios</div>
+      </div>
+      <div class="main-content">
+        <div class="app-inner">
+          <div class="topbar">
+            <div class="topbar-row1">
+              <span class="topbar-title">Agenda</span>
+              <button class="topbar-hoje-btn">☀ Hoje</button>
+            </div>
+            <div class="tabs">
+              <button class="tab active" id="dtab-hoje" onclick="switchDTab('hoje')">Hoje</button>
+              <button class="tab" id="dtab-semana" onclick="switchDTab('semana')">Semana</button>
+              <button class="tab" id="dtab-mes" onclick="switchDTab('mes')">Mês</button>
+            </div>
+          </div>
+
+          <div class="scroll-area">
+
+            <!-- DESKTOP: HOJE -->
+            <div class="tab-view active" id="dview-hoje">
+              <div style="max-width:520px; margin: 0 auto;">
+                <div class="day-header">
+                  <span class="day-header-date">Terça, 25 mar</span>
+                  <span class="day-header-count">3 aulas</span>
+                </div>
+                <div class="aula-card planejada">
+                  <div class="aula-card-body">
+                    <div class="aula-meta">
+                      <span class="aula-horario">08h30</span>
+                      <div><div class="aula-turma">Turma 7A</div><div class="aula-escola">Escola Norte</div></div>
+                    </div>
+                    <div class="aula-plano-row"><span class="aula-plano-icon">📋</span><span class="aula-plano-nome">Ritmo e Pulsação</span></div>
+                    <div class="aula-materiais">
+                      <span class="material-chip">🥁 Pandeiro</span>
+                      <span class="material-chip">🎵 Metrônomo</span>
+                      <span class="material-chip">📄 Fichas A4</span>
+                    </div>
+                    <div class="aula-actions"><button class="btn-ver-plano">Ver plano →</button></div>
+                  </div>
+                </div>
+                <div class="aula-card sem-plano">
+                  <div class="aula-card-body">
+                    <div class="aula-meta"><span class="aula-horario">10h00</span><div><div class="aula-turma">Turma 5B</div><div class="aula-escola">Escola Norte</div></div></div>
+                    <div class="aula-sem-plano">⚠ Sem plano para hoje</div>
+                    <div class="aula-actions"><button class="btn-planejar">+ Planejar agora</button></div>
+                  </div>
+                </div>
+                <div class="aula-card realizada">
+                  <div class="aula-card-body">
+                    <div class="aula-meta">
+                      <span class="aula-horario">14h30</span>
+                      <div><div class="aula-turma">Turma 9C</div><div class="aula-escola">Escola Sul</div></div>
+                      <span class="aula-realizada-badge">✓ Realizada</span>
+                    </div>
+                    <div class="aula-plano-row"><span class="aula-plano-icon">📋</span><span class="aula-plano-nome">Harmonia Básica</span></div>
+                    <div class="aula-materiais">
+                      <span class="material-chip">🎹 Teclado</span>
+                      <span class="material-chip">🎼 Partitura Dó maior</span>
+                    </div>
+                    <div class="aula-actions">
+                      <button class="btn-ver-plano" style="background:#E2E8F0;color:#64748B">Ver plano →</button>
+                      <button class="btn-registrar">✍ Registrar</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DESKTOP: SEMANA -->
+            <div class="tab-view" id="dview-semana">
+              <div class="semana-desktop-grid">
+                <!-- Seg 23 -->
+                <div>
+                  <div class="semana-col-header">
+                    <div class="semana-col-day">Seg</div>
+                    <div class="semana-col-num">23</div>
+                  </div>
+                  <div class="semana-card-empty">— sem aulas —</div>
+                </div>
+                <!-- Ter 24 = HOJE -->
+                <div>
+                  <div class="semana-col-header hoje-col">
+                    <div class="semana-col-day">Ter</div>
+                    <div class="semana-col-num">24 <span class="semana-col-badge">hoje</span></div>
+                  </div>
+                  <div class="semana-card planejada">
+                    <div class="semana-card-hora">08h30</div>
+                    <div class="semana-card-turma">Turma 7A</div>
+                    <div class="semana-card-plano">📋 Ritmo e Pulsação</div>
+                  </div>
+                  <div class="semana-card sem-plano">
+                    <div class="semana-card-hora">10h00</div>
+                    <div class="semana-card-turma">Turma 5B</div>
+                    <div class="semana-card-plano" style="color:#F59E0B">⚠ Sem plano</div>
+                  </div>
+                  <div class="semana-card realizada">
+                    <div class="semana-card-hora">14h30</div>
+                    <div class="semana-card-turma">Turma 9C</div>
+                    <div class="semana-card-plano">✓ Harmonia Básica</div>
+                  </div>
+                </div>
+                <!-- Qua 25 -->
+                <div>
+                  <div class="semana-col-header">
+                    <div class="semana-col-day">Qua</div>
+                    <div class="semana-col-num">25</div>
+                  </div>
+                  <div class="semana-card planejada">
+                    <div class="semana-card-hora">09h00</div>
+                    <div class="semana-card-turma">Turma 6A</div>
+                    <div class="semana-card-plano">📋 Leitura Musical</div>
+                  </div>
+                  <div class="semana-card planejada">
+                    <div class="semana-card-hora">11h00</div>
+                    <div class="semana-card-turma">Turma 8B</div>
+                    <div class="semana-card-plano">📋 Escalas Maiores</div>
+                  </div>
+                </div>
+                <!-- Qui 26 -->
+                <div>
+                  <div class="semana-col-header">
+                    <div class="semana-col-day">Qui</div>
+                    <div class="semana-col-num">26</div>
+                  </div>
+                  <div class="semana-card-empty">— sem aulas —</div>
+                </div>
+                <!-- Sex 27 -->
+                <div>
+                  <div class="semana-col-header">
+                    <div class="semana-col-day">Sex</div>
+                    <div class="semana-col-num">27</div>
+                  </div>
+                  <div class="semana-card planejada">
+                    <div class="semana-card-hora">08h00</div>
+                    <div class="semana-card-turma">Turma 7A</div>
+                    <div class="semana-card-plano">📋 Dinâmica</div>
+                  </div>
+                  <div class="semana-card sem-plano">
+                    <div class="semana-card-hora">10h30</div>
+                    <div class="semana-card-turma">Turma 5B</div>
+                    <div class="semana-card-plano" style="color:#F59E0B">⚠ Sem plano</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DESKTOP: MÊS -->
+            <div class="tab-view" id="dview-mes">
+              <div style="max-width:560px; margin: 0 auto;">
+                <div class="mes-header">
+                  <span class="mes-title">Março 2026</span>
+                  <div class="mes-nav">
+                    <button class="mes-nav-btn">◀</button>
+                    <button class="mes-nav-btn">▶</button>
+                  </div>
+                </div>
+                <div class="cal-grid" id="dcal-grid"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#3B82F6"></div> Planejada</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div> Sem plano</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#10B981"></div> Realizada</div>
+</div>
+
+<script>
+// ── Device toggle ──
+function setDevice(dev) {
+  document.getElementById('frame-mobile').style.display = dev === 'mobile' ? '' : 'none'
+  document.getElementById('frame-desktop').style.display = dev === 'desktop' ? '' : 'none'
+  document.getElementById('btn-mobile').classList.toggle('active', dev === 'mobile')
+  document.getElementById('btn-desktop').classList.toggle('active', dev === 'desktop')
+}
+
+// ── Mobile tabs ──
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+  document.querySelectorAll('#frame-mobile .tab-view').forEach(v => v.classList.remove('active'))
+  document.getElementById('tab-' + name).classList.add('active')
+  document.getElementById('view-' + name).classList.add('active')
+}
+
+// ── Desktop tabs ──
+function switchDTab(name) {
+  document.querySelectorAll('.tab[id^="dtab"]').forEach(t => t.classList.remove('active'))
+  document.querySelectorAll('#frame-desktop .tab-view').forEach(v => v.classList.remove('active'))
+  document.getElementById('dtab-' + name).classList.add('active')
+  document.getElementById('dview-' + name).classList.add('active')
+}
+
+// ── Week day selector ──
+function selectWeekDay(btn) {
+  btn.closest('.week-strip').querySelectorAll('.week-day-btn').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+}
+
+// ── Build calendar ──
+function buildCal(containerId) {
+  const container = document.getElementById(containerId)
+  if (!container) return
+
+  const weekdays = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+  weekdays.forEach(d => {
+    const el = document.createElement('div')
+    el.className = 'cal-weekday'
+    el.textContent = d
+    container.appendChild(el)
+  })
+
+  // March 2026: starts on Sunday (0)
+  const startDay = 0 // new Date(2026, 2, 1).getDay() = 0 (Sunday)
+  const daysInMonth = 31
+  const hoje = 25
+
+  // aulas data: days with classes
+  const aulasMap = {
+    3: ['blue'], 4: ['blue','blue'],
+    9: ['blue'], 10: ['blue','amber'],
+    11: ['emerald'],
+    16: ['blue'], 17: ['blue','blue'],
+    18: ['emerald'],
+    23: ['blue'], 24: ['blue','amber','emerald'],
+    25: ['blue','blue'],
+    30: ['blue'], 31: ['blue']
+  }
+
+  // empty cells
+  for (let i = 0; i < startDay; i++) {
+    const el = document.createElement('div')
+    el.className = 'cal-day empty'
+    container.appendChild(el)
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const el = document.createElement('div')
+    const dots = aulasMap[d] || []
+    const isHoje = d === hoje
+    el.className = 'cal-day' + (isHoje ? ' hoje-day' : '') + (dots.length ? ' has-aulas' : '')
+
+    const numEl = document.createElement('div')
+    numEl.className = 'cal-day-num'
+    numEl.textContent = d
+    el.appendChild(numEl)
+
+    if (dots.length) {
+      const dotsEl = document.createElement('div')
+      dotsEl.className = 'cal-dots'
+      dots.forEach(c => {
+        const dot = document.createElement('div')
+        dot.className = 'cal-dot ' + c
+        dotsEl.appendChild(dot)
+      })
+      el.appendChild(dotsEl)
+    }
+
+    container.appendChild(el)
+  }
+}
+
+buildCal('cal-grid')
+buildCal('dcal-grid')
+</script>
+</body>
+</html>

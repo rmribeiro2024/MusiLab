@@ -63,6 +63,7 @@ export interface ModalCardHeroProps {
   registro: RegistroPosAula | null
   ultimoReg: RegistroPosAula | null
   ultimoRegData: string | null
+  planoData?: any
   // Estilo de abertura
   animStyle?: 'center' | 'bottomSheet' | 'sharedElement'
   triggerRect?: { top: number; left: number; width: number; height: number }
@@ -224,11 +225,14 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
   let panelStyle: React.CSSProperties = {}
 
   if (animStyle === 'bottomSheet') {
-    panelClass = `bg-white dark:bg-[#1F2937] shadow-2xl flex flex-col absolute bottom-0 left-0 right-0 rounded-t-2xl overflow-hidden`
+    panelClass = `bg-white dark:bg-[#1F2937] shadow-2xl flex flex-col absolute bottom-0 rounded-t-2xl overflow-hidden`
     panelStyle = {
       ...cardStyle,
       maxHeight: '85vh',
-      transform: `translateY(${visible ? (sheetDragY > 0 ? `${sheetDragY}px` : '0') : '100%'})`,
+      width: '100%',
+      maxWidth: '560px',
+      left: '50%',
+      transform: `translateX(-50%) translateY(${visible ? (sheetDragY > 0 ? `${sheetDragY}px` : '0') : '100%'})`,
       transition: sheetDragY > 0 ? 'none' : 'transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
     }
   } else if (animStyle === 'sharedElement') {

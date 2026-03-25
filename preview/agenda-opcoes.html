@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MusiLab — Agenda · Opção C Refinada</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --indigo:#5B5FEA;--indigo-dim:#EEF0FD;
+  --s900:#0F172A;--s800:#1E293B;--s700:#334155;--s600:#475569;
+  --s500:#64748B;--s400:#94A3B8;--s300:#CBD5E1;--s200:#E2E8F0;
+  --s100:#F1F5F9;--s50:#F8FAFC;
+  --amber:#F59E0B;--c1:#7c83d4;--c3:#2a9c70;
+  --red:#EF4444;--red-dim:#FEF2F2;
+}
+body{font-family:'DM Sans',sans-serif;background:#ECEFFE;color:var(--s900);padding:32px 16px 80px;min-height:100vh}
+
+.ph{text-align:center;margin-bottom:28px}
+.ph-logo{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--indigo);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px}
+.ph-logo svg{width:16px;height:16px}
+.ph h1{font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px}
+.ph p{font-size:12.5px;color:var(--s500)}
+.ph-badge{display:inline-flex;align-items:center;gap:5px;background:#FEF3C7;color:#92400E;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;margin-top:8px}
+
+.dtoggle{display:flex;gap:6px;background:#fff;border:1px solid var(--s200);border-radius:12px;padding:4px;margin:0 auto 32px;width:fit-content}
+.dbtn{display:flex;align-items:center;gap:6px;padding:7px 18px;border-radius:9px;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:500;color:var(--s500);cursor:pointer;transition:all .16s}
+.dbtn.on{background:var(--indigo);color:#fff}
+.dbtn svg{width:14px;height:14px}
+
+.frames{display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
+
+/* ── PHONE ── */
+.phone{width:320px;background:#111;border-radius:36px;box-shadow:0 20px 60px rgba(15,23,42,.2);overflow:hidden;flex-shrink:0}
+.phone-notch{height:36px;background:#111;display:flex;align-items:center;justify-content:center}
+.phone-notch-pill{width:90px;height:26px;background:#000;border-radius:14px}
+.phone-screen{background:var(--s50);height:640px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--s200) transparent}
+.phone-screen::-webkit-scrollbar{width:3px}
+.phone-screen::-webkit-scrollbar-thumb{background:var(--s200)}
+.phone-bar{height:24px;background:#111;display:flex;align-items:center;justify-content:center}
+.phone-bar-pill{width:80px;height:4px;background:rgba(255,255,255,.2);border-radius:2px}
+
+/* ── DESKTOP ── */
+.desk{width:460px;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(15,23,42,.12);overflow:hidden;flex-shrink:0}
+.desk-titlebar{height:32px;background:#F5F5F5;border-bottom:1px solid #E0E0E0;display:flex;align-items:center;padding:0 10px;gap:5px}
+.desk-dot{width:10px;height:10px;border-radius:50%}
+.desk-screen{background:var(--s50);height:580px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--s200) transparent}
+.desk-screen::-webkit-scrollbar{width:3px}
+.desk-screen::-webkit-scrollbar-thumb{background:var(--s200)}
+
+/* ── APP SHELL ── */
+.topbar{background:#fff;border-bottom:1px solid var(--s200);padding:11px 14px 0;position:sticky;top:0;z-index:10}
+.tb-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.tb-title{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.hoje-btn{font-size:10px;font-weight:600;color:var(--indigo);background:var(--indigo-dim);border:none;border-radius:20px;padding:3px 9px;cursor:pointer;font-family:inherit}
+.tabs{display:flex}
+.tab{flex:1;padding:8px 4px;font-size:12px;font-weight:600;color:var(--s400);background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;text-align:center}
+.tab.on{color:var(--indigo);border-bottom-color:var(--indigo)}
+.scroll-inner{padding:12px 12px 20px}
+
+.dh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.dh-date{font-size:13px;font-weight:700}
+.dh-count{font-size:11px;color:var(--s500);background:var(--s100);padding:2px 9px;border-radius:20px;font-weight:500}
+
+/* ── CARD ── */
+.aula-card{background:#fff;border:1px solid var(--s200);border-left-width:3px;border-radius:9px;margin-bottom:8px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+.card-head{padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;justify-content:space-between;gap:6px;user-select:none}
+.card-head-left{flex:1;min-width:0}
+.card-meta{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.horario{font-size:10.5px;font-weight:700;font-family:'DM Mono',monospace;background:var(--s100);color:var(--s600);padding:2px 6px;border-radius:5px}
+.turma-nome{font-size:13px;font-weight:700}
+.escola-nome{font-size:10.5px;font-weight:500;margin-top:1px}
+.plano-tag{display:flex;align-items:center;gap:4px;margin-top:3px}
+.plano-tag-nome{font-size:11.5px;font-weight:600;color:var(--s700)}
+.card-arrow{font-size:11px;color:var(--s300);flex-shrink:0;margin-top:2px;transition:transform .2s}
+.aula-card.open .card-arrow{transform:rotate(180deg);color:var(--indigo)}
+.sem-plano-row{font-size:11.5px;color:var(--amber);font-weight:600;margin-top:3px}
+
+.card-body-wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows 220ms cubic-bezier(.34,1.1,.64,1)}
+.aula-card.open .card-body-wrap{grid-template-rows:1fr}
+.card-body-inner{overflow:hidden}
+.card-body{border-top:1px solid var(--s100);padding:11px 12px}
+
+/* ── ROTEIRO SCROLL ── */
+.roteiro-scroll{
+  border:1px solid var(--s200);border-radius:8px;
+  background:var(--s50);margin-bottom:0;
+}
+/* scroll interno só no desktop */
+body.mode-d .roteiro-scroll{
+  max-height:240px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--s300) transparent;
+}
+body.mode-d .roteiro-scroll::-webkit-scrollbar{width:3px}
+body.mode-d .roteiro-scroll::-webkit-scrollbar-thumb{background:var(--s300)}
+
+.rot-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 10px 5px;border-bottom:1px solid var(--s200);
+  background:#fff;position:sticky;top:0;z-index:2;
+}
+.rot-hdr-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--s400)}
+.rot-hdr-total{font-size:9.5px;color:var(--s400);font-family:'DM Mono',monospace}
+
+/* ── OPÇÃO C: inline edit ── */
+.ri-editable{
+  display:flex;gap:8px;padding:7px 8px;
+  border-bottom:1px solid var(--s100);
+  transition:background .12s;position:relative;
+}
+.ri-editable:last-of-type{border-bottom:none}
+.ri-editable:hover{background:#FFF9F9}
+.ri-editable:hover .ri-del{opacity:1}
+.ri-editable.editing{background:var(--indigo-dim)}
+
+.ri-edit-num{
+  font-size:9px;font-weight:700;font-family:'DM Mono',monospace;color:var(--s400);
+  background:var(--s200);width:17px;height:17px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;
+}
+.ri-edit-body{flex:1;min-width:0}
+.ri-edit-top{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.ri-edit-text{
+  flex:1;background:transparent;border:none;outline:none;
+  font-family:inherit;font-size:11.5px;color:var(--s800);font-weight:600;cursor:text;min-width:0;
+}
+.ri-edit-dur{
+  font-size:10px;color:var(--s400);font-family:'DM Mono',monospace;
+  background:var(--s100);padding:1px 5px;border-radius:4px;white-space:nowrap;flex-shrink:0;
+}
+.ri-edit-desc{
+  width:100%;background:transparent;border:none;outline:none;
+  font-family:inherit;font-size:10.5px;color:var(--s600);line-height:1.4;
+  resize:none;cursor:text;overflow:hidden;
+  field-sizing:content;min-height:1em;
+}
+
+/* ── DELETE BUTTON ── */
+.ri-del{
+  display:flex;align-items:center;justify-content:center;
+  width:20px;height:20px;border-radius:5px;
+  border:none;background:var(--red-dim);color:var(--red);
+  font-size:14px;font-weight:700;cursor:pointer;
+  flex-shrink:0;margin-top:1px;
+  opacity:0;transition:opacity .14s,background .12s;
+  line-height:1;font-family:'DM Mono',monospace;
+}
+.ri-del:hover{background:var(--red);color:#fff}
+
+.ri-edit-hint{
+  font-size:10px;color:var(--indigo);font-weight:600;
+  padding:5px 10px;display:flex;align-items:center;gap:3px;opacity:.65;
+  border-top:1px dashed var(--indigo-dim);
+}
+
+/* ── MATERIAIS DO DIA (rodapé da página) ── */
+.mat-dia{
+  background:#fff;border:1px solid var(--s200);border-radius:9px;
+  padding:12px 14px;margin-top:4px;
+  box-shadow:0 1px 3px rgba(15,23,42,.04);
+}
+.mat-dia-hdr{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.mat-dia-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--s500)}
+.mat-dia-sub{font-size:10px;color:var(--s400);margin-left:auto}
+.mat-chips{display:flex;flex-wrap:wrap;gap:4px}
+.mat-chip{font-size:10.5px;font-weight:500;color:var(--s700);background:var(--s50);border:1px solid var(--s200);padding:3px 9px;border-radius:20px}
+
+.btn-planejar{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:5px 11px;background:#FEF3C7;color:#92400E;
+  border:none;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;
+}
+
+/* ── FRAMES ── */
+.frame-m,.frame-d{display:none}
+body.mode-m .frame-m{display:block}
+body.mode-d .frame-d{display:block}
+
+/* ── FRAME LABELS ── */
+.frame-label{font-size:11px;font-weight:600;color:var(--s500);text-align:center;margin-bottom:8px;letter-spacing:.04em;text-transform:uppercase}
+</style>
+</head>
+<body class="mode-m">
+
+<div class="ph">
+  <div class="ph-logo">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+    MusiLab
+  </div>
+  <h1>Agenda — Opção C Refinada</h1>
+  <p>Edição inline · materiais no rodapé · remover atividade com −</p>
+  <div><span class="ph-badge">✓ Decisão tomada</span></div>
+</div>
+
+<div class="dtoggle">
+  <button class="dbtn on" id="btn-m" onclick="setDev('m')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>
+    Mobile
+  </button>
+  <button class="dbtn" id="btn-d" onclick="setDev('d')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    Desktop
+  </button>
+</div>
+
+<div class="frames">
+
+  <!-- ═══ MOBILE ═══ -->
+  <div class="frame-m">
+    <div class="frame-label">📱 Mobile</div>
+    <div class="phone">
+      <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+      <div class="phone-screen">
+        <div class="topbar">
+          <div class="tb-row"><span class="tb-title">Agenda</span><button class="hoje-btn">☀ Hoje</button></div>
+          <div class="tabs"><button class="tab on">Hoje</button><button class="tab">Semana</button><button class="tab">Mês</button></div>
+        </div>
+        <div class="scroll-inner">
+          <div class="dh"><span class="dh-date">Terça, 25 mar</span><span class="dh-count">3 aulas</span></div>
+
+          <!-- 7A aberto -->
+          <div class="aula-card open" style="border-left-color:var(--c1)">
+            <div class="card-head" onclick="toggleCard(this.closest('.aula-card'))">
+              <div class="card-head-left">
+                <div class="card-meta"><span class="horario">08h30</span><span class="turma-nome">Turma 7A</span></div>
+                <div class="escola-nome" style="color:var(--c1)">Escola Norte · 3º ano</div>
+                <div class="plano-tag"><span>📋</span><span class="plano-tag-nome">Ritmo e Pulsação</span></div>
+              </div>
+              <span class="card-arrow">▼</span>
+            </div>
+            <div class="card-body-wrap"><div class="card-body-inner"><div class="card-body">
+              <div class="roteiro-scroll">
+                <div class="rot-hdr">
+                  <span class="rot-hdr-label">Roteiro de atividades</span>
+                  <span class="rot-hdr-total">45min</span>
+                </div>
+                <div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()">
+                  <span class="ri-edit-num">1</span>
+                  <div class="ri-edit-body">
+                    <div class="ri-edit-top"><input class="ri-edit-text" value="Aquecimento rítmico" onclick="event.stopPropagation()"><span class="ri-edit-dur">10min</span></div>
+                    <textarea class="ri-edit-desc" onclick="event.stopPropagation()">Palmas em sequência 1-2-1-2-3, depois batidas leves com o pandeiro. Pedir que os alunos repitam com o metrônomo.</textarea>
+                  </div>
+                  <button class="ri-del" onclick="removeItem(this);event.stopPropagation()" title="Remover">−</button>
+                </div>
+                <div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()">
+                  <span class="ri-edit-num">2</span>
+                  <div class="ri-edit-body">
+                    <div class="ri-edit-top"><input class="ri-edit-text" value="Exploração do pandeiro" onclick="event.stopPropagation()"><span class="ri-edit-dur">15min</span></div>
+                    <textarea class="ri-edit-desc" onclick="event.stopPropagation()">Cada aluno: mão aberta no centro, dedilhado nas bordas, polegar no couro. Imitar ritmos curtos do professor.</textarea>
+                  </div>
+                  <button class="ri-del" onclick="removeItem(this);event.stopPropagation()" title="Remover">−</button>
+                </div>
+                <div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()">
+                  <span class="ri-edit-num">3</span>
+                  <div class="ri-edit-body">
+                    <div class="ri-edit-top"><input class="ri-edit-text" value="Atividade em grupo — eco" onclick="event.stopPropagation()"><span class="ri-edit-dur">15min</span></div>
+                    <textarea class="ri-edit-desc" onclick="event.stopPropagation()">Duplas: um toca padrão de 4 tempos, o outro responde em eco. Rotacionar a cada 2 minutos.</textarea>
+                  </div>
+                  <button class="ri-del" onclick="removeItem(this);event.stopPropagation()" title="Remover">−</button>
+                </div>
+                <div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()">
+                  <span class="ri-edit-num">4</span>
+                  <div class="ri-edit-body">
+                    <div class="ri-edit-top"><input class="ri-edit-text" value="Fechamento oral" onclick="event.stopPropagation()"><span class="ri-edit-dur">5min</span></div>
+                    <textarea class="ri-edit-desc" onclick="event.stopPropagation()">Roda de feedback: o que foi fácil, o que foi difícil. 2-3 alunos descrevem como sentiram o pulso.</textarea>
+                  </div>
+                  <button class="ri-del" onclick="removeItem(this);event.stopPropagation()" title="Remover">−</button>
+                </div>
+                <div class="ri-edit-hint">✏ Clique em qualquer item para editar</div>
+              </div>
+            </div></div></div>
+          </div>
+
+          <!-- 5B fechado -->
+          <div class="aula-card" style="border-left-color:var(--amber)" onclick="toggleCard(this)">
+            <div class="card-head"><div class="card-head-left"><div class="card-meta"><span class="horario">10h00</span><span class="turma-nome">Turma 5B</span></div><div class="escola-nome" style="color:var(--c1)">Escola Norte · 1º ano</div><div class="sem-plano-row">⚠ Sem plano</div></div><span class="card-arrow">▼</span></div>
+            <div class="card-body-wrap"><div class="card-body-inner"><div class="card-body"><button class="btn-planejar" onclick="event.stopPropagation()">+ Aplicar plano</button></div></div></div>
+          </div>
+
+          <!-- 9C fechado -->
+          <div class="aula-card" style="border-left-color:var(--c3)" onclick="toggleCard(this)">
+            <div class="card-head"><div class="card-head-left"><div class="card-meta"><span class="horario">14h30</span><span class="turma-nome">Turma 9C</span></div><div class="escola-nome" style="color:var(--c3)">Escola Sul · 5º ano</div><div class="plano-tag"><span>📋</span><span class="plano-tag-nome">Harmonia Básica</span></div></div><span class="card-arrow">▼</span></div>
+            <div class="card-body-wrap"><div class="card-body-inner"><div class="card-body">
+              <div class="roteiro-scroll">
+                <div class="rot-hdr"><span class="rot-hdr-label">Roteiro de atividades</span><span class="rot-hdr-total">35min</span></div>
+                <div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()"><span class="ri-edit-num">1</span><div class="ri-edit-body"><div class="ri-edit-top"><input class="ri-edit-text" value="Revisão de escalas" onclick="event.stopPropagation()"><span class="ri-edit-dur">10min</span></div><textarea class="ri-edit-desc" onclick="event.stopPropagation()">Escala de Dó maior ascendente e descendente juntos. Verificar postura.</textarea></div><button class="ri-del" onclick="removeItem(this);event.stopPropagation()" title="Remover">−</button></div>
+                <div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()"><span class="ri-edit-num">2</span><div class="ri-edit-body"><div class="ri-edit-top"><input class="ri-edit-text" value="Tríades Dó, Fá, Sol" onclick="event.stopPropagation()"><span class="ri-edit-dur">20min</span></div><textarea class="ri-edit-desc" onclick="event.stopPropagation()">Apresentar cada tríade. Troca I–IV–V em Dó maior. Cada aluno toca a sequência 4x.</textarea></div><button class="ri-del" onclick="removeItem(this);event.stopPropagation()" title="Remover">−</button></div>
+                <div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()"><span class="ri-edit-num">3</span><div class="ri-edit-body"><div class="ri-edit-top"><input class="ri-edit-text" value="Encerramento" onclick="event.stopPropagation()"><span class="ri-edit-dur">5min</span></div><textarea class="ri-edit-desc" onclick="event.stopPropagation()">Tocar juntos I–IV–V–I. Combinar tarefa para próxima aula.</textarea></div><button class="ri-del" onclick="removeItem(this);event.stopPropagation()" title="Remover">−</button></div>
+                <div class="ri-edit-hint">✏ Clique para editar</div>
+              </div>
+            </div></div></div>
+          </div>
+
+          <!-- MATERIAIS DO DIA — rodapé da página -->
+          <div class="mat-dia">
+            <div class="mat-dia-hdr">
+              <span>🎒</span>
+              <span class="mat-dia-title">Materiais do dia</span>
+              <span class="mat-dia-sub">5 itens · 2 escolas</span>
+            </div>
+            <div class="mat-chips">
+              <span class="mat-chip">🥁 Pandeiro</span>
+              <span class="mat-chip">🎵 Metrônomo</span>
+              <span class="mat-chip">📄 Fichas A4</span>
+              <span class="mat-chip">🎹 Teclado</span>
+              <span class="mat-chip">🎼 Partitura Dó maior</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="phone-bar"><div class="phone-bar-pill"></div></div>
+    </div>
+  </div>
+
+  <!-- ═══ DESKTOP ═══ -->
+  <div class="frame-d">
+    <div class="frame-label">🖥 Desktop</div>
+    <div class="desk">
+      <div class="desk-titlebar"><div class="desk-dot" style="background:#FF5F57"></div><div class="desk-dot" style="background:#FFBD2E"></div><div class="desk-dot" style="background:#28C840"></div></div>
+      <div class="desk-screen">
+        <div class="topbar">
+          <div class="tb-row"><span class="tb-title">Agenda</span><button class="hoje-btn">☀ Hoje</button></div>
+          <div class="tabs"><button class="tab on">Hoje</button><button class="tab">Semana</button><button class="tab">Mês</button></div>
+        </div>
+        <div class="scroll-inner">
+          <div class="dh"><span class="dh-date">Terça, 25 mar</span><span class="dh-count">3 aulas</span></div>
+
+          <!-- 7A aberto -->
+          <div class="aula-card open" style="border-left-color:var(--c1)">
+            <div class="card-head" onclick="toggleCard(this.closest('.aula-card'))">
+              <div class="card-head-left"><div class="card-meta"><span class="horario">08h30</span><span class="turma-nome">Turma 7A</span></div><div class="escola-nome" style="color:var(--c1)">Escola Norte · 3º ano</div><div class="plano-tag"><span>📋</span><span class="plano-tag-nome">Ritmo e Pulsação</span></div></div>
+              <span class="card-arrow">▼</span>
+            </div>
+            <div class="card-body-wrap"><div class="card-body-inner"><div class="card-body">
+              <div class="roteiro-scroll">
+                <div class="rot-hdr"><span class="rot-hdr-label">Roteiro de atividades</span><span class="rot-hdr-total">45min</span></div>
+                <div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()"><span class="ri-edit-num">1</span><div class="ri-edit-body"><div class="ri-edit-top"><input class="ri-edit-text" value="Aquecimento rítmico" onclick="event.stopPropagation()"><span class="ri-edit-dur">10min</span></div><textarea class="ri-edit-desc" onclick="event.stopPropagation()">Palmas em sequência 1-2-1-2-3, depois batidas com pandeiro. Repetir com metrônomo.</textarea></div><button class="ri-del" onclick="removeItem(this);event.stopPropagation()">−</button></div>
+                <div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()"><span class="ri-edit-num">2</span><div class="ri-edit-body"><div class="ri-edit-top"><input class="ri-edit-text" value="Exploração do pandeiro" onclick="event.stopPropagation()"><span class="ri-edit-dur">15min</span></div><textarea class="ri-edit-desc" onclick="event.stopPropagation()">Mão aberta, dedilhado, polegar no couro. Imitar ritmos curtos do professor.</textarea></div><button class="ri-del" onclick="removeItem(this);event.stopPropagation()">−</button></div>
+                <div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()"><span class="ri-edit-num">3</span><div class="ri-edit-body"><div class="ri-edit-top"><input class="ri-edit-text" value="Atividade em grupo — eco" onclick="event.stopPropagation()"><span class="ri-edit-dur">15min</span></div><textarea class="ri-edit-desc" onclick="event.stopPropagation()">Duplas: um toca padrão de 4 tempos, outro responde em eco. Rotacionar a cada 2min.</textarea></div><button class="ri-del" onclick="removeItem(this);event.stopPropagation()">−</button></div>
+                <div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()"><span class="ri-edit-num">4</span><div class="ri-edit-body"><div class="ri-edit-top"><input class="ri-edit-text" value="Fechamento oral" onclick="event.stopPropagation()"><span class="ri-edit-dur">5min</span></div><textarea class="ri-edit-desc" onclick="event.stopPropagation()">Roda de feedback: fácil / difícil. 2-3 alunos descrevem como sentiram o pulso.</textarea></div><button class="ri-del" onclick="removeItem(this);event.stopPropagation()">−</button></div>
+                <div class="ri-edit-hint">✏ Clique em qualquer item para editar</div>
+              </div>
+            </div></div></div>
+          </div>
+
+          <!-- 5B fechado -->
+          <div class="aula-card" style="border-left-color:var(--amber)" onclick="toggleCard(this)"><div class="card-head"><div class="card-head-left"><div class="card-meta"><span class="horario">10h00</span><span class="turma-nome">Turma 5B</span></div><div class="escola-nome" style="color:var(--c1)">Escola Norte · 1º ano</div><div class="sem-plano-row">⚠ Sem plano</div></div><span class="card-arrow">▼</span></div><div class="card-body-wrap"><div class="card-body-inner"><div class="card-body"><button class="btn-planejar" onclick="event.stopPropagation()">+ Aplicar plano</button></div></div></div></div>
+
+          <!-- 9C fechado -->
+          <div class="aula-card" style="border-left-color:var(--c3)" onclick="toggleCard(this)"><div class="card-head"><div class="card-head-left"><div class="card-meta"><span class="horario">14h30</span><span class="turma-nome">Turma 9C</span></div><div class="escola-nome" style="color:var(--c3)">Escola Sul · 5º ano</div><div class="plano-tag"><span>📋</span><span class="plano-tag-nome">Harmonia Básica</span></div></div><span class="card-arrow">▼</span></div><div class="card-body-wrap"><div class="card-body-inner"><div class="card-body"><div class="roteiro-scroll"><div class="rot-hdr"><span class="rot-hdr-label">Roteiro de atividades</span><span class="rot-hdr-total">35min</span></div><div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()"><span class="ri-edit-num">1</span><div class="ri-edit-body"><div class="ri-edit-top"><input class="ri-edit-text" value="Revisão de escalas" onclick="event.stopPropagation()"><span class="ri-edit-dur">10min</span></div><textarea class="ri-edit-desc" onclick="event.stopPropagation()">Escala de Dó maior ascendente e descendente.</textarea></div><button class="ri-del" onclick="removeItem(this);event.stopPropagation()">−</button></div><div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()"><span class="ri-edit-num">2</span><div class="ri-edit-body"><div class="ri-edit-top"><input class="ri-edit-text" value="Tríades Dó, Fá, Sol" onclick="event.stopPropagation()"><span class="ri-edit-dur">20min</span></div><textarea class="ri-edit-desc" onclick="event.stopPropagation()">Apresentar tríades. Troca I–IV–V. Cada aluno toca 4x.</textarea></div><button class="ri-del" onclick="removeItem(this);event.stopPropagation()">−</button></div><div class="ri-editable" onclick="focusEdit(this);event.stopPropagation()"><span class="ri-edit-num">3</span><div class="ri-edit-body"><div class="ri-edit-top"><input class="ri-edit-text" value="Encerramento" onclick="event.stopPropagation()"><span class="ri-edit-dur">5min</span></div><textarea class="ri-edit-desc" onclick="event.stopPropagation()">Tocar I–IV–V–I. Combinar tarefa.</textarea></div><button class="ri-del" onclick="removeItem(this);event.stopPropagation()">−</button></div><div class="ri-edit-hint">✏ Clique para editar</div></div></div></div></div></div>
+
+          <!-- MATERIAIS DO DIA — rodapé da página -->
+          <div class="mat-dia">
+            <div class="mat-dia-hdr">
+              <span>🎒</span>
+              <span class="mat-dia-title">Materiais do dia</span>
+              <span class="mat-dia-sub">5 itens · 2 escolas</span>
+            </div>
+            <div class="mat-chips">
+              <span class="mat-chip">🥁 Pandeiro</span>
+              <span class="mat-chip">🎵 Metrônomo</span>
+              <span class="mat-chip">📄 Fichas A4</span>
+              <span class="mat-chip">🎹 Teclado</span>
+              <span class="mat-chip">🎼 Partitura Dó maior</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function setDev(d){
+  document.body.className='mode-'+d
+  document.getElementById('btn-m').classList.toggle('on',d==='m')
+  document.getElementById('btn-d').classList.toggle('on',d==='d')
+}
+function toggleCard(card){card.classList.toggle('open')}
+function autoResize(ta){ta.style.height='auto';ta.style.height=ta.scrollHeight+'px'}
+document.querySelectorAll('.ri-edit-desc').forEach(ta=>{
+  autoResize(ta)
+  ta.addEventListener('input',()=>autoResize(ta))
+})
+function focusEdit(row){
+  row.classList.add('editing')
+  const ta=row.querySelector('textarea')
+  const inp=row.querySelector('input')
+  if(ta&&!ta.matches(':focus'))ta.focus()
+  else if(inp){inp.focus();inp.select()}
+  row.addEventListener('focusout',()=>{
+    setTimeout(()=>{if(!row.matches(':focus-within'))row.classList.remove('editing')},80)
+  },{once:true})
+}
+function removeItem(btn){
+  const row=btn.closest('.ri-editable')
+  row.style.transition='opacity .18s,max-height .22s'
+  row.style.opacity='0'
+  row.style.maxHeight=row.offsetHeight+'px'
+  setTimeout(()=>{row.style.maxHeight='0';row.style.padding='0'},10)
+  setTimeout(()=>{
+    row.remove()
+    // renumerar
+    const scroll=btn.closest('.roteiro-scroll')
+    scroll.querySelectorAll('.ri-edit-num').forEach((n,i)=>n.textContent=i+1)
+  },220)
+}
+</script>
+</body>
+</html>

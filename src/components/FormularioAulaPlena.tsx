@@ -420,6 +420,58 @@ Responda APENAS com JSON: {"habilidades": ["EF15AR14", "EF69AR16"]}`
   const [modalConceitos, setModalConceitos] = useState<string[] | null>(null)
   const [detectandoConceitos, setDetectandoConceitos] = useState(false)
 
+  // ── Ampliar Ideias ──
+  type SugestaoAtividade = { nome: string; duracao: string; descricao: string }
+  const [ampliarOpen, setAmpliarOpen] = useState(false)
+  const [ampliarLoading, setAmpliarLoading] = useState(false)
+  const [ampliarSugestoes, setAmpliarSugestoes] = useState<SugestaoAtividade[]>([])
+  const [ampliarExpandido, setAmpliarExpandido] = useState<number | null>(null)
+
+  async function ampliarIdeias() {
+    const ativs = plano.atividadesRoteiro || []
+    if (ativs.length === 0) { showToast('Adicione ao menos uma atividade primeiro!', 'error'); return }
+    setAmpliarLoading(true)
+    setAmpliarOpen(true)
+    setAmpliarSugestoes([])
+    setAmpliarExpandido(null)
+    try {
+      const listaAtividades = ativs.map(a => `- ${a.nome}${a.duracao ? ` (${a.duracao} min)` : ''}`).join('\n')
+      const objetivo = typeof plano.objetivoGeral === 'string' ? plano.objetivoGeral.replace(/<[^>]*>/g, '') : ''
+      const prompt = `Você é um assistente pedagógico especialista em educação musical. O professor já planejou as seguintes atividades para a aula:
+
+${listaAtividades}
+
+Nível/turma: ${plano.nivel || 'não informado'}
+Objetivo: ${objetivo || 'não informado'}
+
+Sugira 4 ideias de atividades que AMPLIAM ou COMPLEMENTAM o que já está planejado. Não repita atividades existentes. As sugestões devem ser pontos de partida inspiradores para a criatividade do professor, não receitas prontas.
+
+Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10", "descricao": "Uma frase curta e inspiradora sobre a atividade"}]}`
+      const raw = await geminiPost(prompt)
+      const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || raw.match(/(\{[\s\S]*\})/)
+      if (!match) { showToast('IA não retornou sugestões', 'error'); setAmpliarOpen(false); return }
+      const result = JSON.parse(match[1] || match[0])
+      if (Array.isArray(result.sugestoes)) setAmpliarSugestoes(result.sugestoes)
+    } catch { showToast('Erro ao ampliar ideias', 'error'); setAmpliarOpen(false) }
+    finally { setAmpliarLoading(false) }
+  }
+
+  function adicionarSugestao(s: SugestaoAtividade) {
+    const nova: AtividadeRoteiro = {
+      id: gerarIdSeguro(),
+      nome: s.nome,
+      duracao: s.duracao,
+      descricao: s.descricao,
+      conceitos: [],
+      tags: [],
+      recursos: [],
+      musicasVinculadas: [],
+      estrategiasVinculadas: [],
+    }
+    setPlano(p => ({ ...p, atividadesRoteiro: [...(p.atividadesRoteiro || []), nova] }))
+    showToast(`"${s.nome}" adicionada ao roteiro!`, 'success')
+  }
+
   // ── Atividades: drag-and-drop ──
   const [dragActiveIndex, setDragActiveIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -965,6 +1017,15 @@ Responda APENAS com JSON: {"habilidades": ["EF15AR14", "EF69AR16"]}`
                           setModalConfirm={setModalConfirm}
                         />
                       ))}
+                      <button
+                        type="button"
+                        onClick={ampliarIdeias}
+                        disabled={ampliarLoading}
+                        className="mt-1 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-slate-300 dark:border-[#374151] text-slate-500 dark:text-slate-400 text-xs font-semibold hover:border-slate-400 hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        {ampliarLoading
+                          ? <><svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Buscando ideias...</>
+                          : '✨ Ampliar Ideias'}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1458,6 +1519,83 @@ Responda APENAS com JSON: {"habilidades": ["EF15AR14", "EF69AR16"]}`
         </div>
 
       </div>{/* fim overflow-y-auto */}
+
+      {/* Modal Ampliar Ideias */}
+      {ampliarOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40 backdrop-blur-sm" onClick={() => !ampliarLoading && setAmpliarOpen(false)}>
+          <div className="bg-white dark:bg-[var(--v2-card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[88vh] sm:max-h-[80vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="sm:hidden flex justify-center pt-3 pb-1">
+              <div className="w-9 h-1 bg-slate-200 dark:bg-slate-600 rounded-full" />
+            </div>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-[#374151]">
+              <div>
+                <p className="text-sm font-bold text-slate-700 dark:text-white">✨ Ampliar Ideias</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Pontos de partida — use como inspiração, não como receita</p>
+              </div>
+              {!ampliarLoading && (
+                <button type="button" onClick={() => setAmpliarOpen(false)} className="text-slate-300 hover:text-slate-500 text-lg leading-none transition-colors">×</button>
+              )}
+            </div>
+            <div className="overflow-y-auto flex-1 px-4 py-3 space-y-2">
+              {ampliarLoading ? (
+                <div className="flex flex-col items-center gap-3 py-10">
+                  <svg className="w-6 h-6 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  <p className="text-sm text-slate-400">Gerando sugestões...</p>
+                </div>
+              ) : ampliarSugestoes.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-8">Nenhuma sugestão gerada.</p>
+              ) : ampliarSugestoes.map((s, i) => {
+                const aberto = ampliarExpandido === i
+                return (
+                  <div key={i} className={`rounded-xl border transition-all ${aberto ? 'border-indigo-300 dark:border-indigo-500/50 shadow-sm' : 'border-slate-200 dark:border-[#374151] hover:border-slate-300 dark:hover:border-[#4B5563]'}`}>
+                    <button
+                      type="button"
+                      onClick={() => setAmpliarExpandido(aberto ? null : i)}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-700 dark:text-white truncate">{s.nome}</p>
+                        {s.duracao && <p className="text-[11px] text-slate-400 mt-0.5">⏱ {s.duracao} min</p>}
+                      </div>
+                      <svg className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${aberto ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    {aberto && (
+                      <div className="px-4 pb-4 border-t border-slate-100 dark:border-[#374151]">
+                        {s.descricao && <p className="text-[12.5px] text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">{s.descricao}</p>}
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            type="button"
+                            onClick={() => { adicionarSugestao(s); setAmpliarOpen(false) }}
+                            className="flex-1 px-3 py-2 border border-indigo-400 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors">
+                            + Usar esta atividade
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { adicionarSugestao(s); setAmpliarOpen(false) }}
+                            className="px-3 py-2 border border-slate-200 dark:border-[#374151] text-slate-500 dark:text-slate-400 text-xs font-medium rounded-lg hover:border-slate-300 hover:text-slate-600 transition-colors whitespace-nowrap">
+                            Adaptar antes
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            {!ampliarLoading && ampliarSugestoes.length > 0 && (
+              <div className="px-4 py-3 border-t border-slate-100 dark:border-[#374151] flex gap-2">
+                <button type="button" onClick={ampliarIdeias}
+                  className="flex-1 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border border-slate-200 dark:border-[#374151] hover:border-slate-300 px-3 py-2 rounded-xl transition-colors">
+                  ↻ Outras ideias
+                </button>
+                <button type="button" onClick={() => setAmpliarOpen(false)}
+                  className="px-4 text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors">
+                  Fechar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal conceitos */}
       {modalConceitos && (

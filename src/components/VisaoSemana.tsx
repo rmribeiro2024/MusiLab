@@ -2,7 +2,8 @@
 // Etapa 4 — Visão da Semana (Planejamento)
 // Mostra o grid SEG–SEX com turmas agendadas. Foco: preparação (não registro).
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { usePlanosContext } from '../contexts/PlanosContext'
@@ -162,13 +163,16 @@ function UltimaAulaSection({ registro, temPlano, foiRegistrada }: { registro: Re
   )
 }
 
-// ─── Card Expansion (4º modo — conteúdo cresce dentro do próprio card) ────────
+// ─── Inline Card Drawer (4º modo de visualização) ────────────────────────────
 
-interface CardExpansionProps {
+interface InlineCardDrawerProps {
   heroCard: {
+    turmaNome: string; escolaNome: string; escolaCor: { light: string; dark: string } | null
+    ymd: string; horario: string; diaSemanaShort: string
     cardState: 'comPlano' | 'registrada' | 'sugestao' | 'vazio'
     planoTitulo: string | null; objetivo: string | null
     registro: any; ultimoReg: any; ultimoRegData: string | null
+    planoData?: any
   }
   onClose: () => void
   onEditar: () => void
@@ -176,11 +180,24 @@ interface CardExpansionProps {
   onCriarPlano: () => void
 }
 
-function CardExpansion({ heroCard, onClose, onEditar, onRegistrar, onCriarPlano }: CardExpansionProps) {
+function InlineCardDrawer({ heroCard, onClose, onEditar, onRegistrar, onCriarPlano }: InlineCardDrawerProps) {
   const [visible, setVisible] = React.useState(false)
+  const [expandedActs, setExpandedActs] = React.useState<Set<number>>(new Set())
   React.useEffect(() => { requestAnimationFrame(() => setVisible(true)) }, [])
 
-  const { cardState, planoTitulo, objetivo, registro, ultimoReg, ultimoRegData } = heroCard
+  function toggleAct(i: number) {
+    setExpandedActs(prev => {
+      const next = new Set(prev)
+      next.has(i) ? next.delete(i) : next.add(i)
+      return next
+    })
+  }
+
+  const { turmaNome, escolaNome, escolaCor, ymd, horario, diaSemanaShort,
+    cardState, planoTitulo, objetivo, registro, ultimoReg, ultimoRegData, planoData } = heroCard
+
+  const dataLabel    = `${diaSemanaShort}, ${ymd.slice(8, 10)}/${ymd.slice(5, 7)}`
+  const horarioLabel = horario ? horario.replace(/:00$/, 'h').replace(/:(\d{2})$/, 'h$1') : ''
 
   const funcionouBem   = registro?.funcionouBem || null
   const repetiria      = (registro as any)?.repetiria || null
@@ -195,73 +212,116 @@ function CardExpansion({ heroCard, onClose, onEditar, onRegistrar, onCriarPlano 
   const ultStatusLabel    = ultStatus ? STATUS_CFG[ultStatus].label : null
   const ultAcao           = ultStatus ? STATUS_CFG[ultStatus].acao : 'Planejar próxima aula'
 
-  return (
+  const escolaVar = escolaCor
+    ? ({ '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties)
+    : undefined
+
+  const top = (heroCard as any).triggerRect?.bottom ?? 120
+
+  return createPortal(
     <div style={{
-      display: 'grid',
-      gridTemplateRows: visible ? '1fr' : '0fr',
-      transition: 'grid-template-rows 260ms cubic-bezier(0.34, 1.2, 0.64, 1)',
+      position: 'fixed',
+      top: top + 4,
+      left: '216px',
+      right: 0,
+      opacity: visible ? 1 : 0,
+      transform: `translateY(${visible ? '0' : '-8px'})`,
+      zIndex: 200,
+      transition: 'opacity 200ms ease, transform 220ms ease',
+      maxHeight: `calc(100vh - ${top + 24}px)`,
+      overflowY: 'auto',
     }}>
-      <div style={{ overflow: 'hidden' }}>
-        {/* Separador + botão fechar */}
-        <div className="mx-[10px] border-t border-[#E6EAF0] dark:border-[#374151] mt-1 pt-2 pb-2.5 space-y-2">
-          <div className="flex justify-end">
-            <button onClick={e => { e.stopPropagation(); onClose() }}
-              className="w-4 h-4 flex items-center justify-center rounded-full text-slate-300 dark:text-[#4B5563] hover:text-slate-500 dark:hover:text-[#9CA3AF] hover:bg-slate-100 dark:hover:bg-white/[0.08] transition text-[10px]"
-            >✕</button>
-          </div>
+      <div className="v2-card rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] overflow-hidden mx-2 mb-2" style={escolaVar}>
 
           {/* Body */}
-          {cardState === 'comPlano' && (
-            planoTitulo
-              ? <div className="flex items-start gap-1.5">
-                  <span className="text-[11px] shrink-0 mt-0.5">📋</span>
-                  <div>
-                    <p className="text-[11.5px] font-semibold text-slate-800 dark:text-[#E5E7EB] leading-snug">{planoTitulo}</p>
-                    {objetivo && <p className="text-[10.5px] text-slate-500 dark:text-[#9CA3AF] mt-0.5 line-clamp-2">{objetivo}</p>}
+          <div className="px-4 py-3 space-y-2 overflow-y-auto" style={{ maxHeight: '70vh' }}>
+            {cardState === 'comPlano' && (
+              <div className="space-y-2">
+                {planoTitulo
+                  ? <div className="flex items-start gap-2">
+                      <span className="text-[12px] shrink-0 mt-0.5">📋</span>
+                      <div>
+                        <p className="text-[13px] font-semibold text-slate-800 dark:text-[#E5E7EB] leading-snug">{planoTitulo}</p>
+                        {objetivo && <p className="text-[12px] text-slate-500 dark:text-[#9CA3AF] mt-0.5 leading-snug">{objetivo}</p>}
+                      </div>
+                    </div>
+                  : <p className="text-[12px] text-slate-400 dark:text-[#6B7280] italic">Aula planejada para este dia.</p>
+                }
+                {planoData?.atividadesRoteiro?.length > 0 && (
+                  <div className="pt-2 border-t border-[#F1F3F8] dark:border-[#2d3748] space-y-1">
+                    <p className="text-[10px] font-semibold text-slate-400 dark:text-[#6B7280] uppercase tracking-wide mb-1.5">Atividades</p>
+                    {planoData.atividadesRoteiro.map((a: any, i: number) => {
+                      const isOpen = expandedActs.has(i)
+                      const hasDesc = !!a.descricao
+                      return (
+                        <div key={i}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); hasDesc && toggleAct(i) }}
+                            className={`w-full flex items-center gap-2 text-left rounded px-1 py-1 -mx-1 transition-colors ${hasDesc ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-[#1f2937]' : 'cursor-default'}`}
+                          >
+                            <span className="text-[11px] text-slate-400 dark:text-[#6B7280] shrink-0 w-4">{i + 1}.</span>
+                            <span className="text-[12px] font-medium text-slate-700 dark:text-[#D1D5DB] flex-1 leading-snug">{a.nome || a.titulo || '—'}</span>
+                            {a.duracao && <span className="text-[11px] text-slate-400 dark:text-[#6B7280] shrink-0">· {a.duracao}min</span>}
+                            {hasDesc && (
+                              <span className="text-[10px] text-slate-300 dark:text-[#4B5563] shrink-0 ml-0.5">{isOpen ? '▾' : '▸'}</span>
+                            )}
+                          </button>
+                          {isOpen && hasDesc && (
+                            <div
+                              className="ml-5 mt-1 mb-1.5 text-[12px] text-slate-500 dark:text-[#9CA3AF] leading-relaxed [&_p]:mb-1.5 [&_ul]:ml-4 [&_ul]:list-disc [&_ol]:ml-4 [&_ol]:list-decimal [&_li]:mb-1 [&_h2]:font-semibold [&_h2]:text-slate-700 [&_h2]:dark:text-[#D1D5DB] [&_h2]:mt-1.5 [&_h2]:mb-0.5 [&_strong]:font-semibold [&_a]:text-indigo-500 [&_a]:underline"
+                              dangerouslySetInnerHTML={{ __html: a.descricao }}
+                            />
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
+                )}
+              </div>
+            )}
+
+            {cardState === 'registrada' && (
+              <div className="space-y-2">
+                {planoTitulo && <p className="text-[12px] font-semibold text-slate-700 dark:text-[#D1D5DB] pb-2 border-b border-[#F1F3F8] dark:border-[#2d3748]">📋 {planoTitulo}</p>}
+                {registro?.resumoAula && <RegistroField icon="📝" label="Resumo" text={registro.resumoAula} />}
+                {funcionouBem && <RegistroField icon="⭐" label="Funcionou" text={funcionouBem} />}
+                {fariadiferente && <RegistroField icon="🔄" label="Faria diferente" text={fariadiferente} />}
+                {registro?.proximaAula && <RegistroField icon="➡️" label="Próxima aula" text={registro.proximaAula} />}
+                {registro?.comportamento && <RegistroField icon="👥" label="Turma" text={registro.comportamento} />}
+                {statusLabel && <p className="text-[11px] text-slate-400 dark:text-[#6B7280]">Como foi: <span className="font-medium">{statusLabel}</span></p>}
+                {!registro?.resumoAula && !funcionouBem && !fariadiferente && !statusLabel && (
+                  <p className="text-[12px] text-slate-400 dark:text-[#6B7280] italic">Sem detalhes preenchidos.</p>
+                )}
+              </div>
+            )}
+
+            {cardState === 'sugestao' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px]">💡</span>
+                  <p className="text-[13px] font-semibold text-slate-700 dark:text-[#D1D5DB]">Sugestão: {ultAcao}</p>
                 </div>
-              : <p className="text-[11px] text-slate-400 dark:text-[#6B7280] italic">Aula planejada para este dia.</p>
-          )}
-
-          {cardState === 'registrada' && (
-            <div className="space-y-1.5">
-              {planoTitulo && <p className="text-[11px] font-semibold text-slate-700 dark:text-[#D1D5DB] line-clamp-1">📋 {planoTitulo}</p>}
-              <p className="text-[9.5px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">✓ O que aconteceu</p>
-              {temConteudoReg ? (
-                <>
-                  {funcionouBem && <RegistroField icon="⭐" label="Funcionou" text={funcionouBem} />}
-                  {repetiria && !funcionouBem && <RegistroField icon="⭐" label="Funcionou" text={repetiria} />}
-                  {fariadiferente && <RegistroField icon="🔄" label="Faria diferente" text={fariadiferente} />}
-                  {statusLabel && <p className="text-[10px] text-slate-400 dark:text-[#6B7280]">Como foi: <span className="font-medium">{statusLabel}</span></p>}
-                </>
-              ) : (
-                <p className="text-[10.5px] text-slate-400 dark:text-[#6B7280] italic">Sem detalhes preenchidos.</p>
-              )}
-            </div>
-          )}
-
-          {cardState === 'sugestao' && (
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px]">💡</span>
-                <p className="text-[11.5px] font-semibold text-slate-700 dark:text-[#D1D5DB]">Sugestão: {ultAcao}</p>
+                <div className="pt-2 border-t border-[#F1F3F8] dark:border-[#2d3748] space-y-1.5">
+                  <p className="text-[10px] font-semibold text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">📋 Última aula{ultimoRegData ? ` · ${ultimoRegData}` : ''}</p>
+                  {ultimoReg?.resumoAula && <RegistroField icon="📝" label="Resumo" text={ultimoReg.resumoAula} />}
+                  {ultRepetiria && <RegistroField icon="⭐" label="Funcionou" text={ultRepetiria} />}
+                  {ultFariadiferente && <RegistroField icon="🔄" label="Faria diferente" text={ultFariadiferente} />}
+                  {ultimoReg?.proximaAula && <RegistroField icon="➡️" label="Próxima aula" text={ultimoReg.proximaAula} />}
+                  {ultStatusLabel && <p className="text-[11px] text-slate-400 dark:text-[#6B7280]">Como foi: <span className="font-medium">{ultStatusLabel}</span></p>}
+                  {!ultimoReg?.resumoAula && !ultRepetiria && !ultFariadiferente && !ultimoReg?.proximaAula && !ultStatusLabel && (
+                    <p className="text-[12px] text-slate-400 dark:text-[#6B7280] italic">Sem detalhes no último registro.</p>
+                  )}
+                </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-[9.5px] font-semibold text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">📋 Última aula{ultimoRegData ? ` · ${ultimoRegData}` : ''}</p>
-                {ultRepetiria && <RegistroField icon="⭐" label="Funcionou" text={ultRepetiria} />}
-                {ultFariadiferente && <RegistroField icon="🔄" label="Faria diferente" text={ultFariadiferente} />}
-                {ultStatusLabel && <p className="text-[10px] text-slate-400 dark:text-[#6B7280]">Como foi: <span className="font-medium">{ultStatusLabel}</span></p>}
-                {!ultRepetiria && !ultFariadiferente && !ultStatusLabel && <p className="text-[10.5px] text-slate-400 dark:text-[#6B7280] italic">Sem detalhes no último registro.</p>}
-              </div>
-            </div>
-          )}
+            )}
 
-          {cardState === 'vazio' && (
-            <p className="text-[11px] text-slate-400 dark:text-[#6B7280] text-center italic">Nenhum plano para esta aula.</p>
-          )}
+            {cardState === 'vazio' && (
+              <p className="text-[12px] text-slate-400 dark:text-[#6B7280] text-center py-1 italic">Nenhum plano para esta aula.</p>
+            )}
+          </div>
 
-          {/* Footer botões */}
-          <div className="flex gap-1.5 pt-1">
+          {/* Footer */}
+          <div className="px-4 pb-4 pt-1 flex gap-2">
             {cardState === 'comPlano' && (
               <>
                 <ActionButton onClick={onEditar} label="✏️ Editar" variant="secondary" />
@@ -279,8 +339,8 @@ function CardExpansion({ heroCard, onClose, onEditar, onRegistrar, onCriarPlano 
             )}
           </div>
         </div>
-      </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -460,13 +520,7 @@ export default function VisaoSemana() {
   const isPast  = (d: Date) => d < hoje && !isHoje(d)
   const isSemanaAtual = toYMD(semanaInicio) === toYMD(getSemanaAtualInicio())
   const todayYmd = toYMD(hoje)
-
-  // Tempo atual em minutos — atualiza a cada 30s para evitar flashing no badge "AO VIVO"
-  const [agoraMin, setAgoraMin] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes() })
-  useEffect(() => {
-    const t = setInterval(() => { const n = new Date(); setAgoraMin(n.getHours() * 60 + n.getMinutes()) }, 30_000)
-    return () => clearInterval(t)
-  }, [])
+  const agoraMin = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes() })()
 
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -634,22 +688,24 @@ export default function VisaoSemana() {
                     const aoVivo = ymd === todayYmd && minInicio !== null && agoraMin >= minInicio && agoraMin <= minInicio + 50
                     // Aula concluída neste dia: opacidade reduzida
                     const foiRegistrada = turmasRegistradas.has(tidYmd)
+                    const isDrawerOpen = effectiveAnimStyle === 'inlineDrawer' && heroCard?.navParams.turmaId === tidStr && heroCard?.ymd === ymd
                     const cardStyle  = escolaCor
                       ? { '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties
                       : undefined
 
                     return (
+                      <React.Fragment key={`${aula.turmaId}-${aula.horario}-${i}`}>
                       <div
-                        key={`${aula.turmaId}-${aula.horario}-${i}`}
                         style={cardStyle}
                         draggable={eArrastavel}
                         onClick={(!past || foiRegistrada) ? (e: React.MouseEvent) => {
                           e.stopPropagation()
 
-                          // Modo gaveta: toggle — clica de novo fecha
-                          if (effectiveAnimStyle === 'inlineDrawer' && heroCard &&
-                            heroCard.navParams.turmaId === tidStr && heroCard.ymd === ymd) {
-                            setHeroCard(null); return
+                          // Toggle no modo inlineDrawer: fecha se já está aberto
+                          if (effectiveAnimStyle === 'inlineDrawer' &&
+                              heroCard?.navParams.turmaId === tidStr && heroCard?.ymd === ymd) {
+                            setHeroCard(null)
+                            return
                           }
 
                           // Captura posição do card para o Shared Element
@@ -692,6 +748,7 @@ export default function VisaoSemana() {
                             horario: aula.horario ?? '', diaSemanaShort: short,
                             cardState, planoTitulo, objetivo,
                             registro: registroDoDia as any, ultimoReg, ultimoRegData,
+                            planoData: planoDataObj,
                             animStyle: effectiveAnimStyle,
                             triggerRect: capturedRect,
                             navParams: {
@@ -733,7 +790,7 @@ export default function VisaoSemana() {
                           setDragSrcId(null); setDragOverId(null)
                         }}
                         onDragEnd={() => { setDragSrcId(null); setDragOverId(null) }}
-                        className={`v2-card rounded-[8px] overflow-hidden transition-all duration-150 ${
+                        className={`v2-card rounded-[8px] ${isDrawerOpen ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-150 ${
                           isDragOver
                             ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 shadow-[0_4px_16px_rgba(91,95,234,0.25)]'
                             : isDragSrc
@@ -773,10 +830,10 @@ export default function VisaoSemana() {
                         {/* seção última aula / aula planejada */}
                         <UltimaAulaSection registro={ultimoReg} temPlano={temPlano} foiRegistrada={foiRegistrada} />
 
-                        {/* ── Gaveta inline (4º modo) — expande dentro do card ── */}
+                        {/* ── Gaveta inline (4º modo) ── */}
                         {effectiveAnimStyle === 'inlineDrawer' && heroCard &&
                           heroCard.navParams.turmaId === tidStr && heroCard.ymd === ymd && (
-                          <CardExpansion
+                          <InlineCardDrawer
                             heroCard={heroCard}
                             onClose={() => setHeroCard(null)}
                             onEditar={() => {
@@ -804,6 +861,7 @@ export default function VisaoSemana() {
                           />
                         )}
                       </div>
+                      </React.Fragment>
                     )
                   })
                 )}
