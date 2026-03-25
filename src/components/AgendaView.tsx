@@ -146,49 +146,79 @@ interface RoteiroItemProps {
   onRemover: (id: string | number, nome: string) => void
 }
 
-function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onRemover }: RoteiroItemProps) {
-  const [valor, setValor] = useState(ativ.nome)
+function stripHTMLToText(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
 
-  // Sincroniza se o nome mudar externamente (ex: desfazer)
-  useEffect(() => { setValor(ativ.nome) }, [ativ.nome])
+function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onRemover }: RoteiroItemProps) {
+  const [titulo, setTitulo] = useState(ativ.nome)
+  const [descricao, setDescricao] = useState(() => ativ.descricao ? stripHTMLToText(ativ.descricao) : '')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => { setTitulo(ativ.nome) }, [ativ.nome])
+
+  // Auto-resize do textarea
+  useEffect(() => {
+    const ta = textareaRef.current
+    if (ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px' }
+  }, [descricao])
 
   return (
-    <div className="flex items-start gap-2 group">
+    <div className="flex items-start gap-2">
       <span className="text-xs font-mono text-slate-400 mt-[10px] w-5 shrink-0 text-right">
         {idx + 1}
       </span>
 
       <div className="flex-1 bg-slate-50 dark:bg-gray-700/60 rounded-md px-3 py-2">
+        {/* Título editável */}
         <div className="flex items-center gap-2">
           <input
-            className="flex-1 bg-transparent text-sm font-medium text-slate-800 dark:text-slate-100 outline-none min-w-0 cursor-text rounded px-1 -mx-1 hover:bg-white/70 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-gray-600/40 focus:ring-1 focus:ring-blue-400/50 transition-colors"
-            value={valor}
-            onChange={e => { setValor(e.target.value); onEditar(ativ.id, e.target.value) }}
+            className="flex-1 bg-transparent text-sm font-semibold text-slate-800 dark:text-slate-100 outline-none min-w-0 cursor-text rounded px-1 -mx-1 hover:bg-white/60 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-gray-600/40 focus:ring-1 focus:ring-blue-400/50 transition-colors"
+            value={titulo}
+            onChange={e => { setTitulo(e.target.value); onEditar(ativ.id, e.target.value) }}
             onClick={e => e.stopPropagation()}
             onMouseDown={e => e.stopPropagation()}
+            placeholder="Título da atividade"
           />
           {ativ.duracao && (
             <span className="text-xs text-slate-400 shrink-0">{ativ.duracao}</span>
           )}
         </div>
-        {ativ.descricao && (
-          <div
-            className="agenda-descricao text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: sanitizarRich(ativ.descricao) }}
+
+        {/* Descrição editável como textarea */}
+        {(ativ.descricao || descricao) && (
+          <textarea
+            ref={textareaRef}
+            className="w-full mt-1.5 bg-transparent text-xs text-slate-500 dark:text-slate-400 outline-none resize-none leading-relaxed cursor-text rounded px-1 -mx-1 hover:bg-white/60 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-gray-600/40 focus:ring-1 focus:ring-blue-400/50 transition-colors overflow-hidden"
+            value={descricao}
+            onChange={e => setDescricao(e.target.value)}
+            onClick={e => e.stopPropagation()}
+            onMouseDown={e => e.stopPropagation()}
+            rows={1}
           />
         )}
       </div>
 
+      {/* Botão remover — ícone × claro */}
       {temAplicacao && (
         <button
-          className="mt-[6px] w-6 h-6 flex items-center justify-center rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
-          onClick={e => { e.stopPropagation(); onRemover(ativ.id, valor) }}
+          className="mt-[6px] w-6 h-6 flex items-center justify-center rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0 text-base leading-none"
+          onClick={e => { e.stopPropagation(); onRemover(ativ.id, titulo) }}
           onMouseDown={e => e.stopPropagation()}
           title="Remover desta aula"
         >
-          <svg viewBox="0 0 12 12" width="11" height="11" fill="currentColor">
-            <rect x="1" y="5.5" width="10" height="1" rx="0.5"/>
-          </svg>
+          ×
         </button>
       )}
     </div>
