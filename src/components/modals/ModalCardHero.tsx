@@ -114,12 +114,19 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
     turmaNome, escolaNome, escolaCor, ymd, horario, diaSemanaShort,
     cardState, planoTitulo, objetivo,
     registro, ultimoReg, ultimoRegData,
+    planoData,
     animStyle = 'center',
     triggerRect,
     onClose, onEditar, onRegistrar, onCriarPlano,
   } = props
 
   const isDark = useIsDark()
+
+  // Atividades colapsáveis
+  const [expandedActs, setExpandedActs] = useState<Set<number>>(new Set())
+  function toggleAct(i: number) {
+    setExpandedActs(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n })
+  }
 
   // Animação de entrada
   const [visible, setVisible] = useState(false)
@@ -236,7 +243,7 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
       transition: sheetDragY > 0 ? 'none' : 'transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
     }
   } else if (animStyle === 'sharedElement') {
-    panelClass = `${panelContentClass} absolute rounded-2xl w-[340px]`
+    panelClass = `${panelContentClass} absolute rounded-2xl w-[560px]`
     panelStyle = {
       ...cardStyle,
       top: '50%',
@@ -341,6 +348,36 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
               <p className="text-[12px] text-slate-400 dark:text-[#6B7280] italic">
                 Aula planejada para este dia.
               </p>
+            )}
+
+            {/* Atividades colapsáveis */}
+            {planoData?.atividadesRoteiro?.length > 0 && (
+              <div className="pt-2 border-t border-[#E6EAF0] dark:border-[#374151] space-y-0.5">
+                <p className="text-[10px] font-semibold text-slate-400 dark:text-[#6B7280] uppercase tracking-wide mb-1.5">Atividades</p>
+                {planoData.atividadesRoteiro.map((a: any, i: number) => {
+                  const isOpen = expandedActs.has(i)
+                  const hasDesc = !!a.descricao
+                  return (
+                    <div key={i}>
+                      <button
+                        onClick={e => { e.stopPropagation(); hasDesc && toggleAct(i) }}
+                        className={`w-full flex items-center gap-2 text-left rounded px-1 py-1 -mx-1 transition-colors ${hasDesc ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5' : 'cursor-default'}`}
+                      >
+                        <span className="text-[11px] text-slate-400 shrink-0 w-4">{i + 1}.</span>
+                        <span className="text-[12.5px] font-medium text-slate-700 dark:text-[#D1D5DB] flex-1 leading-snug">{a.nome || a.titulo || '—'}</span>
+                        {a.duracao && <span className="text-[11px] text-slate-400 shrink-0">· {a.duracao}min</span>}
+                        {hasDesc && <span className="text-[10px] text-slate-300 dark:text-[#4B5563] ml-0.5">{isOpen ? '▾' : '▸'}</span>}
+                      </button>
+                      {isOpen && hasDesc && (
+                        <div
+                          className="ml-5 mt-1 mb-1.5 text-[12px] text-slate-500 dark:text-[#9CA3AF] leading-relaxed [&_p]:mb-1.5 [&_ul]:ml-4 [&_ul]:list-disc [&_ol]:ml-4 [&_ol]:list-decimal [&_li]:mb-1 [&_h2]:font-semibold [&_h2]:text-slate-700 [&_h2]:dark:text-[#D1D5DB] [&_h2]:mt-1.5 [&_h2]:mb-0.5 [&_strong]:font-semibold [&_a]:text-indigo-500 [&_a]:underline"
+                          dangerouslySetInnerHTML={{ __html: a.descricao }}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             )}
           </div>
         )}
