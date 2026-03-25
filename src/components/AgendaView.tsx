@@ -373,7 +373,7 @@ function AulaCard({ slot, isDarkMode }: AulaCardProps) {
 
       {/* Conteúdo expandido — animação CSS grid */}
       <div style={{ display: 'grid', gridTemplateRows: aberto ? '1fr' : '0fr', transition: 'grid-template-rows 0.25s ease' }}>
-        <div style={{ overflow: 'hidden' }}>
+        <div style={{ overflow: aberto ? 'visible' : 'hidden' }}>
           <div className="px-4 pb-4 pt-3 border-t border-slate-100 dark:border-slate-700">
             {!slot.plano ? (
               <p className="text-sm text-slate-400 italic">Nenhum plano vinculado a esta aula.</p>
