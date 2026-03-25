@@ -1,0 +1,531 @@
+// src/components/AgendaView.tsx
+// Módulo Agenda unificado — Hoje / Semana / Mês
+// Substitui TelaResumoDia + AgendaSemanal (visualização diária)
+// Design: cards por turma, expandem com roteiro (Option C — inline edit),
+//         materiais do dia no rodapé da página.
+
+import React, { useState, useMemo, useCallback, useEffect } from 'react'
+import { useCalendarioContext } from '../contexts/CalendarioContext'
+import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
+import { useAplicacoesContext } from '../contexts/AplicacoesContext'
+import { usePlanosContext } from '../contexts/PlanosContext'
+import type { AulaGrade, AplicacaoAula, Plano, AnoLetivo, AtividadeRoteiro } from '../types'
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function toStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function getMondayOf(d: Date): Date {
+  const date = new Date(d)
+  date.setHours(0, 0, 0, 0)
+  const day = date.getDay()
+  date.setDate(date.getDate() + (day === 0 ? -6 : 1 - day))
+  return date
+}
+
+function addDays(d: Date, n: number): Date {
+  const date = new Date(d)
+  date.setDate(date.getDate() + n)
+  return date
+}
+
+function getNomeTurma(
+  anoLetivoId: string | undefined,
+  escolaId: string | undefined,
+  segmentoId: string,
+  turmaId: string,
+  anosLetivos: AnoLetivo[],
+): string {
+  if (!anoLetivoId || !escolaId) return turmaId
+  // eslint-disable-next-line eqeqeq
+  const ano = anosLetivos.find(a => a.id == anoLetivoId)
+  // eslint-disable-next-line eqeqeq
+  const esc = ano?.escolas.find(e => e.id == escolaId)
+  // eslint-disable-next-line eqeqeq
+  const seg = esc?.segmentos.find(s => s.id == segmentoId)
+  // eslint-disable-next-line eqeqeq
+  const tur = seg?.turmas.find(t => t.id == turmaId)
+  return [seg?.nome, tur?.nome].filter(Boolean).join(' › ') || turmaId
+}
+
+function getNomeEscola(
+  anoLetivoId: string | undefined,
+  escolaId: string | undefined,
+  anosLetivos: AnoLetivo[],
+): string {
+  if (!anoLetivoId || !escolaId) return ''
+  // eslint-disable-next-line eqeqeq
+  const ano = anosLetivos.find(a => a.id == anoLetivoId)
+  // eslint-disable-next-line eqeqeq
+  return ano?.escolas.find(e => e.id == escolaId)?.nome ?? ''
+}
+
+function formatHorario(h: string): string {
+  if (!h) return ''
+  const [hh, mm] = h.split(':')
+  return mm === '00' ? `${hh}h` : `${hh}h${mm}`
+}
+
+function stripHTML(html: string): string {
+  return html.replace(/<[^>]*>/g, '').trim()
+}
+
+// ─── Constantes ───────────────────────────────────────────────────────────────
+
+const DIAS_SEMANA_SHORT = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex']
+const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
+const MESES_LONGOS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+// Paleta de cores por escola — mesma de VisaoSemana.tsx
+const ESCOLA_COLORS: { light: string; dark: string }[] = [
+  { light: '#7c83d4', dark: '#bfc3f5' },
+  { light: '#3b8fc2', dark: '#9dd5f0' },
+  { light: '#2a9c70', dark: '#8edbbf' },
+  { light: '#b8860e', dark: '#e6be6a' },
+  { light: '#c2623b', dark: '#f0b49d' },
+]
+
+// ─── Tipos internos ───────────────────────────────────────────────────────────
+
+interface AulaSlot {
+  aulaGrade: AulaGrade
+  aplicacao?: AplicacaoAula
+  plano?: Plano
+  nomeTurma: string
+  nomeEscola: string
+  escolaColorIdx: number
+  dataStr: string
+}
+
+type TabMode = 'hoje' | 'semana' | 'mes'
+
+// ─── Hook: useAgendaSlotsForDay ───────────────────────────────────────────────
+
+function useAgendaSlotsForDay(dataStr: string, escolaColorMap: Map<string, number>): AulaSlot[] {
+  const { obterTurmasDoDia } = useCalendarioContext()
+  const { anosLetivos } = useAnoLetivoContext()
+  const { aplicacoes } = useAplicacoesContext()
+  const { planos } = usePlanosContext()
+
+  return useMemo(() => {
+    const aulas = obterTurmasDoDia(dataStr)
+    return aulas
+      .map(aula => {
+        const ap = aplicacoes.find(
+          a => a.data === dataStr && a.turmaId === aula.turmaId && a.anoLetivoId === (aula.anoLetivoId ?? ''),
+        )
+        const escolaId = aula.escolaId ?? ''
+        return {
+          aulaGrade: aula,
+          aplicacao: ap,
+          plano: ap ? planos.find(p => String(p.id) === String(ap.planoId)) : undefined,
+          nomeTurma: getNomeTurma(aula.anoLetivoId, aula.escolaId, aula.segmentoId, aula.turmaId, anosLetivos),
+          nomeEscola: getNomeEscola(aula.anoLetivoId, aula.escolaId, anosLetivos),
+          escolaColorIdx: escolaColorMap.get(escolaId) ?? 0,
+          dataStr,
+        }
+      })
+      .sort((a, b) => (a.aulaGrade.horario ?? '').localeCompare(b.aulaGrade.horario ?? ''))
+  }, [dataStr, obterTurmasDoDia, aplicacoes, planos, anosLetivos, escolaColorMap])
+}
+
+// ─── AulaCard ─────────────────────────────────────────────────────────────────
+
+interface AulaCardProps {
+  slot: AulaSlot
+  isDarkMode: boolean
+}
+
+function AulaCard({ slot, isDarkMode }: AulaCardProps) {
+  const { setAplicacoes } = useAplicacoesContext()
+  const [aberto, setAberto] = useState(false)
+
+  // Roteiro local — inicializado do plano, editável inline (Opção C)
+  const [roteiroLocal, setRoteiroLocal] = useState<AtividadeRoteiro[]>(
+    slot.plano?.atividadesRoteiro ?? [],
+  )
+
+  // Sincroniza quando muda o plano/aplicação (dia diferente selecionado)
+  useEffect(() => {
+    setRoteiroLocal(slot.plano?.atividadesRoteiro ?? [])
+    setAberto(false)
+  }, [slot.plano?.id, slot.aplicacao?.id])
+
+  // Filtra atividades ocultas nesta aplicação específica
+  const roteiroVisivel = useMemo(
+    () => roteiroLocal.filter(a => !slot.aplicacao?.atividadesOcultas?.includes(String(a.id))),
+    [roteiroLocal, slot.aplicacao?.atividadesOcultas],
+  )
+
+  const cor = ESCOLA_COLORS[slot.escolaColorIdx % ESCOLA_COLORS.length]
+  const borderColor = isDarkMode ? cor.dark : cor.light
+
+  const removerAtividade = useCallback((atividadeId: string | number) => {
+    if (!slot.aplicacao) return
+    setAplicacoes(prev =>
+      prev.map(a =>
+        a.id === slot.aplicacao!.id
+          ? { ...a, atividadesOcultas: [...(a.atividadesOcultas ?? []), String(atividadeId)] }
+          : a,
+      ),
+    )
+  }, [slot.aplicacao, setAplicacoes])
+
+  const editarItem = useCallback((id: string | number, novoNome: string) => {
+    setRoteiroLocal(prev => prev.map(a => String(a.id) === String(id) ? { ...a, nome: novoNome } : a))
+  }, [])
+
+  const statusBadge = slot.aplicacao ? (
+    <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
+      slot.aplicacao.status === 'realizada'
+        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+        : slot.aplicacao.status === 'cancelada'
+        ? 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+        : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+    }`}>
+      {slot.aplicacao.status === 'realizada' ? '✓ Realizada'
+       : slot.aplicacao.status === 'cancelada' ? '✕ Cancelada'
+       : 'Planejada'}
+    </span>
+  ) : null
+
+  return (
+    <div
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md"
+      style={{ borderLeft: `3px solid ${borderColor}` }}
+    >
+      {/* Cabeçalho — clicável */}
+      <div
+        className="px-4 py-3 flex items-start gap-3 cursor-pointer select-none"
+        onClick={() => setAberto(v => !v)}
+      >
+        {/* Horário */}
+        <div className="text-sm font-mono font-semibold text-slate-400 dark:text-slate-500 min-w-[34px] pt-0.5">
+          {formatHorario(slot.aulaGrade.horario ?? '')}
+        </div>
+
+        {/* Info turma */}
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate">
+            {slot.nomeTurma}
+          </p>
+          {slot.nomeEscola && (
+            <p className="text-xs mt-0.5 font-medium" style={{ color: borderColor }}>
+              {slot.nomeEscola}
+            </p>
+          )}
+          {slot.plano && (
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 truncate">
+              {slot.plano.titulo}
+            </p>
+          )}
+        </div>
+
+        {/* Badge status + chevron */}
+        <div className="flex items-center gap-2 shrink-0">
+          {statusBadge}
+          <svg
+            className={`w-4 h-4 text-slate-400 transition-transform ${aberto ? 'rotate-180' : ''}`}
+            viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"
+          >
+            <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      {/* Conteúdo expandido — animação CSS grid */}
+      <div style={{ display: 'grid', gridTemplateRows: aberto ? '1fr' : '0fr', transition: 'grid-template-rows 0.25s ease' }}>
+        <div style={{ overflow: 'hidden' }}>
+          <div className="px-4 pb-4 pt-3 border-t border-slate-100 dark:border-slate-700">
+            {!slot.plano ? (
+              <p className="text-sm text-slate-400 italic">Nenhum plano vinculado a esta aula.</p>
+            ) : roteiroVisivel.length === 0 ? (
+              <p className="text-sm text-slate-400 italic">Sem atividades no roteiro.</p>
+            ) : (
+              <div className="space-y-2">
+                {roteiroVisivel.map((ativ, idx) => (
+                  <div key={String(ativ.id)} className="flex items-start gap-2 group">
+                    {/* Número */}
+                    <span className="text-xs font-mono text-slate-400 mt-[10px] w-5 shrink-0 text-right">
+                      {idx + 1}
+                    </span>
+
+                    {/* Bloco editável */}
+                    <div className="flex-1 bg-slate-50 dark:bg-gray-700/60 rounded-md px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          className="flex-1 bg-transparent text-sm font-medium text-slate-800 dark:text-slate-100 outline-none min-w-0"
+                          value={ativ.nome}
+                          onChange={e => editarItem(ativ.id, e.target.value)}
+                          onClick={e => e.stopPropagation()}
+                        />
+                        {ativ.duracao && (
+                          <span className="text-xs text-slate-400 shrink-0">{ativ.duracao}</span>
+                        )}
+                      </div>
+                      {ativ.descricao && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                          {stripHTML(ativ.descricao)}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Botão remover — sempre visível no mobile, hover no desktop */}
+                    {slot.aplicacao && (
+                      <button
+                        className="mt-[6px] w-6 h-6 flex items-center justify-center rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0 sm:opacity-0 sm:group-hover:opacity-100"
+                        onClick={e => { e.stopPropagation(); removerAtividade(ativ.id) }}
+                        title="Remover desta aula"
+                        aria-label="Remover atividade"
+                      >
+                        <svg viewBox="0 0 12 12" width="11" height="11" fill="currentColor">
+                          <rect x="1" y="5.5" width="10" height="1" rx="0.5"/>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── MateriaisDia ─────────────────────────────────────────────────────────────
+
+function MateriaisDia({ slots }: { slots: AulaSlot[] }) {
+  const materiais = useMemo(() => {
+    const set = new Set<string>()
+    slots.forEach(s => (s.plano?.materiais ?? []).forEach(m => { if (m) set.add(m) }))
+    return Array.from(set)
+  }, [slots])
+
+  if (materiais.length === 0) return null
+
+  return (
+    <div className="mt-8 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-xl">
+      <h3 className="text-xs font-semibold text-amber-700 dark:text-amber-500 uppercase tracking-wider mb-3">
+        Materiais do dia
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {materiais.map(m => (
+          <span
+            key={m}
+            className="text-sm px-3 py-1 bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700/50 rounded-lg text-slate-700 dark:text-slate-300"
+          >
+            {m}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── AgendaDia ────────────────────────────────────────────────────────────────
+
+interface AgendaDiaProps {
+  dataStr: string
+  escolaColorMap: Map<string, number>
+  isDarkMode: boolean
+}
+
+function AgendaDia({ dataStr, escolaColorMap, isDarkMode }: AgendaDiaProps) {
+  const slots = useAgendaSlotsForDay(dataStr, escolaColorMap)
+
+  if (slots.length === 0) {
+    return (
+      <div className="py-14 text-center">
+        <div className="text-3xl mb-3">🎵</div>
+        <p className="text-sm text-slate-400 dark:text-slate-500">Nenhuma aula neste dia</p>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div className="space-y-3">
+        {slots.map(slot => (
+          <AulaCard
+            key={`${slot.aulaGrade.id}-${slot.dataStr}`}
+            slot={slot}
+            isDarkMode={isDarkMode}
+          />
+        ))}
+      </div>
+      <MateriaisDia slots={slots} />
+    </div>
+  )
+}
+
+// ─── AgendaView — componente principal ───────────────────────────────────────
+
+export default function AgendaView() {
+  const { anosLetivos } = useAnoLetivoContext()
+
+  const hoje = useMemo(() => toStr(new Date()), [])
+  const [tab, setTab] = useState<TabMode>('hoje')
+  const [diaSelecionado, setDiaSelecionado] = useState<string>(hoje)
+  const [segunda, setSegunda] = useState<Date>(() => getMondayOf(new Date()))
+
+  // Detecta dark mode via classe no <html>
+  const [isDarkMode, setIsDarkMode] = useState(
+    () => document.documentElement.classList.contains('dark'),
+  )
+  useEffect(() => {
+    const observer = new MutationObserver(() =>
+      setIsDarkMode(document.documentElement.classList.contains('dark')),
+    )
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
+
+  // Mapa escola → índice de cor (estável por ordem de aparição)
+  const escolaColorMap = useMemo(() => {
+    const map = new Map<string, number>()
+    anosLetivos.forEach(ano =>
+      ano.escolas.forEach(esc => {
+        if (!map.has(esc.id)) map.set(esc.id, map.size % ESCOLA_COLORS.length)
+      }),
+    )
+    return map
+  }, [anosLetivos])
+
+  // Dias da semana exibidos no strip
+  const diasSemana = useMemo(
+    () =>
+      Array.from({ length: 5 }, (_, i) => {
+        const d = addDays(segunda, i)
+        return {
+          dataStr: toStr(d),
+          short: DIAS_SEMANA_SHORT[i],
+          dia: d.getDate(),
+          isHoje: toStr(d) === hoje,
+        }
+      }),
+    [segunda, hoje],
+  )
+
+  const dataAtiva = tab === 'hoje' ? hoje : diaSelecionado
+
+  // Label "segunda, 25 de março"
+  const labelDia = useMemo(() => {
+    const d = new Date(dataAtiva + 'T12:00:00')
+    const nomes = ['domingo','segunda','terça','quarta','quinta','sexta','sábado']
+    return `${nomes[d.getDay()]}, ${d.getDate()} de ${MESES_LONGOS[d.getMonth()]}`
+  }, [dataAtiva])
+
+  // Label "24–28 mar 2026"
+  const labelSemana = useMemo(() => {
+    const fri = addDays(segunda, 4)
+    const m1 = MESES[segunda.getMonth()]
+    const m2 = MESES[fri.getMonth()]
+    return m1 === m2
+      ? `${segunda.getDate()}–${fri.getDate()} ${m1} ${segunda.getFullYear()}`
+      : `${segunda.getDate()} ${m1} – ${fri.getDate()} ${m2} ${fri.getFullYear()}`
+  }, [segunda])
+
+  function prevSemana() {
+    const ns = addDays(segunda, -7)
+    setSegunda(ns)
+    setDiaSelecionado(toStr(ns))
+  }
+  function nextSemana() {
+    const ns = addDays(segunda, 7)
+    setSegunda(ns)
+    setDiaSelecionado(toStr(ns))
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 pb-10">
+
+      {/* ── Tabs ── */}
+      <div className="flex gap-1 bg-slate-100 dark:bg-gray-800 p-1 rounded-xl mb-6">
+        {(['hoje', 'semana', 'mes'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+              tab === t
+                ? 'bg-white dark:bg-gray-700 text-slate-800 dark:text-slate-100 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            {t === 'hoje' ? 'Hoje' : t === 'semana' ? 'Semana' : 'Mês'}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Hoje ── */}
+      {tab === 'hoje' && (
+        <>
+          <p className="text-sm text-slate-400 dark:text-slate-500 capitalize mb-5">{labelDia}</p>
+          <AgendaDia dataStr={hoje} escolaColorMap={escolaColorMap} isDarkMode={isDarkMode} />
+        </>
+      )}
+
+      {/* ── Semana ── */}
+      {tab === 'semana' && (
+        <>
+          {/* Navegação semana */}
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={prevSemana}
+              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Semana anterior"
+            >
+              <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M10 4l-4 4 4 4" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{labelSemana}</span>
+            <button
+              onClick={nextSemana}
+              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Próxima semana"
+            >
+              <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* Strip de dias */}
+          <div className="grid grid-cols-5 gap-1.5 mb-6">
+            {diasSemana.map(dia => (
+              <button
+                key={dia.dataStr}
+                onClick={() => setDiaSelecionado(dia.dataStr)}
+                className={`flex flex-col items-center py-2.5 px-1 rounded-xl text-sm transition-all ${
+                  diaSelecionado === dia.dataStr
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : dia.isHoje
+                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                    : 'bg-slate-50 dark:bg-gray-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <span className="text-[11px] font-medium opacity-80">{dia.short}</span>
+                <span className="text-xl font-bold leading-tight">{dia.dia}</span>
+              </button>
+            ))}
+          </div>
+
+          <p className="text-sm text-slate-400 dark:text-slate-500 capitalize mb-5">{labelDia}</p>
+          <AgendaDia dataStr={diaSelecionado} escolaColorMap={escolaColorMap} isDarkMode={isDarkMode} />
+        </>
+      )}
+
+      {/* ── Mês ── */}
+      {tab === 'mes' && (
+        <div className="py-14 text-center">
+          <div className="text-3xl mb-3">📅</div>
+          <p className="text-sm text-slate-400 dark:text-slate-500">Calendário mensal em breve</p>
+        </div>
+      )}
+    </div>
+  )
+}
