@@ -360,6 +360,9 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
   const cor = ESCOLA_COLORS[slot.escolaColorIdx % ESCOLA_COLORS.length]
   const borderColor = isDarkMode ? cor.dark : cor.light
 
+  // Aula passada + não registrada → precisa de ação imediata
+  const needsAction = !jaRegistrado && statusHorario(slot.aulaGrade.horario) === 'antes'
+
   const removerAtividade = useCallback((atividadeId: string | number, nomeAtiv: string) => {
     if (!slot.aplicacao) return
     const id = String(atividadeId)
@@ -422,22 +425,15 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
       className={`rounded-lg overflow-hidden transition-shadow ${
         jaRegistrado
           ? 'bg-slate-50 dark:bg-[#1A2333]'
-          : 'bg-white dark:bg-[#1F2937] shadow-sm hover:shadow-md'
-      } ${isProxima ? 'ring-1 ring-[#5B5FEA]/30' : ''}`}
-      style={{ borderLeft: jaRegistrado ? `2px solid ${borderColor}55` : `3px solid ${borderColor}` }}
+          : needsAction
+            ? 'bg-white dark:bg-[#1F2937] shadow-md'
+            : 'bg-white dark:bg-[#1F2937] shadow-sm hover:shadow-md'
+      }`}
+      style={{ borderLeft: jaRegistrado ? `2px solid ${borderColor}55` : needsAction ? `4px solid ${borderColor}` : `3px solid ${borderColor}` }}
     >
-      {/* Label "próxima" — só aparece quando a aula é a próxima do dia */}
-      {isProxima && (
-        <div className="px-4 pt-2.5 pb-0">
-          <span className="text-[11px] font-semibold text-[#5B5FEA] dark:text-[#818cf8] uppercase tracking-[0.06em]">
-            Próxima
-          </span>
-        </div>
-      )}
-
       {/* Cabeçalho — clicável */}
       <div
-        className="px-4 py-3 flex items-start gap-3 cursor-pointer select-none"
+        className="px-4 py-3.5 flex items-start gap-3 cursor-pointer select-none"
         onClick={() => setAberto(v => !v)}
       >
         {/* Horário */}
@@ -448,7 +444,10 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
         {/* Info turma */}
         <div className="flex-1 min-w-0">
           {slot.nomeEscola && (
-            <p className="text-[10px] font-medium truncate" style={{ color: borderColor }}>
+            <p
+              className="text-[10px] font-medium truncate"
+              style={{ color: jaRegistrado ? (isDarkMode ? '#374151' : '#cbd5e1') : borderColor }}
+            >
               {slot.nomeEscola}
             </p>
           )}
@@ -458,7 +457,9 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
             {slot.nomeTurma}
           </p>
           {slot.plano ? (
-            <p className="text-xs text-slate-400 dark:text-[#4B5563] mt-0.5 truncate">
+            <p className={`text-xs mt-0.5 truncate ${
+              jaRegistrado ? 'text-slate-300 dark:text-[#374151]' : 'text-slate-400 dark:text-[#4B5563]'
+            }`}>
               {slot.plano.titulo}
             </p>
           ) : (
@@ -466,22 +467,22 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
           )}
         </div>
 
-        {/* Indicador de registro + Chevron */}
-        <div className="flex items-center gap-2 shrink-0 pt-1">
-          {/* Botão rápido: só aparece em aulas passadas não registradas, com card fechado */}
-          {!jaRegistrado && !aberto && statusHorario(slot.aulaGrade.horario) === 'antes' && (
+        {/* Ação + Chevron */}
+        <div className="flex items-center gap-2 shrink-0 pt-0.5">
+          {/* Botão Registrar proeminente — só aulas passadas não registradas, card fechado */}
+          {needsAction && !aberto && (
             <button
               onClick={abrirRegistro}
-              className="text-[11px] font-semibold text-[#5B5FEA] dark:text-[#818cf8] hover:text-[#4f53d4] dark:hover:text-[#a5b4fc] transition-colors"
+              className="shrink-0 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg transition-colors"
             >
               Registrar
             </button>
           )}
           {jaRegistrado && !aberto && (
-            <span className="w-2 h-2 rounded-full bg-emerald-500/70 dark:bg-emerald-400/60 shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500/70 dark:bg-emerald-400/60 shrink-0 mt-0.5" />
           )}
           <svg
-            className={`w-4 h-4 text-slate-400 transition-transform ${aberto ? 'rotate-180' : ''}`}
+            className={`w-3 h-3 text-slate-300 dark:text-[#374151] transition-transform ${aberto ? 'rotate-180' : ''}`}
             viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"
           >
             <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round"/>
@@ -705,27 +706,12 @@ interface AgendaDiaProps {
 
 function AgendaDia({ dataStr, escolaColorMap, isDarkMode }: AgendaDiaProps) {
   const slots = useAgendaSlotsForDay(dataStr, escolaColorMap)
-  const { planos } = usePlanosContext()
   const isHoje = dataStr === toStr(new Date())
-
-  // Stats para o resumo
-  const stats = useMemo(() => {
-    const total = slots.length
-    const comPlano = slots.filter(s => s.plano).length
-    const registradas = slots.filter(s => {
-      const tid = String(s.aulaGrade.turmaId)
-      return planos.some(p => (p.registrosPosAula ?? []).some(r => r.data === s.dataStr && String(r.turma) === tid))
-    }).length
-    const pendentes = total - registradas
-    return { total, comPlano, registradas, pendentes }
-  }, [slots, planos])
 
   // Índice da próxima aula (só relevante para hoje)
   const proximaIdx = useMemo(() => {
     if (!isHoje) return -1
-    // Primeira aula com status 'agora' ou 'depois' (ainda não aconteceu/está acontecendo)
-    const idx = slots.findIndex(s => statusHorario(s.aulaGrade.horario) !== 'antes')
-    return idx
+    return slots.findIndex(s => statusHorario(s.aulaGrade.horario) !== 'antes')
   }, [slots, isHoje])
 
   if (slots.length === 0) {
@@ -738,44 +724,7 @@ function AgendaDia({ dataStr, escolaColorMap, isDarkMode }: AgendaDiaProps) {
 
   return (
     <div>
-      {/* Barra de resumo */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9CA3AF]">
-          {stats.total} aula{stats.total !== 1 ? 's' : ''}
-        </span>
-        <span className="text-slate-300 dark:text-[#374151]">·</span>
-        <span className={`text-[11px] font-semibold ${stats.comPlano === stats.total ? 'text-[#5B5FEA] dark:text-[#818cf8]' : 'text-amber-500 dark:text-amber-400/80'}`}>
-          {stats.comPlano === stats.total ? 'Todas planejadas' : `${stats.comPlano} planejada${stats.comPlano !== 1 ? 's' : ''}`}
-        </span>
-        {stats.registradas > 0 && (
-          <>
-            <span className="text-slate-300 dark:text-[#374151]">·</span>
-            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400/80">
-              {stats.registradas} registrada{stats.registradas !== 1 ? 's' : ''}
-            </span>
-          </>
-        )}
-        {isHoje && stats.pendentes > 0 && stats.pendentes < stats.total && (
-          <>
-            <span className="text-slate-300 dark:text-[#374151]">·</span>
-            <span className="text-[11px] font-semibold text-slate-400 dark:text-[#4B5563]">
-              {stats.pendentes} a registrar
-            </span>
-          </>
-        )}
-      </div>
-
-      {/* Barra de progresso do dia */}
-      {stats.total > 0 && (
-        <div className="w-full h-[3px] bg-slate-100 dark:bg-[#374151] rounded-full overflow-hidden mb-4">
-          <div
-            className="h-full bg-[#5B5FEA] dark:bg-[#818cf8] rounded-full transition-all duration-500"
-            style={{ width: `${(stats.registradas / stats.total) * 100}%` }}
-          />
-        </div>
-      )}
-
-      <div className="space-y-3">
+      <div className="space-y-4">
         {slots.map((slot, idx) => (
           <AulaCard
             key={`${slot.aulaGrade.id}-${slot.dataStr}`}
@@ -886,30 +835,63 @@ export default function AgendaView() {
     setDiaSelecionado(toStr(ns))
   }
 
-  // Slots de hoje para o header inteligente (sem re-renderizar AgendaDia)
+  // Slots + stats de hoje para o header (não recomputar em AgendaDia)
   const slotsHoje = useAgendaSlotsForDay(hoje, escolaColorMap)
 
-  const headerMsg = useMemo(() => {
+  const statsHoje = useMemo(() => {
     const total = slotsHoje.length
-    if (total === 0) return 'Você não tem aulas hoje'
     const registradas = slotsHoje.filter(s => {
       const tid = String(s.aulaGrade.turmaId)
       return planos.some(p => (p.registrosPosAula ?? []).some(r => r.data === s.dataStr && String(r.turma) === tid))
     }).length
-    const pendentes = total - registradas
-    if (pendentes === 0) return 'Tudo registrado \u2713'
-    if (registradas === 0) return `Você tem ${total} aula${total !== 1 ? 's' : ''} hoje`
-    return `Registrar ${pendentes} aula${pendentes !== 1 ? 's' : ''} pendente${pendentes !== 1 ? 's' : ''}`
+    return { total, registradas, pendentes: total - registradas }
   }, [slotsHoje, planos])
+
+  const headerMsg = useMemo(() => {
+    if (!statsHoje.total) return 'Você não tem aulas hoje'
+    if (!statsHoje.pendentes) return 'Tudo registrado \u2713'
+    if (!statsHoje.registradas) return `Você tem ${statsHoje.total} aula${statsHoje.total !== 1 ? 's' : ''} hoje`
+    return `Registrar ${statsHoje.pendentes} aula${statsHoje.pendentes !== 1 ? 's' : ''} pendente${statsHoje.pendentes !== 1 ? 's' : ''}`
+  }, [statsHoje])
 
   return (
     <div className="mx-auto px-4 pb-10 max-w-2xl">
-      <div className="mb-5">
+      {/* Header com hierarquia clara */}
+      <div className="mb-6">
         <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
           {headerMsg}
         </h1>
         <p className="text-sm text-slate-400 dark:text-[#4B5563] capitalize mt-0.5">{labelDia}</p>
+
+        {statsHoje.total > 0 && (
+          <div className="mt-3 space-y-1.5">
+            {/* Linha de contexto simplificada */}
+            <div className="flex items-center gap-2">
+              {statsHoje.pendentes > 0 && (
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9CA3AF]">
+                  {statsHoje.pendentes} a registrar
+                </span>
+              )}
+              {statsHoje.pendentes > 0 && statsHoje.registradas > 0 && (
+                <span className="text-slate-300 dark:text-[#374151]">·</span>
+              )}
+              {statsHoje.registradas > 0 && (
+                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400/80">
+                  {statsHoje.registradas} concluída{statsHoje.registradas !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            {/* Barra de progresso */}
+            <div className="w-full h-[3px] bg-slate-100 dark:bg-[#374151] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#5B5FEA] dark:bg-[#818cf8] rounded-full transition-all duration-500"
+                style={{ width: `${(statsHoje.registradas / statsHoje.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
+
       <AgendaDia dataStr={hoje} escolaColorMap={escolaColorMap} isDarkMode={isDarkMode} />
     </div>
   )
