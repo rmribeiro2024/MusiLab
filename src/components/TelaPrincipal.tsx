@@ -1973,8 +1973,14 @@ export default function TelaPrincipal() {
         )}
 
         {/* ── PAGE HEADER ── */}
-        <div className="mb-5">
-            <h1 className="text-[22px] font-bold tracking-[-0.025em] text-slate-900 dark:text-[#E5E7EB]">Planos de Aula</h1>
+        <div className="flex items-center justify-between mb-5">
+            <h1 className="text-[22px] font-bold tracking-[-0.025em] text-slate-900 dark:text-[#E5E7EB]">Banco de Aulas</h1>
+            <button
+                onClick={novoPlano}
+                className="flex items-center gap-2 bg-[#5B5FEA] hover:bg-[#4f53d4] text-white px-4 py-2 rounded-xl font-semibold text-sm transition-colors shadow-sm"
+            >
+                <span className="text-base leading-none">+</span> Nova aula
+            </button>
         </div>
 
         {/* ── INDICADORES ── */}

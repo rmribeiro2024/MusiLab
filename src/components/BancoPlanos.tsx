@@ -31,8 +31,6 @@ const ModuloRepertorio       = lazy(() => import('./ModuloRepertorio'))
 const ModuloRelatorios       = lazy(() => import('./ModuloRelatorios'))
 const TelaPrincipal          = lazy(() => import('./TelaPrincipal'))
 const TelaCalendario         = lazy(() => import('./TelaCalendario').then(m => ({ default: m.TelaCalendario })))
-const TelaResumoDia          = lazy(() => import('./TelaCalendario'))
-const AgendaSemanal          = lazy(() => import('./AgendaSemanal'))
 const AgendaView             = lazy(() => import('./AgendaView'))
 const TelaPosAula            = lazy(() => import('./TelaPosAula'))
 const TelaPosAulaHistorico   = lazy(() => import('./TelaPosAulaHistorico'))
@@ -577,7 +575,7 @@ export default function BancoPlanos({ session }) {
                             s.modalNovaFaixa || s.modalNovaEscola || s.modalTemplates || s.modalGradeSemanal ||
                             s.modalEventos || s.modoEdicao || s.planoSelecionado || s.showModalContextoNovaAula;
                         if (algumModalAberto) return;
-                        if (s.viewMode === 'lista' || s.viewMode === 'resumoDia' || s.viewMode === 'agendaSemanal') {
+                        if (s.viewMode === 'lista') {
                             e.preventDefault()
                             s.novoPlano()
                             s.setViewMode('lista')
@@ -743,11 +741,7 @@ export default function BancoPlanos({ session }) {
             }, [criarAplicacoes])
 
             // preData para o modal: pré-seleciona data baseado na view atual
-            const preDataModal = viewMode === 'resumoDia'
-                ? new Date().toISOString().slice(0, 10)
-                : viewMode === 'agendaSemanal'
-                    ? (dataDia ?? new Date().toISOString().slice(0, 10))
-                    : undefined
+            const preDataModal = undefined
 
             // Badge pós-aula — turmas pendentes de registro hoje
             const _hojeStr = new Date().toISOString().slice(0, 10)
@@ -757,40 +751,31 @@ export default function BancoPlanos({ session }) {
 
             // Mapa viewMode → grupo para detectar grupo ativo
             const VIEWMODE_TO_GROUP: Record<string, string> = {
-                agenda: 'agenda', resumoDia: 'agenda', agendaSemanal: 'agenda', calendario: 'agenda',
-                posAula: 'posAula', posAulaHistorico: 'posAula',
+                agenda: 'hoje', calendario: 'hoje',
+                posAula: 'hoje', posAulaHistorico: 'hoje',
                 lista: 'planejamento', nova: 'planejamento', sequencias: 'planejamento', visaoSemana: 'planejamento', porTurmas: 'planejamento',
                 turmas: 'turmas', historicoMusical: 'turmas',
                 repertorio: 'biblioteca', atividades: 'biblioteca', estrategias: 'biblioteca',
                 relatorios: 'relatorios',
                 anoLetivo: 'configuracoes',
             }
-            const activeGroupId = VIEWMODE_TO_GROUP[viewMode] ?? 'agenda'
+            const activeGroupId = VIEWMODE_TO_GROUP[viewMode] ?? 'hoje'
 
             // Definição dos grupos de navegação
             type NavSubItem = { label: string; short: string; icon: string; mode: string; accent?: boolean; action: () => void }
             type NavGroup = { id: string; label: string; short: string; icon: string; defaultMode: string; items: NavSubItem[] }
             const NAV_GROUPS: NavGroup[] = [
                 {
-                    id: 'posAula', label: 'Pós-aula', short: 'Pós-aula', icon: '📝', defaultMode: 'posAula',
+                    id: 'hoje', label: 'Hoje', short: 'Hoje', icon: '📅', defaultMode: 'agenda',
                     items: [
-                        { label: 'Registro',  short: 'Reg.',  icon: '📝', mode: 'posAula',          action: () => setViewMode('posAula') },
-                        { label: 'Histórico', short: 'Hist.', icon: '🕓', mode: 'posAulaHistorico', action: () => setViewMode('posAulaHistorico') },
-                    ]
-                },
-                {
-                    id: 'agenda', label: 'Agenda', short: 'Agenda', icon: '📅', defaultMode: 'agenda',
-                    items: [
-                        { label: 'Agenda', short: 'Agenda', icon: '📅', mode: 'agenda', action: () => setViewMode('agenda') },
+                        { label: 'Hoje', short: 'Hoje', icon: '📅', mode: 'agenda', action: () => setViewMode('agenda') },
                     ]
                 },
                 {
                     id: 'planejamento', label: 'Planejamento', short: 'Planos', icon: '📚', defaultMode: 'visaoSemana',
                     items: [
-                        { label: 'Visão da Semana', short: 'Semana', icon: '📅', mode: 'visaoSemana', action: () => setViewMode('visaoSemana') },
+                        { label: 'Semana', short: 'Semana', icon: '📅', mode: 'visaoSemana', action: () => setViewMode('visaoSemana') },
                         { label: 'Banco de Aulas', short: 'Banco', icon: '📚', mode: 'lista',      action: () => { setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null); } },
-                        { label: 'Nova Aula',      short: 'Nova',  icon: '➕', mode: 'nova',      action: () => { novoPlano(); setViewMode('lista') }, accent: true },
-                        { label: 'Aula por Turma', short: 'Turma', icon: '👥', mode: 'porTurmas', action: () => setViewMode('porTurmas') },
                         { label: 'Sequência de Aulas', short: 'Seq.', icon: '🔗', mode: 'sequencias', action: () => setViewMode('sequencias') },
                     ]
                 },
@@ -799,7 +784,6 @@ export default function BancoPlanos({ session }) {
                     items: [
                         { label: 'Painel da Turma', short: 'Painel', icon: '👥', mode: 'turmas',          action: () => setViewMode('turmas') },
                         { label: 'Histórico',        short: 'Hist.',  icon: '📋', mode: 'historicoMusical', action: () => setViewMode('historicoMusical') },
-                        { label: 'Encaminhamentos',  short: 'Enc.',   icon: '↩️', mode: 'continuidade_enc', action: () => { setViewMode('historicoMusical'); } },
                     ]
                 },
                 {
@@ -2683,9 +2667,7 @@ export default function BancoPlanos({ session }) {
                                 {viewMode==='posAula'          && <ErrorBoundary modulo="Pós-aula"><Suspense fallback={<CarregandoModulo />}><TelaPosAula /></Suspense></ErrorBoundary>}
                                 {viewMode==='posAulaHistorico' && <ErrorBoundary modulo="Histórico"><Suspense fallback={<CarregandoModulo />}><TelaPosAulaHistorico /></Suspense></ErrorBoundary>}
                                 {viewMode==='agenda' && <ErrorBoundary modulo="Agenda"><Suspense fallback={<CarregandoModulo />}><AgendaView /></Suspense></ErrorBoundary>}
-                                {viewMode==='resumoDia' && <ErrorBoundary modulo="Resumo do Dia"><Suspense fallback={<CarregandoModulo />}><TelaResumoDia /></Suspense></ErrorBoundary>}
                                 {viewMode==='calendario' && <ErrorBoundary modulo="Calendário"><Suspense fallback={<CarregandoModulo />}><TelaCalendario /></Suspense></ErrorBoundary>}
-                                {viewMode==='agendaSemanal' && <ErrorBoundary modulo="Agenda Semanal"><Suspense fallback={<CarregandoModulo />}><AgendaSemanal /></Suspense></ErrorBoundary>}
 
                                 {/* ══════════════ PLANEJAMENTO POR TURMA ══════════════ */}
                                 {viewMode === 'turmas' && <ErrorBoundary modulo="Caderno da Turma"><Suspense fallback={<CarregandoModulo />}><ModuloPlanejamentoTurma /></Suspense></ErrorBoundary>}
