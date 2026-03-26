@@ -98,8 +98,8 @@ export function ActionButton({
   variant: 'primary' | 'secondary'
   fullWidth?: boolean
 }) {
-  const base = `${fullWidth ? 'flex-1' : ''} flex items-center justify-center px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all`
-  const primary = 'bg-[#5B5FEA] hover:bg-[#4B4FD8] dark:bg-[#818cf8] dark:hover:bg-[#6d78f5] text-white shadow-sm'
+  const base = `${fullWidth ? 'flex-1' : ''} flex items-center justify-center px-4 py-2 rounded-xl text-[12.5px] font-medium transition-all`
+  const primary = 'bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white'
   const secondary = 'border border-[#E6EAF0] dark:border-[#374151] text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-white/[0.05]'
   return (
     <button onClick={onClick} className={`${base} ${variant === 'primary' ? primary : secondary}`}>
@@ -243,11 +243,12 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
       transition: sheetDragY > 0 ? 'none' : 'transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
     }
   } else if (animStyle === 'sharedElement') {
-    panelClass = `${panelContentClass} absolute rounded-2xl w-[560px]`
+    panelClass = `${panelContentClass} absolute rounded-2xl w-[560px] flex flex-col`
     panelStyle = {
       ...cardStyle,
       top: '50%',
       left: '50%',
+      maxHeight: '80vh',
       opacity: visible ? 1 : 0,
       transform: visible
         ? 'translate(-50%, -50%) scale(1)'
@@ -258,13 +259,14 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
     }
   } else {
     // center (padrão)
-    panelClass = `${panelContentClass} absolute rounded-2xl w-[340px]
+    panelClass = `${panelContentClass} absolute rounded-2xl w-[340px] flex flex-col
       ${isDragging ? '' : 'transition-all duration-200 ease-out'}
       ${visible ? 'opacity-100' : 'opacity-0'}`
     panelStyle = {
       ...cardStyle,
       top: pos ? `calc(50% + ${pos.y}px)` : '50%',
       left: pos ? `calc(50% + ${pos.x}px)` : '50%',
+      maxHeight: '80vh',
       transform: `translate(-50%, -50%) ${visible ? 'scale(1)' : 'scale(0.95)'}`,
       pointerEvents: 'auto',
     }
@@ -453,16 +455,13 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
       {/* ── FOOTER ─────────────────────────────────────────────────────── */}
       <div className="px-5 pb-5 pt-0 flex gap-2">
         {cardState === 'comPlano' && (
-          <>
-            <ActionButton onClick={onEditar} label="✏️  Editar" variant="secondary" />
-            <ActionButton onClick={onRegistrar} label="📝  Registrar" variant="primary" fullWidth />
-          </>
+          <ActionButton onClick={onEditar} label="✏️  Editar plano" variant="primary" fullWidth />
         )}
         {cardState === 'registrada' && (
           <ActionButton onClick={onEditar} label="✏️  Ver planejamento" variant="secondary" fullWidth />
         )}
         {cardState === 'sugestao' && (
-          <ActionButton onClick={onCriarPlano} label="+ Planejar com base nisso" variant="primary" fullWidth />
+          <ActionButton onClick={onCriarPlano} label="+ Planejar próxima aula" variant="primary" fullWidth />
         )}
         {cardState === 'vazio' && (
           <ActionButton onClick={onCriarPlano} label="+ Criar plano" variant="primary" fullWidth />

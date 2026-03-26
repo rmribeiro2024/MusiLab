@@ -47,7 +47,8 @@ export interface AplicacaoAula {
   status: 'planejada' | 'realizada' | 'cancelada'
   adaptacaoTexto?: string         // anotações locais — nunca afeta o plano base
   atividadesOcultas?: string[]    // IDs de AtividadeRoteiro a pular nesta turma
-  roteiroNomes?: Record<string, string>  // nome editado por atividadeId nesta aula específica
+  roteiroNomes?: Record<string, string>        // nome editado por atividadeId nesta aula específica
+  roteiroDescricoes?: Record<string, string>   // descrição editada por atividadeId nesta aula específica
   _updatedAt?: string
 }
 

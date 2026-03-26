@@ -420,7 +420,7 @@ Responda APENAS com JSON: {"habilidades": ["EF15AR14", "EF69AR16"]}`
   const [modalConceitos, setModalConceitos] = useState<string[] | null>(null)
   const [detectandoConceitos, setDetectandoConceitos] = useState(false)
 
-  // ── Ampliar Ideias ──
+  // ── Ampliar Ideias (v2) ──
   type SugestaoAtividade = { nome: string; duracao: string; descricao: string }
   const [ampliarOpen, setAmpliarOpen] = useState(false)
   const [ampliarLoading, setAmpliarLoading] = useState(false)
