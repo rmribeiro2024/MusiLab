@@ -446,7 +446,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
           {slot.nomeEscola && (
             <p
               className="text-[10px] font-medium truncate"
-              style={{ color: jaRegistrado ? (isDarkMode ? '#374151' : '#cbd5e1') : borderColor }}
+              style={{ color: jaRegistrado ? (isDarkMode ? '#6B7280' : '#cbd5e1') : borderColor }}
             >
               {slot.nomeEscola}
             </p>
