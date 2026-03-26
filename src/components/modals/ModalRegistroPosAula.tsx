@@ -1245,65 +1245,8 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                             </div>
                                         )}
 
-                                    {/* ── Botão: Aula não realizada ── */}
-                                    {(() => {
-                                        const naoHouve = (novoRegistro as any).statusAula === 'nao_houve'
-                                        const MOTIVOS_CANCELAMENTO = [
-                                            'Feriado', 'Reunião pedagógica', 'Evento escolar', 'Problema técnico',
-                                            'Ausência do professor', 'Turma em prova', 'Imprevistos', 'Outro',
-                                        ]
-                                        return naoHouve ? (
-                                            <div style={{ border: '1.5px solid #cbd5e1', borderRadius: 12, overflow: 'hidden', background: '#f8fafc' }}>
-                                                {/* Banner */}
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                                                    <span style={{ fontSize: 18 }}>🚫</span>
-                                                    <div style={{ flex: 1 }}>
-                                                        <p style={{ fontSize: 13, fontWeight: 700, color: '#334155', margin: 0 }}>Aula não realizada</p>
-                                                        <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>Registre o motivo e a aula será repetida</p>
-                                                    </div>
-                                                    <button type="button"
-                                                        onClick={() => setNovoRegistro({ ...novoRegistro, statusAula: undefined, motivoCancelamento: undefined } as any)}
-                                                        style={{ fontSize: 11, color: '#64748b', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}>
-                                                        Cancelar
-                                                    </button>
-                                                </div>
-                                                {/* Motivo */}
-                                                <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                                    <div>
-                                                        <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 8 }}>Motivo</p>
-                                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                                            {MOTIVOS_CANCELAMENTO.map(m => {
-                                                                const ativo = (novoRegistro as any).motivoCancelamento === m
-                                                                return (
-                                                                    <button key={m} type="button"
-                                                                        onClick={() => setNovoRegistro({ ...novoRegistro, motivoCancelamento: ativo ? undefined : m } as any)}
-                                                                        style={{ fontSize: 12, padding: '5px 12px', borderRadius: 20, cursor: 'pointer', transition: 'all .15s', fontFamily: 'inherit',
-                                                                            background: ativo ? '#334155' : '#fff',
-                                                                            color: ativo ? '#fff' : '#64748b',
-                                                                            border: ativo ? '1px solid #334155' : '1px solid #e2e8f0',
-                                                                            fontWeight: ativo ? 700 : 400 }}>
-                                                                        {m}
-                                                                    </button>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                    <AccordionChip id="reg-obs-cancelamento" icon="📝" label="Observações" placeholder="Algum detalhe sobre o cancelamento?" value={(novoRegistro as any).anotacoesGerais || ''} filled={!!((novoRegistro as any).anotacoesGerais?.trim())} allowVoice onChange={v => setNovoRegistro({ ...novoRegistro, anotacoesGerais: v })} />
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <button type="button"
-                                                onClick={() => setNovoRegistro({ ...novoRegistro, statusAula: 'nao_houve' } as any)}
-                                                style={{ width: '100%', padding: '8px 12px', background: '#fff', border: '1px dashed #cbd5e1', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#94a3b8', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .15s' }}
-                                                onMouseOver={e => { e.currentTarget.style.borderColor = '#94a3b8'; e.currentTarget.style.color = '#475569' }}
-                                                onMouseOut={e  => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#94a3b8' }}>
-                                                🚫 A aula não aconteceu? Registrar aqui
-                                            </button>
-                                        )
-                                    })()}
 
-{/* Chips de anotação — ocultos quando aula não realizada */}
-                                    {(novoRegistro as any).statusAula !== 'nao_houve' && (
+{/* Chips de anotação */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                         {camposConfig.map(({ id, icon, label, field, placeholder }, idx) => {
                                             const valor = (novoRegistro as any)[field] || ''
@@ -1322,10 +1265,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                             )
                                         })}
                                     </div>
-                                    )}
 
-                                    {/* Como foi a aula? — seletor estilo lista (oculto quando aula não realizada) */}
-                                    {(novoRegistro as any).statusAula !== 'nao_houve' && (() => {
+                                    {/* Como foi a aula? */}
+                                    {(() => {
                                         const statusVal = ((novoRegistro as any).statusAula || inferStatusLegado((novoRegistro as any).resultadoAula, (novoRegistro as any).proximaAulaOpcao, (novoRegistro as any).statusAula)) as StatusAula
                                         const ops: { value: StatusAula; label: string; emoji: string }[] = [
                                             { value: 'concluida',  label: 'Conteúdo concluído',              emoji: '✓' },
@@ -1388,7 +1330,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                     {/* ── Para a próxima aula (encaminhamentos — colapsável) ── */}
                                     {(() => {
                                         const encaminhamentos: { id: string; texto: string; concluido: boolean }[] = (novoRegistro as any).encaminhamentos || []
-                                        const isRevisao = (novoRegistro as any).statusAula === 'revisao'
+                                        const isRevisao = (novoRegistro as any).statusAula === 'revisao' || (novoRegistro as any).statusAula === 'incompleta'
                                         const aberto = encAberto || isRevisao
                                         const addEnc = () => {
                                             const txt = novoEnc.trim()

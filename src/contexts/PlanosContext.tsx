@@ -1028,29 +1028,35 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         if (!novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.fariadiferente && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
             showToast('Preencha ao menos um campo!', 'error'); return
         }
-        // Stub = plano não existe em planos (id começa com 'stub-') — dados seriam perdidos
-        if (!planoParaRegistro || String(planoParaRegistro.id).startsWith('stub-')) {
-            showToast('Nenhum plano associado a esta turma. Crie um plano primeiro.', 'error'); return
-        }
+        // Sem plano vinculado → criar rascunho mínimo para hospedar o registro
+        // (professor registrou uma aula que não tinha plano preparado)
+        const semPlano = !planoParaRegistro || String(planoParaRegistro.id).startsWith('stub-')
+        const planoEfetivo: any = semPlano
+            ? normalizePlano({ id: String(Date.now()), titulo: 'Aula sem plano prévio', statusPlanejamento: 'A Fazer' })
+            : planoParaRegistro
+        const atualizarPlanos = (p: any) => semPlano
+            ? setPlanos((prev: any[]) => [p, ...prev])
+            : setPlanos(planos.map((item: any) => item.id === p.id ? p : item))
+
         const agora = new Date()
         const { dataAula, ...camposRegistro } = novoRegistro
         if (_regEdit) {
             const atualizado = carimbарTimestamp({
-                ...planoParaRegistro!,
-                registrosPosAula: planoParaRegistro!.registrosPosAula.map((r: any) =>
+                ...planoEfetivo,
+                registrosPosAula: planoEfetivo.registrosPosAula.map((r: any) =>
                     r.id === _regEdit.id
                         ? { ...r, data: dataAula || r.data, anoLetivo: regAnoSel, escola: regEscolaSel, segmento: regSegmentoSel, turma: regTurmaSel, ...camposRegistro, dataEdicao: agora.toISOString().split('T')[0] }
                         : r
                 )
             })
-            setPlanos(planos.map((p: any) => p.id === atualizado.id ? atualizado : p))
+            atualizarPlanos(atualizado)
             marcarPendente('planos', String(atualizado.id)) // [offlineSync] garante sync mesmo se app fechar antes do delay
             if (planoSelecionado && planoSelecionado.id === atualizado.id) setPlanoSelecionado(atualizado)
             setPlanoParaRegistro(atualizado)
         } else {
             // Verificar duplicata: mesmo data + turma
             const dataAlvo = dataAula || agora.toISOString().split('T')[0]
-            const duplicata = (planoParaRegistro!.registrosPosAula || []).find((r: any) =>
+            const duplicata = (planoEfetivo.registrosPosAula || []).find((r: any) =>
                 r.data === dataAlvo &&
                 String(r.turma) === String(regTurmaSel) &&
                 String(r.segmento || r.serie || '') === String(regSegmentoSel)
@@ -1062,14 +1068,13 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                     labelConfirm: 'Substituir',
                     labelCancelar: 'Cancelar',
                     onConfirm: () => {
-                        // Substitui o registro existente
                         const registroSubstituto: RegistroPosAula = {
                             ...duplicata,
                             dataRegistro: agora.toISOString().split('T')[0], hora: agora.toTimeString().slice(0, 5),
                             ...camposRegistro
                         }
-                        const atualizado = carimbарTimestamp({ ...planoParaRegistro!, registrosPosAula: planoParaRegistro!.registrosPosAula.map((r: any) => r.id === duplicata.id ? registroSubstituto : r) })
-                        setPlanos(planos.map((p: any) => p.id === atualizado.id ? atualizado : p))
+                        const atualizado = carimbарTimestamp({ ...planoEfetivo, registrosPosAula: planoEfetivo.registrosPosAula.map((r: any) => r.id === duplicata.id ? registroSubstituto : r) })
+                        atualizarPlanos(atualizado)
                         marcarPendente('planos', String(atualizado.id))
                         if (planoSelecionado && planoSelecionado.id === atualizado.id) setPlanoSelecionado(atualizado)
                         setPlanoParaRegistro(atualizado)
@@ -1086,8 +1091,8 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                 anoLetivo: regAnoSel, escola: regEscolaSel, segmento: regSegmentoSel, turma: regTurmaSel,
                 ...camposRegistro
             }
-            const atualizado = carimbарTimestamp({ ...planoParaRegistro!, registrosPosAula: [...(planoParaRegistro!.registrosPosAula || []), registro] })
-            setPlanos(planos.map((p: any) => p.id === atualizado.id ? atualizado : p))
+            const atualizado = carimbарTimestamp({ ...planoEfetivo, registrosPosAula: [...(planoEfetivo.registrosPosAula || []), registro] })
+            atualizarPlanos(atualizado)
             marcarPendente('planos', String(atualizado.id)) // [offlineSync] garante sync mesmo se app fechar antes do delay
             if (planoSelecionado && planoSelecionado.id === atualizado.id) setPlanoSelecionado(atualizado)
             setPlanoParaRegistro(atualizado)
