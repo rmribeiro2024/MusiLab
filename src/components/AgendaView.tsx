@@ -143,6 +143,7 @@ interface RoteiroItemProps {
   idx: number
   temAplicacao: boolean
   onEditar: (id: string | number, nome: string) => void
+  onEditarDesc: (id: string | number, desc: string) => void
   onRemover: (id: string | number, nome: string) => void
 }
 
@@ -161,7 +162,50 @@ function stripHTMLToText(html: string): string {
     .trim()
 }
 
-function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onRemover }: RoteiroItemProps) {
+const SERVICOS_CONHECIDOS: Record<string, string> = {
+  'drive.google.com': 'Google Drive',
+  'docs.google.com': 'Google Docs',
+  'sheets.google.com': 'Google Sheets',
+  'slides.google.com': 'Google Slides',
+  'youtube.com': 'YouTube',
+  'youtu.be': 'YouTube',
+  'open.spotify.com': 'Spotify',
+  'dropbox.com': 'Dropbox',
+  'onedrive.live.com': 'OneDrive',
+  'notion.so': 'Notion',
+  'github.com': 'GitHub',
+}
+const SEGMENTOS_GENERICOS = new Set(['view', 'edit', 'open', 'download', 'index', 'preview', 'share', 'pub', 'present'])
+
+/** Substitui links onde o texto = URL crua por um nome legível (serviço ou nome do arquivo) */
+function processarLinksHtml(html: string): string {
+  return html.replace(/<a\s([^>]*)>(https?:\/\/[^<]+)<\/a>/gi, (match, attrs, texto) => {
+    const hrefMatch = attrs.match(/href="([^"]+)"/)
+    const href = hrefMatch ? hrefMatch[1] : texto
+    if (!(texto.trim() === href.trim() || /^https?:\/\//.test(texto.trim()))) return match
+    try {
+      const url = new URL(href)
+      const host = url.hostname.replace(/^www\./, '')
+      // 1. Serviço reconhecido
+      const servico = SERVICOS_CONHECIDOS[host]
+      if (servico) return `<a ${attrs}>${servico}</a>`
+      // 2. Segmento final do path, se não for genérico
+      const segmentos = url.pathname.split('/').filter(Boolean)
+      const ultimo = segmentos[segmentos.length - 1]
+      if (ultimo && !SEGMENTOS_GENERICOS.has(ultimo.toLowerCase())) {
+        let nome = decodeURIComponent(ultimo).replace(/\.[^.]+$/, '')
+        if (nome.length > 40) nome = nome.slice(0, 38) + '…'
+        return `<a ${attrs}>${nome}</a>`
+      }
+      // 3. Fallback: domínio limpo
+      return `<a ${attrs}>${host}</a>`
+    } catch {
+      return match
+    }
+  })
+}
+
+function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onEditarDesc, onRemover }: RoteiroItemProps) {
   const [titulo, setTitulo] = useState(ativ.nome)
   const descRef = useRef<HTMLDivElement>(null)
 
@@ -170,9 +214,20 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onRemover }: R
   // Inicializa o HTML do contentEditable sem sobrescrever o cursor durante edição
   useEffect(() => {
     if (descRef.current && document.activeElement !== descRef.current) {
-      descRef.current.innerHTML = sanitizarRich(ativ.descricao ?? '')
+      descRef.current.innerHTML = processarLinksHtml(sanitizarRich(ativ.descricao ?? ''))
     }
   }, [ativ.descricao])
+
+  // Abre links ao clicar (contentEditable bloqueia navegação nativa)
+  function handleDescClick(e: React.MouseEvent<HTMLDivElement>) {
+    e.stopPropagation()
+    const target = e.target as HTMLElement
+    const anchor = target.closest('a')
+    if (anchor?.href) {
+      window.open(anchor.href, '_blank', 'noopener,noreferrer')
+      e.preventDefault()
+    }
+  }
 
   return (
     <div className="flex items-start gap-2">
@@ -202,21 +257,26 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onRemover }: R
             contentEditable
             suppressContentEditableWarning
             className="agenda-descricao agenda-descricao-edit text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed outline-none rounded px-1 -mx-1 hover:bg-white/60 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-gray-600/40 focus:ring-1 focus:ring-blue-400/50 transition-colors cursor-text"
-            onClick={e => e.stopPropagation()}
+            onClick={handleDescClick}
             onMouseDown={e => e.stopPropagation()}
             onKeyDown={e => e.stopPropagation()}
+            onBlur={() => {
+              if (descRef.current) onEditarDesc(ativ.id, descRef.current.innerHTML)
+            }}
           />
         )}
       </div>
 
       {temAplicacao && (
         <button
-          className="mt-[6px] w-6 h-6 flex items-center justify-center rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0 text-base leading-none"
+          className="mt-[6px] w-6 h-6 flex items-center justify-center rounded text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
           onClick={e => { e.stopPropagation(); onRemover(ativ.id, titulo) }}
           onMouseDown={e => e.stopPropagation()}
           title="Remover desta aula"
         >
-          ×
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
         </button>
       )}
     </div>
@@ -232,19 +292,57 @@ interface AulaCardProps {
 
 function AulaCard({ slot, isDarkMode }: AulaCardProps) {
   const { setAplicacoes } = useAplicacoesContext()
+  const { planos } = usePlanosContext()
+  const {
+    setModalRegistro, setPlanoParaRegistro, setNovoRegistro,
+    setRegistroEditando, setVerRegistros,
+    setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel,
+  } = useCalendarioContext()
   const [aberto, setAberto] = useState(false)
+
+  // Verifica se já há registro pós-aula para esta turma/data
+  const jaRegistrado = useMemo(() => {
+    const tid = String(slot.aulaGrade.turmaId)
+    return planos.some(p =>
+      (p.registrosPosAula ?? []).some(r => r.data === slot.dataStr && String(r.turma) === tid)
+    )
+  }, [planos, slot.aulaGrade.turmaId, slot.dataStr])
+
+  const abrirRegistro = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    const stub = { id: `stub-${slot.aulaGrade.turmaId}`, titulo: slot.plano?.titulo ?? '' }
+    setPlanoParaRegistro(stub as any)
+    setNovoRegistro({
+      dataAula: slot.dataStr, resumoAula: '', funcionouBem: '', fariadiferente: '',
+      proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '',
+      urlEvidencia: '', statusAula: undefined,
+    } as any)
+    setRegistroEditando(null)
+    setVerRegistros(false)
+    setRegAnoSel(slot.aulaGrade.anoLetivoId ?? '')
+    setRegEscolaSel(slot.aulaGrade.escolaId ?? '')
+    setRegSegmentoSel(slot.aulaGrade.segmentoId)
+    setRegTurmaSel(slot.aulaGrade.turmaId)
+    setModalRegistro(true)
+  }, [slot, setModalRegistro, setPlanoParaRegistro, setNovoRegistro, setRegistroEditando,
+      setVerRegistros, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const roteiro = slot.plano?.atividadesRoteiro ?? []
 
-  // Filtra atividades ocultas e aplica nomes editados desta aplicação
+  // Filtra atividades ocultas e aplica nomes/descrições editados desta aplicação
   const roteiroVisivel = useMemo(() => {
     const ocultas = new Set(slot.aplicacao?.atividadesOcultas ?? [])
     const nomes = slot.aplicacao?.roteiroNomes ?? {}
+    const descs = slot.aplicacao?.roteiroDescricoes ?? {}
     return roteiro
       .filter(a => !ocultas.has(String(a.id)))
-      .map(a => ({ ...a, nome: nomes[String(a.id)] ?? a.nome }))
-  }, [roteiro, slot.aplicacao?.atividadesOcultas, slot.aplicacao?.roteiroNomes])
+      .map(a => ({
+        ...a,
+        nome: nomes[String(a.id)] ?? a.nome,
+        descricao: descs[String(a.id)] ?? a.descricao,
+      }))
+  }, [roteiro, slot.aplicacao?.atividadesOcultas, slot.aplicacao?.roteiroNomes, slot.aplicacao?.roteiroDescricoes])
 
   const cor = ESCOLA_COLORS[slot.escolaColorIdx % ESCOLA_COLORS.length]
   const borderColor = isDarkMode ? cor.dark : cor.light
@@ -281,7 +379,6 @@ function AulaCard({ slot, isDarkMode }: AulaCardProps) {
   const editarItem = useCallback((id: string | number, novoNome: string) => {
     if (!slot.aplicacao) return
     const aplicacaoId = slot.aplicacao.id
-    // Salva debounced em roteiroNomes da aplicação
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       setAplicacoes(prev =>
@@ -292,6 +389,18 @@ function AulaCard({ slot, isDarkMode }: AulaCardProps) {
         ),
       )
     }, 400)
+  }, [slot.aplicacao, setAplicacoes])
+
+  const editarItemDesc = useCallback((id: string | number, novaDesc: string) => {
+    if (!slot.aplicacao) return
+    const aplicacaoId = slot.aplicacao.id
+    setAplicacoes(prev =>
+      prev.map(a =>
+        a.id === aplicacaoId
+          ? { ...a, roteiroDescricoes: { ...(a.roteiroDescricoes ?? {}), [String(id)]: novaDesc } }
+          : a,
+      ),
+    )
   }, [slot.aplicacao, setAplicacoes])
 
 
@@ -355,11 +464,26 @@ function AulaCard({ slot, isDarkMode }: AulaCardProps) {
                     idx={idx}
                     temAplicacao={!!slot.aplicacao}
                     onEditar={editarItem}
+                    onEditarDesc={editarItemDesc}
                     onRemover={removerAtividade}
                   />
                 ))}
               </div>
             )}
+
+            {/* Botão registrar pós-aula */}
+            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+              <button
+                onClick={abrirRegistro}
+                className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  jaRegistrado
+                    ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30'
+                    : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-500/20'
+                }`}
+              >
+                {jaRegistrado ? '✅ Registro feito · Editar' : '📝 Registrar pós-aula'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -661,86 +785,9 @@ export default function AgendaView() {
   }
 
   return (
-    <div className={`mx-auto px-4 pb-10 ${tab === 'semana' ? 'max-w-5xl' : 'max-w-2xl'}`}>
-
-      {/* ── Tabs ── */}
-      <div className="flex gap-1 bg-slate-100 dark:bg-gray-800 p-1 rounded-xl mb-6">
-        {(['hoje', 'semana', 'mes'] as const).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-              tab === t
-                ? 'bg-white dark:bg-gray-700 text-slate-800 dark:text-slate-100 shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-            }`}
-          >
-            {t === 'hoje' ? 'Hoje' : t === 'semana' ? 'Semana' : 'Mês'}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Hoje ── */}
-      {tab === 'hoje' && (
-        <>
-          <p className="text-sm text-slate-400 dark:text-slate-500 capitalize mb-5">{labelDia}</p>
-          <AgendaDia dataStr={hoje} escolaColorMap={escolaColorMap} isDarkMode={isDarkMode} />
-        </>
-      )}
-
-      {/* ── Semana ── */}
-      {tab === 'semana' && (
-        <>
-          {/* Navegação semana */}
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={prevSemana}
-              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
-              aria-label="Semana anterior"
-            >
-              <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M10 4l-4 4 4 4" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{labelSemana}</span>
-            <button
-              onClick={nextSemana}
-              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
-              aria-label="Próxima semana"
-            >
-              <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M6 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
-
-          {/* Grid 5 colunas */}
-          <div className="grid grid-cols-5 gap-2">
-            {diasSemana.map(dia => (
-              <ColunaDia
-                key={dia.dataStr}
-                dataStr={dia.dataStr}
-                short={dia.short}
-                diaNum={dia.dia}
-                isHoje={dia.isHoje}
-                escolaColorMap={escolaColorMap}
-                isDarkMode={isDarkMode}
-              />
-            ))}
-          </div>
-
-          {/* Legenda escolas */}
-          <LegendaEscolas anosLetivos={anosLetivos} escolaColorMap={escolaColorMap} isDarkMode={isDarkMode} />
-        </>
-      )}
-
-      {/* ── Mês ── */}
-      {tab === 'mes' && (
-        <div className="py-14 text-center">
-          <div className="text-3xl mb-3">📅</div>
-          <p className="text-sm text-slate-400 dark:text-slate-500">Calendário mensal em breve</p>
-        </div>
-      )}
+    <div className="mx-auto px-4 pb-10 max-w-2xl">
+      <p className="text-sm text-slate-400 dark:text-slate-500 capitalize mb-5">{labelDia}</p>
+      <AgendaDia dataStr={hoje} escolaColorMap={escolaColorMap} isDarkMode={isDarkMode} />
     </div>
   )
 }
