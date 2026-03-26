@@ -986,8 +986,8 @@ export default function TelaResumoDia() {
                                     {/* Header */}
                                     <div className="flex items-center justify-between">
                                         <p className="text-xs font-bold text-purple-800 uppercase">📅 Minhas Turmas de Hoje</p>
-                                        <button onClick={() => setViewMode('agendaSemanal')} className="text-xs text-indigo-600 hover:text-indigo-800 font-bold">
-                                            Ver agenda →
+                                        <button onClick={() => setViewMode('visaoSemana')} className="text-xs text-indigo-600 hover:text-indigo-800 font-bold">
+                                            Ver semana →
                                         </button>
                                     </div>
 

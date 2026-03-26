@@ -1720,6 +1720,16 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
               })}
             </div>
           )}
+          {historicoExpandido && (
+            <div className="px-4 pb-3 border-t border-slate-100 pt-2">
+              <button
+                onClick={() => setViewModeGlobal('posAulaHistorico')}
+                className="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
+              >
+                Ver histórico completo →
+              </button>
+            </div>
+          )}
         </div>
       )}
 
