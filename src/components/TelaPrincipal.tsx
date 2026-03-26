@@ -309,6 +309,7 @@ export default function TelaPrincipal() {
         escolas,
         segmentosPlanos,
         excluirPlano,
+        duplicarPlano,
         fecharModal,
         restaurarVersao,
         filtroConceito,
@@ -2165,6 +2166,10 @@ export default function TelaPrincipal() {
                             <button onClick={e=>{e.stopPropagation();exportarPlanoPDF(plano);}} title="Exportar PDF"
                                 className="p-[7px] text-emerald-400/70 dark:text-emerald-400/50 hover:text-emerald-600 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-md transition-colors duration-[120ms]">
                                 <span className="text-[11px] font-bold tracking-wide">PDF</span>
+                            </button>
+                            <button onClick={e=>{e.stopPropagation();duplicarPlano(plano);}} title="Duplicar"
+                                className="p-[7px] text-sky-300/70 dark:text-sky-400/50 hover:text-sky-600 dark:hover:text-sky-300 hover:bg-sky-50 dark:hover:bg-sky-950/20 rounded-md transition-colors duration-[120ms]">
+                                <i className="fas fa-copy text-[14px]" />
                             </button>
                             <button onClick={e=>{e.stopPropagation();excluirPlano(plano.id);}} title="Excluir"
                                 className="p-[7px] text-slate-300 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 rounded-md transition-colors duration-[120ms]">

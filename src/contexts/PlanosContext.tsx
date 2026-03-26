@@ -192,6 +192,7 @@ export interface PlanosContextValue {
     novaAulaSlots: AplicacaoAulaSlot[] | null
     setNovaAulaSlots: (s: AplicacaoAulaSlot[] | null) => void
     excluirPlano: (id: string | number) => void
+    duplicarPlano: (plano: Plano) => void
     fecharModal: () => void
     restaurarVersao: (plano: Plano, versao: Plano & { _versaoSalvaEm: string }) => void
     toggleConceito: (c: string) => void
@@ -717,6 +718,21 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             onConfirm: () => { setPlanos(prev => prev.filter((p: any) => p.id !== id)); setPlanoSelecionado(null) }
         })
     }, [setModalConfirm])
+
+    const duplicarPlano = useCallback((plano: Plano) => {
+        const copia: Plano = {
+            ...plano,
+            id: String(Date.now()),
+            titulo: `Cópia de ${plano.titulo}`,
+            kanbanStatus: 'backlog',
+            registrosPosAula: [],
+            aplicacoes: [],
+            _ultimaEdicao: new Date().toISOString(),
+            _criadoEm: new Date().toISOString(),
+        } as any
+        setPlanos(prev => [copia, ...prev])
+        showToast('Plano duplicado com sucesso', 'success')
+    }, [showToast])
 
     const fecharModal = () => {
         edicaoDispatch({ type: 'FECHAR' })
@@ -1596,7 +1612,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         dragOverIndex, setDragOverIndex,
         escolas, segmentosPlanos, duracoesSugestao, planosFiltrados,
         normalizePlano, buscaAvancada, sugerirBNCC, gerandoBNCC, sugerirObjetivosIA, gerandoObjetivos,
-        novoPlano, editarPlano, salvarPlano, excluirPlano, fecharModal, restaurarVersao,
+        novoPlano, editarPlano, salvarPlano, excluirPlano, duplicarPlano, fecharModal, restaurarVersao,
         novaAulaSlots, setNovaAulaSlots,
         toggleConceito, toggleFaixa, toggleUnidade,
         adicionarRecurso, removerRecurso,
@@ -1615,7 +1631,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         salvarNotaAdaptacao, removerNotaAdaptacao,
         baixarBackup, restaurarBackup,
         userId,
-    }), [planos, planoSelecionado, modoEdicao, planoEditando, formExpandido, materiaisBloqueados, novoConceito, adicionandoConceito, novaUnidade, adicionandoUnidade, novoRecursoUrl, novoRecursoTipo, novaDataAula, dataEdicao, busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, modoVisualizacao, ordenacaoCards, limparFiltros, statusDropdownId, recursosExpandidos, modalImportarMusica, modalImportarAtividade, dragActiveIndex, dragOverIndex, escolas, segmentosPlanos, duracoesSugestao, planosFiltrados, buscaAvancada, sugerirBNCC, gerandoBNCC, sugerirObjetivosIA, gerandoObjetivos, novoPlano, editarPlano, salvarPlano, excluirPlano, fecharModal, restaurarVersao, toggleConceito, toggleFaixa, toggleUnidade, adicionarRecurso, removerRecurso, adicionarDataEdicao, removerDataEdicao, adicionarDataAulaVisualizacao, removerDataAulaVisualizacao, adicionarConceitoNovo, adicionarTagNova, removerTag, adicionarUnidadeNova, adicionarAtividadeRoteiro, removerAtividadeRoteiro, atualizarAtividadeRoteiro, toggleFavorito, handleDragStart, handleDragEnter, handleDragEnd, toggleRecursosAtiv, templatesRoteiro, modalTemplates, nomeNovoTemplate, modalConfiguracoes, musicasDetectadas, setMusicasDetectadas, limparMusicasDetectadas, showModalMusicas, vincularMusicaAoPlano, desvincularMusicaDoPlano, vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano, abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro, adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido, atualizarKanbanStatus, criarPlanosDeSequencia, baixarBackup, restaurarBackup, userId])
+    }), [planos, planoSelecionado, modoEdicao, planoEditando, formExpandido, materiaisBloqueados, novoConceito, adicionandoConceito, novaUnidade, adicionandoUnidade, novoRecursoUrl, novoRecursoTipo, novaDataAula, dataEdicao, busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, modoVisualizacao, ordenacaoCards, limparFiltros, statusDropdownId, recursosExpandidos, modalImportarMusica, modalImportarAtividade, dragActiveIndex, dragOverIndex, escolas, segmentosPlanos, duracoesSugestao, planosFiltrados, buscaAvancada, sugerirBNCC, gerandoBNCC, sugerirObjetivosIA, gerandoObjetivos, novoPlano, editarPlano, salvarPlano, excluirPlano, duplicarPlano, fecharModal, restaurarVersao, toggleConceito, toggleFaixa, toggleUnidade, adicionarRecurso, removerRecurso, adicionarDataEdicao, removerDataEdicao, adicionarDataAulaVisualizacao, removerDataAulaVisualizacao, adicionarConceitoNovo, adicionarTagNova, removerTag, adicionarUnidadeNova, adicionarAtividadeRoteiro, removerAtividadeRoteiro, atualizarAtividadeRoteiro, toggleFavorito, handleDragStart, handleDragEnter, handleDragEnd, toggleRecursosAtiv, templatesRoteiro, modalTemplates, nomeNovoTemplate, modalConfiguracoes, musicasDetectadas, setMusicasDetectadas, limparMusicasDetectadas, showModalMusicas, vincularMusicaAoPlano, desvincularMusicaDoPlano, vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano, abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro, adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido, atualizarKanbanStatus, criarPlanosDeSequencia, baixarBackup, restaurarBackup, userId])
 
     return <PlanosContext.Provider value={value}>{children}</PlanosContext.Provider>
 }
