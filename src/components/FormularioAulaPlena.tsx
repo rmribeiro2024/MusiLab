@@ -385,6 +385,59 @@ Responda APENAS com JSON válido, sem texto extra:
   const [gerandoBNCC, setGerandoBNCC] = useState(false)
   const [bnccBusca, setBnccBusca] = useState('')
 
+  // ── Sugerir Avaliação via IA ──
+  const [gerandoAvaliacao, setGerandoAvaliacao] = useState(false)
+  const [avaliacaoIAKey, setAvaliacaoIAKey] = useState(0)
+
+  async function sugerirAvaliacaoIA() {
+    const ativs = plano.atividadesRoteiro || []
+    if (!plano.titulo && ativs.length === 0) {
+      showToast('Preencha o título ou adicione atividades primeiro.', 'error')
+      return
+    }
+    setGerandoAvaliacao(true)
+    try {
+      const listaAtividades = ativs
+        .map(a => `- ${a.nome}${a.duracao ? ` (${a.duracao}min)` : ''}${a.descricao ? ': ' + a.descricao.replace(/<[^>]+>/g, '').slice(0, 100) : ''}`)
+        .join('\n')
+
+      const prompt = `Você é especialista em pedagogia musical, com domínio de Wiggins & McTighe (Understanding by Design), Madeline Hunter e Vasconcellos.
+
+Com base neste plano de aula de música, preencha os 3 campos de avaliação de forma técnica e específica — NÃO genérica.
+
+PLANO:
+Título: ${plano.titulo || '(sem título)'}
+Objetivo: ${(plano.objetivoGeral || '').replace(/<[^>]+>/g, '') || '(não informado)'}
+Nível: ${plano.nivel || (plano.faixaEtaria || [])[0] || '(não informado)'}
+Conceitos: ${(plano.conceitos || []).join(', ') || '(nenhum)'}
+Atividades:
+${listaAtividades || '(nenhuma)'}
+
+REGRAS:
+1. "evidencia" (Wiggins & McTighe — UbD) — descreva comportamentos OBSERVÁVEIS e específicos que provam aprendizagem musical. Use verbos concretos: "o aluno reproduz", "a turma improvisa", "percebe sem apoio visual". Seja específico às atividades acima.
+2. "fechamento" (Hunter — checking for understanding) — formule 1 ou 2 perguntas reflexivas para o fechamento da aula. Devem gerar metacognição musical, não respostas sim/não.
+3. "contingencia" (Vasconcellos — plano B) — descreva 1 ou 2 adaptações práticas caso a atividade principal não funcione. Seja concreto e musical.
+
+Responda APENAS com JSON válido:
+{"evidencia": "...", "fechamento": "...", "contingencia": "..."}`
+
+      const raw = await geminiPost(prompt)
+      const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || raw.match(/(\{[\s\S]*\})/)
+      if (!match) { showToast('IA não retornou JSON válido', 'error'); return }
+      const result = JSON.parse(match[1] || match[0])
+      setPlano(p => ({
+        ...p,
+        avaliacaoEvidencia: result.evidencia ?? p.avaliacaoEvidencia,
+        avaliacaoFechamento: result.fechamento ?? p.avaliacaoFechamento,
+        avaliacaoContingencia: result.contingencia ?? p.avaliacaoContingencia,
+      }))
+      setAvaliacaoIAKey(k => k + 1)
+      setSecoesForm(prev => new Set([...prev, 'avaliacao']))
+      showToast('Avaliação gerada com IA!', 'success')
+    } catch { showToast('Erro ao gerar avaliação', 'error') }
+    finally { setGerandoAvaliacao(false) }
+  }
+
   async function sugerirBNCC() {
     setGerandoBNCC(true)
     try {
@@ -1243,11 +1296,17 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
             </button>
             {secoesForm.has('avaliacao') && (
               <div className="px-5 pt-4 pb-5 space-y-4">
+                <div className="flex justify-end">
+                  <button type="button" onClick={sugerirAvaliacaoIA} disabled={gerandoAvaliacao}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 dark:text-indigo-400 transition-colors disabled:opacity-50">
+                    {gerandoAvaliacao ? '⏳ Gerando...' : '✨ Sugerir com IA'}
+                  </button>
+                </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">📊 O que observarei para saber se funcionou?</label>
                   <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
                     <TipTapEditor
-                      key={`avaliacao-evidencia-${plano.id}`}
+                      key={`avaliacao-evidencia-${plano.id}-${avaliacaoIAKey}`}
                       initialValue={plano.avaliacaoEvidencia ?? ''}
                       onChange={val => setPlano(p => ({ ...p, avaliacaoEvidencia: val }))}
                       placeholder="Ex: alunos conseguem tocar o ritmo sem apoio visual, participam da improvisação…"
@@ -1259,7 +1318,7 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
                   <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">❓ Qual pergunta farei no fechamento?</label>
                   <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
                     <TipTapEditor
-                      key={`avaliacao-fechamento-${plano.id}`}
+                      key={`avaliacao-fechamento-${plano.id}-${avaliacaoIAKey}`}
                       initialValue={plano.avaliacaoFechamento ?? ''}
                       onChange={val => setPlano(p => ({ ...p, avaliacaoFechamento: val }))}
                       placeholder="Ex: O que foi mais difícil? O que vocês notaram sobre o ritmo?"
@@ -1271,7 +1330,7 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
                   <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">⚡ Se não funcionar, o que farei? <span className="font-normal text-slate-400">(opcional)</span></label>
                   <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
                     <TipTapEditor
-                      key={`avaliacao-contingencia-${plano.id}`}
+                      key={`avaliacao-contingencia-${plano.id}-${avaliacaoIAKey}`}
                       initialValue={plano.avaliacaoContingencia ?? ''}
                       onChange={val => setPlano(p => ({ ...p, avaliacaoContingencia: val }))}
                       placeholder="Ex: simplificar o ritmo, trocar pela atividade de eco…"
