@@ -510,7 +510,13 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                 return (ord[a.statusPlanejamento || 'A Fazer'] || 1) - (ord[b.statusPlanejamento || 'A Fazer'] || 1)
             }
             if (ordenacaoCards === 'favoritos') return (b.destaque ? 1 : 0) - (a.destaque ? 1 : 0)
-            return b.id - a.id
+            // Recente: prefere _updatedAt > updatedAt > createdAt > id numérico
+            const dateA = a._updatedAt || a.updatedAt || a.createdAt
+            const dateB = b._updatedAt || b.updatedAt || b.createdAt
+            if (dateA && dateB) return new Date(dateB).getTime() - new Date(dateA).getTime()
+            if (dateB) return 1
+            if (dateA) return -1
+            return Number(b.id) - Number(a.id)
         })
     }, [planos, buscaDebounced, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, ordenacaoCards, anosLetivos, aplicacoes])
 
@@ -1005,6 +1011,10 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const salvarRegistro = useCallback(() => {
         if (!novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.fariadiferente && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
             showToast('Preencha ao menos um campo!', 'error'); return
+        }
+        // Stub = plano não existe em planos (id começa com 'stub-') — dados seriam perdidos
+        if (!planoParaRegistro || String(planoParaRegistro.id).startsWith('stub-')) {
+            showToast('Nenhum plano associado a esta turma. Crie um plano primeiro.', 'error'); return
         }
         const agora = new Date()
         const { dataAula, ...camposRegistro } = novoRegistro
