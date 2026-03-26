@@ -5,6 +5,7 @@ import { showToast } from '../lib/toast'
 import { gerarIdSeguro } from '../lib/utils'
 import { agruparPorCategoria } from '../lib/taxonomia'
 import { useEstrategiasContext } from '../contexts'
+import { musicasIACache } from '../lib/detectarMusicas'
 import type { AtividadeRoteiro, Plano, Atividade } from '../types'
 
 // ── Tipos locais ─────────────────────────────────────────────────────────────
@@ -420,7 +421,7 @@ const CardAtividadeRoteiro = memo(function CardAtividadeRoteiro({
 
   // ── Chamar Gemini para análise de conceitos ──────────────────
   const analisarConceitos = async (atividadeId: string): Promise<string[]> => {
-    const cacheKey = `${atividadeId}-${(atividade.descricao || '').length}`
+    const cacheKey = `v2-${atividadeId}-${(atividade.descricao || '').length}`
 
     // Retorna cache se existir
     if (geminiCacheRef.current.has(cacheKey)) {
@@ -433,17 +434,31 @@ const CardAtividadeRoteiro = memo(function CardAtividadeRoteiro({
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY
     if (!apiKey) return []
 
-    const prompt = `Você é um especialista em pedagogia musical. Analise a atividade abaixo e identifique os conceitos musicais pedagógicos presentes.
+    const prompt = `Você é um avaliador rigoroso de pedagogia musical. Analise a atividade abaixo e retorne dois resultados:
+
+1. CONCEITOS MUSICAIS — quais conceitos da taxonomia são o FOCO PEDAGÓGICO CENTRAL da atividade.
+2. MÚSICAS — títulos de músicas, canções ou peças musicais mencionadas ou usadas na atividade.
 
 Atividade: "${atividade.nome}"
-Descrição: "${texto}"
+Descrição: "${texto.slice(0, 600)}"
 
-Use APENAS conceitos da seguinte taxonomia pedagógica musical:
+TAXONOMIA DE CONCEITOS (use SOMENTE estes termos, ortografia idêntica):
 ${TAXONOMIA_PROMPT}
 
-Retorne apenas os conceitos claramente identificados (máximo 6), usando os nomes exatos da taxonomia.
-Responda APENAS com JSON válido: {"conceitos": ["conceito1", "conceito2"]}
-Se não identificar nenhum conceito, retorne: {"conceitos": []}`
+REGRAS PARA CONCEITOS:
+1. Máximo 3 conceitos — prefira 1 ou 2.
+2. Inclua SOMENTE se for foco pedagógico central, não instrução acessória.
+3. NÃO inclua instruções físicas, postura, respiração ou ações não-musicais.
+4. NÃO invente termos fora da taxonomia.
+
+REGRAS PARA MÚSICAS:
+1. Inclua SOMENTE títulos reais de músicas, canções, peças ou repertório musical.
+2. NÃO inclua nomes de atividades, instruções, frases de exemplo ou exercícios.
+3. Se não houver música mencionada, retorne lista vazia.
+
+Responda APENAS com JSON válido:
+{"conceitos": ["conceito1"], "musicas": ["Título da Música"]}
+Se nada se aplicar: {"conceitos": [], "musicas": []}`
 
     try {
       const res = await fetch(
@@ -467,6 +482,15 @@ Se não identificar nenhum conceito, retorne: {"conceitos": []}`
       const result = JSON.parse(match[1] || match[0])
       const conceitos: string[] = Array.isArray(result.conceitos) ? result.conceitos : []
       geminiCacheRef.current.set(cacheKey, conceitos)
+
+      // Salvar músicas detectadas no cache global (usado por detectarMusicasNoPlano na Fase 2)
+      const musicasTitulos: string[] = Array.isArray(result.musicas) ? result.musicas : []
+      const origem = `atividade ${atividadeId}`
+      musicasIACache.set(
+        `${atividadeId}-${(atividade.descricao || '').length}`,
+        musicasTitulos.map(titulo => ({ titulo: titulo.trim(), origem }))
+      )
+
       return conceitos
     } catch (e) {
       console.error('[Gemini conceitos] erro:', e)
