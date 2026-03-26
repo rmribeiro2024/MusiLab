@@ -57,6 +57,19 @@ export async function exportarPlanoPDF(plano) {
     const RULE   = [220, 224, 230];    // linha divisória
     const LS     = 6.2;               // espaçamento entre linhas (mm)
 
+    // safe(): quando Roboto não carregou, Helvetica só suporta Latin-1 (U+0000–U+00FF).
+    // Substitui símbolos comuns por equivalentes ASCII antes de descartar o resto.
+    const safe = (s: string): string => {
+        if (FONTE_PDF !== 'helvetica') return s;
+        return s
+            .replace(/→/g, '->').replace(/←/g, '<-').replace(/↑/g, '^').replace(/↓/g, 'v')
+            .replace(/[•·◦]/g, '-').replace(/[—–]/g, '-')
+            .replace(/[""]/g, '"').replace(/['']/g, "'")
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^\x00-\xFF]/g, '')
+            .replace(/ {2,}/g, ' ');
+    };
+
     // ── Conversor HTML → texto limpo ──
     const decodeEntities = (str: string): string => {
         try {
@@ -88,17 +101,12 @@ export async function exportarPlanoPDF(plano) {
             })
             .replace(/<[^>]*>/g, '')
         const decoded = decodeEntities(stripped)
-            // Remove símbolo de parágrafo TipTap (%¶ ou ¶ isolado) — causa kerning em jsPDF
-            .replace(/%?¶\s*/g, '')
+            // Remove marcadores de parágrafo TipTap (pilcrow U+00B6 e variantes)
+            .replace(/[%\s]*[\u00B6\u204B\u2761\uFFFD\u2029\u2028]\s*/g, '')
             .replace(/\n{3,}/g, '\n\n')
             .trim()
-        return decoded
+        return FONTE_PDF === 'helvetica' ? safe(decoded) : decoded;
     };
-
-    // safe(): quando Roboto não carregou, Helvetica não suporta acentos — normaliza
-    const safe = (s: string) => FONTE_PDF === 'helvetica'
-        ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        : s;
 
     let y = 0;
 
@@ -128,7 +136,7 @@ export async function exportarPlanoPDF(plano) {
         doc.setFontSize(size || 11);
         doc.setFont(FONTE_PDF, bold ? "bold" : "normal");
         doc.setTextColor(...DARK);
-        const lines = doc.splitTextToSize(String(text).trim(), cW - (indent || 0));
+        const lines = doc.splitTextToSize(safe(String(text).trim()), cW - (indent || 0));
         lines.forEach(l => { chk(LS); doc.text(l, mL + (indent || 0), y); y += LS; });
     };
 
@@ -139,7 +147,7 @@ export async function exportarPlanoPDF(plano) {
 
     y = 19;
     doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(19); doc.setTextColor(...DARK);
-    const titleLines = doc.splitTextToSize(plano.titulo || "Plano de Aula", cW);
+    const titleLines = doc.splitTextToSize(safe(plano.titulo || "Plano de Aula"), cW);
     titleLines.forEach(l => { chk(9); doc.text(l, mL, y); y += 9; });
 
     if (plano.destaque) {
@@ -159,7 +167,7 @@ export async function exportarPlanoPDF(plano) {
     if (meta) {
         y += 1;
         doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(10.5); doc.setTextColor(...LABEL);
-        const mLines = doc.splitTextToSize(meta, cW);
+        const mLines = doc.splitTextToSize(safe(meta), cW);
         mLines.forEach(l => { doc.text(l, mL, y); y += 5.5; });
     }
 
@@ -173,7 +181,7 @@ export async function exportarPlanoPDF(plano) {
         sectionTitle("Habilidades BNCC");
         bncc.forEach(h => {
             // cW - 2: folga extra para evitar overflow na margem direita
-            const ls = doc.splitTextToSize(h.trim(), cW - 2);
+            const ls = doc.splitTextToSize(safe(h.trim()), cW - 2);
             doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
             ls.forEach(l => { chk(LS); doc.text(l, mL, y); y += LS; });
         });
@@ -217,7 +225,7 @@ export async function exportarPlanoPDF(plano) {
             chk(22);
             // Título + duração inline: "Nome da etapa (20 min)"
             const durStr = ativ.duracao ? ' (' + ativ.duracao + ')' : '';
-            const header = (ativ.nome || safe('Atividade')) + durStr;
+            const header = safe((ativ.nome || 'Atividade') + durStr);
             doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(12); doc.setTextColor(...DARK);
             const hLines = doc.splitTextToSize(header, cW);
             hLines.forEach(l => { chk(7); doc.text(l, mL, y); y += 7; });
@@ -275,7 +283,7 @@ export async function exportarPlanoPDF(plano) {
     if (plano.materiais && plano.materiais.length > 0) {
         sectionTitle("Materiais");
         plano.materiais.forEach(m => {
-            const ls = doc.splitTextToSize('- ' + m, cW - 4);
+            const ls = doc.splitTextToSize(safe('- ' + m), cW - 4);
             doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
             ls.forEach((l, i) => { chk(LS); doc.text(l, mL + (i > 0 ? 6 : 4), y); y += LS; });
         });

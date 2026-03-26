@@ -75,25 +75,10 @@ function extrairTextosPlano(plano: Plano): Array<{ texto: string; origem: string
     return blocos
 }
 
-// ── Fase 2: extração de strings entre aspas ───────────────────────────────────
-// Captura texto entre " ", « » ou ' ' com 4–60 caracteres.
-const RE_CITACAO = /"([^"]{4,60})"|«([^»]{4,60})»|'([^']{4,60})'/g
-
-function extrairCitacoes(plano: Plano): Array<{ titulo: string; origem: string }> {
-    const blocos = extrairTextosPlano(plano)
-    const citacoes: Array<{ titulo: string; origem: string }> = []
-    for (const bloco of blocos) {
-        // Remove HTML antes de rodar o regex — evita capturar atributos style="..." como títulos
-        const textoLimpo = bloco.texto.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-        RE_CITACAO.lastIndex = 0
-        let m: RegExpExecArray | null
-        while ((m = RE_CITACAO.exec(textoLimpo)) !== null) {
-            const titulo = (m[1] || m[2] || m[3]).trim()
-            if (titulo) citacoes.push({ titulo, origem: bloco.origem })
-        }
-    }
-    return citacoes
-}
+// ── Cache de músicas detectadas por IA (preenchido pelo CardAtividadeRoteiro via Gemini) ──
+// Chave: `${atividadeId}-${descricao.length}` — mesma convenção do cache de conceitos
+// Valor: títulos de músicas identificados pela IA na descrição da atividade
+export const musicasIACache = new Map<string, Array<{ titulo: string; origem: string }>>()
 
 // ── Tipos de resultado ────────────────────────────────────────────────────────
 /**
@@ -237,33 +222,55 @@ export function detectarMusicasNoPlano(plano: Plano, repertorio: Musica[]): Musi
         for (const m of grupo) processadosNorm.add(m.norm)
     }
 
-    // ── FASE 2: citações entre aspas não cobertas pelo repertório ─────────────
+    // ── FASE 2: músicas detectadas pela IA (Gemini, via musicasIACache) ──────────
     const normsTodosRepertorio = new Set(
         repertorio.map(m => normalizar(m.titulo || '')).filter(Boolean)
     )
-    const citacoesProcessadas = new Set<string>()
+    const iaProcessadas = new Set<string>()
 
-    for (const cit of extrairCitacoes(plano)) {
-        const norm = normalizar(cit.titulo)
-        if (norm.length <= 3) continue
-        if (citacoesProcessadas.has(norm)) continue
+    for (const ativ of plano.atividadesRoteiro || []) {
+        // Busca no cache todas as chaves que começam com o ID desta atividade
+        for (const [key, cits] of musicasIACache.entries()) {
+            if (!key.startsWith(`${ativ.id}-`)) continue
+            for (const cit of cits) {
+                const norm = normalizar(cit.titulo)
+                if (norm.length <= 3) continue
+                if (iaProcessadas.has(norm)) continue
 
-        // Já coberta por match do repertório?
-        const coberta = [...processadosNorm].some(
-            rep => rep.includes(norm) || norm.includes(rep)
-        )
-        if (coberta) continue
+                // Já coberta por match do repertório (Fase 1)?
+                const coberta = [...processadosNorm].some(
+                    rep => rep.includes(norm) || norm.includes(rep)
+                )
+                if (coberta) continue
 
-        // Está no repertório? (título exato mas não foi encontrado no texto — edge case)
-        if (normsTodosRepertorio.has(norm)) continue
+                iaProcessadas.add(norm)
 
-        resultados.push({
-            tituloDetectado: cit.titulo,
-            origem: cit.origem,
-            classificacao: 'nova',
-            jaVinculada: false,
-        })
-        citacoesProcessadas.add(norm)
+                // Tenta match no repertório
+                const matches = repertorio.filter(m => {
+                    const mn = normalizar(m.titulo || '')
+                    return mn.length > 3 && (mn === norm || mn.includes(norm) || norm.includes(mn))
+                })
+
+                if (matches.length === 1) {
+                    resultados.push({
+                        tituloDetectado: cit.titulo, origem: cit.origem,
+                        classificacao: 'encontrada', musica: matches[0],
+                        jaVinculada: vinculadasNorm.has(normalizar(matches[0].titulo || '')),
+                    })
+                } else if (matches.length > 1) {
+                    resultados.push({
+                        tituloDetectado: cit.titulo, origem: cit.origem,
+                        classificacao: 'ambigua', candidatas: matches,
+                        jaVinculada: matches.some(m => vinculadasNorm.has(normalizar(m.titulo || ''))),
+                    })
+                } else if (!normsTodosRepertorio.has(norm)) {
+                    resultados.push({
+                        tituloDetectado: cit.titulo, origem: cit.origem,
+                        classificacao: 'nova', jaVinculada: false,
+                    })
+                }
+            }
+        }
     }
 
     // Merge: Fase 0 tem prioridade; fases 1 e 2 só adicionam se norm não coberto pela Fase 0
