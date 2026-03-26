@@ -419,16 +419,16 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
 
   return (
     <div
-      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md ${
-        isProxima ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 ring-offset-1 dark:ring-offset-gray-900' : ''
+      className={`bg-white dark:bg-[#1F2937] rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md ${
+        isProxima ? 'ring-1 ring-[#5B5FEA]/30' : ''
       }`}
       style={{ borderLeft: `3px solid ${borderColor}` }}
     >
-      {/* Badge "próxima aula" */}
+      {/* Label "próxima" — só aparece quando a aula é a próxima do dia */}
       {isProxima && (
-        <div className="px-4 pt-2 pb-0">
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-full">
-            🎯 Próxima aula
+        <div className="px-4 pt-2.5 pb-0">
+          <span className="text-[11px] font-semibold text-[#5B5FEA] dark:text-[#818cf8] uppercase tracking-[0.06em]">
+            Próxima
           </span>
         </div>
       )}
@@ -439,33 +439,33 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
         onClick={() => setAberto(v => !v)}
       >
         {/* Horário */}
-        <div className="text-sm font-mono font-semibold text-slate-400 dark:text-slate-500 min-w-[34px] pt-0.5">
+        <div className="text-[10.5px] font-semibold font-mono text-slate-500 dark:text-[#9CA3AF] min-w-[34px] pt-0.5">
           {formatHorario(slot.aulaGrade.horario ?? '')}
         </div>
 
         {/* Info turma */}
         <div className="flex-1 min-w-0">
           {slot.nomeEscola && (
-            <p className="text-xs font-medium truncate" style={{ color: borderColor }}>
+            <p className="text-[10px] font-medium truncate" style={{ color: borderColor }}>
               {slot.nomeEscola}
             </p>
           )}
-          <p className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate">
+          <p className="text-[13px] font-bold tracking-tight text-slate-800 dark:text-[#E5E7EB] truncate">
             {slot.nomeTurma}
           </p>
           {slot.plano ? (
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-              📋 {slot.plano.titulo}
+            <p className="text-xs text-slate-400 dark:text-[#4B5563] mt-0.5 truncate">
+              {slot.plano.titulo}
             </p>
           ) : (
-            <p className="text-xs text-amber-500 dark:text-amber-400 mt-0.5">⚠ Sem plano vinculado</p>
+            <p className="text-[11px] font-semibold text-amber-500 dark:text-amber-400/80 mt-0.5">Sem plano vinculado</p>
           )}
         </div>
 
-        {/* Status + Chevron */}
-        <div className="flex items-center gap-2 shrink-0 pt-0.5">
+        {/* Indicador de registro + Chevron */}
+        <div className="flex items-center gap-2 shrink-0 pt-1">
           {jaRegistrado && !aberto && (
-            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-full">✅</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500/70 dark:bg-emerald-400/60 shrink-0" />
           )}
           <svg
             className={`w-4 h-4 text-slate-400 transition-transform ${aberto ? 'rotate-180' : ''}`}
@@ -479,11 +479,11 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
       {/* Conteúdo expandido — animação CSS grid */}
       <div style={{ display: 'grid', gridTemplateRows: aberto ? '1fr' : '0fr', transition: 'grid-template-rows 0.25s ease' }}>
         <div style={{ overflow: aberto ? 'visible' : 'hidden' }}>
-          <div className="px-4 pb-4 pt-3 border-t border-slate-100 dark:border-slate-700">
+          <div className="px-4 pb-4 pt-3 border-t border-slate-100 dark:border-[#374151]">
             {!slot.plano ? (
-              <p className="text-sm text-slate-400 italic">Nenhum plano vinculado a esta aula.</p>
+              <p className="text-sm text-slate-400 dark:text-[#4B5563] italic">Nenhum plano vinculado a esta aula.</p>
             ) : roteiroVisivel.length === 0 ? (
-              <p className="text-sm text-slate-400 italic">Sem atividades no roteiro.</p>
+              <p className="text-sm text-slate-400 dark:text-[#4B5563] italic">Sem atividades no roteiro.</p>
             ) : (
               <div className="space-y-2">
                 {roteiroVisivel.map((ativ, idx) => (
@@ -501,16 +501,16 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
             )}
 
             {/* Botão registrar pós-aula */}
-            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#374151]">
               <button
                 onClick={abrirRegistro}
-                className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium transition-colors ${
+                className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-colors ${
                   jaRegistrado
-                    ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30'
-                    : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-500/20'
+                    ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/25'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
                 }`}
               >
-                {jaRegistrado ? '✅ Registro feito · Editar' : '📝 Registrar pós-aula'}
+                {jaRegistrado ? 'Registro feito · Editar' : 'Registrar pós-aula'}
               </button>
             </div>
           </div>
@@ -718,8 +718,7 @@ function AgendaDia({ dataStr, escolaColorMap, isDarkMode }: AgendaDiaProps) {
   if (slots.length === 0) {
     return (
       <div className="py-14 text-center">
-        <div className="text-3xl mb-3">🎵</div>
-        <p className="text-sm text-slate-400 dark:text-slate-500">Nenhuma aula neste dia</p>
+        <p className="text-sm text-slate-400 dark:text-[#4B5563]">Nenhuma aula neste dia</p>
       </div>
     )
   }
@@ -727,26 +726,26 @@ function AgendaDia({ dataStr, escolaColorMap, isDarkMode }: AgendaDiaProps) {
   return (
     <div>
       {/* Barra de resumo */}
-      <div className="flex items-center gap-3 mb-4 px-1">
-        <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9CA3AF]">
           {stats.total} aula{stats.total !== 1 ? 's' : ''}
         </span>
-        <span className="text-slate-300 dark:text-slate-600">·</span>
-        <span className={`text-sm font-medium ${stats.comPlano === stats.total ? 'text-indigo-500 dark:text-indigo-400' : 'text-amber-500 dark:text-amber-400'}`}>
-          {stats.comPlano === stats.total ? '✓ Todas planejadas' : `${stats.comPlano} planejada${stats.comPlano !== 1 ? 's' : ''}`}
+        <span className="text-slate-300 dark:text-[#374151]">·</span>
+        <span className={`text-[11px] font-semibold ${stats.comPlano === stats.total ? 'text-[#5B5FEA] dark:text-[#818cf8]' : 'text-amber-500 dark:text-amber-400/80'}`}>
+          {stats.comPlano === stats.total ? 'Todas planejadas' : `${stats.comPlano} planejada${stats.comPlano !== 1 ? 's' : ''}`}
         </span>
         {stats.registradas > 0 && (
           <>
-            <span className="text-slate-300 dark:text-slate-600">·</span>
-            <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="text-slate-300 dark:text-[#374151]">·</span>
+            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400/80">
               {stats.registradas} registrada{stats.registradas !== 1 ? 's' : ''}
             </span>
           </>
         )}
         {isHoje && stats.pendentes > 0 && stats.pendentes < stats.total && (
           <>
-            <span className="text-slate-300 dark:text-slate-600">·</span>
-            <span className="text-sm font-medium text-slate-400 dark:text-slate-500">
+            <span className="text-slate-300 dark:text-[#374151]">·</span>
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-[#4B5563]">
               {stats.pendentes} a registrar
             </span>
           </>
@@ -873,10 +872,10 @@ export default function AgendaView() {
   return (
     <div className="mx-auto px-4 pb-10 max-w-2xl">
       <div className="mb-5">
-        <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-100 leading-tight">
-          {saudacao} 🎵
+        <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
+          {saudacao}
         </h1>
-        <p className="text-sm text-slate-400 dark:text-slate-500 capitalize mt-0.5">{labelDia}</p>
+        <p className="text-sm text-slate-400 dark:text-[#4B5563] capitalize mt-0.5">{labelDia}</p>
       </div>
       <AgendaDia dataStr={hoje} escolaColorMap={escolaColorMap} isDarkMode={isDarkMode} />
     </div>
