@@ -13,6 +13,7 @@ import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import type { AnoLetivo, RegistroPosAula } from '../types'
 import { showToast } from '../lib/toast'
 import ModalCardHero, { type ModalCardHeroProps, RegistroField, ActionButton } from './modals/ModalCardHero'
+import { TelaCalendario } from './TelaCalendario'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -178,9 +179,12 @@ interface InlineCardDrawerProps {
   onEditar: () => void
   onRegistrar: () => void
   onCriarPlano: () => void
+  onAdaptarAnterior: () => void
+  onBuscarBanco: () => void
+  onVerHistorico: () => void
 }
 
-function InlineCardDrawer({ heroCard, onClose, onEditar, onRegistrar, onCriarPlano }: InlineCardDrawerProps) {
+function InlineCardDrawer({ heroCard, onClose, onEditar, onRegistrar, onCriarPlano, onAdaptarAnterior, onBuscarBanco, onVerHistorico }: InlineCardDrawerProps) {
   const [visible, setVisible] = React.useState(false)
   const [expandedActs, setExpandedActs] = React.useState<Set<number>>(new Set())
   React.useEffect(() => { requestAnimationFrame(() => setVisible(true)) }, [])
@@ -297,9 +301,14 @@ function InlineCardDrawer({ heroCard, onClose, onEditar, onRegistrar, onCriarPla
 
             {cardState === 'sugestao' && (
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[12px]">💡</span>
-                  <p className="text-[13px] font-semibold text-slate-700 dark:text-[#D1D5DB]">Sugestão: {ultAcao}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px]">💡</span>
+                    <p className="text-[13px] font-semibold text-slate-700 dark:text-[#D1D5DB]">Sugestão: {ultAcao}</p>
+                  </div>
+                  <button onClick={onVerHistorico} className="text-[11px] text-indigo-500 dark:text-indigo-400 hover:underline shrink-0">
+                    Ver histórico →
+                  </button>
                 </div>
                 <div className="pt-2 border-t border-[#F1F3F8] dark:border-[#2d3748] space-y-1.5">
                   <p className="text-[10px] font-semibold text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">📋 Última aula{ultimoRegData ? ` · ${ultimoRegData}` : ''}</p>
@@ -321,21 +330,54 @@ function InlineCardDrawer({ heroCard, onClose, onEditar, onRegistrar, onCriarPla
           </div>
 
           {/* Footer */}
-          <div className="px-4 pb-4 pt-1 flex gap-2">
+          <div className="px-4 pb-4 pt-1">
             {cardState === 'comPlano' && (
-              <>
+              <div className="flex gap-2">
                 <ActionButton onClick={onEditar} label="✏️ Editar" variant="secondary" />
                 <ActionButton onClick={onRegistrar} label="📝 Registrar" variant="primary" fullWidth />
-              </>
+              </div>
             )}
             {cardState === 'registrada' && (
-              <ActionButton onClick={onEditar} label="✏️ Ver planejamento" variant="secondary" fullWidth />
+              <div className="flex gap-2">
+                <ActionButton onClick={onEditar} label="✏️ Ver planejamento" variant="secondary" fullWidth />
+              </div>
             )}
-            {cardState === 'sugestao' && (
-              <ActionButton onClick={onCriarPlano} label="+ Planejar" variant="primary" fullWidth />
-            )}
-            {cardState === 'vazio' && (
-              <ActionButton onClick={onCriarPlano} label="+ Criar plano" variant="primary" fullWidth />
+            {(cardState === 'sugestao' || cardState === 'vazio') && (
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold text-slate-400 dark:text-[#6B7280] uppercase tracking-wide mb-2">Como planejar?</p>
+                <button
+                  onClick={onCriarPlano}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-[8px] border border-[#E6EAF0] dark:border-[#374151] hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/[0.08] text-left transition-all group"
+                >
+                  <span className="text-[13px]">✏️</span>
+                  <div>
+                    <p className="text-[12px] font-semibold text-slate-700 dark:text-[#D1D5DB]">Do zero</p>
+                    <p className="text-[10px] text-slate-400 dark:text-[#6B7280]">Criar plano em branco</p>
+                  </div>
+                </button>
+                {ultimoReg && (
+                  <button
+                    onClick={onAdaptarAnterior}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-[8px] border border-[#E6EAF0] dark:border-[#374151] hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/[0.08] text-left transition-all"
+                  >
+                    <span className="text-[13px]">🔄</span>
+                    <div>
+                      <p className="text-[12px] font-semibold text-slate-700 dark:text-[#D1D5DB]">Adaptar da anterior</p>
+                      <p className="text-[10px] text-slate-400 dark:text-[#6B7280]">Basear na última aula{ultimoRegData ? ` · ${ultimoRegData}` : ''}</p>
+                    </div>
+                  </button>
+                )}
+                <button
+                  onClick={onBuscarBanco}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-[8px] border border-[#E6EAF0] dark:border-[#374151] hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/[0.08] text-left transition-all"
+                >
+                  <span className="text-[13px]">🏛️</span>
+                  <div>
+                    <p className="text-[12px] font-semibold text-slate-700 dark:text-[#D1D5DB]">Buscar no Banco</p>
+                    <p className="text-[10px] text-slate-400 dark:text-[#6B7280]">Reutilizar aula existente</p>
+                  </div>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -355,7 +397,7 @@ export default function VisaoSemana() {
   const { anosLetivos } = useAnoLetivoContext()
   const { planos } = usePlanosContext()
   const { setViewMode } = useRepertorioContext()
-  const { selecionarTurma, setDataNavegacao, planejamentos, copiarPlanejamento } = usePlanejamentoTurmaContext()
+  const { selecionarTurma, setDataNavegacao, planejamentos, copiarPlanejamento, setModoInicialNavegacao } = usePlanejamentoTurmaContext()
   const { aplicacoes } = useAplicacoesContext()
 
   // ── Drag-drop entre cards ──────────────────────────────────────────────────
@@ -386,6 +428,7 @@ export default function VisaoSemana() {
 
   // Estado local de navegação — não interfere com AgendaSemanal
   const [semanaInicio, setSemanaInicio] = useState<Date>(() => getSemanaAtualInicio())
+  const [vistaAtiva, setVistaAtiva] = useState<'semana' | 'mes'>('semana')
 
   // Mobile: índice do dia visível (0=Seg … 4=Sex)
   const todayDayIdx = (() => { const d = new Date().getDay(); return (d >= 1 && d <= 5) ? d - 1 : 0 })()
@@ -531,18 +574,38 @@ export default function VisaoSemana() {
       onTouchEnd={onSwipeTouchEnd}
     >
 
-      {/* ── Cabeçalho: título + navegação de semana ── */}
+      {/* ── Cabeçalho: título + toggle Semana/Mês + navegação ── */}
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
-        <div>
-          <h1 className="text-[17px] font-bold tracking-tight text-slate-800 dark:text-[#E5E7EB]">
-            Visão da Semana
-          </h1>
-          <p className="text-[12.5px] text-slate-500 dark:text-[#9CA3AF] mt-1">
-            O que preciso preparar esta semana?
-          </p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-[17px] font-bold tracking-tight text-slate-800 dark:text-[#E5E7EB]">
+              Planejamento
+            </h1>
+            <p className="text-[12.5px] text-slate-500 dark:text-[#9CA3AF] mt-1">
+              {vistaAtiva === 'semana' ? 'O que preciso preparar esta semana?' : 'Visão mensal do calendário'}
+            </p>
+          </div>
+
+          {/* Toggle Semana | Mês */}
+          <div className="flex rounded-[8px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden v2-card">
+            {(['semana', 'mes'] as const).map(v => (
+              <button
+                key={v}
+                onClick={() => setVistaAtiva(v)}
+                className={`px-3 py-1.5 text-[12px] font-semibold transition-all
+                  ${vistaAtiva === v
+                    ? 'bg-[#5B5FEA] dark:bg-[#818cf8] text-white'
+                    : 'text-slate-500 dark:text-[#9CA3AF] hover:bg-slate-50 dark:hover:bg-white/[0.05]'}`}
+              >
+                {v === 'semana' ? 'Semana' : 'Mês'}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
+          {/* Navegação de semana — só visível na vista Semana */}
+          {vistaAtiva === 'semana' && (<>
           {/* ← Anterior */}
           <button
             onClick={() => setSemanaInicio(prev => addDays(prev, -7))}
@@ -599,8 +662,15 @@ export default function VisaoSemana() {
               </button>
             ))}
           </div>}
+          </>)}
         </div>
       </div>
+
+      {/* ── Vista Mês ── */}
+      {vistaAtiva === 'mes' && <TelaCalendario />}
+
+      {/* ── Vista Semana ── */}
+      {vistaAtiva === 'semana' && (<>
 
       {/* ── Mobile: indicador de dia atual ── */}
       {isMobile && (
@@ -858,6 +928,26 @@ export default function VisaoSemana() {
                               setDataNavegacao(heroCard.navParams.date)
                               setViewMode('porTurmas')
                             }}
+                            onAdaptarAnterior={() => {
+                              setHeroCard(null)
+                              selecionarTurma({ anoLetivoId: heroCard.navParams.anoLetivoId, escolaId: heroCard.navParams.escolaId, segmentoId: heroCard.navParams.segmentoId, turmaId: heroCard.navParams.turmaId })
+                              setDataNavegacao(heroCard.navParams.date)
+                              setModoInicialNavegacao('criar')
+                              setViewMode('porTurmas')
+                            }}
+                            onBuscarBanco={() => {
+                              setHeroCard(null)
+                              selecionarTurma({ anoLetivoId: heroCard.navParams.anoLetivoId, escolaId: heroCard.navParams.escolaId, segmentoId: heroCard.navParams.segmentoId, turmaId: heroCard.navParams.turmaId })
+                              setDataNavegacao(heroCard.navParams.date)
+                              setModoInicialNavegacao('importar')
+                              setViewMode('porTurmas')
+                            }}
+                            onVerHistorico={() => {
+                              setHeroCard(null)
+                              selecionarTurma({ anoLetivoId: heroCard.navParams.anoLetivoId, escolaId: heroCard.navParams.escolaId, segmentoId: heroCard.navParams.segmentoId, turmaId: heroCard.navParams.turmaId })
+                              setDataNavegacao(heroCard.navParams.date)
+                              setViewMode('porTurmas')
+                            }}
                           />
                         )}
                       </div>
@@ -940,6 +1030,8 @@ export default function VisaoSemana() {
           }}
         />
       )}
+
+      </>)}
 
     </div>
   )

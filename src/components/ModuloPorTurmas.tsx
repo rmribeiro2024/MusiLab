@@ -669,7 +669,7 @@ function BancoPicker({ planos, onSelect, onCancelar }: {
 
 // ─── Sub-componente: Conteúdo da turma selecionada ───────────────────────────
 
-function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: TurmaSelecionada; dataPrevista: string }) {
+function ConteudoTurma({ turmaSelecionada, dataPrevista, modoInicial, onModoInicialConsumed }: { turmaSelecionada: TurmaSelecionada; dataPrevista: string; modoInicial?: 'criar' | 'importar' | null; onModoInicialConsumed?: () => void }) {
     const { ultimoRegistroDaTurma, fecharForm, salvarPlanejamento, planejamentosDaTurma, editarPlanejamento, excluirPlanejamento } = usePlanejamentoTurmaContext()
     const { planos, setPlanos } = usePlanosContext()
     const { aplicacoes } = useAplicacoesContext()
@@ -692,6 +692,14 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
     const [modoAtivo, setModoAtivo] = useState<ModoForm | null>(null)
     const [planoParaEditar, setPlanoParaEditar] = useState<any>(null)
     const [mostrarBotoesAdicionar, setMostrarBotoesAdicionar] = useState(false)
+
+    // Modo inicial vindo da Visão da Semana (ex: "Buscar no Banco")
+    useEffect(() => {
+        if (!modoInicial) return
+        setModoAtivo(modoInicial)
+        onModoInicialConsumed?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
     const [pendingSave, setPendingSave] = useState<{ plano: any; origemAula: 'banco' | 'adaptacao' | 'livre' } | null>(null)
 
     // Garante que qualquer edição pendente de outro módulo seja descartada ao montar
@@ -931,7 +939,7 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista }: { turmaSelecionada: T
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function ModuloPorTurmas() {
-    const { selecionarTurma, turmaSelecionada, dataNavegacao, setDataNavegacao } = usePlanejamentoTurmaContext()
+    const { selecionarTurma, turmaSelecionada, dataNavegacao, setDataNavegacao, modoInicialNavegacao, setModoInicialNavegacao } = usePlanejamentoTurmaContext()
     const { setViewMode } = useRepertorioContext()
 
     // Data local — independente do AgendaSemanal e VisaoSemana
@@ -943,6 +951,7 @@ export default function ModuloPorTurmas() {
         return d
     })
     const [voltarPara, setVoltarPara] = useState<string | null>(null)
+    const [modoInicialLocal, setModoInicialLocal] = useState<'criar' | 'importar' | null>(null)
 
     // Navegação vinda da Visão da Semana — aplica a data e registra origem
     useEffect(() => {
@@ -951,6 +960,13 @@ export default function ModuloPorTurmas() {
         setVoltarPara('visaoSemana')
         setDataNavegacao(null)
     }, [dataNavegacao, setDataNavegacao])
+
+    // Modo inicial vindo da Visão da Semana (Buscar no Banco)
+    useEffect(() => {
+        if (!modoInicialNavegacao) return
+        setModoInicialLocal(modoInicialNavegacao)
+        setModoInicialNavegacao(null)
+    }, [modoInicialNavegacao, setModoInicialNavegacao])
 
     const ymd = toYMD(dataSelecionada)
 
@@ -988,7 +1004,7 @@ export default function ModuloPorTurmas() {
                 />
 
                 {turmaSelecionada
-                    ? <ConteudoTurma key={`${turmaSelecionada.turmaId}-${ymd}`} turmaSelecionada={turmaSelecionada} dataPrevista={ymd} />
+                    ? <ConteudoTurma key={`${turmaSelecionada.turmaId}-${ymd}`} turmaSelecionada={turmaSelecionada} dataPrevista={ymd} modoInicial={modoInicialLocal} onModoInicialConsumed={() => setModoInicialLocal(null)} />
                     : <EstadoVazio dataYmd={ymd} />
                 }
             </div>

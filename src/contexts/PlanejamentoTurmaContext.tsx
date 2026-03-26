@@ -34,6 +34,8 @@ export interface PlanejamentoTurmaContextValue {
   // Navegação cross-módulo (VisaoSemana → AulaPorTurma)
   dataNavegacao: Date | null
   setDataNavegacao: (d: Date | null) => void
+  modoInicialNavegacao: 'criar' | 'importar' | null
+  setModoInicialNavegacao: (m: 'criar' | 'importar' | null) => void
 
   // Ações de seleção de turma
   selecionarTurma: (turma: TurmaSelecionada) => void
@@ -122,6 +124,7 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
   const [planejamentoEditando, setPlanejamentoEditando] = useState<PlanejamentoTurma | null>(null)
   const [formAberto, setFormAberto] = useState(false)
   const [dataNavegacao, setDataNavegacao] = useState<Date | null>(null)
+  const [modoInicialNavegacao, setModoInicialNavegacao] = useState<'criar' | 'importar' | null>(null)
   const [carregado, setCarregado] = useState(false)
 
   // ── Carregar do Supabase quando userId disponível ────────────────────────
@@ -307,6 +310,8 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
     formAberto,
     dataNavegacao,
     setDataNavegacao,
+    modoInicialNavegacao,
+    setModoInicialNavegacao,
     ultimoRegistroDaTurma,
     historicoDaTurma,
     planejamentosDaTurma,
@@ -318,7 +323,7 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
     copiarPlanejamento,
     fecharForm,
     buildDadosParaBanco,
-  }), [planejamentos, turmaSelecionada, planejamentoEditando, formAberto, dataNavegacao, ultimoRegistroDaTurma, historicoDaTurma, planejamentosDaTurma, selecionarTurma, novoPlanejamento, editarPlanejamento, salvarPlanejamento, excluirPlanejamento, copiarPlanejamento, fecharForm, buildDadosParaBanco])
+  }), [planejamentos, turmaSelecionada, planejamentoEditando, formAberto, dataNavegacao, modoInicialNavegacao, ultimoRegistroDaTurma, historicoDaTurma, planejamentosDaTurma, selecionarTurma, novoPlanejamento, editarPlanejamento, salvarPlanejamento, excluirPlanejamento, copiarPlanejamento, fecharForm, buildDadosParaBanco])
 
   return (
     <PlanejamentoTurmaContext.Provider value={value}>
