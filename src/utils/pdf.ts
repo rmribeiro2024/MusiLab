@@ -150,16 +150,10 @@ export async function exportarPlanoPDF(plano) {
     const titleLines = doc.splitTextToSize(safe(plano.titulo || "Plano de Aula"), cW);
     titleLines.forEach(l => { chk(9); doc.text(l, mL, y); y += 9; });
 
-    if (plano.destaque) {
-        doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(9); doc.setTextColor(...LABEL);
-        doc.text("Favorito", W - mR, 20, { align: 'right' });
-    }
-
-    // Metadados — sem status
+    // Metadados — sem status, sem nivel (campo legado — não exposto no formulário atual)
     const meta = [
         plano.escola,
         plano.numeroAula ? 'Aula ' + plano.numeroAula : null,
-        plano.nivel,
         plano.duracao || null,
         // Deduplicar faixaEtaria normalizando espaços e símbolos de grau (° / º)
         [...new Set((plano.faixaEtaria||[]).map(s => String(s).trim().replace(/[°º]/g, 'º')))].join(', ') || null,
@@ -630,9 +624,10 @@ export async function exportarAtividadePDF(ativ) {
     ].filter(Boolean);
     if (metas.length) {
         doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(9); doc.setTextColor(...LABEL);
-        doc.text(metas.join('  |  '), mL, y); y += 6;
+        const metaLines = doc.splitTextToSize(metas.join('  |  '), cW);
+        metaLines.forEach((l: string) => { doc.text(l, mL, y); y += 5.5; });
     }
-    y = 46;
+    y = Math.max(y + 2, 46);
 
     // ── Descrição ──
     if (ativ.descricao) {

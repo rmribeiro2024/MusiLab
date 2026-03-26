@@ -434,10 +434,7 @@ const CardAtividadeRoteiro = memo(function CardAtividadeRoteiro({
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY
     if (!apiKey) return []
 
-    const prompt = `Você é um avaliador rigoroso de pedagogia musical. Analise a atividade abaixo e retorne dois resultados:
-
-1. CONCEITOS MUSICAIS — quais conceitos da taxonomia são o FOCO PEDAGÓGICO CENTRAL da atividade.
-2. MÚSICAS — títulos de músicas, canções ou peças musicais mencionadas ou usadas na atividade.
+    const prompt = `Você é um especialista rigoroso em pedagogia musical. Analise a atividade abaixo e retorne dois resultados.
 
 Atividade: "${atividade.nome}"
 Descrição: "${texto.slice(0, 600)}"
@@ -445,16 +442,21 @@ Descrição: "${texto.slice(0, 600)}"
 TAXONOMIA DE CONCEITOS (use SOMENTE estes termos, ortografia idêntica):
 ${TAXONOMIA_PROMPT}
 
-REGRAS PARA CONCEITOS:
-1. Máximo 3 conceitos — prefira 1 ou 2.
-2. Inclua SOMENTE se for foco pedagógico central, não instrução acessória.
-3. NÃO inclua instruções físicas, postura, respiração ou ações não-musicais.
-4. NÃO invente termos fora da taxonomia.
+═══ REGRAS PARA CONCEITOS (leia com atenção) ═══
+1. Máximo 2 conceitos — prefira 1. Só inclua o que é ENSINADO ou PRATICADO diretamente.
+2. Pergunta-chave: "Qual elemento MUSICAL o aluno aprende ou experimenta nesta atividade?" — só isso vai na lista.
+3. NÃO inclua:
+   - Ações físicas (postura, respiração, mãos, corpo, coordenação motora, percussão corporal)
+   - Competências socioemocionais (atenção, concentração, cooperação, disciplina)
+   - Estratégias didáticas (repetição, imitação, exploração livre)
+   - Categorias genéricas como "Expressão Musical", "Música", "Prática Musical"
+   - Qualquer termo fora da taxonomia acima
+4. Se a atividade NÃO ensina nenhum conceito musical específico, retorne lista VAZIA.
 
-REGRAS PARA MÚSICAS:
-1. Inclua SOMENTE títulos reais de músicas, canções, peças ou repertório musical.
-2. NÃO inclua nomes de atividades, instruções, frases de exemplo ou exercícios.
-3. Se não houver música mencionada, retorne lista vazia.
+═══ REGRAS PARA MÚSICAS ═══
+1. Inclua SOMENTE títulos reais e reconhecíveis de músicas, canções, peças ou obras musicais que aparecem como REPERTÓRIO DA ATIVIDADE.
+2. NÃO inclua: nomes de atividades, frases de exemplo inventadas, letras de exercícios, textos entre aspas que são instruções ou exemplos pedagógicos (ex: "meu nome é João" usada como exercício de ritmo NÃO é uma música real).
+3. Se nenhuma música real for mencionada, retorne lista VAZIA.
 
 Responda APENAS com JSON válido:
 {"conceitos": ["conceito1"], "musicas": ["Título da Música"]}
