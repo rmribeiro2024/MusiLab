@@ -6,6 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useMemo 
 import { dbGet, dbSet } from '../lib/db'
 import { syncToSupabase, loadFromSupabase } from '../lib/utils'
 import type { Musica } from '../types'
+import type { ViewMode } from '../lib/navigation'
 
 // ─── MIGRAÇÃO: campos legados singular → plural ──────────────────────────────
 // Converte campos legados (estilo, tonalidade, etc.) para o formato array.
@@ -29,8 +30,8 @@ function migrarRepertorio(lista: Musica[]): Musica[] { return lista.map(migrarMu
 
 export interface RepertorioContextValue {
   // Navegação global (viewMode controla qual módulo é exibido)
-  viewMode: string
-  setViewMode: React.Dispatch<React.SetStateAction<string>>
+  viewMode: ViewMode
+  setViewMode: React.Dispatch<React.SetStateAction<ViewMode>>
   // Edição de música
   musicaEditando: Musica | null
   setMusicaEditando: React.Dispatch<React.SetStateAction<Musica | null>>
@@ -114,7 +115,7 @@ interface RepertorioProviderProps {
 export function RepertorioProvider({ children, userId }: RepertorioProviderProps) {
 
   // ── Navegação global ───────────────────────────────────────────────────────
-  const [viewMode, setViewMode] = useState('agenda')
+  const [viewMode, setViewMode] = useState<ViewMode>('agenda')
 
   // ── Edição de música ───────────────────────────────────────────────────────
   const [musicaEditando, setMusicaEditando] = useState<Musica | null>(null)

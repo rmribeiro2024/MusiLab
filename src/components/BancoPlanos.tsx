@@ -47,7 +47,10 @@ import ModalTemplatesRoteiro from './modals/ModalTemplatesRoteiro'
 import ModalNovaMusicaInline from './modals/ModalNovaMusicaInline'
 import ModalContextoNovaAula from './modals/ModalContextoNovaAula'
 import ModuloNovaAula from './ModuloNovaAula'
-import ModuleSidebar from './ModuleSidebar'
+import AppSidebar from './AppSidebar'
+import SectionTabs from './SectionTabs'
+import { getActiveSection, NAV_SECTIONS } from '../lib/navigation'
+import type { ViewMode, SectionId } from '../lib/navigation'
 import ModalConfiguracoes from './modals/ModalConfiguracoes'
 import ModalAdicionarAoPlano from './modals/ModalAdicionarAoPlano'
 import ModalRegistroPosAula from './modals/ModalRegistroPosAula'
@@ -721,7 +724,6 @@ export default function BancoPlanos({ session }) {
             const [sidebarCollapsed, setSidebarCollapsed] = useState(
                 () => localStorage.getItem('sidebar_collapsed') === 'true'
             )
-            const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
             const toggleSidebar = () => {
                 setSidebarCollapsed(prev => {
                     const next = !prev
@@ -749,67 +751,10 @@ export default function BancoPlanos({ session }) {
             const _todosRegs = planos.flatMap(p => (p.registrosPosAula || []).map(r => ({ data: r.data, turma: r.turma })))
             const pendentesHoje = _turmasHoje.filter(a => !_todosRegs.some(r => r.data === _hojeStr && String(r.turma) === String(a.turmaId))).length
 
-            // Mapa viewMode → grupo para detectar grupo ativo
-            const VIEWMODE_TO_GROUP: Record<string, string> = {
-                agenda: 'hoje', calendario: 'hoje',
-                posAula: 'hoje', posAulaHistorico: 'hoje',
-                lista: 'planejamento', nova: 'planejamento', sequencias: 'planejamento', visaoSemana: 'planejamento', porTurmas: 'planejamento',
-                turmas: 'turmas', historicoMusical: 'turmas',
-                repertorio: 'biblioteca', atividades: 'biblioteca', estrategias: 'biblioteca',
-                relatorios: 'relatorios',
-                anoLetivo: 'configuracoes',
-            }
-            const activeGroupId = VIEWMODE_TO_GROUP[viewMode] ?? 'hoje'
+            // Seção ativa derivada do viewMode — fonte única: src/lib/navigation.ts
+            const activeGroupId = getActiveSection(viewMode as ViewMode)
 
             // Definição dos grupos de navegação
-            type NavSubItem = { label: string; short: string; icon: string; mode: string; accent?: boolean; action: () => void }
-            type NavGroup = { id: string; label: string; short: string; icon: string; defaultMode: string; items: NavSubItem[] }
-            const NAV_GROUPS: NavGroup[] = [
-                {
-                    id: 'hoje', label: 'Hoje', short: 'Hoje', icon: '📅', defaultMode: 'agenda',
-                    items: [
-                        { label: 'Hoje', short: 'Hoje', icon: '📅', mode: 'agenda', action: () => setViewMode('agenda') },
-                    ]
-                },
-                {
-                    id: 'planejamento', label: 'Planejamento', short: 'Planos', icon: '📚', defaultMode: 'visaoSemana',
-                    items: [
-                        { label: 'Semana', short: 'Semana', icon: '📅', mode: 'visaoSemana', action: () => setViewMode('visaoSemana') },
-                        { label: 'Banco de Aulas', short: 'Banco', icon: '📚', mode: 'lista',      action: () => { setViewMode('lista'); setModoEdicao(false); setPlanoEditando(null); } },
-                        { label: 'Sequência de Aulas', short: 'Seq.', icon: '🔗', mode: 'sequencias', action: () => setViewMode('sequencias') },
-                    ]
-                },
-                {
-                    id: 'turmas', label: 'Turmas', short: 'Turmas', icon: '👥', defaultMode: 'turmas',
-                    items: [
-                        { label: 'Painel da Turma', short: 'Painel', icon: '👥', mode: 'turmas',          action: () => setViewMode('turmas') },
-                        { label: 'Histórico',        short: 'Hist.',  icon: '📋', mode: 'historicoMusical', action: () => setViewMode('historicoMusical') },
-                    ]
-                },
-                {
-                    id: 'biblioteca', label: 'Biblioteca', short: 'Biblio', icon: '🎼', defaultMode: 'repertorio',
-                    items: [
-                        { label: 'Repertório',  short: 'Rep.',  icon: '🎼', mode: 'repertorio',  action: () => setViewMode('repertorio') },
-                        { label: 'Atividades',  short: 'Atv.',  icon: '🎁', mode: 'atividades',  action: () => setViewMode('atividades') },
-                        { label: 'Estratégias', short: 'Estr.', icon: '🧩', mode: 'estrategias', action: () => setViewMode('estrategias') },
-                    ]
-                },
-                {
-                    id: 'relatorios', label: 'Relatórios', short: 'Rel.', icon: '📋', defaultMode: 'relatorios',
-                    items: [
-                        { label: 'Relatórios', short: 'Rel.', icon: '📋', mode: 'relatorios', action: () => setViewMode('relatorios') },
-                    ]
-                },
-                {
-                    id: 'configuracoes', label: 'Configurações', short: 'Config', icon: '⚙️', defaultMode: 'anoLetivo',
-                    items: [
-                        { label: 'Estrutura Escolar',   short: 'Escola', icon: '🗓️', mode: 'anoLetivo',      action: () => setViewMode('anoLetivo') },
-                        { label: 'Grade Semanal',        short: 'Grade',  icon: '📆', mode: 'modal_grade',    action: () => setModalGradeSemanal(true) },
-                        { label: 'Backup / Restauração', short: 'Backup', icon: '💾', mode: 'modal_config',   action: () => setModalConfiguracoes(true) },
-                    ]
-                },
-            ]
-            const activeGroupItems = NAV_GROUPS.find(g => g.id === activeGroupId)?.items ?? []
             const voltouOnline = useVoltouOnline();
             useEffect(() => {
                 // Sem userId (modo local): carrega dados do IndexedDB diretamente
@@ -2038,7 +1983,6 @@ export default function BancoPlanos({ session }) {
                 novaAulaPreData, setNovaAulaPreData,
                 setViewMode, dataDia,
                 sidebarCollapsed, setSidebarCollapsed,
-                mobileSidebarOpen, setMobileSidebarOpen,
             };
 
             // ============================================================
@@ -2509,159 +2453,40 @@ export default function BancoPlanos({ session }) {
             };
             return (
                 <BancoPlanosContext.Provider value={ctx as any}>
-                <div className="min-h-screen bg-[#F6F8FB] dark:bg-[#0F172A] flex flex-col">
+                <div className="h-screen bg-[#F6F8FB] dark:bg-[#0F172A] flex overflow-hidden">
 
-                    {/* ══════════ HEADER — barra única 48px ══════════ */}
-                    {/* bg-[#ffffff] (não bg-white) para evitar override CSS do dark mode */}
-                    <div className="v2-head border-b border-[#E6EAF0] dark:border-[#2d3f6a] h-12 flex items-center flex-none safe-pt">
-                        <div className="w-full px-[18px] flex items-center gap-5 h-12">
+                    {/* ══ AppSidebar — navegação principal (desktop) ══ */}
+                    <AppSidebar
+                        activeSection={activeGroupId as SectionId}
+                        onNavigate={(section) => {
+                            const s = NAV_SECTIONS.find(x => x.id === section)!
+                            if (s.defaultMode === 'lista') { setModoEdicao(false); setPlanoEditando(null) }
+                            setViewMode(s.defaultMode)
+                        }}
+                        collapsed={sidebarCollapsed}
+                        onToggle={toggleSidebar}
+                        statusSalvamento={statusSalvamento}
+                        darkMode={darkMode}
+                        onThemeToggle={() => setThemeMode(m => m === 'light' ? 'dark' : 'light')}
+                        onBackupClick={baixarBackup}
+                    />
 
-                            {/* Logo */}
-                            <div className="flex items-center gap-[7px] flex-none">
-                                <span className="text-[17px] leading-none">🎵</span>
-                                <span className="text-[16px] font-bold tracking-[-0.03em] text-[#0f172a] dark:text-[#f1f5f9] leading-none">MusiLab</span>
-                            </div>
+                    {/* ══ Body: SectionTabs + conteúdo ══ */}
+                    <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-                            {/* Nav grupos — apenas desktop (mobile usa bottom nav) */}
-                            <nav className="hidden sm:flex items-center flex-1 overflow-x-auto scrollbar-hide">
-                                {NAV_GROUPS.map(group => {
-                                    const isGroupActive = activeGroupId === group.id
-                                    return (
-                                        <button key={group.id}
-                                            onClick={() => { const first = group.items[0]; first.action() }}
-                                            style={{
-                                                padding: '4px 11px',
-                                                borderRadius: '6px',
-                                                fontSize: '14px',
-                                                fontWeight: isGroupActive ? 600 : 500,
-                                                letterSpacing: '-0.01em',
-                                                whiteSpace: 'nowrap' as const,
-                                                cursor: 'pointer',
-                                                border: 'none',
-                                                fontFamily: 'inherit',
-                                                transition: 'background 120ms ease, color 120ms ease',
-                                                background: isGroupActive
-                                                    ? (darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.05)')
-                                                    : 'transparent',
-                                                color: isGroupActive
-                                                    ? (darkMode ? '#f1f5f9' : '#0f172a')
-                                                    : (darkMode ? '#9CA3AF' : '#64748b'),
-                                            }}
-                                            onMouseEnter={e => {
-                                                if (!isGroupActive) {
-                                                    (e.currentTarget as HTMLButtonElement).style.background = darkMode ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.03)'
-                                                    ;(e.currentTarget as HTMLButtonElement).style.color = darkMode ? '#f1f5f9' : '#0f172a'
-                                                }
-                                            }}
-                                            onMouseLeave={e => {
-                                                if (!isGroupActive) {
-                                                    (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
-                                                    ;(e.currentTarget as HTMLButtonElement).style.color = darkMode ? '#9CA3AF' : '#64748b'
-                                                }
-                                            }}
-                                        >
-                                            {group.label}
-                                            {group.id === 'posAula' && pendentesHoje > 0 && (
-                                                <span style={{
-                                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                                    marginLeft: '5px', minWidth: '16px', height: '16px', padding: '0 4px',
-                                                    borderRadius: '8px', fontSize: '10px', fontWeight: 700, lineHeight: 1,
-                                                    background: '#f59e0b', color: '#fff',
-                                                }}>{pendentesHoje}</span>
-                                            )}
-                                        </button>
-                                    )
-                                })}
-                            </nav>
+                        {/* SectionTabs — tabs horizontais por seção */}
+                        <SectionTabs
+                            activeSection={activeGroupId as SectionId}
+                            viewMode={viewMode as ViewMode}
+                            onNavigate={(mode) => {
+                                if (mode === 'lista') { setModoEdicao(false); setPlanoEditando(null) }
+                                setViewMode(mode)
+                            }}
+                            darkMode={darkMode}
+                        />
 
-                            {/* Spacer mobile */}
-                            <div className="flex-1 sm:hidden" />
-
-                            {/* Ações direita */}
-                            <div className="flex items-center gap-[7px] flex-none">
-
-                                {/* Status salvamento */}
-                                <div role="status" aria-live="polite" aria-atomic="true" className="flex-none">
-                                    {statusSalvamento === 'salvando' && (
-                                        <span style={{display:'flex',alignItems:'center',gap:'5px',padding:'3px 9px',borderRadius:'20px',fontSize:'11px',fontWeight:600,background:'rgba(245,158,11,0.12)',color: darkMode ? '#fbbf24' : '#d97706',border:'1px solid rgba(245,158,11,0.25)',letterSpacing:'0.01em',animation:'pulse 2s infinite'}}>
-                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{animation:'spin 1s linear infinite'}}>
-                                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
-                                                <path fill="currentColor" d="M4 12a8 8 0 018-8v8z" opacity="0.75"/>
-                                            </svg>
-                                            Salvando…
-                                        </span>
-                                    )}
-                                    {statusSalvamento === 'salvo' && (
-                                        <span style={{display:'flex',alignItems:'center',gap:'5px',padding:'3px 9px',borderRadius:'20px',fontSize:'11px',fontWeight:600,background: darkMode ? 'rgba(52,211,153,0.1)' : 'rgba(16,185,129,0.09)',color: darkMode ? '#34d399' : '#059669',border:`1px solid ${darkMode ? 'rgba(52,211,153,0.22)' : 'rgba(16,185,129,0.2)'}`,letterSpacing:'0.01em'}}>
-                                            <span style={{width:'5px',height:'5px',background:'currentColor',borderRadius:'50%',flexShrink:0}} />
-                                            Salvo
-                                        </span>
-                                    )}
-                                    {statusSalvamento === 'erro' && (
-                                        <button onClick={baixarBackup} title="Clique para baixar backup!" style={{display:'flex',alignItems:'center',gap:'5px',padding:'3px 9px',borderRadius:'20px',fontSize:'11px',fontWeight:600,background: darkMode ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.08)',color: darkMode ? '#f87171' : '#dc2626',border:`1px solid ${darkMode ? 'rgba(239,68,68,0.3)' : 'rgba(239,68,68,0.2)'}`,cursor:'pointer',letterSpacing:'0.01em'}}>
-                                            <span style={{width:'5px',height:'5px',background:'currentColor',borderRadius:'50%',flexShrink:0}} />
-                                            Erro — backup
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Date chip — desktop */}
-                                <div className="hidden sm:flex items-center gap-[5px] whitespace-nowrap" style={{padding:'4px 10px',background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(15,23,42,0.04)',border:`1px solid ${darkMode ? '#374151' : '#E6EAF0'}`,borderRadius:'7px',fontSize:'13px',color: darkMode ? '#9CA3AF' : '#64748b',letterSpacing:'-0.01em',transition:'all 200ms ease'}}>
-                                    <span>📅</span>
-                                    <strong style={{color: darkMode ? '#E5E7EB' : '#0f172a',fontWeight:600}}>
-                                        {new Date().toLocaleDateString('pt-BR', {weekday:'short', day:'numeric', month:'short'})}
-                                    </strong>
-                                </div>
-
-                                {/* Theme toggle — single cycling button */}
-                                <button
-                                    onClick={() => setThemeMode(m => m === 'light' ? 'dark' : 'light')}
-                                    title={darkMode ? 'Modo escuro (clique para claro)' : 'Modo claro (clique para escuro)'}
-                                    style={{display:'flex',alignItems:'center',justifyContent:'center',width:'28px',height:'28px',borderRadius:'7px',border:`1px solid ${darkMode ? '#374151' : '#E6EAF0'}`,background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(15,23,42,0.04)',cursor:'pointer',fontSize:'14px',transition:'all 200ms ease',flexShrink:0}}
-                                >
-                                    {darkMode ? '🌙' : '☀️'}
-                                </button>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ══ BODY: Sidebar + Área de conteúdo ══ */}
-                    <div className="flex flex-1 overflow-hidden">
-
-                        {/* ── Sidebar lateral (só se módulo tem 2+ sub-itens) ── */}
-                        {activeGroupItems.length >= 2 && (
-                            <ModuleSidebar
-                                items={activeGroupItems}
-                                collapsed={sidebarCollapsed}
-                                onToggle={toggleSidebar}
-                                activeMode={viewMode}
-                                mobileOpen={mobileSidebarOpen}
-                                onMobileClose={() => setMobileSidebarOpen(false)}
-                                sectionLabel={NAV_GROUPS.find(g => g.id === activeGroupId)?.label}
-                            />
-                        )}
-
-                        {/* ── Área de conteúdo principal (scrola internamente) ── */}
+                        {/* ── Área de conteúdo principal ── */}
                         <main className="flex-1 overflow-y-auto bg-[#F6F8FB] dark:bg-[#0F172A]">
-
-                            {/* Botão ☰ Seções — só no mobile, só quando há sidebar */}
-                            {activeGroupItems.length >= 2 && (
-                                <div className="sm:hidden flex items-center gap-2 px-4 pt-4 pb-3 border-b border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937]">
-                                    <button
-                                        type="button"
-                                        onClick={() => setMobileSidebarOpen(true)}
-                                        className="text-slate-500 dark:text-[#9CA3AF] hover:text-slate-700 dark:hover:text-white text-sm flex items-center gap-1.5 font-medium transition"
-                                    >
-                                        <span>☰</span>
-                                        <span>Seções</span>
-                                    </button>
-                                    <span className="text-slate-300 dark:text-[#4B5563]">›</span>
-                                    <span className="text-sm font-semibold text-slate-700 dark:text-[#E5E7EB]">
-                                        {activeGroupItems.find(i => i.mode === viewMode)?.label ?? ''}
-                                    </span>
-                                </div>
-                            )}
 
                             <div className="w-full px-4 sm:px-[30px] py-6 sm:py-[26px] pb-20 sm:pb-[30px]">
                                 {viewMode==='posAula'          && <ErrorBoundary modulo="Pós-aula"><Suspense fallback={<CarregandoModulo />}><TelaPosAula /></Suspense></ErrorBoundary>}
@@ -2922,24 +2747,21 @@ export default function BancoPlanos({ session }) {
 
 
 
-                    {/* ── BOTTOM NAVIGATION — apenas mobile ── */}
-                    {/* ══ MOBILE BOTTOM NAV — 6 grupos ══ */}
-                    <nav className="fixed bottom-0 left-0 right-0 sm:hidden bg-white border-t border-slate-200 flex justify-around items-center z-40"
+                    {/* ── BOTTOM NAVIGATION — apenas mobile (5 itens) ── */}
+                    <nav className="fixed bottom-0 left-0 right-0 sm:hidden bg-white dark:bg-[#1F2937] border-t border-slate-200 dark:border-[#374151] flex justify-around items-center z-40"
                          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        {NAV_GROUPS.map(group => {
-                            const isActive = activeGroupId === group.id
+                        {NAV_SECTIONS.map(section => {
+                            const isActive = activeGroupId === section.id
                             return (
-                                <button key={group.id}
-                                    onClick={() => { const first = group.items[0]; first.action() }}
+                                <button key={section.id}
+                                    onClick={() => {
+                                        const defaultMode = section.defaultMode
+                                        if (defaultMode === 'lista') { setModoEdicao(false); setPlanoEditando(null) }
+                                        setViewMode(defaultMode)
+                                    }}
                                     className={`flex flex-col items-center gap-0.5 px-1 py-2 transition active:scale-95 min-w-0 flex-1
-                                        ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}>
-                                    <span className="relative inline-flex">
-                                        <span className="text-lg leading-none">{group.icon}</span>
-                                        {group.id === 'posAula' && pendentesHoje > 0 && (
-                                            <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-[3px] rounded-full text-[9px] font-bold leading-[14px] text-center bg-amber-400 text-white">{pendentesHoje}</span>
-                                        )}
-                                    </span>
-                                    <span className="text-[10px] font-medium">{group.short}</span>
+                                        ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-[#6B7280]'}`}>
+                                    <span className="text-[10px] font-medium leading-tight">{section.shortLabel}</span>
                                 </button>
                             )
                         })}

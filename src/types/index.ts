@@ -140,6 +140,7 @@ export interface RegistroPosAula {
   audioNotaDeVoz?: string   // base64 do blob de áudio (sem prefixo data:...)
   audioDuracao?: number     // segundos gravados
   audioMime?: string        // mime type (ex: 'audio/webm')
+  nivelTecnicoMusical?: number  // 1–5: 1=muito abaixo, 3=dentro, 5=muito acima do esperado
 }
 
 export interface Plano {

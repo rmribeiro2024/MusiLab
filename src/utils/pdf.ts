@@ -65,6 +65,9 @@ export async function exportarPlanoPDF(plano) {
             return txt.value
         } catch { return str }
     }
+    // Trunca URL para exibição: mantém domínio + path curto
+    const truncUrl = (url: string, max = 60) => url.length > max ? url.slice(0, max) + '...' : url;
+
     const htmlToText = (html) => {
         if (!html) return '';
         // Iframes de YouTube/Spotify → texto descritivo
@@ -78,10 +81,24 @@ export async function exportarPlanoPDF(plano) {
             .replace(/<\/li>/gi, '\n')
             .replace(/<li[^>]*>/gi, '- ')
             .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '')
-            .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '$2 ($1)')
+            // links: se texto == href, não duplicar; senão "Texto (url)"
+            .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (_m, href, text) => {
+                const t = text.replace(/<[^>]*>/g, '').trim()
+                return (t === href || !t) ? truncUrl(href) : `${t} (${truncUrl(href)})`
+            })
             .replace(/<[^>]*>/g, '')
-        return decodeEntities(stripped).replace(/\n{3,}/g, '\n\n').trim();
+        const decoded = decodeEntities(stripped)
+            // Remove símbolo de parágrafo TipTap (%¶ ou ¶ isolado) — causa kerning em jsPDF
+            .replace(/%?¶\s*/g, '')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim()
+        return decoded
     };
+
+    // safe(): quando Roboto não carregou, Helvetica não suporta acentos — normaliza
+    const safe = (s: string) => FONTE_PDF === 'helvetica'
+        ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        : s;
 
     let y = 0;
 
@@ -98,12 +115,11 @@ export async function exportarPlanoPDF(plano) {
     };
     const sectionTitle = (label) => {
         chk(16);
-        rule(6, 0);
-        y += 6;
+        y += 5;
         doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(8.5);
         doc.setTextColor(...LABEL);
         doc.text(label.toUpperCase(), mL, y);
-        y += 6;
+        y += 5;
         doc.setFont(FONTE_PDF, "normal"); doc.setTextColor(...DARK);
     };
     // Escreve bloco de texto com quebra de linha automática
@@ -168,7 +184,7 @@ export async function exportarPlanoPDF(plano) {
     // OBJETIVOS
     // ════════════════════════════════
     const objGeral = htmlToText(plano.objetivoGeral);
-    const objEsp = (plano.objetivosEspecificos||[]).map(o => htmlToText(o)).filter(o => o.trim());
+    const objEsp = (plano.objetivosEspecificos||[]).map(o => htmlToText(o)).filter(o => o.trim() && o.trim() !== '-');
     if (objGeral || objEsp.length > 0) {
         sectionTitle("Objetivos de Aprendizagem");
         if (objGeral) {
@@ -180,7 +196,7 @@ export async function exportarPlanoPDF(plano) {
             doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(9); doc.setTextColor(...LABEL);
             doc.text("ESPECIFICOS", mL, y); y += 6;
             objEsp.forEach(o => {
-                o.split('\n').filter(l => l.trim()).forEach(linha => {
+                o.split('\n').filter(l => l.trim() && l.trim() !== '-').forEach(linha => {
                     const txt = (linha.startsWith('-') ? '' : '- ') + linha.trim();
                     // cW - 11: desconta indentação (4mm 1ª linha / 7mm cont.) + 2mm folga margem
                     const ls = doc.splitTextToSize(txt, cW - 11);
@@ -193,67 +209,56 @@ export async function exportarPlanoPDF(plano) {
     }
 
     // ════════════════════════════════
-    // CONCEITOS E UNIDADES
-    // ════════════════════════════════
-    if (plano.conceitos && plano.conceitos.length > 0) {
-        sectionTitle("Conceitos Musicais");
-        para(plano.conceitos.join('  |  '), 0, 11);
-        y += 3;
-    }
-    if (plano.unidades && plano.unidades.length > 0) {
-        sectionTitle("Unidades");
-        para(plano.unidades.join('  |  '), 0, 11);
-        y += 3;
-    }
-
-    // ════════════════════════════════
     // ROTEIRO DE ATIVIDADES
     // ════════════════════════════════
     if (plano.atividadesRoteiro && plano.atividadesRoteiro.length > 0) {
         sectionTitle("Roteiro de Atividades");
-        plano.atividadesRoteiro.forEach((ativ, idx) => {
+        plano.atividadesRoteiro.forEach((ativ) => {
             chk(22);
-            // Nome da atividade
-            const header = (idx + 1) + '. ' + (ativ.nome || 'Atividade');
+            // Título + duração inline: "Nome da etapa (20 min)"
+            const durStr = ativ.duracao ? ' (' + ativ.duracao + ')' : '';
+            const header = (ativ.nome || safe('Atividade')) + durStr;
             doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(12); doc.setTextColor(...DARK);
-            const hLines = doc.splitTextToSize(header, cW - 28);
+            const hLines = doc.splitTextToSize(header, cW);
             hLines.forEach(l => { chk(7); doc.text(l, mL, y); y += 7; });
-            // Duração alinhada à direita
-            if (ativ.duracao) {
-                doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(10); doc.setTextColor(...LABEL);
-                doc.text(ativ.duracao, W - mR, y - 7, { align: 'right' });
-            }
-            // Descricao
+            // Linha divisória fina sob o título da atividade
+            doc.setDrawColor(...RULE); doc.setLineWidth(0.18);
+            doc.line(mL, y - 1, mL + cW, y - 1);
+            y += 2;
+            // Descricao — bullets de htmlToText, sub-itens com indentação extra
             if (ativ.descricao) {
                 const desc = htmlToText(ativ.descricao);
                 if (desc.trim()) {
-                    desc.split('\n').filter(l => l.trim()).forEach(linha => {
-                        const ls = doc.splitTextToSize(linha.trim(), cW - 5);
-                        doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
-                        ls.forEach(l => { chk(LS); doc.text(l, mL + 5, y); y += LS; });
+                    desc.split('\n').filter(l => l.trim() && l.trim() !== '-').forEach(linha => {
+                        const txt = linha.trim();
+                        // Detecta sub-item: começa com letra maiúscula+) ou número+) tipo "A)", "B)", "1)"
+                        const isSubItem = /^[A-Za-z0-9]\)/.test(txt);
+                        const isBullet = txt.startsWith('-');
+                        const indent = isSubItem ? 10 : isBullet ? 5 : 5;
+                        const wrapW = cW - indent - 4;
+                        const ls = doc.splitTextToSize(txt, wrapW);
+                        const color = isSubItem ? LABEL : DARK;
+                        doc.setFont(FONTE_PDF, isSubItem ? "italic" : "normal");
+                        doc.setFontSize(isSubItem ? 10 : 11);
+                        doc.setTextColor(...color);
+                        ls.forEach((l, i) => { chk(LS); doc.text(l, mL + indent + (i > 0 ? 4 : 0), y); y += LS; });
                     });
                 }
             }
-            // Objetivo da atividade
-            if (ativ.objetivo && ativ.objetivo.trim()) {
-                chk(LS);
-                doc.setFont(FONTE_PDF, "italic"); doc.setFontSize(10); doc.setTextColor(...LABEL);
-                const ls = doc.splitTextToSize('Objetivo: ' + ativ.objetivo.trim(), cW - 5);
-                ls.forEach(l => { chk(LS); doc.text(l, mL + 5, y); y += LS; });
-            }
-            // Links/recursos — sem Unicode, apenas ASCII
+            // Links dentro da descrição já foram tratados pelo htmlToText (truncUrl).
+            // Recursos externos — deduplica: ignora se a URL já aparece na descrição renderizada
             if (ativ.recursos && ativ.recursos.length > 0) {
-                ativ.recursos.forEach(rec => {
+                const descText = htmlToText(ativ.descricao || '')
+                ativ.recursos.slice(0, 2).forEach(rec => {
                     const url = typeof rec === 'string' ? rec : (rec.url || '');
-                    if (!url) return;
+                    if (!url || descText.includes(url.slice(0, 30))) return;
                     chk(LS);
-                    doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(9.5); doc.setTextColor(59, 130, 246);
-                    const label = 'Link: ' + url;
-                    const ls = doc.splitTextToSize(label, cW - 5);
+                    doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(9); doc.setTextColor(59, 130, 246);
+                    const ls = doc.splitTextToSize('Link: ' + truncUrl(url, 70), cW - 5);
                     ls.forEach(l => { chk(LS); doc.text(l, mL + 5, y); y += LS; });
                 });
             }
-            y += 5;
+            y += 6;
         });
     }
 
@@ -278,33 +283,6 @@ export async function exportarPlanoPDF(plano) {
     }
 
     // ════════════════════════════════
-    // AVALIACAO
-    // ════════════════════════════════
-    const temAvaliacao = plano.avaliacaoEvidencia?.trim() || plano.avaliacaoFechamento?.trim() || plano.avaliacaoContingencia?.trim() || plano.avaliacaoObservacoes?.trim()
-    if (temAvaliacao) {
-        sectionTitle("Avaliacao");
-        const addCampo = (label: string, valor?: string) => {
-            if (!valor?.trim()) return
-            doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(10); doc.setTextColor(...LABEL);
-            chk(LS); doc.text(label, mL, y); y += LS;
-            doc.setFont(FONTE_PDF, "italic"); doc.setFontSize(11); doc.setTextColor(...DARK);
-            const ls = doc.splitTextToSize(valor.trim(), cW);
-            ls.forEach(l => { chk(LS); doc.text(l, mL, y); y += LS; });
-            y += 2;
-        }
-        if (plano.avaliacaoEvidencia || plano.avaliacaoFechamento || plano.avaliacaoContingencia) {
-            addCampo("O que observarei para saber se funcionou:", plano.avaliacaoEvidencia)
-            addCampo("Pergunta para o fechamento:", plano.avaliacaoFechamento)
-            addCampo("Se nao funcionar:", plano.avaliacaoContingencia)
-        } else if (plano.avaliacaoObservacoes?.trim()) {
-            doc.setFont(FONTE_PDF, "italic"); doc.setFontSize(11); doc.setTextColor(...DARK);
-            const ls = doc.splitTextToSize(plano.avaliacaoObservacoes.trim(), cW);
-            ls.forEach(l => { chk(LS); doc.text(l, mL, y); y += LS; });
-        }
-        y += 3;
-    }
-
-    // ════════════════════════════════
     // RODAPE em todas as paginas
     // ════════════════════════════════
     const totalPages = doc.getNumberOfPages();
@@ -313,7 +291,7 @@ export async function exportarPlanoPDF(plano) {
         doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
         doc.line(mL, H - 14, W - mR, H - 14);
         doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(8.5); doc.setTextColor(...LABEL);
-        doc.text("MusiLab - Plano de Aula", mL, H - 9);
+        doc.text(safe("MusiLab \u2022 Planejamento inteligente de aulas de musica"), mL, H - 9);
         doc.text(p + ' / ' + totalPages, W - mR, H - 9, { align: 'right' });
     }
 

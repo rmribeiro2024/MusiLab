@@ -944,7 +944,7 @@ export default function ModuloRepertorio() {
                                         }
                                     }
                                     setPendingAtividadeId(null);
-                                    setViewMode('planos');
+                                    setViewMode('lista');
                                     showToast('Música salva e vinculada à atividade!', 'success');
                                 } else {
                                     showToast('Música salva!', 'success');

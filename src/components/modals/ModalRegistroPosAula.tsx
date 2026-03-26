@@ -549,23 +549,36 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
         rec.onerror = () => setGravandoEnc(false)
         recognitionEncRef.current = rec; rec.start(); setGravandoEnc(true)
     }
-    // ── Importar campos de registro anterior (mesmo plano, outra turma, últimos 7 dias) ──
+    // ── Importar campos de registro anterior (mesmo plano + mesma série, outra turma, mais recente) ──
     const [importBannerDismissed, setImportBannerDismissed] = React.useState(false)
     React.useEffect(() => { setImportBannerDismissed(false) }, [regTurmaSel, planoParaRegistro?.id])
 
     const registroImportavel = React.useMemo(() => {
         if (!planoParaRegistro || registroEditando) return null
-        const hoje = new Date()
-        const limiteMs = 7 * 24 * 60 * 60 * 1000
+        // Resolve o nome do segmento a partir do seu ID, percorrendo anosLetivos
+        const resolverSegNome = (segId: unknown): string => {
+            for (const a of anosLetivos) {
+                for (const esc of (a.escolas ?? [])) {
+                    const seg = (esc.segmentos ?? []).find((s: any) => s.id == segId)
+                    if (seg) return seg.nome
+                }
+            }
+            return ''
+        }
+        const serieAtual = resolverSegNome(regSegmentoSel)
         const regs = (planoParaRegistro.registrosPosAula || [])
             .filter((r: any) => {
                 if (String(r.turma) === String(regTurmaSel)) return false
-                const diff = hoje.getTime() - new Date(r.data + 'T12:00:00').getTime()
-                return diff >= 0 && diff <= limiteMs
+                // Mesma série (segmento nome) — se ambos resolvíveis, exige igualdade
+                if (serieAtual) {
+                    const serieReg = resolverSegNome(r.segmento || r.serie)
+                    if (serieReg && serieReg !== serieAtual) return false
+                }
+                return true
             })
             .sort((a: any, b: any) => b.data.localeCompare(a.data))
         return regs[0] ?? null
-    }, [planoParaRegistro, regTurmaSel, registroEditando])
+    }, [planoParaRegistro, regTurmaSel, regSegmentoSel, registroEditando, anosLetivos])
 
     function resolverTurmaNome(turmaId: unknown): string {
         for (const a of anosLetivos) {
@@ -584,6 +597,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
     // ── estados de áudio (B3) ──
     const [mostrarAvancados, setMostrarAvancados] = React.useState(false)
     const [encAberto, setEncAberto] = React.useState(false)
+    const [nivelAberto, setNivelAberto] = React.useState(false)
     const [evidenciaAberta, setEvidenciaAberta] = React.useState(false)
     const [aprovAberto, setAprovAberto] = React.useState(false)
     const [checkFlash, setCheckFlash] = React.useState(false)
@@ -819,7 +833,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
     // ── Campos de anotação ──
     const camposConfig = [
         { id: 'reg-aprenderam', icon: '🎯', label: 'O que os alunos demonstraram aprender?',  field: 'funcionouBem', placeholder: 'Ex: 3 alunos tocaram a cadência completa sem parar. A turma manteve o pulso estável por 2 compassos pela primeira vez...' },
-        { id: 'reg-repetiria',  icon: '⭐', label: 'O que funcionou e você faria de novo?',   field: 'repetiria',    placeholder: 'Ex: A demonstração tocada antes de explicar — os alunos entenderam muito mais rápido. Repetiria sempre que introduzir técnica nova...' },
+        { id: 'reg-repetiria',  icon: '⭐', label: 'O que funcionou bem e você repetiria?',   field: 'repetiria',    placeholder: 'Ex: A demonstração tocada antes de explicar — os alunos entenderam muito mais rápido. Repetiria sempre que introduzir técnica nova...' },
         { id: 'reg-mudar',      icon: '💭', label: 'O que faria diferente?',                   field: 'fariadiferente', placeholder: 'Se você pudesse dar esta aula de novo sabendo o que sabe agora — o que faria diferente?' },
     ] as const
 
@@ -1388,7 +1402,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                     onClick={() => setEncAberto(v => !v)}>
                                                     <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📌</span>
                                                     <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: encaminhamentos.length > 0 ? c.textMain : c.textMed, flex: 1 }}>
-                                                        {isRevisao ? 'O que fazer na próxima aula?' : 'Algum lembrete para a próxima aula?'}
+                                                        {isRevisao ? 'O que fazer na próxima aula?' : 'Lembretes para a próxima aula'}
                                                     </span>
                                                     {encaminhamentos.length > 0 && (
                                                         <span style={{ fontSize: 10, color: '#6366f1', fontWeight: 700, background: '#eef2ff', padding: '1px 8px', borderRadius: 99, border: '1px solid #c7d2fe', flexShrink: 0 }}>
@@ -1493,7 +1507,45 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 )
                                             })()}
 
-                                            {/* ── 2. Como estava a turma hoje — contexto ── */}
+                                            {/* ── 2. Nível musical da turma ── */}
+                                            {(() => {
+                                                const DESCRICOES = ['Muito abaixo do esperado', 'Abaixo do esperado', 'Dentro do esperado', 'Acima do esperado', 'Muito acima do esperado']
+                                                const val: number = (novoRegistro as any).nivelTecnicoMusical ?? 0
+                                                const setVal = (n: number) => setNovoRegistro({ ...novoRegistro, nivelTecnicoMusical: val === n ? 0 : n } as any)
+                                                const aberto = nivelAberto || val > 0
+                                                return (
+                                                    <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}
+                                                            onClick={() => setNivelAberto(v => !v)}>
+                                                            <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>🎵</span>
+                                                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: val > 0 ? c.textMain : c.textMed, flex: 1 }}>
+                                                                Nível musical da turma
+                                                            </span>
+                                                            {val > 0 && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                            <span style={{ fontSize: 10, color: c.textMuted, transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
+                                                        </div>
+                                                        {aberto && (
+                                                            <div style={{ padding: '4px 12px 14px' }}>
+                                                                <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginBottom: 6 }}>
+                                                                    {[1, 2, 3, 4, 5].map(n => (
+                                                                        <button key={n} type="button" onClick={() => setVal(n)}
+                                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 30, lineHeight: 1, padding: '4px 8px', color: n <= val ? '#f59e0b' : c.border, transition: 'color .1s, transform .1s', outline: 'none' }}
+                                                                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.18)' }}
+                                                                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)' }}>
+                                                                            {n <= val ? '★' : '☆'}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                                {val > 0 && (
+                                                                    <p style={{ textAlign: 'center', fontSize: 12, color: c.textMed, margin: 0 }}>{DESCRICOES[val - 1]}</p>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })()}
+
+                                            {/* ── 3. Como estava a turma hoje — contexto ── */}
                                             <BehaviorChip
                                                 value={(novoRegistro as any).comportamento || ''}
                                                 filled={!!((novoRegistro as any).comportamento?.trim())}
@@ -1552,9 +1604,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
 
                                             {/* ── 5–7. Análise e diagnóstico — ordem: surpresa → queda → atenção ── */}
                                             {[
-                                                { id: 'av-surpresa',  icon: '🎵', label: 'O que os alunos fizeram musicalmente que não esperava?', field: 'surpresaMusical', placeholder: 'Ex: Joana improvisou uma variação espontânea — vale explorar na próxima aula...' },
+                                                { id: 'av-surpresa',  icon: '🎵', label: 'O que os alunos fizeram musicalmente que surpreendeu?', field: 'surpresaMusical', placeholder: 'Ex: Joana improvisou uma variação espontânea — vale explorar na próxima aula...' },
                                                 { id: 'av-queda',     icon: '📉', label: 'Em que ponto o engajamento caiu?',             field: 'pontoQueda',      placeholder: 'Ex: Na explicação teórica após o aquecimento — a atividade prática antes funcionou melhor...' },
-                                                { id: 'av-atencao',   icon: '👤', label: 'Qual aluno merece atenção especial na próxima aula?',      field: 'alunoAtencao',    placeholder: 'Ex: João ainda trava na troca G→D — dar atenção individual na próxima aula...' },
+                                                { id: 'av-atencao',   icon: '👤', label: 'Algum aluno precisa de atenção especial?',      field: 'alunoAtencao',    placeholder: 'Ex: João ainda trava na troca G→D — dar atenção individual na próxima aula...' },
                                             ].map(({ id, icon, label, field, placeholder }) => {
                                                 const valor = (novoRegistro as any)[field] || ''
                                                 return (
@@ -2079,6 +2131,8 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                     const toggleReg = () => setExpandedRegs(prev => { const next = new Set(prev); if (next.has(reg.id ?? i)) next.delete(reg.id ?? i); else next.add(reg.id ?? i); return next })
 
                                                     // Campos preenchidos para chips de leitura
+                                                    const nivelStars = (reg as any).nivelTecnicoMusical ? '★'.repeat((reg as any).nivelTecnicoMusical) + '☆'.repeat(5 - (reg as any).nivelTecnicoMusical) : ''
+                                                    const NIVEL_DESC = ['Muito abaixo do esperado', 'Abaixo do esperado', 'Dentro do esperado', 'Acima do esperado', 'Muito acima do esperado']
                                                     const chipFields = [
                                                         { icon: '📋', label: 'Realizado',              text: reg.resumoAula },
                                                         { icon: '✅', label: 'O que aprenderam',        text: reg.funcionouBem },
@@ -2087,6 +2141,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                         { icon: '🔧', label: 'Poderia ter sido melhor', text: reg.poderiaMelhorar },
                                                         { icon: '💡', label: 'Próxima aula / estratégias',            text: reg.proximaAula },
                                                         { icon: '👥', label: 'Comportamento',           text: reg.comportamento },
+                                                        { icon: '🎵', label: 'Nível musical',           text: nivelStars ? `${nivelStars} · ${NIVEL_DESC[(reg as any).nivelTecnicoMusical - 1]}` : '' },
                                                         { icon: '📝', label: 'Anotações gerais',        text: reg.anotacoesGerais },
                                                     ].filter(f => f.text?.trim())
                                                     let urlEvidenciaValida = false
@@ -2256,7 +2311,6 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                         // Limpa rascunho
                                         if (regTurmaSel && novoRegistro.dataAula)
                                             localStorage.removeItem(`posAulaDraft-${regTurmaSel}-${novoRegistro.dataAula}`)
-                                        showToast('Registro salvo ✓')
                                         if (onVoltar) onVoltar()
                                     }}
                                     className="px-4 py-2 rounded-lg border border-[#cbd5e1] dark:border-[#374151] bg-transparent text-[#64748b] dark:text-[#9CA3AF] text-[13px] font-semibold hover:border-[#94a3b8] dark:hover:border-[#6b7280] hover:text-[#475569] dark:hover:text-[#E5E7EB] transition">
