@@ -285,12 +285,25 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onEditarDesc, 
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Retorna 'antes' | 'agora' | 'depois' comparando horário HH:MM com hora atual */
+function statusHorario(horario: string | undefined): 'antes' | 'agora' | 'depois' {
+  if (!horario) return 'depois'
+  const now = new Date()
+  const [hh, mm] = horario.split(':').map(Number)
+  const aulaMin = hh * 60 + mm
+  const nowMin = now.getHours() * 60 + now.getMinutes()
+  if (nowMin < aulaMin) return 'depois'
+  if (nowMin <= aulaMin + 60) return 'agora'
+  return 'antes'
+}
+
 interface AulaCardProps {
   slot: AulaSlot
   isDarkMode: boolean
+  isProxima?: boolean
 }
 
-function AulaCard({ slot, isDarkMode }: AulaCardProps) {
+function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
   const { setAplicacoes } = useAplicacoesContext()
   const { planos } = usePlanosContext()
   const {
@@ -406,9 +419,20 @@ function AulaCard({ slot, isDarkMode }: AulaCardProps) {
 
   return (
     <div
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md"
+      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md ${
+        isProxima ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 ring-offset-1 dark:ring-offset-gray-900' : ''
+      }`}
       style={{ borderLeft: `3px solid ${borderColor}` }}
     >
+      {/* Badge "próxima aula" */}
+      {isProxima && (
+        <div className="px-4 pt-2 pb-0">
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-full">
+            🎯 Próxima aula
+          </span>
+        </div>
+      )}
+
       {/* Cabeçalho — clicável */}
       <div
         className="px-4 py-3 flex items-start gap-3 cursor-pointer select-none"
@@ -429,15 +453,20 @@ function AulaCard({ slot, isDarkMode }: AulaCardProps) {
           <p className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate">
             {slot.nomeTurma}
           </p>
-          {slot.plano && (
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 truncate">
-              {slot.plano.titulo}
+          {slot.plano ? (
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+              📋 {slot.plano.titulo}
             </p>
+          ) : (
+            <p className="text-xs text-amber-500 dark:text-amber-400 mt-0.5">⚠ Sem plano vinculado</p>
           )}
         </div>
 
-        {/* Chevron */}
-        <div className="flex items-center shrink-0">
+        {/* Status + Chevron */}
+        <div className="flex items-center gap-2 shrink-0 pt-0.5">
+          {jaRegistrado && !aberto && (
+            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-full">✅</span>
+          )}
           <svg
             className={`w-4 h-4 text-slate-400 transition-transform ${aberto ? 'rotate-180' : ''}`}
             viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"
@@ -663,6 +692,28 @@ interface AgendaDiaProps {
 
 function AgendaDia({ dataStr, escolaColorMap, isDarkMode }: AgendaDiaProps) {
   const slots = useAgendaSlotsForDay(dataStr, escolaColorMap)
+  const { planos } = usePlanosContext()
+  const isHoje = dataStr === toStr(new Date())
+
+  // Stats para o resumo
+  const stats = useMemo(() => {
+    const total = slots.length
+    const comPlano = slots.filter(s => s.plano).length
+    const registradas = slots.filter(s => {
+      const tid = String(s.aulaGrade.turmaId)
+      return planos.some(p => (p.registrosPosAula ?? []).some(r => r.data === s.dataStr && String(r.turma) === tid))
+    }).length
+    const pendentes = total - registradas
+    return { total, comPlano, registradas, pendentes }
+  }, [slots, planos])
+
+  // Índice da próxima aula (só relevante para hoje)
+  const proximaIdx = useMemo(() => {
+    if (!isHoje) return -1
+    // Primeira aula com status 'agora' ou 'depois' (ainda não aconteceu/está acontecendo)
+    const idx = slots.findIndex(s => statusHorario(s.aulaGrade.horario) !== 'antes')
+    return idx
+  }, [slots, isHoje])
 
   if (slots.length === 0) {
     return (
@@ -675,12 +726,40 @@ function AgendaDia({ dataStr, escolaColorMap, isDarkMode }: AgendaDiaProps) {
 
   return (
     <div>
+      {/* Barra de resumo */}
+      <div className="flex items-center gap-3 mb-4 px-1">
+        <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+          {stats.total} aula{stats.total !== 1 ? 's' : ''}
+        </span>
+        <span className="text-slate-300 dark:text-slate-600">·</span>
+        <span className={`text-sm font-medium ${stats.comPlano === stats.total ? 'text-indigo-500 dark:text-indigo-400' : 'text-amber-500 dark:text-amber-400'}`}>
+          {stats.comPlano === stats.total ? '✓ Todas planejadas' : `${stats.comPlano} planejada${stats.comPlano !== 1 ? 's' : ''}`}
+        </span>
+        {stats.registradas > 0 && (
+          <>
+            <span className="text-slate-300 dark:text-slate-600">·</span>
+            <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+              {stats.registradas} registrada{stats.registradas !== 1 ? 's' : ''}
+            </span>
+          </>
+        )}
+        {isHoje && stats.pendentes > 0 && stats.pendentes < stats.total && (
+          <>
+            <span className="text-slate-300 dark:text-slate-600">·</span>
+            <span className="text-sm font-medium text-slate-400 dark:text-slate-500">
+              {stats.pendentes} a registrar
+            </span>
+          </>
+        )}
+      </div>
+
       <div className="space-y-3">
-        {slots.map(slot => (
+        {slots.map((slot, idx) => (
           <AulaCard
             key={`${slot.aulaGrade.id}-${slot.dataStr}`}
             slot={slot}
             isDarkMode={isDarkMode}
+            isProxima={isHoje && idx === proximaIdx}
           />
         ))}
       </div>
@@ -784,9 +863,21 @@ export default function AgendaView() {
     setDiaSelecionado(toStr(ns))
   }
 
+  const saudacao = useMemo(() => {
+    const h = new Date().getHours()
+    if (h < 12) return 'Bom dia'
+    if (h < 18) return 'Boa tarde'
+    return 'Boa noite'
+  }, [])
+
   return (
     <div className="mx-auto px-4 pb-10 max-w-2xl">
-      <p className="text-sm text-slate-400 dark:text-slate-500 capitalize mb-5">{labelDia}</p>
+      <div className="mb-5">
+        <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-100 leading-tight">
+          {saudacao} 🎵
+        </h1>
+        <p className="text-sm text-slate-400 dark:text-slate-500 capitalize mt-0.5">{labelDia}</p>
+      </div>
       <AgendaDia dataStr={hoje} escolaColorMap={escolaColorMap} isDarkMode={isDarkMode} />
     </div>
   )
