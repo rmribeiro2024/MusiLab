@@ -165,7 +165,7 @@ const AccordionChip = React.forwardRef<() => void, {
                         value={gravando && interimText ? (value ? value + ' ' + interimText : interimText) : value}
                         onChange={e => { if (!gravando) onChange(e.target.value) }}
                         onKeyDown={e => { if (e.key === 'Tab') { e.preventDefault(); setOpen(false); onTabNext?.() } }}
-                        rows={isTouchDevice ? 3 : 2} placeholder={placeholder} autoFocus={!('ontouchstart' in window)}
+                        rows={isTouchDevice ? 4 : 2} placeholder={placeholder} autoFocus={!('ontouchstart' in window)}
                         style={{ width: '100%', padding: '9px 10px', border: `1px solid ${gravando ? (speechAtivo ? '#fca5a5' : '#f97316') : c.border}`, borderRadius: 8, fontSize: 13, color: gravando && interimText ? '#94a3b8' : c.textMain, background: c.inputBg, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', transition: 'border-color .2s, color .2s' }}
                         onFocus={e => { if (!gravando) e.target.style.borderColor = '#94a3b8' }}
                         onBlur={e  => { if (!gravando) e.target.style.borderColor = c.border }}
@@ -291,7 +291,7 @@ const BehaviorChip = React.forwardRef<() => void, {
                         {expanded ? '− menos opções' : '+ mais opções'}
                     </button>
                     <textarea value={nota} onChange={e => { setNota(e.target.value); emit(selectedIds, e.target.value) }}
-                        rows={('ontouchstart' in window) ? 3 : 2} placeholder="Se quiser, descreva um pouco mais…"
+                        rows={('ontouchstart' in window) ? 4 : 2} placeholder="Se quiser, descreva um pouco mais…"
                         style={{ width: '100%', padding: '8px 10px', border: `1px solid ${cb.border}`, borderRadius: 8, fontSize: 12, color: cb.textMain, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', background: cb.inputBg }}
                         onFocus={e => (e.target.style.borderColor = '#94a3b8')}
                         onBlur={e  => (e.target.style.borderColor = cb.border)}
@@ -1589,7 +1589,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                             <textarea
                                                                 value={(novoRegistro as any).contextoAulaDetalhe || ''}
                                                                 onChange={e => setNovoRegistro({ ...novoRegistro, contextoAulaDetalhe: e.target.value } as any)}
-                                                                rows={('ontouchstart' in window) ? 3 : 2} placeholder="Detalhe o que aconteceu... (opcional)"
+                                                                rows={('ontouchstart' in window) ? 4 : 2} placeholder="Detalhe o que aconteceu... (opcional)"
                                                                 style={{ width: '100%', padding: '8px 36px 8px 10px', border: `1px solid ${c.border}`, borderRadius: 8, fontSize: 12, color: c.textMain, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', background: c.inputBg }}
                                                                 onFocus={e => (e.target.style.borderColor = '#94a3b8')}
                                                                 onBlur={e  => (e.target.style.borderColor = c.border)}
