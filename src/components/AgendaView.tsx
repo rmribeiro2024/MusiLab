@@ -419,10 +419,12 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
 
   return (
     <div
-      className={`bg-white dark:bg-[#1F2937] rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md ${
-        isProxima ? 'ring-1 ring-[#5B5FEA]/30' : ''
-      }`}
-      style={{ borderLeft: `3px solid ${borderColor}` }}
+      className={`rounded-lg overflow-hidden transition-shadow ${
+        jaRegistrado
+          ? 'bg-slate-50 dark:bg-[#1A2333]'
+          : 'bg-white dark:bg-[#1F2937] shadow-sm hover:shadow-md'
+      } ${isProxima ? 'ring-1 ring-[#5B5FEA]/30' : ''}`}
+      style={{ borderLeft: jaRegistrado ? `2px solid ${borderColor}55` : `3px solid ${borderColor}` }}
     >
       {/* Label "próxima" — só aparece quando a aula é a próxima do dia */}
       {isProxima && (
@@ -450,7 +452,9 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
               {slot.nomeEscola}
             </p>
           )}
-          <p className="text-[13px] font-bold tracking-tight text-slate-800 dark:text-[#E5E7EB] truncate">
+          <p className={`text-[13px] font-bold tracking-tight truncate ${
+            jaRegistrado ? 'text-slate-400 dark:text-[#4B5563]' : 'text-slate-800 dark:text-[#E5E7EB]'
+          }`}>
             {slot.nomeTurma}
           </p>
           {slot.plano ? (
@@ -464,6 +468,15 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
 
         {/* Indicador de registro + Chevron */}
         <div className="flex items-center gap-2 shrink-0 pt-1">
+          {/* Botão rápido: só aparece em aulas passadas não registradas, com card fechado */}
+          {!jaRegistrado && !aberto && statusHorario(slot.aulaGrade.horario) === 'antes' && (
+            <button
+              onClick={abrirRegistro}
+              className="text-[11px] font-semibold text-[#5B5FEA] dark:text-[#818cf8] hover:text-[#4f53d4] dark:hover:text-[#a5b4fc] transition-colors"
+            >
+              Registrar
+            </button>
+          )}
           {jaRegistrado && !aberto && (
             <span className="w-2 h-2 rounded-full bg-emerald-500/70 dark:bg-emerald-400/60 shrink-0" />
           )}
@@ -752,6 +765,16 @@ function AgendaDia({ dataStr, escolaColorMap, isDarkMode }: AgendaDiaProps) {
         )}
       </div>
 
+      {/* Barra de progresso do dia */}
+      {stats.total > 0 && (
+        <div className="w-full h-[3px] bg-slate-100 dark:bg-[#374151] rounded-full overflow-hidden mb-4">
+          <div
+            className="h-full bg-[#5B5FEA] dark:bg-[#818cf8] rounded-full transition-all duration-500"
+            style={{ width: `${(stats.registradas / stats.total) * 100}%` }}
+          />
+        </div>
+      )}
+
       <div className="space-y-3">
         {slots.map((slot, idx) => (
           <AulaCard
@@ -771,6 +794,7 @@ function AgendaDia({ dataStr, escolaColorMap, isDarkMode }: AgendaDiaProps) {
 
 export default function AgendaView() {
   const { anosLetivos } = useAnoLetivoContext()
+  const { planos } = usePlanosContext()
 
   const hoje = useMemo(() => toStr(new Date()), [])
   const [tab, setTab] = useState<TabMode>('hoje')
@@ -862,18 +886,27 @@ export default function AgendaView() {
     setDiaSelecionado(toStr(ns))
   }
 
-  const saudacao = useMemo(() => {
-    const h = new Date().getHours()
-    if (h < 12) return 'Bom dia'
-    if (h < 18) return 'Boa tarde'
-    return 'Boa noite'
-  }, [])
+  // Slots de hoje para o header inteligente (sem re-renderizar AgendaDia)
+  const slotsHoje = useAgendaSlotsForDay(hoje, escolaColorMap)
+
+  const headerMsg = useMemo(() => {
+    const total = slotsHoje.length
+    if (total === 0) return 'Você não tem aulas hoje'
+    const registradas = slotsHoje.filter(s => {
+      const tid = String(s.aulaGrade.turmaId)
+      return planos.some(p => (p.registrosPosAula ?? []).some(r => r.data === s.dataStr && String(r.turma) === tid))
+    }).length
+    const pendentes = total - registradas
+    if (pendentes === 0) return 'Tudo registrado \u2713'
+    if (registradas === 0) return `Você tem ${total} aula${total !== 1 ? 's' : ''} hoje`
+    return `Registrar ${pendentes} aula${pendentes !== 1 ? 's' : ''} pendente${pendentes !== 1 ? 's' : ''}`
+  }, [slotsHoje, planos])
 
   return (
     <div className="mx-auto px-4 pb-10 max-w-2xl">
       <div className="mb-5">
         <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
-          {saudacao}
+          {headerMsg}
         </h1>
         <p className="text-sm text-slate-400 dark:text-[#4B5563] capitalize mt-0.5">{labelDia}</p>
       </div>
