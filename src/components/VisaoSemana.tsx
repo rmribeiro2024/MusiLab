@@ -13,7 +13,7 @@ import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import type { AnoLetivo, RegistroPosAula } from '../types'
 import { showToast } from '../lib/toast'
 import ModalCardHero, { type ModalCardHeroProps, RegistroField, ActionButton } from './modals/ModalCardHero'
-import { TelaCalendario } from './TelaCalendario'
+import VisaoMes from './VisaoMes'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -667,7 +667,14 @@ export default function VisaoSemana() {
       </div>
 
       {/* ── Vista Mês ── */}
-      {vistaAtiva === 'mes' && <TelaCalendario />}
+      {vistaAtiva === 'mes' && (
+        <VisaoMes
+          onDiaClick={d => {
+            setSemanaInicio(getMondayOf(d))
+            setVistaAtiva('semana')
+          }}
+        />
+      )}
 
       {/* ── Vista Semana ── */}
       {vistaAtiva === 'semana' && (<>
