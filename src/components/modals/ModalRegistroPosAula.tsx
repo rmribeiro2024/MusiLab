@@ -1,4 +1,5 @@
 import React from 'react'
+import TipTapEditor from '../TipTapEditor'
 import { useCalendarioContext } from '../../contexts'
 import { useAnoLetivoContext, RUBRICAS_PADRAO } from '../../contexts/AnoLetivoContext'
 import { usePlanosContext, useAplicacoesContext } from '../../contexts'
@@ -41,7 +42,8 @@ const AccordionChip = React.forwardRef<() => void, {
     quickOptions?: string[],
     allowVoice?: boolean,
     isDark?: boolean,
-}>(function AccordionChip({ id, icon, label, placeholder, value, filled, defaultOpen, onChange, onTabNext, quickOptions, allowVoice, isDark = false }, ref) {
+    richText?: boolean,
+}>(function AccordionChip({ id, icon, label, placeholder, value, filled, defaultOpen, onChange, onTabNext, quickOptions, allowVoice, isDark = false, richText = false }, ref) {
     const isTouchDevice = typeof window !== 'undefined' && 'ontouchstart' in window
     const [open, setOpen] = React.useState(defaultOpen ?? false)
     const [gravando, setGravando] = React.useState(false)
@@ -98,8 +100,13 @@ const AccordionChip = React.forwardRef<() => void, {
                 const raw = acumuladoRef.current.trim()
                 acumuladoRef.current = ''
                 if (!raw) return
-                const base = valueRef.current
-                onChange(base ? base + ' ' + raw : raw)
+                if (richText) {
+                    const base = valueRef.current || ''
+                    onChange(base ? base + `<p>${raw}</p>` : `<p>${raw}</p>`)
+                } else {
+                    const base = valueRef.current
+                    onChange(base ? base + ' ' + raw : raw)
+                }
             }
         }
         rec.onerror = (ev: any) => {
@@ -132,7 +139,7 @@ const AccordionChip = React.forwardRef<() => void, {
 
     const c = dk(isDark)
     return (
-        <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
+        <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg, color: c.textMain }}>
             <div onClick={() => setOpen(o => !o)}
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
                 <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>{icon}</span>
@@ -161,15 +168,26 @@ const AccordionChip = React.forwardRef<() => void, {
                             ))}
                         </div>
                     )}
-                    <textarea id={id}
-                        value={gravando && interimText ? (value ? value + ' ' + interimText : interimText) : value}
-                        onChange={e => { if (!gravando) onChange(e.target.value) }}
-                        onKeyDown={e => { if (e.key === 'Tab') { e.preventDefault(); setOpen(false); onTabNext?.() } }}
-                        rows={isTouchDevice ? 4 : 2} placeholder={placeholder} autoFocus={!('ontouchstart' in window)}
-                        style={{ width: '100%', padding: '9px 10px', border: `1px solid ${gravando ? (speechAtivo ? '#fca5a5' : '#f97316') : c.border}`, borderRadius: 8, fontSize: 13, color: gravando && interimText ? '#94a3b8' : c.textMain, background: c.inputBg, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', transition: 'border-color .2s, color .2s' }}
-                        onFocus={e => { if (!gravando) e.target.style.borderColor = '#94a3b8' }}
-                        onBlur={e  => { if (!gravando) e.target.style.borderColor = c.border }}
-                    />
+                    {richText ? (
+                        <div style={{ border: `1px solid ${gravando ? (speechAtivo ? '#fca5a5' : '#f97316') : c.border}`, borderRadius: 8, overflow: 'hidden', transition: 'border-color .2s' }}>
+                            <TipTapEditor
+                                value={value}
+                                onChange={onChange}
+                                placeholder={placeholder}
+                                toolbarMode="lists-only"
+                            />
+                        </div>
+                    ) : (
+                        <textarea id={id}
+                            value={gravando && interimText ? (value ? value + ' ' + interimText : interimText) : value}
+                            onChange={e => { if (!gravando) onChange(e.target.value) }}
+                            onKeyDown={e => { if (e.key === 'Tab') { e.preventDefault(); setOpen(false); onTabNext?.() } }}
+                            rows={isTouchDevice ? 4 : 2} placeholder={placeholder} autoFocus={!('ontouchstart' in window)}
+                            style={{ width: '100%', padding: '9px 10px', border: `1px solid ${gravando ? (speechAtivo ? '#fca5a5' : '#f97316') : c.border}`, borderRadius: 8, fontSize: 13, color: gravando && interimText ? '#94a3b8' : c.textMain, background: c.inputBg, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', transition: 'border-color .2s, color .2s' }}
+                            onFocus={e => { if (!gravando) e.target.style.borderColor = '#94a3b8' }}
+                            onBlur={e  => { if (!gravando) e.target.style.borderColor = c.border }}
+                        />
+                    )}
                     {gravando && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, fontSize: 11 }}>
                             <span style={{ width: 7, height: 7, borderRadius: '50%', background: speechAtivo ? '#ef4444' : '#94a3b8', flexShrink: 0, transition: 'background .2s' }} />
@@ -303,13 +321,14 @@ const BehaviorChip = React.forwardRef<() => void, {
 })
 
 // ── REGISTRO CHIP — leitura no histórico (igual ao chip de edição mas readonly) ──
-function RegistroChip({ icon, label, text }: { icon: string, label: string, text: string }) {
+function RegistroChip({ icon, label, text, isDark = false }: { icon: string, label: string, text: string, isDark?: boolean }) {
+    const c = dk(isDark)
     return (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 10px', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 10px', borderRadius: 8, background: c.cardBgAlt, border: `1px solid ${c.border}` }}>
             <span style={{ fontSize: 13, flexShrink: 0, marginTop: 1 }}>{icon}</span>
             <div>
                 <span style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', display: 'block', marginBottom: 2 }}>{label}</span>
-                <span style={{ fontSize: 12, color: '#334155', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>{text}</span>
+                <span style={{ fontSize: 12, color: c.textMain, lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>{text}</span>
             </div>
         </div>
     )
@@ -900,44 +919,85 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
 
                         {/* Painel planejado — abre via ícone no header */}
                         {planejadoAberto && planoParaRegistro && (() => {
-                            const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim()
-                            const roteiro: any[] = (planoParaRegistro as any).atividadesRoteiro || []
-                            const objetivo = stripHtml((planoParaRegistro as any).objetivoGeral || '')
-                            const criterio = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
-                            const temConteudo = objetivo || roteiro.length > 0 || criterio
+                            const p = planoParaRegistro as any
+                            const stripHtml = (s: string) => (s || '').replace(/<[^>]+>/g, '').trim()
+                            const objetivo  = stripHtml(p.objetivoGeral || '')
+                            const criterio  = stripHtml(p.avaliacaoEvidencia || '')
+                            const roteiro: any[] = p.atividadesRoteiro || []
+                            const duracao   = (p.duracao || '').trim()
+                            const nivel     = (p.nivel || '').trim()
+                            const tema      = (p.tema || '').trim()
+                            const metodologia = stripHtml(p.metodologia || '')
+                            const materiais: string[] = (p.materiais || p.materiaisNecessarios || []).filter(Boolean)
+                            const fechamento = stripHtml(p.avaliacaoFechamento || '')
+                            const temConteudo = objetivo || roteiro.length > 0 || criterio || duracao || nivel || tema || metodologia || materiais.length > 0 || fechamento
+                            const label = (txt: string) => (
+                                <p style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '.07em', marginBottom: 2 }}>{txt}</p>
+                            )
                             return (
-                                <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, position: 'relative', maxHeight: 220, overflowY: 'auto' }}>
+                                <div style={{ background: isDark ? '#1a2232' : '#f8fafc', borderBottom: `1px solid ${isDark ? '#374151' : '#e2e8f0'}`, padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, position: 'relative', maxHeight: 240, overflowY: 'auto' }}>
                                     <button onClick={() => setPlanejadoAberto(false)} title="Fechar" style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#94a3b8', lineHeight: 1, padding: 2 }}
-                                        onMouseOver={e => (e.currentTarget.style.color = '#475569')}
+                                        onMouseOver={e => (e.currentTarget.style.color = isDark ? '#E5E7EB' : '#475569')}
                                         onMouseOut={e  => (e.currentTarget.style.color = '#94a3b8')}>✕</button>
-                                    {!temConteudo && (
-                                        <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Plano de aula não registrado.</p>
-                                    )}
-                                    {objetivo && (
-                                        <div>
-                                            <p style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 2 }}>Objetivo</p>
-                                            <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.4 }}>{objetivo}</p>
-                                        </div>
-                                    )}
-                                    {roteiro.length > 0 && (
-                                        <div>
-                                            <p style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 4 }}>Roteiro</p>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                                {roteiro.map((at: any, i: number) => (
-                                                    <div key={at.id ?? i} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                                        <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 700, flexShrink: 0, minWidth: 14, textAlign: 'right' as const }}>{i + 1}.</span>
-                                                        <span style={{ fontSize: 12, color: '#475569', flex: 1 }}>{at.nome}</span>
-                                                        {at.duracao ? <span style={{ fontSize: 10, color: '#94a3b8', flexShrink: 0 }}>{String(at.duracao).replace(/min$/i, '')}min</span> : null}
+                                    {!temConteudo ? (
+                                        <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>
+                                            Plano sem conteúdo preenchido. Edite-o em <strong>Nova Aula</strong> para adicionar objetivo e roteiro.
+                                        </p>
+                                    ) : (
+                                        <>
+                                            {/* Linha rápida: duracao + nivel + tema */}
+                                            {(duracao || nivel || tema) && (
+                                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginBottom: 2 }}>
+                                                    {duracao && <span style={{ fontSize: 11, color: '#6366f1', background: isDark ? 'rgba(99,102,241,.15)' : '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 5, padding: '1px 7px', fontWeight: 600 }}>{duracao}</span>}
+                                                    {nivel && <span style={{ fontSize: 11, color: '#64748b', background: isDark ? 'rgba(100,116,139,.12)' : '#f1f5f9', border: `1px solid ${isDark ? '#374151' : '#e2e8f0'}`, borderRadius: 5, padding: '1px 7px' }}>{nivel}</span>}
+                                                    {tema && <span style={{ fontSize: 11, color: '#64748b', background: isDark ? 'rgba(100,116,139,.12)' : '#f1f5f9', border: `1px solid ${isDark ? '#374151' : '#e2e8f0'}`, borderRadius: 5, padding: '1px 7px' }}>{tema}</span>}
+                                                </div>
+                                            )}
+                                            {objetivo && (
+                                                <div>
+                                                    {label('Objetivo')}
+                                                    <p style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', lineHeight: 1.4 }}>{objetivo}</p>
+                                                </div>
+                                            )}
+                                            {roteiro.length > 0 && (
+                                                <div>
+                                                    {label('Roteiro')}
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                        {roteiro.map((at: any, i: number) => (
+                                                            <div key={at.id ?? i} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                                                <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 700, flexShrink: 0, minWidth: 14, textAlign: 'right' as const }}>{i + 1}.</span>
+                                                                <span style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', flex: 1 }}>{at.nome || at.descricao || '—'}</span>
+                                                                {at.duracao ? <span style={{ fontSize: 10, color: '#94a3b8', flexShrink: 0 }}>{String(at.duracao).replace(/min$/i, '')}min</span> : null}
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {criterio && (
-                                        <div>
-                                            <p style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 2 }}>Critério de sucesso</p>
-                                            <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.4, fontStyle: 'italic' }}>{criterio}</p>
-                                        </div>
+                                                </div>
+                                            )}
+                                            {!objetivo && !roteiro.length && metodologia && (
+                                                <div>
+                                                    {label('Metodologia')}
+                                                    <p style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', lineHeight: 1.4 }}>{metodologia}</p>
+                                                </div>
+                                            )}
+                                            {criterio && (
+                                                <div>
+                                                    {label('Critério de sucesso')}
+                                                    <p style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', lineHeight: 1.4, fontStyle: 'italic' }}>{criterio}</p>
+                                                </div>
+                                            )}
+                                            {fechamento && (
+                                                <div>
+                                                    {label('Fechamento')}
+                                                    <p style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', lineHeight: 1.4 }}>{fechamento}</p>
+                                                </div>
+                                            )}
+                                            {materiais.length > 0 && (
+                                                <div>
+                                                    {label('Materiais')}
+                                                    <p style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569' }}>{materiais.join(' · ')}</p>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             )
@@ -1257,7 +1317,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
                                                     value={valor} filled={valor.trim().length > 0}
                                                     defaultOpen={deveAbrir}
-                                                    allowVoice isDark={isDark}
+                                                    allowVoice richText isDark={isDark}
                                                     onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v })}
                                                     onTabNext={() => { const next = chipOpenRefs.current[idx + 1]; if (next) next(); else salvarBtnRef.current?.focus() }}
                                                     ref={(fn: (() => void) | null) => { chipOpenRefs.current[idx] = fn }}
@@ -1418,7 +1478,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                             <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: val > 0 ? c.textMain : c.textMed, flex: 1 }}>
                                                                 Aproveitamento da aula
                                                             </span>
-                                                            {val > 0 && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                            {val > 0 && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: isDark ? 'rgba(34,197,94,.12)' : '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: isDark ? '1px solid rgba(34,197,94,.25)' : '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
                                                             <span style={{ fontSize: 10, color: c.textMuted, transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
                                                         </div>
                                                         {aberto && (
@@ -1464,7 +1524,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                             <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: val > 0 ? c.textMain : c.textMed, flex: 1 }}>
                                                                 Nível musical da turma
                                                             </span>
-                                                            {val > 0 && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                            {val > 0 && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: isDark ? 'rgba(34,197,94,.12)' : '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: isDark ? '1px solid rgba(34,197,94,.25)' : '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
                                                             <span style={{ fontSize: 10, color: c.textMuted, transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
                                                         </div>
                                                         {aberto && (
@@ -1506,7 +1566,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                     <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: (novoRegistro as any).contextoAula ? c.textMain : c.textMed, flex: 1 }}>
                                                         Como a aula aconteceu na prática?
                                                     </span>
-                                                    {(novoRegistro as any).contextoAula && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                    {(novoRegistro as any).contextoAula && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: isDark ? 'rgba(34,197,94,.12)' : '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: isDark ? '1px solid rgba(34,197,94,.25)' : '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
                                                     <span style={{ fontSize: 9, color: c.textMuted, flexShrink: 0, marginLeft: 4, transform: contextoAberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
                                                 </div>
                                                 {contextoAberto && (
@@ -1590,7 +1650,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                 Chamada
                                                             </span>
                                                             {(presentes > 0 || ausentes > 0) && (
-                                                                <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 8px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>
+                                                                <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: isDark ? 'rgba(34,197,94,.12)' : '#f0fdf4', padding: '1px 8px', borderRadius: 99, border: isDark ? '1px solid rgba(34,197,94,.25)' : '1px solid #bbf7d0', flexShrink: 0 }}>
                                                                     {presentes}/{total} presentes
                                                                 </span>
                                                             )}
@@ -1680,7 +1740,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                             <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: url ? c.textMain : c.textMed, flex: 1 }}>
                                                                 Evidência de aula
                                                             </span>
-                                                            {url && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                                                            {url && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: isDark ? 'rgba(34,197,94,.12)' : '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: isDark ? '1px solid rgba(34,197,94,.25)' : '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
                                                             <span style={{ fontSize: 10, color: c.textMuted, transition: 'transform .15s', display: 'inline-block', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
                                                         </div>
                                                         {aberto && (
@@ -1706,13 +1766,18 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                             style={{ display: 'none' }}
                                                                             onChange={handleFileSelect}
                                                                         />
-                                                                        {/* Sem token: botão de conectar (mobile=redirect, desktop=popup síncrono) */}
+                                                                        {/* Sem token: botão de conectar */}
                                                                         {!driveConectado ? (
                                                                             <button type="button"
                                                                                 onClick={() => {
                                                                                     setUploadErro('')
                                                                                     if (isMobileDevice()) {
-                                                                                        redirectToGoogleAuth(import.meta.env.VITE_GOOGLE_CLIENT_ID)
+                                                                                        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+                                                                                        if (!clientId) {
+                                                                                            setUploadErro('Google Drive não configurado. Cole um link abaixo.')
+                                                                                            return
+                                                                                        }
+                                                                                        redirectToGoogleAuth(clientId)
                                                                                     } else {
                                                                                         requestDriveToken()
                                                                                     }
@@ -1729,7 +1794,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                         ) : uploadandoEvidencia ? (
                                                                             <div style={{
                                                                                 width: '100%', padding: '10px', borderRadius: 8, border: '1.5px dashed #c7d2fe',
-                                                                                background: '#f5f3ff', fontSize: 12, fontWeight: 600, color: '#6366f1',
+                                                                                background: isDark ? 'rgba(99,102,241,.1)' : '#f5f3ff', fontSize: 12, fontWeight: 600, color: '#6366f1',
                                                                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                                                                             }}>
                                                                                 <span style={{ fontSize: 13 }}>⏳</span>
@@ -1743,7 +1808,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                                         onClick={() => cameraInputRef.current?.click()}
                                                                                         style={{
                                                                                             flex: 1, padding: '10px', borderRadius: 8, border: '1.5px dashed #c7d2fe',
-                                                                                            background: '#fff', cursor: 'pointer',
+                                                                                            background: c.inputBg, cursor: 'pointer',
                                                                                             fontSize: 12, fontWeight: 600, color: '#6366f1', transition: 'all .15s',
                                                                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                                                                                         }}>
@@ -1756,7 +1821,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                                     onClick={() => fileInputRef.current?.click()}
                                                                                     style={{
                                                                                         flex: 1, padding: '10px', borderRadius: 8, border: '1.5px dashed #c7d2fe',
-                                                                                        background: '#fff', cursor: 'pointer',
+                                                                                        background: c.inputBg, cursor: 'pointer',
                                                                                         fontSize: 12, fontWeight: 600, color: '#6366f1', transition: 'all .15s',
                                                                                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                                                                                     }}>
@@ -1778,7 +1843,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
 
                                                                 {/* Arquivo já enviado */}
                                                                 {urlValida && (
-                                                                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, overflow: 'hidden' }}>
+                                                                    <div style={{ background: isDark ? 'rgba(34,197,94,.1)' : '#f0fdf4', border: isDark ? '1px solid rgba(34,197,94,.3)' : '1px solid #bbf7d0', borderRadius: 8, overflow: 'hidden' }}>
                                                                         {(novoRegistro as any).thumbnailEvidencia && (
                                                                             <img src={(novoRegistro as any).thumbnailEvidencia} alt="Evidência"
                                                                                 style={{ width: '100%', maxHeight: 160, objectFit: 'cover', display: 'block' }} />
@@ -1796,16 +1861,16 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                     </div>
                                                                 )}
 
-                                                                {/* Fallback: link manual (sempre disponível) */}
+                                                                {/* Fallback: link manual — se Drive não configurado */}
                                                                 {!driveConfigurado && (
                                                                     <input
                                                                         type="url"
                                                                         value={url}
                                                                         onChange={e => setNovoRegistro({ ...novoRegistro, urlEvidencia: e.target.value } as any)}
                                                                         placeholder="Cole um link (Google Drive, YouTube, áudio...)"
-                                                                        style={{ flex: 1, padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#334155', fontFamily: 'inherit', outline: 'none', background: '#fff' }}
+                                                                        style={{ flex: 1, padding: '8px 10px', border: `1px solid ${c.border}`, borderRadius: 8, fontSize: 13, color: c.inputColor, fontFamily: 'inherit', outline: 'none', background: c.inputBg }}
                                                                         onFocus={e => (e.target.style.borderColor = '#94a3b8')}
-                                                                        onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
+                                                                        onBlur={e => (e.target.style.borderColor = c.border)}
                                                                     />
                                                                 )}
                                                             </div>
@@ -1826,7 +1891,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                 <>
                                     {/* ── Sugestão IA pós-aula ── */}
                                     {(loadingIA || sugestaoIA) && (
-                                        <div style={{ margin: '12px 0 4px', padding: '12px 14px', background: 'linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%)', borderRadius: 12, border: '1px solid #c7d2fe' }}>
+                                        <div style={{ margin: '12px 0 4px', padding: '12px 14px', background: isDark ? '#1a2232' : 'linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%)', borderRadius: 12, border: `1px solid ${isDark ? '#374151' : '#c7d2fe'}` }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                                                 <span style={{ fontSize: 13 }}>✨</span>
                                                 <span style={{ fontSize: 11, fontWeight: 700, color: '#4338ca', textTransform: 'uppercase' as const, letterSpacing: '.06em' }}>Sugestão para a próxima aula</span>
@@ -1834,7 +1899,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                             {loadingIA
                                                 ? <p style={{ fontSize: 12, color: '#6366f1', fontStyle: 'italic' }}>Gerando sugestão...</p>
                                                 : <>
-                                                    <p style={{ fontSize: 12.5, color: '#334155', lineHeight: 1.6, margin: 0 }}>{sugestaoIA}</p>
+                                                    <p style={{ fontSize: 12.5, color: c.textMain, lineHeight: 1.6, margin: 0 }}>{sugestaoIA}</p>
                                                     <button type="button"
                                                         onClick={() => { navigator.clipboard?.writeText(sugestaoIA || ''); setSugestaoIA('✓ Copiado!') }}
                                                         style={{ marginTop: 8, fontSize: 11, fontWeight: 600, color: '#4338ca', background: '#e0e7ff', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
@@ -1847,7 +1912,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
 
                                     {/* ── Resumo para pais ── */}
                                     {sugestaoIA && !loadingIA && (
-                                        <div style={{ margin: '0 0 4px', padding: '12px 14px', background: '#faf5ff', borderRadius: 12, border: '1px solid #e9d5ff' }}>
+                                        <div style={{ margin: '0 0 4px', padding: '12px 14px', background: isDark ? '#1e1a2c' : '#faf5ff', borderRadius: 12, border: `1px solid ${isDark ? '#4c3878' : '#e9d5ff'}` }}>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                                     <span style={{ fontSize: 13 }}>📱</span>
@@ -1880,15 +1945,15 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                             {loadingResumoPais && <p style={{ fontSize: 12, color: '#7c3aed', fontStyle: 'italic' }}>Gerando resumo...</p>}
                                             {resumoPais && (
                                                 <>
-                                                    <p style={{ fontSize: 12.5, color: '#334155', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>{resumoPais}</p>
+                                                    <p style={{ fontSize: 12.5, color: c.textMain, lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>{resumoPais}</p>
                                                     <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                                                         <button type="button"
                                                             onClick={() => { navigator.clipboard?.writeText(resumoPais); setResumoPais('✓ Copiado!') }}
-                                                            style={{ fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#ede9fe', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                                                            style={{ fontSize: 11, fontWeight: 600, color: '#7c3aed', background: isDark ? 'rgba(124,58,237,.15)' : '#ede9fe', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
                                                             📋 Copiar
                                                         </button>
                                                         <button type="button" onClick={() => setResumoPais(null)}
-                                                            style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', background: '#f1f5f9', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                                                            style={{ fontSize: 11, fontWeight: 600, color: c.textMuted, background: c.cardBgAlt, border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
                                                             Regenerar
                                                         </button>
                                                     </div>
@@ -1901,13 +1966,13 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                     {(() => {
                                         const pillStyle = (ativo: boolean) => ({
                                             padding: '5px 11px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .12s',
-                                            background: ativo ? '#475569' : '#fff',
-                                            color: ativo ? '#fff' : '#64748b',
-                                            border: ativo ? '1px solid #475569' : '1px solid #e2e8f0'
+                                            background: ativo ? (isDark ? '#475569' : '#475569') : c.cardBgSolid,
+                                            color: ativo ? '#fff' : c.textMed,
+                                            border: ativo ? `1px solid ${isDark ? '#475569' : '#475569'}` : `1px solid ${c.border}`
                                         })
                                         const btnTodas = (
                                             <button type="button" onClick={() => { setFiltroRegTurma(''); setExpandedRegs(new Set()) }}
-                                                style={{ ...pillStyle(!filtroRegTurma), color: !filtroRegTurma ? '#fff' : '#94a3b8', border: !filtroRegTurma ? '1px solid #475569' : '1px dashed #e2e8f0' }}>
+                                                style={{ ...pillStyle(!filtroRegTurma), color: !filtroRegTurma ? '#fff' : c.textMuted, border: !filtroRegTurma ? `1px solid ${isDark ? '#475569' : '#475569'}` : `1px dashed ${c.border}` }}>
                                                 Todas
                                             </button>
                                         )
@@ -1917,7 +1982,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                             const turmasDoDia = obterTurmasDoDia(filtroRegData)
                                             const dataFmt = new Date(filtroRegData + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })
                                             return (
-                                                <div style={{ background: '#f1f5f9', borderRadius: 10, padding: '10px 12px' }}>
+                                                <div style={{ background: c.cardBgAlt, borderRadius: 10, padding: '10px 12px' }}>
                                                     <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 6 }}>
                                                         Turmas de {dataFmt}
                                                     </div>
@@ -1957,7 +2022,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                         const anoLabel = ano?.ano || '—'
                                         const escLabel = esc?.nome || '—'
                                         return (
-                                            <div style={{ background: '#f1f5f9', borderRadius: 10, padding: '10px 12px' }}>
+                                            <div style={{ background: c.cardBgAlt, borderRadius: 10, padding: '10px 12px' }}>
                                                 <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 6 }}>
                                                     {anoLabel} · {escLabel} · Turma
                                                 </div>
@@ -1982,8 +2047,8 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                         const fim2 = (() => { const s = new Date(seg2 + 'T00:00:00'); s.setDate(s.getDate() + 6); return s.toISOString().split('T')[0] })()
                                         const periodoPillStyle = (ativo: boolean): React.CSSProperties => ({
                                             padding: '4px 10px', borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                                            background: ativo ? '#1e293b' : '#f1f5f9',
-                                            color: ativo ? '#fff' : '#64748b',
+                                            background: ativo ? (isDark ? '#475569' : '#1e293b') : c.cardBgAlt,
+                                            color: ativo ? '#fff' : c.textMed,
                                             border: 'none',
                                         })
                                         const counts = {
@@ -2005,7 +2070,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                         <div style={{ position: 'relative' }}>
                                             <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 12 }}>🔍</span>
                                             <input type="text" value={buscaRegistros} onChange={e => setBuscaRegistros(e.target.value)}
-                                                style={{ width: '100%', padding: '8px 32px 8px 30px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#374151', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                                                style={{ width: '100%', padding: '8px 32px 8px 30px', border: `1px solid ${c.border}`, borderRadius: 8, fontSize: 12, color: c.textMain, background: c.inputBg, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
                                                 placeholder="Buscar nos registros..." />
                                             {buscaRegistros && (
                                                 <button onClick={() => setBuscaRegistros('')}
@@ -2093,21 +2158,21 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                     const isOutroPlano = (reg as any).planoId !== planoParaRegistro.id
 
                                                     return (
-                                                        <div key={reg.id ?? i} style={{ border: registroEditando?.id === reg.id ? '1px solid #94a3b8' : '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', background: registroEditando?.id === reg.id ? '#f8fafc' : '#fff' }}>
+                                                        <div key={reg.id ?? i} style={{ border: registroEditando?.id === reg.id ? `1px solid ${c.textMuted}` : `1px solid ${c.border}`, borderRadius: 12, overflow: 'hidden', background: registroEditando?.id === reg.id ? c.cardBgAlt : c.cardBgSolid }}>
                                                             {/* Cabeçalho clicável */}
                                                             <div onClick={toggleReg}
-                                                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', cursor: 'pointer', background: isOpen ? '#f8fafc' : '#fff', borderBottom: isOpen ? '1px solid #e2e8f0' : 'none' }}>
+                                                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', cursor: 'pointer', background: isOpen ? c.cardBgAlt : c.cardBgSolid, borderBottom: isOpen ? `1px solid ${c.border}` : 'none' }}>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
                                                                     {turmaLabel && (
                                                                         <span style={{ fontSize: 10, fontWeight: 700, background: '#e0f2fe', color: '#0284c7', padding: '2px 8px', borderRadius: 99, flexShrink: 0 }}>{turmaLabel}</span>
                                                                     )}
-                                                                    <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', flexShrink: 0 }}>{dataFmt}</span>
+                                                                    <span style={{ fontSize: 13, fontWeight: 700, color: c.textMain, flexShrink: 0 }}>{dataFmt}</span>
                                                                     {isHoje && <span style={{ fontSize: 11, color: '#3b82f6', fontWeight: 600, flexShrink: 0 }}>hoje</span>}
-                                                                    {reg.statusAula === 'nao_houve' && <span style={{ fontSize: 10, fontWeight: 700, background: '#f1f5f9', color: '#64748b', padding: '2px 7px', borderRadius: 99, border: '1px solid #cbd5e1', flexShrink: 0 }}>🚫 Não realizada</span>}
+                                                                    {reg.statusAula === 'nao_houve' && <span style={{ fontSize: 10, fontWeight: 700, background: isDark ? 'rgba(100,116,139,.15)' : '#f1f5f9', color: '#64748b', padding: '2px 7px', borderRadius: 99, border: `1px solid ${c.border}`, flexShrink: 0 }}>🚫 Não realizada</span>}
                                                                     {reg.dataEdicao && <span style={{ fontSize: 11, color: '#93c5fd', flexShrink: 0 }}>· editado</span>}
                                                                     {(reg as any).audioNotaDeVoz && <span title="Tem nota de voz" style={{ fontSize: 12, flexShrink: 0 }}>🎙️</span>}
                                                                     {isOutroPlano && (reg as any).planoTitulo && (
-                                                                        <span style={{ fontSize: 10, color: '#64748b', background: '#f1f5f9', border: '1px solid #e2e8f0', padding: '1px 6px', borderRadius: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }} title={(reg as any).planoTitulo}>
+                                                                        <span style={{ fontSize: 10, color: c.textMed, background: isDark ? 'rgba(100,116,139,.15)' : '#f1f5f9', border: `1px solid ${c.border}`, padding: '1px 6px', borderRadius: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }} title={(reg as any).planoTitulo}>
                                                                             {(reg as any).planoTitulo}
                                                                         </span>
                                                                     )}
@@ -2115,11 +2180,11 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                                                                     {!isOutroPlano && <>
                                                                         <button onClick={e => { e.stopPropagation(); editarRegistro(reg) }}
-                                                                            style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }} title="Editar">✏️</button>
+                                                                            style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: `1px solid ${c.border}`, borderRadius: 6, background: c.cardBgSolid, cursor: 'pointer' }} title="Editar">✏️</button>
                                                                         <button onClick={e => { e.stopPropagation(); if (copiandoRegId === (reg.id ?? i)) { setCopiandoRegId(null); setTurmasCopiar(new Set()); setCopiarOutroDia('') } else { setCopiandoRegId(reg.id ?? i); setTurmasCopiar(new Set()); setCopiarOutroDia('') } }}
-                                                                            style={{ padding: '3px 7px', fontSize: 11, color: copiandoRegId === (reg.id ?? i) ? '#2563eb' : '#94a3b8', border: `1px solid ${copiandoRegId === (reg.id ?? i) ? '#93c5fd' : '#e2e8f0'}`, borderRadius: 6, background: copiandoRegId === (reg.id ?? i) ? '#eff6ff' : '#fff', cursor: 'pointer' }} title="Copiar para outras turmas">📋</button>
+                                                                            style={{ padding: '3px 7px', fontSize: 11, color: copiandoRegId === (reg.id ?? i) ? '#2563eb' : '#94a3b8', border: `1px solid ${copiandoRegId === (reg.id ?? i) ? '#93c5fd' : c.border}`, borderRadius: 6, background: copiandoRegId === (reg.id ?? i) ? (isDark ? 'rgba(37,99,235,.15)' : '#eff6ff') : c.cardBgSolid, cursor: 'pointer' }} title="Copiar para outras turmas">📋</button>
                                                                         <button onClick={e => { e.stopPropagation(); excluirRegistro(reg.id) }}
-                                                                            style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }} title="Excluir">🗑️</button>
+                                                                            style={{ padding: '3px 7px', fontSize: 11, color: '#94a3b8', border: `1px solid ${c.border}`, borderRadius: 6, background: c.cardBgSolid, cursor: 'pointer' }} title="Excluir">🗑️</button>
                                                                     </>
                                                                     }
                                                                     <span style={{ fontSize: 10, color: '#94a3b8', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
@@ -2136,21 +2201,21 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                 )
                                                                 const labelData = dataRef ? new Date(dataRef + 'T12:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''
                                                                 return (
-                                                                    <div style={{ padding: '10px 12px', background: '#f0f9ff', borderBottom: '1px solid #e2e8f0' }} onClick={e => e.stopPropagation()}>
+                                                                    <div style={{ padding: '10px 12px', background: isDark ? '#0f2034' : '#f0f9ff', borderBottom: `1px solid ${c.border}` }} onClick={e => e.stopPropagation()}>
                                                                         <p style={{ fontSize: 11, fontWeight: 700, color: '#0284c7', marginBottom: 8, letterSpacing: '.04em' }}>COPIAR PARA TURMAS</p>
                                                                         {/* Seletor de dia */}
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                                                                            <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#334155', cursor: 'pointer' }}>
+                                                                            <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: c.textMain, cursor: 'pointer' }}>
                                                                                 <input type="radio" name={`copiar-dia-${reg.id ?? i}`} checked={!copiarOutroDia} onChange={() => { setCopiarOutroDia(''); setTurmasCopiar(new Set()) }} style={{ accentColor: '#3b82f6' }} />
                                                                                 Mesmo dia ({reg.data ? new Date(reg.data + 'T12:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''})
                                                                             </label>
-                                                                            <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#334155', cursor: 'pointer' }}>
+                                                                            <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: c.textMain, cursor: 'pointer' }}>
                                                                                 <input type="radio" name={`copiar-dia-${reg.id ?? i}`} checked={!!copiarOutroDia} onChange={() => { setCopiarOutroDia(reg.data || ''); setTurmasCopiar(new Set()) }} style={{ accentColor: '#3b82f6' }} />
                                                                                 Outro dia:
                                                                             </label>
                                                                             {copiarOutroDia !== '' && (
                                                                                 <input type="date" value={copiarOutroDia} onChange={e => { setCopiarOutroDia(e.target.value); setTurmasCopiar(new Set()) }}
-                                                                                    style={{ fontSize: 12, border: '1px solid #93c5fd', borderRadius: 6, padding: '2px 6px', color: '#0284c7', background: '#fff', outline: 'none' }} />
+                                                                                    style={{ fontSize: 12, border: '1px solid #93c5fd', borderRadius: 6, padding: '2px 6px', color: '#0284c7', background: c.inputBg, outline: 'none' }} />
                                                                             )}
                                                                         </div>
                                                                         {turmasDoDia.length === 0
@@ -2161,7 +2226,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                                     const label = resolverTurmaLabel(a.anoLetivoId, a.escolaId, a.segmentoId, a.turmaId) || `Turma ${a.turmaId}`
                                                                                     const sel = turmasCopiar.has(chave)
                                                                                     return (
-                                                                                        <label key={chave} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, background: sel ? '#dbeafe' : '#fff', border: `1px solid ${sel ? '#93c5fd' : '#e2e8f0'}`, cursor: 'pointer', fontSize: 12, color: '#1e293b', fontWeight: sel ? 600 : 400 }}>
+                                                                                        <label key={chave} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, background: sel ? (isDark ? 'rgba(59,130,246,.15)' : '#dbeafe') : c.cardBgSolid, border: `1px solid ${sel ? '#93c5fd' : c.border}`, cursor: 'pointer', fontSize: 12, color: c.textMain, fontWeight: sel ? 600 : 400 }}>
                                                                                             <input type="checkbox" checked={sel} onChange={() => setTurmasCopiar(prev => { const next = new Set(prev); sel ? next.delete(chave) : next.add(chave); return next })} style={{ accentColor: '#3b82f6' }} />
                                                                                             {a.horario && <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#7c3aed', flexShrink: 0 }}>{a.horario}</span>}
                                                                                             <span>{label}</span>
@@ -2176,7 +2241,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                                 Copiar {turmasCopiar.size > 0 ? `(${turmasCopiar.size})` : ''}
                                                                             </button>
                                                                             <button onClick={() => { setCopiandoRegId(null); setTurmasCopiar(new Set()); setCopiarOutroDia('') }}
-                                                                                style={{ padding: '6px 12px', fontSize: 12, color: '#64748b', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer' }}>
+                                                                                style={{ padding: '6px 12px', fontSize: 12, color: c.textMed, background: c.cardBgSolid, border: `1px solid ${c.border}`, borderRadius: 8, cursor: 'pointer' }}>
                                                                                 Cancelar
                                                                             </button>
                                                                         </div>
@@ -2188,20 +2253,20 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                             {isOpen && (
                                                                 <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                                                                     {reg.statusAula === 'nao_houve' && (
-                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: c.cardBgAlt, border: `1px solid ${c.border}`, borderRadius: 8 }}>
                                                                             <span style={{ fontSize: 16 }}>🚫</span>
                                                                             <div>
-                                                                                <p style={{ fontSize: 12, fontWeight: 700, color: '#475569', margin: 0 }}>Aula não realizada</p>
+                                                                                <p style={{ fontSize: 12, fontWeight: 700, color: c.textMed, margin: 0 }}>Aula não realizada</p>
                                                                                 {(reg as any).motivoCancelamento && <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>Motivo: {(reg as any).motivoCancelamento}</p>}
                                                                             </div>
                                                                         </div>
                                                                     )}
                                                                     {chipFields.length > 0
-                                                                        ? chipFields.map(f => <RegistroChip key={f.label} icon={f.icon} label={f.label} text={f.text!} />)
+                                                                        ? chipFields.map(f => <RegistroChip key={f.label} icon={f.icon} label={f.label} text={f.text!} isDark={isDark} />)
                                                                         : reg.statusAula !== 'nao_houve' && <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Nenhum campo preenchido.</p>
                                                                     }
                                                                     {urlEvidenciaValida && (
-                                                                        <div style={{ borderRadius: 8, background: '#eff6ff', border: '1px solid #bfdbfe', overflow: 'hidden' }}>
+                                                                        <div style={{ borderRadius: 8, background: isDark ? 'rgba(59,130,246,.1)' : '#eff6ff', border: `1px solid ${isDark ? 'rgba(59,130,246,.3)' : '#bfdbfe'}`, overflow: 'hidden' }}>
                                                                             {(reg as any).thumbnailEvidencia && (
                                                                                 <a href={(reg as any).urlEvidencia} target="_blank" rel="noopener noreferrer">
                                                                                     <img src={(reg as any).thumbnailEvidencia} alt="Evidência"
@@ -2219,7 +2284,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                         </div>
                                                                     )}
                                                                     {(reg as any).audioNotaDeVoz && (
-                                                                        <div style={{ padding: '8px 10px', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                                                                        <div style={{ padding: '8px 10px', borderRadius: 8, background: c.cardBgAlt, border: `1px solid ${c.border}` }}>
                                                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                                                                                 <span style={{ fontSize: 13 }}>🎙️</span>
                                                                                 <span style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Nota de voz</span>
