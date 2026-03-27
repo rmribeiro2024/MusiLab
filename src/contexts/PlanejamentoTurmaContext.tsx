@@ -345,7 +345,6 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
     salvarPlanejamentoParaTurma,
     fecharForm,
     buildDadosParaBanco,
-<<<<<<< HEAD
   }), [planejamentos, turmaSelecionada, planejamentoEditando, formAberto, dataNavegacao, modoInicialNavegacao, ultimoRegistroDaTurma, historicoDaTurma, planejamentosDaTurma, selecionarTurma, novoPlanejamento, editarPlanejamento, salvarPlanejamento, excluirPlanejamento, copiarPlanejamento, salvarPlanejamentoParaTurma, fecharForm, buildDadosParaBanco])
 
 
