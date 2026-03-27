@@ -4,16 +4,13 @@
 ```
 C:\Users\rodri\Documents\MusiLab
 ```
-Para sincronizar mudanças do branch de dev para a máquina local:
+Para sincronizar mudanças para a máquina local:
 ```bash
-git pull origin claude/redesign-today-screen-Lt4Ai
+git pull origin main
 ```
 
-## Branch de desenvolvimento ativo
-```
-claude/redesign-today-screen-Lt4Ai
-```
-Todo desenvolvimento deve ir para esse branch. **Nunca fazer push direto para `main`.**
+## Branch de desenvolvimento
+Trabalhar direto no `main`. Dev solo, sem branches de feature.
 
 ## Repositório
 `rmribeiro2024/musilab`
