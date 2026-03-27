@@ -245,14 +245,17 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
       {/* Bloco clicável — expande ao clicar em qualquer lugar (exceto inputs) */}
       <div
         className="flex-1 rounded-md overflow-hidden cursor-pointer"
-        style={{ background: isDark ? '#374151' : '#f8fafc' }}
+        style={isDark
+          ? { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }
+          : { background: '#EEF2F7', border: '1px solid #DDE4EF' }
+        }
         onClick={() => setExpandido(v => !v)}
       >
         {/* Linha principal: título + duração + chevron */}
         <div className="flex items-center gap-2 px-3 py-2">
           <input
             className="flex-1 bg-transparent text-sm font-semibold outline-none min-w-0 cursor-text rounded px-1 -mx-1 transition-colors focus:ring-1 focus:ring-blue-400/50"
-            style={{ color: isDark ? '#E5E7EB' : '#1e293b' }}
+            style={{ color: isDark ? '#E5E7EB' : '#1E2A4A' }}
             value={titulo}
             onChange={e => { setTitulo(e.target.value); onEditar(ativ.id, e.target.value) }}
             onClick={e => e.stopPropagation()}
@@ -261,7 +264,7 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
           {/* Duração editável */}
           <input
             className="w-8 bg-transparent text-xs text-right outline-none rounded transition-colors focus:ring-1 focus:ring-blue-400/50 focus:w-12"
-            style={{ color: isDark ? '#6B7280' : '#94a3b8' }}
+            style={{ color: isDark ? '#9CA3AF' : '#7B8FAB' }}
             value={duracao}
             placeholder="—"
             onChange={e => { setDuracao(e.target.value); onEditarDuracao(ativ.id, e.target.value) }}
@@ -274,7 +277,7 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
             className="w-3 h-3 transition-transform shrink-0"
             style={{
               transform: expandido ? 'rotate(180deg)' : 'rotate(0deg)',
-              color: expandido ? '#6366f1' : (isDark ? '#6B7280' : '#94a3b8'),
+              color: expandido ? '#6366f1' : (isDark ? 'rgba(255,255,255,0.2)' : '#B0BDD0'),
             }}
             viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"
           >
@@ -286,7 +289,7 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
         {expandido && (
           <div
             className="px-3 pb-2"
-            style={{ borderTop: `1px solid ${isDark ? '#4B5563' : '#e2e8f0'}` }}
+            style={{ borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : '#DDE4EF'}` }}
             onClick={e => e.stopPropagation()}
           >
             <div
@@ -295,7 +298,7 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
               suppressContentEditableWarning
               data-placeholder="Adicionar descrição..."
               className="agenda-descricao agenda-descricao-edit text-xs leading-relaxed outline-none rounded px-1 -mx-1 focus:ring-1 focus:ring-blue-400/50 transition-colors cursor-text min-h-[20px] mt-2"
-              style={{ color: isDark ? '#9CA3AF' : '#64748b' }}
+              style={{ color: isDark ? '#9CA3AF' : '#64748B' }}
               onClick={handleDescClick}
               onMouseDown={e => e.stopPropagation()}
               onKeyDown={e => e.stopPropagation()}
@@ -310,7 +313,7 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
       {temAplicacao && (
         <button
           className="mt-[6px] w-6 h-6 flex items-center justify-center rounded transition-colors shrink-0"
-          style={{ color: isDark ? '#4B5563' : '#cbd5e1' }}
+          style={{ color: isDark ? '#4B5563' : '#B0BDD0' }}
           onClick={e => { e.stopPropagation(); onRemover(ativ.id, titulo) }}
           onMouseDown={e => e.stopPropagation()}
           title="Remover desta aula"
@@ -500,14 +503,20 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
 
   return (
     <div
-      className={`rounded-lg overflow-hidden transition-shadow ${
-        jaRegistrado
-          ? 'bg-slate-50 dark:bg-[#1A2333]'
-          : needsAction
-            ? 'bg-white dark:bg-[#1F2937] shadow-md'
-            : 'bg-white dark:bg-[#1F2937] shadow-sm hover:shadow-md'
-      }`}
-      style={{ borderLeft: jaRegistrado ? `2px solid ${borderColor}55` : needsAction ? `4px solid ${borderColor}` : `3px solid ${borderColor}` }}
+      className="rounded-lg overflow-hidden transition-shadow"
+      style={isDarkMode ? {
+        background: jaRegistrado ? '#1A2333' : '#1F2937',
+        borderLeft: jaRegistrado ? `2px solid ${borderColor}55` : needsAction ? `4px solid ${borderColor}` : `3px solid ${borderColor}`,
+        boxShadow: needsAction ? '0 2px 8px rgba(0,0,0,0.3)' : undefined,
+      } : {
+        background: jaRegistrado ? '#F7F9FC' : '#FFFFFF',
+        borderLeft: jaRegistrado ? `2px solid ${borderColor}40` : needsAction ? `4px solid ${borderColor}` : `3px solid ${borderColor}`,
+        boxShadow: needsAction
+          ? '0 2px 8px rgba(99,102,241,0.12), 0 0 0 1px #C7D2FE'
+          : jaRegistrado
+            ? '0 0 0 1px #E2E9F3'
+            : '0 1px 3px rgba(51,65,85,0.08), 0 0 0 1px rgba(148,163,184,0.15)',
+      }}
     >
       {/* Cabeçalho — clicável */}
       <div
@@ -524,20 +533,22 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
           {slot.nomeEscola && (
             <p
               className="text-[10px] font-medium truncate"
-              style={{ color: jaRegistrado ? (isDarkMode ? '#6B7280' : '#cbd5e1') : borderColor }}
+              style={{ color: jaRegistrado ? (isDarkMode ? '#6B7280' : '#B0BDD0') : borderColor }}
             >
               {slot.nomeEscola}
             </p>
           )}
-          <p className={`text-[13px] font-bold tracking-tight truncate ${
-            jaRegistrado ? 'text-slate-400 dark:text-[#4B5563]' : 'text-slate-800 dark:text-[#E5E7EB]'
-          }`}>
+          <p
+            className="text-[13px] font-bold tracking-tight truncate"
+            style={{ color: jaRegistrado ? (isDarkMode ? '#4B5563' : '#B0BDD0') : (isDarkMode ? '#E5E7EB' : '#1E2A4A') }}
+          >
             {slot.nomeTurma}
           </p>
           {slot.plano ? (
-            <p className={`text-xs mt-0.5 truncate ${
-              jaRegistrado ? 'text-slate-300 dark:text-[#374151]' : 'text-slate-400 dark:text-[#4B5563]'
-            }`}>
+            <p
+              className="text-xs mt-0.5 truncate"
+              style={{ color: jaRegistrado ? (isDarkMode ? '#374151' : '#C8D3E0') : (isDarkMode ? '#4B5563' : '#7B8FAB') }}
+            >
               {slot.plano.titulo}
             </p>
           ) : (
@@ -563,7 +574,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
               style={{ color: isDarkMode ? '#6B7280' : '#94a3b8' }}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70" />
-              <span className="text-[10px] font-medium">Editar registro</span>
+              <span className="text-[10px] font-medium">Ver reflexão</span>
             </button>
           )}
           <svg
@@ -578,7 +589,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
       {/* Conteúdo expandido — animação CSS grid */}
       <div style={{ display: 'grid', gridTemplateRows: aberto ? '1fr' : '0fr', transition: 'grid-template-rows 0.25s ease' }}>
         <div style={{ overflow: aberto ? 'visible' : 'hidden' }}>
-          <div className="px-4 pb-4 pt-3 border-t border-slate-100 dark:border-[#374151]">
+          <div className="px-4 pb-4 pt-3" style={{ borderTop: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}` }}>
             {!slot.plano && !jaRegistrado ? (
               <div className="space-y-2" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-1">
@@ -667,14 +678,14 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
             {!jaRegistrado && (
               <div
                 className="mt-3 pt-3"
-                style={{ borderTop: `1px solid ${isDarkMode ? '#374151' : '#f1f5f9'}` }}
+                style={{ borderTop: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}` }}
               >
                 <button
                   onClick={abrirRegistro}
                   className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold"
                   style={{ background: '#4f46e5', color: '#fff' }}
                 >
-                  Registrar pós-aula
+                  Registrar reflexão
                 </button>
               </div>
             )}
