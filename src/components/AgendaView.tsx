@@ -315,9 +315,9 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
   const { salvarPlanejamentoParaTurma } = usePlanejamentoTurmaContext()
   const [aberto, setAberto] = useState(false)
   const [planoRapidoAberto, setPlanoRapidoAberto] = useState(false)
-  const [roteiro, setRoteiro] = useState('')
-  const [objetivo, setObjetivo] = useState('')
-  const roteiroRef = useRef<HTMLTextAreaElement>(null)
+  const [roteiroRapido, setRoteiroRapido] = useState('')
+  const [objetivoRapido, setObjetivoRapido] = useState('')
+  const roteiroRapidoRef = useRef<HTMLTextAreaElement>(null)
 
   // Verifica se já há registro pós-aula para esta turma/data
   const jaRegistrado = useMemo(() => {
@@ -474,7 +474,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
               <p className="text-[11px] font-semibold text-amber-500 dark:text-amber-400/80">Sem plano vinculado</p>
               {!jaRegistrado && (
                 <button
-                  onClick={e => { e.stopPropagation(); setRoteiro(''); setObjetivo(''); setPlanoRapidoAberto(true); setTimeout(() => roteiroRef.current?.focus(), 80) }}
+                  onClick={e => { e.stopPropagation(); setRoteiroRapido(''); setObjetivoRapido(''); setPlanoRapidoAberto(true); setTimeout(() => roteiroRapidoRef.current?.focus(), 80) }}
                   className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium shrink-0"
                 >
                   ⚡ Planejar rápido
@@ -516,7 +516,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
                 <p className="text-sm text-slate-400 dark:text-[#4B5563] italic">Nenhum plano vinculado a esta aula.</p>
                 {!jaRegistrado && (
                   <button
-                    onClick={e => { e.stopPropagation(); setRoteiro(''); setObjetivo(''); setPlanoRapidoAberto(true); setTimeout(() => roteiroRef.current?.focus(), 80) }}
+                    onClick={e => { e.stopPropagation(); setRoteiroRapido(''); setObjetivoRapido(''); setPlanoRapidoAberto(true); setTimeout(() => roteiroRapidoRef.current?.focus(), 80) }}
                     className="self-start text-xs font-semibold text-indigo-400 hover:text-indigo-300 border border-indigo-400/40 hover:border-indigo-300/60 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     ⚡ Planejar rápido
@@ -575,8 +575,8 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Objetivo <span className="font-normal normal-case">(opcional)</span></label>
               <textarea
-                value={objetivo}
-                onChange={e => setObjetivo(e.target.value)}
+                value={objetivoRapido}
+                onChange={e => setObjetivoRapido(e.target.value)}
                 rows={2}
                 placeholder="O que você espera que os alunos aprendam..."
                 className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] rounded-xl text-sm focus:outline-none focus:border-indigo-400 resize-none"
@@ -585,9 +585,9 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Roteiro de atividades <span className="text-red-400">*</span></label>
               <textarea
-                ref={roteiroRef}
-                value={roteiro}
-                onChange={e => setRoteiro(e.target.value)}
+                ref={roteiroRapidoRef}
+                value={roteiroRapido}
+                onChange={e => setRoteiroRapido(e.target.value)}
                 rows={4}
                 placeholder="Descreva as atividades planejadas para esta aula..."
                 className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] rounded-xl text-sm focus:outline-none focus:border-indigo-400 resize-none"
@@ -596,9 +596,9 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
           </div>
           <div className="px-5 pb-6">
             <button
-              disabled={!roteiro.trim()}
+              disabled={!roteiroRapido.trim()}
               onClick={() => {
-                if (!roteiro.trim()) return
+                if (!roteiroRapido.trim()) return
                 salvarPlanejamentoParaTurma(
                   {
                     anoLetivoId: slot.aulaGrade.anoLetivoId ?? '',
@@ -608,14 +608,14 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
                   },
                   {
                     dataPrevista: slot.dataStr,
-                    oQuePretendoFazer: roteiro.trim(),
-                    objetivo: objetivo.trim() || undefined,
+                    oQuePretendoFazer: roteiroRapido.trim(),
+                    objetivo: objetivoRapido.trim() || undefined,
                     origemAula: 'livre',
                   }
                 )
                 setPlanoRapidoAberto(false)
-                setRoteiro('')
-                setObjetivo('')
+                setRoteiroRapido('')
+                setObjetivoRapido('')
                 showToast('Plano salvo ✓')
               }}
               className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
