@@ -1,10 +1,8 @@
 // src/components/VisaoMes.tsx
-// Visão mensal do Planejamento — heat-map de densidade, sem listar aulas individuais.
-// Clique num dia navega para a Semana focada naquele dia.
+// Visão mensal — radar de planejamento. CRITICO = aulas sem plano. Dias OK desaparecem.
 
 import React, { useMemo, useState } from 'react'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
-import { usePlanosContext } from '../contexts/PlanosContext'
 import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContext'
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 
@@ -26,6 +24,8 @@ function getMondayOf(d: Date): Date {
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const DIAS_SEMANA = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom']
 
+type EstadoDia = 'critico' | 'ok' | 'vazio'
+
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -44,29 +44,16 @@ export default function VisaoMes({ onDiaClick }: Props) {
   const { obterTurmasDoDia } = useCalendarioContext()
   const { planejamentos } = usePlanejamentoTurmaContext()
   const { aplicacoes } = useAplicacoesContext()
-  const { planos } = usePlanosContext()
 
   const isDark = document.documentElement.classList.contains('dark')
 
-  // ── Sets de lookup ──────────────────────────────────────────────────────────
+  // ── Set de lookup — turmas com plano ────────────────────────────────────────
   const turmasComPlano = useMemo(() => {
     const s = new Set<string>()
     planejamentos.forEach(p => { if (p.dataPrevista) s.add(`${p.turmaId}-${p.dataPrevista}`) })
     aplicacoes.forEach(a => { if (a.data && a.status !== 'cancelada') s.add(`${a.turmaId}-${a.data}`) })
     return s
   }, [planejamentos, aplicacoes])
-
-  const turmasRegistradas = useMemo(() => {
-    const s = new Set<string>()
-    planos.forEach(plano => {
-      ;(plano.registrosPosAula ?? []).forEach((r: any) => {
-        const data = r.dataAula ?? r.data ?? ''
-        const tid = String(r.turma ?? '')
-        if (tid && data) s.add(`${tid}-${data}`)
-      })
-    })
-    return s
-  }, [planos])
 
   // ── Grid do mês ─────────────────────────────────────────────────────────────
   const semanas = useMemo<Date[][]>(() => {
@@ -78,8 +65,9 @@ export default function VisaoMes({ onDiaClick }: Props) {
     return resultado.filter(s => s.some(d => d.getMonth() === mesRef.getMonth()))
   }, [mesRef])
 
-  // ── Stats por dia ───────────────────────────────────────────────────────────
-  type DiaStats = { total: number; semPlano: number; naoRegistradas: number }
+  // ── Stats por dia ────────────────────────────────────────────────────────────
+  type DiaStats = { total: number; semPlano: number; estado: EstadoDia }
+
   const stats = useMemo<Record<string, DiaStats>>(() => {
     const map: Record<string, DiaStats> = {}
     semanas.flat().forEach(dia => {
@@ -87,28 +75,25 @@ export default function VisaoMes({ onDiaClick }: Props) {
       const aulas = obterTurmasDoDia(ymd)
       const total = aulas.length
       const isPast = dia < hoje
-      const semPlano = !isPast
-        ? aulas.filter(a => !turmasComPlano.has(`${String(a.turmaId)}-${ymd}`)).length
-        : 0
-      const naoRegistradas = isPast
-        ? aulas.filter(a => !turmasRegistradas.has(`${String(a.turmaId)}-${ymd}`)).length
-        : 0
-      map[ymd] = { total, semPlano, naoRegistradas }
+      // Dias passados nunca são CRITICO — planejamento é orientado ao futuro
+      const semPlano = isPast
+        ? 0
+        : aulas.filter(a => !turmasComPlano.has(`${String(a.turmaId)}-${ymd}`)).length
+      let estado: EstadoDia
+      if (total === 0) estado = 'vazio'
+      else if (semPlano > 0) estado = 'critico'
+      else estado = 'ok'
+      map[ymd] = { total, semPlano, estado }
     })
     return map
-  }, [semanas, obterTurmasDoDia, turmasComPlano, turmasRegistradas, hoje])
+  }, [semanas, obterTurmasDoDia, turmasComPlano, hoje])
 
-  // ── Intensidade de fundo por densidade ─────────────────────────────────────
-  function densidadeBg(total: number): string {
-    if (total === 0) return 'transparent'
-    if (isDark) {
-      if (total <= 2) return 'rgba(129,140,248,0.08)'
-      if (total <= 5) return 'rgba(129,140,248,0.15)'
-      return 'rgba(129,140,248,0.25)'
-    }
-    if (total <= 2) return '#EEF2FF'
-    if (total <= 5) return '#E0E7FF'
-    return '#C7D2FE'
+  // ── Estilo da célula por estado ──────────────────────────────────────────────
+  function cellStyle(estado: EstadoDia, doMesAtual: boolean): React.CSSProperties {
+    if (!doMesAtual || estado !== 'critico') return {}
+    return isDark
+      ? { background: 'rgba(245,158,11,0.11)', borderLeft: '3px solid rgba(245,158,11,0.70)' }
+      : { background: '#FFFBEB', borderLeft: '3px solid #F59E0B' }
   }
 
   const mesAnterior = () => setMesRef(m => { const d = new Date(m); d.setMonth(d.getMonth() - 1); return d })
@@ -170,8 +155,7 @@ export default function VisaoMes({ onDiaClick }: Props) {
               const doMesAtual = dia.getMonth() === mesRef.getMonth()
               const isHojeFlag = ymd === hojeYmd
               const isPast = dia < hoje && !isHojeFlag
-              const stat = stats[ymd] ?? { total: 0, semPlano: 0, naoRegistradas: 0 }
-              const bg = doMesAtual ? densidadeBg(stat.total) : 'transparent'
+              const stat = stats[ymd] ?? { total: 0, semPlano: 0, estado: 'vazio' as EstadoDia }
               const isLastRow = si === semanas.length - 1
               const isLastCol = di === 6
               const clickavel = doMesAtual && stat.total > 0
@@ -180,13 +164,13 @@ export default function VisaoMes({ onDiaClick }: Props) {
                 <div
                   key={ymd}
                   onClick={() => clickavel && onDiaClick(dia)}
-                  style={{ background: bg }}
+                  style={cellStyle(stat.estado, doMesAtual)}
                   className={[
-                    'relative p-2 min-h-[72px] flex flex-col select-none',
+                    'relative p-2 min-h-[76px] flex flex-col select-none',
                     !isLastRow ? 'border-b border-[#E6EAF0] dark:border-[#374151]' : '',
                     !isLastCol ? 'border-r border-[#E6EAF0] dark:border-[#374151]' : '',
-                    clickavel ? 'cursor-pointer hover:brightness-[0.96] dark:hover:brightness-110 transition-[filter] duration-100' : '',
-                    !doMesAtual ? 'opacity-25' : '',
+                    clickavel ? 'cursor-pointer hover:brightness-[0.94] dark:hover:brightness-[1.18] transition-[filter] duration-100' : '',
+                    !doMesAtual ? 'opacity-[0.15]' : '',
                   ].filter(Boolean).join(' ')}
                 >
                   {/* Número do dia */}
@@ -194,34 +178,29 @@ export default function VisaoMes({ onDiaClick }: Props) {
                     'text-[12px] font-semibold leading-none self-start',
                     isHojeFlag
                       ? 'w-[22px] h-[22px] flex items-center justify-center rounded-full bg-[#5B5FEA] dark:bg-[#818cf8] text-white text-[11px]'
-                      : isPast
-                        ? 'text-slate-300 dark:text-[#4B5563]'
-                        : 'text-slate-600 dark:text-[#9CA3AF]',
+                      : doMesAtual && stat.estado === 'critico'
+                        ? 'text-slate-700 dark:text-[#E5E7EB]'
+                        : isPast
+                          ? 'text-slate-300 dark:text-[#4B5563]'
+                          : 'text-slate-400 dark:text-[#6B7280]',
                   ].filter(Boolean).join(' ')}>
                     {dia.getDate()}
                   </span>
 
-                  {/* Quantidade de aulas */}
-                  {doMesAtual && stat.total > 0 && (
-                    <span className="text-[11px] font-bold text-slate-400 dark:text-[#6B7280] self-end mt-auto leading-none">
-                      {stat.total}
-                    </span>
-                  )}
-
-                  {/* Dots de status */}
-                  {doMesAtual && (stat.semPlano > 0 || stat.naoRegistradas > 0) && (
-                    <div className="absolute bottom-[6px] left-[7px] flex gap-[3px] items-center">
-                      {stat.semPlano > 0 && (
+                  {/* Indicador de estado — apenas dias com aulas no presente/futuro */}
+                  {doMesAtual && !isPast && stat.total > 0 && (
+                    <div className="mt-auto">
+                      {stat.estado === 'critico' ? (
                         <span
-                          className="w-[5px] h-[5px] rounded-full bg-amber-400 dark:bg-amber-400/80"
-                          title="Aulas sem plano"
-                        />
-                      )}
-                      {stat.naoRegistradas > 0 && (
-                        <span
-                          className="w-[5px] h-[5px] rounded-full bg-slate-300 dark:bg-[#4B5563]"
-                          title="Aulas não registradas"
-                        />
+                          className="text-[11px] font-bold leading-none"
+                          style={{ color: isDark ? '#FCD34D' : '#B45309' }}
+                        >
+                          {stat.semPlano} sem plano
+                        </span>
+                      ) : (
+                        <span className="text-[10px] leading-none text-slate-400 dark:text-[#6B7280]">
+                          {stat.total} {stat.total === 1 ? 'aula' : 'aulas'}
+                        </span>
                       )}
                     </div>
                   )}
@@ -230,26 +209,6 @@ export default function VisaoMes({ onDiaClick }: Props) {
             })}
           </div>
         ))}
-      </div>
-
-      {/* ── Legenda ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-5 mt-3 flex-wrap">
-        <div className="flex items-center gap-1.5">
-          <span className="w-[5px] h-[5px] rounded-full bg-amber-400 dark:bg-amber-400/80" />
-          <span className="text-[11px] text-slate-400 dark:text-[#6B7280]">Aulas sem plano</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-[5px] h-[5px] rounded-full bg-slate-300 dark:bg-[#4B5563]" />
-          <span className="text-[11px] text-slate-400 dark:text-[#6B7280]">Não registradas</span>
-        </div>
-        <div className="flex items-center gap-1.5 ml-auto">
-          <span className="inline-block w-[10px] h-[10px] rounded-[2px]" style={{ background: isDark ? 'rgba(129,140,248,0.08)' : '#EEF2FF' }} />
-          <span className="text-[10px] text-slate-300 dark:text-[#4B5563]">1–2</span>
-          <span className="inline-block w-[10px] h-[10px] rounded-[2px]" style={{ background: isDark ? 'rgba(129,140,248,0.15)' : '#E0E7FF' }} />
-          <span className="text-[10px] text-slate-300 dark:text-[#4B5563]">3–5</span>
-          <span className="inline-block w-[10px] h-[10px] rounded-[2px]" style={{ background: isDark ? 'rgba(129,140,248,0.25)' : '#C7D2FE' }} />
-          <span className="text-[10px] text-slate-300 dark:text-[#4B5563]">6+</span>
-        </div>
       </div>
     </div>
   )

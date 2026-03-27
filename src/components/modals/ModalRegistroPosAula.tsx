@@ -156,20 +156,20 @@ const AccordionChip = React.forwardRef<() => void, {
                 <span style={{ fontSize: 9, color: c.textMuted, flexShrink: 0, marginLeft: 4, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
             </div>
             {open && (
-                <div style={{ padding: '0 12px 10px' }}>
+                <div style={{ padding: '0 12px 10px', background: c.cardBg }}>
                     {quickOptions && quickOptions.length > 0 && (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
                             {quickOptions.map(opt => (
                                 <button key={opt} type="button"
                                     onClick={() => { if (!value.includes(opt)) onChange(value ? value + (value.endsWith('\n') ? '' : '\n') + opt : opt) }}
-                                    style={{ fontSize: 12, fontWeight: 600, color: '#6366f1', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                    style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#818cf8' : '#6366f1', background: isDark ? 'rgba(99,102,241,0.12)' : '#eef2ff', border: isDark ? '1px solid rgba(99,102,241,0.25)' : '1px solid #c7d2fe', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                     + {opt}
                                 </button>
                             ))}
                         </div>
                     )}
                     {richText ? (
-                        <div style={{ border: `1px solid ${gravando ? (speechAtivo ? '#fca5a5' : '#f97316') : c.border}`, borderRadius: 8, overflow: 'hidden', transition: 'border-color .2s' }}>
+                        <div style={{ border: `1px solid ${gravando ? (speechAtivo ? '#fca5a5' : '#f97316') : c.border}`, borderRadius: 8, overflow: 'hidden', background: c.inputBg, transition: 'border-color .2s' }}>
                             <TipTapEditor
                                 value={value}
                                 onChange={onChange}
@@ -375,13 +375,15 @@ interface StatusAulaSelectorProps {
     onChange: (v: StatusAula) => void;
     onDone: () => void;
     firstRef?: React.RefObject<HTMLButtonElement>;
+    isDark?: boolean;
 }
 
-function StatusAulaSelector({ value, onChange, onDone, firstRef }: StatusAulaSelectorProps) {
+function StatusAulaSelector({ value, onChange, onDone, firstRef, isDark = false }: StatusAulaSelectorProps) {
     const refs = React.useRef<(HTMLButtonElement | null)[]>([]);
+    const cs = dk(isDark)
     return (
-        <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+        <div style={{ border: `1.5px solid ${cs.border}`, borderRadius: 10, overflow: 'hidden', background: cs.cardBgSolid }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: cs.cardBgAlt, borderBottom: `1px solid ${cs.borderLight}` }}>
                 <span style={{ fontSize: 13 }}>📋</span>
                 <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase' as const, color: '#94a3b8' }}>Como foi a aula?</span>
                 {value && (
@@ -409,19 +411,19 @@ function StatusAulaSelector({ value, onChange, onDone, firstRef }: StatusAulaSel
                             style={{
                                 display: 'flex', alignItems: 'center', gap: 10,
                                 padding: '9px 12px',
-                                background: sel ? `${op.accent}40` : '#fff',
-                                color: sel ? op.color : '#64748b',
+                                background: sel ? `${op.accent}40` : cs.cardBgSolid,
+                                color: sel ? op.color : cs.textMed,
                                 fontWeight: sel ? 600 : 400,
                                 fontSize: 13, border: 'none',
-                                borderTop: idx > 0 ? '1px solid #f1f5f9' : 'none',
+                                borderTop: idx > 0 ? `1px solid ${cs.borderLight}` : 'none',
                                 borderLeft: sel ? `3px solid ${op.accent}` : '3px solid transparent',
                                 cursor: 'pointer', textAlign: 'left' as const,
                                 width: '100%', transition: 'all .1s', outline: 'none',
                             }}
-                            onFocus={e => { if (!sel) e.currentTarget.style.background = '#f8fafc'; }}
-                            onBlur={e  => { if (!sel) e.currentTarget.style.background = '#fff'; }}
-                            onMouseOver={e => { if (!sel) e.currentTarget.style.background = '#f8fafc'; }}
-                            onMouseOut={e  => { if (!sel) e.currentTarget.style.background = '#fff'; }}
+                            onFocus={e => { if (!sel) e.currentTarget.style.background = cs.cardBgAlt; }}
+                            onBlur={e  => { if (!sel) e.currentTarget.style.background = cs.cardBgSolid; }}
+                            onMouseOver={e => { if (!sel) e.currentTarget.style.background = cs.cardBgAlt; }}
+                            onMouseOut={e  => { if (!sel) e.currentTarget.style.background = cs.cardBgSolid; }}
                         >
                             <span style={{ fontSize: 12, width: 16, textAlign: 'center', flexShrink: 0, color: sel ? op.color : '#94a3b8' }}>{op.emoji}</span>
                             {op.label}
@@ -432,7 +434,7 @@ function StatusAulaSelector({ value, onChange, onDone, firstRef }: StatusAulaSel
         </div>
     );
 }
-export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hideHeader = false, saveLabel, verPlanoExterno }: { inlineMode?: boolean; onVoltar?: () => void; hideHeader?: boolean; saveLabel?: string; verPlanoExterno?: boolean }) {
+export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onSaved, hideHeader = false, saveLabel, verPlanoExterno }: { inlineMode?: boolean; onVoltar?: () => void; onSaved?: () => void; hideHeader?: boolean; saveLabel?: string; verPlanoExterno?: boolean }) {
     const isDark = useIsDark()
     const c = dk(isDark)
     const {
@@ -921,12 +923,12 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                         {planejadoAberto && planoParaRegistro && (() => {
                             const p = planoParaRegistro as any
                             const stripHtml = (s: string) => (s || '').replace(/<[^>]+>/g, '').trim()
-                            const objetivo  = stripHtml(p.objetivoGeral || '')
+                            const objetivo  = stripHtml(p.objetivoGeral || '') || (p.objetivosEspecificos || []).filter(Boolean).join(' ')
                             const criterio  = stripHtml(p.avaliacaoEvidencia || '')
                             const roteiro: any[] = p.atividadesRoteiro || []
-                            const duracao   = (p.duracao || '').trim()
-                            const nivel     = (p.nivel || '').trim()
-                            const tema      = (p.tema || '').trim()
+                            const duracao   = String(p.duracao || '').trim()
+                            const nivel     = String(p.nivel || '').trim()
+                            const tema      = String(p.tema || '').trim()
                             const metodologia = stripHtml(p.metodologia || '')
                             const materiais: string[] = (p.materiais || p.materiaisNecessarios || []).filter(Boolean)
                             const fechamento = stripHtml(p.avaliacaoFechamento || '')
@@ -2319,7 +2321,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                         // Limpa rascunho
                                         if (regTurmaSel && novoRegistro.dataAula)
                                             localStorage.removeItem(`posAulaDraft-${regTurmaSel}-${novoRegistro.dataAula}`)
+                                        setVerRegistros(false)
                                         if (onVoltar) onVoltar()
+                                        if (onSaved) onSaved()
                                     }}
                                     className="px-4 py-2 rounded-lg border border-[#cbd5e1] dark:border-[#374151] bg-transparent text-[#64748b] dark:text-[#9CA3AF] text-[13px] font-semibold hover:border-[#94a3b8] dark:hover:border-[#6b7280] hover:text-[#475569] dark:hover:text-[#E5E7EB] transition">
                                     ✓ {saveLabel || 'Salvar registro'}
@@ -2368,6 +2372,8 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                         )
                                         if (ap && ap.status !== 'realizada') atualizarStatusAplicacao(ap.id, 'realizada')
                                     }
+                                    setModalRegistro(false)
+                                    if (onSaved) onSaved()
                                 }}
                                     style={{ flex: 1, padding: '12px', background: '#1e293b', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'all .15s' }}
                                     onMouseOver={e => { e.currentTarget.style.background = '#334155' }}

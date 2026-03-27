@@ -1081,6 +1081,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                         setRegistroEditando(null); setVerRegistros(true)
                         setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', fariadiferente: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' })
                         setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('')
+                        showToast('Registro salvo ✓')
                     }
                 })
                 return
@@ -1100,6 +1101,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         setRegistroEditando(null); setVerRegistros(true)
         setNovoRegistro({ dataAula: new Date().toISOString().split('T')[0], resumoAula: '', funcionouBem: '', fariadiferente: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', resultadoAula: '', anotacoesGerais: '', proximaAulaOpcao: '', urlEvidencia: '' })
         setRegAnoSel(''); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('')
+        showToast('Registro salvo ✓')
     }, [novoRegistro, _regEdit, planoParaRegistro, regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel, planos, planoSelecionado, setModalConfirm, setPlanoParaRegistro, setRegistroEditando, setVerRegistros, setNovoRegistro, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel])
 
     const excluirRegistro = useCallback((registroId: string | number) => {
@@ -1122,11 +1124,14 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             resultadoAula: reg.resultadoAula || '', anotacoesGerais: reg.anotacoesGerais || '',
             proximaAulaOpcao: reg.proximaAulaOpcao || '',
             urlEvidencia: (reg as any).urlEvidencia || '',
+            // campos que faltavam na edição
+            repetiria: (reg as any).repetiria || '',
+            statusAula: (reg as any).statusAula || '',
             // campos novos (B1, B2, A2) — incluídos na edição para não perdê-los ao salvar
             ...(reg.chamada        ? { chamada: reg.chamada }               : {}),
             ...(reg.encaminhamentos ? { encaminhamentos: reg.encaminhamentos } : {}),
             ...(reg.rubrica        ? { rubrica: reg.rubrica }               : {}),
-        })
+        } as any)
         setRegAnoSel(String(reg.anoLetivo || '')); setRegEscolaSel(String(reg.escola || ''))
         setRegSegmentoSel(String(reg.segmento || reg.serie || '')); setRegTurmaSel(String(reg.turma || ''))
         setVerRegistros(false)

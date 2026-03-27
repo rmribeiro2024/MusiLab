@@ -208,6 +208,7 @@ function processarLinksHtml(html: string): string {
 
 function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onEditarDesc, onRemover }: RoteiroItemProps) {
   const [titulo, setTitulo] = useState(ativ.nome)
+  const [expandido, setExpandido] = useState(false)
   const descRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { setTitulo(ativ.nome) }, [ativ.nome])
@@ -230,6 +231,8 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onEditarDesc, 
     }
   }
 
+  const temDesc = !!(ativ.descricao?.trim())
+
   return (
     <div className="flex items-start gap-2">
       <span className="text-xs font-mono text-slate-400 mt-[10px] w-5 shrink-0 text-right">
@@ -237,8 +240,20 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onEditarDesc, 
       </span>
 
       <div className="flex-1 bg-slate-50 dark:bg-gray-700/60 rounded-md px-3 py-2">
-        {/* Título editável */}
-        <div className="flex items-center gap-2">
+        {/* Título + toggle colapso */}
+        <div
+          className={`flex items-center gap-2 ${temDesc ? 'cursor-pointer' : ''}`}
+          onClick={e => { if (temDesc) { e.stopPropagation(); setExpandido(v => !v) } }}
+        >
+          {temDesc && (
+            <svg
+              className="w-2.5 h-2.5 text-slate-400 shrink-0 transition-transform"
+              style={{ transform: expandido ? 'rotate(90deg)' : 'rotate(0deg)' }}
+              viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"
+            >
+              <path d="M6 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
           <input
             className="flex-1 bg-transparent text-sm font-semibold text-slate-800 dark:text-slate-100 outline-none min-w-0 cursor-text rounded px-1 -mx-1 hover:bg-white/60 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-gray-600/40 focus:ring-1 focus:ring-blue-400/50 transition-colors"
             value={titulo}
@@ -251,8 +266,8 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onEditarDesc, 
           )}
         </div>
 
-        {/* Descrição — contentEditable mantém formatação ao editar */}
-        {ativ.descricao && (
+        {/* Descrição — visível apenas quando expandido */}
+        {temDesc && expandido && (
           <div
             ref={descRef}
             contentEditable
@@ -306,7 +321,7 @@ interface AulaCardProps {
 
 function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
   const { setAplicacoes } = useAplicacoesContext()
-  const { planos } = usePlanosContext()
+  const { planos, editarRegistro } = usePlanosContext()
   const {
     setModalRegistro, setPlanoParaRegistro, setNovoRegistro,
     setRegistroEditando, setVerRegistros,
@@ -330,7 +345,24 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
   const abrirRegistro = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     const stub = { id: `stub-${slot.aulaGrade.turmaId}`, titulo: slot.plano?.titulo ?? '' }
-    setPlanoParaRegistro(stub as any)
+    setPlanoParaRegistro((slot.plano ?? stub) as any)
+
+    if (jaRegistrado) {
+      const tid = String(slot.aulaGrade.turmaId)
+      let regEncontrado: any = null
+      for (const p of planos) {
+        const r = (p.registrosPosAula ?? []).find(
+          (r: any) => r.data === slot.dataStr && String(r.turma) === tid
+        )
+        if (r) { regEncontrado = r; break }
+      }
+      if (regEncontrado) {
+        editarRegistro(regEncontrado)
+        setModalRegistro(true)
+        return
+      }
+    }
+
     setNovoRegistro({
       dataAula: slot.dataStr, resumoAula: '', funcionouBem: '', fariadiferente: '',
       proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '',
@@ -343,8 +375,9 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
     setRegSegmentoSel(slot.aulaGrade.segmentoId)
     setRegTurmaSel(slot.aulaGrade.turmaId)
     setModalRegistro(true)
-  }, [slot, setModalRegistro, setPlanoParaRegistro, setNovoRegistro, setRegistroEditando,
-      setVerRegistros, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel])
+  }, [slot, jaRegistrado, planos, editarRegistro, setModalRegistro, setPlanoParaRegistro,
+      setNovoRegistro, setRegistroEditando, setVerRegistros,
+      setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const roteiro = slot.plano?.atividadesRoteiro ?? []

@@ -39,17 +39,29 @@ export default function TelaPosAula() {
 
     const [dataSel, setDataSel] = useState(hojeStr)
     const [listaAberta, setListaAberta] = useState(true)
-    const [turmaIdx, setTurmaIdx] = useState(-1)
+
+    // ── Panel/sheet (substitui o inline form) ─────────────────────────────────
+    const [painelAberto, setPainelAberto] = useState(false)
+    const [painelVisible, setPainelVisible] = useState(false)
+
+    useEffect(() => {
+        if (painelAberto) requestAnimationFrame(() => setPainelVisible(true))
+        else setPainelVisible(false)
+    }, [painelAberto])
+
+    const fecharPainel = () => {
+        setPainelVisible(false)
+        setTimeout(() => setPainelAberto(false), 280)
+    }
+
     const navDia = (delta: number) => {
         const d = new Date(dataSel + 'T12:00:00')
         d.setDate(d.getDate() + delta)
         setDataSel(toStr(d))
         setListaAberta(true)
-        setTurmaIdx(-1)
-        setModalRegistro(false)
     }
 
-    // Tempo atual em minutos — state estável para evitar flashing no badge "AO VIVO"
+    // Tempo atual em minutos
     const [minAgora, setMinAgora] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes() })
     useEffect(() => {
         const t = setInterval(() => { const n = new Date(); setMinAgora(n.getHours() * 60 + n.getMinutes()) }, 30_000)
@@ -64,10 +76,6 @@ export default function TelaPosAula() {
     const labelDataCurta = (ds: string) => {
         const d = new Date(ds + 'T12:00:00')
         return `${diasSemanaLabel[d.getDay()]}, ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
-    }
-    const labelDataLonga = (ds: string) => {
-        const d = new Date(ds + 'T12:00:00')
-        return `${diasSemanaLong[d.getDay()]}, ${d.getDate()} de ${mesesLabel[d.getMonth()]}`
     }
 
     const todosRegistros = planos.flatMap(p =>
@@ -104,49 +112,52 @@ export default function TelaPosAula() {
     const pendentes  = turmasEnriq.filter(t => !t.registrada).length
     const concluidas = turmasEnriq.filter(t =>  t.registrada).length
 
-    // Seleciona turma pelo índice — fecha a lista
+    // Abre painel para registrar ou editar
     const abrirTurma = (idx: number) => {
         const t = turmasEnriq[idx]
         if (!t) return
-        const plano = t.plano && typeof t.plano === 'object'
-            ? t.plano as any
-            : { id: `stub-${t.aula.id}`, titulo: '', escola: t.escNome, segmento: t.segNome, turma: t.turNome }
-        setPlanoParaRegistro(plano)
 
-        // Bug 7: se turma já registrada, abre com dados preenchidos
         if (t.registrada) {
             const reg = todosRegistros.find(
                 r => r.data === dataSel && String(r.turma) === String(t.aula.turmaId)
             )
             if (reg) {
+                // Usa o plano que contém o registro (não apenas t.plano que pode ser stub)
+                const planoDoReg = planos.find(p => String(p.id) === String(reg.planoId))
+                const planoEfetivo = planoDoReg || (t.plano && typeof t.plano === 'object' ? t.plano as any
+                    : { id: `stub-${t.aula.id}`, titulo: '', escola: t.escNome, segmento: t.segNome, turma: t.turNome })
+                setPlanoParaRegistro(planoEfetivo)
                 editarRegistro(reg)
+                setVerRegistros(false)
             } else {
-                setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', fariadiferente: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
+                // registrada=true mas reg não encontrado — mostra histórico para o usuário localizar
+                const plano = t.plano && typeof t.plano === 'object' ? t.plano as any
+                    : { id: `stub-${t.aula.id}`, titulo: '', escola: t.escNome, segmento: t.segNome, turma: t.turNome }
+                setPlanoParaRegistro(plano)
                 setRegistroEditando(null)
+                setVerRegistros(true)
             }
         } else {
+            const plano = t.plano && typeof t.plano === 'object' ? t.plano as any
+                : { id: `stub-${t.aula.id}`, titulo: '', escola: t.escNome, segmento: t.segNome, turma: t.turNome }
+            setPlanoParaRegistro(plano)
             setNovoRegistro({ dataAula: dataSel, resumoAula: '', funcionouBem: '', fariadiferente: '', proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '', urlEvidencia: '', statusAula: undefined } as any)
             setRegistroEditando(null)
+            setVerRegistros(false)
         }
-
-        setVerRegistros(false)
-        // Pré-seleciona escola/turma diretamente pelos IDs da grade — sem depender do campo plano.escola
         setRegAnoSel(String(t.aula.anoLetivoId ?? ''))
         setRegEscolaSel(String(t.aula.escolaId ?? ''))
         setRegSegmentoSel(String(t.aula.segmentoId ?? ''))
         setRegTurmaSel(String(t.aula.turmaId ?? ''))
-        setTurmaIdx(idx)
-        setListaAberta(false)   // fecha a lista ao selecionar
+        setPainelAberto(true)
     }
 
-    // ── Planejamento rápido ───────────────────────────────────────────────────
-
-    // Retorna PlanejamentoTurma existente para uma turma nesta data, se houver
+    // ── Planejamento rápido ────────────────────────────────────────────────────
     const getPlanoRapidoDaTurma = (t: typeof turmasEnriq[0]) =>
         planejamentos.find(p =>
-            p.turmaId   === String(t.aula.turmaId)   &&
-            p.escolaId  === String(t.aula.escolaId)  &&
-            p.segmentoId=== String(t.aula.segmentoId)&&
+            p.turmaId    === String(t.aula.turmaId)    &&
+            p.escolaId   === String(t.aula.escolaId)   &&
+            p.segmentoId === String(t.aula.segmentoId) &&
             p.anoLetivoId=== String(t.aula.anoLetivoId) &&
             p.dataPrevista === dataSel
         )
@@ -156,7 +167,6 @@ export default function TelaPosAula() {
         setRoteiroRapido('')
         setObjetivoRapido('')
         setPlanoRapidoIdx(idx)
-        // Foca o textarea do roteiro após renderizar
         setTimeout(() => roteiroRef.current?.focus(), 80)
     }
 
@@ -188,71 +198,35 @@ export default function TelaPosAula() {
         showToast('Plano salvo ✓')
     }
 
-    // Bug 6: após salvar, sempre volta à lista de turmas
-    const handleDepoisSalvar = () => {
-        showToast('Registro salvo ✓')
-        setListaAberta(true)
-        setTurmaIdx(-1)
-        setModalRegistro(false)
-    }
-
-
-    const turmaAtual = turmasEnriq[turmaIdx]
-
     return (
         <div className="max-w-2xl mx-auto pb-24">
 
             {/* ── CARD ÚNICO ── */}
             <div className="v2-card rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] overflow-hidden border border-[#E6EAF0] dark:border-[#374151]">
 
-                {/* ══ CABEÇALHO ÚNICO (sempre compacto) ══ */}
+                {/* ══ CABEÇALHO ══ */}
                 <div className="sticky top-0 z-10 v2-card border-b border-[#E6EAF0] dark:border-[#374151]">
-                    <div
-                        className={`px-4 py-3 flex items-center gap-2 select-none ${turmaAtual && !listaAberta ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/20 transition' : ''}`}
-                        onClick={turmaAtual && !listaAberta ? () => { setListaAberta(true); setTurmaIdx(-1) } : undefined}>
+                    <div className="px-4 py-3 flex items-center gap-2 select-none">
 
-                        {/* Voltar / toggle lista */}
-                        {turmaAtual && !listaAberta ? (
-                            <button
-                                onClick={() => { setListaAberta(true); setTurmaIdx(-1) }}
-                                className="text-[11px] text-slate-400 dark:text-[#6b7280] flex items-center gap-0.5 shrink-0 mr-1 cursor-pointer hover:text-slate-600 dark:hover:text-[#9CA3AF] transition">
-                                <span>←</span>
-                                <span className="ml-0.5">voltar</span>
-                            </button>
-                        ) : (
-                            <button
-                                onClick={() => setListaAberta(v => !v)}
-                                className="text-[11px] text-slate-400 dark:text-[#6b7280] flex items-center gap-0.5 shrink-0 mr-1 cursor-pointer hover:text-slate-600 dark:hover:text-[#9CA3AF] transition">
-                                <span>{listaAberta ? '▲' : '▼'}</span>
-                                <span className="ml-0.5">todas</span>
-                            </button>
-                        )}
+                        {/* Toggle lista */}
+                        <button
+                            onClick={() => setListaAberta(v => !v)}
+                            className="text-[11px] text-slate-400 dark:text-[#6b7280] flex items-center gap-0.5 shrink-0 mr-1 cursor-pointer hover:text-slate-600 dark:hover:text-[#9CA3AF] transition">
+                            <span>{listaAberta ? '▲' : '▼'}</span>
+                            <span className="ml-0.5">todas</span>
+                        </button>
 
-                        {/* Centro: data só / ou dot + turma quando selecionada */}
+                        {/* Centro: data */}
                         <div className="flex-1 min-w-0 flex items-center gap-[5px] text-[12px] overflow-hidden">
-                            {turmaAtual ? (
-                                <>
-                                    <span className={`w-[7px] h-[7px] rounded-full shrink-0 ${turmaAtual.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-                                    <span className="font-semibold tabular-nums text-slate-700 dark:text-[#E5E7EB] shrink-0">{turmaAtual.aula.horario}</span>
-                                    <span className="text-slate-300 dark:text-slate-600">·</span>
-                                    <span className="text-slate-400 dark:text-[#6b7280] truncate">{turmaAtual.escNome}</span>
-                                    <span className="text-slate-300 dark:text-slate-600">·</span>
-                                    <span className="font-bold text-slate-700 dark:text-[#E5E7EB] shrink-0">{turmaAtual.turNome}</span>
-                                </>
-                            ) : (
-                                <span className="text-slate-500 dark:text-[#9CA3AF]">
-                                    {labelDataCurta(dataSel)}{ehHoje ? ' · Hoje' : ''}
-                                </span>
-                            )}
+                            <span className="text-slate-500 dark:text-[#9CA3AF]">
+                                {labelDataCurta(dataSel)}{ehHoje ? ' · Hoje' : ''}
+                            </span>
                         </div>
 
-                        {/* Direita: ‹ › dia (sempre) */}
-                        <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                            {turmaAtual && (
-                                <div className="w-px h-4 bg-[#E6EAF0] dark:bg-[#374151] mx-0.5" />
-                            )}
-                            {!ehHoje && !turmaAtual && (
-                                <button onClick={() => { setDataSel(hojeStr); setTurmaIdx(-1) }}
+                        {/* Direita: ‹ › dia */}
+                        <div className="flex items-center gap-1 shrink-0">
+                            {!ehHoje && (
+                                <button onClick={() => { setDataSel(hojeStr) }}
                                     className="mr-1 px-[10px] py-[4px] rounded-[6px] border border-[#E6EAF0] dark:border-[#374151] v2-card text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] cursor-pointer transition hover:text-slate-700">
                                     Hoje
                                 </button>
@@ -266,14 +240,12 @@ export default function TelaPosAula() {
                         </div>
                     </div>
 
-                    {/* Sub-linha — instrução ou status */}
+                    {/* Sub-linha — status */}
                     {listaAberta && turmasEnriq.length > 0 && (
                         <div className="px-4 pb-2 text-[11.5px] text-slate-400 dark:text-[#9CA3AF]">
-                            {turmaIdx === -1
-                                ? <span>Selecione uma turma para registrar o pós-aula</span>
-                                : pendentes > 0
-                                    ? <span>{pendentes} pendente{pendentes > 1 ? 's' : ''}{concluidas > 0 ? ` · ${concluidas} registrada${concluidas > 1 ? 's' : ''}` : ''}</span>
-                                    : <span className="text-emerald-500">Tudo registrado ✓</span>
+                            {pendentes > 0
+                                ? <span>{pendentes} pendente{pendentes > 1 ? 's' : ''}{concluidas > 0 ? ` · ${concluidas} registrada${concluidas > 1 ? 's' : ''}` : ''}</span>
+                                : <span className="text-emerald-500">Tudo registrado ✓</span>
                             }
                         </div>
                     )}
@@ -295,8 +267,7 @@ export default function TelaPosAula() {
                                 <div
                                     key={t.aula.id}
                                     onClick={() => abrirTurma(i)}
-                                    className={`px-4 py-3 flex items-center gap-3 transition cursor-pointer
-                                        ${turmaIdx === i ? 'bg-[#EEF0FF] dark:bg-[#5B5FEA]/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'}`}
+                                    className="px-4 py-3 flex items-center gap-3 transition cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30"
                                     style={{ opacity: t.dimmed ? 0.72 : 1 }}>
 
                                     <span className={`w-2 h-2 rounded-full shrink-0 ${t.registrada ? 'bg-emerald-400' : 'bg-amber-400'}`} />
@@ -318,55 +289,83 @@ export default function TelaPosAula() {
                                             <span className="text-[12px] font-bold text-slate-700 dark:text-[#E5E7EB] truncate">{t.turNome}</span>
                                         </div>
                                         {/* Linha de status de planejamento */}
-                                        {(() => {
-                                            const pr = getPlanoRapidoDaTurma(t)
-                                            if (pr) {
-                                                return (
-                                                    <p className="mt-[3px] text-[11px] text-slate-400 dark:text-[#6B7280] truncate">
-                                                        <span className="text-[#5B5FEA] mr-1">✎</span>
-                                                        {pr.oQuePretendoFazer}
-                                                    </p>
-                                                )
-                                            }
-                                            if (!t.plano && !t.registrada) {
-                                                return (
-                                                    <div className="mt-[3px] flex items-center gap-[6px]">
-                                                        <span className="text-[11px] text-amber-500 dark:text-amber-400">Sem plano vinculado</span>
-                                                        <button
-                                                            onClick={e => abrirPlanoRapido(e, i)}
-                                                            className="text-[11px] text-[#5B5FEA] font-medium hover:underline shrink-0 cursor-pointer">
-                                                            Planejar rápido →
-                                                        </button>
-                                                    </div>
-                                                )
-                                            }
-                                            return null
-                                        })()}
+                                        {!t.plano && !t.registrada && !getPlanoRapidoDaTurma(t) && (
+                                            <div className="mt-[3px] flex items-center gap-[6px]">
+                                                <span className="text-[11px] text-amber-500 dark:text-amber-400">Sem plano vinculado</span>
+                                                <button
+                                                    onClick={e => abrirPlanoRapido(e, i)}
+                                                    className="text-[11px] text-[#5B5FEA] font-medium hover:underline shrink-0 cursor-pointer">
+                                                    Planejar rápido →
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {t.registrada
-                                        ? <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">✓ registrada</span>
-                                        : <span className={`text-[11px] shrink-0 ${turmaIdx === i ? 'text-[#5B5FEA] font-bold' : 'text-slate-300 dark:text-slate-600'}`}>›</span>
-                                    }
+                                    {/* Botão direito — Registrar ou status */}
+                                    {t.registrada ? (
+                                        <span className="text-[10px] text-emerald-500 dark:text-emerald-400 shrink-0 font-medium">✓ registrada</span>
+                                    ) : (
+                                        <span className="text-[11px] shrink-0 px-[8px] py-[3px] rounded-[6px] bg-[#5B5FEA]/10 text-[#5B5FEA] dark:bg-[#5B5FEA]/15 dark:text-[#818cf8] font-semibold">
+                                            Registrar
+                                        </span>
+                                    )}
                                 </div>
                             ))}
                         </div>
                     )}
                 </div>
 
-                {/* ══ FORMULÁRIO INLINE ══ */}
-                {!listaAberta && turmaIdx >= 0 && turmaAtual && (
-                    <Suspense fallback={<div className="px-4 py-8 text-center text-[13px] text-slate-400">Carregando...</div>}>
-                        <ModalRegistroPosAula
-                            inlineMode
-                            hideHeader
-                            onVoltar={handleDepoisSalvar}
-                            saveLabel="Salvar"
-                        />
-                    </Suspense>
-                )}
-
             </div>
+
+            {/* ══ PANEL / SHEET — Registro Pós-Aula ══ */}
+            {painelAberto && (
+                <>
+                    {/* Backdrop */}
+                    <div
+                        onClick={fecharPainel}
+                        style={{
+                            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 48,
+                            opacity: painelVisible ? 1 : 0, transition: 'opacity 280ms ease',
+                        }}
+                    />
+                    {/* Painel: mobile = bottom sheet / desktop = modal centralizado */}
+                    <div style={typeof window !== 'undefined' && window.innerWidth >= 768 ? {
+                        position: 'fixed',
+                        top: '50%', left: '50%',
+                        width: Math.min(window.innerWidth - 48, 540),
+                        height: Math.min(window.innerHeight - 48, 860),
+                        zIndex: 49, display: 'flex', flexDirection: 'column',
+                        borderRadius: 16, overflow: 'hidden',
+                        transform: painelVisible
+                            ? 'translate(-50%, -50%) scale(1)'
+                            : 'translate(-50%, -50%) scale(0.96)',
+                        opacity: painelVisible ? 1 : 0,
+                        transition: 'transform 260ms cubic-bezier(.4,0,.2,1), opacity 260ms ease',
+                        boxShadow: '0 24px 64px rgba(0,0,0,0.28)',
+                    } : {
+                        position: 'fixed', left: 0, right: 0, bottom: 0,
+                        height: '93dvh',
+                        zIndex: 49, display: 'flex', flexDirection: 'column',
+                        borderRadius: '16px 16px 0 0', overflow: 'hidden',
+                        transform: painelVisible ? 'translateY(0)' : 'translateY(100%)',
+                        transition: 'transform 300ms cubic-bezier(.4,0,.2,1)',
+                        boxShadow: '0 -8px 40px rgba(0,0,0,0.22)',
+                    }}>
+                        <Suspense fallback={
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: document.documentElement.classList.contains('dark') ? '#1F2937' : '#fff',
+                                color: '#94a3b8', fontSize: 13 }}>
+                                Carregando...
+                            </div>
+                        }>
+                            <ModalRegistroPosAula
+                                inlineMode={true}
+                                onVoltar={fecharPainel}
+                            />
+                        </Suspense>
+                    </div>
+                </>
+            )}
 
             {/* ══ BOTTOM SHEET: PLANEJAR RÁPIDO ══ */}
             {planoRapidoIdx !== null && (() => {
