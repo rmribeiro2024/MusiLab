@@ -49,6 +49,7 @@ export interface AplicacaoAula {
   atividadesOcultas?: string[]    // IDs de AtividadeRoteiro a pular nesta turma
   roteiroNomes?: Record<string, string>        // nome editado por atividadeId nesta aula específica
   roteiroDescricoes?: Record<string, string>   // descrição editada por atividadeId nesta aula específica
+  roteiroDuracoes?: Record<string, string>     // duração editada por atividadeId nesta aula específica
   _updatedAt?: string
 }
 

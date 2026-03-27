@@ -140,12 +140,13 @@ function useAgendaSlotsForDay(dataStr: string, escolaColorMap: Map<string, numbe
 // Estado local para a digitação — evita o input controlado reverter cada tecla
 
 interface RoteiroItemProps {
-  ativ: AtividadeRoteiro & { nome: string }
+  ativ: AtividadeRoteiro & { nome: string; duracao?: string }
   idx: number
   temAplicacao: boolean
   isDark?: boolean
   onEditar: (id: string | number, nome: string) => void
   onEditarDesc: (id: string | number, desc: string) => void
+  onEditarDuracao: (id: string | number, dur: string) => void
   onRemover: (id: string | number, nome: string) => void
 }
 
@@ -207,10 +208,13 @@ function processarLinksHtml(html: string): string {
   })
 }
 
-function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar, onEditarDesc, onRemover }: RoteiroItemProps) {
+function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar, onEditarDesc, onEditarDuracao, onRemover }: RoteiroItemProps) {
   const [titulo, setTitulo] = useState(ativ.nome)
+  const [duracao, setDuracao] = useState(ativ.duracao ?? '')
   const [expandido, setExpandido] = useState(false)
   const descRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { setDuracao(ativ.duracao ?? '') }, [ativ.duracao])
 
   useEffect(() => { setTitulo(ativ.nome) }, [ativ.nome])
 
@@ -238,11 +242,13 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
         {idx + 1}
       </span>
 
+      {/* Bloco clicável — expande ao clicar em qualquer lugar (exceto inputs) */}
       <div
-        className="flex-1 rounded-md overflow-hidden"
+        className="flex-1 rounded-md overflow-hidden cursor-pointer"
         style={{ background: isDark ? '#374151' : '#f8fafc' }}
+        onClick={() => setExpandido(v => !v)}
       >
-        {/* Linha principal: título + duração + toggle */}
+        {/* Linha principal: título + duração + chevron */}
         <div className="flex items-center gap-2 px-3 py-2">
           <input
             className="flex-1 bg-transparent text-sm font-semibold outline-none min-w-0 cursor-text rounded px-1 -mx-1 transition-colors focus:ring-1 focus:ring-blue-400/50"
@@ -252,27 +258,28 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
             onClick={e => e.stopPropagation()}
             onMouseDown={e => e.stopPropagation()}
           />
-          {ativ.duracao && (
-            <span className="text-xs shrink-0" style={{ color: isDark ? '#6B7280' : '#94a3b8' }}>{ativ.duracao}</span>
-          )}
-          {/* Botão expand — sempre visível */}
-          <button
-            onClick={e => { e.stopPropagation(); setExpandido(v => !v) }}
+          {/* Duração editável */}
+          <input
+            className="w-8 bg-transparent text-xs text-right outline-none rounded transition-colors focus:ring-1 focus:ring-blue-400/50 focus:w-12"
+            style={{ color: isDark ? '#6B7280' : '#94a3b8' }}
+            value={duracao}
+            placeholder="—"
+            onChange={e => { setDuracao(e.target.value); onEditarDuracao(ativ.id, e.target.value) }}
+            onClick={e => e.stopPropagation()}
             onMouseDown={e => e.stopPropagation()}
-            className="w-5 h-5 flex items-center justify-center rounded transition-colors shrink-0"
-            style={expandido
-              ? { color: '#6366f1', background: isDark ? 'rgba(99,102,241,0.15)' : '#eef2ff' }
-              : { color: isDark ? '#6B7280' : '#94a3b8' }}
-            title={expandido ? 'Recolher' : 'Expandir detalhes'}
+            title="Duração (ex: 15 ou 15min)"
+          />
+          {/* Chevron indicador */}
+          <svg
+            className="w-3 h-3 transition-transform shrink-0"
+            style={{
+              transform: expandido ? 'rotate(180deg)' : 'rotate(0deg)',
+              color: expandido ? '#6366f1' : (isDark ? '#6B7280' : '#94a3b8'),
+            }}
+            viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"
           >
-            <svg
-              className="w-3 h-3 transition-transform"
-              style={{ transform: expandido ? 'rotate(180deg)' : 'rotate(0deg)' }}
-              viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"
-            >
-              <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
+            <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </div>
 
         {/* Descrição expandida — editável inline */}
@@ -280,6 +287,7 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
           <div
             className="px-3 pb-2"
             style={{ borderTop: `1px solid ${isDark ? '#4B5563' : '#e2e8f0'}` }}
+            onClick={e => e.stopPropagation()}
           >
             <div
               ref={descRef}
@@ -301,7 +309,8 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
 
       {temAplicacao && (
         <button
-          className="mt-[6px] w-6 h-6 flex items-center justify-center rounded text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
+          className="mt-[6px] w-6 h-6 flex items-center justify-center rounded transition-colors shrink-0"
+          style={{ color: isDark ? '#4B5563' : '#cbd5e1' }}
           onClick={e => { e.stopPropagation(); onRemover(ativ.id, titulo) }}
           onMouseDown={e => e.stopPropagation()}
           title="Remover desta aula"
@@ -398,19 +407,21 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
 
   const roteiro = slot.plano?.atividadesRoteiro ?? []
 
-  // Filtra atividades ocultas e aplica nomes/descrições editados desta aplicação
+  // Filtra atividades ocultas e aplica nomes/descrições/durações editados desta aplicação
   const roteiroVisivel = useMemo(() => {
     const ocultas = new Set(slot.aplicacao?.atividadesOcultas ?? [])
     const nomes = slot.aplicacao?.roteiroNomes ?? {}
     const descs = slot.aplicacao?.roteiroDescricoes ?? {}
+    const durs  = slot.aplicacao?.roteiroDuracoes ?? {}
     return roteiro
       .filter(a => !ocultas.has(String(a.id)))
       .map(a => ({
         ...a,
         nome: nomes[String(a.id)] ?? a.nome,
         descricao: descs[String(a.id)] ?? a.descricao,
+        duracao: durs[String(a.id)] ?? a.duracao,
       }))
-  }, [roteiro, slot.aplicacao?.atividadesOcultas, slot.aplicacao?.roteiroNomes, slot.aplicacao?.roteiroDescricoes])
+  }, [roteiro, slot.aplicacao?.atividadesOcultas, slot.aplicacao?.roteiroNomes, slot.aplicacao?.roteiroDescricoes, slot.aplicacao?.roteiroDuracoes])
 
   const cor = ESCOLA_COLORS[slot.escolaColorIdx % ESCOLA_COLORS.length]
   const borderColor = isDarkMode ? cor.dark : cor.light
@@ -469,6 +480,18 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
       prev.map(a =>
         a.id === aplicacaoId
           ? { ...a, roteiroDescricoes: { ...(a.roteiroDescricoes ?? {}), [String(id)]: novaDesc } }
+          : a,
+      ),
+    )
+  }, [slot.aplicacao, setAplicacoes])
+
+  const editarItemDuracao = useCallback((id: string | number, novaDur: string) => {
+    if (!slot.aplicacao) return
+    const aplicacaoId = slot.aplicacao.id
+    setAplicacoes(prev =>
+      prev.map(a =>
+        a.id === aplicacaoId
+          ? { ...a, roteiroDuracoes: { ...(a.roteiroDuracoes ?? {}), [String(id)]: novaDur } }
           : a,
       ),
     )
@@ -534,7 +557,14 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
             </button>
           )}
           {jaRegistrado && !aberto && (
-            <span className="w-2 h-2 rounded-full bg-emerald-500/70 dark:bg-emerald-400/60 shrink-0 mt-0.5" />
+            <button
+              onClick={abrirRegistro}
+              className="flex items-center gap-1 shrink-0"
+              style={{ color: isDarkMode ? '#6B7280' : '#94a3b8' }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70" />
+              <span className="text-[10px] font-medium">Editar registro</span>
+            </button>
           )}
           <svg
             className={`w-3 h-3 text-slate-300 dark:text-[#374151] transition-transform ${aberto ? 'rotate-180' : ''}`}
@@ -626,44 +656,28 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
                     temAplicacao={!!slot.aplicacao}
                     onEditar={editarItem}
                     onEditarDesc={editarItemDesc}
+                    onEditarDuracao={editarItemDuracao}
                     onRemover={removerAtividade}
                   />
                 ))}
               </div>
             )}
 
-            {/* Botão registrar pós-aula */}
-            <div
-              className="mt-3 pt-3 flex items-center justify-between"
-              style={{ borderTop: `1px solid ${isDarkMode ? '#374151' : '#f1f5f9'}` }}
-            >
-              {jaRegistrado ? (
-                <>
-                  <span className="text-[11px] font-medium" style={{ color: isDarkMode ? '#6B7280' : '#94a3b8' }}>
-                    ✓ Registro feito
-                  </span>
-                  <button
-                    onClick={abrirRegistro}
-                    className="text-[11px] font-semibold px-3 py-1 rounded-lg transition-colors"
-                    style={{
-                      color: isDarkMode ? '#818cf8' : '#4f46e5',
-                      background: isDarkMode ? 'rgba(99,102,241,0.12)' : '#eef2ff',
-                      border: `1px solid ${isDarkMode ? 'rgba(99,102,241,0.25)' : '#c7d2fe'}`,
-                    }}
-                  >
-                    Editar
-                  </button>
-                </>
-              ) : (
+            {/* Botão registrar pós-aula — só quando não registrado */}
+            {!jaRegistrado && (
+              <div
+                className="mt-3 pt-3"
+                style={{ borderTop: `1px solid ${isDarkMode ? '#374151' : '#f1f5f9'}` }}
+              >
                 <button
                   onClick={abrirRegistro}
-                  className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold"
                   style={{ background: '#4f46e5', color: '#fff' }}
                 >
                   Registrar pós-aula
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
