@@ -1785,9 +1785,10 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                                                     }
                                                                                 }}
                                                                                 style={{
-                                                                                    width: '100%', padding: '10px', borderRadius: 8, border: '1.5px solid #c7d2fe',
-                                                                                    background: '#eef2ff', cursor: 'pointer',
-                                                                                    fontSize: 12, fontWeight: 600, color: '#4f46e5',
+                                                                                    width: '100%', padding: '10px', borderRadius: 8,
+                                                                                    border: `1.5px solid ${isDark ? 'rgba(99,102,241,0.3)' : '#c7d2fe'}`,
+                                                                                    background: isDark ? 'rgba(99,102,241,0.1)' : '#eef2ff', cursor: 'pointer',
+                                                                                    fontSize: 12, fontWeight: 600, color: isDark ? '#818cf8' : '#4f46e5',
                                                                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                                                                                 }}>
                                                                                 <span style={{ fontSize: 15 }}>🔗</span>

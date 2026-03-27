@@ -143,6 +143,7 @@ interface RoteiroItemProps {
   ativ: AtividadeRoteiro & { nome: string }
   idx: number
   temAplicacao: boolean
+  isDark?: boolean
   onEditar: (id: string | number, nome: string) => void
   onEditarDesc: (id: string | number, desc: string) => void
   onRemover: (id: string | number, nome: string) => void
@@ -206,7 +207,7 @@ function processarLinksHtml(html: string): string {
   })
 }
 
-function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onEditarDesc, onRemover }: RoteiroItemProps) {
+function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar, onEditarDesc, onRemover }: RoteiroItemProps) {
   const [titulo, setTitulo] = useState(ativ.nome)
   const [expandido, setExpandido] = useState(false)
   const descRef = useRef<HTMLDivElement>(null)
@@ -237,27 +238,31 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onEditarDesc, 
         {idx + 1}
       </span>
 
-      <div className="flex-1 bg-slate-50 dark:bg-gray-700/60 rounded-md overflow-hidden">
+      <div
+        className="flex-1 rounded-md overflow-hidden"
+        style={{ background: isDark ? '#374151' : '#f8fafc' }}
+      >
         {/* Linha principal: título + duração + toggle */}
         <div className="flex items-center gap-2 px-3 py-2">
           <input
-            className="flex-1 bg-transparent text-sm font-semibold text-slate-800 dark:text-slate-100 outline-none min-w-0 cursor-text rounded px-1 -mx-1 hover:bg-white/60 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-gray-600/40 focus:ring-1 focus:ring-blue-400/50 transition-colors"
+            className="flex-1 bg-transparent text-sm font-semibold outline-none min-w-0 cursor-text rounded px-1 -mx-1 transition-colors focus:ring-1 focus:ring-blue-400/50"
+            style={{ color: isDark ? '#E5E7EB' : '#1e293b' }}
             value={titulo}
             onChange={e => { setTitulo(e.target.value); onEditar(ativ.id, e.target.value) }}
             onClick={e => e.stopPropagation()}
             onMouseDown={e => e.stopPropagation()}
           />
           {ativ.duracao && (
-            <span className="text-xs text-slate-400 shrink-0">{ativ.duracao}</span>
+            <span className="text-xs shrink-0" style={{ color: isDark ? '#6B7280' : '#94a3b8' }}>{ativ.duracao}</span>
           )}
           {/* Botão expand — sempre visível */}
           <button
             onClick={e => { e.stopPropagation(); setExpandido(v => !v) }}
             onMouseDown={e => e.stopPropagation()}
-            className={`w-5 h-5 flex items-center justify-center rounded transition-colors shrink-0
-              ${expandido
-                ? 'text-blue-500 bg-blue-50 dark:bg-blue-500/15 dark:text-blue-400'
-                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white/60 dark:hover:bg-white/10'}`}
+            className="w-5 h-5 flex items-center justify-center rounded transition-colors shrink-0"
+            style={expandido
+              ? { color: '#6366f1', background: isDark ? 'rgba(99,102,241,0.15)' : '#eef2ff' }
+              : { color: isDark ? '#6B7280' : '#94a3b8' }}
             title={expandido ? 'Recolher' : 'Expandir detalhes'}
           >
             <svg
@@ -272,13 +277,17 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onEditarDesc, 
 
         {/* Descrição expandida — editável inline */}
         {expandido && (
-          <div className="px-3 pb-2 border-t border-slate-100 dark:border-gray-600/40">
+          <div
+            className="px-3 pb-2"
+            style={{ borderTop: `1px solid ${isDark ? '#4B5563' : '#e2e8f0'}` }}
+          >
             <div
               ref={descRef}
               contentEditable
               suppressContentEditableWarning
               data-placeholder="Adicionar descrição..."
-              className="agenda-descricao agenda-descricao-edit text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed outline-none rounded px-1 -mx-1 hover:bg-white/60 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-gray-600/40 focus:ring-1 focus:ring-blue-400/50 transition-colors cursor-text min-h-[20px]"
+              className="agenda-descricao agenda-descricao-edit text-xs leading-relaxed outline-none rounded px-1 -mx-1 focus:ring-1 focus:ring-blue-400/50 transition-colors cursor-text min-h-[20px] mt-2"
+              style={{ color: isDark ? '#9CA3AF' : '#64748b' }}
               onClick={handleDescClick}
               onMouseDown={e => e.stopPropagation()}
               onKeyDown={e => e.stopPropagation()}
@@ -613,6 +622,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
                     key={String(ativ.id)}
                     ativ={ativ}
                     idx={idx}
+                    isDark={isDarkMode}
                     temAplicacao={!!slot.aplicacao}
                     onEditar={editarItem}
                     onEditarDesc={editarItemDesc}
@@ -623,17 +633,36 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
             )}
 
             {/* Botão registrar pós-aula */}
-            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#374151]">
-              <button
-                onClick={abrirRegistro}
-                className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-colors ${
-                  jaRegistrado
-                    ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/25'
-                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                }`}
-              >
-                {jaRegistrado ? 'Registro feito · Editar' : 'Registrar pós-aula'}
-              </button>
+            <div
+              className="mt-3 pt-3 flex items-center justify-between"
+              style={{ borderTop: `1px solid ${isDarkMode ? '#374151' : '#f1f5f9'}` }}
+            >
+              {jaRegistrado ? (
+                <>
+                  <span className="text-[11px] font-medium" style={{ color: isDarkMode ? '#6B7280' : '#94a3b8' }}>
+                    ✓ Registro feito
+                  </span>
+                  <button
+                    onClick={abrirRegistro}
+                    className="text-[11px] font-semibold px-3 py-1 rounded-lg transition-colors"
+                    style={{
+                      color: isDarkMode ? '#818cf8' : '#4f46e5',
+                      background: isDarkMode ? 'rgba(99,102,241,0.12)' : '#eef2ff',
+                      border: `1px solid ${isDarkMode ? 'rgba(99,102,241,0.25)' : '#c7d2fe'}`,
+                    }}
+                  >
+                    Editar
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={abrirRegistro}
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                  style={{ background: '#4f46e5', color: '#fff' }}
+                >
+                  Registrar pós-aula
+                </button>
+              )}
             </div>
           </div>
         </div>
