@@ -76,7 +76,7 @@ input, textarea, select {
 .agenda-descricao strong { font-weight: 600; }
 .agenda-descricao em { font-style: italic; }
 .agenda-descricao-edit:focus { cursor: text; }
-.agenda-descricao-edit:empty:before { content: 'Clique para editar...'; color: #94a3b8; font-style: italic; }
+.agenda-descricao-edit:empty:before { content: attr(data-placeholder); color: #94a3b8; font-style: italic; pointer-events: none; }
 
 /* ── MODO ESCURO — v2 palette ── */
 .dark body { background: #0F172A; color: #E5E7EB; }

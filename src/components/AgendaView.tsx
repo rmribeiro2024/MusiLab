@@ -213,12 +213,12 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onEditarDesc, 
 
   useEffect(() => { setTitulo(ativ.nome) }, [ativ.nome])
 
-  // Inicializa o HTML do contentEditable sem sobrescrever o cursor durante edição
+  // Inicializa o HTML do contentEditable ao expandir ou quando a descrição muda externamente
   useEffect(() => {
     if (descRef.current && document.activeElement !== descRef.current) {
       descRef.current.innerHTML = processarLinksHtml(sanitizarRich(ativ.descricao ?? ''))
     }
-  }, [ativ.descricao])
+  }, [ativ.descricao, expandido])
 
   // Abre links ao clicar (contentEditable bloqueia navegação nativa)
   function handleDescClick(e: React.MouseEvent<HTMLDivElement>) {
@@ -231,29 +231,15 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onEditarDesc, 
     }
   }
 
-  const temDesc = !!(ativ.descricao?.trim())
-
   return (
     <div className="flex items-start gap-2">
       <span className="text-xs font-mono text-slate-400 mt-[10px] w-5 shrink-0 text-right">
         {idx + 1}
       </span>
 
-      <div className="flex-1 bg-slate-50 dark:bg-gray-700/60 rounded-md px-3 py-2">
-        {/* Título + toggle colapso */}
-        <div
-          className={`flex items-center gap-2 ${temDesc ? 'cursor-pointer' : ''}`}
-          onClick={e => { if (temDesc) { e.stopPropagation(); setExpandido(v => !v) } }}
-        >
-          {temDesc && (
-            <svg
-              className="w-2.5 h-2.5 text-slate-400 shrink-0 transition-transform"
-              style={{ transform: expandido ? 'rotate(90deg)' : 'rotate(0deg)' }}
-              viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"
-            >
-              <path d="M6 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          )}
+      <div className="flex-1 bg-slate-50 dark:bg-gray-700/60 rounded-md overflow-hidden">
+        {/* Linha principal: título + duração + toggle */}
+        <div className="flex items-center gap-2 px-3 py-2">
           <input
             className="flex-1 bg-transparent text-sm font-semibold text-slate-800 dark:text-slate-100 outline-none min-w-0 cursor-text rounded px-1 -mx-1 hover:bg-white/60 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-gray-600/40 focus:ring-1 focus:ring-blue-400/50 transition-colors"
             value={titulo}
@@ -264,22 +250,43 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, onEditar, onEditarDesc, 
           {ativ.duracao && (
             <span className="text-xs text-slate-400 shrink-0">{ativ.duracao}</span>
           )}
+          {/* Botão expand — sempre visível */}
+          <button
+            onClick={e => { e.stopPropagation(); setExpandido(v => !v) }}
+            onMouseDown={e => e.stopPropagation()}
+            className={`w-5 h-5 flex items-center justify-center rounded transition-colors shrink-0
+              ${expandido
+                ? 'text-blue-500 bg-blue-50 dark:bg-blue-500/15 dark:text-blue-400'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white/60 dark:hover:bg-white/10'}`}
+            title={expandido ? 'Recolher' : 'Expandir detalhes'}
+          >
+            <svg
+              className="w-3 h-3 transition-transform"
+              style={{ transform: expandido ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"
+            >
+              <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
         </div>
 
-        {/* Descrição — visível apenas quando expandido */}
-        {temDesc && expandido && (
-          <div
-            ref={descRef}
-            contentEditable
-            suppressContentEditableWarning
-            className="agenda-descricao agenda-descricao-edit text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed outline-none rounded px-1 -mx-1 hover:bg-white/60 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-gray-600/40 focus:ring-1 focus:ring-blue-400/50 transition-colors cursor-text"
-            onClick={handleDescClick}
-            onMouseDown={e => e.stopPropagation()}
-            onKeyDown={e => e.stopPropagation()}
-            onBlur={() => {
-              if (descRef.current) onEditarDesc(ativ.id, descRef.current.innerHTML)
-            }}
-          />
+        {/* Descrição expandida — editável inline */}
+        {expandido && (
+          <div className="px-3 pb-2 border-t border-slate-100 dark:border-gray-600/40">
+            <div
+              ref={descRef}
+              contentEditable
+              suppressContentEditableWarning
+              data-placeholder="Adicionar descrição..."
+              className="agenda-descricao agenda-descricao-edit text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed outline-none rounded px-1 -mx-1 hover:bg-white/60 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-gray-600/40 focus:ring-1 focus:ring-blue-400/50 transition-colors cursor-text min-h-[20px]"
+              onClick={handleDescClick}
+              onMouseDown={e => e.stopPropagation()}
+              onKeyDown={e => e.stopPropagation()}
+              onBlur={() => {
+                if (descRef.current) onEditarDesc(ativ.id, descRef.current.innerHTML)
+              }}
+            />
+          </div>
         )}
       </div>
 
