@@ -566,14 +566,15 @@ function MateriaisDia({ slots }: { slots: AulaSlot[] }) {
 
 // ─── CardSemana — card compacto para a view Semana (não expande) ─────────────
 
-function CardSemana({ slot, isDarkMode }: { slot: AulaSlot; isDarkMode: boolean }) {
+function CardSemana({ slot, isDarkMode, onClickDia }: { slot: AulaSlot; isDarkMode: boolean; onClickDia?: () => void }) {
   const cor = ESCOLA_COLORS[slot.escolaColorIdx % ESCOLA_COLORS.length]
   const borderColor = isDarkMode ? cor.dark : cor.light
   const semPlano = !slot.plano
 
   return (
     <div
-      className="rounded-lg bg-white dark:bg-gray-800 p-2.5 text-left w-full"
+      onClick={onClickDia}
+      className={`rounded-lg bg-white dark:bg-gray-800 p-2.5 text-left w-full ${onClickDia ? 'cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all' : ''}`}
       style={{ borderLeft: `3px solid ${semPlano ? '#f59e0b' : borderColor}` }}
     >
       <p className="text-[11px] font-mono text-slate-400 dark:text-slate-500 mb-0.5">
@@ -605,17 +606,18 @@ interface ColunaDiaProps {
   isHoje: boolean
   escolaColorMap: Map<string, number>
   isDarkMode: boolean
+  onClickDia: () => void
 }
 
-function ColunaDia({ dataStr, short, diaNum, isHoje, escolaColorMap, isDarkMode }: ColunaDiaProps) {
+function ColunaDia({ dataStr, short, diaNum, isHoje, escolaColorMap, isDarkMode, onClickDia }: ColunaDiaProps) {
   const slots = useAgendaSlotsForDay(dataStr, escolaColorMap)
 
   return (
     <div className={`flex flex-col min-w-0 rounded-xl p-2 ${
       isHoje ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-gray-900 bg-blue-50/40 dark:bg-blue-900/10' : ''
     }`}>
-      {/* Cabeçalho */}
-      <div className="text-center mb-2">
+      {/* Cabeçalho — clicável para ir ao dia */}
+      <button className="text-center mb-2 hover:opacity-70 transition-opacity cursor-pointer" onClick={onClickDia}>
         <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
           {short}
         </p>
@@ -631,7 +633,7 @@ function ColunaDia({ dataStr, short, diaNum, isHoje, escolaColorMap, isDarkMode 
             </span>
           )}
         </div>
-      </div>
+      </button>
 
       {/* Cards ou vazio */}
       <div className="flex flex-col gap-1.5 flex-1">
@@ -645,6 +647,7 @@ function ColunaDia({ dataStr, short, diaNum, isHoje, escolaColorMap, isDarkMode 
               key={`${slot.aulaGrade.id}-${slot.dataStr}`}
               slot={slot}
               isDarkMode={isDarkMode}
+              onClickDia={onClickDia}
             />
           ))
         )}
@@ -692,6 +695,133 @@ function LegendaEscolas({ anosLetivos, escolaColorMap, isDarkMode }: LegendaProp
         <span className="w-2 h-2 rounded-full shrink-0 bg-amber-400" />
         Sem plano
       </span>
+    </div>
+  )
+}
+
+// ─── BriefingDia — resumo inteligente com IA ─────────────────────────────────
+
+async function gerarBriefingGemini(slots: AulaSlot[]): Promise<string> {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+  if (!apiKey) throw new Error('Chave API não configurada.')
+
+  const linhas: string[] = []
+  linhas.push(`Data: ${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}`)
+  linhas.push(`Total de aulas: ${slots.length}`)
+
+  const escolas = [...new Set(slots.map(s => s.nomeEscola).filter(Boolean))]
+  if (escolas.length) linhas.push(`Escolas: ${escolas.join(', ')}`)
+
+  slots.forEach(s => {
+    const h = s.aulaGrade.horario ? ` às ${formatHorario(s.aulaGrade.horario)}` : ''
+    if (s.plano) {
+      const ativs = (s.plano.atividadesRoteiro ?? []).slice(0, 4).map(a => a.nome).join(', ')
+      linhas.push(`- ${s.nomeTurma}${h} | "${s.plano.titulo}"${ativs ? ` | Atividades: ${ativs}` : ''}`)
+    } else {
+      linhas.push(`- ${s.nomeTurma}${h} | SEM PLANO VINCULADO`)
+    }
+  })
+
+  const materiais = [...new Set(slots.flatMap(s => s.plano?.materiais ?? []).filter(Boolean))]
+  if (materiais.length) linhas.push(`Materiais necessários: ${materiais.join(', ')}`)
+
+  const prompt = `Você é um assistente para professores de música. Com base nas informações do dia abaixo, escreva um briefing CURTO e ÚTIL (máximo 6 linhas) para o professor se preparar. Seja direto, sem saudações nem introdução. Priorize: turmas sem plano, materiais a preparar, variedade de atividades, alertas importantes. Use português claro e profissional. Não invente nada além do que foi fornecido.
+
+${linhas.join('\n')}
+
+Escreva apenas o briefing, sem títulos nem markdown.`
+
+  const resp = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+    },
+  )
+  if (!resp.ok) throw new Error(`Erro ${resp.status}`)
+  const data = await resp.json()
+  const texto = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+  if (!texto) throw new Error('Resposta vazia')
+  return texto.trim()
+}
+
+function BriefingDia({ slots }: { slots: AulaSlot[] }) {
+  const [texto, setTexto] = useState<string | null>(null)
+  const [carregando, setCarregando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const [fechado, setFechado] = useState(false)
+
+  // Limpa ao mudar o dia
+  useEffect(() => {
+    setTexto(null); setErro(null); setFechado(false)
+  }, [slots])
+
+  if (slots.length === 0 || fechado) return null
+
+  async function gerar() {
+    setCarregando(true); setErro(null)
+    try {
+      setTexto(await gerarBriefingGemini(slots))
+    } catch (e: any) {
+      setErro(e.message ?? 'Erro ao gerar briefing')
+    } finally {
+      setCarregando(false)
+    }
+  }
+
+  if (!texto && !carregando && !erro) {
+    return (
+      <div className="mb-5">
+        <button
+          onClick={gerar}
+          className="flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Gerar briefing do dia com IA
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mb-5 rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/60 dark:bg-indigo-950/30 px-4 py-3.5 relative">
+      <button
+        onClick={() => setFechado(true)}
+        className="absolute top-2.5 right-2.5 w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-sm leading-none"
+        title="Fechar"
+      >
+        ×
+      </button>
+
+      <div className="flex items-center gap-2 mb-2">
+        <svg className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Briefing do dia</span>
+        {!carregando && (
+          <button
+            onClick={gerar}
+            className="ml-auto mr-6 text-[10px] text-indigo-400 dark:text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
+            title="Regerar"
+          >
+            atualizar
+          </button>
+        )}
+      </div>
+
+      {carregando && (
+        <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-[#9CA3AF]">
+          <span className="w-3 h-3 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin shrink-0" />
+          Gerando...
+        </div>
+      )}
+      {erro && <p className="text-xs text-red-500 dark:text-red-400">{erro}</p>}
+      {texto && (
+        <p className="text-sm text-slate-700 dark:text-[#E5E7EB] leading-relaxed whitespace-pre-line">{texto}</p>
+      )}
     </div>
   )
 }
@@ -746,9 +876,6 @@ export default function AgendaView() {
   const { planos } = usePlanosContext()
 
   const hoje = useMemo(() => toStr(new Date()), [])
-  const [tab, setTab] = useState<TabMode>('hoje')
-  const [diaSelecionado, setDiaSelecionado] = useState<string>(hoje)
-  const [segunda, setSegunda] = useState<Date>(() => getMondayOf(new Date()))
 
   // Detecta dark mode via classe no <html>
   const [isDarkMode, setIsDarkMode] = useState(
@@ -790,52 +917,14 @@ export default function AgendaView() {
     return map
   }, [anosLetivos])
 
-  // Dias da semana exibidos no strip
-  const diasSemana = useMemo(
-    () =>
-      Array.from({ length: 5 }, (_, i) => {
-        const d = addDays(segunda, i)
-        return {
-          dataStr: toStr(d),
-          short: DIAS_SEMANA_SHORT[i],
-          dia: d.getDate(),
-          isHoje: toStr(d) === hoje,
-        }
-      }),
-    [segunda, hoje],
-  )
-
-  const dataAtiva = tab === 'hoje' ? hoje : diaSelecionado
-
   // Label "segunda, 25 de março"
   const labelDia = useMemo(() => {
-    const d = new Date(dataAtiva + 'T12:00:00')
+    const d = new Date(hoje + 'T12:00:00')
     const nomes = ['domingo','segunda','terça','quarta','quinta','sexta','sábado']
     return `${nomes[d.getDay()]}, ${d.getDate()} de ${MESES_LONGOS[d.getMonth()]}`
-  }, [dataAtiva])
+  }, [hoje])
 
-  // Label "24–28 mar 2026"
-  const labelSemana = useMemo(() => {
-    const fri = addDays(segunda, 4)
-    const m1 = MESES[segunda.getMonth()]
-    const m2 = MESES[fri.getMonth()]
-    return m1 === m2
-      ? `${segunda.getDate()}–${fri.getDate()} ${m1} ${segunda.getFullYear()}`
-      : `${segunda.getDate()} ${m1} – ${fri.getDate()} ${m2} ${fri.getFullYear()}`
-  }, [segunda])
-
-  function prevSemana() {
-    const ns = addDays(segunda, -7)
-    setSegunda(ns)
-    setDiaSelecionado(toStr(ns))
-  }
-  function nextSemana() {
-    const ns = addDays(segunda, 7)
-    setSegunda(ns)
-    setDiaSelecionado(toStr(ns))
-  }
-
-  // Slots + stats de hoje para o header (não recomputar em AgendaDia)
+  // Slots + stats de hoje
   const slotsHoje = useAgendaSlotsForDay(hoje, escolaColorMap)
 
   const statsHoje = useMemo(() => {
@@ -856,7 +945,7 @@ export default function AgendaView() {
 
   return (
     <div className="mx-auto px-4 pb-10 max-w-2xl">
-      {/* Header com hierarquia clara */}
+      {/* Header */}
       <div className="mb-6">
         <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
           {headerMsg}
@@ -865,7 +954,6 @@ export default function AgendaView() {
 
         {statsHoje.total > 0 && (
           <div className="mt-3 space-y-1.5">
-            {/* Linha de contexto simplificada */}
             <div className="flex items-center gap-2">
               {statsHoje.pendentes > 0 && (
                 <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9CA3AF]">
@@ -881,7 +969,6 @@ export default function AgendaView() {
                 </span>
               )}
             </div>
-            {/* Barra de progresso */}
             <div className="w-full h-[3px] bg-slate-100 dark:bg-[#374151] rounded-full overflow-hidden">
               <div
                 className="h-full bg-[#5B5FEA] dark:bg-[#818cf8] rounded-full transition-all duration-500"
@@ -891,6 +978,8 @@ export default function AgendaView() {
           </div>
         )}
       </div>
+
+      <BriefingDia slots={slotsHoje} />
 
       <AgendaDia dataStr={hoje} escolaColorMap={escolaColorMap} isDarkMode={isDarkMode} />
     </div>

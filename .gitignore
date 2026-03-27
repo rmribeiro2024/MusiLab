@@ -20,3 +20,29 @@ npm-debug.log*
 # Sistema operacional
 .DS_Store
 Thumbs.db
+nul
+
+# Backups e temporários
+*.bak
+*.swp
+*.crswap
+musilab-backup-auto.json*
+
+# Previews de design (arquivos de trabalho locais)
+preview/
+previews/
+preview-*.html
+
+# Python
+__pycache__/
+
+# Claude Code interno
+.claude/
+
+# Rascunhos e documentos de trabalho
+*.docx
+rascunho*.tsx
+src/contexts/*_BACKUP_*.tsx
+src/contexts/*_BASE_*.tsx
+src/contexts/*_LOCAL_*.tsx
+src/contexts/*_REMOTE_*.tsx
