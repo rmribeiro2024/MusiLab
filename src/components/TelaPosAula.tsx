@@ -85,9 +85,10 @@ export default function TelaPosAula() {
             const seg = esc?.segmentos.find(s => s.id == aula.segmentoId)
             const tur = seg?.turmas.find(t => t.id == aula.turmaId)
             const aplicacao = apsDoDia.find(ap => ap.turmaId == aula.turmaId && ap.segmentoId == aula.segmentoId)
+            const planoIdSugerido = !aplicacao ? sugerirPlanoParaTurma(aula.anoLetivoId, aula.escolaId, aula.segmentoId, aula.turmaId) : null
             const plano = aplicacao
                 ? planos.find(p => String(p.id) === String(aplicacao.planoId))
-                : sugerirPlanoParaTurma(aula.anoLetivoId, aula.escolaId, aula.segmentoId, aula.turmaId) || undefined
+                : planoIdSugerido ? planos.find(p => String(p.id) === planoIdSugerido) : undefined
             const registrada = todosRegistros.some(
                 r => r.data === dataSel && String(r.turma) === String(aula.turmaId)
             )
