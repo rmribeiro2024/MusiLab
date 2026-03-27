@@ -139,7 +139,7 @@ const AccordionChip = React.forwardRef<() => void, {
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: filled ? c.textMain : c.textMed, flex: 1 }}>
                     {label}
                 </span>
-                {filled && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                {filled && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: isDark ? 'rgba(34,197,94,0.12)' : '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: `1px solid ${isDark ? 'rgba(34,197,94,0.25)' : '#bbf7d0'}`, flexShrink: 0 }}>✓</span>}
                 {allowVoice && (
                     <button type="button" onClick={toggleVoz} title={gravando ? 'Parar gravação' : 'Gravar por voz'}
                         style={{ fontSize: 13, background: gravando ? '#fee2e2' : 'transparent', border: gravando ? '1px solid #fca5a5' : '1px solid transparent', borderRadius: 6, cursor: 'pointer', padding: '2px 5px', flexShrink: 0, color: gravando ? '#ef4444' : c.textMuted, outline: 'none' }}>
@@ -269,7 +269,7 @@ const BehaviorChip = React.forwardRef<() => void, {
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: filled ? cb.textMain : cb.textMed, flex: 1 }}>
                     Como estava a turma hoje?
                 </span>
-                {filled && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
+                {filled && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: isDark ? 'rgba(34,197,94,0.12)' : '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: `1px solid ${isDark ? 'rgba(34,197,94,0.25)' : '#bbf7d0'}`, flexShrink: 0 }}>✓</span>}
                 <span style={{ fontSize: 9, color: cb.textMuted, flexShrink: 0, marginLeft: 4, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
             </div>
             {open && (
@@ -967,7 +967,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                     {/* Turma + Data — linha compacta (sempre visível quando turma selecionada) */}
                                     {(regTurmaSel || modoCompacto) ? (
                                         <div ref={seletorRef} style={{ position: 'relative' }}>
-                                            {!inlineMode && <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                                            {!inlineMode && <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: c.cardBgAlt, border: `1px solid ${c.border}`, borderRadius: 10 }}>
                                                 {(() => {
                                                     const ano = anosLetivos.find(a => a.id == regAnoSel)
                                                     const esc = ano?.escolas.find(e => e.id == regEscolaSel)
@@ -979,12 +979,12 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                         <span style={{ fontSize: 13, flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 0 }}>
                                                                             {/* Turma */}
                                                             {inlineMode ? (
-                                                                <span style={{ fontWeight: 700, fontSize: 13, color: '#1e293b', lineHeight: 1 }}>{tur?.nome || 'Turma'}</span>
+                                                                <span style={{ fontWeight: 700, fontSize: 13, color: c.textMain, lineHeight: 1 }}>{tur?.nome || 'Turma'}</span>
                                                             ) : (
                                                                 <button type="button" onClick={() => { setSeletorTurma(v => !v); setSeletorEscola(false) }}
-                                                                    style={{ fontWeight: 700, fontSize: 13, color: seletorTurma ? '#6366f1' : '#1e293b', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                                                                    style={{ fontWeight: 700, fontSize: 13, color: seletorTurma ? '#6366f1' : c.textMain, background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
                                                                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#6366f1' }}
-                                                                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = seletorTurma ? '#6366f1' : '#1e293b' }}>
+                                                                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = seletorTurma ? '#6366f1' : c.textMain }}>
                                                                     {tur?.nome || 'Turma'}
                                                                     <span style={{ fontSize: 9, color: '#94a3b8', lineHeight: 1 }}>▾</span>
                                                                 </button>
@@ -1047,7 +1047,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 const todayStr = new Date().toISOString().split('T')[0]
                                                 const nomes = ['Seg','Ter','Qua','Qui','Sex','Sáb']
                                                 return (
-                                                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '8px 10px' }}>
+                                                    <div style={{ background: c.cardBgAlt, border: `1px solid ${c.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '8px 10px' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                                             <button type="button" onClick={() => setSemanaOffset(v => v - 1)}
                                                                 style={{ fontSize: 13, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', lineHeight: 1, flexShrink: 0 }}>‹</button>
@@ -1058,9 +1058,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                                     const isToday = iso === todayStr
                                                                     return (
                                                                         <button key={iso} type="button" onClick={() => { setNovoRegistro(r => ({ ...r, dataAula: iso })); setEditandoData(false) }}
-                                                                            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '5px 2px', borderRadius: 8, border: isSelected ? '1.5px solid #1e2a4a' : isToday ? '1.5px solid #6366f1' : '1px solid #e2e8f0', background: isSelected ? '#1e2a4a' : '#fff', cursor: 'pointer', transition: 'all .12s' }}>
-                                                                            <span style={{ fontSize: 9, fontWeight: 600, color: isSelected ? '#93c5fd' : isToday ? '#6366f1' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '.04em' }}>{nomes[i]}</span>
-                                                                            <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? '#fff' : isToday ? '#6366f1' : '#475569', marginTop: 2 }}>{d.getDate()}</span>
+                                                                            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '5px 2px', borderRadius: 8, border: isSelected ? '1.5px solid #6366f1' : isToday ? '1.5px solid #6366f1' : `1px solid ${c.border}`, background: isSelected ? '#4f46e5' : c.cardBgSolid, cursor: 'pointer', transition: 'all .12s' }}>
+                                                                            <span style={{ fontSize: 9, fontWeight: 600, color: isSelected ? '#c7d2fe' : isToday ? '#6366f1' : c.textMuted, textTransform: 'uppercase', letterSpacing: '.04em' }}>{nomes[i]}</span>
+                                                                            <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? '#fff' : isToday ? '#6366f1' : c.textMed, marginTop: 2 }}>{d.getDate()}</span>
                                                                         </button>
                                                                     )
                                                                 })}
@@ -1079,18 +1079,18 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 const esc = ano?.escolas.find(e => e.id == regEscolaSel)
                                                 const segs = esc?.segmentos || []
                                                 return (
-                                                    <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,.12)', padding: '12px', zIndex: 50, minWidth: 180 }}>
-                                                        <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Turma</p>
+                                                    <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: c.cardBgSolid, border: `1px solid ${c.border}`, borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,.25)', padding: '12px', zIndex: 50, minWidth: 180 }}>
+                                                        <p style={{ fontSize: 10, fontWeight: 700, color: c.textMuted, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Turma</p>
                                                         {segs.filter(s => s.turmas.length > 0).map((s, si) => (
                                                             <div key={s.id}>
                                                                 {segs.filter(s2 => s2.turmas.length > 0).length > 1 && (
-                                                                    <p style={{ fontSize: 10, color: '#cbd5e1', marginBottom: 4, marginTop: si > 0 ? 8 : 0 }}>{s.nome}</p>
+                                                                    <p style={{ fontSize: 10, color: c.textMuted, marginBottom: 4, marginTop: si > 0 ? 8 : 0 }}>{s.nome}</p>
                                                                 )}
                                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                                                     {s.turmas.map(t => (
                                                                         <button key={t.id} type="button"
                                                                             onClick={() => { setRegSegmentoSel(s.id); setRegTurmaSel(t.id); setSeletorTurma(false); setModoCompacto(true) }}
-                                                                            style={{ fontSize: 13, fontWeight: regTurmaSel == t.id ? 700 : 500, padding: '6px 13px', borderRadius: 8, border: regTurmaSel == t.id ? '1.5px solid #1e2a4a' : '1px solid #e2e8f0', background: regTurmaSel == t.id ? '#1e2a4a' : '#f8fafc', color: regTurmaSel == t.id ? '#fff' : '#475569', cursor: 'pointer', transition: 'all .12s' }}>
+                                                                            style={{ fontSize: 13, fontWeight: regTurmaSel == t.id ? 700 : 500, padding: '6px 13px', borderRadius: 8, border: regTurmaSel == t.id ? `1.5px solid #6366f1` : `1px solid ${c.border}`, background: regTurmaSel == t.id ? '#4f46e5' : c.cardBgAlt, color: regTurmaSel == t.id ? '#fff' : c.textMed, cursor: 'pointer', transition: 'all .12s' }}>
                                                                             {t.nome}
                                                                         </button>
                                                                     ))}
@@ -1106,13 +1106,13 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 const ano = anosLetivos.find(a => a.id == regAnoSel)
                                                 const escolas = ano?.escolas || []
                                                 return (
-                                                    <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,.12)', padding: '12px', zIndex: 50, minWidth: 180 }}>
-                                                        <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Escola</p>
+                                                    <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: c.cardBgSolid, border: `1px solid ${c.border}`, borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,.25)', padding: '12px', zIndex: 50, minWidth: 180 }}>
+                                                        <p style={{ fontSize: 10, fontWeight: 700, color: c.textMuted, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Escola</p>
                                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                                             {escolas.map(e => (
                                                                 <button key={e.id} type="button"
                                                                     onClick={() => { setRegEscolaSel(e.id); setRegSegmentoSel(''); setRegTurmaSel(''); setSeletorEscola(false); setSeletorTurma(true) }}
-                                                                    style={{ fontSize: 12, fontWeight: regEscolaSel == e.id ? 700 : 500, padding: '6px 13px', borderRadius: 8, border: regEscolaSel == e.id ? '1.5px solid #1e2a4a' : '1px solid #e2e8f0', background: regEscolaSel == e.id ? '#1e2a4a' : '#f8fafc', color: regEscolaSel == e.id ? '#fff' : '#475569', cursor: 'pointer', transition: 'all .12s' }}>
+                                                                    style={{ fontSize: 12, fontWeight: regEscolaSel == e.id ? 700 : 500, padding: '6px 13px', borderRadius: 8, border: regEscolaSel == e.id ? `1.5px solid #6366f1` : `1px solid ${c.border}`, background: regEscolaSel == e.id ? '#4f46e5' : c.cardBgAlt, color: regEscolaSel == e.id ? '#fff' : c.textMed, cursor: 'pointer', transition: 'all .12s' }}>
                                                                     {e.nome}
                                                                 </button>
                                                             ))}
@@ -1123,10 +1123,10 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                         </div>
                                     ) : (
                                         /* Seleção inicial — nenhuma turma escolhida ainda */
-                                        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12 }} className="space-y-2">
-                                            <p style={{ fontSize: 10, fontWeight: 700, color: '#64748b', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 4 }}>Identificar turma</p>
+                                        <div style={{ border: `1px solid ${c.border}`, borderRadius: 12, padding: 12, background: c.cardBg }} className="space-y-2">
+                                            <p style={{ fontSize: 10, fontWeight: 700, color: c.textMed, letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 4 }}>Identificar turma</p>
                                             <select value={regAnoSel} onChange={e => { setRegAnoSel(e.target.value); setRegEscolaSel(''); setRegSegmentoSel(''); setRegTurmaSel('') }}
-                                                style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#0f172a', background: '#fff' }}
+                                                style={{ width: '100%', padding: '8px 10px', border: `1px solid ${c.border}`, borderRadius: 8, fontSize: 13, color: c.inputColor, background: c.inputBg }}
                                                 className="focus:outline-none focus:border-slate-400">
                                                 <option value="">— Ano Letivo —</option>
                                                 {anosLetivos.filter(a => a.status !== 'arquivado').map(a => <option key={a.id} value={a.id}>{a.ano}</option>)}
@@ -1135,7 +1135,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 const ano = anosLetivos.find(a => a.id == regAnoSel)
                                                 return ano && ano.escolas.length > 0 ? (
                                                     <select value={regEscolaSel} onChange={e => { setRegEscolaSel(e.target.value); setRegSegmentoSel(''); setRegTurmaSel('') }}
-                                                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#0f172a', background: '#fff' }}
+                                                        style={{ width: '100%', padding: '8px 10px', border: `1px solid ${c.border}`, borderRadius: 8, fontSize: 13, color: c.inputColor, background: c.inputBg }}
                                                         className="focus:outline-none focus:border-slate-400">
                                                         <option value="">— Escola —</option>
                                                         {ano.escolas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
@@ -1147,7 +1147,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 const esc = ano?.escolas.find(e => e.id == regEscolaSel)
                                                 return esc && esc.segmentos.length > 0 ? (
                                                     <select value={regSegmentoSel} onChange={e => { setRegSegmentoSel(e.target.value); setRegTurmaSel('') }}
-                                                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, color: '#0f172a', background: '#fff' }}
+                                                        style={{ width: '100%', padding: '8px 10px', border: `1px solid ${c.border}`, borderRadius: 8, fontSize: 13, color: c.inputColor, background: c.inputBg }}
                                                         className="focus:outline-none focus:border-slate-400">
                                                         <option value="">— Segmento —</option>
                                                         {esc.segmentos.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
@@ -1162,7 +1162,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                     <div className="flex flex-wrap gap-2 mt-1">
                                                         {seg.turmas.map(t => (
                                                             <button key={t.id} type="button" onClick={() => { const next = t.id == regTurmaSel ? '' : t.id; setRegTurmaSel(next); if (next) setModoCompacto(true) }}
-                                                                style={{ padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: regTurmaSel == t.id ? 700 : 500, background: regTurmaSel == t.id ? '#475569' : '#f8fafc', color: regTurmaSel == t.id ? '#fff' : '#64748b', border: regTurmaSel == t.id ? '1px solid #475569' : '1px solid #e2e8f0', transition: 'all .15s' }}>
+                                                                style={{ padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: regTurmaSel == t.id ? 700 : 500, background: regTurmaSel == t.id ? '#4f46e5' : c.cardBgAlt, color: regTurmaSel == t.id ? '#fff' : c.textMed, border: regTurmaSel == t.id ? '1px solid #4f46e5' : `1px solid ${c.border}`, transition: 'all .15s' }}>
                                                                 {t.nome}
                                                             </button>
                                                         ))}
@@ -1170,15 +1170,15 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                                 ) : <p className="text-xs text-slate-400 italic">Nenhuma turma cadastrada.</p>
                                             })()}
                                             {!regAnoSel && <p className="text-xs text-slate-400">Cadastre anos letivos, escolas e turmas em <strong>🏫 Turmas</strong>.</p>}
-                                            <div className="flex items-center gap-2 pt-1" style={{ borderTop: '1px solid #f1f5f9', marginTop: 4 }}>
-                                                <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', flex: 1 }}>Data da aula</span>
+                                            <div className="flex items-center gap-2 pt-1" style={{ borderTop: `1px solid ${c.borderLight}`, marginTop: 4 }}>
+                                                <span style={{ fontSize: 11, fontWeight: 600, color: c.textMuted, textTransform: 'uppercase', letterSpacing: '.08em', flex: 1 }}>Data da aula</span>
                                                 {inlineMode ? (
-                                                    <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>
+                                                    <span style={{ fontSize: 13, fontWeight: 600, color: c.textMain }}>
                                                         {novoRegistro.dataAula ? new Date(novoRegistro.dataAula + 'T12:00').toLocaleDateString('pt-BR') : '—'}
                                                     </span>
                                                 ) : (
                                                     <input type="date" value={novoRegistro.dataAula} onChange={e => setNovoRegistro({ ...novoRegistro, dataAula: e.target.value })}
-                                                        className="bg-transparent outline-none border-none text-right" style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }} />
+                                                        className="bg-transparent outline-none border-none text-right" style={{ fontSize: 13, fontWeight: 600, color: c.textMain }} />
                                                 )}
                                             </div>
                                         </div>
@@ -1191,9 +1191,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                                         )
                                         if (!nota) return null
                                         return (
-                                            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '10px 12px' }}>
-                                                <p className="text-[11px] font-bold text-amber-700 mb-1 uppercase tracking-wide">📌 Planejado para esta turma</p>
-                                                <p className="text-xs text-amber-900 whitespace-pre-wrap leading-relaxed">{nota.texto}</p>
+                                            <div style={{ background: isDark ? 'rgba(251,191,36,0.08)' : '#fffbeb', border: `1px solid ${isDark ? 'rgba(251,191,36,0.2)' : '#fde68a'}`, borderRadius: 12, padding: '10px 12px' }}>
+                                                <p style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#fbbf24' : '#92400e', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.06em' }}>📌 Planejado para esta turma</p>
+                                                <p style={{ fontSize: 12, color: isDark ? '#d97706' : '#78350f', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{nota.texto}</p>
                                             </div>
                                         )
                                     })()}
@@ -2263,12 +2263,12 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, hid
                         )}
                         {/* ── Sticky save footer (Novo registro) — só no modal flutuante ── */}
                         {!inlineMode && !verRegistros && (
-                            <div style={{ padding: '10px 16px', borderTop: '1px solid #e2e8f0', background: '#fff', flexShrink: 0, display: 'flex', gap: 8 }}>
+                            <div style={{ padding: '10px 16px', borderTop: `1px solid ${c.border}`, background: c.cardBg, flexShrink: 0, display: 'flex', gap: 8 }}>
                                 <button
                                     onClick={() => setModalRegistro(false)}
-                                    style={{ flex: '0 0 auto', padding: '12px 20px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}
-                                    onMouseOver={e => { e.currentTarget.style.background = '#e2e8f0' }}
-                                    onMouseOut={e  => { e.currentTarget.style.background = '#f1f5f9' }}
+                                    style={{ flex: '0 0 auto', padding: '12px 20px', background: c.cardBgAlt, color: c.textMed, border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}
+                                    onMouseOver={e => { e.currentTarget.style.background = isDark ? '#374151' : '#e2e8f0' }}
+                                    onMouseOut={e  => { e.currentTarget.style.background = c.cardBgAlt }}
                                 >
                                     Cancelar
                                 </button>
