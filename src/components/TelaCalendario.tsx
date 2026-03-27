@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef } from 'react'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { usePlanosContext, useAnoLetivoContext, useRepertorioContext, useAplicacoesContext } from '../contexts'
+import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContext'
 import { verificarFeriado } from '../lib/feriados'
 import { stripHTML } from '../lib/utils'
 import type { AnoLetivo, AulaGrade, AplicacaoAula, Plano } from '../types'
@@ -706,9 +707,14 @@ export default function TelaResumoDia() {
     const { setViewMode } = useRepertorioContext()
     const { setModalGradeSemanal, dataDia, diasExpandidos, modoResumo, semanaResumo, obterTurmasDoDia, setDataDia, setDiasExpandidos, setModalRegistro, setModoResumo, setRrAnoSel, setRrData, setRrEscolaSel, setRrPlanosSegmento, setRrTextos, setRrResultados, setRrRubricas, setRrEncaminhamentos, setRrTurmaId, setRrSegmentoId, setSemanaResumo } = useCalendarioContext()
     const { aplicacoesPorData } = useAplicacoesContext()
+    const { salvarPlanejamentoParaTurma } = usePlanejamentoTurmaContext()
     const [aulaAcaoAtiva, setAulaAcaoAtiva] = useState<AulaGrade | null>(null)
     const [extraMateriais, setExtraMateriais] = useState<Record<string, string[]>>({})
     const [inputMaterial, setInputMaterial] = useState('')
+    const [planoRapidoAula, setPlanoRapidoAula] = useState<{ aula: AulaGrade; segNome: string; turNome: string } | null>(null)
+    const [roteiroRapido, setRoteiroRapido] = useState('')
+    const [objetivoRapido, setObjetivoRapido] = useState('')
+    const roteiroRef = useRef<HTMLTextAreaElement>(null)
 
     const diasSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -754,6 +760,7 @@ export default function TelaResumoDia() {
 
 
     return (
+        <>
         <div className="max-w-2xl mx-auto space-y-3">
 
             {/* ── BARRA DE VOLTA ── */}
@@ -1093,6 +1100,13 @@ export default function TelaResumoDia() {
                                                                     className="w-full text-left px-3 py-2 bg-green-50 hover:bg-green-100 rounded-lg text-xs text-green-700 font-medium">
                                                                     📝 Registrar pós-aula
                                                                 </button>
+                                                                {!t.plano && (
+                                                                    <button
+                                                                        onClick={e => { e.stopPropagation(); setPlanoRapidoAula({ aula: t.aula, segNome: t.segNome, turNome: t.turNome }); setRoteiroRapido(''); setObjetivoRapido(''); setAulaAcaoAtiva(null); setTimeout(() => roteiroRef.current?.focus(), 80); }}
+                                                                        className="w-full text-left px-3 py-2 bg-amber-50 hover:bg-amber-100 rounded-lg text-xs text-amber-700 font-medium">
+                                                                        ⚡ Planejar rápido
+                                                                    </button>
+                                                                )}
                                                                 <button
                                                                     onClick={e => { e.stopPropagation(); setViewMode('turmas'); setAulaAcaoAtiva(null); }}
                                                                     className="w-full text-left px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg text-xs text-purple-700 font-medium">
@@ -1300,5 +1314,76 @@ export default function TelaResumoDia() {
             })()}
 
         </div>
+
+        {/* ── MODAL PLANEJAR RÁPIDO ── */}
+        {planoRapidoAula && (
+            <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setPlanoRapidoAula(null)}>
+                <div className="absolute inset-0 bg-black/40" />
+                <div className="relative w-full max-w-lg bg-white rounded-t-2xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+                    {/* Handle */}
+                    <div className="flex justify-center pt-3 pb-1">
+                        <div className="w-10 h-1 rounded-full bg-slate-200" />
+                    </div>
+                    {/* Header */}
+                    <div className="px-5 pt-2 pb-3 border-b border-slate-100">
+                        <p className="font-bold text-slate-800 text-sm">⚡ Planejar rápido</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{planoRapidoAula.segNome} · {planoRapidoAula.turNome} · {dataDia}</p>
+                    </div>
+                    {/* Fields */}
+                    <div className="px-5 py-4 space-y-3">
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Objetivo <span className="font-normal normal-case">(opcional)</span></label>
+                            <textarea
+                                value={objetivoRapido}
+                                onChange={e => setObjetivoRapido(e.target.value)}
+                                rows={2}
+                                placeholder="O que você espera que os alunos aprendam ou desenvolvam..."
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-400 resize-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Roteiro de atividades <span className="text-red-400">*</span></label>
+                            <textarea
+                                ref={roteiroRef}
+                                value={roteiroRapido}
+                                onChange={e => setRoteiroRapido(e.target.value)}
+                                rows={4}
+                                placeholder="Descreva as atividades planejadas para esta aula..."
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-400 resize-none"
+                            />
+                        </div>
+                    </div>
+                    {/* Footer */}
+                    <div className="px-5 pb-6">
+                        <button
+                            disabled={!roteiroRapido.trim()}
+                            onClick={() => {
+                                if (!roteiroRapido.trim()) return
+                                salvarPlanejamentoParaTurma(
+                                    {
+                                        anoLetivoId: planoRapidoAula.aula.anoLetivoId ?? '',
+                                        escolaId: planoRapidoAula.aula.escolaId ?? '',
+                                        segmentoId: planoRapidoAula.aula.segmentoId,
+                                        turmaId: planoRapidoAula.aula.turmaId,
+                                    },
+                                    {
+                                        dataPrevista: dataDia,
+                                        oQuePretendoFazer: roteiroRapido.trim(),
+                                        objetivo: objetivoRapido.trim() || undefined,
+                                        origemAula: 'livre',
+                                    }
+                                )
+                                setPlanoRapidoAula(null)
+                                setRoteiroRapido('')
+                                setObjetivoRapido('')
+                            }}
+                            className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                            Salvar plano
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 }
