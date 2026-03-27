@@ -46,6 +46,12 @@ export interface PlanejamentoTurmaContextValue {
   copiarPlanejamento: (planoId: string, destino: TurmaSelecionada, dataPrevista?: string) => void
   fecharForm: () => void
 
+  // Salvar planejamento rápido diretamente para uma turma (sem depender de turmaSelecionada)
+  salvarPlanejamentoParaTurma: (
+    turma: TurmaSelecionada,
+    dados: Omit<PlanejamentoTurma, 'id' | 'criadoEm' | 'atualizadoEm' | 'anoLetivoId' | 'escolaId' | 'segmentoId' | 'turmaId'>
+  ) => void
+
   // Promoção para banco (retorna dados para o componente pré-preencher o form de plano)
   buildDadosParaBanco: (id: string) => Partial<{
     titulo: string
@@ -284,6 +290,21 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
     setPlanejamentos(prev => [copia, ...prev])
   }, [planejamentos])
 
+  const salvarPlanejamentoParaTurma = useCallback((
+    turma: TurmaSelecionada,
+    dados: Omit<PlanejamentoTurma, 'id' | 'criadoEm' | 'atualizadoEm' | 'anoLetivoId' | 'escolaId' | 'segmentoId' | 'turmaId'>
+  ) => {
+    const ts = agora()
+    const novo: PlanejamentoTurma = {
+      id: gerarId(),
+      ...turma,
+      ...dados,
+      criadoEm: ts,
+      atualizadoEm: ts,
+    }
+    setPlanejamentos(prev => [novo, ...prev])
+  }, [])
+
   const buildDadosParaBanco = useCallback((id: string) => {
     const p = planejamentos.find(x => x.id === id)
     if (!p || !turmaSelecionada) return {}
@@ -316,9 +337,10 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
     salvarPlanejamento,
     excluirPlanejamento,
     copiarPlanejamento,
+    salvarPlanejamentoParaTurma,
     fecharForm,
     buildDadosParaBanco,
-  }), [planejamentos, turmaSelecionada, planejamentoEditando, formAberto, dataNavegacao, ultimoRegistroDaTurma, historicoDaTurma, planejamentosDaTurma, selecionarTurma, novoPlanejamento, editarPlanejamento, salvarPlanejamento, excluirPlanejamento, copiarPlanejamento, fecharForm, buildDadosParaBanco])
+  }), [planejamentos, turmaSelecionada, planejamentoEditando, formAberto, dataNavegacao, ultimoRegistroDaTurma, historicoDaTurma, planejamentosDaTurma, selecionarTurma, novoPlanejamento, editarPlanejamento, salvarPlanejamento, excluirPlanejamento, copiarPlanejamento, salvarPlanejamentoParaTurma, fecharForm, buildDadosParaBanco])
 
   return (
     <PlanejamentoTurmaContext.Provider value={value}>

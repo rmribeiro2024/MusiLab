@@ -1,8 +1,9 @@
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
+import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContext'
 import ModalRegistroPosAula from './modals/ModalRegistroPosAula'
 import { showToast } from '../lib/toast'
 
@@ -22,6 +23,13 @@ export default function TelaPosAula() {
         setRegTurmaSel,
     } = useCalendarioContext()
     const { aplicacoesPorData } = useAplicacoesContext()
+    const { planejamentos, salvarPlanejamentoParaTurma } = usePlanejamentoTurmaContext()
+
+    // ── Estado do modal "Planejar rápido" ─────────────────────────────────────
+    const [planoRapidoIdx, setPlanoRapidoIdx] = useState<number | null>(null)
+    const [roteiroRapido, setRoteiroRapido] = useState('')
+    const [objetivoRapido, setObjetivoRapido] = useState('')
+    const roteiroRef = useRef<HTMLTextAreaElement>(null)
 
     const hoje = new Date()
     hoje.setHours(0, 0, 0, 0)
@@ -128,6 +136,55 @@ export default function TelaPosAula() {
         setRegTurmaSel(String(t.aula.turmaId ?? ''))
         setTurmaIdx(idx)
         setListaAberta(false)   // fecha a lista ao selecionar
+    }
+
+    // ── Planejamento rápido ───────────────────────────────────────────────────
+
+    // Retorna PlanejamentoTurma existente para uma turma nesta data, se houver
+    const getPlanoRapidoDaTurma = (t: typeof turmasEnriq[0]) =>
+        planejamentos.find(p =>
+            p.turmaId   === String(t.aula.turmaId)   &&
+            p.escolaId  === String(t.aula.escolaId)  &&
+            p.segmentoId=== String(t.aula.segmentoId)&&
+            p.anoLetivoId=== String(t.aula.anoLetivoId) &&
+            p.dataPrevista === dataSel
+        )
+
+    const abrirPlanoRapido = (e: React.MouseEvent, idx: number) => {
+        e.stopPropagation()
+        setRoteiroRapido('')
+        setObjetivoRapido('')
+        setPlanoRapidoIdx(idx)
+        // Foca o textarea do roteiro após renderizar
+        setTimeout(() => roteiroRef.current?.focus(), 80)
+    }
+
+    const fecharPlanoRapido = () => setPlanoRapidoIdx(null)
+
+    const handleSalvarPlanoRapido = () => {
+        if (planoRapidoIdx === null) return
+        const t = turmasEnriq[planoRapidoIdx]
+        if (!t || !roteiroRapido.trim()) return
+
+        salvarPlanejamentoParaTurma(
+            {
+                anoLetivoId: String(t.aula.anoLetivoId ?? ''),
+                escolaId:    String(t.aula.escolaId    ?? ''),
+                segmentoId:  String(t.aula.segmentoId  ?? ''),
+                turmaId:     String(t.aula.turmaId     ?? ''),
+            },
+            {
+                oQuePretendoFazer: roteiroRapido.trim(),
+                objetivo:          objetivoRapido.trim() || undefined,
+                dataPrevista:      dataSel,
+                origemAula:        'livre',
+            }
+        )
+
+        setPlanoRapidoIdx(null)
+        setRoteiroRapido('')
+        setObjetivoRapido('')
+        showToast('Plano salvo ✓')
     }
 
     // Bug 6: após salvar, sempre volta à lista de turmas
@@ -259,6 +316,31 @@ export default function TelaPosAula() {
                                             <span className="text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF] shrink-0">{t.segNome}</span>
                                             <span className="text-[12px] font-bold text-slate-700 dark:text-[#E5E7EB] truncate">{t.turNome}</span>
                                         </div>
+                                        {/* Linha de status de planejamento */}
+                                        {(() => {
+                                            const pr = getPlanoRapidoDaTurma(t)
+                                            if (pr) {
+                                                return (
+                                                    <p className="mt-[3px] text-[11px] text-slate-400 dark:text-[#6B7280] truncate">
+                                                        <span className="text-[#5B5FEA] mr-1">✎</span>
+                                                        {pr.oQuePretendoFazer}
+                                                    </p>
+                                                )
+                                            }
+                                            if (!t.plano && !t.registrada) {
+                                                return (
+                                                    <div className="mt-[3px] flex items-center gap-[6px]">
+                                                        <span className="text-[11px] text-amber-500 dark:text-amber-400">Sem plano vinculado</span>
+                                                        <button
+                                                            onClick={e => abrirPlanoRapido(e, i)}
+                                                            className="text-[11px] text-[#5B5FEA] font-medium hover:underline shrink-0 cursor-pointer">
+                                                            Planejar rápido →
+                                                        </button>
+                                                    </div>
+                                                )
+                                            }
+                                            return null
+                                        })()}
                                     </div>
 
                                     {t.registrada
@@ -284,6 +366,74 @@ export default function TelaPosAula() {
                 )}
 
             </div>
+
+            {/* ══ BOTTOM SHEET: PLANEJAR RÁPIDO ══ */}
+            {planoRapidoIdx !== null && (() => {
+                const t = turmasEnriq[planoRapidoIdx]
+                if (!t) return null
+                return (
+                    <>
+                        {/* Backdrop */}
+                        <div
+                            className="fixed inset-0 z-40 bg-black/40"
+                            onClick={fecharPlanoRapido}
+                        />
+                        {/* Sheet */}
+                        <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto v2-card rounded-t-2xl border-t border-[#E6EAF0] dark:border-[#374151] shadow-[0_-4px_24px_rgba(0,0,0,0.12)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.5)] px-4 pt-4 pb-8">
+
+                            {/* Handle */}
+                            <div className="w-8 h-1 rounded-full bg-slate-200 dark:bg-slate-700 mx-auto mb-4" />
+
+                            {/* Cabeçalho */}
+                            <div className="flex items-center justify-between mb-[2px]">
+                                <span className="text-[13px] font-semibold text-slate-700 dark:text-[#E5E7EB]">Planejar rápido</span>
+                                <button
+                                    onClick={fecharPlanoRapido}
+                                    className="w-7 h-7 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-[14px] cursor-pointer transition">
+                                    ✕
+                                </button>
+                            </div>
+                            <p className="text-[11px] text-slate-400 dark:text-[#6B7280] mb-4">
+                                {t.aula.horario} · {t.escNome} · {t.turNome}
+                            </p>
+
+                            {/* Campo: Objetivo (opcional) */}
+                            <label className="text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] mb-1 block">
+                                Objetivo <span className="font-normal text-slate-400 dark:text-[#6B7280]">(opcional)</span>
+                            </label>
+                            <textarea
+                                value={objetivoRapido}
+                                onChange={e => setObjetivoRapido(e.target.value)}
+                                rows={2}
+                                placeholder="Ex: Desenvolver coordenação rítmica com palmas"
+                                className="w-full rounded-lg border border-[#E6EAF0] dark:border-[#374151] v2-bg text-[12px] text-slate-700 dark:text-[#E5E7EB] placeholder-slate-300 dark:placeholder-[#4B5563] px-3 py-2 mb-3 resize-none focus:outline-none focus:border-[#5B5FEA]/50 transition"
+                            />
+
+                            {/* Campo: Roteiro (obrigatório) */}
+                            <label className="text-[11px] font-medium text-slate-500 dark:text-[#9CA3AF] mb-1 block">
+                                Roteiro de atividades
+                            </label>
+                            <textarea
+                                ref={roteiroRef}
+                                value={roteiroRapido}
+                                onChange={e => setRoteiroRapido(e.target.value)}
+                                rows={4}
+                                placeholder={"Ex:\n- Aquecimento rítmico (5 min)\n- Treino da música X (15 min)\n- Leitura à primeira vista (10 min)"}
+                                className="w-full rounded-lg border border-[#E6EAF0] dark:border-[#374151] v2-bg text-[12px] text-slate-700 dark:text-[#E5E7EB] placeholder-slate-300 dark:placeholder-[#4B5563] px-3 py-2 mb-4 resize-none focus:outline-none focus:border-[#5B5FEA]/50 transition"
+                            />
+
+                            {/* Botão salvar */}
+                            <button
+                                disabled={!roteiroRapido.trim()}
+                                onClick={handleSalvarPlanoRapido}
+                                className="w-full py-[11px] rounded-xl bg-[#5B5FEA] text-white text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition hover:bg-[#4B4FD9] cursor-pointer">
+                                Salvar plano
+                            </button>
+                        </div>
+                    </>
+                )
+            })()}
+
         </div>
     )
 }
