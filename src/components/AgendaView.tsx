@@ -316,6 +316,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
   const [aberto, setAberto] = useState(false)
   const [roteiroRapido, setRoteiroRapido] = useState('')
   const [objetivoRapido, setObjetivoRapido] = useState('')
+  const [objetivoAberto, setObjetivoAberto] = useState(false)
   const roteiroRapidoRef = useRef<HTMLTextAreaElement>(null)
 
   // Verifica se já há registro pós-aula para esta turma/data
@@ -501,16 +502,28 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
           <div className="px-4 pb-4 pt-3 border-t border-slate-100 dark:border-[#374151]">
             {!slot.plano && !jaRegistrado ? (
               <div className="space-y-2" onClick={e => e.stopPropagation()}>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Objetivo <span className="font-normal normal-case">(opcional)</span></label>
-                  <textarea
-                    value={objetivoRapido}
-                    onChange={e => setObjetivoRapido(e.target.value)}
-                    rows={2}
-                    placeholder="O que você espera que os alunos aprendam..."
-                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] rounded-lg text-xs focus:outline-none focus:border-indigo-400 resize-none"
-                  />
+                <div className="flex items-center justify-between mb-1">
+                  <button
+                    type="button"
+                    onClick={() => setObjetivoAberto(v => !v)}
+                    className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 dark:hover:text-[#9CA3AF] transition-colors"
+                  >
+                    <span style={{ display: 'inline-block', transform: objetivoAberto ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▶</span>
+                    Objetivo <span className="font-normal normal-case">(opcional)</span>
+                  </button>
+                  <span className="text-[10px] font-semibold text-indigo-400 dark:text-indigo-400 uppercase tracking-widest">Plano rápido</span>
                 </div>
+                {objetivoAberto && (
+                  <div>
+                    <textarea
+                      value={objetivoRapido}
+                      onChange={e => setObjetivoRapido(e.target.value)}
+                      rows={2}
+                      placeholder="O que você espera que os alunos aprendam..."
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] rounded-lg text-xs focus:outline-none focus:border-indigo-400 resize-none"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Roteiro de atividades <span className="text-red-400">*</span></label>
                   <textarea
