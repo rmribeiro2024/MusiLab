@@ -314,7 +314,6 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
   } = useCalendarioContext()
   const { salvarPlanejamentoParaTurma } = usePlanejamentoTurmaContext()
   const [aberto, setAberto] = useState(false)
-  const [planoRapidoAberto, setPlanoRapidoAberto] = useState(false)
   const [roteiroRapido, setRoteiroRapido] = useState('')
   const [objetivoRapido, setObjetivoRapido] = useState('')
   const roteiroRapidoRef = useRef<HTMLTextAreaElement>(null)
@@ -427,7 +426,6 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
 
 
   return (
-    <>
     <div
       className={`rounded-lg overflow-hidden transition-shadow ${
         jaRegistrado
@@ -441,7 +439,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
       {/* Cabeçalho — clicável */}
       <div
         className="px-4 py-3.5 flex items-start gap-3 cursor-pointer select-none"
-        onClick={() => setAberto(v => !v)}
+        onClick={() => { setAberto(v => { if (!v && !slot.plano && !jaRegistrado) setTimeout(() => roteiroRapidoRef.current?.focus(), 120); return !v }) }}
       >
         {/* Horário */}
         <div className="text-[10.5px] font-semibold font-mono text-slate-500 dark:text-[#9CA3AF] min-w-[34px] pt-0.5">
@@ -470,17 +468,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
               {slot.plano.titulo}
             </p>
           ) : (
-            <div className="flex items-center gap-2 mt-0.5">
-              <p className="text-[11px] font-semibold text-amber-500 dark:text-amber-400/80">Sem plano vinculado</p>
-              {!jaRegistrado && (
-                <button
-                  onClick={e => { e.stopPropagation(); setRoteiroRapido(''); setObjetivoRapido(''); setPlanoRapidoAberto(true); setTimeout(() => roteiroRapidoRef.current?.focus(), 80) }}
-                  className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium shrink-0"
-                >
-                  ⚡ Planejar rápido
-                </button>
-              )}
-            </div>
+            <p className="text-[11px] font-semibold text-amber-500 dark:text-amber-400/80 mt-0.5">Sem plano vinculado</p>
           )}
         </div>
 
@@ -511,18 +499,58 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
       <div style={{ display: 'grid', gridTemplateRows: aberto ? '1fr' : '0fr', transition: 'grid-template-rows 0.25s ease' }}>
         <div style={{ overflow: aberto ? 'visible' : 'hidden' }}>
           <div className="px-4 pb-4 pt-3 border-t border-slate-100 dark:border-[#374151]">
-            {!slot.plano ? (
-              <div className="flex flex-col gap-2">
-                <p className="text-sm text-slate-400 dark:text-[#4B5563] italic">Nenhum plano vinculado a esta aula.</p>
-                {!jaRegistrado && (
-                  <button
-                    onClick={e => { e.stopPropagation(); setRoteiroRapido(''); setObjetivoRapido(''); setPlanoRapidoAberto(true); setTimeout(() => roteiroRapidoRef.current?.focus(), 80) }}
-                    className="self-start text-xs font-semibold text-indigo-400 hover:text-indigo-300 border border-indigo-400/40 hover:border-indigo-300/60 px-3 py-1.5 rounded-lg transition-colors"
-                  >
-                    ⚡ Planejar rápido
-                  </button>
-                )}
+            {!slot.plano && !jaRegistrado ? (
+              <div className="space-y-2" onClick={e => e.stopPropagation()}>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Objetivo <span className="font-normal normal-case">(opcional)</span></label>
+                  <textarea
+                    value={objetivoRapido}
+                    onChange={e => setObjetivoRapido(e.target.value)}
+                    rows={2}
+                    placeholder="O que você espera que os alunos aprendam..."
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] rounded-lg text-xs focus:outline-none focus:border-indigo-400 resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Roteiro de atividades <span className="text-red-400">*</span></label>
+                  <textarea
+                    ref={roteiroRapidoRef}
+                    value={roteiroRapido}
+                    onChange={e => setRoteiroRapido(e.target.value)}
+                    rows={3}
+                    placeholder="Descreva as atividades planejadas..."
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] rounded-lg text-xs focus:outline-none focus:border-indigo-400 resize-none"
+                  />
+                </div>
+                <button
+                  disabled={!roteiroRapido.trim()}
+                  onClick={() => {
+                    if (!roteiroRapido.trim()) return
+                    salvarPlanejamentoParaTurma(
+                      {
+                        anoLetivoId: slot.aulaGrade.anoLetivoId ?? '',
+                        escolaId: slot.aulaGrade.escolaId ?? '',
+                        segmentoId: slot.aulaGrade.segmentoId,
+                        turmaId: slot.aulaGrade.turmaId,
+                      },
+                      {
+                        dataPrevista: slot.dataStr,
+                        oQuePretendoFazer: roteiroRapido.trim(),
+                        objetivo: objetivoRapido.trim() || undefined,
+                        origemAula: 'livre',
+                      }
+                    )
+                    setRoteiroRapido('')
+                    setObjetivoRapido('')
+                    showToast('Plano salvo ✓')
+                  }}
+                  className="w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Salvar plano
+                </button>
               </div>
+            ) : !slot.plano && jaRegistrado ? (
+              <p className="text-sm text-slate-400 dark:text-[#4B5563] italic">Nenhum plano vinculado a esta aula.</p>
             ) : roteiroVisivel.length === 0 ? (
               <p className="text-sm text-slate-400 dark:text-[#4B5563] italic">Sem atividades no roteiro.</p>
             ) : (
@@ -558,75 +586,6 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
         </div>
       </div>
     </div>
-
-    {/* ── BOTTOM SHEET: PLANEJAR RÁPIDO ── */}
-    {planoRapidoAberto && (
-      <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setPlanoRapidoAberto(false)}>
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="relative w-full max-w-lg bg-white dark:bg-[#1F2937] rounded-t-2xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
-          <div className="flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 rounded-full bg-slate-200 dark:bg-slate-600" />
-          </div>
-          <div className="px-5 pt-2 pb-3 border-b border-slate-100 dark:border-[#374151]">
-            <p className="font-bold text-slate-800 dark:text-[#E5E7EB] text-sm">⚡ Planejar rápido</p>
-            <p className="text-xs text-slate-400 dark:text-[#6B7280] mt-0.5">{slot.nomeTurma} · {slot.dataStr}</p>
-          </div>
-          <div className="px-5 py-4 space-y-3">
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Objetivo <span className="font-normal normal-case">(opcional)</span></label>
-              <textarea
-                value={objetivoRapido}
-                onChange={e => setObjetivoRapido(e.target.value)}
-                rows={2}
-                placeholder="O que você espera que os alunos aprendam..."
-                className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] rounded-xl text-sm focus:outline-none focus:border-indigo-400 resize-none"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Roteiro de atividades <span className="text-red-400">*</span></label>
-              <textarea
-                ref={roteiroRapidoRef}
-                value={roteiroRapido}
-                onChange={e => setRoteiroRapido(e.target.value)}
-                rows={4}
-                placeholder="Descreva as atividades planejadas para esta aula..."
-                className="w-full px-3 py-2 border border-slate-200 dark:border-[#374151] bg-white dark:bg-[#111827] text-slate-800 dark:text-[#E5E7EB] rounded-xl text-sm focus:outline-none focus:border-indigo-400 resize-none"
-              />
-            </div>
-          </div>
-          <div className="px-5 pb-6">
-            <button
-              disabled={!roteiroRapido.trim()}
-              onClick={() => {
-                if (!roteiroRapido.trim()) return
-                salvarPlanejamentoParaTurma(
-                  {
-                    anoLetivoId: slot.aulaGrade.anoLetivoId ?? '',
-                    escolaId: slot.aulaGrade.escolaId ?? '',
-                    segmentoId: slot.aulaGrade.segmentoId,
-                    turmaId: slot.aulaGrade.turmaId,
-                  },
-                  {
-                    dataPrevista: slot.dataStr,
-                    oQuePretendoFazer: roteiroRapido.trim(),
-                    objetivo: objetivoRapido.trim() || undefined,
-                    origemAula: 'livre',
-                  }
-                )
-                setPlanoRapidoAberto(false)
-                setRoteiroRapido('')
-                setObjetivoRapido('')
-                showToast('Plano salvo ✓')
-              }}
-              className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Salvar plano
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-    </>
   )
 }
 
