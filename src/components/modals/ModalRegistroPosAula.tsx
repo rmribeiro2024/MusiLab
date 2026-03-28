@@ -865,7 +865,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 49 }} onClick={() => setModalRegistro(false)} />
             )}
 
-            <div className="bg-white dark:bg-[#1F2937] overflow-hidden" style={{ ...modalStyle, ...(inlineMode ? {} : { boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)' }) }}>
+            <div className={inlineMode ? '' : 'bg-white dark:bg-[#1F2937] overflow-hidden'} style={{ ...modalStyle, ...(inlineMode ? {} : { boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)' }) }}>
 
                 {!inlineMode && !maximizado && !minimizado && RESIZE_HANDLES.map(({ dir, style }) => (
                     <div key={dir} style={{ position: 'absolute', zIndex: 20, ...style }} onMouseDown={e => onResizeMouseDown(e, dir)} />
@@ -873,16 +873,20 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
 
                 {/* ── HEADER ── */}
                 {inlineMode && hideHeader ? null : inlineMode ? (
-                    // Header inline — limpo, sem gradient, com botão Voltar
-                    <div className="px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151] flex items-center gap-3 shrink-0 bg-white dark:bg-[#1F2937]">
+                    // Header inline — mesma linguagem da página Hoje
+                    <div className="mb-6">
                         <button
                             onClick={onVoltar ?? (() => setModalRegistro(false))}
-                            className="text-[13px] text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] transition shrink-0">
-                            ← Voltar
+                            className="text-[13px] text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] transition mb-3 flex items-center gap-1">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                            Voltar
                         </button>
-                        <span className="text-[14px] font-semibold text-slate-700 dark:text-[#E5E7EB] truncate flex-1">
-                            {planoParaRegistro.titulo || 'Registro Pós-Aula'}
-                        </span>
+                        <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
+                            Registro pós-aula
+                        </h1>
+                        <p className="text-sm text-slate-400 dark:text-[#4B5563] mt-0.5 truncate">
+                            {planoParaRegistro.titulo}
+                        </p>
                     </div>
                 ) : (
                     // Header original — gradient + drag + min/max/fechar
@@ -1008,7 +1012,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                         {/* Tabs */}
 
                         {/* Body */}
-                        <div className="p-4 space-y-3" style={{ flex: 1, overflowY: 'auto' }}>
+                        <div className={inlineMode ? 'space-y-3' : 'p-4 space-y-3'} style={inlineMode ? undefined : { flex: 1, overflowY: 'auto' as const }}>
 
                             {/* ════════════════════════════════
                                 NOVO REGISTRO
@@ -2312,7 +2316,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
 
                         {/* ── Sticky save footer inline — compacto, alinhado à direita ── */}
                         {inlineMode && !verRegistros && (
-                            <div className="px-4 py-3 border-t border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] flex items-center justify-end gap-3 shrink-0">
+                            <div className="py-4 flex items-center justify-end gap-3 shrink-0">
                                 {autoSaveStatus === 'saved' && (
                                     <span className="text-[11px] text-slate-400 dark:text-[#6b7280]">rascunho salvo</span>
                                 )}
