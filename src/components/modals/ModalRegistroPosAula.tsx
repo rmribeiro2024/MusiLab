@@ -875,12 +875,20 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                 {inlineMode && hideHeader ? null : inlineMode ? (
                     // Header inline — mínimo, contexto já dado pelo cabeçalho de Hoje
                     <div className="mb-4">
-                        <button
-                            onClick={onVoltar ?? (() => setModalRegistro(false))}
-                            className="flex items-center gap-1.5 text-[13px] text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] transition mb-3">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-                            <span className="font-medium">{planoParaRegistro.titulo}</span>
-                        </button>
+                        {(() => {
+                            const ano = anosLetivos.find((a: any) => a.id == regAnoSel)
+                            const seg = ano?.escolas.find((e: any) => e.id == regEscolaSel)?.segmentos.find((s: any) => s.id == regSegmentoSel)
+                            const tur = seg?.turmas.find((t: any) => t.id == regTurmaSel)
+                            const label = tur ? [seg?.nome, tur.nome].filter(Boolean).join(' · ') : planoParaRegistro.titulo
+                            return (
+                                <button
+                                    onClick={onVoltar ?? (() => setModalRegistro(false))}
+                                    className="flex items-center gap-1.5 text-[13px] text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] transition mb-3">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                                    <span className="font-medium">{label}</span>
+                                </button>
+                            )
+                        })()}
                         {(() => {
                             const stripHtml = (s: string) => (s || '').replace(/<[^>]+>/g, '').trim()
                             const criterio = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
