@@ -514,10 +514,10 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
         background: jaRegistrado ? '#F7F9FC' : '#FFFFFF',
         borderLeft: jaRegistrado ? `2px solid ${borderColor}40` : needsAction ? `4px solid ${borderColor}` : `3px solid ${borderColor}`,
         boxShadow: needsAction
-          ? '0 2px 8px rgba(99,102,241,0.12), 0 0 0 1px #C7D2FE'
+          ? '0 2px 10px rgba(99,102,241,0.18), 0 0 0 1px #C7D2FE'
           : jaRegistrado
-            ? '0 0 0 1px #DDE4EF'
-            : '0 1px 4px rgba(51,65,85,0.08), 0 0 0 1px #DDE4EF',
+            ? '0 2px 8px rgba(30,42,74,0.08), 0 0 0 1px #DDE4EF'
+            : '0 2px 10px rgba(30,42,74,0.10), 0 0 0 1px #DDE4EF',
       }}
     >
       {/* Cabeçalho — clicável */}
