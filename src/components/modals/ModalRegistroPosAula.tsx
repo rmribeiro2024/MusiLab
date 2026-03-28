@@ -916,12 +916,6 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                 </div>
                             )
                         })()}
-                        {(() => {
-                            const stripHtml = (s: string) => (s || '').replace(/<[^>]+>/g, '').trim()
-                            const criterio = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
-                            if (!criterio) return null
-                            return <CriterioAccordion criterio={criterio} isDark={isDark} />
-                        })()}
                     </div>
                 ) : (
                     // Header original — gradient + drag + min/max/fechar
