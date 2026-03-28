@@ -434,6 +434,30 @@ function StatusAulaSelector({ value, onChange, onDone, firstRef, isDark = false 
         </div>
     );
 }
+function CriterioAccordion({ criterio, isDark }: { criterio: string; isDark: boolean }) {
+    const [aberto, setAberto] = React.useState(false)
+    const texto = criterio.replace(/\s+(\d+[\).])/g, '\n$1').trim()
+    return (
+        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#374151]">
+            <button
+                type="button"
+                onClick={() => setAberto(v => !v)}
+                className="flex items-center gap-1.5 w-full text-left"
+            >
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#4B5563] flex-1">
+                    O que observarei para saber se funcionou?
+                </span>
+                <span style={{ fontSize: 9, color: isDark ? '#4B5563' : '#94a3b8', transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
+            </button>
+            {aberto && (
+                <p className="text-[12px] text-slate-500 dark:text-[#6b7280] leading-relaxed italic mt-1.5" style={{ whiteSpace: 'pre-line' }}>
+                    {texto}
+                </p>
+            )}
+        </div>
+    )
+}
+
 export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onSaved, hideHeader = false, saveLabel, verPlanoExterno }: { inlineMode?: boolean; onVoltar?: () => void; onSaved?: () => void; hideHeader?: boolean; saveLabel?: string; verPlanoExterno?: boolean }) {
     const isDark = useIsDark()
     const c = dk(isDark)
@@ -896,14 +920,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                             const stripHtml = (s: string) => (s || '').replace(/<[^>]+>/g, '').trim()
                             const criterio = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
                             if (!criterio) return null
-                            return (
-                                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#374151]">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#4B5563] mb-1">O que observarei para saber se funcionou?</p>
-                                    <p className="text-[12px] text-slate-500 dark:text-[#6b7280] leading-relaxed italic" style={{ whiteSpace: 'pre-line' }}>
-                                        {criterio.replace(/\s+(\d+[\).])/g, '\n$1').trim()}
-                                    </p>
-                                </div>
-                            )
+                            return <CriterioAccordion criterio={criterio} isDark={isDark} />
                         })()}
                     </div>
                 ) : (
