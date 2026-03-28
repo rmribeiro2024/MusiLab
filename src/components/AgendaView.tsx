@@ -253,7 +253,7 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
         onClick={() => setExpandido(v => !v)}
       >
         {/* Linha principal: título + duração + chevron */}
-        <div className="flex items-center gap-2 px-3 py-2">
+        <div className={`flex items-center gap-2 px-3 py-2.5 ${expandido ? 'border-b border-slate-100 dark:border-[#374151] rounded-t-2xl' : 'rounded-2xl hover:bg-slate-50 dark:hover:bg-white/[0.02]'}`}>
           <input
             className="flex-1 bg-transparent text-sm font-semibold outline-none min-w-0 cursor-text rounded px-1 -mx-1 transition-colors focus:ring-1 focus:ring-blue-400/50"
             style={{ color: isDark ? '#E5E7EB' : '#1E2A4A' }}
