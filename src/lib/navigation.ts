@@ -73,14 +73,6 @@ export const SIDEBAR_SUBITEMS: Partial<Record<SectionId, { label: string; mode: 
         { label: 'Banco',      mode: 'lista' },
         { label: 'Sequências', mode: 'sequencias' },
     ],
-}
-
-// ─── TABS POR SEÇÃO ───────────────────────────────────────────────────────────
-// Seções com sub-navegação recebem um SectionTabs horizontal no topo do conteúdo.
-// Seções sem entrada aqui (hoje, planejamento, configuracoes) não exibem tabs.
-// Planejamento usa SIDEBAR_SUBITEMS em vez de tabs horizontais.
-
-export const SECTION_TABS: Partial<Record<SectionId, { label: string; mode: ViewMode }[]>> = {
     turmas: [
         { label: 'Painel',    mode: 'turmas' },
         { label: 'Histórico', mode: 'historicoMusical' },
@@ -91,3 +83,9 @@ export const SECTION_TABS: Partial<Record<SectionId, { label: string; mode: View
         { label: 'Estratégias', mode: 'estrategias' },
     ],
 }
+
+// ─── TABS POR SEÇÃO ───────────────────────────────────────────────────────────
+// Todas as seções com sub-navegação usam SIDEBAR_SUBITEMS.
+// SECTION_TABS mantido vazio — SectionTabs retorna null para todas as seções.
+
+export const SECTION_TABS: Partial<Record<SectionId, { label: string; mode: ViewMode }[]>> = {}
