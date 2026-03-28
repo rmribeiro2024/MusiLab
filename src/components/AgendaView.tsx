@@ -1114,68 +1114,67 @@ export default function AgendaView() {
   }, [statsHoje])
 
   return (
-    <div style={{ position: 'relative' }}>
-      {/* ── Painel lista — some ao abrir registro ── */}
-      <div
-        style={{
-          transition: 'opacity 320ms ease, transform 320ms ease',
-          opacity: registroInline ? 0 : 1,
-          transform: registroInline ? 'scale(0.97) translateY(-8px)' : 'scale(1) translateY(0)',
-          pointerEvents: registroInline ? 'none' : undefined,
-          ...(registroInline ? { position: 'absolute', top: 0, left: 0, right: 0 } : {}),
-        }}
-      >
-        <div className="mx-auto px-4 pb-10 max-w-2xl">
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
-              {headerMsg}
-            </h1>
-            <p className="text-sm text-slate-400 dark:text-[#4B5563] capitalize mt-0.5">{labelDia}</p>
+    <div className="mx-auto px-4 pb-10 max-w-2xl">
+      {/* ── Header — sempre visível, não sai da tela ── */}
+      <div className="mb-6">
+        <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
+          {headerMsg}
+        </h1>
+        <p className="text-sm text-slate-400 dark:text-[#4B5563] capitalize mt-0.5">{labelDia}</p>
 
-            {statsHoje.total > 0 && (
-              <div className="mt-3 space-y-1.5">
-                <div className="flex items-center gap-2">
-                  {statsHoje.pendentes > 0 && (
-                    <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9CA3AF]">
-                      {statsHoje.pendentes} a registrar
-                    </span>
-                  )}
-                  {statsHoje.pendentes > 0 && statsHoje.registradas > 0 && (
-                    <span className="text-slate-300 dark:text-[#374151]">·</span>
-                  )}
-                  {statsHoje.registradas > 0 && (
-                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400/80">
-                      {statsHoje.registradas} concluída{statsHoje.registradas !== 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
-                <div className="w-full h-[3px] bg-slate-100 dark:bg-[#374151] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#5B5FEA] dark:bg-[#818cf8] rounded-full transition-all duration-500"
-                    style={{ width: `${(statsHoje.registradas / statsHoje.total) * 100}%` }}
-                  />
-                </div>
-              </div>
-            )}
+        {statsHoje.total > 0 && (
+          <div className="mt-3 space-y-1.5">
+            <div className="flex items-center gap-2">
+              {statsHoje.pendentes > 0 && (
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9CA3AF]">
+                  {statsHoje.pendentes} a registrar
+                </span>
+              )}
+              {statsHoje.pendentes > 0 && statsHoje.registradas > 0 && (
+                <span className="text-slate-300 dark:text-[#374151]">·</span>
+              )}
+              {statsHoje.registradas > 0 && (
+                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400/80">
+                  {statsHoje.registradas} concluída{statsHoje.registradas !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            <div className="w-full h-[3px] bg-slate-100 dark:bg-[#374151] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#5B5FEA] dark:bg-[#818cf8] rounded-full transition-all duration-500"
+                style={{ width: `${(statsHoje.registradas / statsHoje.total) * 100}%` }}
+              />
+            </div>
           </div>
+        )}
+      </div>
 
+      {/* ── Conteúdo animado — lista ↔ formulário ── */}
+      <div style={{ position: 'relative' }}>
+        {/* Painel lista */}
+        <div
+          style={{
+            transition: 'opacity 280ms ease, transform 280ms ease',
+            opacity: registroInline ? 0 : 1,
+            transform: registroInline ? 'scale(0.97) translateY(-6px)' : 'scale(1) translateY(0)',
+            pointerEvents: registroInline ? 'none' : undefined,
+            ...(registroInline ? { position: 'absolute', top: 0, left: 0, right: 0 } : {}),
+          }}
+        >
           <BriefingDia slots={slotsHoje} />
           <AgendaDia dataStr={hoje} escolaColorMap={escolaColorMap} isDarkMode={isDarkMode} onOpenRegistro={abrirRegistroInline} />
         </div>
-      </div>
 
-      {/* ── Painel form — Opção B: cresce + fade ao abrir ── */}
-      <div
-        style={{
-          transition: 'opacity 320ms ease, transform 320ms ease',
-          opacity: registroInline ? 1 : 0,
-          transform: registroInline ? 'scale(1) translateY(0)' : 'scale(0.97) translateY(12px)',
-          pointerEvents: registroInline ? undefined : 'none',
-          ...(!registroInline ? { position: 'absolute', top: 0, left: 0, right: 0 } : {}),
-        }}
-      >
-        <div className="mx-auto px-4 max-w-2xl">
+        {/* Painel form */}
+        <div
+          style={{
+            transition: 'opacity 280ms ease, transform 280ms ease',
+            opacity: registroInline ? 1 : 0,
+            transform: registroInline ? 'scale(1) translateY(0)' : 'scale(0.97) translateY(10px)',
+            pointerEvents: registroInline ? undefined : 'none',
+            ...(!registroInline ? { position: 'absolute', top: 0, left: 0, right: 0 } : {}),
+          }}
+        >
           <ModalRegistroPosAula
             inlineMode
             onVoltar={fecharRegistroInline}
