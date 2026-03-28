@@ -245,11 +245,13 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
       {/* Bloco clicável — expande ao clicar em qualquer lugar (exceto inputs) */}
       <div
         className="flex-1 rounded-md cursor-pointer"
-        style={expandido
-          ? (isDark
+        style={isDark
+          ? (expandido
               ? { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }
-              : { background: '#EEF2F7', border: '1px solid #DDE4EF' })
-          : {}
+              : {})
+          : (expandido
+              ? { background: '#EEF2F7', border: '1px solid #DDE4EF' }
+              : { background: '#F4F7FB', border: '1px solid #E2E9F3' })
         }
         onClick={() => setExpandido(v => !v)}
       >
