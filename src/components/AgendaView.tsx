@@ -244,15 +244,12 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
 
       {/* Bloco clicável — expande ao clicar em qualquer lugar (exceto inputs) */}
       <div
-        className="flex-1 rounded-md cursor-pointer"
-        style={isDark
-          ? (expandido
-              ? { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }
-              : {})
-          : (expandido
-              ? { background: '#EEF2F7', border: '1px solid #DDE4EF' }
-              : { background: '#F4F7FB', border: '1px solid #E2E9F3' })
-        }
+        className={`flex-1 rounded-2xl border cursor-pointer overflow-visible transition-colors
+          bg-white dark:bg-[var(--v2-card)]
+          ${expandido
+            ? 'border-indigo-200 dark:border-indigo-500/30'
+            : 'border-slate-200 dark:border-[#374151]'
+          }`}
         onClick={() => setExpandido(v => !v)}
       >
         {/* Linha principal: título + duração + chevron */}
@@ -292,8 +289,7 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
         {/* Descrição expandida — editável inline */}
         {expandido && (
           <div
-            className="px-3 pb-2"
-            style={{ borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : '#DDE4EF'}` }}
+            className="border-t border-slate-100 dark:border-[#374151] px-3 pb-2"
             onClick={e => e.stopPropagation()}
           >
             <div
