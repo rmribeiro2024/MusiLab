@@ -11,6 +11,7 @@ import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContext'
+import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { sanitizarRich } from '../lib/utils'
 import { showToast } from '../lib/toast'
 import type { AulaGrade, AplicacaoAula, Plano, AnoLetivo, AtividadeRoteiro } from '../types'
@@ -1074,20 +1075,244 @@ function AgendaDia({ dataStr, escolaColorMap, isDarkMode, onOpenRegistro }: Agen
   )
 }
 
+// ─── WeekendMode ──────────────────────────────────────────────────────────────
+
+interface AtencaoItem {
+  turma: string
+  motivo: string
+  acao: string
+  tipo: 'pedagogico' | 'operacional'
+}
+
+interface WeekStatsData {
+  aulasRealizadas: number
+  planosSemanaCriados: number
+  musicasTrabalhadas: number
+  musicasAdicionadas: number
+}
+
+interface WeekendModeProps {
+  labelDia: string
+  weekStats: WeekStatsData
+  ficouParaRegistrar: AulaSlot[]
+  atencaoItems: AtencaoItem[]
+  isDarkMode: boolean
+  pendentesVisiveis: boolean
+  onTogglePendentes: () => void
+  onRegistrarSlot: (slot: AulaSlot) => void
+}
+
+function WeekendMode({
+  labelDia, weekStats, ficouParaRegistrar, atencaoItems,
+  isDarkMode, pendentesVisiveis, onTogglePendentes, onRegistrarSlot,
+}: WeekendModeProps) {
+  const dk = isDarkMode
+  const cBorder  = dk ? '#374151' : '#E2E9F3'
+  const cCard    = dk ? '#1F2937' : '#FFFFFF'
+  const cBody    = dk ? '#111827' : '#FFFFFF'
+  const cRow     = dk ? '#1F2937' : '#F8FAFC'
+  const cText    = dk ? '#E5E7EB' : '#1E2A4A'
+  const cSub     = dk ? '#9CA3AF' : '#64748B'
+  const cDim     = dk ? '#4B5563' : '#94A3B8'
+  const cDimmer  = dk ? '#374151' : '#CBD5E1'
+
+  const DIAS_PT = ['domingo','segunda','terça','quarta','quinta','sexta','sábado']
+
+  function formatDataSlot(dataStr: string): string {
+    const d = new Date(dataStr + 'T12:00:00')
+    return `${DIAS_PT[d.getDay()]}, ${d.getDate()} ${MESES[d.getMonth()]}`
+  }
+
+  const progresso: string[] = [
+    weekStats.aulasRealizadas > 0 ? `${weekStats.aulasRealizadas} aula${weekStats.aulasRealizadas !== 1 ? 's' : ''} realizada${weekStats.aulasRealizadas !== 1 ? 's' : ''}` : '',
+    weekStats.planosSemanaCriados > 0 ? `${weekStats.planosSemanaCriados} plano${weekStats.planosSemanaCriados !== 1 ? 's' : ''} criado${weekStats.planosSemanaCriados !== 1 ? 's' : ''}` : '',
+    weekStats.musicasTrabalhadas > 0 ? `${weekStats.musicasTrabalhadas} música${weekStats.musicasTrabalhadas !== 1 ? 's' : ''} trabalhada${weekStats.musicasTrabalhadas !== 1 ? 's' : ''}` : '',
+    weekStats.musicasAdicionadas > 0 ? `${weekStats.musicasAdicionadas} música${weekStats.musicasAdicionadas !== 1 ? 's' : ''} adicionada${weekStats.musicasAdicionadas !== 1 ? 's' : ''} ao repertório` : '',
+  ].filter(Boolean)
+
+  const ped = atencaoItems.filter(i => i.tipo === 'pedagogico')
+  const op  = atencaoItems.filter(i => i.tipo === 'operacional')
+
+  const rowStyle = (isLast: boolean): React.CSSProperties => ({
+    display: 'flex', alignItems: 'center', gap: 8,
+    padding: '7px 12px', background: cBody,
+    borderBottom: isLast ? 'none' : `1px solid ${cRow}`,
+  })
+
+  const atencaoRowStyle = (isLast: boolean): React.CSSProperties => ({
+    padding: '9px 12px', background: cBody,
+    borderBottom: isLast ? 'none' : `1px solid ${cRow}`,
+  })
+
+  const subLabelStyle = (hasTopBorder: boolean): React.CSSProperties => ({
+    fontSize: 9, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
+    color: cDimmer, padding: '6px 12px 5px', background: cBody,
+    borderBottom: `1px solid ${cRow}`,
+    ...(hasTopBorder ? { borderTop: `1px solid ${cBorder}` } : {}),
+  })
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: cText, lineHeight: 1.25 }}>
+          Boa semana!
+        </h1>
+        <p style={{ fontSize: 12, color: cDim, marginTop: 4, textTransform: 'capitalize' }}>
+          {labelDia}
+        </p>
+      </div>
+
+      {/* Progresso da semana */}
+      {progresso.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: cDimmer, marginBottom: 10, paddingLeft: 2 }}>
+            Progresso da semana
+          </div>
+          <div style={{ background: cCard, borderRadius: 12, border: `1px solid ${cBorder}`, overflow: 'hidden' }}>
+            {progresso.map((item, i) => (
+              <div key={i} style={rowStyle(i === progresso.length - 1)}>
+                <span style={{ fontSize: 11, color: '#34d399', flexShrink: 0 }}>✓</span>
+                <span style={{ fontSize: 12, color: cSub }}>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* O que pede atenção */}
+      {atencaoItems.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: cDimmer, marginBottom: 10, paddingLeft: 2 }}>
+            O que pede atenção
+          </div>
+          <div style={{ background: cCard, borderRadius: 12, border: `1px solid ${cBorder}`, overflow: 'hidden' }}>
+            {ped.length > 0 && (
+              <>
+                <div style={subLabelStyle(false)}>Pedagógico</div>
+                {ped.map((item, i) => (
+                  <div key={i} style={atencaoRowStyle(i === ped.length - 1 && op.length === 0)}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: cText }}>{item.turma}</div>
+                    <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2, lineHeight: 1.4 }}>{item.motivo}</div>
+                    <div style={{ fontSize: 11, color: '#6366f1', marginTop: 5, paddingLeft: 12, position: 'relative', lineHeight: 1.4 }}>
+                      <span style={{ position: 'absolute', left: 0, color: cDimmer }}>→</span>
+                      {item.acao}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            {op.length > 0 && (
+              <>
+                <div style={subLabelStyle(ped.length > 0)}>Operacional</div>
+                {op.map((item, i) => (
+                  <div key={i} style={atencaoRowStyle(i === op.length - 1)}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: cText }}>{item.turma}</div>
+                    <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2, lineHeight: 1.4 }}>{item.motivo}</div>
+                    <div style={{ fontSize: 11, color: '#6366f1', marginTop: 5, paddingLeft: 12, position: 'relative', lineHeight: 1.4 }}>
+                      <span style={{ position: 'absolute', left: 0, color: cDimmer }}>→</span>
+                      {item.acao}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Ficou para registrar */}
+      {ficouParaRegistrar.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, paddingLeft: 2 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: cDimmer }}>
+              Ficou para registrar
+            </div>
+            <button
+              onClick={onTogglePendentes}
+              style={{ fontSize: 10, color: cDimmer, textDecoration: 'underline', textUnderlineOffset: 2, background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              {pendentesVisiveis ? 'esconder' : 'mostrar'}
+            </button>
+          </div>
+          {pendentesVisiveis && (
+            <div style={{ background: cCard, borderRadius: 12, border: `1px solid ${cBorder}`, overflow: 'hidden' }}>
+              {ficouParaRegistrar.map((slot, i) => {
+                const cor = ESCOLA_COLORS[slot.escolaColorIdx % ESCOLA_COLORS.length]
+                const corFinal = dk ? cor.dark : cor.light
+                const isFirst = i === 0
+                return (
+                  <div key={`${slot.aulaGrade.id}-${slot.dataStr}`} style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '8px 12px', background: cBody,
+                    borderBottom: i < ficouParaRegistrar.length - 1 ? `1px solid ${cRow}` : 'none',
+                  }}>
+                    <div style={{ width: 3, height: 26, borderRadius: 99, background: corFinal, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 500, color: cSub }}>{slot.nomeTurma}</div>
+                      <div style={{ fontSize: 10, color: cDimmer, marginTop: 1 }}>{formatDataSlot(slot.dataStr)}</div>
+                    </div>
+                    <button
+                      onClick={() => onRegistrarSlot(slot)}
+                      style={{
+                        fontSize: 11, fontWeight: isFirst ? 600 : 500,
+                        color: isFirst ? '#fff' : cDim,
+                        background: isFirst ? '#4f46e5' : 'transparent',
+                        border: isFirst ? 'none' : `1px solid ${cBorder}`,
+                        padding: '5px 10px', borderRadius: 6,
+                        whiteSpace: 'nowrap', flexShrink: 0, cursor: 'pointer',
+                      }}
+                    >
+                      {isFirst ? 'Registrar agora' : 'Registrar'}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {progresso.length === 0 && atencaoItems.length === 0 && ficouParaRegistrar.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '48px 0' }}>
+          <p style={{ fontSize: 14, color: cDimmer }}>Tudo em dia por aqui.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── AgendaView — componente principal ───────────────────────────────────────
 
 export default function AgendaView() {
   const { anosLetivos } = useAnoLetivoContext()
   const { planos } = usePlanosContext()
+  const { planejamentos } = usePlanejamentoTurmaContext()
+  const { repertorio } = useRepertorioContext()
+  const { aplicacoes } = useAplicacoesContext()
+  const {
+    setModalRegistro, setPlanoParaRegistro, setNovoRegistro, setRegistroEditando, setVerRegistros,
+    setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel,
+  } = useCalendarioContext()
 
   const hoje = useMemo(() => toStr(new Date()), [])
 
-  // ── Registro inline — Opção B (fade + scale) ──
+  // ── Registro inline ──
   const [registroInline, setRegistroInline] = useState(false)
   const abrirRegistroInline = useCallback(() => setRegistroInline(true), [])
   const fecharRegistroInline = useCallback(() => setRegistroInline(false), [])
 
-  // Detecta dark mode via classe no <html>
+  // ── Navegação ±1 dia ──
+  const [diaOffset, setDiaOffset] = useState(0)
+  const ontemStr  = useMemo(() => toStr(addDays(new Date(hoje + 'T12:00:00'), -1)), [hoje])
+  const amanhaStr = useMemo(() => toStr(addDays(new Date(hoje + 'T12:00:00'), +1)), [hoje])
+  const targetDataStr = diaOffset === -1 ? ontemStr : diaOffset === 1 ? amanhaStr : hoje
+
+  // ── Pendentes visíveis ──
+  const [pendentesVisiveis, setPendentesVisiveis] = useState(true)
+
+  // ── Dark mode ──
   const [isDarkMode, setIsDarkMode] = useState(
     () => document.documentElement.classList.contains('dark'),
   )
@@ -1099,7 +1324,7 @@ export default function AgendaView() {
     return () => observer.disconnect()
   }, [])
 
-  // Ctrl+Z — desfaz última remoção de atividade na Agenda
+  // ── Ctrl+Z ──
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
@@ -1116,7 +1341,7 @@ export default function AgendaView() {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  // Mapa escola → índice de cor (estável por ordem de aparição)
+  // ── Mapa escola → cor ──
   const escolaColorMap = useMemo(() => {
     const map = new Map<string, number>()
     anosLetivos.forEach(ano =>
@@ -1127,101 +1352,337 @@ export default function AgendaView() {
     return map
   }, [anosLetivos])
 
-  // Label "segunda, 25 de março"
+  // ── Slots: hoje, ontem, amanhã (top-level — regras de hooks) ──
+  const slotsHoje   = useAgendaSlotsForDay(hoje,      escolaColorMap)
+  const slotsOntem  = useAgendaSlotsForDay(ontemStr,  escolaColorMap)
+  const slotsAmanha = useAgendaSlotsForDay(amanhaStr, escolaColorMap)
+
+  // ── Slots da semana (Seg–Sex) para stats do fim de semana ──
+  const weekDayStrs = useMemo(() => {
+    const mon = getMondayOf(new Date(hoje + 'T12:00:00'))
+    return [0,1,2,3,4].map(i => toStr(addDays(mon, i)))
+  }, [hoje])
+
+  const slotsW0 = useAgendaSlotsForDay(weekDayStrs[0], escolaColorMap)
+  const slotsW1 = useAgendaSlotsForDay(weekDayStrs[1], escolaColorMap)
+  const slotsW2 = useAgendaSlotsForDay(weekDayStrs[2], escolaColorMap)
+  const slotsW3 = useAgendaSlotsForDay(weekDayStrs[3], escolaColorMap)
+  const slotsW4 = useAgendaSlotsForDay(weekDayStrs[4], escolaColorMap)
+
+  const allWeekSlots = useMemo(
+    () => [...slotsW0, ...slotsW1, ...slotsW2, ...slotsW3, ...slotsW4],
+    [slotsW0, slotsW1, slotsW2, slotsW3, slotsW4],
+  )
+
+  // ── Modo fim de semana: Sáb/Dom OU sem aulas hoje ──
+  const modoFimDeSemana = useMemo(() => {
+    const dow = new Date(hoje + 'T12:00:00').getDay()
+    return dow === 0 || dow === 6 || slotsHoje.length === 0
+  }, [hoje, slotsHoje.length])
+
+  // ── Stats da semana (para WeekendMode) ──
+  const weekStats = useMemo<WeekStatsData>(() => {
+    const w0 = weekDayStrs[0]
+    const w4 = weekDayStrs[4]
+
+    const planosSemanaCriados = planejamentos.filter(p => {
+      const d = (p.criadoEm ?? '').slice(0, 10)
+      return d >= w0 && d <= w4
+    }).length
+
+    const musicasTrabalhadasIds = new Set<string>()
+    aplicacoes.forEach(ap => {
+      if (ap.data >= w0 && ap.data <= w4) {
+        const pl = planos.find(p => String(p.id) === String(ap.planoId))
+        pl?.musicasVinculadasPlano?.forEach(v => musicasTrabalhadasIds.add(String(v.musicaId)))
+      }
+    })
+
+    const musicasAdicionadas = repertorio.filter(m => {
+      const d = (m.createdAt ?? '').slice(0, 10)
+      return d >= w0 && d <= w4
+    }).length
+
+    return {
+      aulasRealizadas: allWeekSlots.length,
+      planosSemanaCriados,
+      musicasTrabalhadas: musicasTrabalhadasIds.size,
+      musicasAdicionadas,
+    }
+  }, [allWeekSlots, planejamentos, aplicacoes, planos, repertorio, weekDayStrs])
+
+  // ── Ficou para registrar (slots passados da semana sem registro) ──
+  const ficouParaRegistrar = useMemo(() => {
+    const now = toStr(new Date())
+    return allWeekSlots
+      .filter(slot => {
+        if (slot.dataStr >= now) return false
+        const tid = String(slot.aulaGrade.turmaId)
+        return !planos.some(p =>
+          (p.registrosPosAula ?? []).some(r => r.data === slot.dataStr && String(r.turma) === tid),
+        )
+      })
+      .sort((a, b) => a.dataStr.localeCompare(b.dataStr))
+  }, [allWeekSlots, planos])
+
+  // ── O que pede atenção (operacional: sem registro nas últimas 3 semanas) ──
+  const atencaoItems = useMemo<AtencaoItem[]>(() => {
+    const tresSemStr = toStr(addDays(new Date(hoje + 'T12:00:00'), -21))
+    const turmasVistas = new Set<string>()
+    const items: AtencaoItem[] = []
+
+    allWeekSlots.forEach(slot => {
+      const tid = String(slot.aulaGrade.turmaId)
+      if (turmasVistas.has(tid)) return
+      turmasVistas.add(tid)
+
+      const todosRegistros = planos.flatMap(p =>
+        (p.registrosPosAula ?? []).filter(r => String(r.turma) === tid),
+      )
+      const recentRegistros = todosRegistros.filter(r => (r.data ?? '') >= tresSemStr)
+
+      if (recentRegistros.length === 0) {
+        items.push({
+          turma: slot.nomeTurma,
+          motivo: todosRegistros.length === 0
+            ? 'Nenhum registro feito até agora'
+            : 'Sem registro nas últimas 3 semanas',
+          acao: 'Verifique se consegue registrar no dia da aula',
+          tipo: 'operacional',
+        })
+      }
+    })
+
+    return items.slice(0, 3)
+  }, [allWeekSlots, planos, hoje])
+
+  // ── Labels ──
   const labelDia = useMemo(() => {
     const d = new Date(hoje + 'T12:00:00')
     const nomes = ['domingo','segunda','terça','quarta','quinta','sexta','sábado']
     return `${nomes[d.getDay()]}, ${d.getDate()} de ${MESES_LONGOS[d.getMonth()]}`
   }, [hoje])
 
-  // Slots + stats de hoje
-  const slotsHoje = useAgendaSlotsForDay(hoje, escolaColorMap)
+  const labelDiaTarget = useMemo(() => {
+    if (diaOffset === 0) return labelDia
+    const d = new Date(targetDataStr + 'T12:00:00')
+    const nomes = ['domingo','segunda','terça','quarta','quinta','sexta','sábado']
+    return `${nomes[d.getDay()]}, ${d.getDate()} de ${MESES_LONGOS[d.getMonth()]}`
+  }, [diaOffset, targetDataStr, labelDia])
 
-  const statsHoje = useMemo(() => {
-    const total = slotsHoje.length
-    const registradas = slotsHoje.filter(s => {
+  // ── Stats do dia exibido (barra de progresso) ──
+  const statsTarget = useMemo(() => {
+    const slots = diaOffset === -1 ? slotsOntem : diaOffset === 1 ? slotsAmanha : slotsHoje
+    const total = slots.length
+    const registradas = slots.filter(s => {
       const tid = String(s.aulaGrade.turmaId)
-      return planos.some(p => (p.registrosPosAula ?? []).some(r => r.data === s.dataStr && String(r.turma) === tid))
+      return planos.some(p =>
+        (p.registrosPosAula ?? []).some(r => r.data === s.dataStr && String(r.turma) === tid),
+      )
     }).length
     return { total, registradas, pendentes: total - registradas }
-  }, [slotsHoje, planos])
+  }, [diaOffset, slotsHoje, slotsOntem, slotsAmanha, planos])
 
   const headerMsg = useMemo(() => {
-    if (!statsHoje.total) return 'Você não tem aulas hoje'
-    if (!statsHoje.pendentes) return 'Tudo registrado \u2713'
-    if (!statsHoje.registradas) return `Você tem ${statsHoje.total} aula${statsHoje.total !== 1 ? 's' : ''} hoje`
-    return `Registrar ${statsHoje.pendentes} aula${statsHoje.pendentes !== 1 ? 's' : ''} pendente${statsHoje.pendentes !== 1 ? 's' : ''}`
-  }, [statsHoje])
+    if (!statsTarget.total) return diaOffset === 0 ? 'Você não tem aulas hoje' : 'Nenhuma aula neste dia'
+    if (!statsTarget.pendentes) return 'Tudo registrado \u2713'
+    if (!statsTarget.registradas) return `${statsTarget.total} aula${statsTarget.total !== 1 ? 's' : ''} hoje`
+    return `${statsTarget.pendentes} aula${statsTarget.pendentes !== 1 ? 's' : ''} pendente${statsTarget.pendentes !== 1 ? 's' : ''}`
+  }, [statsTarget, diaOffset])
+
+  // ── Abrir registro a partir do WeekendMode ──
+  const handleRegistrarSlot = useCallback((slot: AulaSlot) => {
+    const stub = { id: `stub-${slot.aulaGrade.turmaId}`, titulo: slot.plano?.titulo ?? '' }
+    setPlanoParaRegistro((slot.plano ?? stub) as any)
+    setRegistroEditando(null)
+    setVerRegistros(false)
+    setNovoRegistro({
+      dataAula: slot.dataStr, resumoAula: '', funcionouBem: '', fariadiferente: '',
+      proximaAula: '', comportamento: '', poderiaMelhorar: '', anotacoesGerais: '',
+      urlEvidencia: '', statusAula: undefined,
+    } as any)
+    setRegAnoSel(slot.aulaGrade.anoLetivoId ?? '')
+    setRegEscolaSel(slot.aulaGrade.escolaId ?? '')
+    setRegSegmentoSel(slot.aulaGrade.segmentoId)
+    setRegTurmaSel(slot.aulaGrade.turmaId)
+    abrirRegistroInline()
+  }, [
+    setPlanoParaRegistro, setRegistroEditando, setVerRegistros, setNovoRegistro,
+    setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel, abrirRegistroInline,
+  ])
 
   return (
     <div className="mx-auto px-4 pb-10 max-w-2xl">
-      {/* ── Header — sempre visível, não sai da tela ── */}
-      <div className="mb-6">
-        <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
-          {headerMsg}
-        </h1>
-        <p className="text-sm text-slate-400 dark:text-[#4B5563] capitalize mt-0.5">{labelDia}</p>
 
-        {statsHoje.total > 0 && (
-          <div className="mt-3 space-y-1.5">
-            <div className="flex items-center gap-2">
-              {statsHoje.pendentes > 0 && (
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9CA3AF]">
-                  {statsHoje.pendentes} a registrar
-                </span>
-              )}
-              {statsHoje.pendentes > 0 && statsHoje.registradas > 0 && (
-                <span className="text-slate-300 dark:text-[#374151]">·</span>
-              )}
-              {statsHoje.registradas > 0 && (
-                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400/80">
-                  {statsHoje.registradas} concluída{statsHoje.registradas !== 1 ? 's' : ''}
-                </span>
-              )}
+      {modoFimDeSemana && diaOffset === 0 ? (
+        // ── MODO FIM DE SEMANA ──────────────────────────────────────────────
+        <>
+          {/* Seta ← Ontem (só se houver aulas ontem) */}
+          {slotsOntem.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <button
+                onClick={() => setDiaOffset(-1)}
+                style={{
+                  fontSize: 12, color: isDarkMode ? '#4B5563' : '#94A3B8',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                }}
+              >
+                ← Ontem
+              </button>
             </div>
-            <div className="w-full h-[3px] bg-slate-100 dark:bg-[#374151] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#5B5FEA] dark:bg-[#818cf8] rounded-full transition-all duration-500"
-                style={{ width: `${(statsHoje.registradas / statsHoje.total) * 100}%` }}
+          )}
+          <div style={{ position: 'relative' }}>
+            <div
+              style={{
+                transition: 'opacity 280ms ease, transform 280ms ease',
+                opacity: registroInline ? 0 : 1,
+                transform: registroInline ? 'scale(0.97) translateY(-6px)' : 'scale(1) translateY(0)',
+                pointerEvents: registroInline ? 'none' : undefined,
+                ...(registroInline ? { position: 'absolute', top: 0, left: 0, right: 0 } : {}),
+              }}
+            >
+              <WeekendMode
+                labelDia={labelDia}
+                weekStats={weekStats}
+                ficouParaRegistrar={ficouParaRegistrar}
+                atencaoItems={atencaoItems}
+                isDarkMode={isDarkMode}
+                pendentesVisiveis={pendentesVisiveis}
+                onTogglePendentes={() => setPendentesVisiveis(v => !v)}
+                onRegistrarSlot={handleRegistrarSlot}
               />
             </div>
+            <div
+              style={{
+                transition: 'opacity 280ms ease, transform 280ms ease',
+                opacity: registroInline ? 1 : 0,
+                transform: registroInline ? 'scale(1) translateY(0)' : 'scale(0.97) translateY(10px)',
+                pointerEvents: registroInline ? undefined : 'none',
+                ...(!registroInline ? { position: 'absolute', top: 0, left: 0, right: 0 } : {}),
+              }}
+            >
+              <ModalRegistroPosAula inlineMode onVoltar={fecharRegistroInline} onSaved={fecharRegistroInline} />
+            </div>
           </div>
-        )}
-      </div>
+        </>
+      ) : (
+        // ── MODO NORMAL (dia letivo, ou visualizando ontem/amanhã) ───────────
+        <>
+          {/* Header */}
+          <div className="mb-6">
+            {/* Botão voltar quando visualizando outro dia */}
+            {diaOffset !== 0 && (
+              <button
+                onClick={() => setDiaOffset(0)}
+                style={{
+                  fontSize: 12, color: isDarkMode ? '#4B5563' : '#94A3B8',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  marginBottom: 10, display: 'flex', alignItems: 'center', gap: 4,
+                }}
+              >
+                ← Hoje
+              </button>
+            )}
 
-      {/* ── Conteúdo animado — lista ↔ formulário ── */}
-      <div style={{ position: 'relative' }}>
-        {/* Painel lista */}
-        <div
-          style={{
-            transition: 'opacity 280ms ease, transform 280ms ease',
-            opacity: registroInline ? 0 : 1,
-            transform: registroInline ? 'scale(0.97) translateY(-6px)' : 'scale(1) translateY(0)',
-            pointerEvents: registroInline ? 'none' : undefined,
-            ...(registroInline ? { position: 'absolute', top: 0, left: 0, right: 0 } : {}),
-          }}
-        >
-          <BriefingDia slots={slotsHoje} />
-          <AgendaDia dataStr={hoje} escolaColorMap={escolaColorMap} isDarkMode={isDarkMode} onOpenRegistro={abrirRegistroInline} />
-        </div>
+            <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
+              {headerMsg}
+            </h1>
+            <p className="text-sm text-slate-400 dark:text-[#4B5563] capitalize mt-0.5">{labelDiaTarget}</p>
 
-        {/* Painel form */}
-        <div
-          style={{
-            transition: 'opacity 280ms ease, transform 280ms ease',
-            opacity: registroInline ? 1 : 0,
-            transform: registroInline ? 'scale(1) translateY(0)' : 'scale(0.97) translateY(10px)',
-            pointerEvents: registroInline ? undefined : 'none',
-            ...(!registroInline ? { position: 'absolute', top: 0, left: 0, right: 0 } : {}),
-          }}
-        >
-          <ModalRegistroPosAula
-            inlineMode
-            onVoltar={fecharRegistroInline}
-            onSaved={fecharRegistroInline}
-          />
-        </div>
-      </div>
+            {statsTarget.total > 0 && (
+              <div className="mt-3 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  {statsTarget.pendentes > 0 && (
+                    <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9CA3AF]">
+                      {statsTarget.pendentes} a registrar
+                    </span>
+                  )}
+                  {statsTarget.pendentes > 0 && statsTarget.registradas > 0 && (
+                    <span className="text-slate-300 dark:text-[#374151]">·</span>
+                  )}
+                  {statsTarget.registradas > 0 && (
+                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400/80">
+                      {statsTarget.registradas} concluída{statsTarget.registradas !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                <div className="w-full h-[3px] bg-slate-100 dark:bg-[#374151] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#5B5FEA] dark:bg-[#818cf8] rounded-full transition-all duration-500"
+                    style={{ width: `${(statsTarget.registradas / statsTarget.total) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Setas de navegação (só para hoje em modo normal) */}
+            {diaOffset === 0 && (slotsOntem.length > 0 || slotsAmanha.length > 0) && (
+              <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                {slotsOntem.length > 0 && (
+                  <button
+                    onClick={() => setDiaOffset(-1)}
+                    style={{
+                      fontSize: 11, color: isDarkMode ? '#4B5563' : '#94A3B8',
+                      background: 'none',
+                      border: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}`,
+                      borderRadius: 6, padding: '3px 8px', cursor: 'pointer',
+                    }}
+                  >
+                    ← Ontem
+                  </button>
+                )}
+                {slotsAmanha.length > 0 && (
+                  <button
+                    onClick={() => setDiaOffset(1)}
+                    style={{
+                      fontSize: 11, color: isDarkMode ? '#4B5563' : '#94A3B8',
+                      background: 'none',
+                      border: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}`,
+                      borderRadius: 6, padding: '3px 8px', cursor: 'pointer',
+                    }}
+                  >
+                    Amanhã →
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Conteúdo animado */}
+          <div style={{ position: 'relative' }}>
+            <div
+              style={{
+                transition: 'opacity 280ms ease, transform 280ms ease',
+                opacity: registroInline ? 0 : 1,
+                transform: registroInline ? 'scale(0.97) translateY(-6px)' : 'scale(1) translateY(0)',
+                pointerEvents: registroInline ? 'none' : undefined,
+                ...(registroInline ? { position: 'absolute', top: 0, left: 0, right: 0 } : {}),
+              }}
+            >
+              {diaOffset === 0 && <BriefingDia slots={slotsHoje} />}
+              <AgendaDia
+                dataStr={targetDataStr}
+                escolaColorMap={escolaColorMap}
+                isDarkMode={isDarkMode}
+                onOpenRegistro={abrirRegistroInline}
+              />
+            </div>
+
+            <div
+              style={{
+                transition: 'opacity 280ms ease, transform 280ms ease',
+                opacity: registroInline ? 1 : 0,
+                transform: registroInline ? 'scale(1) translateY(0)' : 'scale(0.97) translateY(10px)',
+                pointerEvents: registroInline ? undefined : 'none',
+                ...(!registroInline ? { position: 'absolute', top: 0, left: 0, right: 0 } : {}),
+              }}
+            >
+              <ModalRegistroPosAula inlineMode onVoltar={fecharRegistroInline} onSaved={fecharRegistroInline} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

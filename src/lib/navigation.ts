@@ -23,7 +23,7 @@ export interface NavSection {
 // ─── SEÇÕES PRIMÁRIAS ─────────────────────────────────────────────────────────
 
 export const NAV_SECTIONS: NavSection[] = [
-    { id: 'hoje',          label: 'Hoje',          shortLabel: 'Hoje',   defaultMode: 'agenda' },
+    { id: 'hoje',          label: 'Início',        shortLabel: 'Início', defaultMode: 'agenda' },
     { id: 'planejamento',  label: 'Planejamento',   shortLabel: 'Planos', defaultMode: 'visaoSemana' },
     { id: 'turmas',        label: 'Turmas',         shortLabel: 'Turmas', defaultMode: 'turmas' },
     { id: 'biblioteca',    label: 'Biblioteca',     shortLabel: 'Bib.',   defaultMode: 'repertorio' },
