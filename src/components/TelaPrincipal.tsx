@@ -68,29 +68,38 @@ async function classificarVivenciasPlano(plano: Plano, apiKey: string): Promise<
         .map(a => `- ${a.nome}: ${(a.descricao ?? '').replace(/<[^>]*>/g, ' ').trim().slice(0, 200)}`)
         .filter(Boolean).join('\n')
 
-    const prompt = `Você é especialista em pedagogia musical (CLASP - Keith Swanwick).
-Analise o plano de aula e classifique a intensidade de cada Vivência Musical.
+    const prompt = `Você é especialista em educação musical. Analise o plano de aula e classifique cada dimensão CLASP (Keith Swanwick).
+
+REGRA FUNDAMENTAL: o padrão é ZERO. Só atribua valor acima de 0 se houver evidência explícita e inequívoca no texto do plano.
 
 Plano: "${(plano.titulo ?? '').slice(0, 100)}"
 Objetivo: "${(plano.objetivoGeral ?? '').replace(/<[^>]*>/g, ' ').trim().slice(0, 300)}"
 Atividades:
 ${atividades.slice(0, 800)}
 
-Classifique cada dimensão com intensidade de 0 a 3:
-- 0: ausente no plano
-- 1: presente de forma leve
-- 2: explorada com ênfase
-- 3: dimensão dominante
+Escala:
+- 0: ausente ou meramente incidental (padrão)
+- 1: presente e planejado, mas secundário (atividade de apoio, até 30% do tempo)
+- 2: seção dedicada e estruturada (atividade principal, mais de 30% do tempo)
+- 3: objetivo central da aula (tema principal declarado)
 
-Dimensões:
-- tecnica: Técnica instrumental/vocal, execução de habilidades
-- performance: Performance, apresentação, execução musical
-- apreciacao: Escuta ativa, apreciação, audição crítica
-- criacao: Composição, improvisação, criação musical
-- teoria: Teoria musical, história, contexto cultural
-- corpo: Movimento corporal, dança, percussão corporal
+Dimensões — avalie com rigor:
 
-Identifique também até 4 conceitos musicais pedagógicos centrais do plano.
+tecnica: Exercícios explícitos de técnica instrumental ou vocal (escalas, postura, embocadura, digitação, respiração, articulação). NÃO conta: tocar uma música como exercício genérico, aquecimento sem foco técnico declarado.
+
+performance: Ensaio com intenção de apresentação, execução expressiva para colegas ou público, montagem de repertório para evento. NÃO conta: tocar uma música como treino técnico, leitura à primeira vista sem intenção performática.
+
+apreciacao: Escuta ativa com análise estruturada, audição dirigida com roteiro ou perguntas específicas, comparação de interpretações. NÃO conta: colocar música de fundo, ouvir uma música rapidamente como introdução, mencionar "vamos ouvir" sem atividade de análise.
+
+criacao: Composição, improvisação ou arranjo com processo estruturado descrito no plano. NÃO conta: "espaço livre para criação" sem descrição de processo, variar dinâmica ou interpretação como criação.
+
+teoria: Ensino explícito de conceitos teórico-musicais (leitura de partitura, cifras, escalas, acordes, ritmo, harmonia, forma, história da música). NÃO conta: mencionar o nome de uma nota incidentalmente, explicar brevemente sem ser o foco da aula.
+
+corpo: Atividade estruturada de movimento, dança ou percussão corporal como parte central e planejada. NÃO conta: bater palmas para marcar o pulso, "alunos em pé" sem propósito de movimento declarado.
+
+Em caso de dúvida, atribua 0. Só registre presença quando a evidência for clara no texto.
+
+Identifique também até 4 conceitos musicais pedagógicos centrais do plano (ex: "Pulsação", "Fraseado", "Dinâmica", "Forma ABA").
 
 Responda SOMENTE com JSON válido (sem texto extra):
 {"vivencias":{"tecnica":0,"performance":0,"apreciacao":0,"criacao":0,"teoria":0,"corpo":0},"conceitos":["conceito1"]}`
@@ -254,6 +263,97 @@ function ModalConceitosPlano({ conceitos, onConfirmar, onFechar }: ModalConceito
                         ✓ Aplicar conceitos
                     </button>
                 </div>
+            </div>
+        </div>
+    )
+}
+
+// ── Card unificado: vivências CLASP + conceitos após salvar plano ─────────────
+interface ClasseNotifCardProps {
+    notif: { planoId: string; titulo: string; vivencias: Record<string, number>; conceitos: string[] }
+    onFechar: () => void
+    onAplicar: (conceitos: string[]) => void
+}
+function ClasseNotifCard({ notif, onFechar, onAplicar }: ClasseNotifCardProps) {
+    const [draft, setDraft] = React.useState<string[]>(notif.conceitos)
+    const CLASP: Record<string, { label: string; dot: string; text: string; bg: string; border: string }> = {
+        tecnica:     { label: 'Técnica',           dot: '#f472b6', text: '#f9a8d4', bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.2)' },
+        performance: { label: 'Performance',       dot: '#fb923c', text: '#fdba74', bg: 'rgba(251,146,60,0.1)',  border: 'rgba(251,146,60,0.2)'  },
+        apreciacao:  { label: 'Apreciação',        dot: '#34d399', text: '#6ee7b7', bg: 'rgba(52,211,153,0.1)',  border: 'rgba(52,211,153,0.2)'  },
+        criacao:     { label: 'Criação',           dot: '#a78bfa', text: '#c4b5fd', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.2)' },
+        teoria:      { label: 'Teoria e história', dot: '#60a5fa', text: '#93c5fd', bg: 'rgba(96,165,250,0.1)',  border: 'rgba(96,165,250,0.2)'  },
+        corpo:       { label: 'Corpo e movimento', dot: '#fbbf24', text: '#fcd34d', bg: 'rgba(251,191,36,0.1)',  border: 'rgba(251,191,36,0.2)'  },
+    }
+    const ativas = Object.entries(notif.vivencias)
+        .filter(([, v]) => v > 0)
+        .sort(([, a], [, b]) => b - a)
+    if (ativas.length === 0) return null
+    return (
+        <div className="fixed bottom-4 right-4 z-50 shadow-2xl w-[300px] bg-white dark:bg-[#1F2937] border border-slate-200 dark:border-[#374151] rounded-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center gap-2.5 px-3.5 py-3 border-b border-slate-100 dark:border-[#374151]">
+                <div className="w-7 h-7 flex items-center justify-center rounded-lg shrink-0 text-[13px]"
+                    style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.2)', color: '#34d399' }}>
+                    ✓
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-semibold text-slate-900 dark:text-[#E5E7EB]">Plano salvo</div>
+                    <div className="text-[11px] text-slate-400 dark:text-[#4B5563] mt-0.5 truncate">{notif.titulo}</div>
+                </div>
+                <button onClick={onFechar}
+                    className="text-[18px] leading-none text-slate-300 dark:text-[#374151] hover:text-slate-500 dark:hover:text-[#4B5563] shrink-0 bg-transparent border-none cursor-pointer ml-1">
+                    ×
+                </button>
+            </div>
+            {/* Vivências identificadas */}
+            <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-[#374151]">
+                <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#4B5563] mb-2">
+                    Vivências identificadas
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                    {ativas.map(([key]) => {
+                        const c = CLASP[key]
+                        if (!c) return null
+                        return (
+                            <div key={key} className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full"
+                                style={{ color: c.text, background: c.bg, border: `1px solid ${c.border}` }}>
+                                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: c.dot }} />
+                                {c.label}
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+            {/* Conceitos musicais com × para remover */}
+            {draft.length > 0 && (
+                <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-[#374151]">
+                    <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#4B5563] mb-2">
+                        Conceitos identificados
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                        {draft.map((c, i) => (
+                            <span key={i} className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-[#9CA3AF] bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-[#374151] px-2 py-0.5 rounded-full">
+                                {c}
+                                <button type="button"
+                                    onClick={() => setDraft(prev => prev.filter((_, j) => j !== i))}
+                                    className="text-slate-300 dark:text-[#4B5563] hover:text-rose-500 transition-colors leading-none bg-transparent border-none cursor-pointer p-0">×</button>
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
+            {/* Actions */}
+            <div className="flex gap-2 px-3.5 py-2.5">
+                <button onClick={onFechar}
+                    className="flex-1 py-1.5 text-[12px] text-slate-500 dark:text-[#4B5563] bg-transparent border border-slate-200 dark:border-[#374151] rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                    Ignorar
+                </button>
+                {draft.length > 0 && (
+                    <button onClick={() => onAplicar(draft)}
+                        className="flex-[2] py-1.5 text-[12px] font-semibold text-white bg-indigo-600 border-none rounded-lg cursor-pointer hover:bg-indigo-700 transition-colors">
+                        Aplicar conceitos
+                    </button>
+                )}
             </div>
         </div>
     )
@@ -492,10 +592,18 @@ export default function TelaPrincipal() {
                         const existentes = (planoEditando.atividadesRoteiro || []).flatMap(a => a.conceitos || [])
                         const novos = resultados.flat()
                         const merged = [...new Set([...existentes, ...novos])].filter(Boolean)
-                        // Só abre o modal se houver conceitos ainda não salvos no plano
+                        // Conceitos por atividade salvos silenciosamente (sem abrir modal)
+                        // O card unificado (Fluxo 5) é a única interface pós-salvar
                         const conceitosJaSalvos = planoEditando.conceitos ?? []
                         const temNovos = merged.some(c => !conceitosJaSalvos.includes(c))
-                        if (merged.length > 0 && temNovos) setModalConceitosPlano({ planoId: String(planoId), conceitos: merged })
+                        if (merged.length > 0 && temNovos) {
+                            const pid = String(planoId)
+                            setPlanos(prev => prev.map(p =>
+                                String(p.id) === pid
+                                    ? { ...p, conceitos: [...new Set([...conceitosJaSalvos, ...merged])] }
+                                    : p,
+                            ))
+                        }
                     })
                     .catch(() => {/* silencioso */})
                     .finally(() => setDetectandoConceitos(false))
@@ -2508,91 +2616,25 @@ export default function TelaPrincipal() {
             </div>
         )}
 
-        {/* ── Notificação de vivências CLASP após salvar plano ── */}
-        {classeNotif && (() => {
-            const CLASP: Record<string, { label: string; dot: string; text: string; bg: string; border: string }> = {
-                tecnica:     { label: 'Técnica',           dot: '#f472b6', text: '#f9a8d4', bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.2)' },
-                performance: { label: 'Performance',       dot: '#fb923c', text: '#fdba74', bg: 'rgba(251,146,60,0.1)',  border: 'rgba(251,146,60,0.2)' },
-                apreciacao:  { label: 'Apreciação',        dot: '#34d399', text: '#6ee7b7', bg: 'rgba(52,211,153,0.1)',  border: 'rgba(52,211,153,0.2)' },
-                criacao:     { label: 'Criação',           dot: '#a78bfa', text: '#c4b5fd', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.2)' },
-                teoria:      { label: 'Teoria e história', dot: '#60a5fa', text: '#93c5fd', bg: 'rgba(96,165,250,0.1)',  border: 'rgba(96,165,250,0.2)' },
-                corpo:       { label: 'Corpo e movimento', dot: '#fbbf24', text: '#fcd34d', bg: 'rgba(251,191,36,0.1)',  border: 'rgba(251,191,36,0.2)' },
-            }
-            const ativas = Object.entries(classeNotif.vivencias)
-                .filter(([, v]) => v > 0)
-                .sort(([, a], [, b]) => b - a)
-            if (ativas.length === 0) return null
-            return (
-                <div className="fixed bottom-4 right-4 z-50 shadow-2xl w-[300px] bg-white dark:bg-[#1F2937] border border-slate-200 dark:border-[#374151] rounded-2xl overflow-hidden">
-                    {/* Header */}
-                    <div className="flex items-center gap-2.5 px-3.5 py-3 border-b border-slate-100 dark:border-[#374151]">
-                        <div className="w-7 h-7 flex items-center justify-center rounded-lg shrink-0 text-[13px]"
-                            style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.2)', color: '#34d399' }}>
-                            ✓
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <div className="text-[13px] font-semibold text-slate-900 dark:text-[#E5E7EB]">Plano salvo</div>
-                            <div className="text-[11px] text-slate-400 dark:text-[#4B5563] mt-0.5 truncate">{classeNotif.titulo}</div>
-                        </div>
-                        <button onClick={() => setClasseNotif(null)}
-                            className="text-[18px] leading-none text-slate-300 dark:text-[#374151] hover:text-slate-500 dark:hover:text-[#4B5563] shrink-0 bg-transparent border-none cursor-pointer ml-1">
-                            ×
-                        </button>
-                    </div>
-                    {/* Vivências identificadas */}
-                    <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-[#374151]">
-                        <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#374151] mb-2">
-                            Vivências identificadas
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                            {ativas.map(([key]) => {
-                                const c = CLASP[key]
-                                if (!c) return null
-                                return (
-                                    <div key={key} className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full"
-                                        style={{ color: c.text, background: c.bg, border: `1px solid ${c.border}` }}>
-                                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: c.dot }} />
-                                        {c.label}
-                                    </div>
-                                )
-                            })}
-                        </div>
-                        <div className="text-[10px] text-slate-400 dark:text-[#374151] mt-2 italic">Toque para corrigir</div>
-                    </div>
-                    {/* Conceitos musicais */}
-                    {classeNotif.conceitos.length > 0 && (
-                        <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-[#374151]">
-                            <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#374151] mb-2">
-                                Conceitos musicais
-                            </div>
-                            <div className="flex flex-wrap gap-1.5">
-                                {classeNotif.conceitos.map((c, i) => (
-                                    <span key={i} className="text-[11px] text-slate-500 dark:text-[#9CA3AF] bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-[#374151] px-2.5 py-1 rounded-full">
-                                        {c}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                    {/* Actions */}
-                    <div className="flex gap-2 px-3.5 py-2.5">
-                        <button onClick={() => setClasseNotif(null)}
-                            className="flex-1 py-1.5 text-[12px] text-slate-500 dark:text-[#4B5563] bg-transparent border border-slate-200 dark:border-[#374151] rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                            Fechar
-                        </button>
-                        <button
-                            onClick={() => {
-                                const plano = planos.find(p => String(p.id) === classeNotif.planoId)
-                                if (plano) editarPlano(plano)
-                                setClasseNotif(null)
-                            }}
-                            className="flex-[2] py-1.5 text-[12px] font-semibold text-white bg-indigo-600 border-none rounded-lg cursor-pointer hover:bg-indigo-700 transition-colors">
-                            Ver plano
-                        </button>
-                    </div>
-                </div>
-            )
-        })()}
+        {/* ── Card unificado: vivências CLASP + conceitos após salvar plano ── */}
+        {classeNotif && (
+            <ClasseNotifCard
+                notif={classeNotif}
+                onFechar={() => setClasseNotif(null)}
+                onAplicar={(conceitos) => {
+                    const pid = classeNotif.planoId
+                    setPlanos(prev => prev.map(p =>
+                        String(p.id) === pid ? { ...p, conceitos } : p
+                    ))
+                    setPlanoEditando(prev =>
+                        prev && String(prev.id) === pid ? { ...prev, conceitos } : prev
+                    )
+                    setSecoesForm(prev => new Set([...prev, 'classificacao']))
+                    showToast('Conceitos aplicados ao plano', 'success')
+                    setClasseNotif(null)
+                }}
+            />
+        )}
     </>
     );
 

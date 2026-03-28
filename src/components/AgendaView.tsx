@@ -1124,7 +1124,7 @@ function WeekendMode({
   const cText    = dk ? '#E5E7EB' : '#1E2A4A'
   const cSub     = dk ? '#9CA3AF' : '#64748B'
   const cDim     = dk ? '#4B5563' : '#94A3B8'
-  const cDimmer  = dk ? '#374151' : '#CBD5E1'
+  const cDimmer  = dk ? '#4B5563' : '#CBD5E1'
 
   const DIAS_PT = ['domingo','segunda','terça','quarta','quinta','sexta','sábado']
 
@@ -1472,10 +1472,10 @@ export default function AgendaView() {
     }
   }, [allWeekSlots, planejamentos, aplicacoes, planos, repertorio, weekDayStrs])
 
-  // ── Ficou para registrar (slots passados da semana sem registro) ──
+  // ── Ficou para registrar (apenas o último dia com aulas sem registro) ──
   const ficouParaRegistrar = useMemo(() => {
     const now = toStr(new Date())
-    return allWeekSlots
+    const semRegistro = allWeekSlots
       .filter(slot => {
         if (slot.dataStr >= now) return false
         const tid = String(slot.aulaGrade.turmaId)
@@ -1483,7 +1483,9 @@ export default function AgendaView() {
           (p.registrosPosAula ?? []).some(r => r.data === slot.dataStr && String(r.turma) === tid),
         )
       })
-      .sort((a, b) => a.dataStr.localeCompare(b.dataStr))
+      .sort((a, b) => b.dataStr.localeCompare(a.dataStr)) // mais recente primeiro
+    const ultimoDia = semRegistro[0]?.dataStr
+    return ultimoDia ? semRegistro.filter(s => s.dataStr === ultimoDia) : []
   }, [allWeekSlots, planos])
 
   // ── O que pede atenção (operacional: sem registro nas últimas 3 semanas) ──
