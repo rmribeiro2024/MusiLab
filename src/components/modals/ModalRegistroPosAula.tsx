@@ -1247,46 +1247,6 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                         )}
 
 
-{/* ── Critérios atingidos — só aparece se o plano tem critério preenchido ── */}
-                                    {(() => {
-                                        const stripHtml = (s: string) => (s || '').replace(/<[^>]+>/g, '').trim()
-                                        const criterio = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
-                                        if (!criterio) return null
-                                        const val = (novoRegistro as any).criteriosAtingidos as string | undefined
-                                        const ops = [
-                                            { v: 'sim',         label: 'Sim' },
-                                            { v: 'parcialmente', label: 'Parcialmente' },
-                                            { v: 'nao',         label: 'Não' },
-                                        ]
-                                        return (
-                                            <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderBottom: `1px solid ${c.borderLight}` }}>
-                                                    <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>🎯</span>
-                                                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: val ? c.textMain : c.textMed, flex: 1 }}>
-                                                        Você observou esses resultados?
-                                                    </span>
-                                                    {val && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: isDark ? 'rgba(34,197,94,.12)' : '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: isDark ? '1px solid rgba(34,197,94,.25)' : '1px solid #bbf7d0' }}>✓</span>}
-                                                </div>
-                                                <div style={{ padding: '6px 12px 4px', borderBottom: `1px solid ${c.borderLight}` }}>
-                                                    <p style={{ fontSize: 12, color: isDark ? '#6b7280' : '#94a3b8', fontStyle: 'italic', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
-                                                        {criterio.replace(/\s+(\d+[\).])/g, '\n$1').trim()}
-                                                    </p>
-                                                </div>
-                                                <div style={{ padding: '8px 12px', display: 'flex', gap: 6 }}>
-                                                    {ops.map(op => {
-                                                        const ativo = val === op.v
-                                                        return (
-                                                            <button key={op.v} type="button"
-                                                                onClick={() => setNovoRegistro({ ...novoRegistro, criteriosAtingidos: ativo ? undefined : op.v } as any)}
-                                                                style={{ flex: 1, padding: '6px 4px', borderRadius: 20, fontSize: 12, fontWeight: ativo ? 600 : 400, cursor: 'pointer', transition: 'all .15s', border: `1px solid ${ativo ? '#6366f1' : c.border}`, background: ativo ? '#4f46e5' : c.inputBg, color: ativo ? '#fff' : c.textMed, outline: 'none' }}>
-                                                                {op.label}
-                                                            </button>
-                                                        )
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )
-                                    })()}
 
 {/* Chips de anotação */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
