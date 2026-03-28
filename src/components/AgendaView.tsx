@@ -572,16 +572,10 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
           {jaRegistrado && !aberto && (
             <button
               onClick={abrirRegistro}
-              className="flex items-center gap-1.5 shrink-0 transition-colors"
-              style={{ color: isDarkMode ? '#4B5563' : '#B0BDD0' }}
+              className="w-5 h-5 flex items-center justify-center rounded-full shrink-0 transition-opacity hover:opacity-80"
               title="Editar registro pós-aula"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70 shrink-0" />
-              <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
-                <circle cx="3" cy="8" r="1.5"/>
-                <circle cx="8" cy="8" r="1.5"/>
-                <circle cx="13" cy="8" r="1.5"/>
-              </svg>
+              <span className="w-2 h-2 rounded-full bg-emerald-500/70" />
             </button>
           )}
           <svg
