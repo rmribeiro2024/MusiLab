@@ -144,6 +144,7 @@ interface RoteiroItemProps {
   idx: number
   temAplicacao: boolean
   isDark?: boolean
+  jaRegistrado?: boolean
   onEditar: (id: string | number, nome: string) => void
   onEditarDesc: (id: string | number, desc: string) => void
   onEditarDuracao: (id: string | number, dur: string) => void
@@ -208,7 +209,7 @@ function processarLinksHtml(html: string): string {
   })
 }
 
-function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar, onEditarDesc, onEditarDuracao, onRemover }: RoteiroItemProps) {
+function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, jaRegistrado = false, onEditar, onEditarDesc, onEditarDuracao, onRemover }: RoteiroItemProps) {
   const [titulo, setTitulo] = useState(ativ.nome)
   const [duracao, setDuracao] = useState(ativ.duracao ?? '')
   const [expandido, setExpandido] = useState(false)
@@ -256,7 +257,7 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
         <div className={`flex items-center gap-2 px-3 py-2.5 ${expandido ? 'border-b border-slate-100 dark:border-[#374151] rounded-t-2xl' : 'rounded-2xl hover:bg-slate-50 dark:hover:bg-white/[0.02]'}`}>
           <input
             className="flex-1 bg-transparent text-sm font-semibold outline-none min-w-0 cursor-text rounded px-1 -mx-1 transition-colors focus:ring-1 focus:ring-blue-400/50"
-            style={{ color: isDark ? '#E5E7EB' : '#1E2A4A' }}
+            style={{ color: jaRegistrado ? (isDark ? '#6B7280' : '#94A3B8') : (isDark ? '#E5E7EB' : '#1E2A4A') }}
             value={titulo}
             onChange={e => { setTitulo(e.target.value); onEditar(ativ.id, e.target.value) }}
             onClick={e => e.stopPropagation()}
@@ -265,7 +266,7 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
           {/* Duração editável */}
           <input
             className="w-8 bg-transparent text-xs text-right outline-none rounded transition-colors focus:ring-1 focus:ring-blue-400/50 focus:w-12"
-            style={{ color: isDark ? '#9CA3AF' : '#7B8FAB' }}
+            style={{ color: jaRegistrado ? (isDark ? '#4B5563' : '#CBD5E1') : (isDark ? '#9CA3AF' : '#7B8FAB') }}
             value={duracao}
             placeholder="—"
             onChange={e => { setDuracao(e.target.value); onEditarDuracao(ativ.id, e.target.value) }}
@@ -661,6 +662,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
                     ativ={ativ}
                     idx={idx}
                     isDark={isDarkMode}
+                    jaRegistrado={jaRegistrado}
                     temAplicacao={!!slot.aplicacao}
                     onEditar={editarItem}
                     onEditarDesc={editarItemDesc}
