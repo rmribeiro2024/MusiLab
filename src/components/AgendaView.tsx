@@ -675,6 +675,46 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
               </div>
             )}
 
+            {/* Critérios de observação — só quando o plano tem avaliacaoEvidencia */}
+            {(() => {
+              const criterio = (slot.plano?.avaliacaoEvidencia ?? '').replace(/<[^>]+>/g, '').trim()
+              if (!criterio) return null
+              const itens = criterio
+                .split(/\n|(?=\d+[\).])/)
+                .map(s => s.replace(/^\d+[\).]\s*/, '').trim())
+                .filter(Boolean)
+              return (
+                <div
+                  className="mt-3"
+                  style={{ borderRadius: 8, overflow: 'hidden', border: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}` }}
+                >
+                  <div
+                    style={{
+                      padding: '5px 10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: isDarkMode ? 'rgba(99,102,241,0.1)' : 'rgba(99,102,241,0.06)',
+                      borderBottom: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}`,
+                    }}
+                  >
+                    <span style={{ fontSize: 11 }}>🎯</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#818cf8' }}>
+                      O que observar hoje
+                    </span>
+                  </div>
+                  <div style={{ padding: '7px 10px', background: isDarkMode ? '#111827' : '#F8FAFC' }}>
+                    {itens.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, padding: '2px 0' }}>
+                        <div style={{ width: 3, height: 3, borderRadius: '50%', background: isDarkMode ? '#4B5563' : '#CBD5E1', marginTop: 6, flexShrink: 0 }} />
+                        <span style={{ fontSize: 11, color: isDarkMode ? '#6B7280' : '#64748B', lineHeight: 1.5, fontStyle: 'italic' }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Botão registrar pós-aula — só quando não registrado */}
             {!jaRegistrado && (
               <div
