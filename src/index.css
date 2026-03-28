@@ -163,6 +163,29 @@ input, textarea, select {
 /* Garante que o fundo do app (não cards) use #0F172A */
 .dark .bg-\[\#F6F8FB\] { background: #0F172A !important; }
 
+/* ── TOOLTIP RÁPIDO — data-tip ── */
+[data-tip] { position: relative; }
+[data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1E2A4A;
+    color: #fff;
+    font-size: 11px;
+    font-family: 'Inter', system-ui, sans-serif;
+    white-space: nowrap;
+    padding: 3px 8px;
+    border-radius: 5px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 80ms;
+    z-index: 50;
+}
+[data-tip]:hover::after { opacity: 1; }
+.dark [data-tip]::after { background: #374151; }
+
 /* ── MOBILE: FIX iOS SAFARI ── */
 
 /* 0A: 100dvh — descontа a barra de endereço do browser no iPhone */

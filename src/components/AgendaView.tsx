@@ -573,7 +573,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
             <button
               onClick={abrirRegistro}
               className="w-5 h-5 flex items-center justify-center rounded-full shrink-0 transition-opacity hover:opacity-80"
-              title="Editar registro pós-aula"
+              data-tip="Editar registro pós-aula"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500/70" />
             </button>
