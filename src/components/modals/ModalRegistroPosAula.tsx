@@ -1498,9 +1498,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                                                 style={{
                                                                                     flex: 1, padding: '10px 6px', borderRadius: 8, cursor: 'pointer',
                                                                                     transition: 'all .15s', fontSize: 12, fontWeight: 700,
-                                                                                    background: ativo ? '#1e2a4a' : c.inputBg,
+                                                                                    background: ativo ? '#4f46e5' : c.inputBg,
                                                                                     color: ativo ? '#fff' : c.textMuted,
-                                                                                    border: `2px solid ${ativo ? '#1e2a4a' : c.border}`,
+                                                                                    border: `2px solid ${ativo ? '#6366f1' : c.border}`,
                                                                                     outline: 'none',
                                                                                 }}
                                                                                 onMouseEnter={e => { if (!ativo) { (e.currentTarget as HTMLButtonElement).style.borderColor = '#94a3b8'; (e.currentTarget as HTMLButtonElement).style.color = c.textMed } }}
@@ -1584,8 +1584,8 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                                     <button key={op} type="button"
                                                                         onClick={() => setNovoRegistro({ ...novoRegistro, contextoAula: ativo ? '' : op } as any)}
                                                                         style={{ fontSize: 12, padding: '5px 10px', borderRadius: 20, border: '1px solid', cursor: 'pointer', transition: 'all .15s',
-                                                                            background: ativo ? '#1e293b' : c.inputBg,
-                                                                            borderColor: ativo ? '#1e293b' : c.border,
+                                                                            background: ativo ? '#4f46e5' : c.inputBg,
+                                                                            borderColor: ativo ? '#6366f1' : c.border,
                                                                             color: ativo ? '#fff' : c.textMed,
                                                                             fontWeight: ativo ? 600 : 400 }}>
                                                                         {op}
