@@ -873,18 +873,19 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
 
                 {/* ── HEADER ── */}
                 {inlineMode && hideHeader ? null : inlineMode ? (
-                    // Header inline — mesma linguagem da página Hoje
-                    <div className="mb-6">
-                        <button
-                            onClick={onVoltar ?? (() => setModalRegistro(false))}
-                            className="text-[13px] text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] transition mb-3 flex items-center gap-1">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-                            Voltar
-                        </button>
-                        <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
-                            Registro pós-aula
-                        </h1>
-                        <p className="text-sm text-slate-400 dark:text-[#4B5563] mt-0.5 truncate">
+                    // Header inline — compacto
+                    <div className="mb-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <button
+                                onClick={onVoltar ?? (() => setModalRegistro(false))}
+                                className="text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] transition shrink-0">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                            </button>
+                            <h1 className="text-[18px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
+                                Registro pós-aula
+                            </h1>
+                        </div>
+                        <p className="text-[13px] text-slate-400 dark:text-[#4B5563] truncate pl-[23px]">
                             {planoParaRegistro.titulo}
                         </p>
                         {(() => {
