@@ -992,7 +992,9 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                             {criterio && (
                                                 <div>
                                                     {label('Critérios de sucesso da aula')}
-                                                    <p style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', lineHeight: 1.4, fontStyle: 'italic' }}>{criterio}</p>
+                                                    <p style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', lineHeight: 1.6, fontStyle: 'italic', whiteSpace: 'pre-line' }}>
+                                                        {criterio.replace(/\s+(\d+[\).])/g, '\n$1').trim()}
+                                                    </p>
                                                 </div>
                                             )}
                                             {materiais.length > 0 && (
