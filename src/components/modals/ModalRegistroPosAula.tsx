@@ -1973,13 +1973,13 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                     {(() => {
                                         const pillStyle = (ativo: boolean) => ({
                                             padding: '5px 11px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .12s',
-                                            background: ativo ? (isDark ? '#475569' : '#475569') : c.cardBgSolid,
+                                            background: ativo ? '#4f46e5' : c.cardBgSolid,
                                             color: ativo ? '#fff' : c.textMed,
-                                            border: ativo ? `1px solid ${isDark ? '#475569' : '#475569'}` : `1px solid ${c.border}`
+                                            border: ativo ? '1px solid #6366f1' : `1px solid ${c.border}`
                                         })
                                         const btnTodas = (
                                             <button type="button" onClick={() => { setFiltroRegTurma(''); setExpandedRegs(new Set()) }}
-                                                style={{ ...pillStyle(!filtroRegTurma), color: !filtroRegTurma ? '#fff' : c.textMuted, border: !filtroRegTurma ? `1px solid ${isDark ? '#475569' : '#475569'}` : `1px dashed ${c.border}` }}>
+                                                style={{ ...pillStyle(!filtroRegTurma), color: !filtroRegTurma ? '#fff' : c.textMuted, border: !filtroRegTurma ? '1px solid #6366f1' : `1px dashed ${c.border}` }}>
                                                 Todas
                                             </button>
                                         )
