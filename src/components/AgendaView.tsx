@@ -505,7 +505,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
 
   return (
     <div
-      className="rounded-lg overflow-hidden transition-shadow"
+      className="rounded-lg transition-shadow"
       style={isDarkMode ? {
         background: jaRegistrado ? '#1A2333' : '#1F2937',
         borderLeft: jaRegistrado ? `2px solid ${borderColor}55` : needsAction ? `4px solid ${borderColor}` : `3px solid ${borderColor}`,
