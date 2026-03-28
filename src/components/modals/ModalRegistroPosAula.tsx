@@ -1263,7 +1263,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderBottom: `1px solid ${c.borderLight}` }}>
                                                     <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>🎯</span>
                                                     <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: val ? c.textMain : c.textMed, flex: 1 }}>
-                                                        Os critérios de sucesso foram atingidos?
+                                                        Funcionou conforme planejado?
                                                     </span>
                                                     {val && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: isDark ? 'rgba(34,197,94,.12)' : '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: isDark ? '1px solid rgba(34,197,94,.25)' : '1px solid #bbf7d0' }}>✓</span>}
                                                 </div>
