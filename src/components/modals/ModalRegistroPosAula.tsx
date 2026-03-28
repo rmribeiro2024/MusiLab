@@ -881,12 +881,15 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                             const tur = seg?.turmas.find((t: any) => t.id == regTurmaSel)
                             const label = tur ? [seg?.nome, tur.nome].filter(Boolean).join(' · ') : planoParaRegistro.titulo
                             return (
-                                <button
-                                    onClick={onVoltar ?? (() => setModalRegistro(false))}
-                                    className="flex items-center gap-1.5 text-[13px] text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] transition mb-3">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-                                    <span className="font-medium">{label}</span>
-                                </button>
+                                <div className="mb-3">
+                                    <button
+                                        onClick={onVoltar ?? (() => setModalRegistro(false))}
+                                        className="flex items-center gap-1.5 text-[13px] text-slate-400 dark:text-[#6b7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] transition">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                                        <span className="font-medium">{label}</span>
+                                    </button>
+                                    {tur && <p className="text-[12px] text-slate-400 dark:text-[#4B5563] mt-0.5 pl-[19px] truncate">{planoParaRegistro.titulo}</p>}
+                                </div>
                             )
                         })()}
                         {(() => {
