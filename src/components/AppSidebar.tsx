@@ -3,9 +3,9 @@
 // Desktop: fixa à esquerda, colapsável (220px / 56px).
 // Mobile: hidden — navegação pelo BottomNav.
 
-import React from 'react'
-import { NAV_SECTIONS } from '../lib/navigation'
-import type { SectionId } from '../lib/navigation'
+import React, { useState, useEffect } from 'react'
+import { NAV_SECTIONS, SIDEBAR_SUBITEMS } from '../lib/navigation'
+import type { SectionId, ViewMode } from '../lib/navigation'
 
 // ── Ícones SVG inline ─────────────────────────────────────────────────────────
 
@@ -58,6 +58,15 @@ function IconSettings({ size = 18 }: { size?: number }) {
     )
 }
 
+function IconChevron({ size = 12, direction = 'down' }: { size?: number; direction?: 'down' | 'right' }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transition: 'transform 150ms', transform: direction === 'down' ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
+            <polyline points="6 9 12 15 18 9" />
+        </svg>
+    )
+}
+
 const SECTION_ICONS: Record<SectionId, React.FC<{ size?: number }>> = {
     hoje:          IconHome,
     planejamento:  IconCalendar,
@@ -66,17 +75,50 @@ const SECTION_ICONS: Record<SectionId, React.FC<{ size?: number }>> = {
     configuracoes: IconSettings,
 }
 
+// ── Subitem da sidebar ────────────────────────────────────────────────────────
+
+interface SubItemProps {
+    label: string
+    isActive: boolean
+    onClick: () => void
+}
+
+function SidebarSubItem({ label, isActive, onClick }: SubItemProps) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`w-full flex items-center gap-2 pl-[34px] pr-3 py-[7px] rounded-lg text-[13px] transition-all duration-[120ms] text-left
+                ${isActive
+                    ? 'bg-[#5B5FEA]/[0.10] dark:bg-[#5B5FEA]/[0.18] text-[#3730a3] dark:text-indigo-300 font-semibold'
+                    : 'text-slate-500 dark:text-[#9CA3AF] hover:bg-[#E8EDF4] dark:hover:bg-white/[0.05] hover:text-slate-700 dark:hover:text-[#E5E7EB] font-medium'}`}
+        >
+            {/* traço de indentação */}
+            <span
+                className={`shrink-0 w-[2px] h-3 rounded-full transition-colors duration-[120ms]
+                    ${isActive ? 'bg-[#5B5FEA] dark:bg-[#818cf8]' : 'bg-[#D1D5DB] dark:bg-[#374151]'}`}
+            />
+            <span className="truncate leading-none">{label}</span>
+        </button>
+    )
+}
+
 // ── Componente item ───────────────────────────────────────────────────────────
 
 interface ItemProps {
     section: typeof NAV_SECTIONS[number]
     isActive: boolean
+    isContextActive: boolean   // ativo como pai (subitem selecionado), sem ser o item clicado diretamente
+    hasSubitems: boolean
+    isExpanded: boolean
     collapsed: boolean
     onClick: () => void
 }
 
-function SidebarNavItem({ section, isActive, collapsed, onClick }: ItemProps) {
+function SidebarNavItem({ section, isActive, isContextActive, hasSubitems, isExpanded, collapsed, onClick }: ItemProps) {
     const Icon = SECTION_ICONS[section.id]
+    const showActive = isActive || isContextActive
+
     return (
         <button
             type="button"
@@ -86,16 +128,25 @@ function SidebarNavItem({ section, isActive, collapsed, onClick }: ItemProps) {
                 ${collapsed ? 'px-0 py-2.5 justify-center' : 'px-3 py-[9px]'}
                 ${isActive
                     ? 'bg-[#5B5FEA]/[0.09] dark:bg-[#5B5FEA]/[0.16] text-[#3730a3] dark:text-indigo-200 font-semibold'
-                    : 'text-slate-500 dark:text-[#9CA3AF] hover:bg-[#E8EDF4] dark:hover:bg-white/[0.05] hover:text-slate-800 dark:hover:text-[#E5E7EB] font-medium'}`}
+                    : isContextActive
+                        ? 'bg-[#5B5FEA]/[0.05] dark:bg-[#5B5FEA]/[0.09] text-[#4338ca] dark:text-indigo-300 font-medium'
+                        : 'text-slate-500 dark:text-[#9CA3AF] hover:bg-[#E8EDF4] dark:hover:bg-white/[0.05] hover:text-slate-800 dark:hover:text-[#E5E7EB] font-medium'}`}
         >
-            {isActive && (
+            {isActive && !isContextActive && (
                 <span className="absolute left-0 top-[6px] bottom-[6px] w-[3px] bg-[#5B5FEA] dark:bg-[#818cf8] rounded-r-full" />
             )}
             <span className="shrink-0 flex items-center justify-center">
                 <Icon size={17} />
             </span>
             {!collapsed && (
-                <span className="text-[14px] tracking-[-0.01em] truncate leading-none">{section.label}</span>
+                <>
+                    <span className="flex-1 text-[14px] tracking-[-0.01em] truncate leading-none">{section.label}</span>
+                    {hasSubitems && (
+                        <span className="shrink-0 opacity-50">
+                            <IconChevron size={12} direction={isExpanded ? 'down' : 'right'} />
+                        </span>
+                    )}
+                </>
             )}
         </button>
     )
@@ -105,7 +156,9 @@ function SidebarNavItem({ section, isActive, collapsed, onClick }: ItemProps) {
 
 interface Props {
     activeSection: SectionId
+    viewMode: ViewMode
     onNavigate: (section: SectionId) => void
+    onNavigateMode: (mode: ViewMode) => void
     collapsed: boolean
     onToggle: () => void
     statusSalvamento: '' | 'salvando' | 'salvo' | 'erro'
@@ -118,7 +171,9 @@ interface Props {
 
 export default function AppSidebar({
     activeSection,
+    viewMode,
     onNavigate,
+    onNavigateMode,
     collapsed,
     onToggle,
     statusSalvamento,
@@ -128,6 +183,39 @@ export default function AppSidebar({
 }: Props) {
     const mainSections = NAV_SECTIONS.filter(s => s.id !== 'configuracoes')
     const configSection = NAV_SECTIONS.find(s => s.id === 'configuracoes')!
+
+    // Estado expandido: deriva do activeSection, mas pode ser toggled manualmente
+    const [expandedSections, setExpandedSections] = useState<Set<SectionId>>(
+        () => new Set(activeSection === 'planejamento' ? ['planejamento'] : [])
+    )
+
+    // Quando activeSection muda para uma seção com subitens, expande automaticamente
+    useEffect(() => {
+        if (SIDEBAR_SUBITEMS[activeSection]) {
+            setExpandedSections(prev => {
+                if (prev.has(activeSection)) return prev
+                const next = new Set(prev)
+                next.add(activeSection)
+                return next
+            })
+        }
+    }, [activeSection])
+
+    function handleSectionClick(sectionId: SectionId) {
+        const hasSubitems = !!SIDEBAR_SUBITEMS[sectionId]
+        if (hasSubitems) {
+            // Toggle expand; navega para default mode ao expandir
+            const isExpanded = expandedSections.has(sectionId)
+            if (isExpanded) {
+                setExpandedSections(prev => { const s = new Set(prev); s.delete(sectionId); return s })
+            } else {
+                setExpandedSections(prev => new Set([...prev, sectionId]))
+                onNavigate(sectionId)
+            }
+        } else {
+            onNavigate(sectionId)
+        }
+    }
 
     return (
         <aside
@@ -144,15 +232,45 @@ export default function AppSidebar({
 
             {/* ── Nav principal ── */}
             <nav className="flex-1 overflow-y-auto px-2 pt-3 pb-1 space-y-0.5">
-                {mainSections.map(section => (
-                    <SidebarNavItem
-                        key={section.id}
-                        section={section}
-                        isActive={activeSection === section.id}
-                        collapsed={collapsed}
-                        onClick={() => onNavigate(section.id)}
-                    />
-                ))}
+                {mainSections.map(section => {
+                    const subitems = !collapsed ? SIDEBAR_SUBITEMS[section.id] : undefined
+                    const hasSubitems = !!subitems
+                    const isExpanded = expandedSections.has(section.id)
+                    const isContextActive = hasSubitems && activeSection === section.id
+                    // Item pai é "diretamente ativo" apenas quando não há subitem selecionável ativo
+                    // (i.e., seções sem subitems ou modos fantasma sem entrada no SIDEBAR_SUBITEMS)
+                    const subitemModes = subitems?.map(s => s.mode) ?? []
+                    const isSubitemActive = subitemModes.includes(viewMode as ViewMode)
+                    const isDirectlyActive = activeSection === section.id && (!hasSubitems || !isSubitemActive)
+
+                    return (
+                        <div key={section.id}>
+                            <SidebarNavItem
+                                section={section}
+                                isActive={isDirectlyActive}
+                                isContextActive={isContextActive && isSubitemActive}
+                                hasSubitems={hasSubitems}
+                                isExpanded={isExpanded}
+                                collapsed={collapsed}
+                                onClick={() => handleSectionClick(section.id)}
+                            />
+
+                            {/* Subitems — apenas quando expandido e sidebar não colapsada */}
+                            {hasSubitems && isExpanded && !collapsed && (
+                                <div className="mt-0.5 mb-0.5 space-y-0.5">
+                                    {subitems!.map(sub => (
+                                        <SidebarSubItem
+                                            key={sub.mode}
+                                            label={sub.label}
+                                            isActive={viewMode === sub.mode}
+                                            onClick={() => onNavigateMode(sub.mode)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )
+                })}
             </nav>
 
             {/* ── Configurações — sempre no rodapé, separada ── */}
@@ -160,6 +278,9 @@ export default function AppSidebar({
                 <SidebarNavItem
                     section={configSection}
                     isActive={activeSection === 'configuracoes'}
+                    isContextActive={false}
+                    hasSubitems={false}
+                    isExpanded={false}
                     collapsed={collapsed}
                     onClick={() => onNavigate('configuracoes')}
                 />

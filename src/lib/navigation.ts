@@ -63,16 +63,24 @@ export function getActiveSection(viewMode: ViewMode): SectionId {
     return VIEWMODE_TO_SECTION[viewMode] ?? 'hoje'
 }
 
-// ─── TABS POR SEÇÃO ───────────────────────────────────────────────────────────
-// Seções com sub-navegação recebem um SectionTabs horizontal no topo do conteúdo.
-// Seções sem entrada aqui (hoje, configuracoes) não exibem tabs.
+// ─── SUBITENS DA SIDEBAR ──────────────────────────────────────────────────────
+// Seções com subitens na sidebar mostram hierarquia expandível dentro do AppSidebar.
+// Ao expandir, a navegação horizontal (SectionTabs) é dispensada para essa seção.
 
-export const SECTION_TABS: Partial<Record<SectionId, { label: string; mode: ViewMode }[]>> = {
+export const SIDEBAR_SUBITEMS: Partial<Record<SectionId, { label: string; mode: ViewMode }[]>> = {
     planejamento: [
         { label: 'Semana',     mode: 'visaoSemana' },
         { label: 'Banco',      mode: 'lista' },
         { label: 'Sequências', mode: 'sequencias' },
     ],
+}
+
+// ─── TABS POR SEÇÃO ───────────────────────────────────────────────────────────
+// Seções com sub-navegação recebem um SectionTabs horizontal no topo do conteúdo.
+// Seções sem entrada aqui (hoje, planejamento, configuracoes) não exibem tabs.
+// Planejamento usa SIDEBAR_SUBITEMS em vez de tabs horizontais.
+
+export const SECTION_TABS: Partial<Record<SectionId, { label: string; mode: ViewMode }[]>> = {
     turmas: [
         { label: 'Painel',    mode: 'turmas' },
         { label: 'Histórico', mode: 'historicoMusical' },

@@ -2447,10 +2447,15 @@ export default function BancoPlanos({ session }) {
                     {/* ══ AppSidebar — navegação principal (desktop) ══ */}
                     <AppSidebar
                         activeSection={activeGroupId as SectionId}
+                        viewMode={viewMode as ViewMode}
                         onNavigate={(section) => {
                             const s = NAV_SECTIONS.find(x => x.id === section)!
                             if (s.defaultMode === 'lista') { setModoEdicao(false); setPlanoEditando(null) }
                             setViewMode(s.defaultMode)
+                        }}
+                        onNavigateMode={(mode) => {
+                            if (mode === 'lista') { setModoEdicao(false); setPlanoEditando(null) }
+                            setViewMode(mode)
                         }}
                         collapsed={sidebarCollapsed}
                         onToggle={toggleSidebar}
