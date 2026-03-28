@@ -68,9 +68,9 @@ async function classificarVivenciasPlano(plano: Plano, apiKey: string): Promise<
         .map(a => `- ${a.nome}: ${(a.descricao ?? '').replace(/<[^>]*>/g, ' ').trim().slice(0, 200)}`)
         .filter(Boolean).join('\n')
 
-    const prompt = `Você é especialista em educação musical. Analise o plano de aula e classifique cada dimensão CLASP (Keith Swanwick).
+    const prompt = `Você é especialista em educação musical. Analise o plano de aula e classifique as vivências segundo o modelo C(L)A(S)P de Keith Swanwick.
 
-REGRA FUNDAMENTAL: o padrão é ZERO. Só atribua valor acima de 0 se houver evidência explícita e inequívoca no texto do plano.
+REGRA FUNDAMENTAL: o padrão é ZERO. Só atribua valor acima de 0 se houver evidência explícita e inequívoca no texto do plano. Em caso de dúvida, atribua 0.
 
 Plano: "${(plano.titulo ?? '').slice(0, 100)}"
 Objetivo: "${(plano.objetivoGeral ?? '').replace(/<[^>]*>/g, ' ').trim().slice(0, 300)}"
@@ -78,26 +78,48 @@ Atividades:
 ${atividades.slice(0, 800)}
 
 Escala:
-- 0: ausente ou meramente incidental (padrão)
-- 1: presente e planejado, mas secundário (atividade de apoio, até 30% do tempo)
-- 2: seção dedicada e estruturada (atividade principal, mais de 30% do tempo)
-- 3: objetivo central da aula (tema principal declarado)
+- 0: ausente ou incidental (padrão)
+- 1: intencional, mas atividade de apoio (até 30% da aula)
+- 2: seção estruturada e central (mais de 30% da aula)
+- 3: objetivo principal declarado da aula
 
-Dimensões — avalie com rigor:
+Dimensões — definição precisa:
 
-tecnica: Exercícios explícitos de técnica instrumental ou vocal (escalas, postura, embocadura, digitação, respiração, articulação). NÃO conta: tocar uma música como exercício genérico, aquecimento sem foco técnico declarado.
+tecnica [Habilidade Técnica / Skill Acquisition — dimensão de APOIO]:
+Desenvolvimento de competências instrumentais/vocais cujo foco é o COMO fazer, não o comunicar. Exercícios cujo propósito é a precisão técnica, não a expressão musical.
+CONTA: escalas/arpejos com foco em técnica, exercícios de embocadura/respiração/postura, leitura à primeira vista como treino procedimental, ditado rítmico com foco em precisão técnica.
+NÃO CONTA: tocar uma música completa para a turma (Performance), aquecimento genérico sem objetivo técnico declarado, canto coletivo como expressão (Performance).
 
-performance: Ensaio com intenção de apresentação, execução expressiva para colegas ou público, montagem de repertório para evento. NÃO conta: tocar uma música como treino técnico, leitura à primeira vista sem intenção performática.
+performance [Performance — dimensão CENTRAL]:
+Realização musical com INTENÇÃO COMUNICATIVA — o aluno executa para si, para a turma ou para um público. O critério central é comunicar algo musicalmente, mesmo que a peça seja simples e o público seja só a própria turma.
+CONTA: tocar/cantar uma música para a turma, apresentação em conjunto, execução de composição própria, coral, gravação de performance, roda musical coletiva.
+NÃO CONTA: exercícios técnicos sem intenção de comunicar (Habilidade), criar uma peça sem executá-la (Criação).
 
-apreciacao: Escuta ativa com análise estruturada, audição dirigida com roteiro ou perguntas específicas, comparação de interpretações. NÃO conta: colocar música de fundo, ouvir uma música rapidamente como introdução, mencionar "vamos ouvir" sem atividade de análise.
+apreciacao [Audição Ativa / Audition — dimensão CENTRAL]:
+Escuta ativa e reflexiva em que o aluno responde, analisa, compara ou julga musicalmente o que ouve. Inclui movimento como resposta expressiva à escuta. Não é exposição passiva.
+CONTA: identificar elementos musicais durante a escuta, comparar interpretações, mapa auditivo, descrever o que foi musicalmente comunicado, resposta corporal dirigida e estruturada à escuta, ditado melódico/rítmico com foco em percepção musical.
+NÃO CONTA: música como fundo sonoro enquanto fazem outra coisa, ouvir brevemente como introdução sem atividade de resposta, mencionar "vamos ouvir" sem roteiro ou pergunta.
 
-criacao: Composição, improvisação ou arranjo com processo estruturado descrito no plano. NÃO conta: "espaço livre para criação" sem descrição de processo, variar dinâmica ou interpretação como criação.
+criacao [Composição / Composition — dimensão CENTRAL]:
+Toda forma de invenção musical em que o aluno toma decisões sobre sons. Inclui composição, improvisação e arranjo. Não exige notação. O critério: o aluno está decidindo sobre o material sonoro?
+CONTA: criar uma peça com instrumentos, improvisar dentro de parâmetros definidos, arranjar uma música conhecida, inventar uma melodia sobre acordes dados, composição coletiva, criar ritmos e ostinatos originais.
+NÃO CONTA: tocar uma música já pronta (Performance), exercícios técnicos (Habilidade), "espaço livre" sem estrutura de processo criativo descrita.
 
-teoria: Ensino explícito de conceitos teórico-musicais (leitura de partitura, cifras, escalas, acordes, ritmo, harmonia, forma, história da música). NÃO conta: mencionar o nome de uma nota incidentalmente, explicar brevemente sem ser o foco da aula.
+teoria [Literatura Musical / Literature Studies — dimensão de APOIO]:
+Conhecimento declarativo SOBRE música: história, musicologia, biografia de compositores, contexto cultural e social, teoria formal (notação, escalas, harmonia) como conteúdo em si, análise estilística. É um saber "sobre", não um saber "como".
+CONTA: aula de história da música, ensinar leitura de partitura como conteúdo central, contexto histórico de uma obra como objetivo, teoria harmônica como conteúdo declarado, discutir gêneros e estilos musicais, análise de partitura com foco musicológico.
+NÃO CONTA: mencionar o nome de uma nota incidentalmente durante a execução, usar um conceito teórico como ferramenta rápida de apoio a outra atividade (ex: "esse ritmo se chama síncope" durante o ensaio).
 
-corpo: Atividade estruturada de movimento, dança ou percussão corporal como parte central e planejada. NÃO conta: bater palmas para marcar o pulso, "alunos em pé" sem propósito de movimento declarado.
+corpo [Corpo e Movimento — expressão musical corporificada]:
+Atividade em que movimento corporal, dança ou percussão corporal é planejado como forma central de expressão ou vivência musical — não como suporte para outra atividade.
+CONTA: percussão corporal como atividade de composição ou performance, dança vinculada à compreensão musical, movimento expressivo estruturado como resposta à música, coreografia musical como conteúdo central.
+NÃO CONTA: bater palmas para marcar o pulso, "alunos em pé", percussão corporal como aquecimento rápido sem propósito musical declarado, movimento incidental.
 
-Em caso de dúvida, atribua 0. Só registre presença quando a evidência for clara no texto.
+ARMADILHAS — avalie o PROPÓSITO PRINCIPAL, não a atividade em si:
+- Ditado rítmico: é Habilidade se o foco é precisão técnica; é Audição se o foco é percepção musical
+- Canto coletivo: é Performance se há intenção comunicativa; é Habilidade se é treino de afinação
+- Análise de partitura: é Literatura se foco é contexto/história; é Audição se envolve escuta reflexiva da obra
+- Uma atividade pode acionar mais de uma dimensão — avalie o propósito principal de cada uma
 
 Identifique também até 4 conceitos musicais pedagógicos centrais do plano (ex: "Pulsação", "Fraseado", "Dinâmica", "Forma ABA").
 
