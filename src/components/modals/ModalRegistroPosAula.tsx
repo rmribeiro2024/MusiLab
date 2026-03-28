@@ -893,7 +893,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                             if (!criterio) return null
                             return (
                                 <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#374151]">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#4B5563] mb-1">Critérios de sucesso</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#4B5563] mb-1">O que observarei para saber se funcionou?</p>
                                     <p className="text-[12px] text-slate-500 dark:text-[#6b7280] leading-relaxed italic" style={{ whiteSpace: 'pre-line' }}>
                                         {criterio.replace(/\s+(\d+[\).])/g, '\n$1').trim()}
                                     </p>
