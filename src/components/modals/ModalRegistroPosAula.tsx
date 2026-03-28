@@ -1267,6 +1267,11 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                     </span>
                                                     {val && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: isDark ? 'rgba(34,197,94,.12)' : '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: isDark ? '1px solid rgba(34,197,94,.25)' : '1px solid #bbf7d0' }}>✓</span>}
                                                 </div>
+                                                <div style={{ padding: '6px 12px 4px', borderBottom: `1px solid ${c.borderLight}` }}>
+                                                    <p style={{ fontSize: 12, color: isDark ? '#6b7280' : '#94a3b8', fontStyle: 'italic', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+                                                        {criterio.replace(/\s+(\d+[\).])/g, '\n$1').trim()}
+                                                    </p>
+                                                </div>
                                                 <div style={{ padding: '8px 12px', display: 'flex', gap: 6 }}>
                                                     {ops.map(op => {
                                                         const ativo = val === op.v
