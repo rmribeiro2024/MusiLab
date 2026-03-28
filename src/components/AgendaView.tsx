@@ -1175,11 +1175,13 @@ export default function AgendaView() {
           ...(!registroInline ? { position: 'absolute', top: 0, left: 0, right: 0 } : {}),
         }}
       >
-        <ModalRegistroPosAula
-          inlineMode
-          onVoltar={fecharRegistroInline}
-          onSaved={fecharRegistroInline}
-        />
+        <div className="mx-auto px-4 max-w-2xl">
+          <ModalRegistroPosAula
+            inlineMode
+            onVoltar={fecharRegistroInline}
+            onSaved={fecharRegistroInline}
+          />
+        </div>
       </div>
     </div>
   )
