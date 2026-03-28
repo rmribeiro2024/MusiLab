@@ -881,19 +881,25 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
                             Voltar
                         </button>
-                        <div className="flex items-baseline justify-between gap-3">
-                            <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
-                                Registro pós-aula
-                            </h1>
-                            <button type="button" onClick={() => setPlanejadoAberto(v => !v)}
-                                className="text-[12px] shrink-0 transition"
-                                style={{ color: planejadoAberto ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                                {planejadoAberto ? 'ocultar plano' : 'ver plano'}
-                            </button>
-                        </div>
+                        <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
+                            Registro pós-aula
+                        </h1>
                         <p className="text-sm text-slate-400 dark:text-[#4B5563] mt-0.5 truncate">
                             {planoParaRegistro.titulo}
                         </p>
+                        {(() => {
+                            const stripHtml = (s: string) => (s || '').replace(/<[^>]+>/g, '').trim()
+                            const criterio = stripHtml((planoParaRegistro as any).avaliacaoEvidencia || '')
+                            if (!criterio) return null
+                            return (
+                                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#374151]">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#4B5563] mb-1">Critérios de sucesso</p>
+                                    <p className="text-[12px] text-slate-500 dark:text-[#6b7280] leading-relaxed italic" style={{ whiteSpace: 'pre-line' }}>
+                                        {criterio.replace(/\s+(\d+[\).])/g, '\n$1').trim()}
+                                    </p>
+                                </div>
+                            )
+                        })()}
                     </div>
                 ) : (
                     // Header original — gradient + drag + min/max/fechar
@@ -930,84 +936,6 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                 {!minimizado && (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-                        {/* Painel planejado — abre via ícone no header */}
-                        {planejadoAberto && planoParaRegistro && (() => {
-                            const p = planoParaRegistro as any
-                            const stripHtml = (s: string) => (s || '').replace(/<[^>]+>/g, '').trim()
-                            const objetivo  = stripHtml(p.objetivoGeral || '') || (p.objetivosEspecificos || []).filter(Boolean).join(' ')
-                            const criterio  = stripHtml(p.avaliacaoEvidencia || '')
-                            const roteiro: any[] = p.atividadesRoteiro || []
-                            const duracao   = String(p.duracao || '').trim()
-                            const nivel     = String(p.nivel || '').trim()
-                            const tema      = String(p.tema || '').trim()
-                            const metodologia = stripHtml(p.metodologia || '')
-                            const materiais: string[] = (p.materiais || p.materiaisNecessarios || []).filter(Boolean)
-                            const fechamento = stripHtml(p.avaliacaoFechamento || '')
-                            const temConteudo = objetivo || roteiro.length > 0 || criterio || duracao || nivel || tema || metodologia || materiais.length > 0 || fechamento
-                            const label = (txt: string) => (
-                                <p style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '.07em', marginBottom: 2 }}>{txt}</p>
-                            )
-                            return (
-                                <div style={{ background: isDark ? '#1a2232' : '#f8fafc', borderBottom: `1px solid ${isDark ? '#374151' : '#e2e8f0'}`, padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, position: 'relative', maxHeight: 240, overflowY: 'auto' }}>
-                                    <button onClick={() => setPlanejadoAberto(false)} title="Fechar" style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#94a3b8', lineHeight: 1, padding: 2 }}
-                                        onMouseOver={e => (e.currentTarget.style.color = isDark ? '#E5E7EB' : '#475569')}
-                                        onMouseOut={e  => (e.currentTarget.style.color = '#94a3b8')}>✕</button>
-                                    {!temConteudo ? (
-                                        <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>
-                                            Plano sem conteúdo preenchido. Edite-o em <strong>Nova Aula</strong> para adicionar objetivo e roteiro.
-                                        </p>
-                                    ) : (
-                                        <>
-                                            {/* Linha rápida: tema */}
-                                            {tema && (
-                                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginBottom: 2 }}>
-                                                    <span style={{ fontSize: 11, color: '#64748b', background: isDark ? 'rgba(100,116,139,.12)' : '#f1f5f9', border: `1px solid ${isDark ? '#374151' : '#e2e8f0'}`, borderRadius: 5, padding: '1px 7px' }}>{tema}</span>
-                                                </div>
-                                            )}
-                                            {objetivo && (
-                                                <div>
-                                                    {label('Objetivo')}
-                                                    <p style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', lineHeight: 1.4 }}>{objetivo}</p>
-                                                </div>
-                                            )}
-                                            {roteiro.length > 0 && (
-                                                <div>
-                                                    {label('Roteiro')}
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                                        {roteiro.map((at: any, i: number) => (
-                                                            <div key={at.id ?? i} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                                                <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 700, flexShrink: 0, minWidth: 14, textAlign: 'right' as const }}>{i + 1}.</span>
-                                                                <span style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', flex: 1 }}>{at.nome || at.descricao || '—'}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {!objetivo && !roteiro.length && metodologia && (
-                                                <div>
-                                                    {label('Metodologia')}
-                                                    <p style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', lineHeight: 1.4 }}>{metodologia}</p>
-                                                </div>
-                                            )}
-                                            {criterio && (
-                                                <div>
-                                                    {label('Critérios de sucesso da aula')}
-                                                    <p style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', lineHeight: 1.6, fontStyle: 'italic', whiteSpace: 'pre-line' }}>
-                                                        {criterio.replace(/\s+(\d+[\).])/g, '\n$1').trim()}
-                                                    </p>
-                                                </div>
-                                            )}
-                                            {materiais.length > 0 && (
-                                                <div>
-                                                    {label('Materiais')}
-                                                    <p style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569' }}>{materiais.join(' · ')}</p>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            )
-                        })()}
 
                         {/* Tabs */}
 
