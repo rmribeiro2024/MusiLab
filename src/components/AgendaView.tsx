@@ -516,8 +516,8 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
         boxShadow: needsAction
           ? '0 2px 8px rgba(99,102,241,0.12), 0 0 0 1px #C7D2FE'
           : jaRegistrado
-            ? '0 0 0 1px #E2E9F3'
-            : '0 1px 3px rgba(51,65,85,0.08), 0 0 0 1px rgba(148,163,184,0.15)',
+            ? '0 0 0 1px #DDE4EF'
+            : '0 1px 4px rgba(51,65,85,0.08), 0 0 0 1px #DDE4EF',
       }}
     >
       {/* Cabeçalho — clicável */}
