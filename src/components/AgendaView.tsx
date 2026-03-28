@@ -244,10 +244,12 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, onEditar
 
       {/* Bloco clicável — expande ao clicar em qualquer lugar (exceto inputs) */}
       <div
-        className="flex-1 rounded-md overflow-hidden cursor-pointer"
-        style={isDark
-          ? { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }
-          : { background: '#EEF2F7', border: '1px solid #DDE4EF' }
+        className="flex-1 rounded-md cursor-pointer"
+        style={expandido
+          ? (isDark
+              ? { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }
+              : { background: '#EEF2F7', border: '1px solid #DDE4EF' })
+          : {}
         }
         onClick={() => setExpandido(v => !v)}
       >
@@ -570,11 +572,15 @@ function AulaCard({ slot, isDarkMode, isProxima = false }: AulaCardProps) {
           {jaRegistrado && !aberto && (
             <button
               onClick={abrirRegistro}
-              className="flex items-center gap-1 shrink-0"
-              style={{ color: isDarkMode ? '#6B7280' : '#94a3b8' }}
+              className="flex items-center justify-center w-6 h-5 rounded shrink-0 transition-colors"
+              style={{ color: isDarkMode ? '#4B5563' : '#B0BDD0' }}
+              title="Editar registro pós-aula"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70" />
-              <span className="text-[10px] font-medium">Ver reflexão</span>
+              <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
+                <circle cx="3" cy="8" r="1.5"/>
+                <circle cx="8" cy="8" r="1.5"/>
+                <circle cx="13" cy="8" r="1.5"/>
+              </svg>
             </button>
           )}
           <svg
