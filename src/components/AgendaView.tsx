@@ -1089,16 +1089,26 @@ interface WeekStatsData {
   planosSemanaCriados: number
   musicasTrabalhadas: number
   musicasAdicionadas: number
-  vivencias: Record<string, number>   // CLASP agregado da semana (0-3 por dimensão)
+  vivencias: Record<string, number>    // CLASP agregado da semana (0-3 por dimensão)
+  orffFreq: Record<string, number>     // Orff — frequência 0.0-1.0 (proporção de planos com cada meio)
+  orffTotal: number                    // total de planos com orffMeios na semana (denominador)
 }
 
+// CLASP — 5 dimensões puras de Swanwick (corpo removido — pertence ao Orff)
 const CLASP_DIMS: { key: string; label: string; color: string }[] = [
   { key: 'tecnica',     label: 'Técnica',           color: '#f472b6' },
   { key: 'performance', label: 'Performance',        color: '#fb923c' },
   { key: 'apreciacao',  label: 'Apreciação',         color: '#34d399' },
   { key: 'criacao',     label: 'Criação',            color: '#a78bfa' },
   { key: 'teoria',      label: 'Teoria e história',  color: '#60a5fa' },
-  { key: 'corpo',       label: 'Corpo e movimento',  color: '#fbbf24' },
+]
+
+// Orff — 4 meios expressivos
+const ORFF_MEIOS: { key: string; label: string; color: string }[] = [
+  { key: 'fala',         label: 'Fala',         color: '#e879f9' },
+  { key: 'canto',        label: 'Canto',        color: '#34d399' },
+  { key: 'movimento',    label: 'Movimento',    color: '#fbbf24' },
+  { key: 'instrumental', label: 'Instrumental', color: '#60a5fa' },
 ]
 
 interface WeekendModeProps {
@@ -1226,6 +1236,44 @@ function WeekendMode({
           </div>
         )
       })()}
+
+      {/* Meios da semana (Orff) */}
+      {weekStats.orffTotal > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: cDimmer, marginBottom: 10, paddingLeft: 2 }}>
+            Como as aulas aconteceram
+          </div>
+          <div style={{ background: cCard, borderRadius: 12, border: `1px solid ${cBorder}`, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 12px', background: cBody }}>
+              {ORFF_MEIOS.map((meio, i) => {
+                const freq = weekStats.orffFreq[meio.key] ?? 0
+                const contagem = Math.round(freq * weekStats.orffTotal)
+                return (
+                  <div key={meio.key} style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '5px 0',
+                    borderBottom: i < ORFF_MEIOS.length - 1 ? `1px solid ${cRow}` : 'none',
+                  }}>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: cSub, flex: 1 }}>{meio.label}</span>
+                    {freq > 0 ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 48, height: 4, borderRadius: 99, background: dk ? '#1E293B' : '#E2E8F0', overflow: 'hidden' }}>
+                          <div style={{ width: `${Math.round(freq * 100)}%`, height: '100%', borderRadius: 99, background: meio.color }} />
+                        </div>
+                        <span style={{ fontSize: 10, color: cDim, minWidth: 28, textAlign: 'right' }}>
+                          {contagem}/{weekStats.orffTotal}
+                        </span>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: 11, color: cDimmer }}>—</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* O que pede atenção */}
       {atencaoItems.length > 0 && (
@@ -1450,18 +1498,44 @@ export default function AgendaView() {
       return d >= w0 && d <= w4
     }).length
 
-    // Aggregate CLASP vivências from plans applied this week
+    // Aggregate CLASP vivências from plans applied this week (corpo excluído — pertence ao Orff)
     const vivencias: Record<string, number> = {}
     aplicacoes.forEach(ap => {
       if (ap.data >= w0 && ap.data <= w4) {
         const pl = planos.find(p => String(p.id) === String(ap.planoId))
         if (pl?.vivenciasClassificadas) {
           Object.entries(pl.vivenciasClassificadas).forEach(([key, val]) => {
+            if (key === 'corpo') return // migrado para orffMeios.movimento
             vivencias[key] = Math.min(3, (vivencias[key] ?? 0) + val)
           })
         }
       }
     })
+
+    // Aggregate Orff meios — frequência por proporção de planos (0.0–1.0)
+    // Migração: corpo legado em vivenciasClassificadas → movimento em orffMeios
+    const orffCounts: Record<string, number> = { fala: 0, canto: 0, movimento: 0, instrumental: 0 }
+    const planosComOrff = new Set<string>()
+    aplicacoes.forEach(ap => {
+      if (ap.data < w0 || ap.data > w4) return
+      const pl = planos.find(p => String(p.id) === String(ap.planoId))
+      if (!pl) return
+      const meios = pl.orffMeios ?? {}
+      // migração: corpo legado como movimento
+      const movimentoLegado = !pl.orffMeios && (pl.vivenciasClassificadas?.corpo ?? 0) > 0
+      const temAlgumMeio = meios.fala || meios.canto || meios.movimento || meios.instrumental || movimentoLegado
+      if (!temAlgumMeio) return
+      planosComOrff.add(String(pl.id))
+      if (meios.fala)         orffCounts.fala++
+      if (meios.canto)        orffCounts.canto++
+      if (meios.movimento || movimentoLegado) orffCounts.movimento++
+      if (meios.instrumental) orffCounts.instrumental++
+    })
+    const orffTotal = planosComOrff.size
+    const orffFreq: Record<string, number> = {}
+    if (orffTotal > 0) {
+      Object.keys(orffCounts).forEach(k => { orffFreq[k] = orffCounts[k] / orffTotal })
+    }
 
     return {
       aulasRealizadas: allWeekSlots.length,
@@ -1469,6 +1543,8 @@ export default function AgendaView() {
       musicasTrabalhadas: musicasTrabalhadasIds.size,
       musicasAdicionadas,
       vivencias,
+      orffFreq,
+      orffTotal,
     }
   }, [allWeekSlots, planejamentos, aplicacoes, planos, repertorio, weekDayStrs])
 

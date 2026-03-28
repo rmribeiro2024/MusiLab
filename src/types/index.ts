@@ -195,7 +195,8 @@ export interface Plano {
   nivelMusical?: string                  // F2.5: nível musical da turma (Iniciante, Intermediário, Avançado, Misto)
   contextoAulaAnterior?: string          // Aula por Turma: contexto gerado/editado no modo Adaptar
   avaliacao?: string                     // legado simplificado
-  vivenciasClassificadas?: Record<string, number>  // CLASP: { tecnica, performance, apreciacao, criacao, teoria, corpo } → intensidade 0-3
+  vivenciasClassificadas?: Record<string, number>  // CLASP: { tecnica, performance, apreciacao, criacao, teoria } → intensidade 0-3
+  orffMeios?: Record<string, boolean>              // Orff — meios expressivos: { fala, canto, movimento, instrumental }
 }
 
 // ─── VÍNCULO MÚSICA ↔ PLANO ──────────────────────────────────

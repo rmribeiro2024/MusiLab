@@ -56,10 +56,11 @@ import { detectarMusicasNoPlano } from '../lib/detectarMusicas'
 
 import { agruparPorCategoria } from '../lib/taxonomia'
 
-// ── Classificação de Vivências Musicais (CLASP) via Gemini ───────────────────
+// ── Classificação CLASP + Orff via Gemini ────────────────────────────────────
 
 interface ClasseVivenciasResult {
-    vivencias: Record<string, number>
+    vivencias: Record<string, number>   // CLASP — intensidade 0-3
+    meiosOrff: Record<string, boolean>  // Orff — presença true/false
     conceitos: string[]
 }
 
@@ -110,38 +111,59 @@ Conhecimento declarativo SOBRE música: história, musicologia, biografia de com
 CONTA: aula de história da música, ensinar leitura de partitura como conteúdo central, contexto histórico de uma obra como objetivo, teoria harmônica como conteúdo declarado, discutir gêneros e estilos musicais, análise de partitura com foco musicológico.
 NÃO CONTA: mencionar o nome de uma nota incidentalmente durante a execução, usar um conceito teórico como ferramenta rápida de apoio a outra atividade (ex: "esse ritmo se chama síncope" durante o ensaio).
 
-corpo [Corpo e Movimento — expressão musical corporificada]:
-Atividade em que movimento corporal, dança ou percussão corporal é planejado como forma central de expressão ou vivência musical — não como suporte para outra atividade.
-CONTA: percussão corporal como atividade de composição ou performance, dança vinculada à compreensão musical, movimento expressivo estruturado como resposta à música, coreografia musical como conteúdo central.
-NÃO CONTA: bater palmas para marcar o pulso, "alunos em pé", percussão corporal como aquecimento rápido sem propósito musical declarado, movimento incidental.
-
 ARMADILHAS — avalie o PROPÓSITO PRINCIPAL, não a atividade em si:
 - Ditado rítmico: é Habilidade se o foco é precisão técnica; é Audição se o foco é percepção musical
 - Canto coletivo: é Performance se há intenção comunicativa; é Habilidade se é treino de afinação
 - Análise de partitura: é Literatura se foco é contexto/história; é Audição se envolve escuta reflexiva da obra
 - Uma atividade pode acionar mais de uma dimensão — avalie o propósito principal de cada uma
 
+──────────────────────────────────────────────
+EIXO 2 — MEIOS EXPRESSIVOS (Orff-Schulwerk)
+Responde: "por quais linguagens esta aula acontece?"
+Escala: true (meio presente e intencional) / false (ausente ou meramente incidental)
+
+fala: Fala rítmica, parlenda, recitação rítmica, poesia falada, cantiga falada, texto com ritmo.
+CONTA: parlenda estruturada, recitação coletiva rítmica, trabalho com texto como material musical.
+NÃO CONTA: professor falando para a turma, instrução verbal, leitura de enunciado.
+
+canto: Voz usada como instrumento — canto melódico, coral, canção, vocalização intencional.
+CONTA: cantar uma música, vocalize, cânone vocal, canção folclórica, melodia cantada.
+NÃO CONTA: falar em voz alta, recitar ritmicamente sem melodia (isso é fala).
+
+movimento: Movimento corporal, dança ou percussão corporal como meio expressivo musical intencional.
+CONTA: percussão corporal (palmas, patschen, stamping) como atividade musical, dança, movimento expressivo estruturado, coreografia.
+NÃO CONTA: bater palmas apenas para marcar pulso como suporte, "alunos em pé" sem propósito de movimento.
+
+instrumental: Uso de qualquer instrumento musical — percussão, melódico, harmônico.
+CONTA: xilofone, flauta, violão, percussão simples, instrumentos de lâminas, qualquer instrumento tocado.
+NÃO CONTA: instrumentos apenas mencionados no contexto teórico sem serem tocados.
+
+──────────────────────────────────────────────
 Identifique também até 4 conceitos musicais pedagógicos centrais do plano (ex: "Pulsação", "Fraseado", "Dinâmica", "Forma ABA").
 
 Responda SOMENTE com JSON válido (sem texto extra):
-{"vivencias":{"tecnica":0,"performance":0,"apreciacao":0,"criacao":0,"teoria":0,"corpo":0},"conceitos":["conceito1"]}`
+{"clasp":{"tecnica":0,"performance":0,"apreciacao":0,"criacao":0,"teoria":0},"orff":{"fala":false,"canto":false,"movimento":false,"instrumental":false},"conceitos":["conceito1"]}`
     try {
         const res = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
             { method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
         )
-        if (!res.ok) return { vivencias: {}, conceitos: [] }
+        if (!res.ok) return { vivencias: {}, meiosOrff: {}, conceitos: [] }
         const json = await res.json()
         const raw: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
         const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || raw.match(/(\{[\s\S]*\})/)
-        if (!match) return { vivencias: {}, conceitos: [] }
+        if (!match) return { vivencias: {}, meiosOrff: {}, conceitos: [] }
         const result = JSON.parse(match[1] || match[0])
+        // Suporte ao formato antigo (vivencias raiz) para retrocompatibilidade
+        const vivencias = result.clasp ?? result.vivencias ?? {}
+        const meiosOrff = result.orff ?? {}
         return {
-            vivencias: result.vivencias ?? {},
+            vivencias,
+            meiosOrff,
             conceitos: Array.isArray(result.conceitos) ? result.conceitos.slice(0, 4) : [],
         }
-    } catch { return { vivencias: {}, conceitos: [] } }
+    } catch { return { vivencias: {}, meiosOrff: {}, conceitos: [] } }
 }
 
 // ── Detecção de conceitos via Gemini (chamada avulsa, sem estado React) ───────
@@ -290,26 +312,32 @@ function ModalConceitosPlano({ conceitos, onConfirmar, onFechar }: ModalConceito
     )
 }
 
-// ── Card unificado: vivências CLASP + conceitos após salvar plano ─────────────
+// ── Card unificado: CLASP + Orff + conceitos após salvar plano ───────────────
 interface ClasseNotifCardProps {
-    notif: { planoId: string; titulo: string; vivencias: Record<string, number>; conceitos: string[] }
+    notif: { planoId: string; titulo: string; vivencias: Record<string, number>; meiosOrff: Record<string, boolean>; conceitos: string[] }
     onFechar: () => void
     onAplicar: (conceitos: string[]) => void
 }
 function ClasseNotifCard({ notif, onFechar, onAplicar }: ClasseNotifCardProps) {
     const [draft, setDraft] = React.useState<string[]>(notif.conceitos)
-    const CLASP: Record<string, { label: string; dot: string; text: string; bg: string; border: string }> = {
+    const CLASP_MAP: Record<string, { label: string; dot: string; text: string; bg: string; border: string }> = {
         tecnica:     { label: 'Técnica',           dot: '#f472b6', text: '#f9a8d4', bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.2)' },
         performance: { label: 'Performance',       dot: '#fb923c', text: '#fdba74', bg: 'rgba(251,146,60,0.1)',  border: 'rgba(251,146,60,0.2)'  },
         apreciacao:  { label: 'Apreciação',        dot: '#34d399', text: '#6ee7b7', bg: 'rgba(52,211,153,0.1)',  border: 'rgba(52,211,153,0.2)'  },
         criacao:     { label: 'Criação',           dot: '#a78bfa', text: '#c4b5fd', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.2)' },
         teoria:      { label: 'Teoria e história', dot: '#60a5fa', text: '#93c5fd', bg: 'rgba(96,165,250,0.1)',  border: 'rgba(96,165,250,0.2)'  },
-        corpo:       { label: 'Corpo e movimento', dot: '#fbbf24', text: '#fcd34d', bg: 'rgba(251,191,36,0.1)',  border: 'rgba(251,191,36,0.2)'  },
     }
-    const ativas = Object.entries(notif.vivencias)
-        .filter(([, v]) => v > 0)
+    const ORFF_MAP: Record<string, { label: string; cor: string }> = {
+        fala:         { label: 'Fala',         cor: '#e879f9' },
+        canto:        { label: 'Canto',        cor: '#34d399' },
+        movimento:    { label: 'Movimento',    cor: '#fbbf24' },
+        instrumental: { label: 'Instrumental', cor: '#60a5fa' },
+    }
+    const ativasClasp = Object.entries(notif.vivencias)
+        .filter(([k, v]) => v > 0 && k !== 'corpo')
         .sort(([, a], [, b]) => b - a)
-    if (ativas.length === 0) return null
+    const meiosPresentes = Object.entries(notif.meiosOrff ?? {}).filter(([, v]) => v === true)
+    if (ativasClasp.length === 0 && meiosPresentes.length === 0) return null
     return (
         <div className="fixed bottom-4 right-4 z-50 shadow-2xl w-[300px] bg-white dark:bg-[#1F2937] border border-slate-200 dark:border-[#374151] rounded-2xl overflow-hidden">
             {/* Header */}
@@ -327,30 +355,52 @@ function ClasseNotifCard({ notif, onFechar, onAplicar }: ClasseNotifCardProps) {
                     ×
                 </button>
             </div>
-            {/* Vivências identificadas */}
-            <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-[#374151]">
-                <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#4B5563] mb-2">
-                    Vivências identificadas
+            {/* CLASP — vivências */}
+            {ativasClasp.length > 0 && (
+                <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-[#374151]">
+                    <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#4B5563] mb-2">
+                        Vivências
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                        {ativasClasp.map(([key]) => {
+                            const c = CLASP_MAP[key]
+                            if (!c) return null
+                            return (
+                                <div key={key} className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full"
+                                    style={{ color: c.text, background: c.bg, border: `1px solid ${c.border}` }}>
+                                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: c.dot }} />
+                                    {c.label}
+                                </div>
+                            )
+                        })}
+                    </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                    {ativas.map(([key]) => {
-                        const c = CLASP[key]
-                        if (!c) return null
-                        return (
-                            <div key={key} className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full"
-                                style={{ color: c.text, background: c.bg, border: `1px solid ${c.border}` }}>
-                                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: c.dot }} />
-                                {c.label}
-                            </div>
-                        )
-                    })}
+            )}
+            {/* Orff — meios expressivos */}
+            {meiosPresentes.length > 0 && (
+                <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-[#374151]">
+                    <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#4B5563] mb-2">
+                        Meios
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                        {meiosPresentes.map(([key]) => {
+                            const m = ORFF_MAP[key]
+                            if (!m) return null
+                            return (
+                                <div key={key} className="text-[11px] px-2.5 py-1 rounded-full font-medium"
+                                    style={{ color: m.cor, background: `${m.cor}18`, border: `1px solid ${m.cor}33` }}>
+                                    {m.label}
+                                </div>
+                            )
+                        })}
+                    </div>
                 </div>
-            </div>
-            {/* Conceitos musicais com × para remover */}
+            )}
+            {/* Conceitos com × para remover */}
             {draft.length > 0 && (
                 <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-[#374151]">
                     <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#4B5563] mb-2">
-                        Conceitos identificados
+                        Conceitos
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                         {draft.map((c, i) => (
@@ -631,19 +681,21 @@ export default function TelaPrincipal() {
                     .finally(() => setDetectandoConceitos(false))
             }
         }
-        // Fluxo 5: classificar vivências CLASP → notificação após salvar
+        // Fluxo 5: classificar CLASP + Orff → notificação unificada após salvar
         if (apiKey && planoEditando && planoId) {
             const snapId     = String(planoId)
             const snapTitulo = planoEditando.titulo
             const snapPlano  = { ...planoEditando }
             classificarVivenciasPlano(snapPlano, apiKey)
-                .then(({ vivencias, conceitos }) => {
+                .then(({ vivencias, meiosOrff, conceitos }) => {
                     const temDados = Object.values(vivencias).some(v => v > 0)
                     if (!temDados) return
                     setPlanos(prev => prev.map(p =>
-                        String(p.id) === snapId ? { ...p, vivenciasClassificadas: vivencias } : p
+                        String(p.id) === snapId
+                            ? { ...p, vivenciasClassificadas: vivencias, orffMeios: meiosOrff }
+                            : p
                     ))
-                    setClasseNotif({ planoId: snapId, titulo: snapTitulo, vivencias, conceitos })
+                    setClasseNotif({ planoId: snapId, titulo: snapTitulo, vivencias, meiosOrff, conceitos })
                 })
                 .catch(() => {/* silencioso */})
         }
@@ -653,11 +705,12 @@ export default function TelaPrincipal() {
     const [modalConceitosPlano, setModalConceitosPlano] = useState<{ planoId: string; conceitos: string[] } | null>(null)
     const [detectandoConceitos, setDetectandoConceitos] = useState(false)
 
-    // ── Notificação de vivências CLASP após salvar ──
+    // ── Notificação CLASP + Orff após salvar ──
     const [classeNotif, setClasseNotif] = useState<{
         planoId: string
         titulo: string
         vivencias: Record<string, number>
+        meiosOrff: Record<string, boolean>
         conceitos: string[]
     } | null>(null)
 
