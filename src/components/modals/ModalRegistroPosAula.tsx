@@ -1489,22 +1489,20 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                         </div>
                                                         {aberto && (
                                                             <div style={{ padding: '4px 12px 12px' }}>
-                                                                <div style={{ display: 'flex', gap: 6 }}>
+                                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                                                     {LABELS.map((label, i) => {
                                                                         const n = i + 1
                                                                         const ativo = val === n
                                                                         return (
                                                                             <button key={n} type="button" onClick={() => setVal(n)}
                                                                                 style={{
-                                                                                    flex: 1, padding: '10px 6px', borderRadius: 8, cursor: 'pointer',
-                                                                                    transition: 'all .15s', fontSize: 12, fontWeight: 700,
+                                                                                    padding: '5px 13px', borderRadius: 20, cursor: 'pointer',
+                                                                                    transition: 'all .15s', fontSize: 12, fontWeight: ativo ? 600 : 400,
                                                                                     background: ativo ? '#4f46e5' : c.inputBg,
-                                                                                    color: ativo ? '#fff' : c.textMuted,
-                                                                                    border: `2px solid ${ativo ? '#6366f1' : c.border}`,
+                                                                                    color: ativo ? '#fff' : c.textMed,
+                                                                                    border: `1px solid ${ativo ? '#6366f1' : c.border}`,
                                                                                     outline: 'none',
-                                                                                }}
-                                                                                onMouseEnter={e => { if (!ativo) { (e.currentTarget as HTMLButtonElement).style.borderColor = '#94a3b8'; (e.currentTarget as HTMLButtonElement).style.color = c.textMed } }}
-                                                                                onMouseLeave={e => { if (!ativo) { (e.currentTarget as HTMLButtonElement).style.borderColor = c.border; (e.currentTarget as HTMLButtonElement).style.color = c.textMuted } }}>
+                                                                                }}>
                                                                                 {label}
                                                                             </button>
                                                                         )
@@ -1583,7 +1581,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                                 return (
                                                                     <button key={op} type="button"
                                                                         onClick={() => setNovoRegistro({ ...novoRegistro, contextoAula: ativo ? '' : op } as any)}
-                                                                        style={{ fontSize: 12, padding: '5px 10px', borderRadius: 20, border: '1px solid', cursor: 'pointer', transition: 'all .15s',
+                                                                        style={{ fontSize: 12, padding: '5px 13px', borderRadius: 20, border: '1px solid', cursor: 'pointer', transition: 'all .15s',
                                                                             background: ativo ? '#4f46e5' : c.inputBg,
                                                                             borderColor: ativo ? '#6366f1' : c.border,
                                                                             color: ativo ? '#fff' : c.textMed,
