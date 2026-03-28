@@ -881,9 +881,16 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
                             Voltar
                         </button>
-                        <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
-                            Registro pós-aula
-                        </h1>
+                        <div className="flex items-baseline justify-between gap-3">
+                            <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
+                                Registro pós-aula
+                            </h1>
+                            <button type="button" onClick={() => setPlanejadoAberto(v => !v)}
+                                className="text-[12px] shrink-0 transition"
+                                style={{ color: planejadoAberto ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                                {planejadoAberto ? 'ocultar plano' : 'ver plano'}
+                            </button>
+                        </div>
                         <p className="text-sm text-slate-400 dark:text-[#4B5563] mt-0.5 truncate">
                             {planoParaRegistro.titulo}
                         </p>
