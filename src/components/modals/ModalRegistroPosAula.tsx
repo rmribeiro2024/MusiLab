@@ -1496,7 +1496,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                                         return (
                                                                             <button key={n} type="button" onClick={() => setVal(n)}
                                                                                 style={{
-                                                                                    padding: '5px 13px', borderRadius: 20, cursor: 'pointer',
+                                                                                    flex: 1, padding: '6px 4px', borderRadius: 20, cursor: 'pointer',
                                                                                     transition: 'all .15s', fontSize: 12, fontWeight: ativo ? 600 : 400,
                                                                                     background: ativo ? '#4f46e5' : c.inputBg,
                                                                                     color: ativo ? '#fff' : c.textMed,
@@ -1581,7 +1581,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                                 return (
                                                                     <button key={op} type="button"
                                                                         onClick={() => setNovoRegistro({ ...novoRegistro, contextoAula: ativo ? '' : op } as any)}
-                                                                        style={{ fontSize: 12, padding: '5px 13px', borderRadius: 20, border: '1px solid', cursor: 'pointer', transition: 'all .15s',
+                                                                        style={{ flex: 1, fontSize: 12, padding: '6px 4px', borderRadius: 20, border: '1px solid', cursor: 'pointer', transition: 'all .15s',
                                                                             background: ativo ? '#4f46e5' : c.inputBg,
                                                                             borderColor: ativo ? '#6366f1' : c.border,
                                                                             color: ativo ? '#fff' : c.textMed,
