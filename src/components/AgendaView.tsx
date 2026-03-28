@@ -1241,7 +1241,7 @@ function WeekendMode({
       {weekStats.orffTotal > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: cDimmer, marginBottom: 10, paddingLeft: 2 }}>
-            Como as aulas aconteceram
+            Meios expressivos
           </div>
           <div style={{ background: cCard, borderRadius: 12, border: `1px solid ${cBorder}`, overflow: 'hidden' }}>
             <div style={{ padding: '10px 12px', background: cBody }}>
@@ -1498,40 +1498,62 @@ export default function AgendaView() {
       return d >= w0 && d <= w4
     }).length
 
-    // Aggregate CLASP vivências from plans applied this week (corpo excluído — pertence ao Orff)
+    // Aggregate CLASP vivências — aplicacoes (banco) + planejamentos (Nova Aula)
+    // corpo excluído — pertence ao Orff (orffMeios.movimento)
     const vivencias: Record<string, number> = {}
     aplicacoes.forEach(ap => {
       if (ap.data >= w0 && ap.data <= w4) {
         const pl = planos.find(p => String(p.id) === String(ap.planoId))
         if (pl?.vivenciasClassificadas) {
           Object.entries(pl.vivenciasClassificadas).forEach(([key, val]) => {
-            if (key === 'corpo') return // migrado para orffMeios.movimento
+            if (key === 'corpo') return
             vivencias[key] = Math.min(3, (vivencias[key] ?? 0) + val)
           })
         }
       }
     })
+    planejamentos.forEach(pt => {
+      const d = pt.dataPrevista ?? ''
+      if (d >= w0 && d <= w4 && pt.planoData?.vivenciasClassificadas) {
+        Object.entries(pt.planoData.vivenciasClassificadas).forEach(([key, val]) => {
+          if (key === 'corpo') return
+          vivencias[key] = Math.min(3, (vivencias[key] ?? 0) + val)
+        })
+      }
+    })
 
-    // Aggregate Orff meios — frequência por proporção de planos (0.0–1.0)
-    // Migração: corpo legado em vivenciasClassificadas → movimento em orffMeios
+    // Aggregate Orff meios — frequência por aula (não por plano único)
+    // Conta cada aplicacao/planejamento como 1 instância para evitar ratio > 1 com planos reutilizados
+    // Migração: corpo legado em vivenciasClassificadas → movimento
     const orffCounts: Record<string, number> = { fala: 0, canto: 0, movimento: 0, instrumental: 0 }
-    const planosComOrff = new Set<string>()
+    let orffTotal = 0
     aplicacoes.forEach(ap => {
       if (ap.data < w0 || ap.data > w4) return
       const pl = planos.find(p => String(p.id) === String(ap.planoId))
       if (!pl) return
       const meios = pl.orffMeios ?? {}
-      // migração: corpo legado como movimento
       const movimentoLegado = !pl.orffMeios && (pl.vivenciasClassificadas?.corpo ?? 0) > 0
-      const temAlgumMeio = meios.fala || meios.canto || meios.movimento || meios.instrumental || movimentoLegado
-      if (!temAlgumMeio) return
-      planosComOrff.add(String(pl.id))
+      if (!meios.fala && !meios.canto && !meios.movimento && !meios.instrumental && !movimentoLegado) return
+      orffTotal++
       if (meios.fala)         orffCounts.fala++
       if (meios.canto)        orffCounts.canto++
       if (meios.movimento || movimentoLegado) orffCounts.movimento++
       if (meios.instrumental) orffCounts.instrumental++
     })
-    const orffTotal = planosComOrff.size
+    planejamentos.forEach(pt => {
+      const d = pt.dataPrevista ?? ''
+      if (d < w0 || d > w4) return
+      const pd = pt.planoData
+      if (!pd) return
+      const meios = pd.orffMeios ?? {}
+      const movimentoLegado = !pd.orffMeios && (pd.vivenciasClassificadas?.corpo ?? 0) > 0
+      if (!meios.fala && !meios.canto && !meios.movimento && !meios.instrumental && !movimentoLegado) return
+      orffTotal++
+      if (meios.fala)         orffCounts.fala++
+      if (meios.canto)        orffCounts.canto++
+      if (meios.movimento || movimentoLegado) orffCounts.movimento++
+      if (meios.instrumental) orffCounts.instrumental++
+    })
     const orffFreq: Record<string, number> = {}
     if (orffTotal > 0) {
       Object.keys(orffCounts).forEach(k => { orffFreq[k] = orffCounts[k] / orffTotal })

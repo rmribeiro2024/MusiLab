@@ -204,15 +204,18 @@ export default function AppSidebar({
     function handleSectionClick(sectionId: SectionId) {
         const hasSubitems = !!SIDEBAR_SUBITEMS[sectionId]
         if (hasSubitems) {
-            // Toggle expand; navega para default mode ao expandir
             const isExpanded = expandedSections.has(sectionId)
             if (isExpanded) {
+                // Recolhe
                 setExpandedSections(prev => { const s = new Set(prev); s.delete(sectionId); return s })
             } else {
-                setExpandedSections(prev => new Set([...prev, sectionId]))
+                // Accordion: abre só esta, fecha todas as outras
+                setExpandedSections(new Set([sectionId]))
                 onNavigate(sectionId)
             }
         } else {
+            // Seção sem subitens: fecha tudo e navega
+            setExpandedSections(new Set())
             onNavigate(sectionId)
         }
     }
