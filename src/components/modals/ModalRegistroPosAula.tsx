@@ -951,12 +951,10 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                         </p>
                                     ) : (
                                         <>
-                                            {/* Linha rápida: duracao + nivel + tema */}
-                                            {(duracao || nivel || tema) && (
+                                            {/* Linha rápida: tema */}
+                                            {tema && (
                                                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginBottom: 2 }}>
-                                                    {duracao && <span style={{ fontSize: 11, color: '#6366f1', background: isDark ? 'rgba(99,102,241,.15)' : '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 5, padding: '1px 7px', fontWeight: 600 }}>{duracao}</span>}
-                                                    {nivel && <span style={{ fontSize: 11, color: '#64748b', background: isDark ? 'rgba(100,116,139,.12)' : '#f1f5f9', border: `1px solid ${isDark ? '#374151' : '#e2e8f0'}`, borderRadius: 5, padding: '1px 7px' }}>{nivel}</span>}
-                                                    {tema && <span style={{ fontSize: 11, color: '#64748b', background: isDark ? 'rgba(100,116,139,.12)' : '#f1f5f9', border: `1px solid ${isDark ? '#374151' : '#e2e8f0'}`, borderRadius: 5, padding: '1px 7px' }}>{tema}</span>}
+                                                    <span style={{ fontSize: 11, color: '#64748b', background: isDark ? 'rgba(100,116,139,.12)' : '#f1f5f9', border: `1px solid ${isDark ? '#374151' : '#e2e8f0'}`, borderRadius: 5, padding: '1px 7px' }}>{tema}</span>
                                                 </div>
                                             )}
                                             {objetivo && (
@@ -973,7 +971,6 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                             <div key={at.id ?? i} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                                                                 <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 700, flexShrink: 0, minWidth: 14, textAlign: 'right' as const }}>{i + 1}.</span>
                                                                 <span style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', flex: 1 }}>{at.nome || at.descricao || '—'}</span>
-                                                                {at.duracao ? <span style={{ fontSize: 10, color: '#94a3b8', flexShrink: 0 }}>{String(at.duracao).replace(/min$/i, '')}min</span> : null}
                                                             </div>
                                                         ))}
                                                     </div>
@@ -987,14 +984,8 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                             )}
                                             {criterio && (
                                                 <div>
-                                                    {label('Critério de sucesso')}
+                                                    {label('Critérios de sucesso da aula')}
                                                     <p style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', lineHeight: 1.4, fontStyle: 'italic' }}>{criterio}</p>
-                                                </div>
-                                            )}
-                                            {fechamento && (
-                                                <div>
-                                                    {label('Fechamento')}
-                                                    <p style={{ fontSize: 12, color: isDark ? '#D1D5DB' : '#475569', lineHeight: 1.4 }}>{fechamento}</p>
                                                 </div>
                                             )}
                                             {materiais.length > 0 && (
@@ -1017,15 +1008,6 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                             {/* ════════════════════════════════
                                 NOVO REGISTRO
                                 ════════════════════════════════ */}
-                            {/* Ver plano — discreto, canto superior direito, só em inlineMode */}
-                            {inlineMode && !verRegistros && planoParaRegistro && (
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: -4 }}>
-                                    <button type="button" onClick={() => setPlanejadoAberto(v => !v)}
-                                        style={{ fontSize: 11, color: planejadoAberto ? '#6366f1' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1 }}>
-                                        ver plano
-                                    </button>
-                                </div>
-                            )}
 
                             {!verRegistros ? (
                                 <>
