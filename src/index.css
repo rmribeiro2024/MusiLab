@@ -168,8 +168,9 @@ input, textarea, select {
 [data-tip]::after {
     content: attr(data-tip);
     position: absolute;
-    bottom: calc(100% + 5px);
-    right: 0;
+    top: 50%;
+    right: calc(100% + 6px);
+    transform: translateY(-50%);
     background: #1E2A4A;
     color: #fff;
     font-size: 11px;
