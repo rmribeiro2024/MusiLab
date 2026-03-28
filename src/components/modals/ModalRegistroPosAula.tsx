@@ -271,9 +271,9 @@ const BehaviorChip = React.forwardRef<() => void, {
         padding: '8px 13px', borderRadius: 20, fontSize: 13,
         cursor: 'pointer', transition: 'all .12s', fontFamily: 'inherit',
         whiteSpace: 'nowrap' as const, lineHeight: 1.2,
-        background: sel ? (isDark ? '#4f46e5' : '#1e2a4a') : cb.cardBgSolid,
+        background: sel ? '#4f46e5' : cb.cardBgSolid,
         color:      sel ? '#fff' : cb.textMed,
-        border:     sel ? `1.5px solid ${isDark ? '#4f46e5' : '#1e2a4a'}` : `1.5px solid ${cb.border}`,
+        border:     sel ? '1.5px solid #6366f1' : `1.5px solid ${cb.border}`,
         fontWeight: sel ? 700 : 500,
         outline: 'none',
         WebkitTapHighlightColor: 'transparent',
@@ -2054,7 +2054,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                         const fim2 = (() => { const s = new Date(seg2 + 'T00:00:00'); s.setDate(s.getDate() + 6); return s.toISOString().split('T')[0] })()
                                         const periodoPillStyle = (ativo: boolean): React.CSSProperties => ({
                                             padding: '4px 10px', borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                                            background: ativo ? (isDark ? '#475569' : '#1e293b') : c.cardBgAlt,
+                                            background: ativo ? '#4f46e5' : c.cardBgAlt,
                                             color: ativo ? '#fff' : c.textMed,
                                             border: 'none',
                                         })
