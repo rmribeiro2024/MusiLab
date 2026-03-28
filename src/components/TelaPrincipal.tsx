@@ -56,6 +56,63 @@ import { detectarMusicasNoPlano } from '../lib/detectarMusicas'
 
 import { agruparPorCategoria } from '../lib/taxonomia'
 
+// ── Classificação de Vivências Musicais (CLASP) via Gemini ───────────────────
+
+interface ClasseVivenciasResult {
+    vivencias: Record<string, number>
+    conceitos: string[]
+}
+
+async function classificarVivenciasPlano(plano: Plano, apiKey: string): Promise<ClasseVivenciasResult> {
+    const atividades = (plano.atividadesRoteiro ?? [])
+        .map(a => `- ${a.nome}: ${(a.descricao ?? '').replace(/<[^>]*>/g, ' ').trim().slice(0, 200)}`)
+        .filter(Boolean).join('\n')
+
+    const prompt = `Você é especialista em pedagogia musical (CLASP - Keith Swanwick).
+Analise o plano de aula e classifique a intensidade de cada Vivência Musical.
+
+Plano: "${(plano.titulo ?? '').slice(0, 100)}"
+Objetivo: "${(plano.objetivoGeral ?? '').replace(/<[^>]*>/g, ' ').trim().slice(0, 300)}"
+Atividades:
+${atividades.slice(0, 800)}
+
+Classifique cada dimensão com intensidade de 0 a 3:
+- 0: ausente no plano
+- 1: presente de forma leve
+- 2: explorada com ênfase
+- 3: dimensão dominante
+
+Dimensões:
+- tecnica: Técnica instrumental/vocal, execução de habilidades
+- performance: Performance, apresentação, execução musical
+- apreciacao: Escuta ativa, apreciação, audição crítica
+- criacao: Composição, improvisação, criação musical
+- teoria: Teoria musical, história, contexto cultural
+- corpo: Movimento corporal, dança, percussão corporal
+
+Identifique também até 4 conceitos musicais pedagógicos centrais do plano.
+
+Responda SOMENTE com JSON válido (sem texto extra):
+{"vivencias":{"tecnica":0,"performance":0,"apreciacao":0,"criacao":0,"teoria":0,"corpo":0},"conceitos":["conceito1"]}`
+    try {
+        const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
+        )
+        if (!res.ok) return { vivencias: {}, conceitos: [] }
+        const json = await res.json()
+        const raw: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+        const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || raw.match(/(\{[\s\S]*\})/)
+        if (!match) return { vivencias: {}, conceitos: [] }
+        const result = JSON.parse(match[1] || match[0])
+        return {
+            vivencias: result.vivencias ?? {},
+            conceitos: Array.isArray(result.conceitos) ? result.conceitos.slice(0, 4) : [],
+        }
+    } catch { return { vivencias: {}, conceitos: [] } }
+}
+
 // ── Detecção de conceitos via Gemini (chamada avulsa, sem estado React) ───────
 async function analisarConceitosAtividade(nome: string, descricaoHtml: string, apiKey: string): Promise<string[]> {
     const texto = descricaoHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
@@ -444,11 +501,35 @@ export default function TelaPrincipal() {
                     .finally(() => setDetectandoConceitos(false))
             }
         }
+        // Fluxo 5: classificar vivências CLASP → notificação após salvar
+        if (apiKey && planoEditando && planoId) {
+            const snapId     = String(planoId)
+            const snapTitulo = planoEditando.titulo
+            const snapPlano  = { ...planoEditando }
+            classificarVivenciasPlano(snapPlano, apiKey)
+                .then(({ vivencias, conceitos }) => {
+                    const temDados = Object.values(vivencias).some(v => v > 0)
+                    if (!temDados) return
+                    setPlanos(prev => prev.map(p =>
+                        String(p.id) === snapId ? { ...p, vivenciasClassificadas: vivencias } : p
+                    ))
+                    setClasseNotif({ planoId: snapId, titulo: snapTitulo, vivencias, conceitos })
+                })
+                .catch(() => {/* silencioso */})
+        }
     }
 
     // ── Modal revisão de conceitos do plano ──
     const [modalConceitosPlano, setModalConceitosPlano] = useState<{ planoId: string; conceitos: string[] } | null>(null)
     const [detectandoConceitos, setDetectandoConceitos] = useState(false)
+
+    // ── Notificação de vivências CLASP após salvar ──
+    const [classeNotif, setClasseNotif] = useState<{
+        planoId: string
+        titulo: string
+        vivencias: Record<string, number>
+        conceitos: string[]
+    } | null>(null)
 
     // ── Modo do formulário: rápido | completo | detalhado ──
     const [modoForm, setModoForm] = useState<'rapido' | 'completo' | 'detalhado'>('completo')
@@ -2426,6 +2507,92 @@ export default function TelaPrincipal() {
                 Detectando conceitos…
             </div>
         )}
+
+        {/* ── Notificação de vivências CLASP após salvar plano ── */}
+        {classeNotif && (() => {
+            const CLASP: Record<string, { label: string; dot: string; text: string; bg: string; border: string }> = {
+                tecnica:     { label: 'Técnica',           dot: '#f472b6', text: '#f9a8d4', bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.2)' },
+                performance: { label: 'Performance',       dot: '#fb923c', text: '#fdba74', bg: 'rgba(251,146,60,0.1)',  border: 'rgba(251,146,60,0.2)' },
+                apreciacao:  { label: 'Apreciação',        dot: '#34d399', text: '#6ee7b7', bg: 'rgba(52,211,153,0.1)',  border: 'rgba(52,211,153,0.2)' },
+                criacao:     { label: 'Criação',           dot: '#a78bfa', text: '#c4b5fd', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.2)' },
+                teoria:      { label: 'Teoria e história', dot: '#60a5fa', text: '#93c5fd', bg: 'rgba(96,165,250,0.1)',  border: 'rgba(96,165,250,0.2)' },
+                corpo:       { label: 'Corpo e movimento', dot: '#fbbf24', text: '#fcd34d', bg: 'rgba(251,191,36,0.1)',  border: 'rgba(251,191,36,0.2)' },
+            }
+            const ativas = Object.entries(classeNotif.vivencias)
+                .filter(([, v]) => v > 0)
+                .sort(([, a], [, b]) => b - a)
+            if (ativas.length === 0) return null
+            return (
+                <div className="fixed bottom-4 right-4 z-50 shadow-2xl w-[300px] bg-white dark:bg-[#1F2937] border border-slate-200 dark:border-[#374151] rounded-2xl overflow-hidden">
+                    {/* Header */}
+                    <div className="flex items-center gap-2.5 px-3.5 py-3 border-b border-slate-100 dark:border-[#374151]">
+                        <div className="w-7 h-7 flex items-center justify-center rounded-lg shrink-0 text-[13px]"
+                            style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.2)', color: '#34d399' }}>
+                            ✓
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div className="text-[13px] font-semibold text-slate-900 dark:text-[#E5E7EB]">Plano salvo</div>
+                            <div className="text-[11px] text-slate-400 dark:text-[#4B5563] mt-0.5 truncate">{classeNotif.titulo}</div>
+                        </div>
+                        <button onClick={() => setClasseNotif(null)}
+                            className="text-[18px] leading-none text-slate-300 dark:text-[#374151] hover:text-slate-500 dark:hover:text-[#4B5563] shrink-0 bg-transparent border-none cursor-pointer ml-1">
+                            ×
+                        </button>
+                    </div>
+                    {/* Vivências identificadas */}
+                    <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-[#374151]">
+                        <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#374151] mb-2">
+                            Vivências identificadas
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                            {ativas.map(([key]) => {
+                                const c = CLASP[key]
+                                if (!c) return null
+                                return (
+                                    <div key={key} className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full"
+                                        style={{ color: c.text, background: c.bg, border: `1px solid ${c.border}` }}>
+                                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: c.dot }} />
+                                        {c.label}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <div className="text-[10px] text-slate-400 dark:text-[#374151] mt-2 italic">Toque para corrigir</div>
+                    </div>
+                    {/* Conceitos musicais */}
+                    {classeNotif.conceitos.length > 0 && (
+                        <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-[#374151]">
+                            <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#374151] mb-2">
+                                Conceitos musicais
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                                {classeNotif.conceitos.map((c, i) => (
+                                    <span key={i} className="text-[11px] text-slate-500 dark:text-[#9CA3AF] bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-[#374151] px-2.5 py-1 rounded-full">
+                                        {c}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {/* Actions */}
+                    <div className="flex gap-2 px-3.5 py-2.5">
+                        <button onClick={() => setClasseNotif(null)}
+                            className="flex-1 py-1.5 text-[12px] text-slate-500 dark:text-[#4B5563] bg-transparent border border-slate-200 dark:border-[#374151] rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                            Fechar
+                        </button>
+                        <button
+                            onClick={() => {
+                                const plano = planos.find(p => String(p.id) === classeNotif.planoId)
+                                if (plano) editarPlano(plano)
+                                setClasseNotif(null)
+                            }}
+                            className="flex-[2] py-1.5 text-[12px] font-semibold text-white bg-indigo-600 border-none rounded-lg cursor-pointer hover:bg-indigo-700 transition-colors">
+                            Ver plano
+                        </button>
+                    </div>
+                </div>
+            )
+        })()}
     </>
     );
 

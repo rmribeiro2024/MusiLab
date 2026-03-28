@@ -1089,7 +1089,17 @@ interface WeekStatsData {
   planosSemanaCriados: number
   musicasTrabalhadas: number
   musicasAdicionadas: number
+  vivencias: Record<string, number>   // CLASP agregado da semana (0-3 por dimensão)
 }
+
+const CLASP_DIMS: { key: string; label: string; color: string }[] = [
+  { key: 'tecnica',     label: 'Técnica',           color: '#f472b6' },
+  { key: 'performance', label: 'Performance',        color: '#fb923c' },
+  { key: 'apreciacao',  label: 'Apreciação',         color: '#34d399' },
+  { key: 'criacao',     label: 'Criação',            color: '#a78bfa' },
+  { key: 'teoria',      label: 'Teoria e história',  color: '#60a5fa' },
+  { key: 'corpo',       label: 'Corpo e movimento',  color: '#fbbf24' },
+]
 
 interface WeekendModeProps {
   labelDia: string
@@ -1179,6 +1189,43 @@ function WeekendMode({
           </div>
         </div>
       )}
+
+      {/* Vivências da semana */}
+      {(() => {
+        const dimsAtivas = CLASP_DIMS.filter(d => (weekStats.vivencias[d.key] ?? 0) > 0)
+        if (dimsAtivas.length === 0) return null
+        return (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: cDimmer, marginBottom: 10, paddingLeft: 2 }}>
+              Vivências da semana
+            </div>
+            <div style={{ background: cCard, borderRadius: 12, border: `1px solid ${cBorder}`, overflow: 'hidden' }}>
+              <div style={{ padding: '10px 12px', background: cBody }}>
+                {dimsAtivas.map((dim, i) => {
+                  const intensity = Math.min(3, weekStats.vivencias[dim.key] ?? 0)
+                  return (
+                    <div key={dim.key} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '5px 0',
+                      borderBottom: i < dimsAtivas.length - 1 ? `1px solid ${cRow}` : 'none',
+                    }}>
+                      <span style={{ fontSize: 12, fontWeight: 500, color: cSub, flex: 1 }}>{dim.label}</span>
+                      <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                        {[1,2,3].map(n => (
+                          <div key={n} style={{
+                            width: 5, height: 5, borderRadius: '50%',
+                            background: n <= intensity ? dim.color : (dk ? '#1E293B' : '#E2E8F0'),
+                          }} />
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* O que pede atenção */}
       {atencaoItems.length > 0 && (
@@ -1403,11 +1450,25 @@ export default function AgendaView() {
       return d >= w0 && d <= w4
     }).length
 
+    // Aggregate CLASP vivências from plans applied this week
+    const vivencias: Record<string, number> = {}
+    aplicacoes.forEach(ap => {
+      if (ap.data >= w0 && ap.data <= w4) {
+        const pl = planos.find(p => String(p.id) === String(ap.planoId))
+        if (pl?.vivenciasClassificadas) {
+          Object.entries(pl.vivenciasClassificadas).forEach(([key, val]) => {
+            vivencias[key] = Math.min(3, (vivencias[key] ?? 0) + val)
+          })
+        }
+      }
+    })
+
     return {
       aulasRealizadas: allWeekSlots.length,
       planosSemanaCriados,
       musicasTrabalhadas: musicasTrabalhadasIds.size,
       musicasAdicionadas,
+      vivencias,
     }
   }, [allWeekSlots, planejamentos, aplicacoes, planos, repertorio, weekDayStrs])
 
