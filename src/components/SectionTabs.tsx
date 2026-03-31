@@ -20,7 +20,7 @@ export default function SectionTabs({ activeSection, viewMode, onNavigate, darkM
 
     return (
         <div
-            className="flex-none flex items-end border-b border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] px-6"
+            className="sm:hidden flex-none flex items-end border-b border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] px-6"
             style={{ height: 41 }}
         >
             {tabs.map(tab => {
