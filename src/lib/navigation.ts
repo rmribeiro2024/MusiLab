@@ -85,7 +85,22 @@ export const SIDEBAR_SUBITEMS: Partial<Record<SectionId, { label: string; mode: 
 }
 
 // ─── TABS POR SEÇÃO ───────────────────────────────────────────────────────────
-// Todas as seções com sub-navegação usam SIDEBAR_SUBITEMS.
-// SECTION_TABS mantido vazio — SectionTabs retorna null para todas as seções.
+// Usado pelo SectionTabs (mobile only, sm:hidden) para expor os subitens de cada
+// seção no topo do conteúdo. Deve espelhar SIDEBAR_SUBITEMS.
 
-export const SECTION_TABS: Partial<Record<SectionId, { label: string; mode: ViewMode }[]>> = {}
+export const SECTION_TABS: Partial<Record<SectionId, { label: string; mode: ViewMode }[]>> = {
+    planejamento: [
+        { label: 'Semana',     mode: 'visaoSemana' },
+        { label: 'Banco',      mode: 'lista' },
+        { label: 'Sequências', mode: 'sequencias' },
+    ],
+    turmas: [
+        { label: 'Painel',    mode: 'turmas' },
+        { label: 'Histórico', mode: 'historicoMusical' },
+    ],
+    biblioteca: [
+        { label: 'Repertório',  mode: 'repertorio' },
+        { label: 'Atividades',  mode: 'atividades' },
+        { label: 'Estratégias', mode: 'estrategias' },
+    ],
+}
