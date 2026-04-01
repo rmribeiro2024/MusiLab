@@ -1374,7 +1374,7 @@ export default function TelaPrincipal() {
                             )
                         })}
                         <button type="button"
-                            onClick={() => setSecoesForm(prev => new Set([...prev, 'classificacao']))}
+                            onClick={() => setModalConceitosPlano({ planoId: String(planoEditando.id), conceitos: planoEditando.conceitos || [] })}
                             className="text-[10px] text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 underline transition-colors ml-1">
                             + editar
                         </button>
