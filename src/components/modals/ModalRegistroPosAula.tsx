@@ -601,30 +601,12 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
 
     const registroImportavel = React.useMemo(() => {
         if (!planoParaRegistro || registroEditando) return null
-        // Resolve o nome do segmento a partir do seu ID, percorrendo anosLetivos
-        const resolverSegNome = (segId: unknown): string => {
-            for (const a of anosLetivos) {
-                for (const esc of (a.escolas ?? [])) {
-                    const seg = (esc.segmentos ?? []).find((s: any) => s.id == segId)
-                    if (seg) return seg.nome
-                }
-            }
-            return ''
-        }
-        const serieAtual = resolverSegNome(regSegmentoSel)
+        // Qualquer registro do mesmo plano em outra turma serve para importar
         const regs = (planoParaRegistro.registrosPosAula || [])
-            .filter((r: any) => {
-                if (String(r.turma) === String(regTurmaSel)) return false
-                // Mesma série (segmento nome) — se ambos resolvíveis, exige igualdade
-                if (serieAtual) {
-                    const serieReg = resolverSegNome(r.segmento || r.serie)
-                    if (serieReg && serieReg !== serieAtual) return false
-                }
-                return true
-            })
+            .filter((r: any) => String(r.turma) !== String(regTurmaSel))
             .sort((a: any, b: any) => b.data.localeCompare(a.data))
         return regs[0] ?? null
-    }, [planoParaRegistro, regTurmaSel, regSegmentoSel, registroEditando, anosLetivos])
+    }, [planoParaRegistro, regTurmaSel, registroEditando])
 
     function resolverTurmaNome(turmaId: unknown): string {
         for (const a of anosLetivos) {
