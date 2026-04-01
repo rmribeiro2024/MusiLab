@@ -567,7 +567,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
               className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors"
               style={jaRegistrado
                 ? { background: 'transparent', color: '#22c55e', border: 'none', fontSize: 16, fontWeight: 700, padding: '0 4px' }
-                : { background: '#4f46e5', color: '#fff' }
+                : { background: 'transparent', color: isDarkMode ? '#818cf8' : '#5B5FEA', border: `1px solid ${isDarkMode ? '#818cf8' : '#5B5FEA'}` }
               }
             >
               {jaRegistrado ? '✓' : 'Avaliar aula'}
