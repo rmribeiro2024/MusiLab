@@ -936,7 +936,7 @@ ${linhas.join('\n')}
 Escreva apenas o briefing, sem títulos nem markdown.`
 
   const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -954,14 +954,13 @@ function BriefingDia({ slots }: { slots: AulaSlot[] }) {
   const [texto, setTexto] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
-  const [fechado, setFechado] = useState(false)
 
   // Limpa ao mudar o dia
   useEffect(() => {
-    setTexto(null); setErro(null); setFechado(false)
+    setTexto(null); setErro(null)
   }, [slots])
 
-  if (slots.length === 0 || fechado) return null
+  if (slots.length === 0) return null
 
   async function gerar() {
     setCarregando(true); setErro(null)
@@ -991,15 +990,7 @@ function BriefingDia({ slots }: { slots: AulaSlot[] }) {
   }
 
   return (
-    <div className="mb-5 rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/60 dark:bg-indigo-950/30 px-4 py-3.5 relative">
-      <button
-        onClick={() => setFechado(true)}
-        className="absolute top-2.5 right-2.5 w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-sm leading-none"
-        title="Fechar"
-      >
-        ×
-      </button>
-
+    <div className="mb-5 rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/60 dark:bg-indigo-950/30 px-4 py-3.5">
       <div className="flex items-center gap-2 mb-2">
         <svg className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1008,7 +999,7 @@ function BriefingDia({ slots }: { slots: AulaSlot[] }) {
         {!carregando && (
           <button
             onClick={gerar}
-            className="ml-auto mr-6 text-[10px] text-indigo-400 dark:text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
+            className="ml-auto text-[10px] text-indigo-400 dark:text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
             title="Regerar"
           >
             atualizar
