@@ -727,7 +727,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
                   className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold"
                   style={{ background: '#4f46e5', color: '#fff' }}
                 >
-                  Registrar reflexão
+                  Avaliar aula
                 </button>
               </div>
             )}
