@@ -233,16 +233,13 @@ export async function exportarPlanoPDF(plano) {
                 if (desc.trim()) {
                     desc.split('\n').filter(l => l.trim() && l.trim() !== '-').forEach(linha => {
                         const txt = linha.trim();
-                        // Detecta sub-item: começa com letra maiúscula+) ou número+) tipo "A)", "B)", "1)"
-                        const isSubItem = /^[A-Za-z0-9]\)/.test(txt);
                         const isBullet = txt.startsWith('-');
-                        const indent = isSubItem ? 10 : isBullet ? 5 : 5;
+                        const indent = isBullet ? 5 : 5;
                         const wrapW = cW - indent - 4;
                         const ls = doc.splitTextToSize(txt, wrapW);
-                        const color = isSubItem ? LABEL : DARK;
-                        doc.setFont(FONTE_PDF, isSubItem ? "italic" : "normal");
-                        doc.setFontSize(isSubItem ? 10 : 11);
-                        doc.setTextColor(...color);
+                        doc.setFont(FONTE_PDF, "normal");
+                        doc.setFontSize(11);
+                        doc.setTextColor(...DARK);
                         ls.forEach((l, i) => { chk(LS); doc.text(l, mL + indent + (i > 0 ? 4 : 0), y); y += LS; });
                     });
                 }
@@ -297,7 +294,7 @@ export async function exportarPlanoPDF(plano) {
         doc.text(p + ' / ' + totalPages, W - mR, H - 9, { align: 'right' });
     }
 
-    doc.save('Plano - ' + plano.titulo + '.pdf');
+    doc.save('plano de aula - ' + plano.titulo + '.pdf');
 }
 
 // Retorna blob URL para pré-visualização (sem baixar)
