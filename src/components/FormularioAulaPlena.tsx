@@ -212,34 +212,41 @@ async function geminiPost(prompt: string): Promise<string> {
   return parts.find(p => !p.thought)?.text ?? ''
 }
 
-async function analisarConceitosAtividade(nome: string, descricaoHtml: string): Promise<string[]> {
-  const texto = descricaoHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-  if (texto.length < 10) return []
-  const prompt = `Você é especialista em pedagogia musical. Analise a atividade abaixo e identifique os conceitos musicais pedagógicos presentes.
+async function analisarConceitosPlano(
+  titulo: string,
+  objetivo: string,
+  atividades: { nome: string; descricao: string }[]
+): Promise<string[]> {
+  const listaAtivs = atividades
+    .map((a, i) => {
+      const desc = a.descricao.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300)
+      return `${i + 1}. ${a.nome}${desc ? ': ' + desc : ''}`
+    })
+    .join('\n')
+  if (!listaAtivs) return []
 
-Atividade: "${nome}"
-Descrição: "${texto.slice(0, 600)}"
+  const prompt = `Você é especialista em pedagogia musical. Analise o plano de aula abaixo e identifique os 3 a 5 conceitos musicais CENTRAIS — aqueles que realmente estruturam o aprendizado desta aula, não conceitos periféricos ou implícitos.
 
-Use APENAS conceitos destas categorias:
-1. Parâmetros Físicos do Som: Altura, Duração, Intensidade, Timbre
-2. Ritmo e Organização Temporal: Pulsação, Andamento, Métrica, Células Rítmicas, Síncope, Ostinato
-3. Melodia e Alturas: Fraseado, Contorno, Escalas, Intervalos, Tonalidade
-4. Harmonia e Textura: Acordes, Campo Harmônico, Consonância, Textura, Densidade
-5. Estrutura e Forma: Motivo, Frase, Período, Formas (AB, ABA, Rondó, Sonata)
-6. Dinâmica e Expressividade: Crescendo, Articulação, Caráter
-7. Processos Criativos e Ações: Criação, Execução, Apreciação, Escuta ativa
-8. Movimento e Corpo: Espaço, Peso, Fluência, Percussão Corporal, Coordenação Motora
-9. Contexto e Cultura: Gêneros, História, Etnomusicologia
-10. Tecnologia Musical: Áudio, MIDI, Software
+Título: "${titulo}"
+Objetivo: "${objetivo?.replace(/<[^>]+>/g, '').slice(0, 200) || ''}"
+Atividades:
+${listaAtivs}
 
-Retorne máximo 5 conceitos. Responda APENAS com JSON: {"conceitos": ["conceito1"]}
+Regras:
+- Máximo 5 conceitos, mínimo 1
+- Só conceitos que aparecem de forma explícita e central na aula
+- Prefira termos pedagógicos precisos (ex: "Pulsação" em vez de "Ritmo"; "Escuta ativa" em vez de "Ouvir música")
+- Se duas atividades tratam do mesmo conceito, liste-o UMA vez
+
+Responda APENAS com JSON: {"conceitos": ["conceito1", "conceito2"]}
 Se não identificar nenhum, retorne: {"conceitos": []}`
+
   try {
     const raw = await geminiPost(prompt)
     const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || raw.match(/(\{[\s\S]*\})/)
     if (!match) return []
     const result = JSON.parse(match[1] || match[0])
-    return Array.isArray(result.conceitos) ? result.conceitos : []
+    return Array.isArray(result.conceitos) ? result.conceitos.slice(0, 5) : []
   } catch { return [] }
 }
 
@@ -712,19 +719,20 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
     }
     setEstadoSalvar('salvando')
 
-    // Detectar conceitos nas atividades sem conceito
-    const semConceitos = (plano.atividadesRoteiro || []).filter(
-      a => a.descricao?.replace(/<[^>]*>/g, '').trim().length > 10 && !(a.conceitos?.length)
+    // Detectar conceitos do plano (uma única chamada, síntese do plano inteiro)
+    const atividadesComDesc = (plano.atividadesRoteiro || []).filter(
+      a => (a.nome || a.descricao?.replace(/<[^>]*>/g, '').trim())
     )
-    if (semConceitos.length > 0) {
+    if (atividadesComDesc.length > 0 && !(plano.conceitos?.length)) {
       setDetectandoConceitos(true)
-      Promise.all(semConceitos.map(a => analisarConceitosAtividade(a.nome || '', a.descricao || '')))
-        .then(resultados => {
-          const existentes = (plano.atividadesRoteiro || []).flatMap(a => a.conceitos || [])
-          const novos = resultados.flat()
-          const merged = [...new Set([...existentes, ...novos])].filter(Boolean)
-          if (merged.length > 0) {
-            setModalConceitos(merged)
+      analisarConceitosPlano(
+        plano.titulo || '',
+        plano.objetivoGeral || '',
+        atividadesComDesc.map(a => ({ nome: a.nome || '', descricao: a.descricao || '' }))
+      )
+        .then(conceitos => {
+          if (conceitos.length > 0) {
+            setModalConceitos(conceitos)
             setDetectandoConceitos(false)
             return
           }
