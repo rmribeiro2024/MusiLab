@@ -9,6 +9,7 @@ import {
   sanitizar,
   sanitizarRich,
   sanitizeUrl,
+  getLinkLabel,
   validarBackup,
   gerarIdSeguro,
   syncToSupabase,
@@ -2634,13 +2635,13 @@ export default function BancoPlanos({ session }) {
                                                         <div className="space-y-1.5">
                                                             {(planoSelecionado.recursos||[]).map((rec, i) => {
                                                                 const url = typeof rec === 'string' ? rec : rec.url
-                                                                const titulo = typeof rec === 'string' ? url : (rec.titulo || url)
+                                                                const titulo = typeof rec === 'string' ? getLinkLabel(url) : (rec.titulo || getLinkLabel(url))
                                                                 const tipo = typeof rec === 'string' ? 'link' : (rec.tipo || 'link')
                                                                 return (
                                                                     <a key={i} href={sanitizeUrl(url)} target="_blank" rel="noreferrer"
-                                                                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline truncate">
+                                                                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline">
                                                                         <span className="shrink-0">{tipo === 'imagem' ? '🖼️' : tipo === 'audio' ? '🎵' : '🔗'}</span>
-                                                                        <span className="truncate">{titulo}</span>
+                                                                        <span>{titulo}</span>
                                                                     </a>
                                                                 )
                                                             })}
@@ -2683,12 +2684,13 @@ export default function BancoPlanos({ session }) {
                                                             <div className="mt-2 ml-1 space-y-1">
                                                                 {ativ.recursos.map((rec, j) => {
                                                                     const url = typeof rec === 'string' ? rec : rec.url;
+                                                                    const titulo = typeof rec === 'string' ? getLinkLabel(url) : (rec.titulo || getLinkLabel(url));
                                                                     const tipo = typeof rec === 'string' ? 'link' : rec.tipo;
                                                                     return (
                                                                         <a key={j} href={sanitizeUrl(url)} target="_blank" rel="noreferrer"
                                                                             className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline">
                                                                             <span>{tipo === 'imagem' ? '🖼️' : '🔗'}</span>
-                                                                            <span className="truncate">{url}</span>
+                                                                            <span>{titulo}</span>
                                                                         </a>
                                                                     );
                                                                 })}

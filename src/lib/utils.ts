@@ -53,6 +53,39 @@ export function sanitizeUrl(url: string): string {
     return trimmed
 }
 
+// ── LABEL LEGÍVEL PARA URLs ──
+// Converte URLs longas em nomes curtos e legíveis para exibição no preview do plano.
+export function getLinkLabel(url: string): string {
+    if (!url) return 'Link'
+    try {
+        const u = new URL(url)
+        const host = u.hostname.replace(/^www\./, '')
+        // Google Drive — arquivo
+        if (host === 'drive.google.com') {
+            if (u.pathname.includes('/folders/')) return 'Pasta Google Drive'
+            if (u.pathname.includes('/file/d/')) return 'Google Drive'
+            return 'Google Drive'
+        }
+        // Google Docs / Sheets / Slides
+        if (host === 'docs.google.com') {
+            if (u.pathname.includes('/spreadsheets/')) return 'Google Sheets'
+            if (u.pathname.includes('/presentation/')) return 'Google Slides'
+            return 'Google Docs'
+        }
+        // YouTube
+        if (host === 'youtube.com' || host === 'youtu.be') return 'YouTube'
+        // Spotify
+        if (host === 'open.spotify.com') return 'Spotify'
+        // SoundCloud
+        if (host === 'soundcloud.com') return 'SoundCloud'
+        // Outros: mostra só o domínio
+        return host
+    } catch {
+        // URL inválida — mostra primeiros 40 chars
+        return url.length > 40 ? url.slice(0, 38) + '…' : url
+    }
+}
+
 // ── VALIDAÇÃO DE SCHEMA DE BACKUP ──
 // Verifica se o arquivo JSON importado tem a estrutura esperada do MusiLab.
 export function validarBackup(data: unknown): { valido: boolean; erro?: string } {
