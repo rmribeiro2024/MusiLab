@@ -566,11 +566,11 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
               onClick={abrirRegistro}
               className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors"
               style={jaRegistrado
-                ? { background: 'transparent', color: isDarkMode ? '#6B7280' : '#94A3B8', border: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}` }
+                ? { background: 'transparent', color: '#22c55e', border: 'none', fontSize: 16, fontWeight: 700, padding: '0 4px' }
                 : { background: '#4f46e5', color: '#fff' }
               }
             >
-              {jaRegistrado ? 'Ver avaliação' : 'Avaliar aula'}
+              {jaRegistrado ? '✓' : 'Avaliar aula'}
             </button>
           )}
           <svg
@@ -696,7 +696,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
                   >
                     <span style={{ fontSize: 11 }}>🎯</span>
                     <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#818cf8' }}>
-                      O que observar hoje
+                      Critérios de avaliação da aula
                     </span>
                   </div>
                   <div style={{ padding: '7px 10px', background: isDarkMode ? '#111827' : '#F8FAFC' }}>

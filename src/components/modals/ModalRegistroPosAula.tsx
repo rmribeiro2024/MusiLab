@@ -962,7 +962,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                 NOVO REGISTRO
                                 ════════════════════════════════ */}
 
-                            {!verRegistros ? (
+                            {(!verRegistros || inlineMode) ? (
                                 <>
 
                                     {/* Turma + Data — linha compacta (sempre visível quando turma selecionada) */}

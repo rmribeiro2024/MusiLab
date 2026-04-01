@@ -1027,7 +1027,8 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     }, [setPlanoParaRegistro, setNovoRegistro, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel, setFiltroRegAno, setFiltroRegData, setRegistroEditando, setVerRegistros, setModalRegistro])
 
     const salvarRegistro = useCallback(() => {
-        if (!novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.fariadiferente && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
+        const naoHouve = (novoRegistro as any).statusAula === 'nao_houve'
+        if (!naoHouve && !novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.fariadiferente && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
             showToast('Preencha ao menos um campo!', 'error'); return
         }
         // Sem plano vinculado → criar rascunho mínimo para hospedar o registro
