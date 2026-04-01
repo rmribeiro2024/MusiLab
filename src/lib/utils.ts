@@ -137,16 +137,26 @@ export function getLinkLabel(url: string): string {
 // ── LABEL DE AÇÃO PARA LINKS (preview) ──
 // Retorna texto amigável orientado a ação (sem mostrar URL)
 function getLinkActionLabel(url: string): string {
-    if (!url) return 'Acessar recurso'
+    if (!url) return 'Ver link'
     try {
-        const host = new URL(url).hostname.replace(/^www\./, '')
+        const parsed = new URL(url)
+        const host = parsed.hostname.replace(/^www\./, '')
+        const path = parsed.pathname
         if (host === 'youtube.com' || host === 'youtu.be') return 'Assistir vídeo'
-        if (host === 'drive.google.com') return 'Abrir no Drive'
-        if (host === 'docs.google.com') return 'Abrir documento'
-        if (host === 'open.spotify.com') return 'Ouvir no Spotify'
-        if (host === 'soundcloud.com') return 'Ouvir áudio'
-        return 'Acessar recurso'
-    } catch { return 'Acessar recurso' }
+        if (host === 'open.spotify.com') return 'Abrir no Spotify'
+        if (host === 'soundcloud.com') return 'Abrir áudio'
+        if (host === 'docs.google.com') {
+            if (path.includes('/spreadsheets/')) return 'Abrir planilha'
+            if (path.includes('/presentation/')) return 'Abrir apresentação'
+            if (path.includes('/forms/')) return 'Abrir formulário'
+            return 'Abrir documento'
+        }
+        if (host === 'drive.google.com') {
+            if (path.includes('/folders/')) return 'Abrir pasta'
+            return 'Abrir arquivo'
+        }
+        return 'Abrir link'
+    } catch { return 'Abrir link' }
 }
 
 // Transforma HTML de descrição para preview:
@@ -162,7 +172,7 @@ export function limparLinksPreview(html: string): string {
     )
     // 2. URLs soltas em nós de texto (não precedidas de = " ' <)
     r = r.replace(
-        /(?<![='"<])(https?:\/\/[^\s<>"'&]+)/g,
+        /(?<![='"<])(https?:\/\/[^\s<>"']+)/g,
         url => `<a href="${url}" target="_blank" rel="noreferrer" class="preview-link">${getLinkActionLabel(url)}</a>`
     )
     return r
