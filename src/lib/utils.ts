@@ -10,7 +10,7 @@ export const CONCEITOS_MUSICAIS: string[] = [
   // Ritmo e Organização Temporal
   'Pulsação', 'Andamento', 'Métrica', 'Compasso Binário', 'Compasso Ternário',
   'Compasso Quaternário', 'Células Rítmicas', 'Síncope', 'Ostinato', 'Polirritmia',
-  'Acento Rítmico', 'Pausa', 'Subdivisão',
+  'Acento Rítmico', 'Subdivisão',
   // Altura e Melodia
   'Altura', 'Grave e Agudo', 'Contorno Melódico', 'Fraseado', 'Intervalos',
   'Escala', 'Escala Pentatônica', 'Tonalidade', 'Modo', 'Afinação',

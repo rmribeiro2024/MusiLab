@@ -693,12 +693,15 @@ export default function TelaPrincipal() {
                 .then(({ vivencias, meiosOrff, conceitos }) => {
                     const temDados = Object.values(vivencias).some(v => v > 0)
                     if (!temDados) return
+                    // Sempre atualiza os dados no plano (silencioso)
                     setPlanos(prev => prev.map(p =>
                         String(p.id) === snapId
                             ? { ...p, vivenciasClassificadas: vivencias, orffMeios: meiosOrff }
                             : p
                     ))
-                    // Só propõe conceitos se o plano ainda não tiver nenhum salvo
+                    // Modal só aparece na primeira classificação do plano
+                    const jaClassificado = Object.values(snapPlano.vivenciasClassificadas ?? {}).some(v => v > 0)
+                    if (jaClassificado) return
                     const jaTemConceitos = (snapPlano.conceitos?.length ?? 0) > 0
                     setClasseNotif({ planoId: snapId, titulo: snapTitulo, vivencias, meiosOrff, conceitos: jaTemConceitos ? [] : conceitos })
                 })

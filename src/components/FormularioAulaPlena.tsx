@@ -754,8 +754,14 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
   }
 
   function finalizarSalvar(p: Plano) {
+    // Sanitiza conceitos: mantém só os da lista fechada, cap 6
+    const validosSet = new Set(CONCEITOS_MUSICAIS.map(c => c.toLowerCase()))
+    const conceitosSanitizados = (p.conceitos ?? [])
+      .filter(c => validosSet.has(c.toLowerCase()))
+      .slice(0, 6)
     const planoFinal: Plano = {
       ...p,
+      conceitos: conceitosSanitizados,
       contextoAulaAnterior: modo === 'adaptar' ? contextoAulaAnterior : p.contextoAulaAnterior,
     }
     requestAnimationFrame(() => {
