@@ -1176,7 +1176,14 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
                                 const jaVinculada = vinculadas.some(v => v === est.id || v === est.nome)
                                 if (jaVinculada) { showToast('Estratégia já vinculada!', 'error'); return }
                                 const arr = [...plano.atividadesRoteiro]
-                                arr[idx] = { ...arr[idx], estrategiasVinculadas: [...(arr[idx].estrategiasVinculadas || []), est.id] }
+                                const estratTexto = [est.descricao, est.funcao, est.objetivo].filter(Boolean).join('\n')
+                                const toAdd = `<p><strong>${est.nome}</strong></p>${estratTexto ? `<p>${estratTexto}</p>` : ''}`
+                                const descAtual = arr[idx].descricao || ''
+                                arr[idx] = {
+                                  ...arr[idx],
+                                  estrategiasVinculadas: [...(arr[idx].estrategiasVinculadas || []), est.id],
+                                  descricao: descAtual ? descAtual + toAdd : toAdd,
+                                }
                                 setPlano(p => ({ ...p, atividadesRoteiro: arr }))
                                 showToast(`"${est.nome}" vinculada!`, 'success')
                               }}
