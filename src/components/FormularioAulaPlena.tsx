@@ -1544,32 +1544,6 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
           </div>
         )}
 
-        {/* ════ ALERTAS PEDAGÓGICOS ════ */}
-        {(() => {
-          const ativs = plano.atividadesRoteiro || []
-          const musicas = plano.musicasVinculadasPlano || []
-          const alertas: { icon: string; texto: string }[] = []
-          if (ativs.length >= 2 && !ativs.some(a => a.tipoFase === 'fechamento'))
-            alertas.push({ icon: '⚠️', texto: 'Roteiro sem atividade de Fechamento' })
-          if (musicas.length === 0 && plano.titulo.trim())
-            alertas.push({ icon: '🎵', texto: 'Nenhuma música vinculada ao plano' })
-          const temObjetivos = (plano.objetivoGeral || '').replace(/<[^>]+>/g, '').trim() || (plano.objetivosEspecificos || []).filter(Boolean).length > 0
-          if (temObjetivos && ativs.length === 0)
-            alertas.push({ icon: '📋', texto: 'Objetivos definidos mas roteiro vazio' })
-          if (alertas.length === 0) return null
-          return (
-            <div className="px-5 pb-4 pt-3 border-t border-slate-100 dark:border-[#374151]">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Sugestões</p>
-              <div className="flex flex-wrap gap-1.5">
-                {alertas.map((a, i) => (
-                  <span key={i} className="inline-flex items-center gap-1.5 text-[11px] font-medium bg-slate-50 dark:bg-white/[0.04] text-slate-500 border border-slate-200 dark:border-[#374151] px-2.5 py-1 rounded-lg">
-                    <span className="text-[10px]">{a.icon}</span>{a.texto}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )
-        })()}
 
         {/* ════ FOOTER STICKY ════ */}
         <div className="px-4 py-3 bg-white dark:bg-[var(--v2-card)] border-t border-slate-100 dark:border-[#374151] sticky bottom-0">
