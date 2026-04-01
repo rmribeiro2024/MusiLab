@@ -708,7 +708,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
                     {itens.map((item, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, padding: '2px 0' }}>
                         <div style={{ width: 3, height: 3, borderRadius: '50%', background: isDarkMode ? '#4B5563' : '#CBD5E1', marginTop: 6, flexShrink: 0 }} />
-                        <span style={{ fontSize: 11, color: isDarkMode ? '#6B7280' : '#64748B', lineHeight: 1.5, fontStyle: 'italic' }}>{item}</span>
+                        <span style={{ fontSize: 13, color: isDarkMode ? '#9CA3AF' : '#475569', lineHeight: 1.5, fontStyle: 'italic' }}>{item}</span>
                       </div>
                     ))}
                   </div>
