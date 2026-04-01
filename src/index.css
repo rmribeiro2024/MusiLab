@@ -43,6 +43,29 @@ input, textarea, select {
 .rich-editor-area ol { list-style: decimal; padding-left: 1.5rem; margin: 0.25rem 0; }
 .rich-editor-area li { margin: 0.15rem 0; }
 
+/* Links limpos no preview (gerados por limparLinksPreview) */
+.preview-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #5B5FEA;
+    text-decoration: none;
+    padding: 1px 7px;
+    border-radius: 6px;
+    border: 1px solid rgba(91,95,234,0.25);
+    background: rgba(91,95,234,0.06);
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+    vertical-align: middle;
+    margin: 0 1px;
+}
+.preview-link::before { content: '🔗'; font-size: 11px; }
+.preview-link:hover { background: rgba(91,95,234,0.12); border-color: rgba(91,95,234,0.4); }
+.dark .preview-link { color: #818cf8; border-color: rgba(129,140,248,0.25); background: rgba(129,140,248,0.08); }
+.dark .preview-link:hover { background: rgba(129,140,248,0.15); }
+
 /* ── TIPTAP EDITOR ── */
 .tiptap-wrapper { background: transparent; }
 .tiptap-editor { outline: none; min-height: 80px; background: transparent; font-size: 13px; }

@@ -134,6 +134,40 @@ export function getLinkLabel(url: string): string {
     }
 }
 
+// ── LABEL DE AÇÃO PARA LINKS (preview) ──
+// Retorna texto amigável orientado a ação (sem mostrar URL)
+function getLinkActionLabel(url: string): string {
+    if (!url) return 'Acessar recurso'
+    try {
+        const host = new URL(url).hostname.replace(/^www\./, '')
+        if (host === 'youtube.com' || host === 'youtu.be') return 'Assistir vídeo'
+        if (host === 'drive.google.com') return 'Abrir no Drive'
+        if (host === 'docs.google.com') return 'Abrir documento'
+        if (host === 'open.spotify.com') return 'Ouvir no Spotify'
+        if (host === 'soundcloud.com') return 'Ouvir áudio'
+        return 'Acessar recurso'
+    } catch { return 'Acessar recurso' }
+}
+
+// Transforma HTML de descrição para preview:
+// - <a href="URL">URL</a> → <a href="URL">label amigável</a>
+// - URLs soltas no texto → <a href="URL">label amigável</a>
+export function limparLinksPreview(html: string): string {
+    if (!html) return ''
+    // 1. Âncoras cujo texto visível É a URL
+    let r = html.replace(
+        /<a([^>]*?)href="([^"]+)"([^>]*?)>(https?:\/\/[^<]+)<\/a>/gi,
+        (_, pre, href, post) =>
+            `<a${pre}href="${href}"${post} target="_blank" rel="noreferrer" class="preview-link">${getLinkActionLabel(href)}</a>`
+    )
+    // 2. URLs soltas em nós de texto (não precedidas de = " ' <)
+    r = r.replace(
+        /(?<![='"<])(https?:\/\/[^\s<>"'&]+)/g,
+        url => `<a href="${url}" target="_blank" rel="noreferrer" class="preview-link">${getLinkActionLabel(url)}</a>`
+    )
+    return r
+}
+
 // ── VALIDAÇÃO DE SCHEMA DE BACKUP ──
 // Verifica se o arquivo JSON importado tem a estrutura esperada do MusiLab.
 export function validarBackup(data: unknown): { valido: boolean; erro?: string } {
