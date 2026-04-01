@@ -1304,14 +1304,14 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
             </button>
             {secoesForm.has('avaliacao') && (
               <div className="px-5 pt-4 pb-5 space-y-4">
-                <div className="flex justify-end">
-                  <button type="button" onClick={sugerirAvaliacaoIA} disabled={gerandoAvaliacao}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 dark:text-indigo-400 transition-colors disabled:opacity-50">
-                    {gerandoAvaliacao ? '⏳ Gerando...' : '✨ Sugerir com IA'}
-                  </button>
-                </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">📊 O que observarei para saber se funcionou?</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-0">📊 O que observarei para saber se funcionou?</label>
+                    <button type="button" onClick={sugerirAvaliacaoIA} disabled={gerandoAvaliacao}
+                      className="flex items-center gap-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-400/10 dark:hover:bg-violet-400/20 dark:text-violet-400 dark:border-violet-400/25 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                      {gerandoAvaliacao ? '⏳ Gerando...' : '✨ Gerar com IA'}
+                    </button>
+                  </div>
                   <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
                     <TipTapEditor
                       key={`avaliacao-evidencia-${plano.id}-${avaliacaoIAKey}`}
