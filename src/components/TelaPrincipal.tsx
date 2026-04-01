@@ -698,7 +698,9 @@ export default function TelaPrincipal() {
                             ? { ...p, vivenciasClassificadas: vivencias, orffMeios: meiosOrff }
                             : p
                     ))
-                    setClasseNotif({ planoId: snapId, titulo: snapTitulo, vivencias, meiosOrff, conceitos })
+                    // Só propõe conceitos se o plano ainda não tiver nenhum salvo
+                    const jaTemConceitos = (snapPlano.conceitos?.length ?? 0) > 0
+                    setClasseNotif({ planoId: snapId, titulo: snapTitulo, vivencias, meiosOrff, conceitos: jaTemConceitos ? [] : conceitos })
                 })
                 .catch(() => {/* silencioso */})
         }
