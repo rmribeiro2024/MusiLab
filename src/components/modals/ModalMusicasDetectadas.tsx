@@ -238,15 +238,17 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
         if (classeNotif) setDraftConceitos(classeNotif.conceitos ?? [])
     }, [classeNotif])
 
-    const temMusicas = showModalMusicas && musicasDetectadas.length > 0
-    const temClasseNotif = !!classeNotif
-
-    if (!temMusicas && !temClasseNotif) return null
-
     const planoId = planoSelecionado?.id ?? classeNotif?.planoId ?? ''
     const encontradas = musicasDetectadas.filter(d => d.classificacao === 'encontrada')
     const ambiguas    = musicasDetectadas.filter(d => d.classificacao === 'ambigua')
     const novas       = musicasDetectadas.filter(d => d.classificacao === 'nova')
+
+    // Só exibe o modal de musicas quando há ação necessaria (ambiguas ou novas)
+    // "encontradas" sao vinculadas automaticamente — sem necessidade de confirmar
+    const temMusicas = showModalMusicas && (ambiguas.length > 0 || novas.length > 0)
+    const temClasseNotif = !!classeNotif
+
+    if (!temMusicas && !temClasseNotif) return null
 
     const CLASP_MAP: Record<string, { label: string; dot: string; bg: string; border: string; text: string }> = {
         tecnica:     { label: 'Técnica',           dot: '#f472b6', bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.25)', text: '#ec4899' },
@@ -365,20 +367,19 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
                         <div className="border-t border-slate-100 dark:border-[#374151]" />
                     )}
 
-                    {/* Músicas detectadas */}
+                    {/* Músicas detectadas — apenas acoes necessarias */}
                     {temMusicas && (
                         <>
                             <div>
                                 <p className="text-[10px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#6B7280] mb-1">
                                     Músicas detectadas
                                     <span className="ml-1.5 font-normal normal-case text-slate-400">
-                                        — {musicasDetectadas.length} {musicasDetectadas.length === 1 ? 'referência' : 'referências'}
+                                        — {ambiguas.length + novas.length} {(ambiguas.length + novas.length) === 1 ? 'referência' : 'referências'}
                                     </span>
                                 </p>
                             </div>
-                            {encontradas.length > 0 && <SecaoEncontradas itens={encontradas} planoId={planoId} />}
-                            {ambiguas.length > 0    && <SecaoAmbiguas    itens={ambiguas}    planoId={planoId} />}
-                            {novas.length > 0       && <SecaoNovas       itens={novas}       planoId={planoId} />}
+                            {ambiguas.length > 0 && <SecaoAmbiguas itens={ambiguas} planoId={planoId} />}
+                            {novas.length > 0    && <SecaoNovas    itens={novas}    planoId={planoId} />}
                         </>
                     )}
                 </div>

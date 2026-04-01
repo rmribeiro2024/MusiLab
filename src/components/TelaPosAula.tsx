@@ -51,7 +51,10 @@ export default function TelaPosAula() {
 
     const fecharPainel = () => {
         setPainelVisible(false)
-        setTimeout(() => setPainelAberto(false), 280)
+        setTimeout(() => {
+            setPainelAberto(false)
+            document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' })
+        }, 280)
     }
 
     const navDia = (delta: number) => {
