@@ -560,22 +560,17 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
 
         {/* Ação + Chevron */}
         <div className="flex items-center gap-2 shrink-0 pt-0.5">
-          {/* Botão Registrar proeminente — só aulas passadas não registradas, card fechado */}
-          {needsAction && !aberto && (
+          {/* Botão Avaliar aula — sempre visível para aulas passadas */}
+          {(needsAction || jaRegistrado) && (
             <button
               onClick={abrirRegistro}
-              className="shrink-0 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg transition-colors"
+              className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors"
+              style={jaRegistrado
+                ? { background: 'transparent', color: isDarkMode ? '#6B7280' : '#94A3B8', border: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}` }
+                : { background: '#4f46e5', color: '#fff' }
+              }
             >
-              Registrar
-            </button>
-          )}
-          {jaRegistrado && !aberto && (
-            <button
-              onClick={abrirRegistro}
-              className="w-5 h-5 flex items-center justify-center rounded-full shrink-0 transition-opacity hover:opacity-80"
-              data-tip="Editar registro pós-aula"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-500/70" />
+              {jaRegistrado ? 'Ver avaliação' : 'Avaliar aula'}
             </button>
           )}
           <svg
@@ -716,21 +711,6 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
               )
             })()}
 
-            {/* Botão registrar pós-aula — só quando não registrado */}
-            {!jaRegistrado && (
-              <div
-                className="mt-3 pt-3"
-                style={{ borderTop: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}` }}
-              >
-                <button
-                  onClick={abrirRegistro}
-                  className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold"
-                  style={{ background: '#4f46e5', color: '#fff' }}
-                >
-                  Avaliar aula
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
