@@ -2,6 +2,54 @@ import DOMPurify from 'dompurify'
 import { supabase } from './supabase'
 import type { SyncStatus } from '../types'
 
+// ── LISTA CURADA DE CONCEITOS MUSICAIS PEDAGÓGICOS ──────────────────────────
+// Usada como lista fechada para detecção por IA — impede conceitos genéricos.
+// Baseada em: Swanwick (CLASP), Orff-Schulwerk, Dalcroze, Gordon (MLT),
+// Elliott (Music Matters), BNCC Arte/Música, parâmetros do som clássicos.
+export const CONCEITOS_MUSICAIS: string[] = [
+  // Ritmo e Organização Temporal
+  'Pulsação', 'Andamento', 'Métrica', 'Compasso Binário', 'Compasso Ternário',
+  'Compasso Quaternário', 'Células Rítmicas', 'Síncope', 'Ostinato', 'Polirritmia',
+  'Acento Rítmico', 'Pausa', 'Subdivisão',
+  // Altura e Melodia
+  'Altura', 'Grave e Agudo', 'Contorno Melódico', 'Fraseado', 'Intervalos',
+  'Escala', 'Escala Pentatônica', 'Tonalidade', 'Modo', 'Afinação',
+  // Harmonia e Textura
+  'Acorde', 'Campo Harmônico', 'Consonância', 'Dissonância', 'Textura Musical',
+  'Uníssono', 'Polifonia', 'Homofonia', 'Bordão',
+  // Forma e Estrutura
+  'Forma AB', 'Forma ABA', 'Cânone', 'Rondó', 'Motivo', 'Frase Musical',
+  'Repetição', 'Contraste', 'Variação', 'Introdução e Coda',
+  // Dinâmica e Expressão
+  'Dinâmica', 'Crescendo', 'Decrescendo', 'Articulação', 'Legato', 'Staccato',
+  'Timbre', 'Caráter Musical', 'Expressão Musical',
+  // Voz e Corpo
+  'Respiração Diafragmática', 'Emissão Vocal', 'Ressonância Vocal',
+  'Percussão Corporal', 'Coordenação Motora', 'Movimento Expressivo',
+  // Processos Criativos
+  'Improvisação', 'Composição', 'Arranjo', 'Criação Coletiva',
+  // Escuta e Percepção
+  'Escuta Ativa', 'Percepção Rítmica', 'Percepção Melódica', 'Análise Auditiva',
+  // Contexto Cultural
+  'Gênero Musical', 'Folclore Brasileiro', 'Ciranda', 'Samba', 'Maracatu',
+]
+
+// ── COR ESTÁVEL POR CONCEITO (hash determinístico) ───────────────────────────
+// Mesmo conceito → mesma cor em qualquer renderização.
+const CONCEPT_COLORS = [
+  { bg: 'rgba(99,102,241,0.12)',  border: 'rgba(99,102,241,0.3)',  text: '#6366f1' }, // indigo
+  { bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.3)',  text: '#8b5cf6' }, // violet
+  { bg: 'rgba(20,184,166,0.12)', border: 'rgba(20,184,166,0.3)',  text: '#0d9488' }, // teal
+  { bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)',  text: '#d97706' }, // amber
+  { bg: 'rgba(236,72,153,0.12)', border: 'rgba(236,72,153,0.3)',  text: '#db2777' }, // pink
+  { bg: 'rgba(14,165,233,0.12)', border: 'rgba(14,165,233,0.3)',  text: '#0284c7' }, // sky
+]
+export function getConceptColor(concept: string) {
+  let h = 0
+  for (let i = 0; i < concept.length; i++) h = (h * 31 + concept.charCodeAt(i)) >>> 0
+  return CONCEPT_COLORS[h % CONCEPT_COLORS.length]
+}
+
 // ── SANITIZAÇÃO XSS ──
 // Usa DOMPurify para limpar HTML antes de renderizar no DOM.
 // Permite apenas tags seguras de formatação de texto (sem script, iframe, etc).

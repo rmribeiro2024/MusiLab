@@ -4,6 +4,7 @@
 import React, { useState } from 'react'
 import { usePlanosContext } from '../../contexts/PlanosContext'
 import { useRepertorioContext } from '../../contexts/RepertorioContext'
+import { getConceptColor } from '../../lib/utils'
 import type { MusicaDetectada } from '../../lib/detectarMusicas'
 import type { Musica, VinculoMusicaPlano } from '../../types'
 
@@ -337,19 +338,24 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
                         </div>
                     )}
 
-                    {/* Conceitos detectados */}
+                    {/* Conceitos musicais */}
                     {draftConceitos.length > 0 && (
                         <div>
-                            <p className="text-[10px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#6B7280] mb-2">Conceitos detectados</p>
+                            <p className="text-[10px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#6B7280] mb-2">Conceitos musicais</p>
                             <div className="flex flex-wrap gap-1.5">
-                                {draftConceitos.map((c, i) => (
-                                    <span key={i} className="inline-flex items-center gap-1 text-[12px] text-slate-600 dark:text-[#9CA3AF] bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-[#374151] px-2.5 py-1 rounded-full">
-                                        {c}
-                                        <button type="button"
-                                            onClick={() => setDraftConceitos(prev => prev.filter((_, j) => j !== i))}
-                                            className="text-slate-300 hover:text-rose-400 transition-colors leading-none bg-transparent border-none cursor-pointer p-0 ml-0.5">×</button>
-                                    </span>
-                                ))}
+                                {draftConceitos.map((c, i) => {
+                                    const col = getConceptColor(c)
+                                    return (
+                                        <span key={i} className="inline-flex items-center gap-1 text-[12px] font-medium px-2.5 py-1 rounded-full"
+                                            style={{ color: col.text, background: col.bg, border: `1px solid ${col.border}` }}>
+                                            {c}
+                                            <button type="button"
+                                                onClick={() => setDraftConceitos(prev => prev.filter((_, j) => j !== i))}
+                                                style={{ color: col.text, opacity: 0.5 }}
+                                                className="hover:opacity-100 transition-opacity leading-none bg-transparent border-none cursor-pointer p-0 ml-0.5">×</button>
+                                        </span>
+                                    )
+                                })}
                             </div>
                         </div>
                     )}

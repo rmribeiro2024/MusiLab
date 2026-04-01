@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import type { Plano, AtividadeRoteiro, RecursoItem, VinculoMusicaPlano, RegistroPosAula } from '../types'
-import { gerarIdSeguro } from '../lib/utils'
+import { gerarIdSeguro, CONCEITOS_MUSICAIS } from '../lib/utils'
 import { showToast } from '../lib/toast'
 import { BNCC_MUSICA, buscarBNCC, extrairCodigo } from '../lib/bnccMusica'
 import { agruparPorCategoria } from '../lib/taxonomia'
@@ -225,18 +225,22 @@ async function analisarConceitosPlano(
     .join('\n')
   if (!listaAtivs) return []
 
-  const prompt = `Você é especialista em pedagogia musical. Analise o plano de aula abaixo e identifique os 3 a 5 conceitos musicais CENTRAIS — aqueles que realmente estruturam o aprendizado desta aula, não conceitos periféricos ou implícitos.
+  const listaFechada = CONCEITOS_MUSICAIS.join(', ')
+
+  const prompt = `Você é especialista em pedagogia musical. Analise o plano de aula e identifique de 1 a 4 conceitos musicais CENTRAIS e EXPLÍCITOS — aqueles que realmente estruturam o aprendizado desta aula.
 
 Título: "${titulo}"
 Objetivo: "${objetivo?.replace(/<[^>]+>/g, '').slice(0, 200) || ''}"
 Atividades:
 ${listaAtivs}
 
-Regras:
-- Máximo 5 conceitos, mínimo 1
-- Só conceitos que aparecem de forma explícita e central na aula
-- Prefira termos pedagógicos precisos (ex: "Pulsação" em vez de "Ritmo"; "Escuta ativa" em vez de "Ouvir música")
-- Se duas atividades tratam do mesmo conceito, liste-o UMA vez
+REGRAS OBRIGATÓRIAS:
+- Escolha SOMENTE conceitos desta lista — não invente, não use sinônimos, não use termos genéricos:
+  ${listaFechada}
+- Apenas conceitos que são explícitos e centrais na aula (não periféricos ou inferidos)
+- Se duas atividades tratam do mesmo conceito, liste UMA vez
+- Se nenhum conceito da lista for claramente central, retorne array vazio
+- Máximo 4 conceitos
 
 Responda APENAS com JSON: {"conceitos": ["conceito1", "conceito2"]}
 Se não identificar nenhum, retorne: {"conceitos": []}`
@@ -246,7 +250,11 @@ Se não identificar nenhum, retorne: {"conceitos": []}`
     const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || raw.match(/(\{[\s\S]*\})/)
     if (!match) return []
     const result = JSON.parse(match[1] || match[0])
-    return Array.isArray(result.conceitos) ? result.conceitos.slice(0, 5) : []
+    // Filtrar pela lista fechada — descarta qualquer conceito inventado pela IA
+    const validos = CONCEITOS_MUSICAIS.map(c => c.toLowerCase())
+    return Array.isArray(result.conceitos)
+      ? result.conceitos.filter((c: string) => validos.includes(c.toLowerCase())).slice(0, 4)
+      : []
   } catch { return [] }
 }
 

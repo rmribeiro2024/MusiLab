@@ -50,7 +50,7 @@ function MusicaCardComPlayer({ v, onRemover, getYoutubeId }: {
         </>
     )
 }
-import { sanitizar } from '../lib/utils'
+import { sanitizar, getConceptColor } from '../lib/utils'
 import { showToast } from '../lib/toast'
 import { detectarMusicasNoPlano } from '../lib/detectarMusicas'
 
@@ -139,7 +139,15 @@ CONTA: xilofone, flauta, violão, percussão simples, instrumentos de lâminas, 
 NÃO CONTA: instrumentos apenas mencionados no contexto teórico sem serem tocados.
 
 ──────────────────────────────────────────────
-Identifique também até 4 conceitos musicais pedagógicos centrais do plano (ex: "Pulsação", "Fraseado", "Dinâmica", "Forma ABA").
+──────────────────────────────────────────────
+EIXO 3 — CONCEITOS MUSICAIS PEDAGÓGICOS
+Identifique de 1 a 4 conceitos musicais que são CENTRAIS e EXPLÍCITOS nesta aula.
+
+REGRAS OBRIGATÓRIAS:
+- Escolha SOMENTE conceitos desta lista — não invente, não use sinônimos, não use termos genéricos:
+  Pulsação, Andamento, Métrica, Compasso Binário, Compasso Ternário, Compasso Quaternário, Células Rítmicas, Síncope, Ostinato, Polirritmia, Acento Rítmico, Pausa, Subdivisão, Altura, Grave e Agudo, Contorno Melódico, Fraseado, Intervalos, Escala, Escala Pentatônica, Tonalidade, Modo, Afinação, Acorde, Campo Harmônico, Consonância, Dissonância, Textura Musical, Uníssono, Polifonia, Homofonia, Bordão, Forma AB, Forma ABA, Cânone, Rondó, Motivo, Frase Musical, Repetição, Contraste, Variação, Introdução e Coda, Dinâmica, Crescendo, Decrescendo, Articulação, Legato, Staccato, Timbre, Caráter Musical, Expressão Musical, Respiração Diafragmática, Emissão Vocal, Ressonância Vocal, Percussão Corporal, Coordenação Motora, Movimento Expressivo, Improvisação, Composição, Arranjo, Criação Coletiva, Escuta Ativa, Percepção Rítmica, Percepção Melódica, Análise Auditiva, Gênero Musical, Folclore Brasileiro, Ciranda, Samba, Maracatu
+- Se nenhum conceito da lista for claramente central na aula, retorne array vazio
+- Máximo 4 conceitos
 
 Responda SOMENTE com JSON válido (sem texto extra):
 {"clasp":{"tecnica":0,"performance":0,"apreciacao":0,"criacao":0,"teoria":0},"orff":{"fala":false,"canto":false,"movimento":false,"instrumental":false},"conceitos":["conceito1"]}`
@@ -1348,18 +1356,23 @@ export default function TelaPrincipal() {
                     })()}
                 </div>
 
-                {/* ── Conceitos do plano — chips sempre visíveis ── */}
+                {/* ── Conceitos musicais do plano — chips sempre visíveis ── */}
                 {(planoEditando.conceitos || []).length > 0 && (
                     <div className="px-3 sm:px-6 py-3 border-b border-slate-100 dark:border-[#374151] flex flex-wrap gap-1.5 items-center">
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-[#4B5563] uppercase tracking-[0.08em] shrink-0 mr-0.5">Conceitos</span>
-                        {(planoEditando.conceitos || []).map(c => (
-                            <span key={c} className="inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-400/10 text-purple-600 dark:text-purple-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-[#4B5563] uppercase tracking-[0.08em] shrink-0 mr-0.5">Conceitos musicais</span>
+                        {(planoEditando.conceitos || []).map(c => {
+                            const col = getConceptColor(c)
+                            return (
+                            <span key={c} className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg"
+                                style={{ color: col.text, background: col.bg, border: `1px solid ${col.border}` }}>
                                 {c}
                                 <button type="button"
                                     onClick={() => setPlanoEditando({ ...planoEditando, conceitos: (planoEditando.conceitos || []).filter(x => x !== c) })}
-                                    className="hover:text-rose-500 transition-colors leading-none ml-0.5">×</button>
+                                    style={{ color: col.text, opacity: 0.5 }}
+                                    className="hover:opacity-100 transition-opacity leading-none ml-0.5">×</button>
                             </span>
-                        ))}
+                            )
+                        })}
                         <button type="button"
                             onClick={() => setSecoesForm(prev => new Set([...prev, 'classificacao']))}
                             className="text-[10px] text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 underline transition-colors ml-1">
