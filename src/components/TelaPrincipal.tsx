@@ -312,13 +312,8 @@ function ModalConceitosPlano({ conceitos, onConfirmar, onFechar }: ModalConceito
     )
 }
 
-// ── Card unificado: CLASP + Orff + conceitos após salvar plano ───────────────
-interface ClasseNotifCardProps {
-    notif: { planoId: string; titulo: string; vivencias: Record<string, number>; meiosOrff: Record<string, boolean>; conceitos: string[] }
-    onFechar: () => void
-    onAplicar: (conceitos: string[]) => void
-}
-function ClasseNotifCard({ notif, onFechar, onAplicar }: ClasseNotifCardProps) {
+// ── ClasseNotifCard removido — funcionalidade migrada para ModalMusicasDetectadas unificado ──
+function ClasseNotifCard_UNUSED({ notif, onFechar, onAplicar }: { notif: any; onFechar: () => void; onAplicar: (c: string[]) => void }) {
     const [draft, setDraft] = React.useState<string[]>(notif.conceitos)
     const CLASP_MAP: Record<string, { label: string; dot: string; text: string; bg: string; border: string }> = {
         tecnica:     { label: 'Técnica',           dot: '#f472b6', text: '#f9a8d4', bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.2)' },
@@ -2660,7 +2655,24 @@ export default function TelaPrincipal() {
                 onClose={() => setPlanoParaAplicar(null)}
             />
         )}
-        <ModalMusicasDetectadas />
+        {/* ── Modal unificado: plano salvo + vivências + músicas detectadas ── */}
+        <ModalMusicasDetectadas
+            classeNotif={classeNotif}
+            onFecharNotif={() => setClasseNotif(null)}
+            onAplicarConceitos={(conceitos) => {
+                if (!classeNotif) return
+                const pid = classeNotif.planoId
+                setPlanos(prev => prev.map(p =>
+                    String(p.id) === pid ? { ...p, conceitos } : p
+                ))
+                setPlanoEditando(prev =>
+                    prev && String(prev.id) === pid ? { ...prev, conceitos } : prev
+                )
+                setSecoesForm(prev => new Set([...prev, 'classificacao']))
+                showToast('Conceitos aplicados ao plano', 'success')
+                setClasseNotif(null)
+            }}
+        />
 
         {/* ── Modal revisão de conceitos do plano ── */}
         {modalConceitosPlano && (
@@ -2675,7 +2687,6 @@ export default function TelaPrincipal() {
                         prev && String(prev.id) === pid ? { ...prev, conceitos } : prev
                     )
                     setModalConceitosPlano(null)
-                    // Abre o accordion de Classificação para o professor ver os chips aplicados
                     setSecoesForm(prev => new Set([...prev, 'classificacao']))
                     showToast('Conceitos do plano atualizados', 'success')
                 }}
@@ -2689,26 +2700,6 @@ export default function TelaPrincipal() {
                 <span className="w-3 h-3 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin" />
                 Detectando conceitos…
             </div>
-        )}
-
-        {/* ── Card unificado: vivências CLASP + conceitos após salvar plano ── */}
-        {classeNotif && (
-            <ClasseNotifCard
-                notif={classeNotif}
-                onFechar={() => setClasseNotif(null)}
-                onAplicar={(conceitos) => {
-                    const pid = classeNotif.planoId
-                    setPlanos(prev => prev.map(p =>
-                        String(p.id) === pid ? { ...p, conceitos } : p
-                    ))
-                    setPlanoEditando(prev =>
-                        prev && String(prev.id) === pid ? { ...prev, conceitos } : prev
-                    )
-                    setSecoesForm(prev => new Set([...prev, 'classificacao']))
-                    showToast('Conceitos aplicados ao plano', 'success')
-                    setClasseNotif(null)
-                }}
-            />
         )}
     </>
     );
