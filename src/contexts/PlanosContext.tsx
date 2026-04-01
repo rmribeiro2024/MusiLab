@@ -248,6 +248,8 @@ export interface PlanosContextValue {
     // backup
     baixarBackup: () => void
     restaurarBackup: (event: React.ChangeEvent<HTMLInputElement>) => void
+    // manutenção
+    limparClassificacoesPlanos: () => void
     // userId
     userId: string | null
 }
@@ -1379,6 +1381,21 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         reader.readAsText(file); event.target.value = ''
     }
 
+    // ── Manutenção: limpar dados de classificação ─────────────────────────
+    const limparClassificacoesPlanos = useCallback(() => {
+        setModalConfirm({
+            titulo: 'Limpar classificações?',
+            conteudo: `Remove vivenciasClassificadas e orffMeios de todos os ${planos.length} planos. As classificações serão regeneradas automaticamente quando cada plano for salvo novamente.`,
+            labelConfirm: 'Limpar', labelCancelar: 'Cancelar', perigo: true,
+            onConfirm: () => {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const limpos = planos.map(({ vivenciasClassificadas: _v, orffMeios: _o, ...rest }) => rest as Plano)
+                setPlanos(limpos)
+                showToast(`${planos.length} planos limpos. Classificações serão regeneradas ao salvar cada plano.`, 'success')
+            }
+        })
+    }, [planos, setModalConfirm])
+
     // ── Detecção de músicas no plano ──────────────────────────────────────
     const [musicasDetectadas, setMusicasDetectadas] = useState<MusicaDetectada[]>([])
     const limparMusicasDetectadas = () => setMusicasDetectadas([])
@@ -1640,6 +1657,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido, atualizarKanbanStatus, criarPlanosDeSequencia,
         salvarNotaAdaptacao, removerNotaAdaptacao,
         baixarBackup, restaurarBackup,
+        limparClassificacoesPlanos,
         userId,
     }), [planos, planoSelecionado, modoEdicao, planoEditando, formExpandido, materiaisBloqueados, novoConceito, adicionandoConceito, novaUnidade, adicionandoUnidade, novoRecursoUrl, novoRecursoTipo, novaDataAula, dataEdicao, busca, filtroConceito, filtroUnidade, filtroFaixa, filtroNivel, filtroEscola, filtroTag, filtroSegmento, filtroFavorito, filtroStatus, modoVisualizacao, ordenacaoCards, limparFiltros, statusDropdownId, recursosExpandidos, modalImportarMusica, modalImportarAtividade, dragActiveIndex, dragOverIndex, escolas, segmentosPlanos, duracoesSugestao, planosFiltrados, buscaAvancada, sugerirBNCC, gerandoBNCC, sugerirObjetivosIA, gerandoObjetivos, novoPlano, editarPlano, salvarPlano, excluirPlano, duplicarPlano, fecharModal, restaurarVersao, toggleConceito, toggleFaixa, toggleUnidade, adicionarRecurso, removerRecurso, adicionarDataEdicao, removerDataEdicao, adicionarDataAulaVisualizacao, removerDataAulaVisualizacao, adicionarConceitoNovo, adicionarTagNova, removerTag, adicionarUnidadeNova, adicionarAtividadeRoteiro, removerAtividadeRoteiro, atualizarAtividadeRoteiro, toggleFavorito, handleDragStart, handleDragEnter, handleDragEnd, toggleRecursosAtiv, templatesRoteiro, modalTemplates, nomeNovoTemplate, modalConfiguracoes, musicasDetectadas, setMusicasDetectadas, limparMusicasDetectadas, showModalMusicas, vincularMusicaAoPlano, desvincularMusicaDoPlano, vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano, abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro, adicionarAtividadeAoPlano, sugerirPlanoParaTurma, salvarRegistroRapido, atualizarKanbanStatus, criarPlanosDeSequencia, baixarBackup, restaurarBackup, userId])
 

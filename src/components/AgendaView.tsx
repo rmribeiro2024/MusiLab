@@ -1134,7 +1134,7 @@ function WeekendMode({
   const cText    = dk ? '#E5E7EB' : '#1E2A4A'
   const cSub     = dk ? '#9CA3AF' : '#64748B'
   const cDim     = dk ? '#4B5563' : '#94A3B8'
-  const cDimmer  = dk ? '#4B5563' : '#CBD5E1'
+  const cDimmer  = dk ? '#6B7280' : '#CBD5E1'
 
   const DIAS_PT = ['domingo','segunda','terça','quarta','quinta','sexta','sábado']
 
@@ -1374,6 +1374,16 @@ function WeekendMode({
           <p style={{ fontSize: 14, color: cDimmer }}>Tudo em dia por aqui.</p>
         </div>
       )}
+
+      {/* Manutenção */}
+      <div style={{ marginTop: 24, textAlign: 'center' }}>
+        <button
+          onClick={limparClassificacoesPlanos}
+          style={{ fontSize: 10, color: cDimmer, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}
+        >
+          Limpar dados de classificação
+        </button>
+      </div>
     </div>
   )
 }
@@ -1382,7 +1392,7 @@ function WeekendMode({
 
 export default function AgendaView() {
   const { anosLetivos } = useAnoLetivoContext()
-  const { planos } = usePlanosContext()
+  const { planos, limparClassificacoesPlanos } = usePlanosContext()
   const { planejamentos } = usePlanejamentoTurmaContext()
   const { repertorio } = useRepertorioContext()
   const { aplicacoes } = useAplicacoesContext()
