@@ -220,10 +220,11 @@ interface ModalSalvoUnificadoProps {
     } | null
     onFecharNotif?: () => void
     onAplicarConceitos?: (conceitos: string[]) => void
+    onAplicarClassificacao?: (vivencias: Record<string, number>, meiosOrff: Record<string, boolean>) => void
 }
 
 // ── Modal principal unificado ─────────────────────────────────────────────────
-export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onAplicarConceitos }: ModalSalvoUnificadoProps) {
+export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onAplicarConceitos, onAplicarClassificacao }: ModalSalvoUnificadoProps) {
     const {
         musicasDetectadas,
         limparMusicasDetectadas,
@@ -233,9 +234,15 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
     } = usePlanosContext()
 
     const [draftConceitos, setDraftConceitos] = React.useState<string[]>([])
+    const [draftVivencias, setDraftVivencias] = React.useState<Record<string, number>>({})
+    const [draftMeios, setDraftMeios] = React.useState<Record<string, boolean>>({})
 
     React.useEffect(() => {
-        if (classeNotif) setDraftConceitos(classeNotif.conceitos ?? [])
+        if (classeNotif) {
+            setDraftConceitos(classeNotif.conceitos ?? [])
+            setDraftVivencias(classeNotif.vivencias ?? {})
+            setDraftMeios(classeNotif.meiosOrff ?? {})
+        }
     }, [classeNotif])
 
     const planoId = planoSelecionado?.id ?? classeNotif?.planoId ?? ''
@@ -264,18 +271,27 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
         instrumental: { label: 'Instrumental', cor: '#60a5fa' },
     }
 
-    const ativasClasp    = classeNotif ? Object.entries(classeNotif.vivencias).filter(([k, v]) => v > 0 && k !== 'corpo').sort(([, a], [, b]) => b - a) : []
-    const meiosPresentes = classeNotif ? Object.entries(classeNotif.meiosOrff ?? {}).filter(([, v]) => v === true) : []
-
     function fechar() {
         if (temMusicas) { setShowModalMusicas(false); limparMusicasDetectadas() }
         if (temClasseNotif && onFecharNotif) onFecharNotif()
     }
 
     function aplicar() {
-        if (onAplicarConceitos) onAplicarConceitos(draftConceitos)
+        if (onAplicarConceitos && draftConceitos.length > 0) onAplicarConceitos(draftConceitos)
+        if (onAplicarClassificacao) onAplicarClassificacao(draftVivencias, draftMeios)
         if (temMusicas) { setShowModalMusicas(false); limparMusicasDetectadas() }
+        if (temClasseNotif && onFecharNotif) onFecharNotif()
     }
+
+    function toggleVivencia(key: string) {
+        setDraftVivencias(prev => ({ ...prev, [key]: (prev[key] ?? 0) > 0 ? 0 : 1 }))
+    }
+
+    function toggleMeio(key: string) {
+        setDraftMeios(prev => ({ ...prev, [key]: !prev[key] }))
+    }
+
+    const temClassificacao = temClasseNotif
 
     const titulo = classeNotif?.titulo ?? planoSelecionado?.titulo ?? ''
 
@@ -303,37 +319,44 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
                 {/* Corpo rolável */}
                 <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-5">
 
-                    {/* Vivências CLASP */}
-                    {ativasClasp.length > 0 && (
+                    {/* Vivências CLASP — todas as opções, togláveis */}
+                    {temClassificacao && (
                         <div>
                             <p className="text-[10px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#6B7280] mb-2">Vivências</p>
                             <div className="flex flex-wrap gap-1.5">
-                                {ativasClasp.map(([key]) => {
-                                    const c = CLASP_MAP[key]; if (!c) return null
+                                {Object.entries(CLASP_MAP).map(([key, c]) => {
+                                    const ativo = (draftVivencias[key] ?? 0) > 0
                                     return (
-                                        <div key={key} className="flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-full"
-                                            style={{ color: c.text, background: c.bg, border: `1px solid ${c.border}` }}>
-                                            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: c.dot }} />
+                                        <button key={key} type="button" onClick={() => toggleVivencia(key)}
+                                            className="flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-full transition-opacity cursor-pointer border-none"
+                                            style={ativo
+                                                ? { color: c.text, background: c.bg, border: `1px solid ${c.border}` }
+                                                : { color: '#94a3b8', background: 'transparent', border: '1px solid #e2e8f0' }}>
+                                            <div className="w-1.5 h-1.5 rounded-full shrink-0"
+                                                style={{ background: ativo ? c.dot : '#cbd5e1' }} />
                                             {c.label}
-                                        </div>
+                                        </button>
                                     )
                                 })}
                             </div>
                         </div>
                     )}
 
-                    {/* Meios Orff */}
-                    {meiosPresentes.length > 0 && (
+                    {/* Meios Orff — todos, togláveis */}
+                    {temClassificacao && (
                         <div>
                             <p className="text-[10px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#6B7280] mb-2">Meios expressivos</p>
                             <div className="flex flex-wrap gap-1.5">
-                                {meiosPresentes.map(([key]) => {
-                                    const m = ORFF_MAP[key]; if (!m) return null
+                                {Object.entries(ORFF_MAP).map(([key, m]) => {
+                                    const ativo = draftMeios[key] === true
                                     return (
-                                        <div key={key} className="text-[12px] px-2.5 py-1 rounded-full font-medium"
-                                            style={{ color: m.cor, background: `${m.cor}18`, border: `1px solid ${m.cor}30` }}>
+                                        <button key={key} type="button" onClick={() => toggleMeio(key)}
+                                            className="text-[12px] px-2.5 py-1 rounded-full font-medium transition-opacity cursor-pointer border-none"
+                                            style={ativo
+                                                ? { color: m.cor, background: `${m.cor}18`, border: `1px solid ${m.cor}40` }
+                                                : { color: '#94a3b8', background: 'transparent', border: '1px solid #e2e8f0' }}>
                                             {m.label}
-                                        </div>
+                                        </button>
                                     )
                                 })}
                             </div>
@@ -390,10 +413,10 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
                         className="flex-1 py-2.5 text-[13px] text-slate-500 dark:text-[#9CA3AF] bg-transparent border border-slate-200 dark:border-[#374151] rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-colors font-medium">
                         {draftConceitos.length > 0 ? 'Ignorar' : 'Fechar'}
                     </button>
-                    {draftConceitos.length > 0 && (
+                    {temClassificacao && (
                         <button onClick={aplicar}
                             className="flex-[2] py-2.5 text-[13px] font-semibold text-white bg-indigo-600 border-none rounded-xl cursor-pointer hover:bg-indigo-700 transition-colors">
-                            Aplicar conceitos
+                            Salvar classificação
                         </button>
                     )}
                 </div>

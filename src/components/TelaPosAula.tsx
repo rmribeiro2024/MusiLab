@@ -22,8 +22,32 @@ export default function TelaPosAula() {
         setRegSegmentoSel,
         setRegTurmaSel,
     } = useCalendarioContext()
-    const { aplicacoesPorData } = useAplicacoesContext()
+    const { aplicacoesPorData, criarAplicacoes } = useAplicacoesContext()
     const { planejamentos, salvarPlanejamentoParaTurma } = usePlanejamentoTurmaContext()
+
+    // ── Estado do picker "Importar do banco" ──────────────────────────────────
+    const [bancoPickerIdx, setBancoPickerIdx] = useState<number | null>(null)
+    const [bancoBusca, setBancoBusca] = useState('')
+
+    const fecharBancoPicker = () => { setBancoPickerIdx(null); setBancoBusca('') }
+
+    const planosFiltradosBanco = bancoBusca.trim().length >= 1
+        ? planos.filter(p => p.titulo?.toLowerCase().includes(bancoBusca.toLowerCase()))
+        : planos.slice(0, 20)
+
+    function vincularPlanoATurma(planoId: string | number, idx: number) {
+        const t = turmasEnriq[idx]
+        if (!t) return
+        criarAplicacoes(planoId, [{
+            anoLetivoId: t.aula.anoLetivoId,
+            escolaId: t.aula.escolaId,
+            segmentoId: t.aula.segmentoId,
+            turmaId: t.aula.turmaId,
+            data: dataSel,
+            horario: t.aula.horario,
+        }])
+        fecharBancoPicker()
+    }
 
     // ── Estado do modal "Planejar rápido" ─────────────────────────────────────
     const [planoRapidoIdx, setPlanoRapidoIdx] = useState<number | null>(null)
@@ -293,12 +317,17 @@ export default function TelaPosAula() {
                                         </div>
                                         {/* Linha de status de planejamento */}
                                         {!t.plano && !t.registrada && !getPlanoRapidoDaTurma(t) && (
-                                            <div className="mt-[3px] flex items-center gap-[6px]">
+                                            <div className="mt-[3px] flex items-center gap-[6px] flex-wrap">
                                                 <span className="text-[11px] text-amber-500 dark:text-amber-400">Sem plano vinculado</span>
                                                 <button
-                                                    onClick={e => abrirPlanoRapido(e, i)}
+                                                    onClick={e => { e.stopPropagation(); setBancoPickerIdx(i); setBancoBusca('') }}
                                                     className="text-[11px] text-[#5B5FEA] font-medium hover:underline shrink-0 cursor-pointer">
-                                                    Planejar rápido →
+                                                    Importar do banco →
+                                                </button>
+                                                <button
+                                                    onClick={e => abrirPlanoRapido(e, i)}
+                                                    className="text-[11px] text-slate-400 dark:text-[#6b7280] font-medium hover:underline shrink-0 cursor-pointer">
+                                                    Planejar rápido
                                                 </button>
                                             </div>
                                         )}
@@ -369,6 +398,54 @@ export default function TelaPosAula() {
                     </div>
                 </>
             )}
+
+            {/* ══ BOTTOM SHEET: IMPORTAR DO BANCO ══ */}
+            {bancoPickerIdx !== null && (() => {
+                const t = turmasEnriq[bancoPickerIdx]
+                if (!t) return null
+                return (
+                    <>
+                        <div className="fixed inset-0 z-40 bg-black/40" onClick={fecharBancoPicker} />
+                        <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto v2-card rounded-t-2xl border-t border-[#E6EAF0] dark:border-[#374151] shadow-[0_-4px_24px_rgba(0,0,0,0.12)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.5)] px-4 pt-4 pb-8 flex flex-col" style={{ maxHeight: '80dvh' }}>
+                            <div className="w-8 h-1 rounded-full bg-slate-200 dark:bg-slate-700 mx-auto mb-4 shrink-0" />
+                            <div className="flex items-center justify-between mb-3 shrink-0">
+                                <div>
+                                    <span className="text-[13px] font-semibold text-slate-700 dark:text-[#E5E7EB]">Importar plano do banco</span>
+                                    <p className="text-[11px] text-slate-400 dark:text-[#6b7280] mt-0.5">{t.segNome} · {t.turNome} — {t.escNome}</p>
+                                </div>
+                                <button onClick={fecharBancoPicker} className="w-7 h-7 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-[14px] cursor-pointer transition">×</button>
+                            </div>
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder="Buscar plano..."
+                                value={bancoBusca}
+                                onChange={e => setBancoBusca(e.target.value)}
+                                className="shrink-0 w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#374151] rounded-xl bg-transparent text-slate-700 dark:text-[#E5E7EB] placeholder-slate-400 outline-none focus:border-[#5B5FEA] mb-3"
+                            />
+                            <div className="overflow-y-auto flex-1 flex flex-col gap-1.5">
+                                {planosFiltradosBanco.length === 0 && (
+                                    <p className="text-[13px] text-slate-400 dark:text-[#6b7280] text-center py-6">Nenhum plano encontrado</p>
+                                )}
+                                {planosFiltradosBanco.map(p => (
+                                    <button
+                                        key={String(p.id)}
+                                        type="button"
+                                        onClick={() => vincularPlanoATurma(p.id, bancoPickerIdx)}
+                                        className="w-full text-left px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-100 dark:border-[#374151] hover:border-[#5B5FEA]/40 hover:bg-indigo-50/40 dark:hover:bg-[#5B5FEA]/10 transition-colors">
+                                        <div className="text-[13px] font-medium text-slate-700 dark:text-[#E5E7EB] truncate">{p.titulo}</div>
+                                        {(p.escola || p.faixaEtaria?.length) && (
+                                            <div className="text-[11px] text-slate-400 dark:text-[#6b7280] mt-0.5 truncate">
+                                                {[p.escola, (p.faixaEtaria || []).join(', ')].filter(Boolean).join(' · ')}
+                                            </div>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )
+            })()}
 
             {/* ══ BOTTOM SHEET: PLANEJAR RÁPIDO ══ */}
             {planoRapidoIdx !== null && (() => {

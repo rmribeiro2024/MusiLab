@@ -2686,8 +2686,18 @@ export default function TelaPrincipal() {
                 setPlanoEditando(prev =>
                     prev && String(prev.id) === pid ? { ...prev, conceitos } : prev
                 )
+            }}
+            onAplicarClassificacao={(vivencias, meiosOrff) => {
+                if (!classeNotif) return
+                const pid = classeNotif.planoId
+                setPlanos(prev => prev.map(p =>
+                    String(p.id) === pid ? { ...p, vivenciasClassificadas: vivencias, orffMeios: meiosOrff } : p
+                ))
+                setPlanoEditando(prev =>
+                    prev && String(prev.id) === pid ? { ...prev, vivenciasClassificadas: vivencias, orffMeios: meiosOrff } : prev
+                )
                 setSecoesForm(prev => new Set([...prev, 'classificacao']))
-                showToast('Conceitos aplicados ao plano', 'success')
+                showToast('Classificação salva', 'success')
                 setClasseNotif(null)
             }}
         />
