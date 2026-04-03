@@ -3,7 +3,6 @@
 // Foco: "O que vou dar para esta turma na próxima aula?"
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
-import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
@@ -17,20 +16,6 @@ import FormularioAulaPlena from './FormularioAulaPlena'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getMondayOf(date: Date): Date {
-    const d = new Date(date)
-    d.setHours(0, 0, 0, 0)
-    const day = d.getDay()
-    d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day))
-    return d
-}
-
-function addDays(date: Date, n: number): Date {
-    const d = new Date(date)
-    d.setDate(d.getDate() + n)
-    return d
-}
-
 function toYMD(date: Date): string {
     return date.toISOString().slice(0, 10)
 }
@@ -39,18 +24,6 @@ function formatDataCurta(ymd: string): string {
     const [, mm, dd] = ymd.split('-')
     const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
     return `${parseInt(dd)} ${meses[parseInt(mm) - 1]}`
-}
-
-function getDiaSemana(date: Date): string {
-    const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
-    return dias[date.getDay()]
-}
-
-// Avança apenas para dias úteis (Seg–Sex)
-function stepDiaUtil(date: Date, dir: 1 | -1): Date {
-    let d = addDays(date, dir)
-    while (d.getDay() === 0 || d.getDay() === 6) d = addDays(d, dir)
-    return d
 }
 
 function getNomeTurma(
@@ -112,207 +85,167 @@ function buildEscolaColorMap(anosLetivos: AnoLetivo[]): Record<string, { light: 
     return map
 }
 
-// ─── Sub-componente: Seletor de turma (sidebar compacta) ─────────────────────
+// ─── Sub-componente: Lista completa de turmas ────────────────────────────────
 
-interface SeletorProps {
-    dataSelecionada: Date
-    onDataChange: (d: Date) => void
+interface ListaTurmasProps {
     turmaSelecionada: TurmaSelecionada | null
     onSelecionarTurma: (t: TurmaSelecionada) => void
 }
 
-function SeletorTurma({ dataSelecionada, onDataChange, turmaSelecionada, onSelecionarTurma }: SeletorProps) {
-    const { obterTurmasDoDia } = useCalendarioContext()
+function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) {
     const { anosLetivos } = useAnoLetivoContext()
-    const { planejamentos, copiarPlanejamento } = usePlanejamentoTurmaContext()
-    const { aplicacoes } = useAplicacoesContext()
+    const { planos } = usePlanosContext()
+    const [busca, setBusca] = useState('')
     const escolaColorMap = useMemo(() => buildEscolaColorMap(anosLetivos), [anosLetivos])
 
-    // ── Drag-drop: copiar planejamento entre turmas ──
-    const [dragSrcId, setDragSrcId] = useState<string | null>(null)
-    const [dragOverId, setDragOverId] = useState<string | null>(null)
-    type CopyConfirm = { srcPlanoId: string; srcNome: string; dst: TurmaSelecionada; dstNome: string; dataPrevista: string }
-    const [copyConfirm, setCopyConfirm] = useState<CopyConfirm | null>(null)
+    // Computa info por turmaId: última data de aula e cor do dot
+    // Registros ficam em plano.registrosPosAula com campo r.turma === turmaId
+    const turmaInfo = useMemo(() => {
+        const map: Record<string, { dot: 'green' | 'amber' | 'red' | 'gray'; ultimaData: string | null }> = {}
+        for (const plano of planos) {
+            for (const reg of (plano.registrosPosAula ?? [])) {
+                const tid = String(reg.turma ?? '')
+                if (!tid) continue
+                const data = reg.dataAula ?? reg.data ?? null
+                const prev = map[tid]
+                if (prev && prev.ultimaData && data && data < prev.ultimaData) continue
+                const status = reg.statusAula ?? reg.resultadoAula ?? ''
+                const dot: 'green' | 'amber' | 'red' | 'gray' =
+                    ['concluida', 'bem', 'funcionou'].includes(status) ? 'green' :
+                    ['revisao', 'parcial'].includes(status) ? 'amber' :
+                    ['incompleta', 'nao_houve', 'nao_funcionou'].includes(status) ? 'red' : 'gray'
+                map[tid] = { dot, ultimaData: data }
+            }
+        }
+        return map
+    }, [planos])
 
-    const handleDrop = useCallback((e: React.DragEvent, dstAula: ReturnType<typeof obterTurmasDoDia>[number]) => {
-        e.preventDefault()
-        if (!dragSrcId || dragSrcId === String(dstAula.turmaId)) { setDragOverId(null); return }
-        const ymd = toYMD(dataSelecionada)
-        // busca plano mais recente da turma de origem (independente de data)
-        const srcPlanos = planejamentos
-          .filter(p => String(p.turmaId) === dragSrcId)
-          .sort((a, b) => (b.atualizadoEm ?? b.criadoEm ?? '').localeCompare(a.atualizadoEm ?? a.criadoEm ?? ''))
-        if (srcPlanos.length === 0) { setDragSrcId(null); setDragOverId(null); return }
-        const aulasDoDia = obterTurmasDoDia(ymd)
-        const srcAula = aulasDoDia.find(a => String(a.turmaId) === dragSrcId)
-        const srcNome = srcAula ? getNomeTurma(srcAula.anoLetivoId, srcAula.escolaId, srcAula.segmentoId, srcAula.turmaId, anosLetivos) : dragSrcId
-        const dstNome = getNomeTurma(dstAula.anoLetivoId, dstAula.escolaId, dstAula.segmentoId, dstAula.turmaId, anosLetivos)
-        setCopyConfirm({
-            srcPlanoId: srcPlanos[0].id,
-            srcNome,
-            dst: { anoLetivoId: String(dstAula.anoLetivoId ?? ''), escolaId: String(dstAula.escolaId ?? ''), segmentoId: String(dstAula.segmentoId), turmaId: String(dstAula.turmaId) },
-            dstNome,
-            dataPrevista: ymd,
-        })
-        setDragSrcId(null)
-        setDragOverId(null)
-    }, [dragSrcId, planejamentos, dataSelecionada, obterTurmasDoDia, anosLetivos])
+    // Grupos: escola → turmas
+    const grupos = useMemo(() => {
+        type TurmaItem = { key: string; nome: string; anoLetivoId: string; escolaId: string; segmentoId: string; turmaId: string }
+        type Grupo = { escolaId: string; escolaNome: string; turmas: TurmaItem[] }
+        const result: Grupo[] = []
+        for (const ano of anosLetivos) {
+            for (const esc of (ano.escolas ?? [])) {
+                const turmas: TurmaItem[] = []
+                for (const seg of (esc.segmentos ?? [])) {
+                    for (const tur of (seg.turmas ?? [])) {
+                        turmas.push({
+                            key: `${ano.id}-${esc.id}-${seg.id}-${tur.id}`,
+                            nome: [seg.nome, tur.nome].filter(Boolean).join(' › '),
+                            anoLetivoId: String(ano.id),
+                            escolaId: String(esc.id),
+                            segmentoId: String(seg.id),
+                            turmaId: String(tur.id),
+                        })
+                    }
+                }
+                if (turmas.length > 0) result.push({ escolaId: String(esc.id), escolaNome: esc.nome ?? '', turmas })
+            }
+        }
+        return result
+    }, [anosLetivos])
 
-    const ymd = toYMD(dataSelecionada)
-    const aulasDoDia = useMemo(
-        () => obterTurmasDoDia(ymd).sort((a, b) => (a.horario ?? '').localeCompare(b.horario ?? '')),
-        [ymd, obterTurmasDoDia]
-    )
+    const buscaNorm = busca.trim().toLowerCase()
+    const gruposFiltrados = buscaNorm
+        ? grupos.map(g => ({
+            ...g,
+            turmas: g.turmas.filter(t =>
+                t.nome.toLowerCase().includes(buscaNorm) ||
+                g.escolaNome.toLowerCase().includes(buscaNorm)
+            ),
+          })).filter(g => g.turmas.length > 0)
+        : grupos
 
-    const diaNome  = getDiaSemana(dataSelecionada)
-    const diaNum   = dataSelecionada.getDate()
-    const mesNomes = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
-    const mesNome  = mesNomes[dataSelecionada.getMonth()]
+    const DOT_COLORS = {
+        green: 'bg-emerald-400',
+        amber: 'bg-amber-400',
+        red:   'bg-red-400',
+        gray:  'bg-slate-300 dark:bg-[#4B5563]',
+    }
 
     return (
-    <>
-        <aside className="w-52 flex-shrink-0 flex flex-col gap-3">
-
-            {/* ── Navegação de data ── */}
-            <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
-                {/* Cabeçalho data */}
-                <div className="flex items-center justify-between px-3 py-2 border-b border-[#E6EAF0] dark:border-[#374151]">
+        <aside className="w-52 flex-shrink-0 flex flex-col gap-2">
+            {/* Busca */}
+            <div className="relative">
+                <input
+                    type="text"
+                    value={busca}
+                    onChange={e => setBusca(e.target.value)}
+                    placeholder="Buscar turma..."
+                    className="w-full text-[12px] rounded-[8px] border border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-slate-700 dark:text-[#D1D5DB] placeholder:text-slate-400 dark:placeholder:text-[#6B7280] px-3 py-1.5 pr-7 outline-none focus:ring-1 focus:ring-indigo-400"
+                />
+                {busca && (
                     <button
-                        onClick={() => onDataChange(stepDiaUtil(dataSelecionada, -1))}
-                        className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-[#374151] transition text-sm"
-                    >‹</button>
-
-                    <div className="text-center">
-                        <div className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#6B7280]">
-                            {diaNome}
-                        </div>
-                        <div className="text-[18px] font-bold leading-tight text-slate-800 dark:text-[#E5E7EB]">
-                            {diaNum}
-                        </div>
-                        <div className="text-[10px] text-slate-400 dark:text-[#6B7280]">{mesNome}</div>
-                    </div>
-
-                    <button
-                        onClick={() => onDataChange(stepDiaUtil(dataSelecionada, 1))}
-                        className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-[#374151] transition text-sm"
-                    >›</button>
-                </div>
-
-                {/* Lista de turmas do dia */}
-                <div className="py-1">
-                    {aulasDoDia.length === 0 ? (
-                        <div className="px-3 py-4 text-center text-[11px] text-slate-400 dark:text-[#6B7280]">
-                            Nenhuma turma neste dia
-                        </div>
-                    ) : (
-                        aulasDoDia.map((aula, i) => {
-                            const nome      = getNomeTurma(aula.anoLetivoId, aula.escolaId, aula.segmentoId, aula.turmaId, anosLetivos)
-                            const escola    = getNomeEscola(aula.anoLetivoId, aula.escolaId, anosLetivos)
-                            const escolaCor = escolaColorMap[String(aula.escolaId ?? '')]
-                            const isAtiva   = turmaSelecionada
-                                // eslint-disable-next-line eqeqeq
-                                ? String(turmaSelecionada.turmaId) == String(aula.turmaId)
-                                : false
-                            const temPlano  =
-                                planejamentos.some(p => String(p.turmaId) === String(aula.turmaId) && p.dataPrevista === ymd) ||
-                                aplicacoes.some(a => String(a.turmaId) === String(aula.turmaId) && a.data === ymd && a.status !== 'cancelada')
-                            const isDragSrc = dragSrcId === String(aula.turmaId)
-                            const isDragOver = dragOverId === String(aula.turmaId)
-
-                            return (
-                                <button
-                                    key={`${aula.turmaId}-${i}`}
-                                    draggable={temPlano}
-                                    onClick={() => onSelecionarTurma({
-                                        anoLetivoId: String(aula.anoLetivoId ?? ''),
-                                        escolaId:    String(aula.escolaId ?? ''),
-                                        segmentoId:  String(aula.segmentoId),
-                                        turmaId:     String(aula.turmaId),
-                                    })}
-                                    onDragStart={e => { e.dataTransfer.effectAllowed = 'copy'; setDragSrcId(String(aula.turmaId)) }}
-                                    onDragOver={e => { if (dragSrcId && dragSrcId !== String(aula.turmaId)) { e.preventDefault(); setDragOverId(String(aula.turmaId)) } }}
-                                    onDragLeave={() => setDragOverId(null)}
-                                    onDrop={e => handleDrop(e, aula)}
-                                    onDragEnd={() => { setDragSrcId(null); setDragOverId(null) }}
-                                    style={escolaCor
-                                        ? { '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties
-                                        : undefined}
-                                    className={`w-full text-left px-3 py-2 transition-all ${
-                                        isDragOver
-                                            ? 'bg-indigo-50 dark:bg-indigo-500/20 ring-1 ring-indigo-300 dark:ring-indigo-500/40'
-                                            : isDragSrc
-                                            ? 'opacity-50'
-                                            : isAtiva
-                                            ? 'bg-[#5B5FEA]/[0.09] dark:bg-[#5B5FEA]/[0.16]'
-                                            : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
-                                    }`}
-                                >
-                                    <div className={`flex items-center gap-1 text-[12.5px] font-semibold leading-tight ${
-                                        isAtiva
-                                            ? 'text-indigo-700 dark:text-indigo-300'
-                                            : 'text-slate-700 dark:text-[#D1D5DB]'
-                                    }`}>
-                                        <span className="truncate flex-1">{nome}</span>
-                                        {temPlano && <span title="Tem planejamento — arraste para copiar" className="text-[9px] text-emerald-500 shrink-0">✓</span>}
-                                    </div>
-                                    {escola && (
-                                        <div className="escola-label text-[10px] font-medium truncate mt-[1px]">
-                                            {escola}
-                                        </div>
-                                    )}
-                                    {aula.horario && (
-                                        <div className="text-[10px] text-slate-500 dark:text-[#C1C8D4] mt-[1px]">
-                                            {aula.horario.replace(':','h').replace(/h00$/, 'h')}
-                                        </div>
-                                    )}
-                                </button>
-                            )
-                        })
-                    )}
-                </div>
+                        onClick={() => setBusca('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-[13px] leading-none"
+                    >×</button>
+                )}
             </div>
 
-            {/* ── Atalho: semana atual ── */}
-            <button
-                onClick={() => {
-                    const seg = getMondayOf(new Date())
-                    const hoje = new Date(); hoje.setHours(0,0,0,0)
-                    // Se hoje for útil, vai para hoje; senão vai para segunda
-                    const target = (hoje.getDay() >= 1 && hoje.getDay() <= 5) ? hoje : seg
-                    onDataChange(target)
-                }}
-                className="text-[11px] text-center text-slate-400 dark:text-[#6B7280] hover:text-indigo-500 dark:hover:text-indigo-400 transition"
-            >
-                ir para hoje
-            </button>
+            {/* Lista agrupada */}
+            <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden overflow-y-auto max-h-[calc(100vh-200px)]">
+                {gruposFiltrados.length === 0 ? (
+                    <div className="px-3 py-6 text-center text-[11px] text-slate-400 dark:text-[#6B7280]">
+                        Nenhuma turma encontrada
+                    </div>
+                ) : gruposFiltrados.map(grupo => {
+                    const cor = escolaColorMap[grupo.escolaId]
+                    return (
+                        <div key={grupo.escolaId}>
+                            {/* Header escola */}
+                            <div
+                                className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.5px] border-b border-[#E6EAF0] dark:border-[#374151]"
+                                style={cor ? { color: cor.light } : undefined}
+                            >
+                                <span className="dark:hidden">{grupo.escolaNome}</span>
+                                <span className="hidden dark:inline" style={cor ? { color: cor.dark } : undefined}>{grupo.escolaNome}</span>
+                            </div>
+                            {/* Turmas */}
+                            {grupo.turmas.map(t => {
+                                const isAtiva = turmaSelecionada
+                                    ? turmaSelecionada.turmaId === t.turmaId && turmaSelecionada.escolaId === t.escolaId
+                                    : false
+                                const info = turmaInfo[t.turmaId]
+                                const dotClass = DOT_COLORS[info?.dot ?? 'gray']
+                                return (
+                                    <button
+                                        key={t.key}
+                                        onClick={() => onSelecionarTurma({
+                                            anoLetivoId: t.anoLetivoId,
+                                            escolaId: t.escolaId,
+                                            segmentoId: t.segmentoId,
+                                            turmaId: t.turmaId,
+                                        })}
+                                        className={`w-full text-left px-3 py-2 transition-colors flex items-center gap-2 ${
+                                            isAtiva
+                                                ? 'bg-[#5B5FEA]/[0.09] dark:bg-[#5B5FEA]/[0.16]'
+                                                : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
+                                        }`}
+                                    >
+                                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotClass}`} />
+                                        <div className="min-w-0 flex-1">
+                                            <div className={`text-[12.5px] font-semibold leading-tight truncate ${
+                                                isAtiva
+                                                    ? 'text-indigo-700 dark:text-indigo-300'
+                                                    : 'text-slate-700 dark:text-[#D1D5DB]'
+                                            }`}>
+                                                {t.nome}
+                                            </div>
+                                            {info?.ultimaData && (
+                                                <div className="text-[10px] text-slate-400 dark:text-[#6B7280] mt-[1px]">
+                                                    {formatDataCurta(info.ultimaData)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    )
+                })}
+            </div>
         </aside>
-
-        {/* ── Modal confirmação: copiar planejamento ── */}
-        {copyConfirm && (
-            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setCopyConfirm(null)}>
-                <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl p-5 max-w-xs w-full" onClick={e => e.stopPropagation()}>
-                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">Copiar planejamento?</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                        Copiar o planejamento de <strong className="text-slate-700 dark:text-slate-200">{copyConfirm.srcNome}</strong> para <strong className="text-slate-700 dark:text-slate-200">{copyConfirm.dstNome}</strong>?
-                    </p>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setCopyConfirm(null)}
-                            className="flex-1 text-sm border border-slate-200 dark:border-[#374151] rounded-xl px-3 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.05] transition"
-                        >Cancelar</button>
-                        <button
-                            onClick={() => {
-                                copiarPlanejamento(copyConfirm.srcPlanoId, copyConfirm.dst, copyConfirm.dataPrevista)
-                                showToast(`Planejamento copiado para ${copyConfirm.dstNome} ✅`)
-                                setCopyConfirm(null)
-                            }}
-                            className="flex-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-3 py-2 font-medium transition"
-                        >Copiar</button>
-                    </div>
-                </div>
-            </div>
-        )}
-    </>
     )
 }
 
@@ -942,21 +875,15 @@ export default function ModuloPorTurmas() {
     const { selecionarTurma, turmaSelecionada, dataNavegacao, setDataNavegacao, modoInicialNavegacao, setModoInicialNavegacao } = usePlanejamentoTurmaContext()
     const { setViewMode } = useRepertorioContext()
 
-    // Data local — independente do AgendaSemanal e VisaoSemana
-    const [dataSelecionada, setDataSelecionada] = useState<Date>(() => {
-        const d = new Date(); d.setHours(0,0,0,0)
-        // Se fim de semana, avança para segunda
-        if (d.getDay() === 0) return addDays(d, 1)
-        if (d.getDay() === 6) return addDays(d, 2)
-        return d
-    })
     const [voltarPara, setVoltarPara] = useState<string | null>(null)
     const [modoInicialLocal, setModoInicialLocal] = useState<'criar' | 'importar' | null>(null)
+    const [mobileTela, setMobileTela] = useState<'lista' | 'detalhe'>('lista')
 
-    // Navegação vinda da Visão da Semana — aplica a data e registra origem
+    const ymd = toYMD(new Date())
+
+    // Navegação vinda da Visão da Semana
     useEffect(() => {
         if (!dataNavegacao) return
-        setDataSelecionada(dataNavegacao)
         setVoltarPara('visaoSemana')
         setDataNavegacao(null)
     }, [dataNavegacao, setDataNavegacao])
@@ -968,7 +895,10 @@ export default function ModuloPorTurmas() {
         setModoInicialNavegacao(null)
     }, [modoInicialNavegacao, setModoInicialNavegacao])
 
-    const ymd = toYMD(dataSelecionada)
+    const handleSelecionarTurma = useCallback((t: TurmaSelecionada) => {
+        selecionarTurma(t)
+        setMobileTela('detalhe')
+    }, [selecionarTurma])
 
     return (
         <div className="flex flex-col gap-6">
@@ -985,28 +915,44 @@ export default function ModuloPorTurmas() {
             )}
 
             {/* Cabeçalho */}
-            <div>
-                <h1 className="text-[17px] font-bold tracking-tight text-slate-800 dark:text-[#E5E7EB]">
-                    Planejar por Turma
-                </h1>
-                <p className="text-[12.5px] text-slate-500 dark:text-[#9CA3AF] mt-1">
-                    O que vou dar para esta turma na próxima aula?
-                </p>
+            <div className="flex items-center gap-3">
+                {/* Botão voltar mobile — aparece quando detalhe está aberto */}
+                {mobileTela === 'detalhe' && (
+                    <button
+                        onClick={() => setMobileTela('lista')}
+                        className="md:hidden flex items-center gap-1 text-[12px] font-medium text-slate-500 dark:text-[#9CA3AF] hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+                    >
+                        <span className="text-[14px] leading-none">←</span>
+                        Turmas
+                    </button>
+                )}
+                <div className={mobileTela === 'detalhe' ? 'hidden md:block' : ''}>
+                    <h1 className="text-[17px] font-bold tracking-tight text-slate-800 dark:text-[#E5E7EB]">
+                        Planejar por Turma
+                    </h1>
+                    <p className="text-[12.5px] text-slate-500 dark:text-[#9CA3AF] mt-1">
+                        O que vou dar para esta turma na próxima aula?
+                    </p>
+                </div>
             </div>
 
-            {/* Layout: sidebar + conteúdo */}
+            {/* Layout: lista + conteúdo */}
             <div className="flex gap-5 items-start">
-                <SeletorTurma
-                    dataSelecionada={dataSelecionada}
-                    onDataChange={setDataSelecionada}
-                    turmaSelecionada={turmaSelecionada}
-                    onSelecionarTurma={selecionarTurma}
-                />
+                {/* Lista de turmas — escondida no mobile quando detalhe está aberto */}
+                <div className={mobileTela === 'detalhe' ? 'hidden md:block' : 'flex-1 md:flex-none'}>
+                    <ListaTurmas
+                        turmaSelecionada={turmaSelecionada}
+                        onSelecionarTurma={handleSelecionarTurma}
+                    />
+                </div>
 
-                {turmaSelecionada
-                    ? <ConteudoTurma key={`${turmaSelecionada.turmaId}-${ymd}`} turmaSelecionada={turmaSelecionada} dataPrevista={ymd} modoInicial={modoInicialLocal} onModoInicialConsumed={() => setModoInicialLocal(null)} />
-                    : <EstadoVazio dataYmd={ymd} />
-                }
+                {/* Conteúdo — escondido no mobile quando lista está aberta */}
+                <div className={`flex-1 min-w-0 ${mobileTela === 'lista' ? 'hidden md:block' : ''}`}>
+                    {turmaSelecionada
+                        ? <ConteudoTurma key={turmaSelecionada.turmaId} turmaSelecionada={turmaSelecionada} dataPrevista={ymd} modoInicial={modoInicialLocal} onModoInicialConsumed={() => setModoInicialLocal(null)} />
+                        : <EstadoVazio dataYmd={ymd} />
+                    }
+                </div>
             </div>
 
         </div>
