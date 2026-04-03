@@ -187,7 +187,10 @@ Responda SOMENTE com JSON válido (sem texto extra):
         return {
             vivencias,
             meiosOrff,
-            conceitos: Array.isArray(result.conceitos) ? result.conceitos.slice(0, 4) : [],
+            // Filtra contra a lista aprovada — descarta qualquer termo inventado pela IA
+            conceitos: Array.isArray(result.conceitos)
+                ? result.conceitos.filter((c: string) => CONCEITOS_APROVADOS.has(c)).slice(0, 4)
+                : [],
         }
     } catch { return { vivencias: {}, meiosOrff: {}, conceitos: [] } }
 }
@@ -670,25 +673,9 @@ export default function TelaPrincipal() {
                 setShowModalMusicas(true)
             }
         }
-        // Fluxo 4: detectar conceitos → abrir modal de revisão (visão unificada do plano)
+        // Fluxo 5: classificar CLASP + Orff → notificação unificada após salvar
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY
         const planoId = planoEditando?.id
-        if (apiKey && planoEditando && planoId) {
-            const semConceitos = (planoEditando.atividadesRoteiro || []).filter(
-                a => a.descricao?.replace(/<[^>]*>/g, '').trim().length > 10 && !(a.conceitos?.length)
-            )
-            if (semConceitos.length > 0) {
-                setDetectandoConceitos(true)
-                Promise.all(semConceitos.map(a => analisarConceitosAtividade(a.nome || '', a.descricao || '', apiKey)))
-                    .then(() => {
-                        // Fluxo 5 (classificarVivenciasPlano) é a única fonte para plano.conceitos
-                        // analisarConceitosAtividade serve apenas para uso futuro em nível de atividade
-                    })
-                    .catch(() => {/* silencioso */})
-                    .finally(() => setDetectandoConceitos(false))
-            }
-        }
-        // Fluxo 5: classificar CLASP + Orff → notificação unificada após salvar
         if (apiKey && planoEditando && planoId) {
             const snapId     = String(planoId)
             const snapTitulo = planoEditando.titulo
@@ -707,7 +694,8 @@ export default function TelaPrincipal() {
                     const jaClassificado = Object.values(snapPlano.vivenciasClassificadas ?? {}).some(v => v > 0)
                     if (jaClassificado) return
                     const jaTemConceitos = (snapPlano.conceitos?.length ?? 0) > 0
-                    setClasseNotif({ planoId: snapId, titulo: snapTitulo, vivencias, meiosOrff, conceitos: jaTemConceitos ? [] : conceitos })
+                    // Se o plano já tem conceitos válidos, mostra os existentes no modal (não gera novos)
+                    setClasseNotif({ planoId: snapId, titulo: snapTitulo, vivencias, meiosOrff, conceitos: jaTemConceitos ? snapPlano.conceitos : conceitos })
                 })
                 .catch(() => {/* silencioso */})
         }
