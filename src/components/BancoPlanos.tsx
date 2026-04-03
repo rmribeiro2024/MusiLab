@@ -745,6 +745,12 @@ export default function BancoPlanos({ session }) {
             // Seção ativa derivada do viewMode — fonte única: src/lib/navigation.ts
             const activeGroupId = getActiveSection(viewMode as ViewMode)
 
+            // Scroll para o topo ao trocar de view
+            const mainScrollRef = useRef<HTMLElement>(null)
+            useEffect(() => {
+                mainScrollRef.current?.scrollTo({ top: 0 })
+            }, [viewMode])
+
             // Definição dos grupos de navegação
             const voltouOnline = useVoltouOnline();
             useEffect(() => {
@@ -2482,7 +2488,7 @@ export default function BancoPlanos({ session }) {
                         />
 
                         {/* ── Área de conteúdo principal ── */}
-                        <main className="flex-1 overflow-y-auto bg-[#F6F8FB] dark:bg-[#0F172A]">
+                        <main ref={mainScrollRef} className="flex-1 overflow-y-auto bg-[#F6F8FB] dark:bg-[#0F172A]">
 
                             <div className="w-full px-4 sm:px-[30px] py-6 sm:py-[26px] pb-20 sm:pb-[30px]">
                                 {viewMode==='posAula'          && <ErrorBoundary modulo="Pós-aula"><Suspense fallback={<CarregandoModulo />}><TelaPosAula /></Suspense></ErrorBoundary>}
