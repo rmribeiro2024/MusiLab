@@ -1091,11 +1091,12 @@ interface WeekendModeProps {
   pendentesVisiveis: boolean
   onTogglePendentes: () => void
   onRegistrarSlot: (slot: AulaSlot) => void
+  onLimparClassificacoes: () => void
 }
 
 function WeekendMode({
   labelDia, weekStats, ficouParaRegistrar, atencaoItems,
-  isDarkMode, pendentesVisiveis, onTogglePendentes, onRegistrarSlot,
+  isDarkMode, pendentesVisiveis, onTogglePendentes, onRegistrarSlot, onLimparClassificacoes,
 }: WeekendModeProps) {
   const dk = isDarkMode
   const cBorder  = dk ? '#374151' : '#E2E9F3'
@@ -1349,7 +1350,7 @@ function WeekendMode({
       {/* Manutenção */}
       <div style={{ marginTop: 24, textAlign: 'center' }}>
         <button
-          onClick={limparClassificacoesPlanos}
+          onClick={onLimparClassificacoes}
           style={{ fontSize: 10, color: cDimmer, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}
         >
           Limpar dados de classificação
@@ -1693,6 +1694,7 @@ export default function AgendaView() {
                 pendentesVisiveis={pendentesVisiveis}
                 onTogglePendentes={() => setPendentesVisiveis(v => !v)}
                 onRegistrarSlot={handleRegistrarSlot}
+                onLimparClassificacoes={limparClassificacoesPlanos}
               />
             </div>
             <div
