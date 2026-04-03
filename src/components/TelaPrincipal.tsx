@@ -662,23 +662,9 @@ export default function TelaPrincipal() {
             if (semConceitos.length > 0) {
                 setDetectandoConceitos(true)
                 Promise.all(semConceitos.map(a => analisarConceitosAtividade(a.nome || '', a.descricao || '', apiKey)))
-                    .then(resultados => {
-                        // Merge: conceitos Gemini (novos) + conceitos já existentes nas atividades
-                        const existentes = (planoEditando.atividadesRoteiro || []).flatMap(a => a.conceitos || [])
-                        const novos = resultados.flat()
-                        const merged = [...new Set([...existentes, ...novos])].filter(Boolean)
-                        // Conceitos por atividade salvos silenciosamente (sem abrir modal)
-                        // O card unificado (Fluxo 5) é a única interface pós-salvar
-                        const conceitosJaSalvos = planoEditando.conceitos ?? []
-                        const temNovos = merged.some(c => !conceitosJaSalvos.includes(c))
-                        if (merged.length > 0 && temNovos) {
-                            const pid = String(planoId)
-                            setPlanos(prev => prev.map(p =>
-                                String(p.id) === pid
-                                    ? { ...p, conceitos: [...new Set([...conceitosJaSalvos, ...merged])] }
-                                    : p,
-                            ))
-                        }
+                    .then(() => {
+                        // Fluxo 5 (classificarVivenciasPlano) é a única fonte para plano.conceitos
+                        // analisarConceitosAtividade serve apenas para uso futuro em nível de atividade
                     })
                     .catch(() => {/* silencioso */})
                     .finally(() => setDetectandoConceitos(false))
