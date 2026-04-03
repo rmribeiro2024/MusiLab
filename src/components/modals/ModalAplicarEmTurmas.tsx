@@ -109,13 +109,14 @@ export default function ModalAplicarEmTurmas({ plano, onClose }: Props) {
   // key = `${dataStr}:${aulaId}` — identifica unicamente turma+dia
 
   const diasSemana = useMemo(() => getWeekDays(semana), [semana])
+  const hojeStr = useMemo(() => toStr(new Date()), [])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const semanaData = useMemo(
     () => diasSemana
       .map(d => ({ ...d, aulas: obterTurmasDoDia(d.dataStr) }))
-      .filter(d => d.aulas.length > 0),
-    [diasSemana]
+      .filter(d => d.aulas.length > 0 && d.dataStr >= hojeStr),
+    [diasSemana, hojeStr]
   )
 
   const ehSemanaAtual = toStr(semana) === toStr(hoje)
