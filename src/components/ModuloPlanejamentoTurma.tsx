@@ -640,192 +640,182 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
   )
 }
 
-// ─── SELETOR DE DIA + TURMA (painel lateral vertical) ────────────────────────
+// ─── LISTA DE TURMAS (painel lateral vertical) ───────────────────────────────
 
-const DIAS_LABEL: Record<number, string> = { 1:'SEG', 2:'TER', 3:'QUA', 4:'QUI', 5:'SEX' }
-const DIAS_NOME:  Record<number, string> = { 1:'SEGUNDA', 2:'TERÇA', 3:'QUARTA', 4:'QUINTA', 5:'SEXTA' }
-const MESES_ABR  = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
-const MESES_COMP = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
+const ESCOLA_COLORS_MPT: { light: string; dark: string }[] = [
+  { light: '#7c83d4', dark: '#bfc3f5' },
+  { light: '#3b8fc2', dark: '#9dd5f0' },
+  { light: '#2a9c70', dark: '#8edbbf' },
+  { light: '#b8860e', dark: '#e6be6a' },
+  { light: '#c0527a', dark: '#f0a8c3' },
+  { light: '#7a5bbf', dark: '#c8b4f0' },
+  { light: '#c94040', dark: '#f0a8a8' },
+  { light: '#1a9090', dark: '#7dd8d8' },
+]
 
-function nearestWeekday(d: Date): Date {
-  const dow = d.getDay()
-  if (dow === 0) { const n = new Date(d); n.setDate(d.getDate() + 1); return n }
-  if (dow === 6) { const n = new Date(d); n.setDate(d.getDate() + 2); return n }
-  return d
+function buildEscolaColorMapMPT(anosLetivos: AnoLetivo[]): Record<string, { light: string; dark: string }> {
+  const map: Record<string, { light: string; dark: string }> = {}
+  let idx = 0
+  for (const ano of anosLetivos) {
+    for (const esc of (ano.escolas ?? [])) {
+      const key = String(esc.id)
+      if (!map[key]) { map[key] = ESCOLA_COLORS_MPT[idx % ESCOLA_COLORS_MPT.length]; idx++ }
+    }
+  }
+  return map
 }
 
-function stepDay(d: Date, delta: number): Date {
-  const next = new Date(d)
-  next.setDate(d.getDate() + delta)
-  const dow = next.getDay()
-  if (dow === 0) next.setDate(next.getDate() + (delta > 0 ? 1 : -2))
-  if (dow === 6) next.setDate(next.getDate() + (delta > 0 ? 2 : -1))
-  return next
+function formatDataCurtaMPT(ymd: string): string {
+  if (!ymd) return ''
+  const [, mm, dd] = ymd.split('-')
+  const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
+  return `${parseInt(dd)} ${meses[parseInt(mm) - 1]}`
 }
 
-function SeletorDiaTurma({ currentDate, setCurrentDate }: { currentDate: Date; setCurrentDate: (d: Date | ((prev: Date) => Date)) => void }) {
-  const { selecionarTurma, turmaSelecionada, planejamentos } = usePlanejamentoTurmaContext()
+function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
+  turmaSelecionada: TurmaSelecionada | null
+  onSelecionarTurma: (t: TurmaSelecionada) => void
+}) {
   const { anosLetivos } = useAnoLetivoContext()
-  const { obterTurmasDoDia } = useCalendarioContext()
-  const { aplicacoesPorData } = useAplicacoesContext()
-  const [maisAberto, setMaisAberto] = useState(false)
+  const { planos } = usePlanosContext()
+  const [busca, setBusca] = useState('')
+  const escolaColorMap = useMemo(() => buildEscolaColorMapMPT(anosLetivos), [anosLetivos])
 
-  const dateStr = toDateStr(currentDate)
-  const diaDaSemana = currentDate.getDay()
-  const diaLabel  = DIAS_LABEL[diaDaSemana] ?? '?'
-  const diaNome   = DIAS_NOME[diaDaSemana]  ?? '?'
-  const diaNum    = currentDate.getDate()
-  const mesAbr    = MESES_ABR[currentDate.getMonth()]
-  const mesComp   = MESES_COMP[currentDate.getMonth()]
-
-  // Reset "+mais" quando o dia mudar
-  useEffect(() => { setMaisAberto(false) }, [dateStr])
-
-  const aulasDoDia = useMemo(() => obterTurmasDoDia(dateStr), [obterTurmasDoDia, dateStr])
-
-  // Busca nome da turma / escola percorrendo anosLetivos
-  // Usa == (igualdade frouxa) porque segmentoId/turmaId são salvos como numbers pelo ModalGradeSemanal
-  function getTurmaInfo(aula: import('../types').AulaGrade) {
-    for (const ano of anosLetivos) {
-      for (const escola of (ano.escolas ?? [])) {
-        for (const seg of (escola.segmentos ?? [])) {
-          // eslint-disable-next-line eqeqeq
-          if (seg.id != aula.segmentoId) continue
-          // eslint-disable-next-line eqeqeq
-          const turma = (seg.turmas ?? []).find((t: Turma) => t.id == aula.turmaId)
-          if (turma) return {
-            turmaNome:   turma.nome,
-            escolaNome:  escola.nome,
-            anoLetivoId: String(ano.id),
-            escolaId:    String(escola.id),
-          }
-        }
+  // Dot por turmaId: última data e cor
+  const turmaInfo = useMemo(() => {
+    const map: Record<string, { dot: 'green' | 'amber' | 'red' | 'gray'; ultimaData: string | null }> = {}
+    for (const plano of planos) {
+      for (const reg of (plano.registrosPosAula ?? [])) {
+        const tid = String(reg.turma ?? '')
+        if (!tid) continue
+        const data = reg.dataAula ?? reg.data ?? null
+        const prev = map[tid]
+        if (prev && prev.ultimaData && data && data < prev.ultimaData) continue
+        const status = reg.statusAula ?? reg.resultadoAula ?? ''
+        const dot: 'green' | 'amber' | 'red' | 'gray' =
+          ['concluida', 'bem', 'funcionou'].includes(status) ? 'green' :
+          ['revisao', 'parcial'].includes(status) ? 'amber' :
+          ['incompleta', 'nao_houve', 'nao_funcionou'].includes(status) ? 'red' : 'gray'
+        map[tid] = { dot, ultimaData: data }
       }
     }
-    return {
-      turmaNome: aula.turmaId, escolaNome: '',
-      anoLetivoId: aula.anoLetivoId ?? '',
-      escolaId:    aula.escolaId    ?? '',
+    return map
+  }, [planos])
+
+  // Grupos: escola → turmas
+  type TurmaItem = { key: string; nome: string; anoLetivoId: string; escolaId: string; segmentoId: string; turmaId: string }
+  type Grupo = { escolaId: string; escolaNome: string; turmas: TurmaItem[] }
+  const grupos = useMemo<Grupo[]>(() => {
+    const result: Grupo[] = []
+    for (const ano of anosLetivos) {
+      for (const esc of (ano.escolas ?? [])) {
+        const turmas: TurmaItem[] = []
+        for (const seg of (esc.segmentos ?? [])) {
+          for (const tur of (seg.turmas ?? [])) {
+            turmas.push({
+              key: `${ano.id}-${esc.id}-${seg.id}-${tur.id}`,
+              nome: [seg.nome, tur.nome].filter(Boolean).join(' › '),
+              anoLetivoId: String(ano.id),
+              escolaId: String(esc.id),
+              segmentoId: String(seg.id),
+              turmaId: String(tur.id),
+            })
+          }
+        }
+        if (turmas.length > 0) result.push({ escolaId: String(esc.id), escolaNome: esc.nome ?? '', turmas })
+      }
     }
-  }
+    return result
+  }, [anosLetivos])
 
-  // Status: verifica aplicações do dia e depois planejamentos
-  function getStatus(aula: import('../types').AulaGrade): 'realizada' | 'planejada' | 'sem-plano' {
-    const aps = aplicacoesPorData[dateStr] ?? []
-    const ap  = aps.find(a => a.turmaId === aula.turmaId && a.segmentoId === aula.segmentoId)
-    if (ap) return ap.status === 'realizada' ? 'realizada' : 'planejada'
-    const temPlano = planejamentos.some(p =>
-      p.turmaId    === aula.turmaId &&
-      p.segmentoId === aula.segmentoId &&
-      p.dataPrevista === dateStr
-    )
-    return temPlano ? 'planejada' : 'sem-plano'
-  }
+  const buscaNorm = busca.trim().toLowerCase()
+  const gruposFiltrados = buscaNorm
+    ? grupos.map(g => ({
+        ...g,
+        turmas: g.turmas.filter(t =>
+          t.nome.toLowerCase().includes(buscaNorm) ||
+          g.escolaNome.toLowerCase().includes(buscaNorm)
+        ),
+      })).filter(g => g.turmas.length > 0)
+    : grupos
 
-  function handleSelect(aula: import('../types').AulaGrade) {
-    const info = getTurmaInfo(aula)
-    selecionarTurma({
-      anoLetivoId: info.anoLetivoId,
-      escolaId:    info.escolaId,
-      segmentoId:  aula.segmentoId,
-      turmaId:     aula.turmaId,
-    })
+  const DOT_COLORS = {
+    green: 'bg-emerald-400',
+    amber: 'bg-amber-400',
+    red:   'bg-red-400',
+    gray:  'bg-slate-300 dark:bg-[#4B5563]',
   }
-
-  const MAX_VISIBLE = 3
-  const visiveisAulas = maisAberto ? aulasDoDia : aulasDoDia.slice(0, MAX_VISIBLE)
-  const restante = aulasDoDia.length - MAX_VISIBLE
 
   return (
-    <div className="w-48 flex-shrink-0 flex flex-col rounded-3xl overflow-hidden border border-slate-200/80 shadow-md bg-white">
-
-      {/* ── Navegação de dia ── */}
-      <div className="flex items-center justify-between px-3 pt-3 pb-1 gap-1">
-        <button
-          type="button"
-          onClick={() => setCurrentDate(d => stepDay(d, -1))}
-          className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-base transition-colors"
-        >
-          ‹
-        </button>
-        <div className="flex-1 text-center">
-          <div className="text-[9px] font-bold tracking-widest uppercase text-slate-400">{diaNome}</div>
-          <div className="text-[10px] font-semibold text-slate-500">{diaNum} de {mesAbr}</div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setCurrentDate(d => stepDay(d, 1))}
-          className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-base transition-colors"
-        >
-          ›
-        </button>
-      </div>
-
-      {/* ── Cabeçalho navy ── */}
-      <div className="bg-[#1e3a6e] mx-2 rounded-2xl px-4 py-3 relative overflow-hidden">
-        <div className="absolute -top-5 -right-5 w-20 h-20 rounded-full bg-white/10 pointer-events-none" />
-        <div className="text-[9px] font-black tracking-[.14em] uppercase text-white/50 relative z-10">{diaLabel}</div>
-        <div className="text-4xl font-black text-white leading-none tracking-tight relative z-10">{diaNum}</div>
-        <div className="text-[11px] text-white/45 font-medium mt-0.5 relative z-10">{mesComp}</div>
-        <div className="mt-2.5 inline-flex items-center gap-1 bg-white/10 rounded-full px-2.5 py-0.5 relative z-10">
-          <div className="w-1.5 h-1.5 rounded-full bg-white/80" />
-          <span className="text-[10px] font-bold text-white/75">
-            {aulasDoDia.length} turma{aulasDoDia.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-      </div>
-
-      {/* ── Lista de turmas ── */}
-      <div className="flex-1 py-1.5">
-        {aulasDoDia.length === 0 && (
-          <p className="text-xs text-slate-400 text-center py-5 px-3">Nenhuma turma neste dia</p>
+    <aside className="w-52 flex-shrink-0 flex flex-col gap-2">
+      {/* Busca */}
+      <div className="relative">
+        <input
+          type="text"
+          value={busca}
+          onChange={e => setBusca(e.target.value)}
+          placeholder="Buscar turma..."
+          className="w-full text-[12px] rounded-[8px] border border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-slate-700 dark:text-[#D1D5DB] placeholder:text-slate-400 dark:placeholder:text-[#6B7280] px-3 py-1.5 pr-7 outline-none focus:ring-1 focus:ring-indigo-400"
+        />
+        {busca && (
+          <button
+            onClick={() => setBusca('')}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-[13px] leading-none"
+          >×</button>
         )}
-        {visiveisAulas.map((aula, i) => {
-          const { turmaNome, escolaNome } = getTurmaInfo(aula)
-          const status = getStatus(aula)
-          const isSelected =
-            // eslint-disable-next-line eqeqeq
-            turmaSelecionada?.turmaId    == aula.turmaId &&
-            // eslint-disable-next-line eqeqeq
-            turmaSelecionada?.segmentoId == aula.segmentoId
-          const dotColor =
-            status === 'realizada' ? 'bg-emerald-500' :
-            status === 'planejada' ? 'bg-[#4f6fb5]'   : 'bg-slate-300'
+      </div>
+
+      {/* Lista agrupada */}
+      <div className="rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] overflow-hidden overflow-y-auto max-h-[calc(100vh-200px)]">
+        {gruposFiltrados.length === 0 ? (
+          <div className="px-3 py-6 text-center text-[11px] text-slate-400 dark:text-[#6B7280]">
+            Nenhuma turma encontrada
+          </div>
+        ) : gruposFiltrados.map(grupo => {
+          const cor = escolaColorMap[grupo.escolaId]
           return (
-            <React.Fragment key={`${aula.id}-${i}`}>
-              {i > 0 && <div className="h-px bg-slate-100 mx-2.5" />}
-              <button
-                type="button"
-                onClick={() => handleSelect(aula)}
-                className={`w-full text-left flex items-center gap-2 px-3 py-2 transition-colors relative ${
-                  isSelected ? 'bg-[#eef3fb]' : 'hover:bg-slate-50'
-                }`}
+            <div key={grupo.escolaId}>
+              <div
+                className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.5px] border-b border-[#E6EAF0] dark:border-[#374151]"
+                style={{ color: cor?.light ?? '#94a3b8' }}
               >
-                <span className={`absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r transition-colors ${
-                  isSelected ? 'bg-[#1e3a6e]' : 'bg-transparent'
-                }`} />
-                <div className="flex-1 min-w-0 pl-0.5">
-                  <div className={`text-[12px] font-bold truncate ${isSelected ? 'text-[#1e3a6e]' : 'text-slate-800'}`}>
-                    {turmaNome}
-                  </div>
-                  <div className="text-[10px] text-slate-400 truncate">{escolaNome}</div>
-                </div>
-                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`} />
-              </button>
-            </React.Fragment>
+                {grupo.escolaNome}
+              </div>
+              {grupo.turmas.map(t => {
+                const isAtiva = turmaSelecionada
+                  ? turmaSelecionada.turmaId === t.turmaId && turmaSelecionada.escolaId === t.escolaId
+                  : false
+                const info = turmaInfo[t.turmaId]
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => onSelecionarTurma({ anoLetivoId: t.anoLetivoId, escolaId: t.escolaId, segmentoId: t.segmentoId, turmaId: t.turmaId })}
+                    className={`w-full text-left px-3 py-2 transition-colors flex items-center gap-2 ${
+                      isAtiva ? 'bg-[#eef3fb] dark:bg-[#5B5FEA]/[0.16]' : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DOT_COLORS[info?.dot ?? 'gray']}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className={`text-[12px] font-semibold leading-tight truncate ${
+                        isAtiva ? 'text-[#1e3a6e] dark:text-indigo-300' : 'text-slate-700 dark:text-[#D1D5DB]'
+                      }`}>
+                        {t.nome}
+                      </div>
+                      {info?.ultimaData && (
+                        <div className="text-[10px] text-slate-400 dark:text-[#6B7280] mt-[1px]">
+                          {formatDataCurtaMPT(info.ultimaData)}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           )
         })}
-        {restante > 0 && (
-          <button
-            type="button"
-            onClick={() => setMaisAberto(v => !v)}
-            className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-slate-400 hover:text-[#1e3a6e] transition-colors"
-          >
-            {maisAberto ? '− menos' : `+${restante} mais`}
-          </button>
-        )}
       </div>
-    </div>
+    </aside>
   )
 }
 
@@ -2001,18 +1991,44 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
 // ─── MÓDULO PRINCIPAL ─────────────────────────────────────────────────────────
 
 export default function ModuloPlanejamentoTurma() {
-  const { turmaSelecionada } = usePlanejamentoTurmaContext()
-  const [currentDate, setCurrentDate] = useState<Date>(() => nearestWeekday(new Date()))
+  const { turmaSelecionada, selecionarTurma } = usePlanejamentoTurmaContext()
+  const [mobileTela, setMobileTela] = useState<'lista' | 'detalhe'>('lista')
+  const hojeStr = toDateStr(new Date())
+
+  function handleSelecionarTurma(t: TurmaSelecionada) {
+    selecionarTurma(t)
+    setMobileTela('detalhe')
+  }
 
   return (
-    <div className="flex gap-4 items-start">
-      {/* Painel lateral — seletor de dia + turma */}
-      <SeletorDiaTurma currentDate={currentDate} setCurrentDate={setCurrentDate} />
+    <div className="flex flex-col gap-4">
 
-      {/* Painel direito — conteúdo de planejamento */}
-      <div className="flex-1 min-w-0 space-y-3">
-        {!turmaSelecionada && <EstadoVazio />}
-        {turmaSelecionada && <ConteudoTurma key={`${turmaSelecionada.turmaId}-${toDateStr(currentDate)}`} calendarDateStr={toDateStr(currentDate)} />}
+      {/* Botão voltar mobile */}
+      {mobileTela === 'detalhe' && (
+        <button
+          type="button"
+          onClick={() => setMobileTela('lista')}
+          className="md:hidden self-start flex items-center gap-1 text-[12px] font-medium text-slate-500 hover:text-indigo-600 transition"
+        >
+          <span className="text-[14px] leading-none">←</span>
+          Turmas
+        </button>
+      )}
+
+      <div className="flex gap-4 items-start">
+        {/* Lista de turmas — escondida no mobile quando detalhe aberto */}
+        <div className={mobileTela === 'detalhe' ? 'hidden md:block' : 'flex-1 md:flex-none'}>
+          <ListaTurmasMPT
+            turmaSelecionada={turmaSelecionada}
+            onSelecionarTurma={handleSelecionarTurma}
+          />
+        </div>
+
+        {/* Conteúdo — escondido no mobile quando lista aberta */}
+        <div className={`flex-1 min-w-0 space-y-3 ${mobileTela === 'lista' ? 'hidden md:block' : ''}`}>
+          {!turmaSelecionada && <EstadoVazio />}
+          {turmaSelecionada && <ConteudoTurma key={turmaSelecionada.turmaId} calendarDateStr={hojeStr} />}
+        </div>
       </div>
     </div>
   )
