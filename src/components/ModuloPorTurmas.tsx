@@ -11,7 +11,7 @@ import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import type { TurmaSelecionada } from '../contexts/PlanejamentoTurmaContext'
 import { showToast } from '../lib/toast'
 import type { AnoLetivo, RegistroPosAula, Plano, Turma } from '../types'
-import { gerarIdSeguro } from '../lib/utils'
+import { gerarIdSeguro, sanitizar } from '../lib/utils'
 import FormularioAulaPlena from './FormularioAulaPlena'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -378,9 +378,9 @@ function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
                         <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">
                             O que foi realizado
                         </p>
-                        <p className="text-[13px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed line-clamp-3">
-                            {resumo}
-                        </p>
+                        <p className="text-[13px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed line-clamp-3"
+                            dangerouslySetInnerHTML={{ __html: sanitizar(resumo) }}
+                        />
                     </div>
                 )}
 
@@ -419,25 +419,33 @@ function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
                                 {funcionouBem && (
                                     <div>
                                         <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">✓ O que funcionou</p>
-                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed">{funcionouBem}</p>
+                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
+                                            dangerouslySetInnerHTML={{ __html: sanitizar(funcionouBem) }}
+                                        />
                                     </div>
                                 )}
                                 {fariadiferente && (
                                     <div>
                                         <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">✗ O que faria diferente</p>
-                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed">{fariadiferente}</p>
+                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
+                                            dangerouslySetInnerHTML={{ __html: sanitizar(fariadiferente) }}
+                                        />
                                     </div>
                                 )}
                                 {poderiaMelhorar && (
                                     <div>
                                         <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">💭 Poderia melhorar</p>
-                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed">{poderiaMelhorar}</p>
+                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
+                                            dangerouslySetInnerHTML={{ __html: sanitizar(poderiaMelhorar) }}
+                                        />
                                     </div>
                                 )}
                                 {anotacoesGerais && (
                                     <div>
                                         <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">📝 Anotações gerais</p>
-                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed">{anotacoesGerais}</p>
+                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
+                                            dangerouslySetInnerHTML={{ __html: sanitizar(anotacoesGerais) }}
+                                        />
                                     </div>
                                 )}
                             </div>
