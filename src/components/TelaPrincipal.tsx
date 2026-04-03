@@ -64,6 +64,24 @@ interface ClasseVivenciasResult {
     conceitos: string[]
 }
 
+// Lista canônica de conceitos musicais pedagógicos — única fonte de verdade
+const CONCEITOS_APROVADOS = new Set([
+    'Pulsação', 'Andamento', 'Métrica', 'Compasso Binário', 'Compasso Ternário',
+    'Compasso Quaternário', 'Células Rítmicas', 'Síncope', 'Ostinato', 'Polirritmia',
+    'Acento Rítmico', 'Pausa', 'Subdivisão', 'Altura', 'Grave e Agudo',
+    'Contorno Melódico', 'Fraseado', 'Intervalos', 'Escala', 'Escala Pentatônica',
+    'Tonalidade', 'Modo', 'Afinação', 'Acorde', 'Campo Harmônico', 'Consonância',
+    'Dissonância', 'Textura Musical', 'Uníssono', 'Polifonia', 'Homofonia', 'Bordão',
+    'Forma AB', 'Forma ABA', 'Cânone', 'Rondó', 'Motivo', 'Frase Musical',
+    'Repetição', 'Contraste', 'Variação', 'Introdução e Coda', 'Dinâmica',
+    'Crescendo', 'Decrescendo', 'Articulação', 'Legato', 'Staccato', 'Timbre',
+    'Caráter Musical', 'Expressão Musical', 'Respiração Diafragmática', 'Emissão Vocal',
+    'Ressonância Vocal', 'Percussão Corporal', 'Coordenação Motora', 'Movimento Expressivo',
+    'Improvisação', 'Composição', 'Arranjo', 'Criação Coletiva', 'Escuta Ativa',
+    'Percepção Rítmica', 'Percepção Melódica', 'Análise Auditiva', 'Gênero Musical',
+    'Folclore Brasileiro', 'Ciranda', 'Samba', 'Maracatu',
+])
+
 async function classificarVivenciasPlano(plano: Plano, apiKey: string): Promise<ClasseVivenciasResult> {
     const atividades = (plano.atividadesRoteiro ?? [])
         .map(a => `- ${a.nome}: ${(a.descricao ?? '').replace(/<[^>]*>/g, ' ').trim().slice(0, 200)}`)
@@ -777,6 +795,14 @@ export default function TelaPrincipal() {
     useEffect(() => {
         setAtividadesExpandidas(new Set())
         prevAtivCountRef.current = (planoEditando?.atividadesRoteiro || []).length
+    }, [planoEditando?.id]) // eslint-disable-line
+
+    // Sanitiza conceitos legados ao abrir plano — remove termos fora da lista aprovada
+    useEffect(() => {
+        if (!planoEditando?.conceitos?.length) return
+        const limpos = planoEditando.conceitos.filter(c => CONCEITOS_APROVADOS.has(c))
+        if (limpos.length !== planoEditando.conceitos.length)
+            setPlanoEditando({ ...planoEditando, conceitos: limpos })
     }, [planoEditando?.id]) // eslint-disable-line
 
     // Bug 1: sincroniza notasAdaptacao do planoEditando com o estado vivo em planos.
