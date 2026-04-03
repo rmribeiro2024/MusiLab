@@ -560,19 +560,17 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
 
         {/* Ação + Chevron */}
         <div className="flex items-center gap-2 shrink-0 pt-0.5">
-          {/* Botão Avaliar aula — sempre visível para aulas passadas */}
-          {(needsAction || jaRegistrado) && (
-            <button
-              onClick={abrirRegistro}
-              className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors"
-              style={jaRegistrado
-                ? { background: 'transparent', color: '#22c55e', border: 'none', fontSize: 16, fontWeight: 700, padding: '0 4px' }
-                : { background: 'transparent', color: isDarkMode ? '#818cf8' : '#5B5FEA', border: `1px solid ${isDarkMode ? '#818cf8' : '#5B5FEA'}` }
-              }
-            >
-              {jaRegistrado ? '✓' : 'Avaliar aula'}
-            </button>
-          )}
+          {/* Botão Avaliar aula — sempre visível */}
+          <button
+            onClick={abrirRegistro}
+            className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors"
+            style={jaRegistrado
+              ? { background: 'transparent', color: '#22c55e', border: 'none', fontSize: 16, fontWeight: 700, padding: '0 4px' }
+              : { background: 'transparent', color: isDarkMode ? '#818cf8' : '#5B5FEA', border: `1px solid ${isDarkMode ? '#818cf8' : '#5B5FEA'}` }
+            }
+          >
+            {jaRegistrado ? '✓' : 'Avaliar aula'}
+          </button>
           <svg
             className={`w-3 h-3 text-slate-300 dark:text-[#374151] transition-transform ${aberto ? 'rotate-180' : ''}`}
             viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"
@@ -923,7 +921,12 @@ Escreva apenas o briefing, sem títulos nem markdown.`
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
     },
   )
-  if (!resp.ok) throw new Error(`Erro ${resp.status}`)
+  if (!resp.ok) {
+    const errBody = await resp.text().catch(() => '')
+    let detail = ''
+    try { detail = JSON.parse(errBody)?.error?.message ?? '' } catch { detail = errBody.slice(0, 200) }
+    throw new Error(`Erro ${resp.status}${detail ? ': ' + detail : ''}`)
+  }
   const data = await resp.json()
   const texto = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
   if (!texto) throw new Error('Resposta vazia')

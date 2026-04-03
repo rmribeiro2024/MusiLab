@@ -729,6 +729,9 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             kanbanStatus: 'backlog',
             registrosPosAula: [],
             aplicacoes: [],
+            // Resetar classificação para que o modal CLASP/conceitos apareça após salvar o adaptado
+            vivenciasClassificadas: {},
+            orffMeios: {},
             _ultimaEdicao: new Date().toISOString(),
             _criadoEm: new Date().toISOString(),
         } as any
