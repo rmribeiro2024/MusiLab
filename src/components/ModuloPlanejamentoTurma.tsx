@@ -1,6 +1,6 @@
 // src/components/ModuloPlanejamentoTurma.tsx
-// Módulo "Planejamento por Turma" — visão pedagógica por turma.
-// Bloco 1: Último Registro | Bloco 2: Próximo Passo Sugerido | Bloco 3: Planejamento (3 modos)
+// Módulo "Caderno da Turma" — visão pedagógica por turma.
+// Bloco 1: Último Registro | Bloco 2: Próximo Passo Sugerido | CTA: Planejar
 
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { usePlanejamentoTurmaContext, type TurmaSelecionada } from '../contexts/PlanejamentoTurmaContext'
@@ -8,13 +8,11 @@ import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
-import RichTextEditor from './RichTextEditor'
-import TipTapEditor from './TipTapEditor'
 import { stripHTML, gerarIdSeguro } from '../lib/utils'
 import { showToast } from '../lib/toast'
 import { useAtividadesContext, useAplicacoesContext, useSequenciasContext, useEstrategiasContext } from '../contexts'
-import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula, AlunoDestaque, AnotacaoAluno, MarcoAluno } from '../types'
-import FormularioAulaPlena from './FormularioAulaPlena'
+import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula, AlunoDestaque, AnotacaoAluno, MarcoAluno, Plano } from '../types'
+import ModuloHistoricoMusical from './ModuloHistoricoMusical'
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -79,6 +77,273 @@ function labelProximaOpcao(valor: string): string {
     decidir:        'Decidir depois',
   }
   return mapa[valor] ?? valor
+}
+
+// ─── RESUMO AUTOMÁTICO DA TURMA ───────────────────────────────────────────────
+
+interface ResumoTurma {
+  participacao: 'alta' | 'média' | 'baixa' | null
+  presencaMedia: number | null  // 0–1, só disponível quando chamada está preenchida
+  focoRecente: string | null
+  tendencia: 'cresceu' | 'estável' | 'caiu' | null
+  numAulas: number
+}
+
+// Score de engajamento por statusAula (usado quando chamada não está disponível)
+function scoreStatus(r: RegistroPosAula): number | null {
+  const s = r.statusAula ?? r.resultadoAula
+  if (!s) return null
+  const mapa: Record<string, number> = {
+    concluida: 1.0, bem: 1.0, funcionou: 1.0,
+    revisao:   0.7,
+    parcial:   0.5,
+    incompleta: 0.4, nao: 0.4, nao_funcionou: 0.4,
+    nao_houve: 0.0,
+  }
+  return mapa[s] ?? null
+}
+
+function calcResumoTurma(historico: RegistroPosAula[], planos: Plano[]): ResumoTurma {
+  // Últimas 5 aulas que de fato ocorreram
+  const amostra = historico
+    .slice(0, 5)
+    .filter(r => (r.statusAula ?? r.resultadoAula) !== 'nao_houve')
+
+  if (amostra.length === 0) {
+    return { participacao: null, presencaMedia: null, focoRecente: null, tendencia: null, numAulas: 0 }
+  }
+
+  // ── 1. PARTICIPAÇÃO ─────────────────────────────────────────────────────────
+  // Fonte primária: chamada (presença real)
+  const comChamada = amostra.filter(r => (r.chamada?.length ?? 0) > 0)
+  let participacao: 'alta' | 'média' | 'baixa' | null = null
+  let presencaMedia: number | null = null
+
+  if (comChamada.length > 0) {
+    const media = comChamada.reduce((acc, r) => {
+      const ch = r.chamada!
+      return acc + ch.filter(c => c.presente).length / ch.length
+    }, 0) / comChamada.length
+    presencaMedia = media
+    participacao = media >= 0.80 ? 'alta' : media >= 0.55 ? 'média' : 'baixa'
+  } else {
+    // Fallback: statusAula como proxy
+    const scores = amostra.map(scoreStatus).filter((s): s is number => s !== null)
+    if (scores.length > 0) {
+      const media = scores.reduce((a, b) => a + b, 0) / scores.length
+      participacao = media >= 0.75 ? 'alta' : media >= 0.45 ? 'média' : 'baixa'
+    }
+  }
+
+  // ── 2. FOCO RECENTE ──────────────────────────────────────────────────────────
+  // Fonte primária: orffMeios do plano pai (o meio expressivo mais usado)
+  const ORFF_LABELS: Record<string, string> = { fala: 'fala', canto: 'canto', movimento: 'movimento', instrumental: 'instrumental' }
+  const CLASP_LABELS: Record<string, string> = { tecnica: 'técnica', performance: 'performance', apreciacao: 'apreciação', criacao: 'criação', teoria: 'teoria' }
+
+  const contagemOrff: Record<string, number> = {}
+  const contagemClasp: Record<string, number> = {}
+
+  for (const reg of amostra) {
+    const plano = planos.find(p => p.registrosPosAula?.some(r => r.id === reg.id))
+    if (!plano) continue
+    if (plano.orffMeios) {
+      for (const [meio, ativo] of Object.entries(plano.orffMeios)) {
+        if (ativo) contagemOrff[meio] = (contagemOrff[meio] ?? 0) + 1
+      }
+    }
+    if (plano.vivenciasClassificadas) {
+      for (const [dim, val] of Object.entries(plano.vivenciasClassificadas)) {
+        if (val > 0) contagemClasp[dim] = (contagemClasp[dim] ?? 0) + val
+      }
+    }
+  }
+
+  let focoRecente: string | null = null
+  const topOrff = Object.entries(contagemOrff).sort((a, b) => b[1] - a[1])[0]
+  if (topOrff) {
+    focoRecente = ORFF_LABELS[topOrff[0]] ?? topOrff[0]
+  } else {
+    const topClasp = Object.entries(contagemClasp).sort((a, b) => b[1] - a[1])[0]
+    if (topClasp) focoRecente = CLASP_LABELS[topClasp[0]] ?? topClasp[0]
+  }
+
+  // ── 3. TENDÊNCIA ────────────────────────────────────────────────────────────
+  // Requer ≥ 3 registros com score
+  let tendencia: 'cresceu' | 'estável' | 'caiu' | null = null
+  if (amostra.length >= 3) {
+    // amostra está desc; reverter para cronológico
+    const crono = [...amostra].reverse()
+    const scores = crono.map(r => {
+      if ((r.chamada?.length ?? 0) > 0) {
+        const ch = r.chamada!
+        return ch.filter(c => c.presente).length / ch.length
+      }
+      return scoreStatus(r)
+    }).filter((s): s is number => s !== null)
+
+    if (scores.length >= 3) {
+      const meio = Math.ceil(scores.length / 2)
+      const primeira = scores.slice(0, meio).reduce((a, b) => a + b, 0) / meio
+      const segunda  = scores.slice(-meio).reduce((a, b) => a + b, 0) / meio
+      const delta = segunda - primeira
+      tendencia = delta > 0.2 ? 'cresceu' : delta < -0.2 ? 'caiu' : 'estável'
+    }
+  }
+
+  return { participacao, presencaMedia, focoRecente, tendencia, numAulas: amostra.length }
+}
+
+function calcDestaquesTurma(historico: RegistroPosAula[], planos: Plano[]): string[] {
+  const amostra = historico
+    .slice(0, 5)
+    .filter(r => (r.statusAula ?? r.resultadoAula) !== 'nao_houve')
+
+  if (amostra.length < 2) return []
+
+  const destaques: string[] = []
+
+  // ── Regra 1: Participação — últimas 2 aulas vs anteriores ───────────────────
+  const crono = [...amostra].reverse()
+  const scores = crono.map(r => {
+    if ((r.chamada?.length ?? 0) > 0) {
+      const ch = r.chamada!
+      return ch.filter(c => c.presente).length / ch.length
+    }
+    return scoreStatus(r)
+  }).filter((s): s is number => s !== null)
+
+  if (scores.length >= 3) {
+    const ultimas2    = scores.slice(-2)
+    const anteriores  = scores.slice(0, -2)
+    const mediaRecente   = ultimas2.reduce((a, b) => a + b, 0) / ultimas2.length
+    const mediaAnterior  = anteriores.reduce((a, b) => a + b, 0) / anteriores.length
+    const delta = mediaRecente - mediaAnterior
+    if (delta < -0.2) destaques.push('Participação caiu nas últimas aulas')
+    else if (delta > 0.2) destaques.push('Participação melhorou nas últimas aulas')
+  }
+
+  // ── Orff: pré-processamento ──────────────────────────────────────────────────
+  const comOrff = amostra
+    .map(reg => ({
+      reg,
+      orff: planos.find(p => p.registrosPosAula?.some(r => r.id === reg.id))?.orffMeios ?? null,
+    }))
+    .filter(({ orff }) => orff != null)
+
+  if (comOrff.length >= 2) {
+    const contagem: Record<string, number> = {}
+    for (const { orff } of comOrff) {
+      for (const [meio, ativo] of Object.entries(orff!)) {
+        if (ativo) contagem[meio] = (contagem[meio] ?? 0) + 1
+      }
+    }
+
+    const sorted = Object.entries(contagem).sort((a, b) => b[1] - a[1])
+    const distintos = sorted.filter(([, n]) => n > 0).length
+
+    // ── Regra 2: Baixa variedade — apenas 1 meio distinto usado ─────────────────
+    if (distintos === 1 && destaques.length < 3) {
+      destaques.push('Pouca variedade de atividades')
+    }
+
+    // ── Regra 3: Predomínio — 2+ meios usados, top ≥ 2× o segundo ───────────────
+    if (distintos >= 2 && destaques.length < 3) {
+      const [top, segundo] = sorted
+      if (top[1] >= segundo[1] * 2) {
+        destaques.push(`Predomínio de atividades de ${top[0]}`)
+      }
+    }
+  }
+
+  return destaques
+}
+
+// ─── CONTINUIDADE PEDAGÓGICA ──────────────────────────────────────────────────
+
+interface Continuidade {
+  data: string
+  ondeParamos: string | null
+  dificuldade: string | null
+  sugestao: string | null
+}
+
+function calcContinuidade(historico: RegistroPosAula[]): Continuidade | null {
+  const ultima = historico.find(r => (r.statusAula ?? r.resultadoAula) !== 'nao_houve')
+  if (!ultima) return null
+
+  const ondeParamos = ultima.resumoAula?.trim() || ultima.resumo?.trim() || null
+  const dificuldade = ultima.fariadiferente?.trim() || ultima.naoFuncionou?.trim() || ultima.poderiaMelhorar?.trim() || null
+  const sugestao    = ultima.proximaAula?.trim() || null
+
+  if (!ondeParamos && !dificuldade && !sugestao) return null
+
+  return {
+    data: ultima.dataAula ?? ultima.data,
+    ondeParamos,
+    dificuldade,
+    sugestao,
+  }
+}
+
+// ─── ALUNOS EM DESTAQUE ───────────────────────────────────────────────────────
+
+interface AlunoDestaqueResumo {
+  nome: string
+  label: string
+  nivel: 'positivo' | 'negativo'
+}
+
+function calcAlunosDestaque(
+  historico: RegistroPosAula[],
+  alunos: AlunoDestaque[]
+): AlunoDestaqueResumo[] {
+  if (alunos.length < 2) return []
+
+  // Usar até 10 aulas para ter dados mais estáveis por aluno
+  const aulasChamada = historico
+    .slice(0, 10)
+    .filter(r => (r.chamada?.length ?? 0) > 0)
+
+  if (aulasChamada.length < 2) return []
+
+  // Agregar presença por alunoId
+  const stats: Record<string, { presente: number; total: number }> = {}
+  for (const reg of aulasChamada) {
+    for (const c of reg.chamada!) {
+      if (!stats[c.alunoId]) stats[c.alunoId] = { presente: 0, total: 0 }
+      stats[c.alunoId].total++
+      if (c.presente) stats[c.alunoId].presente++
+    }
+  }
+
+  // Cruzar com lista de alunos da turma — só quem apareceu em ≥ 2 aulas
+  const ranked = alunos
+    .map(a => {
+      const s = stats[a.id]
+      if (!s || s.total < 2) return null
+      return { nome: a.nome, pct: s.presente / s.total }
+    })
+    .filter((x): x is { nome: string; pct: number } => x !== null)
+    .sort((a, b) => b.pct - a.pct)
+
+  if (ranked.length < 2) return []
+
+  const resultado: AlunoDestaqueResumo[] = []
+
+  // Aluno com maior presença
+  const melhor = ranked[0]
+  if (melhor.pct >= 0.80) {
+    resultado.push({ nome: melhor.nome, label: 'alta participação', nivel: 'positivo' })
+  }
+
+  // Aluno com menor presença (label varia pela gravidade)
+  const pior = ranked[ranked.length - 1]
+  if (pior.pct < 0.60) {
+    const label = pior.pct < 0.40 ? 'faltas recorrentes' : 'baixa participação'
+    resultado.push({ nome: pior.nome, label, nivel: 'negativo' })
+  }
+
+  return resultado
 }
 
 // ─── TIMELINE PEDAGÓGICA ──────────────────────────────────────────────────────
@@ -631,84 +896,6 @@ function CardProximoPasso({ valor, onAdaptar, onImportar, onNovo, podeAdaptar }:
   )
 }
 
-// ─── PAINEL DO BANCO DE AULAS ──────────────────────────────────────────────────
-
-function PainelImportarBanco({
-  planosRelacionadosIds,
-  onToggle,
-  onFechar,
-  onImportar,
-}: {
-  planosRelacionadosIds: string[]
-  onToggle: (id: string) => void
-  onFechar: () => void
-  onImportar?: (plano: import('../types').Plano) => void
-}) {
-  const { planos } = usePlanosContext()
-  const [busca, setBusca] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => { inputRef.current?.focus() }, [])
-
-  const planosFiltrados = useMemo(() => {
-    const q = busca.toLowerCase().trim()
-    return planos
-      .filter(p => !p.arquivado && (
-        !q ||
-        p.titulo?.toLowerCase().includes(q) ||
-        p.tema?.toLowerCase().includes(q) ||
-        (p.conceitos ?? []).some((c: string) => c.toLowerCase().includes(q))
-      ))
-      .slice(0, 20)
-  }, [planos, busca])
-
-  return (
-    <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-      <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100">
-        <span className="text-xs font-semibold text-slate-600">Banco de aulas</span>
-        <button type="button" onClick={onFechar} className="text-slate-400 hover:text-slate-600 text-xs">✕ Fechar</button>
-      </div>
-      <div className="px-3 pt-3 pb-2">
-        <input
-          ref={inputRef}
-          type="text"
-          value={busca}
-          onChange={e => setBusca(e.target.value)}
-          placeholder="Buscar por título, tema ou conceito..."
-          className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-        />
-      </div>
-      <div className="max-h-56 overflow-y-auto divide-y divide-slate-50">
-        {planosFiltrados.length === 0 ? (
-          <p className="text-xs text-slate-400 text-center py-4 px-3">Nenhuma aula encontrada</p>
-        ) : (
-          planosFiltrados.map(p => {
-            const sel = planosRelacionadosIds.includes(String(p.id))
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => onImportar ? onImportar(p) : onToggle(String(p.id))}
-                className={`w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 transition-colors ${sel ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'}`}
-              >
-                <div className="min-w-0">
-                  <p className="text-xs font-medium truncate">{p.titulo}</p>
-                  {p.tema && <p className="text-xs text-slate-400 truncate">{p.tema}</p>}
-                </div>
-                {!onImportar && (
-                  <span className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center text-xs ${sel ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300'}`}>
-                    {sel ? '✓' : ''}
-                  </span>
-                )}
-              </button>
-            )
-          })
-        )}
-      </div>
-    </div>
-  )
-}
-
 // ─── MODAL PREVIEW DO PLANO ───────────────────────────────────────────────────
 
 function ModalPreviewPlano({ plano, onFechar, turmaId }: { plano: import('../types').Plano; onFechar: () => void; turmaId?: string }) {
@@ -837,492 +1024,10 @@ function ModalPreviewPlano({ plano, onFechar, turmaId }: { plano: import('../typ
   )
 }
 
-// ─── BLOCO 3: FORMULÁRIO DE PLANEJAMENTO (3 MODOS) ────────────────────────────
-
-type Modo = 'adaptar' | 'importar' | 'criar' | null
-type DadosForm = Omit<import('../types').PlanejamentoTurma, 'id' | 'criadoEm' | 'atualizadoEm' | 'anoLetivoId' | 'escolaId' | 'segmentoId' | 'turmaId'>
-
-function origemParaModo(origem?: string): Exclude<Modo, null> {
-  if (origem === 'adaptacao') return 'adaptar'
-  if (origem === 'banco') return 'importar'
-  return 'criar'
-}
-
-function FormPlanejamentoInline({
-  turmaSelecionada,
-  planejamentoEditando,
-  onSalvar,
-  onCancelarEdicao,
-  ultimoRegistro,
-  acionarBloco2,
-  ultimoPlanejamento,
-  calendarDateStr,
-}: {
-  turmaSelecionada: TurmaSelecionada
-  planejamentoEditando: import('../types').PlanejamentoTurma | null
-  onSalvar: (dados: DadosForm) => void
-  onCancelarEdicao: () => void
-  ultimoRegistro?: RegistroPosAula | null
-  acionarBloco2?: { n: number; modo: Exclude<Modo, null> } | null
-  ultimoPlanejamento?: import('../types').PlanejamentoTurma | null
-  calendarDateStr?: string
-}) {
-  const { planos } = usePlanosContext()
-  const { anosLetivos } = useAnoLetivoContext()
-  const { setViewMode } = useRepertorioContext()
-  const { gradesSemanas } = useCalendarioContext()
-
-  const turmaNome = useMemo(() => {
-    for (const ano of anosLetivos) {
-      for (const escola of ano.escolas ?? []) {
-        for (const seg of escola.segmentos ?? []) {
-          // eslint-disable-next-line eqeqeq
-          if (seg.id == turmaSelecionada.segmentoId) {
-            // eslint-disable-next-line eqeqeq
-            const t = (seg.turmas ?? []).find((t: import('../types').Turma) => t.id == turmaSelecionada.turmaId)
-            if (t) return t.nome
-          }
-        }
-      }
-    }
-    return `Turma ${turmaSelecionada.turmaId}`
-  }, [turmaSelecionada, anosLetivos])
-
-  const proximaData = useMemo(
-    () => calcProximaAula(turmaSelecionada, gradesSemanas),
-    [turmaSelecionada, gradesSemanas]
-  )
-
-  // Data da última aula real da turma segundo o horário cadastrado (grades)
-  const ultimaAulaData = useMemo(
-    () => calcUltimaAula(turmaSelecionada, gradesSemanas) || (ultimoRegistro?.data ?? ''),
-    [turmaSelecionada, gradesSemanas, ultimoRegistro]
-  )
-
-  // Computa conteúdo de pré-preenchimento do modo Adaptar
-  function buildAdaptarHtml() {
-    const partes: string[] = []
-    if (ultimoRegistro?.proximaAula?.trim())
-      partes.push(`<p>${ultimoRegistro.proximaAula}</p>`)
-    if (ultimoRegistro?.poderiaMelhorar?.trim())
-      partes.push(`<p>⚠️ Ponto de atenção: ${ultimoRegistro.poderiaMelhorar}</p>`)
-    if (ultimoRegistro?.resumoAula?.trim()) {
-      const r = ultimoRegistro.resumoAula
-      partes.push(`<p>📋 Última aula: ${r.length > 100 ? r.slice(0, 100) + '…' : r}</p>`)
-    }
-    return partes.join('')
-  }
-
-  // Modo inicial: editar → respeita origemAula; novo → Adaptar se houver dados, senão seletor
-  const modoInicial: Modo = (() => {
-    if (planejamentoEditando) return origemParaModo(planejamentoEditando.origemAula)
-    const temDados = !!(
-      ultimoRegistro?.proximaAula?.trim() ||
-      ultimoRegistro?.poderiaMelhorar?.trim() ||
-      ultimoRegistro?.resumoAula?.trim()
-    )
-    return temDados ? 'adaptar' : null
-  })()
-
-  const [modo, setModo] = useState<Modo>(modoInicial)
-  const [dataPrevista, setDataPrevista] = useState(planejamentoEditando?.dataPrevista ?? proximaData ?? calendarDateStr ?? '')
-  const [oQuePretendoFazer, setOQuePretendoFazer] = useState(
-    planejamentoEditando?.oQuePretendoFazer ?? (modoInicial === 'adaptar' ? buildAdaptarHtml() : '')
-  )
-  // Plano do banco que contém o último registro pós-aula desta turma
-  const planoDaUltimaAulaId: string | null = (() => {
-    if (!ultimoRegistro) return null
-    const found = planos.find(p =>
-      p.registrosPosAula?.some(r => String(r.id) === String(ultimoRegistro.id))
-    )
-    return found ? String(found.id) : null
-  })()
-
-  const [planosRelacionadosIds, setPlanosRelacionadosIds] = useState<string[]>(() => {
-    if (planejamentoEditando) return planejamentoEditando.planosRelacionadosIds?.map(String) ?? []
-    if (modoInicial === 'adaptar') {
-      // Prioridade: plano do banco que gerou o último registro desta turma
-      if (planoDaUltimaAulaId) return [planoDaUltimaAulaId]
-      // Fallback: planos do último planejamento salvo
-      return ultimoPlanejamento?.planosRelacionadosIds?.map(String) ?? []
-    }
-    return []
-  })
-  const [novoMaterial, setNovoMaterial] = useState('')
-  const [materiais, setMateriais] = useState<string[]>(planejamentoEditando?.materiais ?? [])
-  const [editorKey, setEditorKey] = useState(0)
-  const [materiaisAbertos, setMateriaisAbertos] = useState(
-    modoInicial !== 'adaptar' && materiais.length > 0
-  )
-  const [painelImportarAberto, setPainelImportarAberto] = useState(false)
-  const [basePlano, setBasePlano] = useState<import('../types').Plano | null>(() => {
-    const id = planejamentoEditando?.planosRelacionadosIds?.[0]
-    return id ? planos.find(p => String(p.id) === id) ?? null : null
-  })
-  const [painelAdaptarAberto, setPainelAdaptarAberto] = useState(false)
-  const [planosAdaptarAbertos, setPlanosAdaptarAbertos] = useState(() =>
-    // No modo adaptar sempre fecha — usuário abre se quiser ver
-    false
-  )
-  const [planoPreview, setPlanoPreview] = useState<import('../types').Plano | null>(null)
-
-  // Referência para evitar disparo duplo do acionarBloco2
-  const acionarBloco2PrevRef = useRef(acionarBloco2?.n ?? 0)
-  // Rastreia se o usuário editou manualmente o editor (auto-preenchimento não conta)
-  const hasEditedRef = useRef(false)
-
-  // Sincroniza data quando proximaData é calculado
-  useEffect(() => {
-    if (!planejamentoEditando && proximaData && !dataPrevista) {
-      setDataPrevista(proximaData)
-    }
-  }, [proximaData]) // eslint-disable-line
-
-  // Sugestões de materiais (top 8 do histórico)
-  const sugestoesMateriais = useMemo(() => {
-    const contagem: Record<string, number> = {}
-    planos.forEach(p => {
-      (p.materiais ?? []).forEach(m => {
-        const s = m.trim()
-        if (s) contagem[s] = (contagem[s] || 0) + 1
-      })
-    })
-    return Object.entries(contagem).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([m]) => m)
-  }, [planos])
-
-  const planosRelacionados = useMemo(
-    () => planosRelacionadosIds.map(id => planos.find(p => String(p.id) === id)).filter(Boolean) as import('../types').Plano[],
-    [planosRelacionadosIds, planos]
-  )
-
-  const podeAdaptar = !!(
-    ultimoRegistro?.proximaAula?.trim() ||
-    ultimoRegistro?.poderiaMelhorar?.trim() ||
-    ultimoRegistro?.resumoAula?.trim() ||
-    ultimoRegistro?.fariadiferente?.trim() ||
-    (ultimoRegistro as any)?.encaminhamentos?.some((e: any) => !e.concluido)
-  )
-
-  // ── Selecionar modo ──────────────────────────────────────────────────────────
-  function handleSelecionarModo(novoModo: Modo) {
-    const temConteudo = oQuePretendoFazer.replace(/<[^>]+>/g, '').trim()
-    if (temConteudo && hasEditedRef.current && !window.confirm('Há texto no editor. Deseja trocar de modo e perder o conteúdo?')) return
-
-    let novoConteudo = ''
-
-    if (novoModo === 'adaptar') {
-      const partes: string[] = []
-      // 0. Encaminhamentos pendentes — incluir como checklist no topo
-      const encs = ((ultimoRegistro as any)?.encaminhamentos as { id: string; texto: string; concluido: boolean }[] | undefined)
-      const pendentes = encs?.filter(e => !e.concluido) ?? []
-      if (pendentes.length > 0) {
-        partes.push(pendentes.map(e => `<p>📌 ${e.texto}</p>`).join(''))
-      }
-      // 1. Ideias/estratégias — prioridade máxima, sem prefixo
-      if (ultimoRegistro?.proximaAula?.trim()) {
-        partes.push(`<p>${ultimoRegistro.proximaAula}</p>`)
-      }
-      // 2. O que poderia melhorar — atenção pedagógica
-      if (ultimoRegistro?.poderiaMelhorar?.trim()) {
-        partes.push(`<p>⚠️ Ponto de atenção: ${ultimoRegistro.poderiaMelhorar}</p>`)
-      }
-      // 3. Resumo da última aula — apenas como apoio, truncado
-      if (ultimoRegistro?.resumoAula?.trim()) {
-        const r = ultimoRegistro.resumoAula
-        const curto = r.length > 100 ? r.slice(0, 100) + '…' : r
-        partes.push(`<p>📋 Última aula: ${curto}</p>`)
-      }
-      novoConteudo = partes.join('')
-    }
-
-    hasEditedRef.current = false
-    setModo(novoModo)
-    setOQuePretendoFazer(novoConteudo)
-    setEditorKey(k => k + 1)
-    setBasePlano(null)
-    setMateriais([])
-    // Adaptar: plano do banco do último registro; outros modos: limpa
-    if (novoModo === 'adaptar') {
-      setPlanosRelacionadosIds(
-        planoDaUltimaAulaId
-          ? [planoDaUltimaAulaId]
-          : (ultimoPlanejamento?.planosRelacionadosIds?.map(String) ?? [])
-      )
-    } else {
-      setPlanosRelacionadosIds([])
-    }
-    setPainelImportarAberto(novoModo === 'importar')
-    setPainelAdaptarAberto(false)
-    setPlanosAdaptarAbertos(false)
-    setMateriaisAbertos(false)
-  }
-
-  // ── Acionamento externo (botões do Bloco 2: Adaptar / Importar / Novo) ───────
-  useEffect(() => {
-    if (acionarBloco2 && acionarBloco2.n !== acionarBloco2PrevRef.current && !planejamentoEditando) {
-      acionarBloco2PrevRef.current = acionarBloco2.n
-      handleSelecionarModo(acionarBloco2.modo)
-    }
-  }, [acionarBloco2]) // eslint-disable-line
-
-  // ── Voltar ao seletor ────────────────────────────────────────────────────────
-  function tentarVoltarSeletor() {
-    const temConteudo = oQuePretendoFazer.replace(/<[^>]+>/g, '').trim()
-    if (temConteudo && hasEditedRef.current && !window.confirm('Há texto no editor. Deseja trocar de modo e perder o conteúdo?')) return
-    hasEditedRef.current = false
-    setModo(null)
-    setOQuePretendoFazer('')
-    setEditorKey(k => k + 1)
-    setBasePlano(null)
-    setMateriais([])
-    setPlanosRelacionadosIds([])
-    setPainelImportarAberto(false)
-  }
-
-  // ── Importar plano do banco (click único → auto-preenche e fecha painel) ─────
-  function importarDoBanco(plano: import('../types').Plano) {
-    const partes: string[] = []
-    if (plano.objetivoGeral?.trim()) partes.push(`<p>${plano.objetivoGeral}</p>`)
-    if (plano.atividadesRoteiro?.length) {
-      plano.atividadesRoteiro.forEach(a => {
-        if (a.nome?.trim()) partes.push(`<p>• ${a.nome}</p>`)
-      })
-    }
-    const html = partes.join('')
-    if (html) {
-      setOQuePretendoFazer(html)
-      setEditorKey(k => k + 1)
-    }
-    if (plano.materiais?.length) {
-      setMateriais(plano.materiais)
-      setMateriaisAbertos(true)
-    }
-    setPlanosRelacionadosIds([String(plano.id)])
-    setBasePlano(plano)
-    setPainelImportarAberto(false)
-  }
-
-  function togglePlano(id: string) {
-    setPlanosRelacionadosIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
-  }
-
-  function adicionarMaterial(m?: string) {
-    const mat = (m ?? novoMaterial).trim()
-    if (mat && !materiais.includes(mat)) {
-      setMateriais(prev => [...prev, mat])
-      if (!m) setNovoMaterial('')
-    }
-  }
-
-  function removerMaterial(m: string) { setMateriais(prev => prev.filter(x => x !== m)) }
-
-  function handleSalvar(e: React.FormEvent) {
-    e.preventDefault()
-    if (!oQuePretendoFazer.replace(/<[^>]+>/g, '').trim()) return
-    const origemAula: 'banco' | 'adaptacao' | 'livre' =
-      modo === 'adaptar' ? 'adaptacao' :
-      modo === 'importar' ? 'banco' : 'livre'
-    onSalvar({
-      dataPrevista: dataPrevista || undefined,
-      oQuePretendoFazer,
-      planosRelacionadosIds: planosRelacionadosIds.length > 0 ? planosRelacionadosIds : undefined,
-      materiais: materiais.length > 0 ? materiais : undefined,
-      origemAula,
-    })
-  }
-
-  const inputClass = 'w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400'
-
-  const tituloModo =
-    planejamentoEditando ? '✏️ Editando planejamento' :
-    modo === 'adaptar'  ? '🔄 Adaptar da última aula' :
-    modo === 'importar' ? '🏦 Importar do banco' :
-    modo === 'criar'    ? '✏️ Criar nova aula' :
-    '📝 Planejamento da próxima aula'
-
-  return (
-    <form onSubmit={handleSalvar} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-50">
-        <h3 className="text-sm font-semibold text-slate-700">
-          {tituloModo}
-          {modo === 'adaptar' && ultimaAulaData && (
-            <span className="ml-2 text-xs font-normal text-slate-400">{formatarData(ultimaAulaData)}</span>
-          )}
-        </h3>
-        <div className="flex items-center gap-2">
-          {!planejamentoEditando && modo !== null && (
-            <button type="button" onClick={tentarVoltarSeletor}
-              className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
-              ← Mudar modo
-            </button>
-          )}
-          {planejamentoEditando && (
-            <button type="button" onClick={onCancelarEdicao}
-              className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
-              Cancelar
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* ── SELETOR DE MODO (quando modo === null) ───────────────────────────── */}
-      {modo === null ? (
-        <div className="px-5 py-5">
-
-          {/* Banner encaminhamentos pendentes */}
-          {(() => {
-            const encs = ((ultimoRegistro as any)?.encaminhamentos as { id: string; texto: string; concluido: boolean }[] | undefined)
-            const pendentes = encs?.filter(e => !e.concluido) ?? []
-            if (pendentes.length === 0) return null
-            return (
-              <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-xl p-3">
-                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-2">
-                  📌 {pendentes.length} encaminhamento{pendentes.length !== 1 ? 's' : ''} da última aula
-                </p>
-                <ul className="space-y-1">
-                  {pendentes.map(e => (
-                    <li key={e.id} className="flex items-start gap-1.5 text-xs text-indigo-700">
-                      <span className="shrink-0 mt-0.5">•</span>
-                      <span>{e.texto}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-[10px] text-indigo-400 mt-2">Use "Adaptar da última aula" para incluí-los no roteiro.</p>
-              </div>
-            )
-          })()}
-
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
-            Como deseja planejar?
-          </p>
-          <div className="flex flex-col gap-2">
-
-            {/* Adaptar */}
-            <button
-              type="button"
-              onClick={() => handleSelecionarModo('adaptar')}
-              disabled={!podeAdaptar}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${
-                podeAdaptar
-                  ? 'border-blue-400 bg-blue-50 hover:bg-blue-100 cursor-pointer'
-                  : 'border-slate-100 bg-slate-50 cursor-not-allowed'
-              }`}
-            >
-              <span className="text-base flex-shrink-0">🔄</span>
-              <div>
-                <div className={`text-sm font-semibold ${podeAdaptar ? 'text-blue-700' : 'text-slate-300'}`}>Adaptar da última aula</div>
-                <div className={`text-xs mt-0.5 ${podeAdaptar ? 'text-blue-500' : 'text-slate-300'}`}>Usa os registros do último encontro como base</div>
-              </div>
-            </button>
-
-            {/* Importar */}
-            <button
-              type="button"
-              onClick={() => handleSelecionarModo('importar')}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white text-left hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
-            >
-              <span className="text-base flex-shrink-0">🏛</span>
-              <div>
-                <div className="text-sm font-semibold text-slate-700">Importar do banco de aulas</div>
-                <div className="text-xs text-slate-400 mt-0.5">Aproveite um plano já criado anteriormente</div>
-              </div>
-            </button>
-
-            {/* Criar nova */}
-            <button
-              type="button"
-              onClick={() => handleSelecionarModo('criar')}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white text-left hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
-            >
-              <span className="text-base flex-shrink-0">✏️</span>
-              <div>
-                <div className="text-sm font-semibold text-slate-700">Criar nova aula livre</div>
-                <div className="text-xs text-slate-400 mt-0.5">Começa do zero, sem base anterior</div>
-              </div>
-            </button>
-          </div>
-
-          {!podeAdaptar && (
-            <p className="text-xs text-slate-400 text-center mt-3">
-              🔄 Adaptar disponível após registrar a primeira aula desta turma
-            </p>
-          )}
-        </div>
-
-      ) : (
-
-        // ── FORMULÁRIO PLENO ──────────────────────────────────────────────
-        <>
-          {/* MODO IMPORTAR — mostrar picker enquanto basePlano não foi selecionado */}
-          {modo === 'importar' && !basePlano ? (
-            <div className="px-5 py-4 space-y-3">
-              <PainelImportarBanco
-                planosRelacionadosIds={planosRelacionadosIds}
-                onToggle={togglePlano}
-                onFechar={() => setPainelImportarAberto(false)}
-                onImportar={importarDoBanco}
-              />
-            </div>
-          ) : (
-            <FormularioAulaPlena
-              key={`fap-${turmaSelecionada.turmaId}-${planejamentoEditando?.id ?? 'new'}-${modo}`}
-              initialPlano={(() => {
-                // Edição: restaura planoData salvo anteriormente
-                if (planejamentoEditando?.planoData) {
-                  return { ...planejamentoEditando.planoData }
-                }
-                // Adaptar: pré-preenche com plano do banco da última aula
-                if (modo === 'adaptar' && planoDaUltimaAulaId) {
-                  const planoBase = planos.find(p => String(p.id) === planoDaUltimaAulaId)
-                  return planoBase ? { ...planoBase, id: gerarIdSeguro() } : {}
-                }
-                // Importar: pré-preenche com plano escolhido do banco
-                if (modo === 'importar' && basePlano) {
-                  return { ...basePlano, id: gerarIdSeguro() }
-                }
-                return {}
-              })()}
-              modo={modo}
-              ultimoRegistro={ultimoRegistro}
-              turmaNome={turmaNome}
-              dataPrevista={planejamentoEditando?.dataPrevista ?? proximaData ?? calendarDateStr ?? ''}
-              onSalvar={plano => {
-                const origemAula: 'banco' | 'adaptacao' | 'livre' =
-                  modo === 'adaptar' ? 'adaptacao' :
-                  modo === 'importar' ? 'banco' : 'livre'
-                onSalvar({
-                  dataPrevista: dataPrevista || undefined,
-                  oQuePretendoFazer: plano.objetivoGeral || plano.titulo || '',
-                  planosRelacionadosIds: planosRelacionadosIds.length > 0 ? planosRelacionadosIds : undefined,
-                  materiais: plano.materiais?.length ? plano.materiais : undefined,
-                  origemAula,
-                  planoData: plano,
-                })
-              }}
-              onCancelar={() => {
-                if (planejamentoEditando) {
-                  onCancelarEdicao()
-                } else {
-                  tentarVoltarSeletor()
-                }
-              }}
-            />
-          )}
-        </>
-      )}
-
-      {/* Modal preview de plano */}
-      {planoPreview && <ModalPreviewPlano plano={planoPreview} onFechar={() => setPlanoPreview(null)} turmaId={String(turmaSelecionada?.turmaId ?? '')} />}
-    </form>
-  )
-}
-
 // ─── CARD DE PLANEJAMENTO (histórico salvo) ────────────────────────────────────
 
 function CardPlanejamento({ planejamento }: { planejamento: import('../types').PlanejamentoTurma }) {
-  const { editarPlanejamento, excluirPlanejamento, buildDadosParaBanco } = usePlanejamentoTurmaContext()
+  const { excluirPlanejamento, buildDadosParaBanco } = usePlanejamentoTurmaContext()
   const { novoPlano, setPlanoEditando, planos } = usePlanosContext()
   const { setViewMode } = useRepertorioContext()
   const [expandido, setExpandido] = useState(false)
@@ -1401,12 +1106,33 @@ function CardPlanejamento({ planejamento }: { planejamento: import('../types').P
           )}
 
           <div className="flex gap-3 pt-1 flex-wrap">
-            <button onClick={() => editarPlanejamento(planejamento)} className="text-xs text-blue-600 hover:text-blue-800 font-medium">Editar</button>
             {!(planejamento.planosRelacionadosIds && planejamento.planosRelacionadosIds.length > 0) && (
                 <button onClick={handlePromover} className="text-xs text-emerald-600 hover:text-emerald-800 font-medium border border-emerald-200 px-2 py-0.5 rounded-lg hover:bg-emerald-50 transition-colors">Promover para banco →</button>
             )}
             <button onClick={() => excluirPlanejamento(planejamento.id)} className="text-xs text-red-500 hover:text-red-700 font-medium">Excluir</button>
           </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── PLANEJAMENTOS SALVOS (somente leitura, colapsável) ───────────────────────
+
+function PlanejamentosSalvos({ planejamentos }: { planejamentos: import('../types').PlanejamentoTurma[] }) {
+  const [expandido, setExpandido] = useState(false)
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <button
+        onClick={() => setExpandido(v => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+      >
+        <span>Planejamentos salvos ({planejamentos.length})</span>
+        <span className="text-slate-400">{expandido ? '▲' : '▼'}</span>
+      </button>
+      {expandido && (
+        <div className="px-4 pb-4 space-y-2">
+          {planejamentos.map(p => <CardPlanejamento key={p.id} planejamento={p} />)}
         </div>
       )}
     </div>
@@ -1421,20 +1147,16 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
     ultimoRegistroDaTurma,
     historicoDaTurma,
     planejamentosDaTurma,
-    salvarPlanejamento,
-    planejamentoEditando,
-    fecharForm,
+    setDataNavegacao,
+    setModoInicialNavegacao,
   } = usePlanejamentoTurmaContext()
 
-  const { anosLetivos, alunosAddOrUpdate, alunosRemove, alunosGetByTurma, alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco, turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao } = useAnoLetivoContext() as ReturnType<typeof useAnoLetivoContext> & { turmaGetTiposAnotacao: (a: string, b: string, c: string, d: string) => string[]; turmaAddTipoAnotacao: (a: string, b: string, c: string, d: string, tipo: string) => void; turmaRemoveTipoAnotacao: (a: string, b: string, c: string, d: string, tipo: string) => void }
+  const { anosLetivos, alunosAddOrUpdate, alunosRemove, alunosGetByTurma, alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco, turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao, turmaSetObservacoes, turmaSetObjetivo } = useAnoLetivoContext() as ReturnType<typeof useAnoLetivoContext> & { turmaGetTiposAnotacao: (a: string, b: string, c: string, d: string) => string[]; turmaAddTipoAnotacao: (a: string, b: string, c: string, d: string, tipo: string) => void; turmaRemoveTipoAnotacao: (a: string, b: string, c: string, d: string, tipo: string) => void; turmaSetObservacoes: (a: string, b: string, c: string, d: string, texto: string) => void; turmaSetObjetivo: (a: string, b: string, c: string, d: string, texto: string) => void }
   const { planos, setPlanoSelecionado } = usePlanosContext()
   const { aplicacoes } = useAplicacoesContext()
   const { obterTurmasDoDia } = useCalendarioContext()
   const { setViewMode: setViewModeGlobal } = useRepertorioContext()
   const { estrategias } = useEstrategiasContext()
-  const [historicoExpandido, setHistoricoExpandido] = useState(false)
-  const [registroExpandido, setRegistroExpandido] = useState(false)
-  const [planejamentosExpandidos, setPlanejamentosExpandidos] = useState(false)
   const [alunosExpandidos, setAlunosExpandidos] = useState(false)
   const [novoAlunoNome, setNovoAlunoNome] = useState('')
   const [novoAlunoNota, setNovoAlunoNota] = useState('')
@@ -1447,15 +1169,16 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   const [anotacaoForm, setAnotacaoForm] = useState<{ alunoId: string; texto: string; tipo: string } | null>(null)
   const [marcoForm, setMarcoForm] = useState<{ alunoId: string; descricao: string } | null>(null)
   const [novoTipoAnotacao, setNovoTipoAnotacao] = useState('')
-  const [acionarBloco2, setAcionarBloco2] = useState<{ n: number; modo: Exclude<Modo, null> } | null>(null)
   const [dataAtiva, setDataAtiva] = useState<string | null>(null)
-  const formBlockRef = useRef<HTMLDivElement>(null)
-
-  // Limpa qualquer edição pendente ao montar (data ou turma mudou via key)
-  useEffect(() => { fecharForm() }, []) // eslint-disable-line
+  const [aba, setAba] = useState<'turma' | 'aulas' | 'repertorio'>('aulas')
+  const [editandoObs, setEditandoObs] = useState(false)
+  const [obsRascunho, setObsRascunho] = useState('')
+  const [editandoObj, setEditandoObj] = useState(false)
+  const [objRascunho, setObjRascunho] = useState('')
 
   // Resetar seleção ao trocar de turma
   useEffect(() => { setDataAtiva(null) }, [turmaSelecionada?.turmaId])
+  useEffect(() => { setAba('aulas') }, [turmaSelecionada?.turmaId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Planejamentos filtrados para a data atual (evita exibir plans de outros dias)
   const planejamentosDoDia = useMemo(
@@ -1502,6 +1225,68 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
     return `Turma ${turmaSelecionada.turmaId}`
   }, [turmaSelecionada, anosLetivos])
 
+  // Data da próxima aula real desta turma no calendário
+  const proximaAulaData = useMemo(() => {
+    if (!turmaSelecionada) return ''
+    const hoje = new Date()
+    for (let i = 1; i <= 90; i++) {
+      const d = new Date(hoje)
+      d.setDate(hoje.getDate() + i)
+      const ds = toDateStr(d)
+      const aulas = obterTurmasDoDia(ds)
+      if (aulas.some(a =>
+        // eslint-disable-next-line eqeqeq
+        a.turmaId == turmaSelecionada.turmaId && a.segmentoId == turmaSelecionada.segmentoId
+      )) return ds
+    }
+    return ''
+  }, [turmaSelecionada, obterTurmasDoDia])
+
+  // Objeto Turma completo da hierarquia (para observacoes/objetivo)
+  const turmaData = useMemo((): Turma | null => {
+    if (!turmaSelecionada) return null
+    for (const ano of anosLetivos) {
+      for (const escola of ano.escolas ?? []) {
+        for (const seg of escola.segmentos ?? []) {
+          // eslint-disable-next-line eqeqeq
+          if (seg.id == turmaSelecionada.segmentoId) {
+            // eslint-disable-next-line eqeqeq
+            const t = (seg.turmas ?? []).find((t: Turma) => t.id == turmaSelecionada.turmaId)
+            if (t) return t
+          }
+        }
+      }
+    }
+    return null
+  }, [turmaSelecionada, anosLetivos])
+
+  // Chave de filtro para ModuloHistoricoMusical (formato turmaId-escolaId)
+  const turmaKey = turmaSelecionada ? `${turmaSelecionada.turmaId}-${turmaSelecionada.escolaId}` : ''
+
+  // Continuidade pedagógica — baseada na última aula registrada
+  const continuidade = useMemo(
+    () => calcContinuidade(historicoDaTurma),
+    [historicoDaTurma]
+  )
+
+  // Resumo automático — calculado a partir das últimas 5 aulas
+  const resumoTurma = useMemo(
+    () => calcResumoTurma(historicoDaTurma, planos),
+    [historicoDaTurma, planos]
+  )
+
+  // Destaques automáticos — até 3 insights das últimas aulas
+  const destaquesTurma = useMemo(
+    () => calcDestaquesTurma(historicoDaTurma, planos),
+    [historicoDaTurma, planos]
+  )
+
+  // Alunos em destaque — alta/baixa presença por aluno
+  const alunosDestaque = useMemo(
+    () => calcAlunosDestaque(historicoDaTurma, turmaData?.alunos ?? []),
+    [historicoDaTurma, turmaData]
+  )
+
   // Registro exibido: seleção na timeline tem prioridade sobre o mais recente
   const registroExibido = useMemo<RegistroPosAula | null>(() =>
     dataAtiva
@@ -1534,578 +1319,681 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   if (!turmaSelecionada) return null
 
   const registrosAnteriores = historicoDaTurma.slice(1)
-
-  const podeAdaptarBloco2 = !!(
-    registroExibido?.proximaAula?.trim() ||
-    registroExibido?.poderiaMelhorar?.trim() ||
-    registroExibido?.resumoAula?.trim()
-  )
-
-  function acionarModoFromBloco2(modo: Exclude<Modo, null>) {
-    setAcionarBloco2(prev => ({ n: (prev?.n ?? 0) + 1, modo }))
-    setTimeout(() => {
-      formBlockRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 80)
-  }
+  // Exclui o registro já exibido no topo para evitar duplicação
+  const listaHistorico = registroExibido
+    ? historicoDaTurma.filter(r => r !== registroExibido)
+    : registrosAnteriores
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
 
-      {/* ── TIMELINE PEDAGÓGICA ────────────────────────────────────────────────── */}
-      <TimelinePedagogica
-        onAcionar={acionarModoFromBloco2}
-        dataAtiva={dataAtiva}
-        setDataAtiva={setDataAtiva}
-        turmaNome={turmaNome}
-      />
-
-      {/* ── BLOCO 1: Registro pós-aula ─────────────────────────────────────────── */}
-      {/* Ordem: se data da aula == data do último registro → aula atual primeiro */}
-      {(() => {
-        const registroDate = registroExibido?.dataAula ?? registroExibido?.data ?? ''
-        const aulaIgualRegistro = !!calendarDateStr && !!registroDate && calendarDateStr === registroDate
-
-        const blocoRegistro = registroExibido ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      {/* ── ABAS ─────────────────────────────────────────────────────────────── */}
+      <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
+        {(['turma', 'aulas', 'repertorio'] as const).map(t => (
           <button
+            key={t}
             type="button"
-            onClick={() => setRegistroExpandido(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+            onClick={() => setAba(t)}
+            className={`flex-1 text-xs font-semibold py-2 rounded-lg transition-colors ${
+              aba === t ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
           >
-            <div className="flex items-center gap-2 min-w-0">
-              <h3 className="text-sm font-semibold text-slate-700">
-                {dataAtiva ? 'Registro selecionado' : 'Último registro'}
-              </h3>
-              <span className="text-xs text-slate-400">
-                {formatarData(registroExibido.dataAula ?? registroExibido.data ?? '')}
-              </span>
-              {!registroExpandido && registroExibido.resultadoAula && (
-                <span className="text-xs text-slate-400 truncate hidden sm:inline">
-                  · {labelResultado(registroExibido.resultadoAula)}
-                </span>
-              )}
-            </div>
-            <span className="text-slate-400 text-xs ml-2 shrink-0">{registroExpandido ? '▲' : '▼'}</span>
+            {t === 'turma' ? 'Turma' : t === 'aulas' ? 'Aulas' : 'Repertório'}
           </button>
-          {registroExpandido && (
-            <div className="px-4 pb-4 space-y-2 border-t border-slate-100 pt-3">
-              {registroExibido.resultadoAula && (
-                <InfoRow icon="📊" label="Resultado da aula" valor={labelResultado(registroExibido.resultadoAula)} />
-              )}
-              {registroExibido.resumoAula && (
-                <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
-              )}
-              {registroExibido.funcionouBem && (
-                <InfoRow icon="✅" label="O que funcionou bem" valor={registroExibido.funcionouBem} />
-              )}
-              {(registroExibido.fariadiferente || (registroExibido as any).naoFuncionou) && (
-                <InfoRow icon="⚠️" label="O que faria diferente" valor={registroExibido.fariadiferente || (registroExibido as any).naoFuncionou} />
-              )}
-              {registroExibido.poderiaMelhorar && (
-                <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
-              )}
-              {registroExibido.comportamento && (
-                <InfoRow icon="👥" label="Comportamento da turma" valor={registroExibido.comportamento} />
-              )}
-              {registroExibido.anotacoesGerais && (
-                <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
-              )}
-              {registroExibido.proximaAula && (
-                <InfoRow icon="💡" label="Ideias / estratégias" valor={registroExibido.proximaAula} destacado />
-              )}
-              {(() => {
-                const chamada = (registroExibido as any).chamada as { alunoId: string; presente: boolean }[] | undefined
-                if (!chamada || chamada.length === 0) return null
-                const presentes = chamada.filter(c => c.presente).length
-                const ausentes = chamada.filter(c => !c.presente)
-                const ts = turmaSelecionada!
-                const allAlunos = alunosGetByTurma(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
-                const nomeAluno = (id: string) => allAlunos.find(a => a.id === id)?.nome ?? id
-                return (
-                  <div className="mt-1">
-                    <InfoRow icon="✋" label="Chamada" valor={`${presentes}/${chamada.length} presentes`} />
-                    {ausentes.length > 0 && (
-                      <p className="text-[11px] text-slate-400 mt-0.5 ml-6 italic">
-                        Ausentes: {ausentes.map(c => nomeAluno(c.alunoId)).join(', ')}
-                      </p>
-                    )}
-                  </div>
-                )
-              })()}
-            </div>
-          )}
-        </div>
-        ) : null
-
-        const blocoAulaAtual = temAulaNoDia ? (
-          planoDoCalendario ? (
-            <button
-              key="aula-atual"
-              type="button"
-              onClick={() => { setPlanoSelecionado(planoDoCalendario); setViewModeGlobal('lista') }}
-              className="w-full bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors text-left"
-            >
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Aula atual</p>
-                <p className="text-sm font-semibold text-slate-700 truncate">{planoDoCalendario.titulo}</p>
-              </div>
-              <svg className="w-4 h-4 text-slate-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          ) : (
-            <div key="aula-atual" className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Aula atual</p>
-              <p className="text-sm text-slate-400 italic">Sem plano</p>
-            </div>
-          )
-        ) : null
-
-        return aulaIgualRegistro
-          ? <>{blocoAulaAtual}{blocoRegistro}</>
-          : <>{blocoRegistro}{blocoAulaAtual}</>
-      })()}
-
-      {/* ── BLOCO 2: Próximo Passo Sugerido ───────────────────────────────────── */}
-      {registroExibido?.proximaAulaOpcao && planejamentosDoDia.length === 0 && (
-        <CardProximoPasso
-          valor={registroExibido.proximaAulaOpcao}
-          podeAdaptar={podeAdaptarBloco2}
-          onAdaptar={() => acionarModoFromBloco2('adaptar')}
-          onImportar={() => acionarModoFromBloco2('importar')}
-          onNovo={() => acionarModoFromBloco2('criar')}
-        />
-      )}
-      {registroExibido?.proximaAulaOpcao && planejamentosDoDia.length > 0 && (
-        <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl">
-          <span className="text-emerald-600 dark:text-emerald-400 text-sm">✅</span>
-          <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Próxima aula já planejada</span>
-          <button
-            type="button"
-            onClick={() => setPlanejamentosExpandidos(v => !v)}
-            className="ml-auto text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
-          >{planejamentosExpandidos ? 'Recolher' : 'Ver planejamento ▼'}</button>
-        </div>
-      )}
-
-      {/* Histórico anterior (colapsável) */}
-      {registrosAnteriores.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <button
-            onClick={() => setHistoricoExpandido(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-          >
-            <span>Histórico de registros ({registrosAnteriores.length} anterior{registrosAnteriores.length !== 1 ? 'es' : ''})</span>
-            <span className="text-slate-400">{historicoExpandido ? '▲' : '▼'}</span>
-          </button>
-          {historicoExpandido && (
-            <div className="divide-y divide-slate-100">
-              {registrosAnteriores.map((r, i) => {
-                const chamada = (r as any).chamada as { alunoId: string; presente: boolean }[] | undefined
-                const presentes = chamada ? chamada.filter(c => c.presente).length : null
-                const total = chamada ? chamada.length : null
-                return (
-                  <div key={r.id ?? i} className="px-4 py-3 flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-medium text-slate-500">{formatarData(r.dataAula ?? r.data ?? '')}</span>
-                      {r.resumoAula && <p className="text-xs text-slate-600 line-clamp-2 mt-0.5">{r.resumoAula}</p>}
-                    </div>
-                    {presentes !== null && total !== null && total > 0 && (
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${presentes === total ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                        ✋ {presentes}/{total}
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-          {historicoExpandido && (
-            <div className="px-4 pb-3 border-t border-slate-100 pt-2">
-              <button
-                onClick={() => setViewModeGlobal('posAulaHistorico')}
-                className="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
-              >
-                Ver histórico completo →
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── BLOCO 3: Formulário de planejamento ───────────────────────────────── */}
-      <div ref={formBlockRef}>
-        <FormPlanejamentoInline
-          key={`form-${turmaSelecionada.turmaId}-${planejamentoEditando?.id ?? 'new'}`}
-          turmaSelecionada={turmaSelecionada}
-          planejamentoEditando={planejamentoEditando}
-          onSalvar={dados => { salvarPlanejamento({ ...dados, dataPrevista: dados.dataPrevista || calendarDateStr }); fecharForm(); setPlanejamentosExpandidos(true); showToast('Planejamento salvo! ✅') }}
-          onCancelarEdicao={fecharForm}
-          ultimoRegistro={ultimoRegistroDaTurma}
-          acionarBloco2={acionarBloco2}
-          ultimoPlanejamento={planejamentosDoDia[0] ?? null}
-          calendarDateStr={calendarDateStr}
-        />
+        ))}
       </div>
 
-      {/* Planejamentos salvos (colapsável) */}
-      {planejamentosDoDia.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <button
-            onClick={() => setPlanejamentosExpandidos(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-          >
-            <span>Planejamentos salvos ({planejamentosDoDia.length})</span>
-            <span className="text-slate-400">{planejamentosExpandidos ? '▲' : '▼'}</span>
-          </button>
-          {planejamentosExpandidos && (
-            <div className="px-4 pb-4 space-y-2">
-              {planejamentosDoDia.map(p => <CardPlanejamento key={p.id} planejamento={p} />)}
+      {/* ── ABA: TURMA ───────────────────────────────────────────────────────── */}
+      {aba === 'turma' && (
+        <div className="space-y-3">
+
+          {/* ── PRINCIPAL: Sobre a turma ─────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[13px] font-semibold text-slate-600">Sobre a turma</h3>
+              {!editandoObs && (
+                <button type="button"
+                  onClick={() => { setObsRascunho(turmaData?.observacoes ?? ''); setEditandoObs(true) }}
+                  className="text-[11px] text-indigo-500 hover:text-indigo-700 font-semibold">
+                  Editar
+                </button>
+              )}
             </div>
-          )}
+            {editandoObs ? (
+              <div className="space-y-2">
+                <textarea
+                  autoFocus
+                  rows={4}
+                  value={obsRascunho}
+                  onChange={e => setObsRascunho(e.target.value)}
+                  placeholder="Como é esta turma? Perfil, comportamento, o que funciona..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none resize-none"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button type="button" onClick={() => setEditandoObs(false)}
+                    className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1">Cancelar</button>
+                  <button type="button"
+                    onClick={() => {
+                      const ts = turmaSelecionada!
+                      turmaSetObservacoes(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, obsRascunho)
+                      setEditandoObs(false)
+                    }}
+                    className="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded-lg">
+                    Salvar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              turmaData?.observacoes
+                ? <p className="text-[14px] text-slate-700 leading-relaxed whitespace-pre-wrap">{turmaData.observacoes}</p>
+                : <p className="text-sm text-slate-400 italic">Nenhuma observação. Clique em Editar para adicionar.</p>
+            )}
+          </div>
+
+          {/* ── SECUNDÁRIO: Objetivo da turma ────────────────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Objetivo da turma</h3>
+              {!editandoObj && (
+                <button type="button"
+                  onClick={() => { setObjRascunho(turmaData?.objetivo ?? ''); setEditandoObj(true) }}
+                  className="text-[11px] text-indigo-500 hover:text-indigo-700 font-semibold">
+                  Editar
+                </button>
+              )}
+            </div>
+            {editandoObj ? (
+              <div className="space-y-2">
+                <textarea
+                  autoFocus
+                  rows={3}
+                  value={objRascunho}
+                  onChange={e => setObjRascunho(e.target.value)}
+                  placeholder="O que você quer que esta turma conquiste musicalmente este período?"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none resize-none"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button type="button" onClick={() => setEditandoObj(false)}
+                    className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1">Cancelar</button>
+                  <button type="button"
+                    onClick={() => {
+                      const ts = turmaSelecionada!
+                      turmaSetObjetivo(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, objRascunho)
+                      setEditandoObj(false)
+                    }}
+                    className="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded-lg">
+                    Salvar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              turmaData?.objetivo
+                ? <p className="text-sm text-slate-600 whitespace-pre-wrap">{turmaData.objetivo}</p>
+                : <p className="text-sm text-slate-400 italic">Nenhum objetivo definido. Clique em Editar para adicionar.</p>
+            )}
+          </div>
+
+          {/* ── TERCIÁRIO: resumo automático + placeholder ───────────────────── */}
+          <div className="space-y-2">
+
+            {/* Continuidade pedagógica — baseada na última aula */}
+            {continuidade && (
+              <div className="rounded-2xl border border-slate-200 px-4 py-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Continuidade</h3>
+                  <span className="text-[10px] text-slate-300">{continuidade.data}</span>
+                </div>
+                {continuidade.ondeParamos && (
+                  <p className="text-[13px] text-slate-600 leading-snug">{continuidade.ondeParamos}</p>
+                )}
+                {continuidade.dificuldade && (
+                  <p className="text-[12px] text-amber-700 leading-snug">
+                    <span className="font-semibold mr-1">!</span>{continuidade.dificuldade}
+                  </p>
+                )}
+                {continuidade.sugestao && (
+                  <p className="text-[12px] text-indigo-600 leading-snug">
+                    <span className="mr-1">→</span>{continuidade.sugestao}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Resumo da turma — calculado das últimas aulas */}
+            <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-3">
+              <h3 className="text-[11px] font-medium text-slate-300 uppercase tracking-wider mb-2">Resumo da turma</h3>
+              {resumoTurma.numAulas === 0 ? (
+                <p className="text-xs text-slate-400 italic">Registre aulas para ver o resumo.</p>
+              ) : (
+                <div className="space-y-1">
+                  {resumoTurma.presencaMedia != null && (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[11px] font-medium text-slate-400 w-24 shrink-0">Presença</span>
+                      <span className={`text-xs font-semibold ${
+                        resumoTurma.presencaMedia >= 0.80 ? 'text-emerald-600' :
+                        resumoTurma.presencaMedia >= 0.55 ? 'text-amber-600'   : 'text-red-500'
+                      }`}>{Math.round(resumoTurma.presencaMedia * 100)}%</span>
+                    </div>
+                  )}
+                  {resumoTurma.participacao && resumoTurma.presencaMedia == null && (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[11px] font-medium text-slate-400 w-24 shrink-0">Participação</span>
+                      <span className={`text-xs font-semibold ${
+                        resumoTurma.participacao === 'alta'  ? 'text-emerald-600' :
+                        resumoTurma.participacao === 'média' ? 'text-amber-600'   : 'text-red-500'
+                      }`}>{resumoTurma.participacao}</span>
+                    </div>
+                  )}
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[11px] font-medium text-slate-400 w-24 shrink-0">Foco recente</span>
+                    <span className="text-xs text-slate-600">{resumoTurma.focoRecente ?? '—'}</span>
+                  </div>
+                  {resumoTurma.tendencia && (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[11px] font-medium text-slate-400 w-24 shrink-0">Tendência</span>
+                      <span className={`text-xs font-semibold ${
+                        resumoTurma.tendencia === 'cresceu' ? 'text-emerald-600' :
+                        resumoTurma.tendencia === 'caiu'    ? 'text-red-500'     : 'text-slate-500'
+                      }`}>{resumoTurma.tendencia}</span>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-slate-300 pt-1">
+                    Baseado nas últimas {resumoTurma.numAulas} aula{resumoTurma.numAulas !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Destaques recentes */}
+            <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-3">
+              <h3 className="text-[11px] font-medium text-slate-300 uppercase tracking-wider mb-2">Destaques recentes</h3>
+              {destaquesTurma.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">Registre mais aulas para ver os destaques.</p>
+              ) : (
+                <ul className="space-y-1">
+                  {destaquesTurma.map((d, i) => (
+                    <li key={i} className="flex items-start gap-1.5 text-xs text-slate-600">
+                      <span className="text-slate-300 shrink-0 mt-0.5">•</span>
+                      <span>{d}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Alunos em destaque — derivado da chamada */}
+            {alunosDestaque.length > 0 && (
+              <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-3">
+                <h3 className="text-[11px] font-medium text-slate-300 uppercase tracking-wider mb-2">Alunos em destaque</h3>
+                <ul className="space-y-1">
+                  {alunosDestaque.map((a, i) => (
+                    <li key={i} className="flex items-center gap-2 text-xs">
+                      <span className="shrink-0">{a.nivel === 'positivo' ? '★' : a.label === 'faltas recorrentes' ? '↓' : '!'}</span>
+                      <span className="font-medium text-slate-700">{a.nome}</span>
+                      <span className={a.nivel === 'positivo' ? 'text-emerald-600' : 'text-red-500'}>{a.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+          </div>
+
+          {/* ── ALUNOS ───────────────────────────────────────────────────────── */}
+          {(() => {
+            const ts = turmaSelecionada!
+            const alunos = alunosGetByTurma(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
+            const flagged = alunos.filter(a => a.flag)
+            const others = alunos.filter(a => !a.flag)
+            const hoje = new Date().toISOString().split('T')[0]
+
+            function salvarAluno() {
+              const nome = novoAlunoNome.trim()
+              if (!nome) return
+              const id = editandoAlunoId ?? gerarIdSeguro()
+              const base = editandoAlunoId ? (alunos.find(a => a.id === id) ?? {}) : {}
+              alunosAddOrUpdate(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, {
+                ...base, id, nome, flag: novoAlunoFlag,
+                nota: novoAlunoNota.trim() || undefined,
+                instrumento: novoAlunoInstrumento.trim() || undefined,
+              } as AlunoDestaque)
+              setNovoAlunoNome(''); setNovoAlunoNota(''); setNovoAlunoFlag(false); setNovoAlunoInstrumento(''); setEditandoAlunoId(null)
+              setAlunosExpandidos(true)
+            }
+
+            function iniciarEdicao(al: AlunoDestaque) {
+              setEditandoAlunoId(al.id)
+              setNovoAlunoNome(al.nome)
+              setNovoAlunoNota(al.nota ?? '')
+              setNovoAlunoFlag(al.flag)
+              setNovoAlunoInstrumento(al.instrumento ?? '')
+              setAlunosExpandidos(true)
+              setAlunoCardExpandido(null)
+            }
+
+            function salvarAnotacao(alunoId: string) {
+              if (!anotacaoForm || !anotacaoForm.texto.trim()) return
+              alunoAddAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, alunoId, {
+                id: gerarIdSeguro(), data: hoje,
+                texto: anotacaoForm.texto.trim(),
+                tipo: anotacaoForm.tipo.trim() || undefined,
+              })
+              setAnotacaoForm(null)
+            }
+
+            function salvarMarco(alunoId: string) {
+              if (!marcoForm || !marcoForm.descricao.trim()) return
+              alunoAddMarco(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, alunoId, {
+                id: gerarIdSeguro(), data: hoje,
+                descricao: marcoForm.descricao.trim(),
+              })
+              setMarcoForm(null)
+            }
+
+            return (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <button
+                  onClick={() => setAlunosExpandidos(v => !v)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    Alunos
+                    {flagged.length > 0 && (
+                      <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">
+                        {flagged.length}
+                      </span>
+                    )}
+                    {alunos.length > 0 && (
+                      <span className="text-[10px] text-slate-400">({alunos.length} aluno{alunos.length !== 1 ? 's' : ''})</span>
+                    )}
+                  </span>
+                  <span className="text-slate-400">{alunosExpandidos ? '▲' : '▼'}</span>
+                </button>
+
+                {alunosExpandidos && (
+                  <div className="px-4 pb-4 space-y-3">
+
+                    {alunos.length > 0 && (
+                      <div className="space-y-2">
+                        {[...flagged, ...others].map(al => {
+                          const expandido = alunoCardExpandido === al.id
+                          const ultimaAnotacao = al.anotacoes?.slice(-1)[0]
+                          const totalAnotacoes = al.anotacoes?.length ?? 0
+                          const totalMarcos = al.marcos?.length ?? 0
+                          return (
+                            <div key={al.id} className={`rounded-xl border overflow-hidden ${al.flag ? 'border-amber-200 bg-amber-50' : 'border-slate-100 bg-slate-50'}`}>
+                              <div className="flex items-center gap-2 px-3 py-2.5">
+                                <button
+                                  onClick={() => alunosAddOrUpdate(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, { ...al, flag: !al.flag })}
+                                  title={al.flag ? 'Remover flag' : 'Marcar atenção'}
+                                  className="text-base shrink-0"
+                                >{al.flag ? '⚠️' : '👤'}</button>
+                                <button
+                                  onClick={() => setAlunoCardExpandido(expandido ? null : al.id)}
+                                  className="flex-1 min-w-0 text-left"
+                                >
+                                  <div className="flex items-baseline gap-2">
+                                    <span className={`text-sm font-semibold ${al.flag ? 'text-amber-800' : 'text-slate-700'}`}>{al.nome}</span>
+                                    {al.instrumento && <span className="text-[10px] text-slate-400 italic">{al.instrumento}</span>}
+                                  </div>
+                                  {!expandido && ultimaAnotacao && (
+                                    <p className="text-[11px] text-slate-500 truncate mt-0.5">{ultimaAnotacao.texto}</p>
+                                  )}
+                                  {!expandido && !ultimaAnotacao && al.nota && (
+                                    <p className="text-[11px] text-slate-500 italic mt-0.5">{al.nota}</p>
+                                  )}
+                                </button>
+                                {(totalAnotacoes > 0 || totalMarcos > 0) && (
+                                  <span className="text-[10px] text-slate-400 shrink-0">
+                                    {totalAnotacoes > 0 && `${totalAnotacoes}📝`} {totalMarcos > 0 && `${totalMarcos}⭐`}
+                                  </span>
+                                )}
+                                <div className="flex gap-1 shrink-0">
+                                  <button onClick={() => iniciarEdicao(al)} className="text-slate-400 hover:text-indigo-500 transition text-xs px-1">✏️</button>
+                                  <button onClick={() => alunosRemove(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, al.id)}
+                                    className="text-slate-300 hover:text-red-500 transition text-xs px-1">✕</button>
+                                </div>
+                              </div>
+
+                              {expandido && (
+                                <div className="border-t border-slate-200 px-3 pb-3 pt-2 space-y-3 bg-white">
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">⭐ Marcos</span>
+                                      {marcoForm?.alunoId !== al.id && (
+                                        <button onClick={() => { setMarcoForm({ alunoId: al.id, descricao: '' }); setAnotacaoForm(null) }}
+                                          className="text-[10px] text-indigo-500 hover:text-indigo-700 font-semibold">+ Marco</button>
+                                      )}
+                                    </div>
+                                    {(al.marcos ?? []).length === 0 && marcoForm?.alunoId !== al.id && (
+                                      <p className="text-[11px] text-slate-400 italic">Nenhum marco registrado.</p>
+                                    )}
+                                    {(al.marcos ?? []).map(m => (
+                                      <div key={m.id} className="flex items-start gap-1.5 text-[11px] text-slate-600 mb-1">
+                                        <span className="text-amber-500 shrink-0">⭐</span>
+                                        <span className="flex-1">{m.descricao} <span className="text-slate-400">· {m.data.split('-').reverse().join('/')}</span></span>
+                                        <button onClick={() => alunoRemoveMarco(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, al.id, m.id)}
+                                          className="text-slate-300 hover:text-red-400 ml-1">✕</button>
+                                      </div>
+                                    ))}
+                                    {marcoForm?.alunoId === al.id && (
+                                      <div className="flex gap-2 mt-1">
+                                        <input autoFocus type="text" placeholder="Ex: Tocou a peça completa sem partitura"
+                                          value={marcoForm.descricao}
+                                          onChange={e => setMarcoForm({ ...marcoForm, descricao: e.target.value })}
+                                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarMarco(al.id) } if (e.key === 'Escape') setMarcoForm(null) }}
+                                          className="flex-1 px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
+                                        />
+                                        <button onClick={() => salvarMarco(al.id)} disabled={!marcoForm.descricao.trim()}
+                                          className="text-[10px] bg-indigo-500 text-white px-2.5 py-1 rounded-lg disabled:opacity-40">OK</button>
+                                        <button onClick={() => setMarcoForm(null)} className="text-[10px] text-slate-400 px-1">✕</button>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">📝 Anotações</span>
+                                      {anotacaoForm?.alunoId !== al.id && (
+                                        <button onClick={() => { setAnotacaoForm({ alunoId: al.id, texto: '', tipo: '' }); setMarcoForm(null) }}
+                                          className="text-[10px] text-indigo-500 hover:text-indigo-700 font-semibold">+ Anotação</button>
+                                      )}
+                                    </div>
+                                    {(al.anotacoes ?? []).length === 0 && anotacaoForm?.alunoId !== al.id && (
+                                      <p className="text-[11px] text-slate-400 italic">Nenhuma anotação.</p>
+                                    )}
+                                    {(al.anotacoes ?? []).slice().reverse().map(an => (
+                                      <div key={an.id} className="flex items-start gap-1.5 text-[11px] text-slate-600 mb-1.5 pb-1.5 border-b border-slate-100 last:border-0">
+                                        <div className="flex-1 min-w-0">
+                                          {an.tipo && <span className="inline-block text-[9px] bg-indigo-50 text-indigo-600 font-semibold px-1.5 py-0.5 rounded-full mr-1 mb-0.5">{an.tipo}</span>}
+                                          <span>{an.texto}</span>
+                                          <span className="text-slate-400 ml-1">· {an.data.split('-').reverse().join('/')}</span>
+                                        </div>
+                                        <button onClick={() => alunoRemoveAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, al.id, an.id)}
+                                          className="text-slate-300 hover:text-red-400 shrink-0">✕</button>
+                                      </div>
+                                    ))}
+                                    {anotacaoForm?.alunoId === al.id && (() => {
+                                      const tiposConf = turmaGetTiposAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
+                                      return (
+                                        <div className="space-y-1.5 mt-1">
+                                          {tiposConf.length > 0 && (
+                                            <div className="flex flex-wrap gap-1">
+                                              {tiposConf.map(tipo => (
+                                                <button key={tipo} type="button"
+                                                  onClick={() => setAnotacaoForm({ ...anotacaoForm, tipo })}
+                                                  className={`text-[10px] px-2 py-0.5 rounded-full border transition ${anotacaoForm.tipo === tipo ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'}`}>
+                                                  {tipo}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          )}
+                                          <input type="text" placeholder={tiposConf.length > 0 ? 'Tipo personalizado (ou selecione acima)' : 'Tipo (opcional, ex: dificuldade rítmica)'}
+                                            value={anotacaoForm.tipo}
+                                            onChange={e => setAnotacaoForm({ ...anotacaoForm, tipo: e.target.value })}
+                                            className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
+                                          />
+                                          <div className="flex gap-2">
+                                            <input autoFocus type="text" placeholder="Anotação sobre o aluno nesta aula"
+                                              value={anotacaoForm.texto}
+                                              onChange={e => setAnotacaoForm({ ...anotacaoForm, texto: e.target.value })}
+                                              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAnotacao(al.id) } if (e.key === 'Escape') setAnotacaoForm(null) }}
+                                              className="flex-1 px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
+                                            />
+                                            <button onClick={() => salvarAnotacao(al.id)} disabled={!anotacaoForm.texto.trim()}
+                                              className="text-[10px] bg-indigo-500 text-white px-2.5 py-1 rounded-lg disabled:opacity-40">OK</button>
+                                            <button onClick={() => setAnotacaoForm(null)} className="text-[10px] text-slate-400 px-1">✕</button>
+                                          </div>
+                                        </div>
+                                      )
+                                    })()}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    <div className="border border-dashed border-slate-200 rounded-xl p-3 space-y-2">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                        {editandoAlunoId ? 'Editando aluno' : '+ Adicionar aluno'}
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Nome do aluno"
+                          value={novoAlunoNome}
+                          onChange={e => setNovoAlunoNome(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAluno() } }}
+                          className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-400 outline-none"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Instrumento"
+                          value={novoAlunoInstrumento}
+                          onChange={e => setNovoAlunoInstrumento(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAluno() } }}
+                          className="w-28 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-400 outline-none"
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Observação rápida (opcional)"
+                        value={novoAlunoNota}
+                        onChange={e => setNovoAlunoNota(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAluno() } }}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-400 outline-none"
+                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
+                          <input type="checkbox" checked={novoAlunoFlag} onChange={e => setNovoAlunoFlag(e.target.checked)} className="accent-amber-500" />
+                          Atenção especial
+                        </label>
+                        <div className="flex gap-2">
+                          {editandoAlunoId && (
+                            <button onClick={() => { setEditandoAlunoId(null); setNovoAlunoNome(''); setNovoAlunoNota(''); setNovoAlunoFlag(false); setNovoAlunoInstrumento('') }}
+                              className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1">Cancelar</button>
+                          )}
+                          <button onClick={salvarAluno} disabled={!novoAlunoNome.trim()}
+                            className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                            {editandoAlunoId ? 'Salvar' : 'Adicionar'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const tiposConf = turmaGetTiposAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
+                      return (
+                        <div className="border-t border-slate-100 pt-3 mt-1 space-y-2">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Tipos de anotação</p>
+                          {tiposConf.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {tiposConf.map(tipo => (
+                                <span key={tipo} className="flex items-center gap-1 text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 rounded-full">
+                                  {tipo}
+                                  <button type="button" onClick={() => turmaRemoveTipoAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, tipo)}
+                                    className="text-indigo-300 hover:text-red-400 leading-none">×</button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <input type="text" placeholder='Ex: "dominou peça", "esqueceu material"'
+                              value={novoTipoAnotacao}
+                              onChange={e => setNovoTipoAnotacao(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (novoTipoAnotacao.trim()) { turmaAddTipoAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, novoTipoAnotacao.trim()); setNovoTipoAnotacao('') } } }}
+                              className="flex-1 px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
+                            />
+                            <button type="button"
+                              onClick={() => { if (novoTipoAnotacao.trim()) { turmaAddTipoAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, novoTipoAnotacao.trim()); setNovoTipoAnotacao('') } }}
+                              disabled={!novoTipoAnotacao.trim()}
+                              className="text-[10px] bg-indigo-500 text-white px-2.5 py-1 rounded-lg disabled:opacity-40">+ Tipo</button>
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
         </div>
       )}
 
-      {/* ── ALUNOS ──────────────────────────────────────────────────────────────── */}
-      {(() => {
-        const ts = turmaSelecionada!
-        const alunos = alunosGetByTurma(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
-        const flagged = alunos.filter(a => a.flag)
-        const others = alunos.filter(a => !a.flag)
-        const hoje = new Date().toISOString().split('T')[0]
+      {/* ── ABA: AULAS ───────────────────────────────────────────────────────── */}
+      {aba === 'aulas' && (
+        <div className="space-y-3">
 
-        function salvarAluno() {
-          const nome = novoAlunoNome.trim()
-          if (!nome) return
-          const id = editandoAlunoId ?? gerarIdSeguro()
-          const base = editandoAlunoId ? (alunos.find(a => a.id === id) ?? {}) : {}
-          alunosAddOrUpdate(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, {
-            ...base, id, nome, flag: novoAlunoFlag,
-            nota: novoAlunoNota.trim() || undefined,
-            instrumento: novoAlunoInstrumento.trim() || undefined,
-          } as AlunoDestaque)
-          setNovoAlunoNome(''); setNovoAlunoNota(''); setNovoAlunoFlag(false); setNovoAlunoInstrumento(''); setEditandoAlunoId(null)
-          setAlunosExpandidos(true) // garante que a lista fique visível após salvar
-        }
+          {/* Progresso pedagógico (timeline interativa) */}
+          <TimelinePedagogica
+            onAcionar={() => {
+              const data = proximaAulaData || calendarDateStr
+              setDataNavegacao(new Date(data))
+              setModoInicialNavegacao(null)
+              setViewModeGlobal('porTurmas')
+            }}
+            dataAtiva={dataAtiva}
+            setDataAtiva={setDataAtiva}
+            turmaNome={turmaNome}
+          />
 
-        function iniciarEdicao(al: AlunoDestaque) {
-          setEditandoAlunoId(al.id)
-          setNovoAlunoNome(al.nome)
-          setNovoAlunoNota(al.nota ?? '')
-          setNovoAlunoFlag(al.flag)
-          setNovoAlunoInstrumento(al.instrumento ?? '')
-          setAlunosExpandidos(true)
-          setAlunoCardExpandido(null)
-        }
-
-        function salvarAnotacao(alunoId: string) {
-          if (!anotacaoForm || !anotacaoForm.texto.trim()) return
-          alunoAddAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, alunoId, {
-            id: gerarIdSeguro(), data: hoje,
-            texto: anotacaoForm.texto.trim(),
-            tipo: anotacaoForm.tipo.trim() || undefined,
-          })
-          setAnotacaoForm(null)
-        }
-
-        function salvarMarco(alunoId: string) {
-          if (!marcoForm || !marcoForm.descricao.trim()) return
-          alunoAddMarco(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, alunoId, {
-            id: gerarIdSeguro(), data: hoje,
-            descricao: marcoForm.descricao.trim(),
-          })
-          setMarcoForm(null)
-        }
-
-        return (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <button
-              onClick={() => setAlunosExpandidos(v => !v)}
-              className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <span className="flex items-center gap-2">
-                👥 Alunos
-                {flagged.length > 0 && (
-                  <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">
-                    ⚠️ {flagged.length}
+          {/* ── Último registro / Registro selecionado — sempre visível ──── */}
+          {registroExibido && (() => {
+            const ts = turmaSelecionada!
+            const allAlunos = alunosGetByTurma(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
+            const nomeAluno = (id: string) => allAlunos.find(a => a.id === id)?.nome ?? id
+            const chamada = (registroExibido as any).chamada as { alunoId: string; presente: boolean }[] | undefined
+            const presentes = chamada ? chamada.filter(c => c.presente).length : null
+            const ausentes  = chamada ? chamada.filter(c => !c.presente) : []
+            return (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 space-y-2">
+                {/* Header do registro */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] font-semibold text-slate-600">
+                    {dataAtiva ? 'Registro selecionado' : 'Última aula'}
                   </span>
-                )}
-                {alunos.length > 0 && (
-                  <span className="text-[10px] text-slate-400">({alunos.length} aluno{alunos.length !== 1 ? 's' : ''})</span>
-                )}
-              </span>
-              <span className="text-slate-400">{alunosExpandidos ? '▲' : '▼'}</span>
-            </button>
-
-            {alunosExpandidos && (
-              <div className="px-4 pb-4 space-y-3">
-
-                {/* Cards de alunos */}
-                {alunos.length > 0 && (
-                  <div className="space-y-2">
-                    {[...flagged, ...others].map(al => {
-                      const expandido = alunoCardExpandido === al.id
-                      const ultimaAnotacao = al.anotacoes?.slice(-1)[0]
-                      const totalAnotacoes = al.anotacoes?.length ?? 0
-                      const totalMarcos = al.marcos?.length ?? 0
-                      return (
-                        <div key={al.id} className={`rounded-xl border overflow-hidden ${al.flag ? 'border-amber-200 bg-amber-50' : 'border-slate-100 bg-slate-50'}`}>
-                          {/* Cabeçalho do card */}
-                          <div className="flex items-center gap-2 px-3 py-2.5">
-                            <button
-                              onClick={() => alunosAddOrUpdate(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, { ...al, flag: !al.flag })}
-                              title={al.flag ? 'Remover flag' : 'Marcar atenção'}
-                              className="text-base shrink-0"
-                            >{al.flag ? '⚠️' : '👤'}</button>
-                            <button
-                              onClick={() => setAlunoCardExpandido(expandido ? null : al.id)}
-                              className="flex-1 min-w-0 text-left"
-                            >
-                              <div className="flex items-baseline gap-2">
-                                <span className={`text-sm font-semibold ${al.flag ? 'text-amber-800' : 'text-slate-700'}`}>{al.nome}</span>
-                                {al.instrumento && <span className="text-[10px] text-slate-400 italic">{al.instrumento}</span>}
-                              </div>
-                              {!expandido && ultimaAnotacao && (
-                                <p className="text-[11px] text-slate-500 truncate mt-0.5">{ultimaAnotacao.texto}</p>
-                              )}
-                              {!expandido && !ultimaAnotacao && al.nota && (
-                                <p className="text-[11px] text-slate-500 italic mt-0.5">{al.nota}</p>
-                              )}
-                            </button>
-                            {(totalAnotacoes > 0 || totalMarcos > 0) && (
-                              <span className="text-[10px] text-slate-400 shrink-0">
-                                {totalAnotacoes > 0 && `${totalAnotacoes}📝`} {totalMarcos > 0 && `${totalMarcos}⭐`}
-                              </span>
-                            )}
-                            <div className="flex gap-1 shrink-0">
-                              <button onClick={() => iniciarEdicao(al)} className="text-slate-400 hover:text-indigo-500 transition text-xs px-1">✏️</button>
-                              <button onClick={() => alunosRemove(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, al.id)}
-                                className="text-slate-300 hover:text-red-500 transition text-xs px-1">✕</button>
-                            </div>
-                          </div>
-
-                          {/* Conteúdo expandido */}
-                          {expandido && (
-                            <div className="border-t border-slate-200 px-3 pb-3 pt-2 space-y-3 bg-white">
-
-                              {/* Marcos pedagógicos */}
-                              <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">⭐ Marcos</span>
-                                  {marcoForm?.alunoId !== al.id && (
-                                    <button onClick={() => { setMarcoForm({ alunoId: al.id, descricao: '' }); setAnotacaoForm(null) }}
-                                      className="text-[10px] text-indigo-500 hover:text-indigo-700 font-semibold">+ Marco</button>
-                                  )}
-                                </div>
-                                {(al.marcos ?? []).length === 0 && marcoForm?.alunoId !== al.id && (
-                                  <p className="text-[11px] text-slate-400 italic">Nenhum marco registrado.</p>
-                                )}
-                                {(al.marcos ?? []).map(m => (
-                                  <div key={m.id} className="flex items-start gap-1.5 text-[11px] text-slate-600 mb-1">
-                                    <span className="text-amber-500 shrink-0">⭐</span>
-                                    <span className="flex-1">{m.descricao} <span className="text-slate-400">· {m.data.split('-').reverse().join('/')}</span></span>
-                                    <button onClick={() => alunoRemoveMarco(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, al.id, m.id)}
-                                      className="text-slate-300 hover:text-red-400 ml-1">✕</button>
-                                  </div>
-                                ))}
-                                {marcoForm?.alunoId === al.id && (
-                                  <div className="flex gap-2 mt-1">
-                                    <input autoFocus type="text" placeholder="Ex: Tocou a peça completa sem partitura"
-                                      value={marcoForm.descricao}
-                                      onChange={e => setMarcoForm({ ...marcoForm, descricao: e.target.value })}
-                                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarMarco(al.id) } if (e.key === 'Escape') setMarcoForm(null) }}
-                                      className="flex-1 px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
-                                    />
-                                    <button onClick={() => salvarMarco(al.id)} disabled={!marcoForm.descricao.trim()}
-                                      className="text-[10px] bg-indigo-500 text-white px-2.5 py-1 rounded-lg disabled:opacity-40">OK</button>
-                                    <button onClick={() => setMarcoForm(null)} className="text-[10px] text-slate-400 px-1">✕</button>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Anotações */}
-                              <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">📝 Anotações</span>
-                                  {anotacaoForm?.alunoId !== al.id && (
-                                    <button onClick={() => { setAnotacaoForm({ alunoId: al.id, texto: '', tipo: '' }); setMarcoForm(null) }}
-                                      className="text-[10px] text-indigo-500 hover:text-indigo-700 font-semibold">+ Anotação</button>
-                                  )}
-                                </div>
-                                {(al.anotacoes ?? []).length === 0 && anotacaoForm?.alunoId !== al.id && (
-                                  <p className="text-[11px] text-slate-400 italic">Nenhuma anotação.</p>
-                                )}
-                                {(al.anotacoes ?? []).slice().reverse().map(an => (
-                                  <div key={an.id} className="flex items-start gap-1.5 text-[11px] text-slate-600 mb-1.5 pb-1.5 border-b border-slate-100 last:border-0">
-                                    <div className="flex-1 min-w-0">
-                                      {an.tipo && <span className="inline-block text-[9px] bg-indigo-50 text-indigo-600 font-semibold px-1.5 py-0.5 rounded-full mr-1 mb-0.5">{an.tipo}</span>}
-                                      <span>{an.texto}</span>
-                                      <span className="text-slate-400 ml-1">· {an.data.split('-').reverse().join('/')}</span>
-                                    </div>
-                                    <button onClick={() => alunoRemoveAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, al.id, an.id)}
-                                      className="text-slate-300 hover:text-red-400 shrink-0">✕</button>
-                                  </div>
-                                ))}
-                                {anotacaoForm?.alunoId === al.id && (() => {
-                                  const tiposConf = turmaGetTiposAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
-                                  return (
-                                    <div className="space-y-1.5 mt-1">
-                                      {tiposConf.length > 0 && (
-                                        <div className="flex flex-wrap gap-1">
-                                          {tiposConf.map(tipo => (
-                                            <button key={tipo} type="button"
-                                              onClick={() => setAnotacaoForm({ ...anotacaoForm, tipo })}
-                                              className={`text-[10px] px-2 py-0.5 rounded-full border transition ${anotacaoForm.tipo === tipo ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'}`}>
-                                              {tipo}
-                                            </button>
-                                          ))}
-                                        </div>
-                                      )}
-                                      <input type="text" placeholder={tiposConf.length > 0 ? 'Tipo personalizado (ou selecione acima)' : 'Tipo (opcional, ex: dificuldade rítmica)'}
-                                        value={anotacaoForm.tipo}
-                                        onChange={e => setAnotacaoForm({ ...anotacaoForm, tipo: e.target.value })}
-                                        className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
-                                      />
-                                      <div className="flex gap-2">
-                                        <input autoFocus type="text" placeholder="Anotação sobre o aluno nesta aula"
-                                          value={anotacaoForm.texto}
-                                          onChange={e => setAnotacaoForm({ ...anotacaoForm, texto: e.target.value })}
-                                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAnotacao(al.id) } if (e.key === 'Escape') setAnotacaoForm(null) }}
-                                          className="flex-1 px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
-                                        />
-                                        <button onClick={() => salvarAnotacao(al.id)} disabled={!anotacaoForm.texto.trim()}
-                                          className="text-[10px] bg-indigo-500 text-white px-2.5 py-1 rounded-lg disabled:opacity-40">OK</button>
-                                        <button onClick={() => setAnotacaoForm(null)} className="text-[10px] text-slate-400 px-1">✕</button>
-                                      </div>
-                                    </div>
-                                  )
-                                })()}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-
-                {/* Formulário de adição/edição */}
-                <div className="border border-dashed border-slate-200 rounded-xl p-3 space-y-2">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                    {editandoAlunoId ? 'Editando aluno' : '+ Adicionar aluno'}
-                  </p>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Nome do aluno"
-                      value={novoAlunoNome}
-                      onChange={e => setNovoAlunoNome(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAluno() } }}
-                      className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-400 outline-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Instrumento"
-                      value={novoAlunoInstrumento}
-                      onChange={e => setNovoAlunoInstrumento(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAluno() } }}
-                      className="w-28 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-400 outline-none"
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Observação rápida (opcional)"
-                    value={novoAlunoNota}
-                    onChange={e => setNovoAlunoNota(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); salvarAluno() } }}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-400 outline-none"
-                  />
-                  <div className="flex items-center justify-between gap-2">
-                    <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
-                      <input type="checkbox" checked={novoAlunoFlag} onChange={e => setNovoAlunoFlag(e.target.checked)} className="accent-amber-500" />
-                      ⚠️ Atenção especial
-                    </label>
-                    <div className="flex gap-2">
-                      {editandoAlunoId && (
-                        <button onClick={() => { setEditandoAlunoId(null); setNovoAlunoNome(''); setNovoAlunoNota(''); setNovoAlunoFlag(false); setNovoAlunoInstrumento('') }}
-                          className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1">Cancelar</button>
-                      )}
-                      <button onClick={salvarAluno} disabled={!novoAlunoNome.trim()}
-                        className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
-                        {editandoAlunoId ? 'Salvar' : 'Adicionar'}
-                      </button>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">{formatarData(registroExibido.dataAula ?? registroExibido.data ?? '')}</span>
+                    {registroExibido.resultadoAula && (
+                      <span className="text-[11px] font-semibold text-slate-500">{labelResultado(registroExibido.resultadoAula)}</span>
+                    )}
                   </div>
                 </div>
-
-                {/* Tipos de anotação configuráveis desta turma */}
-                {(() => {
-                  const tiposConf = turmaGetTiposAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
-                  return (
-                    <div className="border-t border-slate-100 pt-3 mt-1 space-y-2">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Tipos de anotação</p>
-                      {tiposConf.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {tiposConf.map(tipo => (
-                            <span key={tipo} className="flex items-center gap-1 text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 rounded-full">
-                              {tipo}
-                              <button type="button" onClick={() => turmaRemoveTipoAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, tipo)}
-                                className="text-indigo-300 hover:text-red-400 leading-none">×</button>
-                            </span>
-                          ))}
-                        </div>
+                {/* Conteúdo */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  {registroExibido.resumoAula && (
+                    <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
+                  )}
+                  {registroExibido.funcionouBem && (
+                    <InfoRow icon="✅" label="O que funcionou bem" valor={registroExibido.funcionouBem} />
+                  )}
+                  {(registroExibido.fariadiferente || (registroExibido as any).naoFuncionou) && (
+                    <InfoRow icon="⚠️" label="O que faria diferente" valor={registroExibido.fariadiferente || (registroExibido as any).naoFuncionou} />
+                  )}
+                  {registroExibido.poderiaMelhorar && (
+                    <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
+                  )}
+                  {registroExibido.comportamento && (
+                    <InfoRow icon="👥" label="Comportamento da turma" valor={registroExibido.comportamento} />
+                  )}
+                  {registroExibido.anotacoesGerais && (
+                    <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
+                  )}
+                  {registroExibido.proximaAula && (
+                    <InfoRow icon="💡" label="Ideias / estratégias" valor={registroExibido.proximaAula} destacado />
+                  )}
+                  {chamada && chamada.length > 0 && (
+                    <div>
+                      <InfoRow icon="✋" label="Chamada" valor={`${presentes}/${chamada.length} presentes`} />
+                      {ausentes.length > 0 && (
+                        <p className="text-[11px] text-slate-400 mt-0.5 ml-6 italic">
+                          Ausentes: {ausentes.map(c => nomeAluno(c.alunoId)).join(', ')}
+                        </p>
                       )}
-                      <div className="flex gap-2">
-                        <input type="text" placeholder='Ex: "dominou peça", "esqueceu material"'
-                          value={novoTipoAnotacao}
-                          onChange={e => setNovoTipoAnotacao(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (novoTipoAnotacao.trim()) { turmaAddTipoAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, novoTipoAnotacao.trim()); setNovoTipoAnotacao('') } } }}
-                          className="flex-1 px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] focus:border-indigo-400 outline-none"
-                        />
-                        <button type="button"
-                          onClick={() => { if (novoTipoAnotacao.trim()) { turmaAddTipoAnotacao(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, novoTipoAnotacao.trim()); setNovoTipoAnotacao('') } }}
-                          disabled={!novoTipoAnotacao.trim()}
-                          className="text-[10px] bg-indigo-500 text-white px-2.5 py-1 rounded-lg disabled:opacity-40">+ Tipo</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* ── Registros anteriores — lista linear ──────────────────────── */}
+          {listaHistorico.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+              <div className="px-4 pt-3 pb-1">
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Registros anteriores</h3>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {listaHistorico.map((r, i) => {
+                  const chamada = (r as any).chamada as { alunoId: string; presente: boolean }[] | undefined
+                  const pres  = chamada ? chamada.filter(c => c.presente).length : null
+                  const total = chamada ? chamada.length : null
+                  return (
+                    <div key={r.id ?? i} className="px-4 py-2.5 flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-medium text-slate-500 shrink-0">{formatarData(r.dataAula ?? r.data ?? '')}</span>
+                        {r.resumoAula && (
+                          <p className="text-xs text-slate-600 line-clamp-1 mt-0.5">{r.resumoAula}</p>
+                        )}
                       </div>
+                      {pres !== null && total !== null && total > 0 && (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${pres === total ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                          {pres}/{total}
+                        </span>
+                      )}
                     </div>
                   )
-                })()}
-
+                })}
               </div>
-            )}
-          </div>
-        )
-      })()}
+              <div className="px-4 py-2.5 border-t border-slate-100">
+                <button
+                  onClick={() => setViewModeGlobal('posAulaHistorico')}
+                  className="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
+                >
+                  Ver histórico completo →
+                </button>
+              </div>
+            </div>
+          )}
 
-      {/* ── COBERTURA PEDAGÓGICA ───────────────────────────────────────────────── */}
-      {coberturaDimensoes.length > 0 && (() => {
-        const maxCount = coberturaDimensoes[0].count
-        return (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-base">📊</span>
-              <h3 className="font-semibold text-sm text-slate-700">Cobertura pedagógica</h3>
-              <span className="text-xs text-slate-400 ml-auto">este ano</span>
+          {/* ── Estado vazio: sem aulas registradas ──────────────────────── */}
+          {!registroExibido && listaHistorico.length === 0 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-5 text-center">
+              <p className="text-sm text-slate-500 font-medium">Nenhuma aula registrada ainda</p>
+              <p className="text-xs text-slate-400 mt-1">Planeje a primeira aula e registre como foi.</p>
             </div>
-            <div className="space-y-2">
-              {coberturaDimensoes.map(({ dimensao, count }) => (
-                <div key={dimensao} className="flex items-center gap-2">
-                  <span className="text-xs text-slate-600 w-28 shrink-0 truncate">{dimensao}</span>
-                  <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-indigo-400 h-2 rounded-full transition-all"
-                      style={{ width: `${Math.round((count / maxCount) * 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-slate-400 w-14 text-right shrink-0">
-                    {count} aula{count !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-      })()}
+          )}
+
+          {/* ── CTA ──────────────────────────────────────────────────────── */}
+          <button
+            type="button"
+            onClick={() => {
+              const data = proximaAulaData || calendarDateStr
+              setDataNavegacao(new Date(data))
+              setModoInicialNavegacao(null)
+              setViewModeGlobal('porTurmas')
+            }}
+            className="w-full flex items-center justify-between bg-indigo-500 hover:bg-indigo-600 text-white font-semibold text-sm px-5 py-3.5 rounded-2xl transition-colors"
+          >
+            <span>Planejar próxima aula{proximaAulaData ? ` · ${formatarData(proximaAulaData)}` : ''}</span>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+        </div>
+      )}
+
+      {/* ── ABA: REPERTÓRIO ──────────────────────────────────────────────────── */}
+      {aba === 'repertorio' && turmaKey && (
+        <ModuloHistoricoMusical ocultarSeletorTurma turmaForcada={turmaKey} />
+      )}
+
     </div>
   )
 }

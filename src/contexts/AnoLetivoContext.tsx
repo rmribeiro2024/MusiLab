@@ -133,6 +133,9 @@ export interface AnoLetivoContextValue {
   turmaGetTiposAnotacao: (anoId: string, escolaId: string, segmentoId: string, turmaId: string) => string[]
   turmaAddTipoAnotacao: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, tipo: string) => void
   turmaRemoveTipoAnotacao: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, tipo: string) => void
+  // Observações e objetivo da turma
+  turmaSetObservacoes: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, texto: string) => void
+  turmaSetObjetivo: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, texto: string) => void
   // Faixas e escolas — funções
   salvarNovaFaixa: () => void
   salvarNovaEscola: (planoEditando?: Plano | null, setPlanoEditando?: React.Dispatch<React.SetStateAction<Plano | null>>) => void
@@ -754,6 +757,14 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     setTiposAnotacaoGlobais(prev => prev.filter(t => t !== tipo))
   }
 
+  function turmaSetObservacoes(anoId: string, escolaId: string, segmentoId: string, turmaId: string, texto: string) {
+    _updateTurma(anoId, escolaId, segmentoId, turmaId, t => ({ ...t, observacoes: texto }))
+  }
+
+  function turmaSetObjetivo(anoId: string, escolaId: string, segmentoId: string, turmaId: string, texto: string) {
+    _updateTurma(anoId, escolaId, segmentoId, turmaId, t => ({ ...t, objetivo: texto }))
+  }
+
   // ── salvarNovaFaixa ───────────────────────────────────────────────────────
 
   function salvarNovaFaixa() {
@@ -837,9 +848,10 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     turmaSetRubricas, turmaGetRubricas,
     tiposAnotacaoGlobais,
     turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao,
+    turmaSetObservacoes, turmaSetObjetivo,
     salvarNovaFaixa,
     salvarNovaEscola,
-  }), [anosLetivos, eventosEscolares, planejamentoAnual, anoPlanoAtivoId, mostrandoFormNovoAno, formNovoAno, periodoExpId, periodoEditForm, adicionandoPeriodoAno, formNovoPeriodo, conceitos, unidades, faixas, tagsGlobais, modalTurmas, anoLetivoSelecionadoModal, gtAnoNovo, gtAnoSel, gtEscolaNome, gtEscolaSel, gtSegmentoNome, gtSegmentoSel, gtTurmaNome, mostrarArquivados, modalNovaEscola, novaEscolaNome, novaEscolaAnoId, modalNovaFaixa, novaFaixaNome, criarAnoLetivoPainel, excluirAnoPlano, adicionarPeriodoNoAno, salvarEdicaoPeriodo, excluirPeriodoDoAno, adicionarMetaNoAno, excluirMetaDoAno, eventoEditando, modalEventos, novoEvento, salvarEvento, excluirEvento, gtAddAno, gtRemoveAno, gtMudarStatusAno, gtAddEscola, gtRemoveEscola, gtAddSegmento, gtRemoveSegmento, gtAddTurma, gtRemoveTurma, alunosAddOrUpdate, alunosRemove, alunosGetByTurma, alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco, turmaSetRubricas, turmaGetRubricas, tiposAnotacaoGlobais, turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao, salvarNovaFaixa, salvarNovaEscola])
+  }), [anosLetivos, eventosEscolares, planejamentoAnual, anoPlanoAtivoId, mostrandoFormNovoAno, formNovoAno, periodoExpId, periodoEditForm, adicionandoPeriodoAno, formNovoPeriodo, conceitos, unidades, faixas, tagsGlobais, modalTurmas, anoLetivoSelecionadoModal, gtAnoNovo, gtAnoSel, gtEscolaNome, gtEscolaSel, gtSegmentoNome, gtSegmentoSel, gtTurmaNome, mostrarArquivados, modalNovaEscola, novaEscolaNome, novaEscolaAnoId, modalNovaFaixa, novaFaixaNome, criarAnoLetivoPainel, excluirAnoPlano, adicionarPeriodoNoAno, salvarEdicaoPeriodo, excluirPeriodoDoAno, adicionarMetaNoAno, excluirMetaDoAno, eventoEditando, modalEventos, novoEvento, salvarEvento, excluirEvento, gtAddAno, gtRemoveAno, gtMudarStatusAno, gtAddEscola, gtRemoveEscola, gtAddSegmento, gtRemoveSegmento, gtAddTurma, gtRemoveTurma, alunosAddOrUpdate, alunosRemove, alunosGetByTurma, alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco, turmaSetRubricas, turmaGetRubricas, tiposAnotacaoGlobais, turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao, turmaSetObservacoes, turmaSetObjetivo, salvarNovaFaixa, salvarNovaEscola])
 
   return (
     <AnoLetivoContext.Provider value={value}>

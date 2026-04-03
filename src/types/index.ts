@@ -390,6 +390,8 @@ export interface Turma {
   alunos?: AlunoDestaque[]
   rubricas?: CriterioRubrica[]   // critérios configurados para esta turma
   tiposAnotacao?: string[]       // ex: ["dominou peça", "esqueceu instrumento", "liderou grupo"]
+  observacoes?: string           // texto livre: como a turma é, comportamento, o que funciona
+  objetivo?: string              // objetivo pedagógico da turma no período
 }
 
 export interface Segmento {

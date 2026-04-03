@@ -3,7 +3,12 @@ import { supabase } from '../lib/supabase'
 import { sanitizar, gerarIdSeguro } from '../lib/utils'
 import { useHistoricoContext, useAnoLetivoContext, useAtividadesContext, usePlanosContext, useRepertorioContext } from '../contexts'
 
-export default function ModuloHistoricoMusical() {
+interface ModuloHistoricoMusicalProps {
+    ocultarSeletorTurma?: boolean
+    turmaForcada?: string
+}
+
+export default function ModuloHistoricoMusical({ ocultarSeletorTurma, turmaForcada }: ModuloHistoricoMusicalProps = {}) {
     const { hmFiltroBusca, setHmFiltroBusca, hmFiltroFim, setHmFiltroFim, hmFiltroInicio, setHmFiltroInicio, hmFiltroTurma, setHmFiltroTurma, hmModalMusica, setHmModalMusica } = useHistoricoContext()
     const { anosLetivos, faixas } = useAnoLetivoContext()
     const { atividades } = useAtividadesContext()
@@ -13,6 +18,11 @@ export default function ModuloHistoricoMusical() {
     // ── Estados locais via useState (fora do IIFE via refs de closure) ──
     // Usamos estados já existentes no componente pai para filtros
     // Precisamos de estados próprios: declarados no início do componente (veja abaixo no JSX)
+
+    // Pre-set turma filter when embedded inside a turma view
+    useEffect(() => {
+        if (turmaForcada) setHmFiltroTurma(turmaForcada)
+    }, [turmaForcada]) // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── COLETA DE DADOS ──
     // Percorre todos os planos e coleta usos de músicas por data + turma
@@ -206,6 +216,7 @@ export default function ModuloHistoricoMusical() {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {/* Turma */}
+                    {!ocultarSeletorTurma && (
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Turma</label>
                         <select value={hmFiltroTurma} onChange={e => setHmFiltroTurma(e.target.value)}
@@ -216,6 +227,7 @@ export default function ModuloHistoricoMusical() {
                             ))}
                         </select>
                     </div>
+                    )}
                     {/* Período início */}
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">De</label>
