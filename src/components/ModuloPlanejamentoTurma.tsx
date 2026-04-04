@@ -1960,52 +1960,65 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                     <span className="text-[11px] font-semibold text-slate-500">{labelResultado(registroExibido.resultadoAula)}</span>
                   )}
                 </div>
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  {/* Campos sempre visíveis */}
-                  {registroExibido.resumoAula && (
-                    <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
-                  )}
-                  {(registroExibido.fariadiferente || (registroExibido as any).naoFuncionou) && (
-                    <InfoRow icon="⚠️" label="O que faria diferente" valor={registroExibido.fariadiferente || (registroExibido as any).naoFuncionou} />
-                  )}
-                  {/* Campos colapsáveis */}
-                  {verDetalhesRegistro && (
-                    <>
-                      {registroExibido.funcionouBem && (
-                        <InfoRow icon="✅" label="O que funcionou bem" valor={registroExibido.funcionouBem} />
+                {(() => {
+                  // Contar campos secundários com conteúdo real
+                  const secundarios = [
+                    stripHTML(registroExibido.funcionouBem ?? '').trim(),
+                    stripHTML(registroExibido.poderiaMelhorar ?? '').trim(),
+                    stripHTML(registroExibido.comportamento ?? '').trim(),
+                    stripHTML(registroExibido.anotacoesGerais ?? '').trim(),
+                  ].filter(Boolean)
+                  const temChamada = !!(chamada && chamada.length > 0)
+                  const totalSecundarios = secundarios.length + (temChamada ? 1 : 0)
+                  // Colapsar só se houver 2 ou mais campos secundários
+                  const usarColapso = totalSecundarios >= 2
+                  const mostrarSecundarios = !usarColapso || verDetalhesRegistro
+                  return (
+                    <div className="space-y-2 pt-2 border-t border-slate-100">
+                      {registroExibido.resumoAula && (
+                        <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
                       )}
-                      {registroExibido.poderiaMelhorar && (
-                        <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
+                      {(registroExibido.fariadiferente || (registroExibido as any).naoFuncionou) && (
+                        <InfoRow icon="⚠️" label="O que faria diferente" valor={registroExibido.fariadiferente || (registroExibido as any).naoFuncionou} />
                       )}
-                      {registroExibido.comportamento && (
-                        <InfoRow icon="👥" label="Comportamento da turma" valor={registroExibido.comportamento} />
-                      )}
-                      {registroExibido.anotacoesGerais && (
-                        <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
-                      )}
-                      {chamada && chamada.length > 0 && (
-                        <div>
-                          <InfoRow icon="✋" label="Chamada" valor={`${presentes}/${chamada.length} presentes`} />
-                          {ausentes.length > 0 && (
-                            <p className="text-[11px] text-slate-400 mt-0.5 ml-6 italic">
-                              Ausentes: {ausentes.map(c => nomeAluno(c.alunoId)).join(', ')}
-                            </p>
+                      {mostrarSecundarios && (
+                        <>
+                          {registroExibido.funcionouBem && (
+                            <InfoRow icon="✅" label="O que funcionou bem" valor={registroExibido.funcionouBem} />
                           )}
-                        </div>
+                          {registroExibido.poderiaMelhorar && (
+                            <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
+                          )}
+                          {registroExibido.comportamento && (
+                            <InfoRow icon="👥" label="Comportamento da turma" valor={registroExibido.comportamento} />
+                          )}
+                          {registroExibido.anotacoesGerais && (
+                            <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
+                          )}
+                          {temChamada && (
+                            <div>
+                              <InfoRow icon="✋" label="Chamada" valor={`${presentes}/${chamada!.length} presentes`} />
+                              {ausentes.length > 0 && (
+                                <p className="text-[11px] text-slate-400 mt-0.5 ml-6 italic">
+                                  Ausentes: {ausentes.map(c => nomeAluno(c.alunoId)).join(', ')}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </>
                       )}
-                    </>
-                  )}
-                  {/* Toggle Ver detalhes — só aparece se houver conteúdo real nos campos secundários */}
-                  {(stripHTML(registroExibido.funcionouBem ?? '').trim() || stripHTML(registroExibido.poderiaMelhorar ?? '').trim() || stripHTML(registroExibido.comportamento ?? '').trim() || stripHTML(registroExibido.anotacoesGerais ?? '').trim() || (chamada && chamada.length > 0)) && (
-                    <button
-                      type="button"
-                      onClick={() => setVerDetalhesRegistro(v => !v)}
-                      className="text-[11px] text-indigo-400 hover:text-indigo-600 font-medium transition-colors"
-                    >
-                      {verDetalhesRegistro ? 'Ocultar detalhes ↑' : 'Ver detalhes ↓'}
-                    </button>
-                  )}
-                </div>
+                      {usarColapso && (
+                        <button
+                          type="button"
+                          onClick={() => setVerDetalhesRegistro(v => !v)}
+                          className="text-[11px] text-indigo-400 hover:text-indigo-600 font-medium transition-colors"
+                        >
+                          {verDetalhesRegistro ? 'Ocultar detalhes ↑' : 'Ver detalhes ↓'}
+                        </button>
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
             )
           })()}
