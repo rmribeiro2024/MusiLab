@@ -60,6 +60,14 @@ function formatarData(dataStr: string): string {
   return `${d}/${m}/${y}`
 }
 
+function formatarDataComDia(dataStr: string): string {
+  if (!dataStr) return '—'
+  const dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+  const data = new Date(dataStr + 'T12:00:00')
+  const [y, m, d] = dataStr.split('-')
+  return `${d}/${m}/${y} (${dias[data.getDay()]})`
+}
+
 function labelResultado(valor: string): string {
   const mapa: Record<string, string> = {
     bem:     '✅ Funcionou bem',
@@ -1946,7 +1954,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] font-semibold text-slate-600">
-                    Aula · {formatarData(registroExibido.dataAula ?? registroExibido.data ?? '')}
+                    Avaliação da última aula · {formatarDataComDia(registroExibido.dataAula ?? registroExibido.data ?? '')}
                   </span>
                   {registroExibido.resultadoAula && (
                     <span className="text-[11px] font-semibold text-slate-500">{labelResultado(registroExibido.resultadoAula)}</span>
