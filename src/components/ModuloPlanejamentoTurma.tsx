@@ -1946,14 +1946,11 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] font-semibold text-slate-600">
-                    {dataAtiva ? 'Registro selecionado' : 'Última aula'}
+                    Aula · {formatarData(registroExibido.dataAula ?? registroExibido.data ?? '')}
                   </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">{formatarData(registroExibido.dataAula ?? registroExibido.data ?? '')}</span>
-                    {registroExibido.resultadoAula && (
-                      <span className="text-[11px] font-semibold text-slate-500">{labelResultado(registroExibido.resultadoAula)}</span>
-                    )}
-                  </div>
+                  {registroExibido.resultadoAula && (
+                    <span className="text-[11px] font-semibold text-slate-500">{labelResultado(registroExibido.resultadoAula)}</span>
+                  )}
                 </div>
                 <div className="space-y-2 pt-2 border-t border-slate-100">
                   {/* Campos sempre visíveis */}
