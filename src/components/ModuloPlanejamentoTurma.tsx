@@ -8,7 +8,7 @@ import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
 import { usePlanosContext } from '../contexts/PlanosContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
-import { stripHTML, gerarIdSeguro } from '../lib/utils'
+import { stripHTML, gerarIdSeguro, sanitizar } from '../lib/utils'
 import { showToast } from '../lib/toast'
 import { useAtividadesContext, useAplicacoesContext, useSequenciasContext, useEstrategiasContext } from '../contexts'
 import type { AnoLetivo, Escola, Segmento, Turma, GradeEditando, RegistroPosAula, AlunoDestaque, AnotacaoAluno, MarcoAluno, Plano } from '../types'
@@ -665,11 +665,18 @@ function buildEscolaColorMapMPT(anosLetivos: AnoLetivo[]): Record<string, { ligh
   return map
 }
 
-function formatDataCurtaMPT(ymd: string): string {
+function tempoRelativo(ymd: string): string {
   if (!ymd) return ''
-  const [, mm, dd] = ymd.split('-')
-  const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
-  return `${parseInt(dd)} ${meses[parseInt(mm) - 1]}`
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
+  const data = new Date(ymd + 'T12:00:00')
+  const diff = Math.round((hoje.getTime() - data.getTime()) / 86400000)
+  if (diff <= 0) return 'hoje'
+  if (diff === 1) return 'ontem'
+  if (diff < 7) return `${diff} dias`
+  if (diff < 14) return '1 sem'
+  if (diff < 21) return '2 sem'
+  if (diff < 60) return `${Math.floor(diff / 7)} sem`
+  return `${Math.floor(diff / 30)} mes`
 }
 
 function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
@@ -678,29 +685,78 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
 }) {
   const { anosLetivos } = useAnoLetivoContext()
   const { planos } = usePlanosContext()
+  const { aplicacoes } = useAplicacoesContext()
+  const { obterTurmasDoDia } = useCalendarioContext()
   const [busca, setBusca] = useState('')
   const escolaColorMap = useMemo(() => buildEscolaColorMapMPT(anosLetivos), [anosLetivos])
 
-  // Dot por turmaId: última data e cor
+  const hojeStr = useMemo(() => toDateStr(new Date()), [])
+
+  // Turmas que têm aula hoje ou amanhã (para priorizar no topo)
+  const turmasComAulaHoje = useMemo(() => {
+    const set = new Set<string>()
+    const amanha = new Date(); amanha.setDate(amanha.getDate() + 1)
+    const amanhaStr = toDateStr(amanha)
+    for (const ds of [hojeStr, amanhaStr]) {
+      for (const a of obterTurmasDoDia(ds)) set.add(String(a.turmaId))
+    }
+    return set
+  }, [hojeStr, obterTurmasDoDia])
+
+  // Dot semântico por turmaId: o que o professor precisa FAZER agora
+  // amber = PLANEJAR (aula iminente sem plano)
+  // blue  = REGISTRAR (última aula sem registro)
+  // green = OK
+  // gray  = sem aula agendada nos próximos dias
   const turmaInfo = useMemo(() => {
-    const map: Record<string, { dot: 'green' | 'amber' | 'red' | 'gray'; ultimaData: string | null }> = {}
+    const map: Record<string, { dot: 'green' | 'amber' | 'blue' | 'gray'; ultimaData: string | null }> = {}
+
+    // Última data de registro por turma
+    const ultimoReg: Record<string, { data: string; temConteudo: boolean }> = {}
     for (const plano of planos) {
       for (const reg of (plano.registrosPosAula ?? [])) {
         const tid = String(reg.turma ?? '')
         if (!tid) continue
-        const data = reg.dataAula ?? reg.data ?? null
-        const prev = map[tid]
-        if (prev && prev.ultimaData && data && data < prev.ultimaData) continue
-        const status = reg.statusAula ?? reg.resultadoAula ?? ''
-        const dot: 'green' | 'amber' | 'red' | 'gray' =
-          ['concluida', 'bem', 'funcionou'].includes(status) ? 'green' :
-          ['revisao', 'parcial'].includes(status) ? 'amber' :
-          ['incompleta', 'nao_houve', 'nao_funcionou'].includes(status) ? 'red' : 'gray'
-        map[tid] = { dot, ultimaData: data }
+        const data = reg.dataAula ?? reg.data ?? ''
+        if (!data) continue
+        const prev = ultimoReg[tid]
+        if (!prev || data > prev.data) {
+          const temConteudo = !!(reg.resumoAula || reg.resumo || reg.funcionouBem || reg.fariadiferente)
+          ultimoReg[tid] = { data, temConteudo }
+        }
       }
     }
+
+    // Aplicações (planos agendados) nos próximos 7 dias por turma
+    const temPlanoIminente = new Set<string>()
+    const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
+    for (const ap of aplicacoes) {
+      if (ap.status === 'cancelada') continue
+      const apData = new Date(ap.data + 'T12:00:00')
+      const diff = Math.round((apData.getTime() - hoje.getTime()) / 86400000)
+      if (diff >= 0 && diff <= 7) temPlanoIminente.add(String(ap.turmaId))
+    }
+
+    // Computa dot para cada turma que tem aula hoje/amanhã
+    for (const turmaId of turmasComAulaHoje) {
+      const reg = ultimoReg[turmaId]
+      const temPlano = temPlanoIminente.has(turmaId)
+      if (!temPlano) {
+        map[turmaId] = { dot: 'amber', ultimaData: reg?.data ?? null }
+      } else if (reg && !reg.temConteudo) {
+        map[turmaId] = { dot: 'blue', ultimaData: reg.data }
+      } else {
+        map[turmaId] = { dot: 'green', ultimaData: reg?.data ?? null }
+      }
+    }
+
+    // Turmas sem aula iminente: apenas última data para referência
+    for (const [tid, reg] of Object.entries(ultimoReg)) {
+      if (!map[tid]) map[tid] = { dot: 'gray', ultimaData: reg.data }
+    }
+
     return map
-  }, [planos])
+  }, [planos, aplicacoes, turmasComAulaHoje])
 
   // Grupos: escola → turmas
   type TurmaItem = { key: string; nome: string; anoLetivoId: string; escolaId: string; segmentoId: string; turmaId: string }
@@ -742,9 +798,28 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
   const DOT_COLORS = {
     green: 'bg-emerald-400',
     amber: 'bg-amber-400',
-    red:   'bg-red-400',
+    blue:  'bg-blue-400',
     gray:  'bg-slate-300 dark:bg-[#4B5563]',
   }
+
+  const DOT_LABELS = {
+    amber: 'Planejar',
+    blue:  'Registrar',
+    green: '',
+    gray:  '',
+  }
+
+  // Ordena: turmas com dot amber/blue (ação necessária) primeiro, depois restantes
+  const gruposFiltradosOrdenados = useMemo(() => {
+    return gruposFiltrados.map(g => ({
+      ...g,
+      turmas: [...g.turmas].sort((a, b) => {
+        const prioA = turmasComAulaHoje.has(a.turmaId) ? 0 : 1
+        const prioB = turmasComAulaHoje.has(b.turmaId) ? 0 : 1
+        return prioA - prioB
+      }),
+    }))
+  }, [gruposFiltrados, turmasComAulaHoje])
 
   return (
     <aside className="w-52 flex-shrink-0 flex flex-col gap-2">
@@ -767,11 +842,11 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
 
       {/* Lista agrupada */}
       <div className="rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] overflow-hidden overflow-y-auto max-h-[calc(100vh-200px)]">
-        {gruposFiltrados.length === 0 ? (
+        {gruposFiltradosOrdenados.length === 0 ? (
           <div className="px-3 py-6 text-center text-[11px] text-slate-400 dark:text-[#6B7280]">
             Nenhuma turma encontrada
           </div>
-        ) : gruposFiltrados.map(grupo => {
+        ) : gruposFiltradosOrdenados.map(grupo => {
           const cor = escolaColorMap[grupo.escolaId]
           return (
             <div key={grupo.escolaId}>
@@ -786,6 +861,8 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
                   ? turmaSelecionada.turmaId === t.turmaId && turmaSelecionada.escolaId === t.escolaId
                   : false
                 const info = turmaInfo[t.turmaId]
+                const dot = info?.dot ?? 'gray'
+                const label = DOT_LABELS[dot]
                 return (
                   <button
                     key={t.key}
@@ -795,18 +872,23 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
                       isAtiva ? 'bg-[#eef3fb] dark:bg-[#5B5FEA]/[0.16]' : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
                     }`}
                   >
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DOT_COLORS[info?.dot ?? 'gray']}`} />
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DOT_COLORS[dot]}`} />
                     <div className="min-w-0 flex-1">
                       <div className={`text-[12px] font-semibold leading-tight truncate ${
                         isAtiva ? 'text-[#1e3a6e] dark:text-indigo-300' : 'text-slate-700 dark:text-[#D1D5DB]'
                       }`}>
                         {t.nome}
                       </div>
-                      {info?.ultimaData && (
-                        <div className="text-[10px] text-slate-400 dark:text-[#6B7280] mt-[1px]">
-                          {formatDataCurtaMPT(info.ultimaData)}
-                        </div>
-                      )}
+                      <div className="text-[10px] mt-[1px] flex items-center gap-1">
+                        {info?.ultimaData && (
+                          <span className="text-slate-400 dark:text-[#6B7280]">{tempoRelativo(info.ultimaData)}</span>
+                        )}
+                        {label && (
+                          <span className={`font-semibold ${dot === 'amber' ? 'text-amber-500' : 'text-blue-500'}`}>
+                            · {label}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </button>
                 )
@@ -1161,6 +1243,8 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   const [novoTipoAnotacao, setNovoTipoAnotacao] = useState('')
   const [dataAtiva, setDataAtiva] = useState<string | null>(null)
   const [aba, setAba] = useState<'turma' | 'aulas' | 'repertorio'>('aulas')
+  const [timelineAberta, setTimelineAberta] = useState(false)
+  const [verDetalhesRegistro, setVerDetalhesRegistro] = useState(false)
   const [editandoObs, setEditandoObs] = useState(false)
   const [obsRascunho, setObsRascunho] = useState('')
   const [editandoObj, setEditandoObj] = useState(false)
@@ -1168,7 +1252,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
 
   // Resetar seleção ao trocar de turma
   useEffect(() => { setDataAtiva(null) }, [turmaSelecionada?.turmaId])
-  useEffect(() => { setAba('aulas') }, [turmaSelecionada?.turmaId]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setAba('aulas'); setTimelineAberta(false); setVerDetalhesRegistro(false) }, [turmaSelecionada?.turmaId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Planejamentos filtrados para a data atual (evita exibir plans de outros dias)
   const planejamentosDoDia = useMemo(
@@ -1839,20 +1923,18 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
       {aba === 'aulas' && (
         <div className="space-y-3">
 
-          {/* Progresso pedagógico (timeline interativa) */}
-          <TimelinePedagogica
-            onAcionar={() => {
-              const data = proximaAulaData || calendarDateStr
-              setDataNavegacao(new Date(data))
-              setModoInicialNavegacao(null)
-              setViewModeGlobal('porTurmas')
-            }}
-            dataAtiva={dataAtiva}
-            setDataAtiva={setDataAtiva}
-            turmaNome={turmaNome}
-          />
+          {/* ── 1. Sua nota para hoje (proximaAula do último registro) ──── */}
+          {registroExibido?.proximaAula && (
+            <div className="bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-3">
+              <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">Sua nota para hoje</p>
+              <div
+                className="text-sm text-indigo-800 leading-relaxed prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: sanitizar(registroExibido.proximaAula) }}
+              />
+            </div>
+          )}
 
-          {/* ── Último registro / Registro selecionado — sempre visível ──── */}
+          {/* ── 2. Último registro / Registro selecionado — simplificado ── */}
           {registroExibido && (() => {
             const ts = turmaSelecionada!
             const allAlunos = alunosGetByTurma(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId)
@@ -1862,7 +1944,6 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             const ausentes  = chamada ? chamada.filter(c => !c.presente) : []
             return (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 space-y-2">
-                {/* Header do registro */}
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] font-semibold text-slate-600">
                     {dataAtiva ? 'Registro selecionado' : 'Última aula'}
@@ -1874,45 +1955,129 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                     )}
                   </div>
                 </div>
-                {/* Conteúdo */}
                 <div className="space-y-2 pt-2 border-t border-slate-100">
+                  {/* Campos sempre visíveis */}
                   {registroExibido.resumoAula && (
                     <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
-                  )}
-                  {registroExibido.funcionouBem && (
-                    <InfoRow icon="✅" label="O que funcionou bem" valor={registroExibido.funcionouBem} />
                   )}
                   {(registroExibido.fariadiferente || (registroExibido as any).naoFuncionou) && (
                     <InfoRow icon="⚠️" label="O que faria diferente" valor={registroExibido.fariadiferente || (registroExibido as any).naoFuncionou} />
                   )}
-                  {registroExibido.poderiaMelhorar && (
-                    <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
-                  )}
-                  {registroExibido.comportamento && (
-                    <InfoRow icon="👥" label="Comportamento da turma" valor={registroExibido.comportamento} />
-                  )}
-                  {registroExibido.anotacoesGerais && (
-                    <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
-                  )}
-                  {registroExibido.proximaAula && (
-                    <InfoRow icon="💡" label="Ideias / estratégias" valor={registroExibido.proximaAula} destacado />
-                  )}
-                  {chamada && chamada.length > 0 && (
-                    <div>
-                      <InfoRow icon="✋" label="Chamada" valor={`${presentes}/${chamada.length} presentes`} />
-                      {ausentes.length > 0 && (
-                        <p className="text-[11px] text-slate-400 mt-0.5 ml-6 italic">
-                          Ausentes: {ausentes.map(c => nomeAluno(c.alunoId)).join(', ')}
-                        </p>
+                  {/* Campos colapsáveis */}
+                  {verDetalhesRegistro && (
+                    <>
+                      {registroExibido.funcionouBem && (
+                        <InfoRow icon="✅" label="O que funcionou bem" valor={registroExibido.funcionouBem} />
                       )}
-                    </div>
+                      {registroExibido.poderiaMelhorar && (
+                        <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
+                      )}
+                      {registroExibido.comportamento && (
+                        <InfoRow icon="👥" label="Comportamento da turma" valor={registroExibido.comportamento} />
+                      )}
+                      {registroExibido.anotacoesGerais && (
+                        <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
+                      )}
+                      {chamada && chamada.length > 0 && (
+                        <div>
+                          <InfoRow icon="✋" label="Chamada" valor={`${presentes}/${chamada.length} presentes`} />
+                          {ausentes.length > 0 && (
+                            <p className="text-[11px] text-slate-400 mt-0.5 ml-6 italic">
+                              Ausentes: {ausentes.map(c => nomeAluno(c.alunoId)).join(', ')}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {/* Toggle Ver detalhes */}
+                  {(registroExibido.funcionouBem || registroExibido.poderiaMelhorar || registroExibido.comportamento || registroExibido.anotacoesGerais || (chamada && chamada.length > 0)) && (
+                    <button
+                      type="button"
+                      onClick={() => setVerDetalhesRegistro(v => !v)}
+                      className="text-[11px] text-indigo-400 hover:text-indigo-600 font-medium transition-colors"
+                    >
+                      {verDetalhesRegistro ? 'Ocultar detalhes ↑' : 'Ver detalhes ↓'}
+                    </button>
                   )}
                 </div>
               </div>
             )
           })()}
 
-          {/* ── Registros anteriores — lista linear ──────────────────────── */}
+          {/* ── 3. Situação da turma — 2 linhas compactas ────────────────── */}
+          {resumoTurma.numAulas > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3 space-y-1.5">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Situação da turma</p>
+              <div className="flex items-center gap-3 flex-wrap">
+                {resumoTurma.presencaMedia != null && (
+                  <span className="text-xs text-slate-600">
+                    Presença{' '}
+                    <span className={`font-semibold ${
+                      resumoTurma.presencaMedia >= 0.80 ? 'text-emerald-600' :
+                      resumoTurma.presencaMedia >= 0.55 ? 'text-amber-600' : 'text-red-500'
+                    }`}>{Math.round(resumoTurma.presencaMedia * 100)}%</span>
+                  </span>
+                )}
+                {resumoTurma.participacao && resumoTurma.presencaMedia == null && (
+                  <span className="text-xs text-slate-600">
+                    Participação{' '}
+                    <span className={`font-semibold ${
+                      resumoTurma.participacao === 'alta' ? 'text-emerald-600' :
+                      resumoTurma.participacao === 'média' ? 'text-amber-600' : 'text-red-500'
+                    }`}>{resumoTurma.participacao}</span>
+                  </span>
+                )}
+                {resumoTurma.focoRecente && (
+                  <span className="text-xs text-slate-600">Foco: <span className="font-medium">{resumoTurma.focoRecente}</span></span>
+                )}
+                {resumoTurma.tendencia && (
+                  <span className={`text-xs font-semibold ${
+                    resumoTurma.tendencia === 'cresceu' ? 'text-emerald-600' :
+                    resumoTurma.tendencia === 'caiu' ? 'text-red-500' : 'text-slate-500'
+                  }`}>{resumoTurma.tendencia === 'cresceu' ? 'Crescendo' : resumoTurma.tendencia === 'caiu' ? 'Caindo' : 'Estável'}</span>
+                )}
+              </div>
+              {destaquesTurma.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-0.5">
+                  {destaquesTurma.slice(0, 3).map((d, i) => (
+                    <span key={i} className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{d}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── 4. Timeline pedagógica — colapsável ──────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setTimelineAberta(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition-colors"
+            >
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Progresso da turma</span>
+              <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${timelineAberta ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {timelineAberta && (
+              <div className="px-4 pb-4">
+                <TimelinePedagogica
+                  onAcionar={() => {
+                    const data = proximaAulaData || calendarDateStr
+                    setDataNavegacao(new Date(data))
+                    setModoInicialNavegacao(null)
+                    setViewModeGlobal('porTurmas')
+                  }}
+                  dataAtiva={dataAtiva}
+                  setDataAtiva={setDataAtiva}
+                  turmaNome={turmaNome}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* ── 5. Registros anteriores — lista linear ───────────────────── */}
           {listaHistorico.length > 0 && (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="px-4 pt-3 pb-1">
