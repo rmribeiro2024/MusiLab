@@ -2023,29 +2023,14 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             )
           })()}
 
-          {/* ── 3. Situação da turma ─────────────────────────────────────── */}
+          {/* ── 3. Vivências e meios expressivos ─────────────────────────── */}
           {/* TODO: participação removida temporariamente — reativar quando chamada tiver fluxo definido */}
-          {(resumoTurma.focoRecente || resumoTurma.tendencia || destaquesTurma.length > 0) && (
+          {resumoTurma.focoRecente && (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3 space-y-1.5">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Situação da turma</p>
-              <div className="flex items-center gap-3 flex-wrap">
-                {resumoTurma.focoRecente && (
-                  <span className="text-xs text-slate-600">Foco: <span className="font-medium">{resumoTurma.focoRecente}</span></span>
-                )}
-                {resumoTurma.tendencia && (
-                  <span className={`text-xs font-semibold ${
-                    resumoTurma.tendencia === 'cresceu' ? 'text-emerald-600' :
-                    resumoTurma.tendencia === 'caiu' ? 'text-red-500' : 'text-slate-500'
-                  }`}>{resumoTurma.tendencia === 'cresceu' ? 'Crescendo' : resumoTurma.tendencia === 'caiu' ? 'Caindo' : 'Estável'}</span>
-                )}
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vivências e meios expressivos mais trabalhados</p>
+              <div className="flex flex-wrap gap-1.5">
+                <span className="text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 rounded-full font-medium">{resumoTurma.focoRecente}</span>
               </div>
-              {destaquesTurma.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-0.5">
-                  {destaquesTurma.slice(0, 3).map((d, i) => (
-                    <span key={i} className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{d}</span>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 
