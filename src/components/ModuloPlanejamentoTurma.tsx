@@ -89,10 +89,12 @@ function labelProximaOpcao(valor: string): string {
 
 // ─── RESUMO AUTOMÁTICO DA TURMA ───────────────────────────────────────────────
 
+type PeriodoVivencias = '3' | '5' | 'mes'
+
 interface ResumoTurma {
   participacao: 'alta' | 'média' | 'baixa' | null
   presencaMedia: number | null  // 0–1, só disponível quando chamada está preenchida
-  focoRecente: string | null
+  focosRecentes: string[]       // ranking top-3 dos meios/vivências mais trabalhados
   tendencia: 'cresceu' | 'estável' | 'caiu' | null
   numAulas: number
 }
@@ -111,18 +113,27 @@ function scoreStatus(r: RegistroPosAula): number | null {
   return mapa[s] ?? null
 }
 
-function calcResumoTurma(historico: RegistroPosAula[], planos: Plano[]): ResumoTurma {
-  // Últimas 5 aulas que de fato ocorreram
-  const amostra = historico
-    .slice(0, 5)
-    .filter(r => (r.statusAula ?? r.resultadoAula) !== 'nao_houve')
+function calcResumoTurma(historico: RegistroPosAula[], planos: Plano[], periodo: PeriodoVivencias = '5'): ResumoTurma {
+  const ORFF_LABELS: Record<string, string> = { fala: 'Fala', canto: 'Canto', movimento: 'Movimento', instrumental: 'Instrumental' }
+  const CLASP_LABELS: Record<string, string> = { tecnica: 'Técnica', performance: 'Performance', apreciacao: 'Apreciação', criacao: 'Criação', teoria: 'Teoria' }
+
+  // Filtrar por período
+  let base = historico.filter(r => (r.statusAula ?? r.resultadoAula) !== 'nao_houve')
+  if (periodo === 'mes') {
+    const limite = new Date(); limite.setDate(limite.getDate() - 30)
+    const limiteStr = limite.toISOString().split('T')[0]
+    base = base.filter(r => (r.dataAula ?? r.data ?? '') >= limiteStr)
+  } else {
+    base = base.slice(0, Number(periodo))
+  }
+  const amostra = base
 
   if (amostra.length === 0) {
-    return { participacao: null, presencaMedia: null, focoRecente: null, tendencia: null, numAulas: 0 }
+    return { participacao: null, presencaMedia: null, focosRecentes: [], tendencia: null, numAulas: 0 }
   }
 
   // ── 1. PARTICIPAÇÃO ─────────────────────────────────────────────────────────
-  // Fonte primária: chamada (presença real)
+  // TODO: reativar quando chamada tiver fluxo definido
   const comChamada = amostra.filter(r => (r.chamada?.length ?? 0) > 0)
   let participacao: 'alta' | 'média' | 'baixa' | null = null
   let presencaMedia: number | null = null
@@ -135,7 +146,6 @@ function calcResumoTurma(historico: RegistroPosAula[], planos: Plano[]): ResumoT
     presencaMedia = media
     participacao = media >= 0.80 ? 'alta' : media >= 0.55 ? 'média' : 'baixa'
   } else {
-    // Fallback: statusAula como proxy
     const scores = amostra.map(scoreStatus).filter((s): s is number => s !== null)
     if (scores.length > 0) {
       const media = scores.reduce((a, b) => a + b, 0) / scores.length
@@ -143,43 +153,40 @@ function calcResumoTurma(historico: RegistroPosAula[], planos: Plano[]): ResumoT
     }
   }
 
-  // ── 2. FOCO RECENTE ──────────────────────────────────────────────────────────
-  // Fonte primária: orffMeios do plano pai (o meio expressivo mais usado)
-  const ORFF_LABELS: Record<string, string> = { fala: 'fala', canto: 'canto', movimento: 'movimento', instrumental: 'instrumental' }
-  const CLASP_LABELS: Record<string, string> = { tecnica: 'técnica', performance: 'performance', apreciacao: 'apreciação', criacao: 'criação', teoria: 'teoria' }
-
-  const contagemOrff: Record<string, number> = {}
-  const contagemClasp: Record<string, number> = {}
+  // ── 2. RANKING DE VIVÊNCIAS E MEIOS EXPRESSIVOS ───────────────────────────
+  // Unifica orffMeios e vivenciasClassificadas num único ranking top-3
+  const contagem: Record<string, number> = {}
 
   for (const reg of amostra) {
     const plano = planos.find(p => p.registrosPosAula?.some(r => r.id === reg.id))
     if (!plano) continue
     if (plano.orffMeios) {
       for (const [meio, ativo] of Object.entries(plano.orffMeios)) {
-        if (ativo) contagemOrff[meio] = (contagemOrff[meio] ?? 0) + 1
+        if (ativo) {
+          const label = ORFF_LABELS[meio] ?? meio
+          contagem[label] = (contagem[label] ?? 0) + 1
+        }
       }
     }
     if (plano.vivenciasClassificadas) {
       for (const [dim, val] of Object.entries(plano.vivenciasClassificadas)) {
-        if (val > 0) contagemClasp[dim] = (contagemClasp[dim] ?? 0) + val
+        if (val > 0) {
+          const label = CLASP_LABELS[dim] ?? dim
+          contagem[label] = (contagem[label] ?? 0) + val
+        }
       }
     }
   }
 
-  let focoRecente: string | null = null
-  const topOrff = Object.entries(contagemOrff).sort((a, b) => b[1] - a[1])[0]
-  if (topOrff) {
-    focoRecente = ORFF_LABELS[topOrff[0]] ?? topOrff[0]
-  } else {
-    const topClasp = Object.entries(contagemClasp).sort((a, b) => b[1] - a[1])[0]
-    if (topClasp) focoRecente = CLASP_LABELS[topClasp[0]] ?? topClasp[0]
-  }
+  const focosRecentes = Object.entries(contagem)
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([label]) => label)
 
   // ── 3. TENDÊNCIA ────────────────────────────────────────────────────────────
-  // Requer ≥ 3 registros com score
   let tendencia: 'cresceu' | 'estável' | 'caiu' | null = null
   if (amostra.length >= 3) {
-    // amostra está desc; reverter para cronológico
     const crono = [...amostra].reverse()
     const scores = crono.map(r => {
       if ((r.chamada?.length ?? 0) > 0) {
@@ -198,7 +205,7 @@ function calcResumoTurma(historico: RegistroPosAula[], planos: Plano[]): ResumoT
     }
   }
 
-  return { participacao, presencaMedia, focoRecente, tendencia, numAulas: amostra.length }
+  return { participacao, presencaMedia, focosRecentes, tendencia, numAulas: amostra.length }
 }
 
 function calcDestaquesTurma(historico: RegistroPosAula[], planos: Plano[]): string[] {
@@ -1251,8 +1258,9 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   const [novoTipoAnotacao, setNovoTipoAnotacao] = useState('')
   const [dataAtiva, setDataAtiva] = useState<string | null>(null)
   const [aba, setAba] = useState<'turma' | 'aulas' | 'repertorio'>('aulas')
-  const [timelineAberta, setTimelineAberta] = useState(false)
+  const [timelineAberta, setTimelineAberta] = useState(true)
   const [verDetalhesRegistro, setVerDetalhesRegistro] = useState(false)
+  const [periodoVivencias, setPeriodoVivencias] = useState<PeriodoVivencias>('5')
   const [editandoObs, setEditandoObs] = useState(false)
   const [obsRascunho, setObsRascunho] = useState('')
   const [editandoObj, setEditandoObj] = useState(false)
@@ -1351,10 +1359,10 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
     [historicoDaTurma]
   )
 
-  // Resumo automático — calculado a partir das últimas 5 aulas
+  // Resumo automático — recalcula ao mudar período
   const resumoTurma = useMemo(
-    () => calcResumoTurma(historicoDaTurma, planos),
-    [historicoDaTurma, planos]
+    () => calcResumoTurma(historicoDaTurma, planos, periodoVivencias),
+    [historicoDaTurma, planos, periodoVivencias]
   )
 
   // Destaques automáticos — até 3 insights das últimas aulas
@@ -2023,14 +2031,51 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             )
           })()}
 
-          {/* ── 3. Vivências e meios expressivos ─────────────────────────── */}
+          {/* ── 3. Vivências e meios expressivos — ranking com período ──── */}
           {/* TODO: participação removida temporariamente — reativar quando chamada tiver fluxo definido */}
-          {resumoTurma.focoRecente && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3 space-y-1.5">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vivências e meios expressivos mais trabalhados</p>
-              <div className="flex flex-wrap gap-1.5">
-                <span className="text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 rounded-full font-medium">{resumoTurma.focoRecente}</span>
+          {resumoTurma.numAulas > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">
+                  Vivências e meios expressivos mais trabalhados
+                </p>
+                <div className="flex gap-1 shrink-0">
+                  {(['3', '5', 'mes'] as PeriodoVivencias[]).map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPeriodoVivencias(p)}
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors ${
+                        periodoVivencias === p
+                          ? 'bg-indigo-500 text-white'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}
+                    >
+                      {p === '3' ? '3 aulas' : p === '5' ? '5 aulas' : 'Mês'}
+                    </button>
+                  ))}
+                </div>
               </div>
+              {resumoTurma.focosRecentes.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {resumoTurma.focosRecentes.map((foco, i) => (
+                    <span
+                      key={foco}
+                      className={`text-xs px-2.5 py-1 rounded-full font-medium border ${
+                        i === 0
+                          ? 'bg-indigo-50 text-indigo-700 border-indigo-100'
+                          : i === 1
+                          ? 'bg-slate-100 text-slate-600 border-slate-200'
+                          : 'bg-slate-50 text-slate-500 border-slate-100'
+                      }`}
+                    >
+                      {i + 1}. {foco}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic">Nenhum plano vinculado neste período.</p>
+              )}
             </div>
           )}
 
