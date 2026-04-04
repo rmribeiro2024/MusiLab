@@ -1990,8 +1990,8 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                       )}
                     </>
                   )}
-                  {/* Toggle Ver detalhes */}
-                  {(registroExibido.funcionouBem || registroExibido.poderiaMelhorar || registroExibido.comportamento || registroExibido.anotacoesGerais || (chamada && chamada.length > 0)) && (
+                  {/* Toggle Ver detalhes — só aparece se houver conteúdo real nos campos secundários */}
+                  {(stripHTML(registroExibido.funcionouBem ?? '').trim() || stripHTML(registroExibido.poderiaMelhorar ?? '').trim() || stripHTML(registroExibido.comportamento ?? '').trim() || stripHTML(registroExibido.anotacoesGerais ?? '').trim() || (chamada && chamada.length > 0)) && (
                     <button
                       type="button"
                       onClick={() => setVerDetalhesRegistro(v => !v)}
