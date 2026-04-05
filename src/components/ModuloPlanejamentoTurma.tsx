@@ -89,12 +89,19 @@ function labelProximaOpcao(valor: string): string {
 
 // ─── RESUMO AUTOMÁTICO DA TURMA ───────────────────────────────────────────────
 
-type PeriodoVivencias = '3' | '5' | 'mes'
+type PeriodoVivencias =
+  | { tipo: 'tudo' }
+  | { tipo: 'mes_atual' }
+  | { tipo: 'mes'; mes: number; ano: number }
+  | { tipo: 'range'; inicio: string; fim: string }
+
+interface ItemRanking { label: string; count: number }
 
 interface ResumoTurma {
   participacao: 'alta' | 'média' | 'baixa' | null
-  presencaMedia: number | null  // 0–1, só disponível quando chamada está preenchida
-  focosRecentes: string[]       // ranking top-3 dos meios/vivências mais trabalhados
+  presencaMedia: number | null
+  vivencias: ItemRanking[]   // CLASP — ordenado por frequência, todos os 5 itens
+  meios: ItemRanking[]       // Orff  — ordenado por frequência, todos os 4 itens
   tendencia: 'cresceu' | 'estável' | 'caiu' | null
   numAulas: number
 }
@@ -113,27 +120,35 @@ function scoreStatus(r: RegistroPosAula): number | null {
   return mapa[s] ?? null
 }
 
-function calcResumoTurma(historico: RegistroPosAula[], planos: Plano[], periodo: PeriodoVivencias = '5'): ResumoTurma {
-  const ORFF_LABELS: Record<string, string> = { fala: 'Fala', canto: 'Canto', movimento: 'Movimento', instrumental: 'Instrumental' }
+function calcResumoTurma(historico: RegistroPosAula[], planos: Plano[], periodo: PeriodoVivencias = { tipo: 'tudo' }): ResumoTurma {
+  const ORFF_KEYS  = ['fala', 'canto', 'movimento', 'instrumental'] as const
+  const CLASP_KEYS = ['performance', 'apreciacao', 'criacao', 'teoria', 'tecnica'] as const
+  const ORFF_LABELS:  Record<string, string> = { fala: 'Fala', canto: 'Canto', movimento: 'Movimento', instrumental: 'Instrumental' }
   const CLASP_LABELS: Record<string, string> = { tecnica: 'Técnica', performance: 'Performance', apreciacao: 'Apreciação', criacao: 'Criação', teoria: 'Teoria' }
 
-  // Filtrar por período
+  // ── Filtrar por período ─────────────────────────────────────────────────────
   let base = historico.filter(r => (r.statusAula ?? r.resultadoAula) !== 'nao_houve')
-  if (periodo === 'mes') {
-    const limite = new Date(); limite.setDate(limite.getDate() - 30)
-    const limiteStr = limite.toISOString().split('T')[0]
-    base = base.filter(r => (r.dataAula ?? r.data ?? '') >= limiteStr)
-  } else {
-    base = base.slice(0, Number(periodo))
+  if (periodo.tipo === 'mes_atual') {
+    const hoje = new Date()
+    const anoMes = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
+    base = base.filter(r => (r.dataAula ?? r.data ?? '').startsWith(anoMes))
+  } else if (periodo.tipo === 'mes') {
+    const anoMes = `${periodo.ano}-${String(periodo.mes + 1).padStart(2, '0')}`
+    base = base.filter(r => (r.dataAula ?? r.data ?? '').startsWith(anoMes))
+  } else if (periodo.tipo === 'range') {
+    base = base.filter(r => {
+      const d = r.dataAula ?? r.data ?? ''
+      return d >= periodo.inicio && d <= periodo.fim
+    })
   }
+  // 'tudo' não filtra
   const amostra = base
 
   if (amostra.length === 0) {
-    return { participacao: null, presencaMedia: null, focosRecentes: [], tendencia: null, numAulas: 0 }
+    return { participacao: null, presencaMedia: null, vivencias: [], meios: [], tendencia: null, numAulas: 0 }
   }
 
   // ── 1. PARTICIPAÇÃO ─────────────────────────────────────────────────────────
-  // TODO: reativar quando chamada tiver fluxo definido
   const comChamada = amostra.filter(r => (r.chamada?.length ?? 0) > 0)
   let participacao: 'alta' | 'média' | 'baixa' | null = null
   let presencaMedia: number | null = null
@@ -153,36 +168,39 @@ function calcResumoTurma(historico: RegistroPosAula[], planos: Plano[], periodo:
     }
   }
 
-  // ── 2. RANKING DE VIVÊNCIAS E MEIOS EXPRESSIVOS ───────────────────────────
-  // Unifica orffMeios e vivenciasClassificadas num único ranking top-3
-  const contagem: Record<string, number> = {}
+  // ── 2. VIVÊNCIAS (CLASP) e MEIOS (Orff) — separados ─────────────────────────
+  const contagemViv:  Record<string, number> = {}
+  const contagemMeio: Record<string, number> = {}
 
   for (const reg of amostra) {
     const plano = planos.find(p => p.registrosPosAula?.some(r => r.id === reg.id))
     if (!plano) continue
-    if (plano.orffMeios) {
-      for (const [meio, ativo] of Object.entries(plano.orffMeios)) {
-        if (ativo) {
-          const label = ORFF_LABELS[meio] ?? meio
-          contagem[label] = (contagem[label] ?? 0) + 1
-        }
-      }
-    }
     if (plano.vivenciasClassificadas) {
       for (const [dim, val] of Object.entries(plano.vivenciasClassificadas)) {
         if (val > 0) {
           const label = CLASP_LABELS[dim] ?? dim
-          contagem[label] = (contagem[label] ?? 0) + val
+          contagemViv[label] = (contagemViv[label] ?? 0) + val
+        }
+      }
+    }
+    if (plano.orffMeios) {
+      for (const [meio, ativo] of Object.entries(plano.orffMeios)) {
+        if (ativo) {
+          const label = ORFF_LABELS[meio] ?? meio
+          contagemMeio[label] = (contagemMeio[label] ?? 0) + 1
         }
       }
     }
   }
 
-  const focosRecentes = Object.entries(contagem)
-    .filter(([, n]) => n > 0)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([label]) => label)
+  // Lista completa ordenada por frequência (inclui zeros para mostrar lacunas)
+  const vivencias: ItemRanking[] = CLASP_KEYS
+    .map(k => ({ label: CLASP_LABELS[k], count: contagemViv[CLASP_LABELS[k]] ?? 0 }))
+    .sort((a, b) => b.count - a.count)
+
+  const meios: ItemRanking[] = ORFF_KEYS
+    .map(k => ({ label: ORFF_LABELS[k], count: contagemMeio[ORFF_LABELS[k]] ?? 0 }))
+    .sort((a, b) => b.count - a.count)
 
   // ── 3. TENDÊNCIA ────────────────────────────────────────────────────────────
   let tendencia: 'cresceu' | 'estável' | 'caiu' | null = null
@@ -205,7 +223,7 @@ function calcResumoTurma(historico: RegistroPosAula[], planos: Plano[], periodo:
     }
   }
 
-  return { participacao, presencaMedia, focosRecentes, tendencia, numAulas: amostra.length }
+  return { participacao, presencaMedia, vivencias, meios, tendencia, numAulas: amostra.length }
 }
 
 function calcDestaquesTurma(historico: RegistroPosAula[], planos: Plano[]): string[] {
@@ -1375,7 +1393,12 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   const [timelineAberta, setTimelineAberta] = useState(true)
   const [verDetalhesRegistro, setVerDetalhesRegistro] = useState(false)
   const [registroAbertoId, setRegistroAbertoId] = useState<string | number | null>(null)
-  const [periodoVivencias, setPeriodoVivencias] = useState<PeriodoVivencias>('5')
+  const [periodoVivencias, setPeriodoVivencias] = useState<PeriodoVivencias>({ tipo: 'tudo' })
+  const [vivDropdownAberto, setVivDropdownAberto] = useState(false)
+  const [vivDropdownAba, setVivDropdownAba] = useState<'mes' | 'range'>('mes')
+  const [vivPickerAno, setVivPickerAno] = useState(() => new Date().getFullYear())
+  const [vivRangeInicio, setVivRangeInicio] = useState('')
+  const [vivRangeFim, setVivRangeFim] = useState('')
   const [editandoObs, setEditandoObs] = useState(false)
   const [obsRascunho, setObsRascunho] = useState('')
   const [editandoObj, setEditandoObj] = useState(false)
@@ -2146,53 +2169,196 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             )
           })()}
 
-          {/* ── 3. Vivências e meios expressivos — ranking com período ──── */}
-          {/* TODO: participação removida temporariamente — reativar quando chamada tiver fluxo definido */}
-          {resumoTurma.numAulas > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3 space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">
-                  Vivências e meios expressivos mais trabalhados
-                </p>
-                <div className="flex gap-1 shrink-0">
-                  {(['3', '5', 'mes'] as PeriodoVivencias[]).map(p => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setPeriodoVivencias(p)}
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors ${
-                        periodoVivencias === p
-                          ? 'bg-indigo-500 text-white'
-                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                      }`}
-                    >
-                      {p === '3' ? '3 aulas' : p === '5' ? '5 aulas' : 'Mês'}
-                    </button>
-                  ))}
+          {/* ── 3. Vivências e meios expressivos ──────────────────────────── */}
+          {resumoTurma.numAulas > 0 && (() => {
+            const MESES_PT    = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+            const MESES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+            const hoje = new Date()
+
+            const ctxLabel = (() => {
+              if (periodoVivencias.tipo === 'tudo')      return 'Todas as aulas registradas'
+              if (periodoVivencias.tipo === 'mes_atual') return `${MESES_PT[hoje.getMonth()]} de ${hoje.getFullYear()}`
+              if (periodoVivencias.tipo === 'mes')       return `${MESES_PT[periodoVivencias.mes]} de ${periodoVivencias.ano}`
+              const fmt = (d: string) => { const [y,m,day] = d.split('-'); return `${day}/${m}/${y}` }
+              return `${fmt(periodoVivencias.inicio)} a ${fmt(periodoVivencias.fim)}`
+            })()
+
+            const isTudo    = periodoVivencias.tipo === 'tudo'
+            const isMesAtual = periodoVivencias.tipo === 'mes_atual'
+            const isCustom  = periodoVivencias.tipo === 'mes' || periodoVivencias.tipo === 'range'
+
+            const maxViv = Math.max(...resumoTurma.vivencias.map(v => v.count), 1)
+            const maxMei = Math.max(...resumoTurma.meios.map(m => m.count), 1)
+
+            return (
+              <>
+                {vivDropdownAberto && (
+                  <div className="fixed inset-0 z-40" onClick={() => setVivDropdownAberto(false)} />
+                )}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-2 mb-3 flex-wrap">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">
+                        Vivências e meios expressivos
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{ctxLabel}</p>
+                    </div>
+
+                    {/* Seletor de período */}
+                    <div className="relative z-50 shrink-0">
+                      <div className="flex gap-1">
+                        {[
+                          { id: 'tudo',     label: 'Tudo',     active: isTudo,     onClick: () => { setPeriodoVivencias({ tipo: 'tudo' }); setVivDropdownAberto(false) } },
+                          { id: 'mes_atual', label: 'Este mês', active: isMesAtual, onClick: () => { setPeriodoVivencias({ tipo: 'mes_atual' }); setVivDropdownAberto(false) } },
+                        ].map(({ id, label, active, onClick }) => (
+                          <button key={id} type="button" onClick={onClick}
+                            className={`text-[10px] px-2.5 py-1 rounded-full font-semibold border transition-colors ${
+                              active ? 'bg-[#5B5FEA] text-white border-[#5B5FEA]'
+                                     : 'bg-white text-slate-500 border-slate-200 hover:border-[#5B5FEA] hover:text-[#5B5FEA]'
+                            }`}
+                          >{label}</button>
+                        ))}
+                        <button type="button" onClick={() => setVivDropdownAberto(v => !v)}
+                          className={`text-[10px] px-2.5 py-1 rounded-full font-semibold border transition-colors flex items-center gap-1 ${
+                            isCustom || vivDropdownAberto
+                              ? 'bg-[#5B5FEA] text-white border-[#5B5FEA]'
+                              : 'bg-white text-slate-500 border-slate-200 hover:border-[#5B5FEA] hover:text-[#5B5FEA]'
+                          }`}
+                        >
+                          {isCustom ? (periodoVivencias.tipo === 'range' ? 'Período' : `${MESES_CURTO[periodoVivencias.mes]} ${periodoVivencias.ano}`) : 'Escolher'}
+                          <svg className="w-2.5 h-2.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      {/* Dropdown */}
+                      {vivDropdownAberto && (
+                        <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg p-3 min-w-[248px]">
+                          {/* Abas */}
+                          <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5 mb-3">
+                            {(['mes', 'range'] as const).map(aba => (
+                              <button key={aba} type="button" onClick={() => setVivDropdownAba(aba)}
+                                className={`flex-1 text-[10px] font-semibold py-1 rounded-md transition-colors ${
+                                  vivDropdownAba === aba ? 'bg-white text-[#5B5FEA] shadow-sm' : 'text-slate-500'
+                                }`}
+                              >{aba === 'mes' ? 'Mês específico' : 'Período'}</button>
+                            ))}
+                          </div>
+
+                          {vivDropdownAba === 'mes' && (
+                            <>
+                              <div className="flex items-center justify-between mb-2">
+                                <button type="button" onClick={() => setVivPickerAno(y => y - 1)}
+                                  className="w-6 h-6 flex items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs">‹</button>
+                                <span className="text-[12px] font-bold text-slate-700">{vivPickerAno}</span>
+                                <button type="button" onClick={() => setVivPickerAno(y => y + 1)}
+                                  className="w-6 h-6 flex items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs">›</button>
+                              </div>
+                              <div className="grid grid-cols-3 gap-1">
+                                {MESES_CURTO.map((m, i) => {
+                                  const isFuturo = vivPickerAno > hoje.getFullYear() || (vivPickerAno === hoje.getFullYear() && i > hoje.getMonth())
+                                  const isAtual  = vivPickerAno === hoje.getFullYear() && i === hoje.getMonth()
+                                  const isSel    = periodoVivencias.tipo === 'mes' && periodoVivencias.ano === vivPickerAno && periodoVivencias.mes === i
+                                  return (
+                                    <button key={m} type="button" disabled={isFuturo}
+                                      onClick={() => { setPeriodoVivencias({ tipo: 'mes', mes: i, ano: vivPickerAno }); setVivDropdownAberto(false) }}
+                                      className={`text-[11px] font-medium py-1.5 rounded-lg transition-colors ${
+                                        isSel    ? 'bg-[#5B5FEA] text-white' :
+                                        isAtual  ? 'border border-[#c7d2fe] text-[#5B5FEA] font-bold' :
+                                        isFuturo ? 'text-slate-200 cursor-default' :
+                                                   'text-slate-500 hover:bg-slate-100'
+                                      }`}
+                                    >{m}</button>
+                                  )
+                                })}
+                              </div>
+                            </>
+                          )}
+
+                          {vivDropdownAba === 'range' && (
+                            <div className="space-y-2">
+                              {[
+                                { label: 'De',  value: vivRangeInicio, setter: setVivRangeInicio },
+                                { label: 'Até', value: vivRangeFim,    setter: setVivRangeFim    },
+                              ].map(({ label, value, setter }) => (
+                                <div key={label} className="flex items-center gap-2">
+                                  <span className="text-[10px] text-slate-400 w-6 text-right shrink-0">{label}</span>
+                                  <input type="date" value={value} onChange={e => setter(e.target.value)}
+                                    className="flex-1 text-[11px] px-2 py-1.5 rounded-lg border border-slate-200 outline-none focus:border-[#5B5FEA] font-[inherit]"
+                                  />
+                                </div>
+                              ))}
+                              <button type="button"
+                                disabled={!vivRangeInicio || !vivRangeFim}
+                                onClick={() => {
+                                  if (vivRangeInicio && vivRangeFim) {
+                                    setPeriodoVivencias({ tipo: 'range', inicio: vivRangeInicio, fim: vivRangeFim })
+                                    setVivDropdownAberto(false)
+                                  }
+                                }}
+                                className="w-full mt-1 py-1.5 text-[11px] font-bold rounded-lg bg-[#5B5FEA] text-white disabled:opacity-40"
+                              >Aplicar</button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Conteúdo — desktop 2 colunas (sm:) / mobile empilhado */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Vivências musicais */}
+                    {(() => {
+                      const temDados = resumoTurma.vivencias.some(v => v.count > 0)
+                      return (
+                        <div className="border border-slate-100 rounded-lg p-2.5" style={{ borderTop: '2px solid #818cf8' }}>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-indigo-400 mb-2">Vivências musicais</p>
+                          {!temDados
+                            ? <p className="text-[10px] text-slate-300 italic">Sem dados no período</p>
+                            : resumoTurma.vivencias.map((item, i) => (
+                              <div key={item.label} className={`flex items-center gap-1.5 mb-1.5 last:mb-0 ${item.count === 0 ? 'opacity-30' : ''}`}>
+                                <span className={`text-[9px] font-bold w-3 shrink-0 ${i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-400' : 'text-slate-300'}`}>{i + 1}</span>
+                                <span className="text-[10px] text-slate-600 flex-1 truncate">{item.label}</span>
+                                <div className="w-16 sm:w-8 h-[4px] bg-slate-100 rounded-full overflow-hidden shrink-0">
+                                  <div className="h-full rounded-full bg-indigo-400" style={{ width: `${(item.count / maxViv) * 100}%` }} />
+                                </div>
+                                <span className={`text-[9px] font-semibold w-4 text-right shrink-0 ${i === 0 ? 'text-indigo-400' : 'text-slate-300'}`}>{item.count}</span>
+                              </div>
+                            ))
+                          }
+                        </div>
+                      )
+                    })()}
+
+                    {/* Meios expressivos */}
+                    {(() => {
+                      const temDados = resumoTurma.meios.some(m => m.count > 0)
+                      return (
+                        <div className="border border-slate-100 rounded-lg p-2.5" style={{ borderTop: '2px solid #34d399' }}>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-500 mb-2">Meios expressivos</p>
+                          {!temDados
+                            ? <p className="text-[10px] text-slate-300 italic">Sem dados no período</p>
+                            : resumoTurma.meios.map((item, i) => (
+                              <div key={item.label} className={`flex items-center gap-1.5 mb-1.5 last:mb-0 ${item.count === 0 ? 'opacity-30' : ''}`}>
+                                <span className={`text-[9px] font-bold w-3 shrink-0 ${i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-400' : 'text-slate-300'}`}>{i + 1}</span>
+                                <span className="text-[10px] text-slate-600 flex-1 truncate">{item.label}</span>
+                                <div className="w-16 sm:w-8 h-[4px] bg-slate-100 rounded-full overflow-hidden shrink-0">
+                                  <div className="h-full rounded-full bg-emerald-400" style={{ width: `${(item.count / maxMei) * 100}%` }} />
+                                </div>
+                                <span className={`text-[9px] font-semibold w-4 text-right shrink-0 ${i === 0 ? 'text-emerald-500' : 'text-slate-300'}`}>{item.count}</span>
+                              </div>
+                            ))
+                          }
+                        </div>
+                      )
+                    })()}
+                  </div>
                 </div>
-              </div>
-              {resumoTurma.focosRecentes.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {resumoTurma.focosRecentes.map((foco, i) => (
-                    <span
-                      key={foco}
-                      className={`text-xs px-2.5 py-1 rounded-full font-medium border ${
-                        i === 0
-                          ? 'bg-indigo-50 text-indigo-700 border-indigo-100'
-                          : i === 1
-                          ? 'bg-slate-100 text-slate-600 border-slate-200'
-                          : 'bg-slate-50 text-slate-500 border-slate-100'
-                      }`}
-                    >
-                      {i + 1}. {foco}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400 italic">Nenhum plano vinculado neste período.</p>
-              )}
-            </div>
-          )}
+              </>
+            )
+          })()}
 
           {/* ── 4. Timeline pedagógica — colapsável ──────────────────────── */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
