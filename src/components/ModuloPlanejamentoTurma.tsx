@@ -557,7 +557,7 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
 
       {/* Filmstrip */}
       {(() => {
-        const bg = isDark ? '#1F2937' : '#F6F8FB'
+        const bg = isDark ? '#1F2937' : '#fafafa'
         const cardBg = isDark ? '#111827' : '#ffffff'
         const cardBorder = isDark ? '#374151' : '#d1d5db'
         const sepBorder = isDark ? '#374151' : '#d4d4d8'
@@ -828,6 +828,20 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
   const [busca, setBusca] = useState('')
   const escolaColorMap = useMemo(() => buildEscolaColorMapMPT(anosLetivos), [anosLetivos])
 
+  // Accordion: quais escolas estão abertas. Se há turma pré-selecionada, abre só ela.
+  const [openEscolas, setOpenEscolas] = useState<Set<string>>(
+    () => turmaSelecionada ? new Set([turmaSelecionada.escolaId]) : new Set()
+  )
+  // Sincroniza quando a turma selecionada muda (ex: navegação da Visão da Semana)
+  useEffect(() => {
+    if (turmaSelecionada) {
+      setOpenEscolas(prev => {
+        if (prev.has(turmaSelecionada.escolaId)) return prev
+        return new Set([turmaSelecionada.escolaId])
+      })
+    }
+  }, [turmaSelecionada?.escolaId])
+
   const hojeStr = useMemo(() => toDateStr(new Date()), [])
 
   // Turmas que têm aula hoje ou amanhã (para priorizar no topo)
@@ -997,17 +1011,29 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
           </div>
         ) : gruposFiltradosOrdenados.map(grupo => {
           const cor = escolaColorMap[grupo.escolaId]
+          const estaAberta = busca.trim() ? true : openEscolas.has(grupo.escolaId)
           return (
             <div key={grupo.escolaId}>
-              {/* Label escola */}
-              <div
-                className="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-[.06em]"
-                style={{ color: cor?.light ?? '#C0C8D6' }}
+              {/* Label escola — clicável para colapsar */}
+              <button
+                type="button"
+                onClick={() => setOpenEscolas(prev => {
+                  const next = new Set(prev)
+                  if (next.has(grupo.escolaId)) next.delete(grupo.escolaId)
+                  else next.add(grupo.escolaId)
+                  return next
+                })}
+                className="w-full flex items-center justify-between px-3 pt-3 pb-1"
               >
-                {grupo.escolaNome}
-              </div>
+                <span className="text-[10px] font-bold uppercase tracking-[.06em]" style={{ color: cor?.light ?? '#C0C8D6' }}>
+                  {grupo.escolaNome}
+                </span>
+                <span className="text-[10px]" style={{ color: cor?.light ?? '#C0C8D6', opacity: 0.7 }}>
+                  {estaAberta ? '▾' : '▸'}
+                </span>
+              </button>
 
-              {grupo.turmas.map(t => {
+              {estaAberta && grupo.turmas.map(t => {
                 const isAtiva = turmaSelecionada
                   ? turmaSelecionada.turmaId === t.turmaId && turmaSelecionada.escolaId === t.escolaId
                   : false
@@ -1039,7 +1065,7 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
                   </button>
                 )
               })}
-              <div className="h-1" />
+              {estaAberta && <div className="h-1" />}
             </div>
           )
         })}
