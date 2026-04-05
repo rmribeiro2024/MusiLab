@@ -449,7 +449,7 @@ function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
                 {resumo && (
                     <div>
                         <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">
-                            O que foi realizado
+                            📝 O que foi realizado
                         </p>
                         <p className="text-[13px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
                             dangerouslySetInnerHTML={{ __html: sanitizar(resumo) }}
@@ -475,13 +475,13 @@ function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
                     <div className="flex flex-col gap-3 pt-2 border-t border-[#E6EAF0] dark:border-[#2D3748]">
                         {comportamento && (
                             <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5]">Comportamento da turma:</span>
+                                <span className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5]">👥 Comportamento da turma:</span>
                                 <span className="text-[12px] text-slate-700 dark:text-[#D1D5DB] italic">{comportamento}</span>
                             </div>
                         )}
                         {funcionouBem && (
                             <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">O que funcionou</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">⭐ O que funcionou</p>
                                 <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
                                     dangerouslySetInnerHTML={{ __html: sanitizar(funcionouBem) }}
                                 />
@@ -489,7 +489,7 @@ function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
                         )}
                         {fariadiferente && (
                             <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">O que faria diferente</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">🔄 O que faria diferente</p>
                                 <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
                                     dangerouslySetInnerHTML={{ __html: sanitizar(fariadiferente) }}
                                 />
@@ -497,7 +497,7 @@ function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
                         )}
                         {poderiaMelhorar && (
                             <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">Poderia melhorar</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">💡 Poderia melhorar</p>
                                 <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
                                     dangerouslySetInnerHTML={{ __html: sanitizar(poderiaMelhorar) }}
                                 />
@@ -505,7 +505,7 @@ function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
                         )}
                         {anotacoesGerais && (
                             <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">Anotações gerais</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">🗒 Anotações gerais</p>
                                 <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
                                     dangerouslySetInnerHTML={{ __html: sanitizar(anotacoesGerais) }}
                                 />
