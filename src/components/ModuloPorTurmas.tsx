@@ -693,7 +693,7 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista, modoInicial, onModoInic
     }, [anosLetivos, turmaSelecionada])
     const [modoAtivo, setModoAtivo] = useState<ModoForm | null>(null)
     const [planoParaEditar, setPlanoParaEditar] = useState<any>(null)
-    const [mostrarBotoesAdicionar, setMostrarBotoesAdicionar] = useState(false)
+
 
     // Modo inicial vindo da Visão da Semana (ex: "Buscar no Banco")
     useEffect(() => {
@@ -780,7 +780,7 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista, modoInicial, onModoInic
                 <BancoPicker
                     planos={planos}
                     onSelect={p => setPlanoParaEditar(p)}
-                    onCancelar={() => { setModoAtivo(null); setMostrarBotoesAdicionar(false) }}
+                    onCancelar={() => { setModoAtivo(null) }}
                 />
             ) : modoAtivo ? (
                 <FormPlanoTurma
@@ -788,7 +788,7 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista, modoInicial, onModoInic
                     modo={modoAtivo}
                     ultimoRegistro={ultimoRegistroDaTurma}
                     onSalvar={handleFormSalvar}
-                    onCancelar={() => { setModoAtivo(null); setPlanoParaEditar(null); setMostrarBotoesAdicionar(false); fecharForm() }}
+                    onCancelar={() => { setModoAtivo(null); setPlanoParaEditar(null); fecharForm() }}
                     initialPlanoOverride={planoParaEditar ?? undefined}
                 />
             ) : temAlgo ? (
@@ -869,24 +869,6 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista, modoInicial, onModoInic
                                 </div>
                             )
                         })}
-                    </div>
-                    {/* Adicionar outra aula */}
-                    <div className="px-5 py-3 border-t border-[#E6EAF0] dark:border-[#374151]">
-                        {mostrarBotoesAdicionar ? (
-                            <div className="flex flex-col gap-2">
-                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-[#94A3B8] dark:text-[#6B7280] mb-1">
-                                    Adicionar outra aula
-                                </p>
-                                <BotoesPlanejar onSelect={() => setMostrarBotoesAdicionar(false)} />
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => setMostrarBotoesAdicionar(true)}
-                                className="text-[11px] text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition flex items-center gap-1"
-                            >
-                                <span className="text-base leading-none">+</span> adicionar outra aula
-                            </button>
-                        )}
                     </div>
                 </div>
             ) : (
