@@ -370,6 +370,21 @@ function toDateStr(d: Date): string {
 const MESES_TIMELINE = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
 const MESES_FULL    = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
+function stripHtml(html?: string): string {
+  if (!html) return ''
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>|<\/div>|<\/li>|<\/h[1-6]>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 const ORFF_LABELS_TL:  Record<string, string> = { fala: 'Fala', canto: 'Canto', movimento: 'Movimento', instrumental: 'Instrumental' }
 const CLASP_LABELS_TL: Record<string, string> = { tecnica: 'Técnica', performance: 'Performance', apreciacao: 'Apreciação', criacao: 'Criação', teoria: 'Teoria' }
 
@@ -393,8 +408,14 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
   const { planos } = usePlanosContext()
   const { obterTurmasDoDia } = useCalendarioContext()
   const { sequencias } = useSequenciasContext()
-  const [verTodos, setVerTodos] = useState(false)
   const hojeStr = useMemo(() => toDateStr(new Date()), [])
+
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'))
+  useEffect(() => {
+    const obs = new MutationObserver(() => setIsDark(document.documentElement.classList.contains('dark')))
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => obs.disconnect()
+  }, [])
 
   // Auto-scroll: centraliza o ponto ativo na sua row
   useEffect(() => {
@@ -414,18 +435,7 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
       .sort((a, b) => a.data.localeCompare(b.data))
     const datasComAp = new Set(apsDaTurma.map(a => a.data))
 
-    // Próximas datas no calendário sem aplicação (até 60 dias, máx 6 itens)
-    const semAp: string[] = []
     const hoje = new Date()
-    for (let i = 1; i <= 60 && semAp.length < 6; i++) {
-      const d = new Date(hoje); d.setDate(hoje.getDate() + i)
-      const ds = toDateStr(d)
-      if (datasComAp.has(ds)) continue
-      const aulas = obterTurmasDoDia(ds)
-      // eslint-disable-next-line eqeqeq
-      if (aulas.some(a => a.turmaId == turmaSelecionada.turmaId && a.segmentoId == turmaSelecionada.segmentoId))
-        semAp.push(ds)
-    }
 
     const fromAps: TLItem[] = apsDaTurma.map(ap => {
       const plano = planos.find(p => String(p.id) === String(ap.planoId))
@@ -447,37 +457,29 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
       }
     })
 
-    const fromSemAp: TLItem[] = semAp.map(ds => ({ dataStr: ds, status: 'sem-plano' as const }))
-
-    return [...fromAps, ...fromSemAp].sort((a, b) => a.dataStr.localeCompare(b.dataStr))
+    return fromAps.sort((a, b) => a.dataStr.localeCompare(b.dataStr))
   }, [turmaSelecionada, aplicacoes, planos, obterTurmasDoDia])
 
-  // Janela padrão: últimas 5 passadas (realizada|cancelada) + próximas 3 (planejada/sem-plano)
-  const itensPadrao = useMemo<TLItem[]>(() => {
-    const hojeStr = toDateStr(new Date())
-    const realizadas = todosItens.filter(i => i.status === 'realizada' || i.status === 'cancelada').slice(-5)
-    const futuras    = todosItens.filter(i => i.dataStr >= hojeStr && i.status !== 'realizada' && i.status !== 'cancelada').slice(0, 3)
-    const seen = new Set<string>()
-    return [...realizadas, ...futuras]
-      .filter(i => !seen.has(i.dataStr) && !!seen.add(i.dataStr))
-      .sort((a, b) => a.dataStr.localeCompare(b.dataStr))
-  }, [todosItens])
-
-  const itensVisiveis = verTodos ? todosItens : itensPadrao
-  const temMais       = !verTodos && todosItens.length > itensPadrao.length
-
-  // Agrupar por mês para o filmstrip
+  // Agrupar por mês para o filmstrip — fevereiro a dezembro
+  const SLOTS_MIN = 4  // mínimo de cards por mês (preenche com placeholders)
   const mesGrupos = useMemo(() => {
     const map = new Map<string, TLItem[]>()
-    for (const item of itensVisiveis) {
-      const key = item.dataStr.slice(0, 7) // 'YYYY-MM'
+    for (const item of todosItens) {
+      const key = item.dataStr.slice(0, 7)
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(item)
     }
+    const ano = todosItens.length > 0
+      ? parseInt(todosItens[0].dataStr.slice(0, 4))
+      : new Date().getFullYear()
     const result: { mes: string; items: TLItem[] }[] = []
-    map.forEach((items, mes) => result.push({ mes, items }))
+    for (let m = 2; m <= 12; m++) {
+      const key = `${ano}-${String(m).padStart(2, '0')}`
+      const items = map.get(key) ?? []
+      if (items.length > 0) result.push({ mes: key, items })
+    }
     return result
-  }, [itensVisiveis])
+  }, [todosItens])
 
   // Painel flutuante — dados do card clicado
   const [painelData, setPainelData] = useState<{
@@ -487,6 +489,9 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
     vivencias: string[]
   } | null>(null)
   const [planoPreview, setPlanoPreview] = useState<import('../types').Plano | null>(null)
+  const [objAberto, setObjAberto] = useState(false)
+  const [ativsAbertas, setAtivsAbertas] = useState<Set<number>>(new Set())
+  useEffect(() => { setObjAberto(false); setAtivsAbertas(new Set()) }, [painelData])
 
   const contadores = useMemo(() => ({
     realizadas:  todosItens.filter(i => i.status === 'realizada').length,
@@ -522,183 +527,120 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
     setPainelData({ item, plano, registro, vivencias })
   }
 
-  const itemSemPlanoAtivo = dataAtiva ? itensVisiveis.find(i => i.dataStr === dataAtiva && i.status === 'sem-plano') ?? null : null
+  const itemSemPlanoAtivo = dataAtiva ? todosItens.find(i => i.dataStr === dataAtiva && i.status === 'sem-plano') ?? null : null
 
-  if (!turmaSelecionada || itensVisiveis.length === 0) return null
+  if (!turmaSelecionada || todosItens.length === 0) return null
 
-  const circ = 2 * Math.PI * 10  // stroke circumference for r=10
 
   return (
-    <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04)', overflow: 'hidden' }}>
+    <div style={{ background: isDark ? '#1F2937' : '#fff', borderRadius: 20, border: `1px solid ${isDark ? '#374151' : '#e4e4e7'}`, boxShadow: '0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04)', overflow: 'hidden' }}>
       <style>{`@keyframes crescer-tl{from{opacity:0;transform:scale(.88) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}`}</style>
 
-      {/* Header */}
-      <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 3 }}>
-            Histórico da Turma
-          </div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{turmaNome || 'Turma'}</div>
-          <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748b' }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block', flexShrink: 0 }} />
-            {contadores.realizadas} realizada{contadores.realizadas !== 1 ? 's' : ''}
-            {contadores.canceladas > 0 && ` · ${contadores.canceladas} cancelada${contadores.canceladas !== 1 ? 's' : ''}`}
-          </div>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-          {temMais && (
-            <button type="button" onClick={() => setVerTodos(true)} style={{ fontSize: 11, fontWeight: 600, color: '#64748b', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}>
-              Ver todos
-            </button>
-          )}
-          {verTodos && (
-            <button type="button" onClick={() => setVerTodos(false)} style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}>
-              Resumo
-            </button>
-          )}
-        </div>
-      </div>
 
-      {/* Progress bar */}
+      {/* Filmstrip */}
       {(() => {
-        const total = contadores.realizadas + contadores.canceladas + contadores.planejadas + contadores.semPlano
-        const denominador = total - contadores.semPlano
-        const pct = denominador > 0 ? contadores.realizadas / denominador : 0
+        const bg = isDark ? '#1F2937' : '#F6F8FB'
+        const cardBg = isDark ? '#111827' : '#ffffff'
+        const cardBorder = isDark ? '#374151' : '#d1d5db'
+        const sepBorder = isDark ? '#374151' : '#d4d4d8'
+        const labelColor = isDark ? '#9CA3AF' : '#64748b'
+        const numColor = isDark ? '#E5E7EB' : '#0f172a'
+        const titleColor = isDark ? '#D1D5DB' : '#334155'
+        const phBorder = isDark ? '#2D3748' : '#eaecef'
+        const phBg = isDark ? '#1a2130' : '#f3f5f8'
         return (
-          <div style={{ padding: '10px 18px 12px', borderBottom: '1px solid #f1f5f9' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 7 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>Aulas realizadas</span>
-              <span style={{ fontSize: 11.5, color: '#64748b' }}>{contadores.realizadas} de {denominador}</span>
-            </div>
-            <div style={{ position: 'relative', height: 4, background: '#e2e8f0', borderRadius: 99 }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', background: '#16a34a', borderRadius: 99, width: `${pct * 100}%` }} />
-              <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: `calc(${pct * 100}% - 6px)`, width: 12, height: 12, borderRadius: '50%', background: '#16a34a', border: '2.5px solid #fff', boxShadow: '0 0 0 2px #16a34a' }} />
+          <div style={{ overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'none', padding: '8px 12px', gap: 12 }}>
+              {mesGrupos.map(({ mes, items }, mesI) => {
+                const mesIdx = parseInt(mes.split('-')[1]) - 1
+                const mesNome = MESES_FULL[mesIdx]
+                const isAgora = mes === hojeStr.slice(0, 7)
+                const isUltimoMes = mesI === mesGrupos.length - 1
+                return (
+                  <div key={mes} style={{ flexShrink: 0, width: 230, scrollSnapAlign: 'start', background: bg, borderRadius: 12, padding: '8px 10px', borderRight: isUltimoMes ? 'none' : `1px solid ${sepBorder}`, paddingRight: isUltimoMes ? 10 : 22 }}>
+                    {/* Month label */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: labelColor, textTransform: 'uppercase' as const, letterSpacing: '.04em' }}>{mesNome}</span>
+                      {isAgora && (
+                        <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.5px', background: isDark ? '#4B5563' : '#334155', color: '#fff', padding: '1.5px 6px', borderRadius: 99 }}>AGORA</span>
+                      )}
+                    </div>
+
+                    {/* 2-col grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
+                      {items.map(item => {
+                        const dd = item.dataStr.split('-')[2]
+
+                        if (item.status === 'sem-plano') {
+                          const isAtivo = dataAtiva === item.dataStr
+                          return (
+                            <button key={item.dataStr} type="button" data-date={item.dataStr}
+                              onClick={() => setDataAtiva(isAtivo ? null : item.dataStr)}
+                              style={{ borderRadius: 9, border: isAtivo ? '2px solid #5B5FEA' : `1px solid ${cardBorder}`, background: cardBg, minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2, cursor: 'pointer', textAlign: 'left' }}>
+                              <span style={{ fontSize: 14, fontWeight: 800, color: '#6B7280', lineHeight: 1 }}>{dd}</span>
+                            </button>
+                          )
+                        }
+
+                        if (item.status === 'cancelada') {
+                          return (
+                            <div key={item.dataStr} style={{ borderRadius: 9, border: `1px solid ${cardBorder}`, background: cardBg, minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <span style={{ fontSize: 14, fontWeight: 800, color: '#6B7280', lineHeight: 1, textDecoration: 'line-through' }}>{dd}</span>
+                              {item.planoTitulo && (
+                                <span style={{ fontSize: 9.5, color: '#6B7280', lineHeight: 1.3, marginTop: 2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{item.planoTitulo.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                              )}
+                              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.4px', textTransform: 'uppercase', color: '#6B7280', marginTop: 'auto', paddingTop: 4 }}>Cancelada</span>
+                            </div>
+                          )
+                        }
+
+                        // realizada | planejada — clicável
+                        return (
+                          <button key={item.dataStr} type="button" data-date={item.dataStr}
+                            onClick={() => abrirPainel(item)}
+                            style={{ borderRadius: 9, border: `1px solid ${cardBorder}`, background: cardBg, minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2, cursor: 'pointer', textAlign: 'left' }}
+                            onMouseEnter={e => { e.currentTarget.style.boxShadow = isDark ? '0 2px 8px rgba(0,0,0,.4)' : '0 2px 8px rgba(0,0,0,.09)'; e.currentTarget.style.borderColor = isDark ? '#6B7280' : '#94a3b8' }}
+                            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = cardBorder }}
+                          >
+                            <span style={{ fontSize: 14, fontWeight: 800, color: numColor, lineHeight: 1 }}>{dd}</span>
+                            {item.planoTitulo && (
+                              <span style={{ fontSize: 9.5, fontWeight: 500, color: titleColor, lineHeight: 1.3, marginTop: 2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{item.planoTitulo.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                            )}
+                          </button>
+                        )
+                      })}
+                      {Array.from({ length: Math.max(0, 4 - items.length) }).map((_, pi) => (
+                        <div key={`ph-${pi}`} style={{ borderRadius: 9, border: `1px solid ${phBorder}`, background: phBg, minHeight: 62 }} />
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )
       })()}
 
-      {/* Filmstrip */}
-      <div style={{ overflow: 'hidden', background: '#e4e8ef' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'none', background: '#e4e8ef', padding: '0 4px' }}>
-          {mesGrupos.map(({ mes, items }) => {
-            const mesIdx = parseInt(mes.split('-')[1]) - 1
-            const mesNome = MESES_FULL[mesIdx]
-            const isAgora = mes === hojeStr.slice(0, 7)
-            const numRealizadas = items.filter(i => i.status === 'realizada').length
-            const numComPlano   = items.filter(i => i.status !== 'sem-plano').length
-            const ringOffset = numComPlano > 0 ? circ * (1 - numRealizadas / numComPlano) : circ
-
-            return (
-              <div key={mes} style={{
-                flexShrink: 0, width: 210, scrollSnapAlign: 'start',
-                background: '#f1f5f9',
-                border: isAgora ? '2px solid #94a3b8' : '1px solid #e2e8f0',
-                borderRadius: 14, margin: '8px 4px', overflow: 'hidden',
-              }}>
-                {/* Month header */}
-                <div style={{ padding: '9px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 700, color: '#334155' }}>{mesNome}</span>
-                    {isAgora && (
-                      <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.5px', background: '#334155', color: '#fff', padding: '1.5px 6px', borderRadius: 99 }}>AGORA</span>
-                    )}
-                  </div>
-                  {/* Ring donut */}
-                  <div style={{ position: 'relative', width: 28, height: 28, flexShrink: 0 }}>
-                    <svg width={28} height={28} viewBox="0 0 28 28" style={{ transform: 'rotate(-90deg)' }}>
-                      <circle cx={14} cy={14} r={10} fill="none" stroke="#e2e8f0" strokeWidth={2.5} />
-                      {numRealizadas > 0 && (
-                        <circle cx={14} cy={14} r={10} fill="none" stroke="#16a34a" strokeWidth={2.5}
-                          strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={ringOffset} />
-                      )}
-                    </svg>
-                    <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: numRealizadas > 0 ? '#334155' : '#94a3b8' }}>
-                      {numRealizadas}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 2-col grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, padding: 8 }}>
-                  {items.map(item => {
-                    const dd = item.dataStr.split('-')[2]
-
-                    if (item.status === 'sem-plano') {
-                      const isAtivo = dataAtiva === item.dataStr
-                      return (
-                        <button key={item.dataStr} type="button" data-date={item.dataStr}
-                          onClick={() => setDataAtiva(isAtivo ? null : item.dataStr)}
-                          style={{ borderRadius: 9, border: isAtivo ? '2px solid #5B5FEA' : '1.5px dashed #e2e8f0', background: 'transparent', minHeight: 62, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>{dd}</span>
-                        </button>
-                      )
-                    }
-
-                    if (item.status === 'cancelada') {
-                      return (
-                        <div key={item.dataStr} style={{ borderRadius: 9, border: '1px solid #e2e8f0', background: '#fff', minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <span style={{ fontSize: 14, fontWeight: 800, color: '#94a3b8', lineHeight: 1, textDecoration: 'line-through' }}>{dd}</span>
-                          {item.planoTitulo && (
-                            <span style={{ fontSize: 9.5, color: '#94a3b8', lineHeight: 1.3, marginTop: 2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{item.planoTitulo}</span>
-                          )}
-                          <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.4px', textTransform: 'uppercase', color: '#94a3b8', marginTop: 'auto', paddingTop: 4 }}>Cancelada</span>
-                        </div>
-                      )
-                    }
-
-                    // realizada | planejada — clicável
-                    return (
-                      <button key={item.dataStr} type="button" data-date={item.dataStr}
-                        onClick={() => abrirPainel(item)}
-                        style={{ borderRadius: 9, border: '1px solid #e2e8f0', background: '#fff', minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2, cursor: 'pointer', textAlign: 'left' }}
-                        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,.09)'; e.currentTarget.style.borderColor = '#94a3b8' }}
-                        onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#e2e8f0' }}
-                      >
-                        <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{dd}</span>
-                        {item.planoTitulo && (
-                          <span style={{ fontSize: 9.5, fontWeight: 500, color: '#334155', lineHeight: 1.3, marginTop: 2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{item.planoTitulo}</span>
-                        )}
-                        {item.status === 'planejada' && (
-                          <span style={{ fontSize: 8, fontWeight: 600, color: '#5B5FEA', marginTop: 'auto', paddingTop: 4 }}>Planejada</span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div style={{ padding: '8px 18px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 14 }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: '#94a3b8' }}>
-          <span style={{ width: 12, height: 8, borderRadius: 2, border: '1px dashed #e2e8f0', display: 'inline-block' }} />
-          Próximas aulas
-        </span>
-      </div>
 
       {/* Sem-plano: ações inline abaixo do filmstrip */}
       {itemSemPlanoAtivo && (() => {
         const [, mm, dd] = itemSemPlanoAtivo.dataStr.split('-')
         return (
-          <div style={{ padding: '12px 18px 16px', borderTop: '1px solid #f1f5f9' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 10 }}>
+          <div style={{ padding: '12px 18px 16px', borderTop: `1px solid ${isDark ? '#374151' : '#f1f5f9'}` }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', marginBottom: 10 }}>
               Aula de {dd}/{mm} — sem plano
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <button type="button" onClick={() => onAcionar('adaptar')}
-                style={{ width: '100%', textAlign: 'left', fontSize: 12, fontWeight: 600, padding: '7px 12px', borderRadius: 8, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #dbeafe', cursor: 'pointer' }}>
+                style={{ width: '100%', textAlign: 'left', fontSize: 12, fontWeight: 600, padding: '7px 12px', borderRadius: 8, background: isDark ? 'rgba(59,130,246,.15)' : '#eff6ff', color: isDark ? '#93c5fd' : '#1d4ed8', border: `1px solid ${isDark ? 'rgba(59,130,246,.3)' : '#dbeafe'}`, cursor: 'pointer' }}>
                 Adaptar última aula
               </button>
               <button type="button" onClick={() => onAcionar('importar')}
-                style={{ width: '100%', textAlign: 'left', fontSize: 12, fontWeight: 600, padding: '7px 12px', borderRadius: 8, background: '#fff', color: '#475569', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                style={{ width: '100%', textAlign: 'left', fontSize: 12, fontWeight: 600, padding: '7px 12px', borderRadius: 8, background: isDark ? '#111827' : '#fff', color: isDark ? '#D1D5DB' : '#475569', border: `1px solid ${isDark ? '#374151' : '#e2e8f0'}`, cursor: 'pointer' }}>
                 Importar do banco
               </button>
               <button type="button" onClick={() => onAcionar('criar')}
-                style={{ width: '100%', textAlign: 'left', fontSize: 12, fontWeight: 600, padding: '7px 12px', borderRadius: 8, background: '#fff', color: '#475569', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                style={{ width: '100%', textAlign: 'left', fontSize: 12, fontWeight: 600, padding: '7px 12px', borderRadius: 8, background: isDark ? '#111827' : '#fff', color: isDark ? '#D1D5DB' : '#475569', border: `1px solid ${isDark ? '#374151' : '#e2e8f0'}`, cursor: 'pointer' }}>
                 Criar nova aula
               </button>
             </div>
@@ -715,60 +657,102 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
           onClick={() => setPainelData(null)}
           style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.35)', backdropFilter: 'blur(1px)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
         >
-          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 18, boxShadow: '0 8px 40px rgba(0,0,0,.18)', width: '100%', maxWidth: 360, overflow: 'hidden', animation: 'crescer-tl .2s cubic-bezier(.34,1.56,.64,1)', transformOrigin: 'center bottom' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: isDark ? '#1F2937' : '#fff', borderRadius: 18, boxShadow: isDark ? '0 8px 40px rgba(0,0,0,.5)' : '0 8px 40px rgba(0,0,0,.18)', width: '100%', maxWidth: 360, overflow: 'hidden', animation: 'crescer-tl .2s cubic-bezier(.34,1.56,.64,1)', transformOrigin: 'center bottom' }}>
 
             {/* Painel header */}
-            <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+            <div style={{ padding: '14px 16px 12px', borderBottom: `1px solid ${isDark ? '#374151' : '#e2e8f0'}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
               <div>
-                <div style={{ fontSize: 28, fontWeight: 900, color: '#0f172a', lineHeight: 1, letterSpacing: -1 }}>{painelData.item.dataStr.split('-')[2]}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginTop: 3 }}>{painelData.plano?.titulo ?? '—'}</div>
-                <div style={{ fontSize: 10.5, color: '#94a3b8', marginTop: 2 }}>
+                <div style={{ fontSize: 28, fontWeight: 900, color: isDark ? '#F9FAFB' : '#0f172a', lineHeight: 1, letterSpacing: -1 }}>{painelData.item.dataStr.split('-')[2]}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: isDark ? '#F9FAFB' : '#0f172a', marginTop: 3 }}>{painelData.plano?.titulo ?? '—'}</div>
+                <div style={{ fontSize: 10.5, color: '#9CA3AF', marginTop: 2 }}>
                   {MESES_FULL[parseInt(painelData.item.dataStr.split('-')[1]) - 1]} · {painelData.item.status === 'realizada' ? 'Realizada' : 'Planejada'}
                 </div>
               </div>
-              <button type="button" onClick={() => setPainelData(null)} style={{ width: 28, height: 28, borderRadius: '50%', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#64748b', flexShrink: 0 }}>
+              <button type="button" onClick={() => setPainelData(null)} style={{ width: 28, height: 28, borderRadius: '50%', background: isDark ? '#374151' : '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: isDark ? '#9CA3AF' : '#64748b', flexShrink: 0 }}>
                 ✕
               </button>
             </div>
 
-            {/* O que foi planejado */}
+            {/* Objetivo da aula */}
             {(painelData.plano?.objetivoGeral || painelData.plano?.tema) && (
-              <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 5 }}>O que foi planejado</div>
-                <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.55 }}>{painelData.plano.objetivoGeral || painelData.plano.tema}</div>
-              </div>
-            )}
-
-            {/* Como foi na prática */}
-            {painelData.registro && (painelData.registro.resumoAula || painelData.registro.funcionouBem || painelData.registro.resumo) && (
-              <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 5 }}>Como foi na prática</div>
-                <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.55 }}>{painelData.registro.resumoAula || painelData.registro.funcionouBem || painelData.registro.resumo}</div>
-              </div>
-            )}
-
-            {/* Vivências */}
-            {painelData.vivencias.length > 0 && (
-              <div style={{ padding: '10px 16px', borderBottom: painelData.plano ? '1px solid #e2e8f0' : undefined }}>
-                <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 5 }}>Vivências desta aula</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {painelData.vivencias.map(v => (
-                    <span key={v} style={{ fontSize: 10.5, fontWeight: 500, background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 99, color: '#334155', padding: '3px 10px' }}>{v}</span>
-                  ))}
+              <div
+                onClick={e => { e.stopPropagation(); setObjAberto(v => !v) }}
+                style={{ padding: '11px 16px 10px', borderBottom: `1px solid ${isDark ? '#374151' : '#e2e8f0'}`, cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 5 }}>
+                  <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: '#9CA3AF' }}>Objetivo da aula</div>
+                  <span style={{ fontSize: 10, color: '#9CA3AF', flexShrink: 0, marginTop: 1, transition: 'transform .2s', transform: objAberto ? 'rotate(180deg)' : 'none' }}>▾</span>
+                </div>
+                <div style={objAberto ? { fontSize: 12, color: isDark ? '#D1D5DB' : '#334155', lineHeight: 1.6 } : { fontSize: 12, color: isDark ? '#D1D5DB' : '#334155', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
+                  {stripHtml(painelData.plano!.objetivoGeral || painelData.plano!.tema)}
                 </div>
               </div>
             )}
 
-            {/* Ver plano completo */}
-            {painelData.plano && (
-              <div style={{ padding: '10px 16px 14px' }}>
-                <button type="button"
-                  onClick={() => { setPlanoPreview(painelData.plano!); setPainelData(null) }}
-                  style={{ width: '100%', textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#5B5FEA', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 10, padding: '7px 12px', cursor: 'pointer' }}>
-                  Ver plano completo
-                </button>
+            {/* Atividades */}
+            {(painelData.plano?.atividadesRoteiro?.length ?? 0) > 0 && (
+              <div style={{ padding: '10px 16px 8px', borderBottom: `1px solid ${isDark ? '#374151' : '#e2e8f0'}` }}>
+                <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: '#9CA3AF', marginBottom: 6 }}>Atividades</div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {painelData.plano!.atividadesRoteiro.map((atv, i) => {
+                    const aberta = ativsAbertas.has(i)
+                    const temDesc = !!atv.descricao
+                    const rowBorder = isDark ? '#374151' : '#f8fafc'
+                    return (
+                      <React.Fragment key={i}>
+                        <div
+                          onClick={temDesc ? e => { e.stopPropagation(); setAtivsAbertas(prev => { const s = new Set(prev); s.has(i) ? s.delete(i) : s.add(i); return s }) } : undefined}
+                          style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '5px 0', borderBottom: `1px solid ${rowBorder}`, cursor: temDesc ? 'pointer' : 'default' }}
+                        >
+                          <span style={{ fontSize: 12, color: isDark ? '#E5E7EB' : '#0f172a', flex: 1, fontWeight: 500 }}>{atv.nome}</span>
+                          {atv.duracao && <span style={{ fontSize: 10, color: '#9CA3AF', flexShrink: 0 }}>{atv.duracao} min</span>}
+                          {temDesc && <span style={{ fontSize: 10, color: '#9CA3AF', flexShrink: 0, transition: 'transform .2s', display: 'inline-block', transform: aberta ? 'rotate(180deg)' : 'none' }}>▾</span>}
+                        </div>
+                        {aberta && atv.descricao && (
+                          <div style={{ fontSize: 11, color: isDark ? '#9CA3AF' : '#64748b', lineHeight: 1.5, padding: '4px 0 6px', borderBottom: `1px solid ${rowBorder}`, whiteSpace: 'pre-line' }}>
+                            {stripHtml(atv.descricao)}
+                          </div>
+                        )}
+                      </React.Fragment>
+                    )
+                  })}
+                </div>
               </div>
             )}
+
+            {/* Avaliação — só mostra se tiver algum campo preenchido */}
+            {(() => {
+              const reg = painelData.registro
+              const resumo = stripHtml(reg?.resumoAula)
+              const funcionouBem = stripHtml(reg?.funcionouBem)
+              const fariadiferente = stripHtml(reg?.fariadiferente)
+              if (!resumo && !funcionouBem && !fariadiferente) return null
+              const textColor = isDark ? '#D1D5DB' : '#334155'
+              return (
+                <>
+                  <div style={{ margin: '0 16px' }}><div style={{ borderTop: `1px solid ${isDark ? '#374151' : '#e2e8f0'}` }} /></div>
+                  <div style={{ padding: '10px 16px 14px' }}>
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: '#9CA3AF' }}>Avaliacao</div>
+                    </div>
+                    {resumo && <div style={{ fontSize: 12, color: textColor, lineHeight: 1.65 }}>{resumo}</div>}
+                    {funcionouBem && (
+                      <>
+                        <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase' as const, color: '#9CA3AF', marginTop: 10, marginBottom: 4 }}>O que funcionou bem</div>
+                        <div style={{ fontSize: 12, color: textColor, lineHeight: 1.65 }}>{funcionouBem}</div>
+                      </>
+                    )}
+                    {fariadiferente && (
+                      <>
+                        <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase' as const, color: '#9CA3AF', marginTop: 10, marginBottom: 4 }}>O que faria diferente</div>
+                        <div style={{ fontSize: 12, color: textColor, lineHeight: 1.65 }}>{fariadiferente}</div>
+                      </>
+                    )}
+                  </div>
+                </>
+              )
+            })()}
+
           </div>
         </div>
       )}
@@ -974,7 +958,7 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
   const totalTurmas = gruposFiltradosOrdenados.reduce((acc, g) => acc + g.turmas.length, 0)
 
   return (
-    <aside className="w-56 flex-shrink-0 flex flex-col overflow-hidden rounded-[12px] border border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937]" style={{ maxHeight: 'calc(100vh - 160px)' }}>
+    <aside className="w-52 flex-shrink-0 flex flex-col overflow-hidden bg-white dark:bg-[#111827] border-r border-[#E6EAF0] dark:border-[#374151]" style={{ maxHeight: 'calc(100vh - 160px)' }}>
       {/* Busca + contagem */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#E6EAF0] dark:border-[#374151]">
         <input
@@ -1013,52 +997,27 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
                 const dot = info?.dot ?? 'gray'
                 const label = DOT_LABELS[dot]
 
+                const turmaNome = t.nome.includes('›') ? t.nome.split('›').pop()!.trim() : t.nome
+
                 return (
                   <button
                     key={t.key}
                     type="button"
                     onClick={() => onSelecionarTurma({ anoLetivoId: t.anoLetivoId, escolaId: t.escolaId, segmentoId: t.segmentoId, turmaId: t.turmaId })}
-                    className={`w-full text-left px-2 py-1.5 mx-1 rounded-[8px] transition-colors flex items-center gap-2.5 border ${
+                    className={`w-full text-left px-3 py-1.5 rounded-[8px] transition-colors flex items-center gap-2 border ${
                       isAtiva
                         ? 'bg-[#EEF2FF] dark:bg-[#1E2847] border-[#C7D2FE] dark:border-[#3730A3]'
-                        : 'border-transparent hover:bg-[#F8FAFC] dark:hover:bg-[#263348]'
+                        : 'border-transparent hover:bg-[#EEF2FF]/60 dark:hover:bg-[#263348]'
                     }`}
-                    style={{ width: 'calc(100% - 8px)' }}
                   >
-                    {/* Avatar */}
-                    <span className={`w-[30px] h-[30px] rounded-[7px] flex items-center justify-center flex-shrink-0 text-[10px] font-bold ${
-                      isAtiva
-                        ? 'bg-[#5B5FEA] text-white'
-                        : 'bg-[#E0E7FF] dark:bg-[#1E2847] text-[#5B5FEA] dark:text-[#818CF8]'
-                    }`}>
-                      {initiais(t.nome)}
-                    </span>
-
                     {/* Nome + meta */}
                     <div className="min-w-0 flex-1">
-                      <div className={`text-[12px] font-semibold leading-tight truncate ${
+                      <div className={`text-[12.5px] font-semibold leading-tight truncate ${
                         isAtiva ? 'text-[#4338CA] dark:text-[#A5B4FC]' : 'text-[#1F2937] dark:text-[#E5E7EB]'
                       }`}>
-                        {t.nome}
-                      </div>
-                      <div className="text-[10px] mt-[2px] text-[#9CA3AF] dark:text-[#4B5563] flex items-center gap-1">
-                        {info?.ultimaData
-                          ? <span>Última: {tempoRelativo(info.ultimaData)}</span>
-                          : <span>Sem registros</span>
-                        }
-                        {label && (
-                          <span className={`font-semibold ${dot === 'amber' ? 'text-amber-500' : 'text-blue-500'}`}>
-                            · {label}
-                          </span>
-                        )}
+                        {turmaNome}
                       </div>
                     </div>
-
-                    {/* Dot status — direita */}
-                    <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ background: DOT_BG[dot] }}
-                    />
                   </button>
                 )
               })}
@@ -2241,7 +2200,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
               onClick={() => setTimelineAberta(v => !v)}
               className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition-colors"
             >
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Progresso da turma</span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Aulas realizadas</span>
               <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${timelineAberta ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
@@ -2366,7 +2325,7 @@ export default function ModuloPlanejamentoTurma() {
         </button>
       )}
 
-      <div className="flex gap-4 items-start">
+      <div className="flex items-start bg-white dark:bg-[#111827] rounded-2xl border border-[#E6EAF0] dark:border-[#374151] overflow-hidden shadow-sm">
         {/* Lista de turmas — escondida no mobile quando detalhe aberto */}
         <div className={mobileTela === 'detalhe' ? 'hidden md:block' : 'flex-1 md:flex-none'}>
           <ListaTurmasMPT
@@ -2376,7 +2335,7 @@ export default function ModuloPlanejamentoTurma() {
         </div>
 
         {/* Conteúdo — escondido no mobile quando lista aberta */}
-        <div className={`flex-1 min-w-0 space-y-3 ${mobileTela === 'lista' ? 'hidden md:block' : ''}`}>
+        <div className={`flex-1 min-w-0 space-y-3 p-4 ${mobileTela === 'lista' ? 'hidden md:block' : ''}`}>
           {!turmaSelecionada && <EstadoVazio />}
           {turmaSelecionada && <ConteudoTurma key={turmaSelecionada.turmaId} calendarDateStr={hojeStr} />}
         </div>
