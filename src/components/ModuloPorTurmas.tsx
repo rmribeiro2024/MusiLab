@@ -98,6 +98,16 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) 
     const [busca, setBusca] = useState('')
     const escolaColorMap = useMemo(() => buildEscolaColorMap(anosLetivos), [anosLetivos])
 
+    // Accordion: null = todas abertas; Set = apenas as IDs no set abertas
+    const [openEscolas, setOpenEscolas] = useState<Set<string> | null>(
+        () => turmaSelecionada ? new Set([turmaSelecionada.escolaId]) : null
+    )
+    useEffect(() => {
+        if (turmaSelecionada) {
+            setOpenEscolas(new Set([turmaSelecionada.escolaId]))
+        }
+    }, [turmaSelecionada?.escolaId]) // eslint-disable-line react-hooks/exhaustive-deps
+
     // Computa info por turmaId: última data de aula e cor do dot
     // Registros ficam em plano.registrosPosAula com campo r.turma === turmaId
     const turmaInfo = useMemo(() => {
@@ -191,18 +201,27 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) 
                     </div>
                 ) : gruposFiltrados.map(grupo => {
                     const cor = escolaColorMap[grupo.escolaId]
+                    const estaAberta = busca.trim() ? true : (openEscolas === null || openEscolas.has(grupo.escolaId))
                     return (
                         <div key={grupo.escolaId}>
-                            {/* Header escola */}
-                            <div
-                                className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.5px] border-b border-[#E6EAF0] dark:border-[#374151]"
-                                style={cor ? { color: cor.light } : undefined}
+                            {/* Header escola — clicável para colapsar */}
+                            <button
+                                type="button"
+                                onClick={() => setOpenEscolas(prev => {
+                                    const allIds = gruposFiltrados.map(g => g.escolaId)
+                                    const current = prev === null ? new Set(allIds) : new Set(prev)
+                                    if (current.has(grupo.escolaId)) current.delete(grupo.escolaId)
+                                    else current.add(grupo.escolaId)
+                                    return current
+                                })}
+                                className="w-full flex items-center justify-between px-3 py-1.5 border-b border-[#E6EAF0] dark:border-[#374151]"
                             >
-                                <span className="dark:hidden">{grupo.escolaNome}</span>
-                                <span className="hidden dark:inline" style={cor ? { color: cor.dark } : undefined}>{grupo.escolaNome}</span>
-                            </div>
+                                <span className="text-[10px] font-semibold uppercase tracking-[.5px] dark:hidden" style={cor ? { color: cor.light } : undefined}>{grupo.escolaNome}</span>
+                                <span className="text-[10px] font-semibold uppercase tracking-[.5px] hidden dark:inline" style={cor ? { color: cor.dark } : undefined}>{grupo.escolaNome}</span>
+                                <span className="text-[10px] text-slate-400" style={cor ? { color: estaAberta ? cor.light : '#9CA3AF' } : undefined}>{estaAberta ? '▾' : '▸'}</span>
+                            </button>
                             {/* Turmas */}
-                            {grupo.turmas.map(t => {
+                            {estaAberta && grupo.turmas.map(t => {
                                 const isAtiva = turmaSelecionada
                                     ? turmaSelecionada.turmaId === t.turmaId && turmaSelecionada.escolaId === t.escolaId
                                     : false
@@ -887,12 +906,14 @@ export default function ModuloPorTurmas() {
     const [modoInicialLocal, setModoInicialLocal] = useState<'criar' | 'importar' | null>(null)
     const [mobileTela, setMobileTela] = useState<'lista' | 'detalhe'>('lista')
 
-    const ymd = toYMD(new Date())
+    // ymd: usa a data do card da Visão da Semana quando disponível, senão hoje
+    const [ymd, setYmd] = useState(() => toYMD(new Date()))
 
     // Navegação vinda da Visão da Semana
     useEffect(() => {
         if (!dataNavegacao) return
         setVoltarPara('visaoSemana')
+        setYmd(toYMD(dataNavegacao))   // ← captura a data real do card
         setDataNavegacao(null)
     }, [dataNavegacao, setDataNavegacao])
 
