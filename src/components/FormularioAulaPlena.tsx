@@ -894,7 +894,6 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
           {secoesForm.has('musicas') && (
             <div className="px-5 py-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em]">🎵 Músicas da aula</p>
                 <button type="button" onClick={() => setPickerAberto(o => !o)}
                   className="text-xs text-indigo-600 hover:text-indigo-800 font-medium shrink-0 ml-3">
                   {pickerAberto ? '✕ Fechar' : '+ Adicionar'}
