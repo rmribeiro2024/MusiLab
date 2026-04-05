@@ -94,7 +94,6 @@ interface ListaTurmasProps {
 
 function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) {
     const { anosLetivos } = useAnoLetivoContext()
-    const { planos } = usePlanosContext()
     const { planejamentos } = usePlanejamentoTurmaContext()
     const [busca, setBusca] = useState('')
     const escolaColorMap = useMemo(() => buildEscolaColorMap(anosLetivos), [anosLetivos])
@@ -116,27 +115,6 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) 
         return s
     }, [planejamentos])
 
-    // Computa info por turmaId: última data de aula e cor do dot
-    // Registros ficam em plano.registrosPosAula com campo r.turma === turmaId
-    const turmaInfo = useMemo(() => {
-        const map: Record<string, { dot: 'green' | 'amber' | 'red' | 'gray'; ultimaData: string | null }> = {}
-        for (const plano of planos) {
-            for (const reg of (plano.registrosPosAula ?? [])) {
-                const tid = String(reg.turma ?? '')
-                if (!tid) continue
-                const data = reg.dataAula ?? reg.data ?? null
-                const prev = map[tid]
-                if (prev && prev.ultimaData && data && data < prev.ultimaData) continue
-                const status = reg.statusAula ?? reg.resultadoAula ?? ''
-                const dot: 'green' | 'amber' | 'red' | 'gray' =
-                    ['concluida', 'bem', 'funcionou'].includes(status) ? 'green' :
-                    ['revisao', 'parcial'].includes(status) ? 'amber' :
-                    ['incompleta', 'nao_houve', 'nao_funcionou'].includes(status) ? 'red' : 'gray'
-                map[tid] = { dot, ultimaData: data }
-            }
-        }
-        return map
-    }, [planos])
 
     // Grupos: escola → turmas
     const grupos = useMemo(() => {
@@ -175,12 +153,6 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) 
           })).filter(g => g.turmas.length > 0)
         : grupos
 
-    const DOT_COLORS = {
-        green: 'bg-emerald-400',
-        amber: 'bg-amber-400',
-        red:   'bg-red-400',
-        gray:  'bg-slate-300 dark:bg-[#4B5563]',
-    }
 
     return (
         <aside className="w-52 flex-shrink-0 flex flex-col gap-2">
@@ -233,9 +205,7 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) 
                                 const isAtiva = turmaSelecionada
                                     ? turmaSelecionada.turmaId === t.turmaId && turmaSelecionada.escolaId === t.escolaId
                                     : false
-                                const info = turmaInfo[t.turmaId]
                                 const temPlano = turmasComPlanejamento.has(t.turmaId)
-                                const dotClass = DOT_COLORS[info?.dot ?? 'gray']
                                 return (
                                     <button
                                         key={t.key}
@@ -251,10 +221,6 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) 
                                                 : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
                                         }`}
                                     >
-                                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotClass}`} />
-                                        {temPlano && (
-                                            <span className="text-[9px] font-bold text-emerald-500 dark:text-emerald-400 flex-shrink-0">✓</span>
-                                        )}
                                         <div className="min-w-0 flex-1">
                                             <div className={`text-[12.5px] font-semibold leading-tight truncate ${
                                                 isAtiva
@@ -263,9 +229,9 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) 
                                             }`}>
                                                 {t.nome}
                                             </div>
-                                            {info?.ultimaData && (
-                                                <div className="text-[10px] text-slate-400 dark:text-[#6B7280] mt-[1px]">
-                                                    {formatDataCurta(info.ultimaData)}
+                                            {temPlano && (
+                                                <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-[1px]">
+                                                    ✓ Aula planejada
                                                 </div>
                                             )}
                                         </div>
