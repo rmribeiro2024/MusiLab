@@ -1388,10 +1388,10 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
             <div className="px-5 pt-5 pb-5 space-y-4">
               {!modoRapido && (
                 <>
-                  <p className="text-[11px] text-slate-400">Conteúdos digitais de apoio — músicas, vídeos, partituras, imagens, links.</p>
+                  <p className="text-[11px] text-slate-400">Links digitais de apoio e materiais necessários para a aula.</p>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
-                      <input type="text" placeholder="Cole aqui: YouTube, Spotify, PDF, link..." value={novoRecursoUrl}
+                      <input type="text" placeholder="Link digital: YouTube, Spotify, PDF…" value={novoRecursoUrl}
                         onChange={e => setNovoRecursoUrl(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); adicionarRecurso() } }}
                         className="w-full pl-3 pr-10 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-indigo-400 outline-none" />
@@ -1432,8 +1432,8 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
                   })}
                 </div>
               )}
-              {/* Materiais físicos (detalhado) */}
-              {modoDetalhado && (() => {
+              {/* Materiais físicos */}
+              {!modoRapido && (() => {
                 const mats = [...(plano.materiais || []), ...(plano.materiaisNecessarios || []).filter(m => !(plano.materiais || []).includes(m))]
                 const removerMat = (mat: string) => setPlano(p => ({
                   ...p,
