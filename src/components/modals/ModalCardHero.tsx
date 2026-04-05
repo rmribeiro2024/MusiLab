@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react'
 import type { RegistroPosAula } from '../../types'
+import { stripHTML } from '../../lib/utils'
 
 // ── Dark mode ─────────────────────────────────────────────────────────────────
 function useIsDark() {
@@ -193,18 +194,22 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
   const horarioLabel = horario ? horario.replace(/:00$/, 'h').replace(/:(\d{2})$/, 'h$1') : ''
 
   // Campos do registro
-  const funcionouBem   = registro?.funcionouBem || null
-  const repetiria      = (registro as any)?.repetiria || null
-  const fariadiferente = registro?.fariadiferente || (registro as any)?.naoFuncionou || null
+  const funcionouBem   = stripHTML(registro?.funcionouBem ?? '') || null
+  const repetiria      = stripHTML((registro as any)?.repetiria ?? '') || null
+  const fariadiferente = stripHTML(registro?.fariadiferente ?? (registro as any)?.naoFuncionou ?? '') || null
   const statusReg      = registro ? inferStatus(registro) : null
   const statusLabel    = statusReg ? STATUS_LABEL[statusReg] : null
   const temConteudoReg = !!(funcionouBem || repetiria || fariadiferente || statusLabel)
 
-  // Campos do último registro (sugestão)
-  const ultRepetiria      = (ultimoReg as any)?.repetiria || ultimoReg?.funcionouBem || null
-  const ultFariadiferente = ultimoReg?.fariadiferente || (ultimoReg as any)?.naoFuncionou || null
+  // Campos do último registro (sugestão) — não exibir conteúdo quando nao_houve
   const ultStatus         = ultimoReg ? inferStatus(ultimoReg) : null
   const ultStatusLabel    = ultStatus ? STATUS_LABEL[ultStatus] : null
+  const ultRepetiria      = ultStatus !== 'nao_houve'
+    ? (stripHTML((ultimoReg as any)?.repetiria ?? '') || stripHTML(ultimoReg?.funcionouBem ?? '') || null)
+    : null
+  const ultFariadiferente = ultStatus !== 'nao_houve'
+    ? (stripHTML(ultimoReg?.fariadiferente ?? '') || stripHTML((ultimoReg as any)?.naoFuncionou ?? '') || null)
+    : null
   const ultAcao           = ultStatus ? STATUS_ACAO[ultStatus] : 'Planejar próxima aula'
 
   // CSS vars cor da escola

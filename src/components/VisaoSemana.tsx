@@ -13,6 +13,7 @@ import { useAplicacoesContext } from '../contexts/AplicacoesContext'
 import type { AnoLetivo, RegistroPosAula } from '../types'
 import { showToast } from '../lib/toast'
 import ModalCardHero, { type ModalCardHeroProps, RegistroField, ActionButton } from './modals/ModalCardHero'
+import { stripHTML } from '../lib/utils'
 import VisaoMes from './VisaoMes'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -203,17 +204,21 @@ function InlineCardDrawer({ heroCard, onClose, onEditar, onRegistrar, onCriarPla
   const dataLabel    = `${diaSemanaShort}, ${ymd.slice(8, 10)}/${ymd.slice(5, 7)}`
   const horarioLabel = horario ? horario.replace(/:00$/, 'h').replace(/:(\d{2})$/, 'h$1') : ''
 
-  const funcionouBem   = registro?.funcionouBem || null
-  const repetiria      = (registro as any)?.repetiria || null
-  const fariadiferente = registro?.fariadiferente || (registro as any)?.naoFuncionou || null
+  const funcionouBem   = stripHTML(registro?.funcionouBem ?? '') || null
+  const repetiria      = stripHTML((registro as any)?.repetiria ?? '') || null
+  const fariadiferente = stripHTML(registro?.fariadiferente ?? (registro as any)?.naoFuncionou ?? '') || null
   const statusReg      = registro ? inferStatus(registro) : null
   const statusLabel    = statusReg ? STATUS_CFG[statusReg].label : null
   const temConteudoReg = !!(funcionouBem || repetiria || fariadiferente || statusLabel)
 
-  const ultRepetiria      = (ultimoReg as any)?.repetiria || ultimoReg?.funcionouBem || null
-  const ultFariadiferente = ultimoReg?.fariadiferente || (ultimoReg as any)?.naoFuncionou || null
   const ultStatus         = ultimoReg ? inferStatus(ultimoReg) : null
   const ultStatusLabel    = ultStatus ? STATUS_CFG[ultStatus].label : null
+  const ultRepetiria      = ultStatus !== 'nao_houve'
+    ? (stripHTML((ultimoReg as any)?.repetiria ?? '') || stripHTML(ultimoReg?.funcionouBem ?? '') || null)
+    : null
+  const ultFariadiferente = ultStatus !== 'nao_houve'
+    ? (stripHTML(ultimoReg?.fariadiferente ?? '') || stripHTML((ultimoReg as any)?.naoFuncionou ?? '') || null)
+    : null
   const ultAcao           = ultStatus ? STATUS_CFG[ultStatus].acao : 'Planejar próxima aula'
 
   const escolaVar = escolaCor
