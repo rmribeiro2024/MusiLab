@@ -368,10 +368,14 @@ function toDateStr(d: Date): string {
 }
 
 const MESES_TIMELINE = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
+const MESES_FULL    = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+const ORFF_LABELS_TL:  Record<string, string> = { fala: 'Fala', canto: 'Canto', movimento: 'Movimento', instrumental: 'Instrumental' }
+const CLASP_LABELS_TL: Record<string, string> = { tecnica: 'Técnica', performance: 'Performance', apreciacao: 'Apreciação', criacao: 'Criação', teoria: 'Teoria' }
 
 interface TLItem {
   dataStr: string
-  status: 'realizada' | 'planejada' | 'sem-plano'
+  status: 'realizada' | 'planejada' | 'sem-plano' | 'cancelada'
   planoId?: string | number
   planoTitulo?: string
   aplicacaoId?: string
@@ -430,9 +434,12 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
         ? sequencias.find(s => s.slots.some(sl => sl.planoVinculado != null && String(sl.planoVinculado) === String(ap.planoId)))
         : undefined
       const sequenciaTitulo = seq?.titulo ?? plano?.tema ?? undefined
+      const status: TLItem['status'] =
+        ap.status === 'realizada'  ? 'realizada'  :
+        ap.status === 'cancelada'  ? 'cancelada'  : 'planejada'
       return {
         dataStr: ap.data,
-        status: ap.status === 'realizada' ? 'realizada' : 'planejada',
+        status,
         planoId: ap.planoId,
         planoTitulo: plano?.titulo,
         aplicacaoId: ap.id,
@@ -445,11 +452,11 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
     return [...fromAps, ...fromSemAp].sort((a, b) => a.dataStr.localeCompare(b.dataStr))
   }, [turmaSelecionada, aplicacoes, planos, obterTurmasDoDia])
 
-  // Janela padrão: últimas 5 realizadas + próximas 3 (planejada/sem-plano)
+  // Janela padrão: últimas 5 passadas (realizada|cancelada) + próximas 3 (planejada/sem-plano)
   const itensPadrao = useMemo<TLItem[]>(() => {
     const hojeStr = toDateStr(new Date())
-    const realizadas = todosItens.filter(i => i.status === 'realizada').slice(-5)
-    const futuras    = todosItens.filter(i => i.dataStr >= hojeStr && i.status !== 'realizada').slice(0, 3)
+    const realizadas = todosItens.filter(i => i.status === 'realizada' || i.status === 'cancelada').slice(-5)
+    const futuras    = todosItens.filter(i => i.dataStr >= hojeStr && i.status !== 'realizada' && i.status !== 'cancelada').slice(0, 3)
     const seen = new Set<string>()
     return [...realizadas, ...futuras]
       .filter(i => !seen.has(i.dataStr) && !!seen.add(i.dataStr))
@@ -459,198 +466,312 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
   const itensVisiveis = verTodos ? todosItens : itensPadrao
   const temMais       = !verTodos && todosItens.length > itensPadrao.length
 
-  // Agrupar itens por sequência pedagógica / tema
-  const grupos = useMemo(() => {
+  // Agrupar por mês para o filmstrip
+  const mesGrupos = useMemo(() => {
     const map = new Map<string, TLItem[]>()
-    const noGroup: TLItem[] = []
     for (const item of itensVisiveis) {
-      if (item.sequenciaTitulo) {
-        if (!map.has(item.sequenciaTitulo)) map.set(item.sequenciaTitulo, [])
-        map.get(item.sequenciaTitulo)!.push(item)
-      } else {
-        noGroup.push(item)
-      }
+      const key = item.dataStr.slice(0, 7) // 'YYYY-MM'
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(item)
     }
-    const result: { titulo: string | null; items: TLItem[] }[] = []
-    map.forEach((items, titulo) => result.push({ titulo, items }))
-    if (noGroup.length) result.push({ titulo: null, items: noGroup })
+    const result: { mes: string; items: TLItem[] }[] = []
+    map.forEach((items, mes) => result.push({ mes, items }))
     return result
   }, [itensVisiveis])
-  const temAgrupamento = grupos.some(g => g.titulo !== null)
 
-  // Detalhe do ponto selecionado
-  const itemAtivo    = dataAtiva ? itensVisiveis.find(i => i.dataStr === dataAtiva) ?? null : null
+  // Painel flutuante — dados do card clicado
+  const [painelData, setPainelData] = useState<{
+    item: TLItem
+    plano: import('../types').Plano | null
+    registro: RegistroPosAula | null
+    vivencias: string[]
+  } | null>(null)
   const [planoPreview, setPlanoPreview] = useState<import('../types').Plano | null>(null)
 
   const contadores = useMemo(() => ({
-    realizadas: todosItens.filter(i => i.status === 'realizada').length,
+    realizadas:  todosItens.filter(i => i.status === 'realizada').length,
+    canceladas:  todosItens.filter(i => i.status === 'cancelada').length,
     planejadas:  todosItens.filter(i => i.status === 'planejada').length,
     semPlano:    todosItens.filter(i => i.status === 'sem-plano').length,
   }), [todosItens])
 
+  function abrirPainel(item: TLItem) {
+    if (item.status === 'sem-plano') {
+      setDataAtiva(item.dataStr)
+      return
+    }
+    const plano = item.planoId != null ? planos.find(p => String(p.id) === String(item.planoId)) ?? null : null
+    const registro = plano
+      ? plano.registrosPosAula.find(r => {
+          const d = r.dataAula || r.data
+          return d === item.dataStr && String(r.turma ?? '') === String(turmaSelecionada?.turmaId ?? '')
+        }) ?? null
+      : null
+    const vivencias: string[] = []
+    if (plano?.orffMeios) {
+      for (const [meio, ativo] of Object.entries(plano.orffMeios)) {
+        if (ativo) vivencias.push(ORFF_LABELS_TL[meio] ?? meio)
+      }
+    }
+    if (plano?.vivenciasClassificadas) {
+      for (const [dim, val] of Object.entries(plano.vivenciasClassificadas)) {
+        const label = CLASP_LABELS_TL[dim] ?? dim
+        if (val > 0 && !vivencias.includes(label)) vivencias.push(label)
+      }
+    }
+    setPainelData({ item, plano, registro, vivencias })
+  }
+
+  const itemSemPlanoAtivo = dataAtiva ? itensVisiveis.find(i => i.dataStr === dataAtiva && i.status === 'sem-plano') ?? null : null
+
   if (!turmaSelecionada || itensVisiveis.length === 0) return null
 
+  const circ = 2 * Math.PI * 10  // stroke circumference for r=10
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+    <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04)', overflow: 'hidden' }}>
+      <style>{`@keyframes crescer-tl{from{opacity:0;transform:scale(.88) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}`}</style>
 
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-baseline gap-1.5 min-w-0">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest shrink-0">Progresso pedagógico</h3>
-          {turmaNome && <span className="text-xs text-slate-400 font-medium truncate">— {turmaNome}</span>}
-        </div>
-        {temMais && (
-          <button type="button" onClick={() => setVerTodos(true)}
-            className="text-[11px] font-semibold text-indigo-500 hover:text-indigo-700 transition-colors">
-            Ver histórico completo
-          </button>
-        )}
-        {verTodos && (
-          <button type="button" onClick={() => setVerTodos(false)}
-            className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 transition-colors">
-            Ver resumo
-          </button>
-        )}
-      </div>
-
-      {/* Resumo de indicadores */}
-      <div className="flex items-center gap-1 mb-4 text-[11px] flex-wrap">
-        <span className="font-bold text-emerald-600">{contadores.realizadas}</span>
-        <span className="text-slate-400">realizadas</span>
-        <span className="text-slate-300 mx-1">•</span>
-        <span className="font-bold text-indigo-500">{contadores.planejadas}</span>
-        <span className="text-slate-400">planejadas</span>
-        {contadores.semPlano > 0 && <>
-          <span className="text-slate-300 mx-1">•</span>
-          <span className="font-bold text-slate-400">{contadores.semPlano}</span>
-          <span className="text-slate-400">sem plano</span>
-        </>}
-      </div>
-
-      {/* Timeline: barra única com todos os itens */}
-      <div>
-        <div key="__all__">
-            {/* Dots row */}
-            <div className="relative px-3">
-              <div className="absolute top-[29px] left-5 right-5 h-0.5 bg-slate-100 rounded-full pointer-events-none" />
-              <div className="relative flex items-start overflow-x-auto scrollbar-hide pb-1"
-                style={{ gap: itensVisiveis.length > 6 ? '0' : undefined, justifyContent: itensVisiveis.length <= 8 ? 'space-between' : undefined }}>
-                {itensVisiveis.map((item) => {
-                  const isAtivo = dataAtiva === item.dataStr
-                  const [, mm, dd] = item.dataStr.split('-')
-                  const mesAbr = MESES_TIMELINE[parseInt(mm) - 1]
-                  const statusLabel =
-                    item.status === 'realizada' ? 'Realizada' :
-                    item.status === 'planejada' ? 'Planejada' : 'Sem plano'
-                  const dotColor =
-                    item.status === 'realizada' ? 'bg-emerald-500 border-emerald-500' :
-                    item.status === 'planejada' ? 'bg-indigo-500 border-indigo-500' :
-                    'bg-white border-slate-300'
-                  const dotGlow = isAtivo
-                    ? item.status === 'realizada' ? 'ring-4 ring-offset-2 ring-emerald-300 shadow-[0_0_10px_3px_rgba(52,211,153,0.45)] scale-125'
-                    : item.status === 'planejada' ? 'ring-4 ring-offset-2 ring-indigo-300 shadow-[0_0_10px_3px_rgba(129,140,248,0.45)] scale-125'
-                    : 'ring-4 ring-offset-2 ring-slate-300 shadow-[0_0_8px_2px_rgba(148,163,184,0.35)] scale-125'
-                    : 'hover:scale-110'
-                  const isHoje = item.dataStr === hojeStr
-                  return (
-                    <button
-                      key={item.dataStr}
-                      data-date={item.dataStr}
-                      type="button"
-                      onClick={() => setDataAtiva(isAtivo ? null : item.dataStr)}
-                      className="relative z-10 flex flex-col items-center shrink-0 px-2 pt-5 group focus:outline-none"
-                    >
-                      {isHoje && (
-                        <span className="absolute top-0 left-1/2 -translate-x-1/2 text-[8px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-full whitespace-nowrap leading-tight">
-                          Hoje
-                        </span>
-                      )}
-                      {/* Tooltip */}
-                      <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 pointer-events-none">
-                        <div className="bg-slate-800 text-white rounded-lg px-2.5 py-2 text-[10px] whitespace-nowrap shadow-xl text-left min-w-[90px]">
-                          <div className="font-bold text-white">{dd}/{mm}</div>
-                          {item.planoTitulo && <div className="text-slate-300 mt-0.5 max-w-[130px] truncate">{item.planoTitulo}</div>}
-                          <div className={`mt-1 font-semibold ${item.status === 'realizada' ? 'text-emerald-400' : item.status === 'planejada' ? 'text-indigo-400' : 'text-slate-400'}`}>{statusLabel}</div>
-                        </div>
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-800 w-0 h-0" />
-                      </div>
-                      {/* Dot */}
-                      <div className={`w-[18px] h-[18px] rounded-full border-2 transition-all duration-200 ${dotColor} ${dotGlow}`} />
-                      {/* Rótulos */}
-                      <span className={`text-[9px] font-bold mt-1 transition-colors ${isAtivo ? (item.status === 'realizada' ? 'text-emerald-600' : item.status === 'planejada' ? 'text-indigo-600' : 'text-slate-500') : 'text-slate-500'}`}>{dd}</span>
-                      <span className="text-[9px] text-slate-400">{mesAbr}</span>
-                      {item.planoTitulo && (
-                        <span className="text-[8px] text-slate-400 text-center leading-tight mt-0.5 whitespace-normal break-words max-w-[72px]">
-                          {item.planoTitulo}
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+      {/* Header */}
+      <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 3 }}>
+            Histórico da Turma
           </div>
-      </div>
-
-      {/* Legenda */}
-      <div className="flex items-center gap-3 mt-3 flex-wrap">
-        {[
-          { cls: 'bg-emerald-500 border-emerald-500', label: 'Realizada' },
-          { cls: 'bg-indigo-500 border-indigo-500',   label: 'Planejada' },
-          { cls: 'bg-white border-slate-300',          label: 'Sem plano' },
-        ].map(({ cls, label }) => (
-          <span key={label} className="flex items-center gap-1 text-[9px] text-slate-400">
-            <span className={`w-2.5 h-2.5 rounded-full border-2 shrink-0 ${cls}`} />
-            {label}
-          </span>
-        ))}
-      </div>
-
-      {/* Painel de detalhe da data selecionada */}
-      {itemAtivo && (
-        <div className="mt-4 border-t border-slate-100 pt-3 space-y-2.5">
-
-          {/* Data */}
-          <span className="text-sm font-semibold text-slate-700">{formatarData(itemAtivo.dataStr)}</span>
-
-          {/* Realizada ou Planejada: plano clicável */}
-          {itemAtivo.planoTitulo && itemAtivo.planoId && (
-            <button
-              type="button"
-              onClick={() => {
-                const p = planos.find(p => String(p.id) === String(itemAtivo.planoId))
-                if (p) setPlanoPreview(p)
-              }}
-              className="w-full flex items-center justify-between gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2.5 transition-colors group"
-            >
-              <span className="text-xs text-slate-700 font-medium truncate">{itemAtivo.planoTitulo}</span>
-              <span className="text-[11px] font-semibold text-indigo-500 group-hover:text-indigo-700 shrink-0 transition-colors">Ver →</span>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{turmaNome || 'Turma'}</div>
+          <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748b' }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block', flexShrink: 0 }} />
+            {contadores.realizadas} realizada{contadores.realizadas !== 1 ? 's' : ''}
+            {contadores.canceladas > 0 && ` · ${contadores.canceladas} cancelada${contadores.canceladas !== 1 ? 's' : ''}`}
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          {temMais && (
+            <button type="button" onClick={() => setVerTodos(true)} style={{ fontSize: 11, fontWeight: 600, color: '#64748b', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}>
+              Ver todos
             </button>
           )}
+          {verTodos && (
+            <button type="button" onClick={() => setVerTodos(false)} style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}>
+              Resumo
+            </button>
+          )}
+        </div>
+      </div>
 
-          {/* Sem plano: 3 ações */}
-          {itemAtivo.status === 'sem-plano' && (
-            <div className="flex flex-col gap-1.5">
+      {/* Progress bar */}
+      {(() => {
+        const total = contadores.realizadas + contadores.canceladas + contadores.planejadas + contadores.semPlano
+        const denominador = total - contadores.semPlano
+        const pct = denominador > 0 ? contadores.realizadas / denominador : 0
+        return (
+          <div style={{ padding: '10px 18px 12px', borderBottom: '1px solid #f1f5f9' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 7 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>Aulas realizadas</span>
+              <span style={{ fontSize: 11.5, color: '#64748b' }}>{contadores.realizadas} de {denominador}</span>
+            </div>
+            <div style={{ position: 'relative', height: 4, background: '#e2e8f0', borderRadius: 99 }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', background: '#16a34a', borderRadius: 99, width: `${pct * 100}%` }} />
+              <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: `calc(${pct * 100}% - 6px)`, width: 12, height: 12, borderRadius: '50%', background: '#16a34a', border: '2.5px solid #fff', boxShadow: '0 0 0 2px #16a34a' }} />
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Filmstrip */}
+      <div style={{ overflow: 'hidden', background: '#e4e8ef' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'none', background: '#e4e8ef', padding: '0 4px' }}>
+          {mesGrupos.map(({ mes, items }) => {
+            const mesIdx = parseInt(mes.split('-')[1]) - 1
+            const mesNome = MESES_FULL[mesIdx]
+            const isAgora = mes === hojeStr.slice(0, 7)
+            const numRealizadas = items.filter(i => i.status === 'realizada').length
+            const numComPlano   = items.filter(i => i.status !== 'sem-plano').length
+            const ringOffset = numComPlano > 0 ? circ * (1 - numRealizadas / numComPlano) : circ
+
+            return (
+              <div key={mes} style={{
+                flexShrink: 0, width: 210, scrollSnapAlign: 'start',
+                background: '#f1f5f9',
+                border: isAgora ? '2px solid #94a3b8' : '1px solid #e2e8f0',
+                borderRadius: 14, margin: '8px 4px', overflow: 'hidden',
+              }}>
+                {/* Month header */}
+                <div style={{ padding: '9px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 700, color: '#334155' }}>{mesNome}</span>
+                    {isAgora && (
+                      <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.5px', background: '#334155', color: '#fff', padding: '1.5px 6px', borderRadius: 99 }}>AGORA</span>
+                    )}
+                  </div>
+                  {/* Ring donut */}
+                  <div style={{ position: 'relative', width: 28, height: 28, flexShrink: 0 }}>
+                    <svg width={28} height={28} viewBox="0 0 28 28" style={{ transform: 'rotate(-90deg)' }}>
+                      <circle cx={14} cy={14} r={10} fill="none" stroke="#e2e8f0" strokeWidth={2.5} />
+                      {numRealizadas > 0 && (
+                        <circle cx={14} cy={14} r={10} fill="none" stroke="#16a34a" strokeWidth={2.5}
+                          strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={ringOffset} />
+                      )}
+                    </svg>
+                    <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: numRealizadas > 0 ? '#334155' : '#94a3b8' }}>
+                      {numRealizadas}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2-col grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, padding: 8 }}>
+                  {items.map(item => {
+                    const dd = item.dataStr.split('-')[2]
+
+                    if (item.status === 'sem-plano') {
+                      const isAtivo = dataAtiva === item.dataStr
+                      return (
+                        <button key={item.dataStr} type="button" data-date={item.dataStr}
+                          onClick={() => setDataAtiva(isAtivo ? null : item.dataStr)}
+                          style={{ borderRadius: 9, border: isAtivo ? '2px solid #5B5FEA' : '1.5px dashed #e2e8f0', background: 'transparent', minHeight: 62, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>{dd}</span>
+                        </button>
+                      )
+                    }
+
+                    if (item.status === 'cancelada') {
+                      return (
+                        <div key={item.dataStr} style={{ borderRadius: 9, border: '1px solid #e2e8f0', background: '#fff', minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <span style={{ fontSize: 14, fontWeight: 800, color: '#94a3b8', lineHeight: 1, textDecoration: 'line-through' }}>{dd}</span>
+                          {item.planoTitulo && (
+                            <span style={{ fontSize: 9.5, color: '#94a3b8', lineHeight: 1.3, marginTop: 2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{item.planoTitulo}</span>
+                          )}
+                          <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.4px', textTransform: 'uppercase', color: '#94a3b8', marginTop: 'auto', paddingTop: 4 }}>Cancelada</span>
+                        </div>
+                      )
+                    }
+
+                    // realizada | planejada — clicável
+                    return (
+                      <button key={item.dataStr} type="button" data-date={item.dataStr}
+                        onClick={() => abrirPainel(item)}
+                        style={{ borderRadius: 9, border: '1px solid #e2e8f0', background: '#fff', minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2, cursor: 'pointer', textAlign: 'left' }}
+                        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,.09)'; e.currentTarget.style.borderColor = '#94a3b8' }}
+                        onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#e2e8f0' }}
+                      >
+                        <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{dd}</span>
+                        {item.planoTitulo && (
+                          <span style={{ fontSize: 9.5, fontWeight: 500, color: '#334155', lineHeight: 1.3, marginTop: 2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{item.planoTitulo}</span>
+                        )}
+                        {item.status === 'planejada' && (
+                          <span style={{ fontSize: 8, fontWeight: 600, color: '#5B5FEA', marginTop: 'auto', paddingTop: 4 }}>Planejada</span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '8px 18px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 14 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: '#94a3b8' }}>
+          <span style={{ width: 12, height: 8, borderRadius: 2, border: '1px dashed #e2e8f0', display: 'inline-block' }} />
+          Próximas aulas
+        </span>
+      </div>
+
+      {/* Sem-plano: ações inline abaixo do filmstrip */}
+      {itemSemPlanoAtivo && (() => {
+        const [, mm, dd] = itemSemPlanoAtivo.dataStr.split('-')
+        return (
+          <div style={{ padding: '12px 18px 16px', borderTop: '1px solid #f1f5f9' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 10 }}>
+              Aula de {dd}/{mm} — sem plano
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <button type="button" onClick={() => onAcionar('adaptar')}
-                className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100 transition-colors">
-                🔄 Adaptar última aula
+                style={{ width: '100%', textAlign: 'left', fontSize: 12, fontWeight: 600, padding: '7px 12px', borderRadius: 8, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #dbeafe', cursor: 'pointer' }}>
+                Adaptar última aula
               </button>
               <button type="button" onClick={() => onAcionar('importar')}
-                className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
-                🏛 Importar do banco
+                style={{ width: '100%', textAlign: 'left', fontSize: 12, fontWeight: 600, padding: '7px 12px', borderRadius: 8, background: '#fff', color: '#475569', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                Importar do banco
               </button>
               <button type="button" onClick={() => onAcionar('criar')}
-                className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
-                ✏️ Criar nova aula
+                style={{ width: '100%', textAlign: 'left', fontSize: 12, fontWeight: 600, padding: '7px 12px', borderRadius: 8, background: '#fff', color: '#475569', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                Criar nova aula
               </button>
             </div>
-          )}
+          </div>
+        )
+      })()}
 
+      {/* Modal preview plano completo */}
+      {planoPreview && <ModalPreviewPlano plano={planoPreview} onFechar={() => setPlanoPreview(null)} turmaId={String(turmaSelecionada?.turmaId ?? '')} />}
+
+      {/* Painel flutuante (card cresce) */}
+      {painelData && (
+        <div
+          onClick={() => setPainelData(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.35)', backdropFilter: 'blur(1px)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 18, boxShadow: '0 8px 40px rgba(0,0,0,.18)', width: '100%', maxWidth: 360, overflow: 'hidden', animation: 'crescer-tl .2s cubic-bezier(.34,1.56,.64,1)', transformOrigin: 'center bottom' }}>
+
+            {/* Painel header */}
+            <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+              <div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: '#0f172a', lineHeight: 1, letterSpacing: -1 }}>{painelData.item.dataStr.split('-')[2]}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginTop: 3 }}>{painelData.plano?.titulo ?? '—'}</div>
+                <div style={{ fontSize: 10.5, color: '#94a3b8', marginTop: 2 }}>
+                  {MESES_FULL[parseInt(painelData.item.dataStr.split('-')[1]) - 1]} · {painelData.item.status === 'realizada' ? 'Realizada' : 'Planejada'}
+                </div>
+              </div>
+              <button type="button" onClick={() => setPainelData(null)} style={{ width: 28, height: 28, borderRadius: '50%', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#64748b', flexShrink: 0 }}>
+                ✕
+              </button>
+            </div>
+
+            {/* O que foi planejado */}
+            {(painelData.plano?.objetivoGeral || painelData.plano?.tema) && (
+              <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 5 }}>O que foi planejado</div>
+                <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.55 }}>{painelData.plano.objetivoGeral || painelData.plano.tema}</div>
+              </div>
+            )}
+
+            {/* Como foi na prática */}
+            {painelData.registro && (painelData.registro.resumoAula || painelData.registro.funcionouBem || painelData.registro.resumo) && (
+              <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 5 }}>Como foi na prática</div>
+                <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.55 }}>{painelData.registro.resumoAula || painelData.registro.funcionouBem || painelData.registro.resumo}</div>
+              </div>
+            )}
+
+            {/* Vivências */}
+            {painelData.vivencias.length > 0 && (
+              <div style={{ padding: '10px 16px', borderBottom: painelData.plano ? '1px solid #e2e8f0' : undefined }}>
+                <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 5 }}>Vivências desta aula</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {painelData.vivencias.map(v => (
+                    <span key={v} style={{ fontSize: 10.5, fontWeight: 500, background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 99, color: '#334155', padding: '3px 10px' }}>{v}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Ver plano completo */}
+            {painelData.plano && (
+              <div style={{ padding: '10px 16px 14px' }}>
+                <button type="button"
+                  onClick={() => { setPlanoPreview(painelData.plano!); setPainelData(null) }}
+                  style={{ width: '100%', textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#5B5FEA', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 10, padding: '7px 12px', cursor: 'pointer' }}>
+                  Ver plano completo
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
-
-      {/* Modal preview do plano */}
-      {planoPreview && <ModalPreviewPlano plano={planoPreview} onFechar={() => setPlanoPreview(null)} turmaId={String(turmaSelecionada?.turmaId ?? '')} />}
     </div>
   )
 }
@@ -836,27 +957,38 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
     }))
   }, [gruposFiltrados, turmasComAulaHoje])
 
+  const DOT_BG: Record<string, string> = {
+    green: '#34d399',
+    amber: '#fbbf24',
+    blue:  '#60a5fa',
+    gray:  '#9CA3AF',
+  }
+
+  // Iniciais para o avatar: pega última parte do nome (após ›) e extrai 2 chars alfanuméricos
+  function initiais(nome: string): string {
+    const parte = nome.includes('›') ? nome.split('›').pop()! : nome
+    const chars = parte.replace(/[^a-zA-Z0-9]/g, '')
+    return chars.slice(0, 2).toUpperCase() || '??'
+  }
+
+  const totalTurmas = gruposFiltradosOrdenados.reduce((acc, g) => acc + g.turmas.length, 0)
+
   return (
-    <aside className="w-52 flex-shrink-0 flex flex-col gap-2">
-      {/* Busca */}
-      <div className="relative">
+    <aside className="w-56 flex-shrink-0 flex flex-col overflow-hidden rounded-[12px] border border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937]" style={{ maxHeight: 'calc(100vh - 160px)' }}>
+      {/* Busca + contagem */}
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#E6EAF0] dark:border-[#374151]">
         <input
           type="text"
           value={busca}
           onChange={e => setBusca(e.target.value)}
           placeholder="Buscar turma..."
-          className="w-full text-[12px] rounded-[8px] border border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-slate-700 dark:text-[#D1D5DB] placeholder:text-slate-400 dark:placeholder:text-[#6B7280] px-3 py-1.5 pr-7 outline-none focus:ring-1 focus:ring-indigo-400"
+          className="flex-1 text-[12px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] bg-[#F6F8FB] dark:bg-[#0F172A] text-slate-700 dark:text-[#D1D5DB] placeholder:text-slate-400 dark:placeholder:text-[#6B7280] px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-indigo-400"
         />
-        {busca && (
-          <button
-            onClick={() => setBusca('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-[13px] leading-none"
-          >×</button>
-        )}
+        <span className="text-[11px] text-slate-400 dark:text-[#6B7280] font-medium flex-shrink-0">{totalTurmas}</span>
       </div>
 
       {/* Lista agrupada */}
-      <div className="rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] overflow-hidden overflow-y-auto max-h-[calc(100vh-200px)]">
+      <div className="flex-1 overflow-y-auto">
         {gruposFiltradosOrdenados.length === 0 ? (
           <div className="px-3 py-6 text-center text-[11px] text-slate-400 dark:text-[#6B7280]">
             Nenhuma turma encontrada
@@ -865,12 +997,14 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
           const cor = escolaColorMap[grupo.escolaId]
           return (
             <div key={grupo.escolaId}>
+              {/* Label escola */}
               <div
-                className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.5px] border-b border-[#E6EAF0] dark:border-[#374151]"
-                style={{ color: cor?.light ?? '#94a3b8' }}
+                className="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-[.06em]"
+                style={{ color: cor?.light ?? '#C0C8D6' }}
               >
                 {grupo.escolaNome}
               </div>
+
               {grupo.turmas.map(t => {
                 const isAtiva = turmaSelecionada
                   ? turmaSelecionada.turmaId === t.turmaId && turmaSelecionada.escolaId === t.escolaId
@@ -878,26 +1012,40 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
                 const info = turmaInfo[t.turmaId]
                 const dot = info?.dot ?? 'gray'
                 const label = DOT_LABELS[dot]
+
                 return (
                   <button
                     key={t.key}
                     type="button"
                     onClick={() => onSelecionarTurma({ anoLetivoId: t.anoLetivoId, escolaId: t.escolaId, segmentoId: t.segmentoId, turmaId: t.turmaId })}
-                    className={`w-full text-left px-3 py-2 transition-colors flex items-center gap-2 ${
-                      isAtiva ? 'bg-[#eef3fb] dark:bg-[#5B5FEA]/[0.16]' : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
+                    className={`w-full text-left px-2 py-1.5 mx-1 rounded-[8px] transition-colors flex items-center gap-2.5 border ${
+                      isAtiva
+                        ? 'bg-[#EEF2FF] dark:bg-[#1E2847] border-[#C7D2FE] dark:border-[#3730A3]'
+                        : 'border-transparent hover:bg-[#F8FAFC] dark:hover:bg-[#263348]'
                     }`}
+                    style={{ width: 'calc(100% - 8px)' }}
                   >
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DOT_COLORS[dot]}`} />
+                    {/* Avatar */}
+                    <span className={`w-[30px] h-[30px] rounded-[7px] flex items-center justify-center flex-shrink-0 text-[10px] font-bold ${
+                      isAtiva
+                        ? 'bg-[#5B5FEA] text-white'
+                        : 'bg-[#E0E7FF] dark:bg-[#1E2847] text-[#5B5FEA] dark:text-[#818CF8]'
+                    }`}>
+                      {initiais(t.nome)}
+                    </span>
+
+                    {/* Nome + meta */}
                     <div className="min-w-0 flex-1">
                       <div className={`text-[12px] font-semibold leading-tight truncate ${
-                        isAtiva ? 'text-[#1e3a6e] dark:text-indigo-300' : 'text-slate-700 dark:text-[#D1D5DB]'
+                        isAtiva ? 'text-[#4338CA] dark:text-[#A5B4FC]' : 'text-[#1F2937] dark:text-[#E5E7EB]'
                       }`}>
                         {t.nome}
                       </div>
-                      <div className="text-[10px] mt-[1px] flex items-center gap-1">
-                        {info?.ultimaData && (
-                          <span className="text-slate-400 dark:text-[#6B7280]">{tempoRelativo(info.ultimaData)}</span>
-                        )}
+                      <div className="text-[10px] mt-[2px] text-[#9CA3AF] dark:text-[#4B5563] flex items-center gap-1">
+                        {info?.ultimaData
+                          ? <span>Última: {tempoRelativo(info.ultimaData)}</span>
+                          : <span>Sem registros</span>
+                        }
                         {label && (
                           <span className={`font-semibold ${dot === 'amber' ? 'text-amber-500' : 'text-blue-500'}`}>
                             · {label}
@@ -905,9 +1053,16 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
                         )}
                       </div>
                     </div>
+
+                    {/* Dot status — direita */}
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ background: DOT_BG[dot] }}
+                    />
                   </button>
                 )
               })}
+              <div className="h-1" />
             </div>
           )
         })}
