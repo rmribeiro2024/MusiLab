@@ -95,6 +95,7 @@ interface ListaTurmasProps {
 function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) {
     const { anosLetivos } = useAnoLetivoContext()
     const { planos } = usePlanosContext()
+    const { planejamentos } = usePlanejamentoTurmaContext()
     const [busca, setBusca] = useState('')
     const escolaColorMap = useMemo(() => buildEscolaColorMap(anosLetivos), [anosLetivos])
 
@@ -107,6 +108,13 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) 
             setOpenEscolas(new Set([turmaSelecionada.escolaId]))
         }
     }, [turmaSelecionada?.escolaId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Turmas que têm pelo menos um planejamento salvo
+    const turmasComPlanejamento = useMemo(() => {
+        const s = new Set<string>()
+        planejamentos.forEach(p => s.add(String(p.turmaId)))
+        return s
+    }, [planejamentos])
 
     // Computa info por turmaId: última data de aula e cor do dot
     // Registros ficam em plano.registrosPosAula com campo r.turma === turmaId
@@ -226,6 +234,7 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) 
                                     ? turmaSelecionada.turmaId === t.turmaId && turmaSelecionada.escolaId === t.escolaId
                                     : false
                                 const info = turmaInfo[t.turmaId]
+                                const temPlano = turmasComPlanejamento.has(t.turmaId)
                                 const dotClass = DOT_COLORS[info?.dot ?? 'gray']
                                 return (
                                     <button
@@ -243,6 +252,9 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) 
                                         }`}
                                     >
                                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotClass}`} />
+                                        {temPlano && (
+                                            <span className="text-[9px] font-bold text-emerald-500 dark:text-emerald-400 flex-shrink-0">✓</span>
+                                        )}
                                         <div className="min-w-0 flex-1">
                                             <div className={`text-[12.5px] font-semibold leading-tight truncate ${
                                                 isAtiva
@@ -311,8 +323,6 @@ function formatDataRegistro(ymd: string): string {
 // ─── Sub-componente: bloco "Aula anterior" ───────────────────────────────────
 
 function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
-    const [expandido, setExpandido] = useState(false)
-
     if (!registro) {
         return (
             <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-5 py-4">
@@ -397,7 +407,7 @@ function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
                         <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">
                             O que foi realizado
                         </p>
-                        <p className="text-[13px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed line-clamp-3"
+                        <p className="text-[13px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
                             dangerouslySetInnerHTML={{ __html: sanitizar(resumo) }}
                         />
                     </div>
@@ -416,60 +426,48 @@ function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
                     </div>
                 )}
 
-                {/* ── [+ Ver mais] — campos de reflexão ── */}
+                {/* Campos de reflexão — sempre visíveis */}
                 {temDetalhes && (
-                    <>
-                        <button
-                            onClick={() => setExpandido(v => !v)}
-                            className="flex items-center gap-1 text-[11px] text-slate-400 dark:text-[#6B7280] hover:text-slate-600 dark:hover:text-[#9CA3AF] transition w-fit pt-1"
-                        >
-                            <span className="text-[9px]">{expandido ? '▾' : '▸'}</span>
-                            <span>{expandido ? 'Ver menos' : '+ Ver mais'}</span>
-                        </button>
-
-                        {expandido && (
-                            <div className="flex flex-col gap-3 pt-2 border-t border-[#E6EAF0] dark:border-[#2D3748]">
-                                {comportamento && (
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5]">🎭 Comportamento da turma:</span>
-                                        <span className="text-[12px] text-slate-700 dark:text-[#D1D5DB] italic">{comportamento}</span>
-                                    </div>
-                                )}
-                                {funcionouBem && (
-                                    <div>
-                                        <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">✓ O que funcionou</p>
-                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
-                                            dangerouslySetInnerHTML={{ __html: sanitizar(funcionouBem) }}
-                                        />
-                                    </div>
-                                )}
-                                {fariadiferente && (
-                                    <div>
-                                        <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">✗ O que faria diferente</p>
-                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
-                                            dangerouslySetInnerHTML={{ __html: sanitizar(fariadiferente) }}
-                                        />
-                                    </div>
-                                )}
-                                {poderiaMelhorar && (
-                                    <div>
-                                        <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">💭 Poderia melhorar</p>
-                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
-                                            dangerouslySetInnerHTML={{ __html: sanitizar(poderiaMelhorar) }}
-                                        />
-                                    </div>
-                                )}
-                                {anotacoesGerais && (
-                                    <div>
-                                        <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">📝 Anotações gerais</p>
-                                        <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
-                                            dangerouslySetInnerHTML={{ __html: sanitizar(anotacoesGerais) }}
-                                        />
-                                    </div>
-                                )}
+                    <div className="flex flex-col gap-3 pt-2 border-t border-[#E6EAF0] dark:border-[#2D3748]">
+                        {comportamento && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5]">Comportamento da turma:</span>
+                                <span className="text-[12px] text-slate-700 dark:text-[#D1D5DB] italic">{comportamento}</span>
                             </div>
                         )}
-                    </>
+                        {funcionouBem && (
+                            <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">O que funcionou</p>
+                                <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: sanitizar(funcionouBem) }}
+                                />
+                            </div>
+                        )}
+                        {fariadiferente && (
+                            <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">O que faria diferente</p>
+                                <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: sanitizar(fariadiferente) }}
+                                />
+                            </div>
+                        )}
+                        {poderiaMelhorar && (
+                            <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">Poderia melhorar</p>
+                                <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: sanitizar(poderiaMelhorar) }}
+                                />
+                            </div>
+                        )}
+                        {anotacoesGerais && (
+                            <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-[.6px] text-slate-400 dark:text-[#8896A5] mb-1">Anotações gerais</p>
+                                <p className="text-[12.5px] text-slate-700 dark:text-[#D1D5DB] leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: sanitizar(anotacoesGerais) }}
+                                />
+                            </div>
+                        )}
+                    </div>
                 )}
 
             </div>
