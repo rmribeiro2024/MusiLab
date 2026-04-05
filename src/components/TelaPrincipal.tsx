@@ -57,34 +57,14 @@ import { detectarMusicasNoPlano } from '../lib/detectarMusicas'
 import { agruparPorCategoria } from '../lib/taxonomia'
 
 // ── Classificação CLASP + Orff via Gemini ────────────────────────────────────
+import { classificarVivenciasPlano, CONCEITOS_APROVADOS, type ClasseVivenciasResult } from '../lib/classificarVivencias'
 
-interface ClasseVivenciasResult {
-    vivencias: Record<string, number>   // CLASP — intensidade 0-3
-    meiosOrff: Record<string, boolean>  // Orff — presença true/false
-    conceitos: string[]
-}
+// ── Detecção de conceitos via Gemini (chamada avulsa, sem estado React) ───────
+// classificarVivenciasPlano → importada de src/lib/classificarVivencias.ts
 
-// Lista canônica de conceitos musicais pedagógicos — única fonte de verdade
-const CONCEITOS_APROVADOS = new Set([
-    'Pulsação', 'Andamento', 'Métrica', 'Compasso Binário', 'Compasso Ternário',
-    'Compasso Quaternário', 'Células Rítmicas', 'Síncope', 'Ostinato', 'Polirritmia',
-    'Acento Rítmico', 'Pausa', 'Subdivisão', 'Altura', 'Grave e Agudo',
-    'Contorno Melódico', 'Fraseado', 'Intervalos', 'Escala', 'Escala Pentatônica',
-    'Tonalidade', 'Modo', 'Afinação', 'Acorde', 'Campo Harmônico', 'Consonância',
-    'Dissonância', 'Textura Musical', 'Uníssono', 'Polifonia', 'Homofonia', 'Bordão',
-    'Forma AB', 'Forma ABA', 'Cânone', 'Rondó', 'Motivo', 'Frase Musical',
-    'Repetição', 'Contraste', 'Variação', 'Introdução e Coda', 'Dinâmica',
-    'Crescendo', 'Decrescendo', 'Articulação', 'Legato', 'Staccato', 'Timbre',
-    'Caráter Musical', 'Expressão Musical', 'Respiração Diafragmática', 'Emissão Vocal',
-    'Ressonância Vocal', 'Percussão Corporal', 'Coordenação Motora', 'Movimento Expressivo',
-    'Improvisação', 'Composição', 'Arranjo', 'Criação Coletiva', 'Escuta Ativa',
-    'Percepção Rítmica', 'Percepção Melódica', 'Análise Auditiva', 'Gênero Musical',
-    'Folclore Brasileiro', 'Ciranda', 'Samba', 'Maracatu',
-])
-
-async function classificarVivenciasPlano(plano: Plano, apiKey: string): Promise<ClasseVivenciasResult> {
+async function _placeholder_delete_me(plano: Plano, apiKey: string): Promise<ClasseVivenciasResult> {
     const atividades = (plano.atividadesRoteiro ?? [])
-        .map(a => `- ${a.nome}: ${(a.descricao ?? '').replace(/<[^>]*>/g, ' ').trim().slice(0, 200)}`)
+        .map((a: any) => `- ${a.nome}: ${(a.descricao ?? '').replace(/<[^>]*>/g, ' ').trim().slice(0, 200)}`)
         .filter(Boolean).join('\n')
 
     const prompt = `Você é especialista em educação musical. Analise o plano de aula e classifique as vivências segundo o modelo C(L)A(S)P de Keith Swanwick.

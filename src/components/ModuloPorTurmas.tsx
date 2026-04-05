@@ -12,6 +12,7 @@ import type { TurmaSelecionada } from '../contexts/PlanejamentoTurmaContext'
 import { showToast } from '../lib/toast'
 import type { AnoLetivo, RegistroPosAula, Plano, Turma } from '../types'
 import { gerarIdSeguro, sanitizar } from '../lib/utils'
+import { classificarVivenciasPlano } from '../lib/classificarVivencias'
 import FormularioAulaPlena from './FormularioAulaPlena'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -673,7 +674,7 @@ function BancoPicker({ planos, onSelect, onCancelar }: {
 
 function ConteudoTurma({ turmaSelecionada, dataPrevista, modoInicial, onModoInicialConsumed }: { turmaSelecionada: TurmaSelecionada; dataPrevista: string; modoInicial?: 'criar' | 'importar' | null; onModoInicialConsumed?: () => void }) {
     const { ultimoRegistroDaTurma, fecharForm, salvarPlanejamento, planejamentosDaTurma, editarPlanejamento, excluirPlanejamento } = usePlanejamentoTurmaContext()
-    const { planos, setPlanos } = usePlanosContext()
+    const { planos, setPlanos, adicionarPlanoAoBanco } = usePlanosContext()
     const { aplicacoes } = useAplicacoesContext()
     const { anosLetivos } = useAnoLetivoContext()
 
@@ -729,13 +730,28 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista, modoInicial, onModoInic
             planoData: plano,
         })
         if (salvarNoBanco) {
-            // Bug 7: popula escola para aparecer no filtro do banco de aulas
             const planoParaBanco = normalizePlano({
                 ...plano,
                 id: gerarIdSeguro(),
                 escola: plano.escola || escolaNomeDaTurma,
             })
-            setPlanos(prev => [...prev, planoParaBanco])
+            // Salva no banco com detecção automática de músicas do repertório
+            adicionarPlanoAoBanco(planoParaBanco)
+            // Classificação CLASP + Orff + Conceitos via IA (assíncrono, silencioso)
+            const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+            if (apiKey) {
+                const newId = String(planoParaBanco.id)
+                classificarVivenciasPlano(planoParaBanco, apiKey)
+                    .then(({ vivencias, meiosOrff }) => {
+                        if (!Object.values(vivencias).some(v => v > 0)) return
+                        setPlanos(prev => prev.map(p =>
+                            String(p.id) === newId
+                                ? { ...p, vivenciasClassificadas: vivencias, orffMeios: meiosOrff }
+                                : p
+                        ))
+                    })
+                    .catch(() => {/* silencioso */})
+            }
             showToast('Salvo no banco de aulas ✅')
         }
         setPendingSave(null)

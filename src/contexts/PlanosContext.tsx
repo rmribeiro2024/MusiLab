@@ -189,6 +189,7 @@ export interface PlanosContextValue {
     novoPlano: () => void
     editarPlano: (plano: Plano) => void
     salvarPlano: (ignorarAvisoEscola?: boolean) => void
+    adicionarPlanoAoBanco: (plano: Plano) => void
     novaAulaSlots: AplicacaoAulaSlot[] | null
     setNovaAulaSlots: (s: AplicacaoAulaSlot[] | null) => void
     excluirPlano: (id: string | number) => void
@@ -566,6 +567,39 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         edicaoDispatch({ type: 'EDITAR_PLANO', plano: normalizePlano(plano) })
         setViewMode('lista')
     }, [setViewMode])
+
+    // Salva um plano já pronto no banco de aulas (sem abrir editor).
+    // Roda detecção de músicas e auto-vinculação silenciosa.
+    const adicionarPlanoAoBanco = (plano: Plano) => {
+        setPlanos(prev => [...prev, plano])
+        // Detecção de músicas do repertório — auto-vincula com alta confiança
+        const detectadas = detectarMusicasNoPlano(plano, repertorio)
+        const autoVinculos: VinculoMusicaPlano[] = detectadas
+            .filter(d => d.classificacao === 'encontrada' && !d.jaVinculada && d.musica)
+            .map(d => ({
+                musicaId: d.musica!.id ?? d.musica!.titulo,
+                titulo: d.musica!.titulo,
+                autor: d.musica!.autor,
+                origemDeteccao: 'encontrada' as const,
+                confirmadoPor: 'auto' as const,
+                confirmadoEm: new Date().toISOString(),
+            }))
+        if (autoVinculos.length > 0) {
+            const jaVinculadosIds = new Set((plano.musicasVinculadasPlano || []).map(v => String(v.musicaId)))
+            const novos = autoVinculos.filter(v => !jaVinculadosIds.has(String(v.musicaId)))
+            if (novos.length > 0) {
+                const planoAtualizado = { ...plano, musicasVinculadasPlano: [...(plano.musicasVinculadasPlano || []), ...novos] }
+                setPlanos(prev => prev.map(p => p.id === planoAtualizado.id ? planoAtualizado : p))
+                setRepertorio(prev => prev.map((m: any) => {
+                    const vinculo = novos.find(v => String(v.musicaId) === String(m.id ?? m.titulo))
+                    if (!vinculo) return m
+                    const jaTemPlano = (m.planosVinculados || []).some((pId: any) => String(pId) === String(plano.id))
+                    if (jaTemPlano) return m
+                    return { ...m, planosVinculados: [...(m.planosVinculados || []), plano.id] }
+                }))
+            }
+        }
+    }
 
     const salvarPlano = (ignorarAvisoEscola = false) => {
         if (!planoEditando.titulo || !planoEditando.titulo.trim()) {
@@ -1643,7 +1677,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         dragOverIndex, setDragOverIndex,
         escolas, segmentosPlanos, duracoesSugestao, planosFiltrados,
         normalizePlano, buscaAvancada, sugerirBNCC, gerandoBNCC, sugerirObjetivosIA, gerandoObjetivos,
-        novoPlano, editarPlano, salvarPlano, excluirPlano, duplicarPlano, fecharModal, restaurarVersao,
+        novoPlano, editarPlano, salvarPlano, adicionarPlanoAoBanco, excluirPlano, duplicarPlano, fecharModal, restaurarVersao,
         novaAulaSlots, setNovaAulaSlots,
         toggleConceito, toggleFaixa, toggleUnidade,
         adicionarRecurso, removerRecurso,
