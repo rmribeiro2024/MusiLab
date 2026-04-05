@@ -90,13 +90,20 @@ function buildEscolaColorMap(anosLetivos: AnoLetivo[]): Record<string, { light: 
 interface ListaTurmasProps {
     turmaSelecionada: TurmaSelecionada | null
     onSelecionarTurma: (t: TurmaSelecionada) => void
+    ymd: string
 }
 
-function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) {
+function ListaTurmas({ turmaSelecionada, onSelecionarTurma, ymd }: ListaTurmasProps) {
     const { anosLetivos } = useAnoLetivoContext()
-    const { planejamentos } = usePlanejamentoTurmaContext()
+    const { planejamentos, copiarPlanejamento } = usePlanejamentoTurmaContext()
     const [busca, setBusca] = useState('')
     const escolaColorMap = useMemo(() => buildEscolaColorMap(anosLetivos), [anosLetivos])
+
+    // Drag-and-drop entre turmas
+    type CopyConfirm = { srcPlanoId: string; srcNome: string; dstNome: string; dst: TurmaSelecionada }
+    const [dragSrcTid, setDragSrcTid] = useState<string | null>(null)
+    const [dragOverTid, setDragOverTid] = useState<string | null>(null)
+    const [copyConfirm, setCopyConfirm] = useState<CopyConfirm | null>(null)
 
     // Accordion: null = todas abertas; Set = apenas as IDs no set abertas
     const [openEscolas, setOpenEscolas] = useState<Set<string> | null>(
@@ -155,6 +162,7 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) 
 
 
     return (
+        <>
         <aside className="w-52 flex-shrink-0 flex flex-col gap-2">
             {/* Busca */}
             <div className="relative">
@@ -206,17 +214,49 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) 
                                     ? turmaSelecionada.turmaId === t.turmaId && turmaSelecionada.escolaId === t.escolaId
                                     : false
                                 const temPlano = turmasComPlanejamento.has(t.turmaId)
+                                const isDragSrc  = dragSrcTid === t.turmaId
+                                const isDragOver = dragOverTid === t.turmaId
                                 return (
                                     <button
                                         key={t.key}
+                                        draggable={temPlano}
                                         onClick={() => onSelecionarTurma({
                                             anoLetivoId: t.anoLetivoId,
                                             escolaId: t.escolaId,
                                             segmentoId: t.segmentoId,
                                             turmaId: t.turmaId,
                                         })}
+                                        onDragStart={temPlano ? () => setDragSrcTid(t.turmaId) : undefined}
+                                        onDragOver={e => {
+                                            if (dragSrcTid && dragSrcTid !== t.turmaId) {
+                                                e.preventDefault()
+                                                setDragOverTid(t.turmaId)
+                                            }
+                                        }}
+                                        onDragLeave={() => setDragOverTid(null)}
+                                        onDrop={e => {
+                                            e.preventDefault()
+                                            if (!dragSrcTid || dragSrcTid === t.turmaId) { setDragOverTid(null); return }
+                                            const srcPlanos = planejamentos
+                                                .filter(p => String(p.turmaId) === dragSrcTid)
+                                                .sort((a, b) => (b.atualizadoEm ?? b.criadoEm ?? '').localeCompare(a.atualizadoEm ?? a.criadoEm ?? ''))
+                                            if (!srcPlanos.length) { setDragSrcTid(null); setDragOverTid(null); return }
+                                            const srcNome = grupos.flatMap(g => g.turmas).find(x => x.turmaId === dragSrcTid)?.nome ?? dragSrcTid
+                                            setCopyConfirm({
+                                                srcPlanoId: srcPlanos[0].id,
+                                                srcNome,
+                                                dstNome: t.nome,
+                                                dst: { anoLetivoId: t.anoLetivoId, escolaId: t.escolaId, segmentoId: t.segmentoId, turmaId: t.turmaId },
+                                            })
+                                            setDragSrcTid(null); setDragOverTid(null)
+                                        }}
+                                        onDragEnd={() => { setDragSrcTid(null); setDragOverTid(null) }}
                                         className={`w-full text-left px-3 py-2 transition-colors flex items-center gap-2 ${
-                                            isAtiva
+                                            isDragOver
+                                                ? 'ring-2 ring-inset ring-indigo-400 bg-indigo-50 dark:bg-indigo-500/10'
+                                                : isDragSrc
+                                                ? 'opacity-40'
+                                                : isAtiva
                                                 ? 'bg-[#5B5FEA]/[0.09] dark:bg-[#5B5FEA]/[0.16]'
                                                 : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
                                         }`}
@@ -243,6 +283,44 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma }: ListaTurmasProps) 
                 })}
             </div>
         </aside>
+
+        {/* ── Modal de confirmação de cópia drag-and-drop ── */}
+        {copyConfirm && (
+            <div
+                className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+                onClick={() => setCopyConfirm(null)}
+            >
+                <div
+                    className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl p-6 max-w-sm w-full"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <p className="text-[14px] font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                        Copiar planejamento?
+                    </p>
+                    <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
+                        O planejamento de <strong>{copyConfirm.srcNome}</strong> será copiado para <strong>{copyConfirm.dstNome}</strong>.
+                    </p>
+                    <div className="flex flex-col gap-2">
+                        <button
+                            onClick={() => {
+                                copiarPlanejamento(copyConfirm.srcPlanoId, copyConfirm.dst, ymd)
+                                setCopyConfirm(null)
+                            }}
+                            className="w-full text-[13px] font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-4 py-2.5 transition"
+                        >
+                            Sim, copiar
+                        </button>
+                        <button
+                            onClick={() => setCopyConfirm(null)}
+                            className="w-full text-[13px] border border-[#E6EAF0] dark:border-[#374151] rounded-xl px-4 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.05] transition"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     )
 }
 
@@ -936,6 +1014,7 @@ export default function ModuloPorTurmas() {
                     <ListaTurmas
                         turmaSelecionada={turmaSelecionada}
                         onSelecionarTurma={handleSelecionarTurma}
+                        ymd={ymd}
                     />
                 </div>
 
