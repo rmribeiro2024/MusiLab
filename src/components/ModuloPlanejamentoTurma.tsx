@@ -1622,7 +1622,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
       </div>
 
       {/* ── ABAS (underline) ─────────────────────────────────────────────────── */}
-      <div className="flex border-b border-[#E6EAF0] dark:border-[#374151]">
+      <div className="flex border-b border-[#E6EAF0] dark:border-[#374151] bg-white rounded-[10px]" style={{ background: '#ffffff' }}>
         {(['turma', 'aulas', 'repertorio'] as const).map(t => (
           <button
             key={t}
