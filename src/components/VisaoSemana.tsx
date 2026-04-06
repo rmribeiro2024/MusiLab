@@ -647,9 +647,12 @@ export default function VisaoSemana() {
     const plano = planejamentos.find(p => String(p.turmaId) === tidStr && p.dataPrevista === ymd)
     if (!plano) return
     const novaData = toYMD(addDays(new Date(ymd + 'T12:00:00'), 7))
-    copiarPlanejamento(plano.id, { anoLetivoId: plano.anoLetivoId, escolaId: plano.escolaId, segmentoId: plano.segmentoId, turmaId: tidStr }, novaData)
-    excluirPlanejamento(plano.id)
-    showToast('Aula movida para a próxima semana')
+    const novoId = copiarPlanejamento(plano.id, { anoLetivoId: plano.anoLetivoId, escolaId: plano.escolaId, segmentoId: plano.segmentoId, turmaId: tidStr }, novaData)
+    const timer = setTimeout(() => excluirPlanejamento(plano.id), 5000)
+    showToast('Aula movida para a próxima semana', 'info', 5000, () => {
+      clearTimeout(timer)
+      if (novoId) excluirPlanejamento(novoId)
+    })
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
