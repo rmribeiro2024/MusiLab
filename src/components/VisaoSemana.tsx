@@ -403,7 +403,7 @@ export default function VisaoSemana() {
   const { planos } = usePlanosContext()
   const { setViewMode } = useRepertorioContext()
   const { selecionarTurma, setDataNavegacao, planejamentos, copiarPlanejamento, excluirPlanejamento, setModoInicialNavegacao } = usePlanejamentoTurmaContext()
-  const { aplicacoes } = useAplicacoesContext()
+  const { aplicacoes, moverParaProximaSemana: moverAplicacao } = useAplicacoesContext()
 
   // ── Drag-drop entre cards ──────────────────────────────────────────────────
   const [dragSrcId, setDragSrcId] = useState<string | null>(null)   // "${turmaId}-${ymd}"
@@ -644,6 +644,14 @@ export default function VisaoSemana() {
   }
 
   function moverParaProximaSemana(tidStr: string, ymd: string) {
+    // Caminho 1: aplicação do banco (preserva vínculo com plano original)
+    const aplicacao = aplicacoes.find(a => String(a.turmaId) === tidStr && a.data === ymd && a.status !== 'cancelada')
+    if (aplicacao) {
+      const timer = setTimeout(() => moverAplicacao(aplicacao.id), 5000)
+      showToast('Aula movida para a próxima semana', 'info', 5000, () => clearTimeout(timer))
+      return
+    }
+    // Caminho 2: PlanejamentoTurma local
     const plano = planejamentos.find(p => String(p.turmaId) === tidStr && p.dataPrevista === ymd)
     if (!plano) return
     const novaData = toYMD(addDays(new Date(ymd + 'T12:00:00'), 7))
@@ -894,8 +902,11 @@ export default function VisaoSemana() {
                             p => String(p.turmaId) === tidStr && p.dataPrevista === ymd
                           ) ?? null
 
-                          // Plano completo: via planejamento.planoData ou via aplicacoes
+                          // Plano completo: via planejamento.planoData → planosRelacionadosIds → aplicacoes
                           let planoDataObj: any = planejamentoDoDia?.planoData ?? null
+                          if (!planoDataObj && planejamentoDoDia?.planosRelacionadosIds?.length) {
+                            planoDataObj = planos.find(p => String(p.id) === String(planejamentoDoDia.planosRelacionadosIds![0])) ?? null
+                          }
                           if (!planoDataObj) {
                             const ap = aplicacoes.find(a => String(a.turmaId) === tidStr && a.data === ymd && a.status !== 'cancelada')
                             if (ap) planoDataObj = planos.find(p => String(p.id) === String((ap as any).planoId)) ?? null
@@ -909,8 +920,7 @@ export default function VisaoSemana() {
                               }) ?? null
                             : null
 
-                          const _oqpf = planejamentoDoDia?.oQuePretendoFazer
-                          const planoTitulo = planoDataObj?.titulo || (_oqpf ? (_oqpf.length > 60 ? _oqpf.slice(0, 57) + '…' : _oqpf) : null)
+                          const planoTitulo = planoDataObj?.titulo || null
                           const objetivo = planoDataObj?.objetivoGeral || planejamentoDoDia?.objetivo || null
 
                           const regData = ultimoReg ? ((ultimoReg as any).dataAula ?? (ultimoReg as any).data ?? '') : null
