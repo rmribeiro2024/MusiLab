@@ -417,6 +417,7 @@ export default function VisaoSemana() {
 
   // ── Modo "Copiar para turmas" ─────────────────────────────────────────────
   type CopiarModoState = { planoId: string; srcTidStr: string; srcYmd: string; srcNome: string; srcEscolaId: string; srcSegmentoId: string }
+  const [menuAberto, setMenuAberto] = useState<string | null>(null)
   const [copiarModo, setCopiarModo] = useState<CopiarModoState | null>(null)
   const [copiadosNaModo, setCopiadosNaModo] = useState<Map<string, string>>(new Map()) // Map<tidYmd, planejamentoId>
 
@@ -979,17 +980,35 @@ export default function VisaoSemana() {
                           )}
                         </div>
 
-                        {/* ── Botão copiar aula ── */}
+                        {/* ── Botão ··· e dropdown ── */}
                         {temPlano && !past && !copiarModo && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); iniciarCopiarModo(aula, tidStr, ymd, turmaNome) }}
-                            className="absolute top-[5px] right-[5px] w-5 h-5 rounded flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#2D3748] transition-all z-10 opacity-0 group-hover:opacity-100"
-                            title="Copiar aula para outras turmas"
-                          >
-                            <svg width="12" height="3" viewBox="0 0 12 3" fill="currentColor">
-                              <circle cx="1.5" cy="1.5" r="1.5"/><circle cx="6" cy="1.5" r="1.5"/><circle cx="10.5" cy="1.5" r="1.5"/>
-                            </svg>
-                          </button>
+                          <div className="absolute top-[5px] right-[5px] z-10">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setMenuAberto(menuAberto === tidYmd ? null : tidYmd) }}
+                              className="w-5 h-5 rounded flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#2D3748] transition-all opacity-0 group-hover:opacity-100"
+                              title="Opções"
+                            >
+                              <svg width="12" height="3" viewBox="0 0 12 3" fill="currentColor">
+                                <circle cx="1.5" cy="1.5" r="1.5"/><circle cx="6" cy="1.5" r="1.5"/><circle cx="10.5" cy="1.5" r="1.5"/>
+                              </svg>
+                            </button>
+                            {menuAberto === tidYmd && (
+                              <>
+                                <div className="fixed inset-0 z-20" onClick={(e) => { e.stopPropagation(); setMenuAberto(null) }} />
+                                <div
+                                  className="absolute top-[22px] right-0 z-30 bg-white dark:bg-[#1E2A4A] rounded-[10px] shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-[#E6EAF0] dark:border-[#374151] py-1 w-[160px]"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <button
+                                    onClick={() => { setMenuAberto(null); iniciarCopiarModo(aula, tidStr, ymd, turmaNome) }}
+                                    className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
+                                  >
+                                    Copiar aula
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         )}
 
                         {/* seção última aula / aula planejada */}
