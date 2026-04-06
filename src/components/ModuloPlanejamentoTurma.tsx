@@ -990,21 +990,21 @@ function ListaTurmasMPT({ turmaSelecionada, onSelecionarTurma }: {
   const totalTurmas = gruposFiltradosOrdenados.reduce((acc, g) => acc + g.turmas.length, 0)
 
   return (
-    <aside className="w-52 flex-shrink-0 flex flex-col overflow-hidden bg-white dark:bg-[#111827] border-r border-[#E6EAF0] dark:border-[#374151]" style={{ maxHeight: 'calc(100vh - 160px)' }}>
+    <aside className="w-52 flex-shrink-0 flex flex-col gap-2">
       {/* Busca + contagem */}
-      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#E6EAF0] dark:border-[#374151]">
+      <div className="flex items-center gap-2">
         <input
           type="text"
           value={busca}
           onChange={e => setBusca(e.target.value)}
           placeholder="Buscar turma..."
-          className="flex-1 text-[12px] rounded-[7px] border border-[#E6EAF0] dark:border-[#374151] bg-[#F6F8FB] dark:bg-[#0F172A] text-slate-700 dark:text-[#D1D5DB] placeholder:text-slate-400 dark:placeholder:text-[#6B7280] px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-indigo-400"
+          className="flex-1 text-[12px] rounded-[8px] border border-[#E6EAF0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-slate-700 dark:text-[#D1D5DB] placeholder:text-slate-400 dark:placeholder:text-[#6B7280] px-3 py-1.5 outline-none focus:ring-1 focus:ring-indigo-400"
         />
         <span className="text-[11px] text-slate-400 dark:text-[#6B7280] font-medium flex-shrink-0">{totalTurmas}</span>
       </div>
 
       {/* Lista agrupada */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
         {gruposFiltradosOrdenados.length === 0 ? (
           <div className="px-3 py-6 text-center text-[11px] text-slate-400 dark:text-[#6B7280]">
             Nenhuma turma encontrada
@@ -2552,7 +2552,7 @@ export default function ModuloPlanejamentoTurma() {
         </button>
       )}
 
-      <div className="flex items-start bg-white dark:bg-[#111827] rounded-2xl border border-[#E6EAF0] dark:border-[#374151] overflow-hidden shadow-sm">
+      <div className="flex gap-5 items-start">
         {/* Lista de turmas — escondida no mobile quando detalhe aberto */}
         <div className={mobileTela === 'detalhe' ? 'hidden md:block' : 'flex-1 md:flex-none'}>
           <ListaTurmasMPT
@@ -2562,7 +2562,7 @@ export default function ModuloPlanejamentoTurma() {
         </div>
 
         {/* Conteúdo — escondido no mobile quando lista aberta */}
-        <div className={`flex-1 min-w-0 space-y-3 p-4 ${mobileTela === 'lista' ? 'hidden md:block' : ''}`}>
+        <div className={`flex-1 min-w-0 space-y-3 ${mobileTela === 'lista' ? 'hidden md:block' : ''}`}>
           {!turmaSelecionada && <EstadoVazio />}
           {turmaSelecionada && <ConteudoTurma key={turmaSelecionada.turmaId} calendarDateStr={hojeStr} />}
         </div>
