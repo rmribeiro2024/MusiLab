@@ -1597,26 +1597,12 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
     <div className="space-y-3">
 
       {/* ── IDENTIDADE DA TURMA ─────────────────────────────────────────────── */}
-      <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-[10px] bg-[#EEEEFF] flex-shrink-0" />
-          <div>
-            <div className="text-[14px] font-semibold text-slate-700 leading-tight">{turmaNome}</div>
-            {escolaNome && <div className="text-[11px] text-slate-400 mt-0.5">{escolaNome}</div>}
-          </div>
+      <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 py-3 flex items-center gap-3">
+        <div className="w-9 h-9 rounded-[10px] bg-[#EEEEFF] flex-shrink-0" />
+        <div>
+          <div className="text-[14px] font-semibold text-slate-700 leading-tight">{turmaNome}</div>
+          {escolaNome && <div className="text-[11px] text-slate-400 mt-0.5">{escolaNome}</div>}
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            const data = proximaAulaData || calendarDateStr
-            setDataNavegacao(new Date(data))
-            setModoInicialNavegacao(null)
-            setViewModeGlobal('porTurmas')
-          }}
-          className="text-[11.5px] font-semibold text-[#5B5FEA] bg-[#EEEEFF] hover:bg-[#E0E1FC] px-3 py-1.5 rounded-[7px] transition-colors flex-shrink-0"
-        >
-          Planejar aula
-        </button>
       </div>
 
       {/* ── ABAS (underline) ─────────────────────────────────────────────────── */}
@@ -2584,10 +2570,10 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
               setModoInicialNavegacao(null)
               setViewModeGlobal('porTurmas')
             }}
-            className="w-full flex items-center justify-between bg-indigo-500 hover:bg-indigo-600 text-white font-semibold text-sm px-5 py-3.5 rounded-2xl transition-colors"
+            className="w-full flex items-center justify-between bg-[#EEEEFF] hover:bg-[#E0E1FC] text-[#5B5FEA] font-semibold text-[13px] px-4 py-3 rounded-[10px] border border-[#C7C9F8] transition-colors"
           >
             <span>Planejar próxima aula{proximaAulaData ? ` · ${formatarData(proximaAulaData)}` : ''}</span>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </button>
