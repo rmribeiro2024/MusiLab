@@ -448,7 +448,7 @@ export default function VisaoSemana() {
   React.useEffect(() => {
     if (!copiarModo) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setCopiarModo(null); setCopiadosNaModo(new Map()) }
+      if (e.key === 'Escape') { copiadosNaModo.forEach(id => excluirPlanejamento(id)); setCopiarModo(null); setCopiadosNaModo(new Map()) }
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
@@ -1141,6 +1141,15 @@ export default function VisaoSemana() {
             )}
           </div>
           <div className="w-px h-3.5 bg-[#E6EAF0] dark:bg-[#374151]" />
+          <button
+            onClick={() => {
+              copiadosNaModo.forEach(id => excluirPlanejamento(id))
+              setCopiarModo(null); setCopiadosNaModo(new Map())
+            }}
+            className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition whitespace-nowrap"
+          >
+            Cancelar
+          </button>
           <button
             onClick={() => { setCopiarModo(null); setCopiadosNaModo(new Map()) }}
             className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition whitespace-nowrap"
