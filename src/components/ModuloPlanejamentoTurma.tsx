@@ -1090,7 +1090,7 @@ function EstadoVazio() {
 
 function InfoRow({ icon, label, valor }: { icon: string; label: string; valor: string; destacado?: boolean }) {
   return (
-    <div className="text-xs rounded-lg px-3 py-2 bg-slate-50 text-slate-600">
+    <div className="text-xs px-3 py-2 text-slate-600">
       <span className="mr-1">{icon}</span>
       <span className="font-medium">{label}:</span>{' '}
       <span style={{ whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: valor }} />
