@@ -628,9 +628,9 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
                           </button>
                         )
                       })}
-                      {Array.from({ length: Math.max(0, 4 - items.length) }).map((_, pi) => (
-                        <div key={`ph-${pi}`} style={{ borderRadius: 9, border: `1px solid ${phBorder}`, background: phBg, minHeight: 62 }} />
-                      ))}
+                      {isUltimoMes && items.length < 4 && (
+                        <div key="ph-0" style={{ borderRadius: 9, border: `1px dashed ${isDark ? '#374151' : '#D1D5DB'}`, background: 'transparent', minHeight: 62, opacity: 0.5 }} />
+                      )}
                     </div>
                   </div>
                 )
@@ -2395,8 +2395,10 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                   </div>
                   </div>{/* fim header cinza */}
 
-                  {/* Conteúdo — desktop 2 colunas (sm:) / mobile empilhado */}
-                  {vivenciasAbertas && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Conteúdo — 2 colunas só quando ambas têm dados */}
+                  {vivenciasAbertas && (() => {
+                    const meiosTemDados = resumoTurma.meios.some(m => m.count > 0)
+                    return <div className={meiosTemDados ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''}>
                     {/* Vivências musicais */}
                     {(() => {
                       const temDados = resumoTurma.vivencias.some(v => v.count > 0)
@@ -2420,29 +2422,27 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                       )
                     })()}
 
-                    {/* Meios expressivos */}
-                    {(() => {
-                      const temDados = resumoTurma.meios.some(m => m.count > 0)
+                    {/* Meios expressivos — só renderiza se tiver dados */}
+                    {resumoTurma.meios.some(m => m.count > 0) && (() => {
+                      const temDados = true
                       return (
                         <div className="border border-slate-100 rounded-lg p-2.5" style={{ borderTop: '2px solid #34d399' }}>
                           <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-500 mb-2">Meios expressivos</p>
-                          {!temDados
-                            ? <p className="text-[10px] text-slate-300 italic">Sem dados no período</p>
-                            : resumoTurma.meios.map((item, i) => (
-                              <div key={item.label} className={`flex items-center gap-1.5 mb-1.5 last:mb-0 ${item.count === 0 ? 'opacity-30' : ''}`}>
-                                <span className={`text-[9px] font-bold w-3 shrink-0 ${i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-400' : 'text-slate-300'}`}>{i + 1}</span>
-                                <span className="text-[10px] text-slate-600 flex-1 truncate">{item.label}</span>
-                                <div className="w-16 sm:w-8 h-[4px] bg-slate-100 rounded-full overflow-hidden shrink-0">
-                                  <div className="h-full rounded-full bg-emerald-400" style={{ width: `${(item.count / maxMei) * 100}%` }} />
-                                </div>
-                                <span className={`text-[9px] font-semibold w-4 text-right shrink-0 ${i === 0 ? 'text-emerald-500' : 'text-slate-300'}`}>{item.count}</span>
+                          {resumoTurma.meios.map((item, i) => (
+                            <div key={item.label} className={`flex items-center gap-1.5 mb-1.5 last:mb-0 ${item.count === 0 ? 'opacity-30' : ''}`}>
+                              <span className={`text-[9px] font-bold w-3 shrink-0 ${i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-400' : 'text-slate-300'}`}>{i + 1}</span>
+                              <span className="text-[10px] text-slate-600 flex-1 truncate">{item.label}</span>
+                              <div className="w-16 sm:w-8 h-[4px] bg-slate-100 rounded-full overflow-hidden shrink-0">
+                                <div className="h-full rounded-full bg-emerald-400" style={{ width: `${(item.count / maxMei) * 100}%` }} />
                               </div>
-                            ))
-                          }
+                              <span className={`text-[9px] font-semibold w-4 text-right shrink-0 ${i === 0 ? 'text-emerald-500' : 'text-slate-300'}`}>{item.count}</span>
+                            </div>
+                          ))}
                         </div>
                       )
                     })()}
-                  </div>}
+                  </div>
+                  })()}
                 </div>
               </>
             )
