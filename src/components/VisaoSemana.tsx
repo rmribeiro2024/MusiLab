@@ -411,6 +411,10 @@ export default function VisaoSemana() {
   type CopyConfirm = { srcPlanoId: string; srcNome: string; dst: { anoLetivoId: string; escolaId: string; segmentoId: string; turmaId: string }; dstNome: string; dataPrevista: string }
   const [copyConfirm, setCopyConfirm] = useState<CopyConfirm | null>(null)
 
+  type MesmaSerieItem = { dst: { anoLetivoId: string; escolaId: string; segmentoId: string; turmaId: string }; turmaNome: string; escolaNome: string; ymd: string; diaNome: string }
+  type MesmaSerieConfirm = { planoId: string; srcNome: string; itens: MesmaSerieItem[] }
+  const [mesmaSerieConfirm, setMesmaSerieConfirm] = useState<MesmaSerieConfirm | null>(null)
+
   // ── Modo "Copiar para turmas" ─────────────────────────────────────────────
   type CopiarModoState = { planoId: string; srcTidStr: string; srcYmd: string; srcNome: string; srcEscolaId: string; srcSegmentoId: string }
   const [copiarModo, setCopiarModo] = useState<CopiarModoState | null>(null)
@@ -606,20 +610,27 @@ export default function VisaoSemana() {
   function copiarParaMesmaSerie(aula: any, tidStr: string, ymd: string) {
     const plano = planejamentos.find(p => String(p.turmaId) === tidStr && p.dataPrevista === ymd)
     if (!plano) return
-    let count = 0
     const jaCopiados = new Set<string>()
-    diasDaSemana.forEach(({ ymd: dayYmd }) => {
+    const itens: MesmaSerieItem[] = []
+    const diasNomes = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex']
+    diasDaSemana.forEach(({ ymd: dayYmd }, idx) => {
       obterTurmasDoDia(dayYmd).forEach((a: any) => {
         const dstTid = String(a.turmaId)
         if (dstTid !== tidStr && String(a.escolaId) === String(aula.escolaId ?? '') && String(a.segmentoId) === String(aula.segmentoId) && !jaCopiados.has(dstTid)) {
           jaCopiados.add(dstTid)
-          copiarPlanejamento(plano.id, { anoLetivoId: String(a.anoLetivoId ?? ''), escolaId: String(a.escolaId ?? ''), segmentoId: String(a.segmentoId), turmaId: dstTid }, dayYmd)
-          count++
+          itens.push({
+            dst: { anoLetivoId: String(a.anoLetivoId ?? ''), escolaId: String(a.escolaId ?? ''), segmentoId: String(a.segmentoId), turmaId: dstTid },
+            turmaNome: getNomeTurma(String(a.anoLetivoId ?? ''), String(a.escolaId ?? ''), String(a.segmentoId), dstTid, anosLetivos),
+            escolaNome: getNomeEscola(String(a.anoLetivoId ?? ''), String(a.escolaId ?? ''), anosLetivos),
+            ymd: dayYmd,
+            diaNome: diasNomes[idx] ?? '',
+          })
         }
       })
     })
     setMenuAberto(null)
-    showToast(count > 0 ? `Copiado para ${count} turma${count > 1 ? 's' : ''} ✅` : 'Nenhuma outra turma da mesma série na semana')
+    if (itens.length === 0) { showToast('Nenhuma outra turma da mesma série na semana'); return }
+    setMesmaSerieConfirm({ planoId: plano.id, srcNome: getNomeTurma(String(aula.anoLetivoId ?? ''), String(aula.escolaId ?? ''), String(aula.segmentoId), tidStr, anosLetivos), itens })
   }
 
   function handleCopiarEmModo(aula: any, tidStr: string, ymd: string) {
@@ -1102,6 +1113,40 @@ export default function VisaoSemana() {
           )
         })}
       </div>
+
+      {/* ── Modal: confirmar cópia mesma série ────────────────────────────── */}
+      {mesmaSerieConfirm && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setMesmaSerieConfirm(null)}>
+          <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <p className="text-[13px] font-semibold text-slate-700 dark:text-[#E5E7EB] mb-1">Copiar aula de <span className="text-indigo-600 dark:text-indigo-400">{mesmaSerieConfirm.srcNome}</span> para:</p>
+            <ul className="mt-3 space-y-1.5 max-h-56 overflow-y-auto">
+              {mesmaSerieConfirm.itens.map((item, i) => (
+                <li key={i} className="flex items-center justify-between text-[12px] bg-slate-50 dark:bg-[#273344] rounded-lg px-3 py-2">
+                  <span className="font-semibold text-slate-700 dark:text-[#E5E7EB]">{item.turmaNome}</span>
+                  <span className="text-slate-400 dark:text-[#6B7280] text-[11px] text-right">
+                    {item.escolaNome && <span className="block leading-tight">{item.escolaNome}</span>}
+                    <span>{item.diaNome}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => setMesmaSerieConfirm(null)}
+                className="flex-1 text-[12px] font-semibold py-2 rounded-xl border border-[#E6EAF0] dark:border-[#374151] text-slate-500 dark:text-[#9CA3AF] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
+              >Cancelar</button>
+              <button
+                onClick={() => {
+                  mesmaSerieConfirm.itens.forEach(item => copiarPlanejamento(mesmaSerieConfirm.planoId, item.dst, item.ymd))
+                  showToast(`Copiado para ${mesmaSerieConfirm.itens.length} turma${mesmaSerieConfirm.itens.length > 1 ? 's' : ''} ✅`)
+                  setMesmaSerieConfirm(null)
+                }}
+                className="flex-1 text-[12px] font-semibold py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition"
+              >Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal: confirmar cópia de planejamento ─────────────────────────── */}
       {copyConfirm && (
