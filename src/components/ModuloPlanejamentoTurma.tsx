@@ -2375,7 +2375,12 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                           ))}
                         </div>
                         {viv.totalCount > 0 && (
-                          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{viv.totalCount}</span>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, color: '#818CF8',
+                            background: isDark ? '#312e81' : '#EEF2FF',
+                            border: `1px solid ${isDark ? '#4338ca' : '#C7D2FE'}`,
+                            borderRadius: 99, padding: '1px 6px', flexShrink: 0,
+                          }}>{viv.totalCount}</span>
                         )}
                       </div>
                       {viv.ausenteUltimoMes && (
