@@ -560,6 +560,7 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
         const bg = 'transparent'
         const cardBg = isDark ? '#111827' : '#ffffff'
         const cardBorder = isDark ? '#374151' : '#d1d5db'
+        const cardLeftAccent = isDark ? '#4B5563' : '#C7C9F8'
         const sepBorder = isDark ? '#374151' : '#d4d4d8'
         const labelColor = isDark ? '#9CA3AF' : '#64748b'
         const numColor = isDark ? '#E5E7EB' : '#0f172a'
@@ -594,7 +595,7 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
                           return (
                             <button key={item.dataStr} type="button" data-date={item.dataStr}
                               onClick={() => setDataAtiva(isAtivo ? null : item.dataStr)}
-                              style={{ borderRadius: 9, border: isAtivo ? '2px solid #5B5FEA' : `1px solid ${cardBorder}`, background: cardBg, minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2, cursor: 'pointer', textAlign: 'left' }}>
+                              style={{ borderRadius: 9, border: isAtivo ? '2px solid #5B5FEA' : `1px solid ${cardBorder}`, borderLeft: isAtivo ? '2px solid #5B5FEA' : `3px solid ${cardLeftAccent}`, background: cardBg, minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2, cursor: 'pointer', textAlign: 'left' }}>
                               <span style={{ fontSize: 14, fontWeight: 800, color: '#6B7280', lineHeight: 1 }}>{dd}</span>
                             </button>
                           )
@@ -602,7 +603,7 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
 
                         if (item.status === 'cancelada') {
                           return (
-                            <div key={item.dataStr} style={{ borderRadius: 9, border: `1px solid ${cardBorder}`, background: cardBg, minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <div key={item.dataStr} style={{ borderRadius: 9, border: `1px solid ${cardBorder}`, borderLeft: `3px solid ${cardLeftAccent}`, background: cardBg, minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
                               <span style={{ fontSize: 14, fontWeight: 800, color: '#6B7280', lineHeight: 1, textDecoration: 'line-through' }}>{dd}</span>
                               {item.planoTitulo && (
                                 <span style={{ fontSize: 9.5, color: '#6B7280', lineHeight: 1.3, marginTop: 2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{item.planoTitulo.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
@@ -616,7 +617,7 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
                         return (
                           <button key={item.dataStr} type="button" data-date={item.dataStr}
                             onClick={() => abrirPainel(item)}
-                            style={{ borderRadius: 9, border: `1px solid ${cardBorder}`, background: cardBg, minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2, cursor: 'pointer', textAlign: 'left' }}
+                            style={{ borderRadius: 9, border: `1px solid ${cardBorder}`, borderLeft: `3px solid ${cardLeftAccent}`, background: cardBg, minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2, cursor: 'pointer', textAlign: 'left' }}
                             onMouseEnter={e => { e.currentTarget.style.boxShadow = isDark ? '0 2px 8px rgba(0,0,0,.4)' : '0 2px 8px rgba(0,0,0,.09)'; e.currentTarget.style.borderColor = isDark ? '#6B7280' : '#94a3b8' }}
                             onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = cardBorder }}
                           >
