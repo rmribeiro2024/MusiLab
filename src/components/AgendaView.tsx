@@ -891,38 +891,60 @@ async function gerarBriefingGemini(slots: AulaSlot[]): Promise<string> {
   const linhas: string[] = []
   linhas.push(`Hoje (${hoje}) — ${slots.length} aula${slots.length !== 1 ? 's' : ''}`)
 
+  const NOMES_GENERICOS = new Set(['introdução', 'desenvolvimento', 'fechamento', 'abertura', 'aquecimento', 'encerramento'])
+
+  const semPlano: string[] = []
+  const titulosUnicos = new Set<string>()
+  const escolasSet = new Set<string>()
+
   slots.forEach(s => {
     const h = s.aulaGrade.horario ? ` às ${formatHorario(s.aulaGrade.horario)}` : ''
-    const escola = s.nomeEscola ? ` [${s.nomeEscola}]` : ''
+    const escola = s.nomeEscola ?? ''
+    if (escola) escolasSet.add(escola)
     if (s.plano) {
-      const ativs = (s.plano.atividadesRoteiro ?? []).slice(0, 4).map(a => a.nome).join(', ')
-      linhas.push(`- ${s.nomeTurma}${escola}${h} | "${s.plano.titulo}"${ativs ? ` | ${ativs}` : ''}`)
+      const ativs = (s.plano.atividadesRoteiro ?? [])
+        .map(a => a.nome?.trim())
+        .filter(n => n && !NOMES_GENERICOS.has(n.toLowerCase()))
+        .slice(0, 3)
+        .join(', ')
+      const titulo = s.plano.titulo ?? ''
+      if (titulo) titulosUnicos.add(titulo)
+      linhas.push(`- ${s.nomeTurma}${escola ? ` [${escola}]` : ''}${h} | "${titulo}"${ativs ? ` | ${ativs}` : ''}`)
     } else {
-      linhas.push(`- ${s.nomeTurma}${escola}${h} | SEM PLANO`)
+      semPlano.push(`${s.nomeTurma}${escola ? ` [${escola}]` : ''}${h}`)
+      linhas.push(`- ${s.nomeTurma}${escola ? ` [${escola}]` : ''}${h} | SEM PLANO`)
     }
   })
 
   const materiais = [...new Set(slots.flatMap(s => s.plano?.materiais ?? []).filter(Boolean))]
   if (materiais.length) linhas.push(`Materiais: ${materiais.join(', ')}`)
 
-  const prompt = `Você é um assistente operacional para professores de música. Transforme os dados abaixo em alertas concretos para o dia de HOJE.
+  // Fatos estruturais calculados antes de enviar à IA
+  const fatosExtras: string[] = []
+  if (titulosUnicos.size === 1) fatosExtras.push(`Mesma música/plano em todas as ${slots.length} aulas: "${[...titulosUnicos][0]}"`)
+  if (escolasSet.size > 1) fatosExtras.push(`Duas escolas no dia: ${[...escolasSet].join(' e ')}`)
+  if (semPlano.length) fatosExtras.push(`Sem plano: ${semPlano.join('; ')}`)
+  if (fatosExtras.length) linhas.push(...fatosExtras)
 
-REGRAS — sem exceção:
-- Use APENAS os dados fornecidos. Proibido inferir, inventar ou sugerir conteúdo pedagógico.
-- Proibido conselhos genéricos ("mantenha o engajamento", "seja criativo", "lembre-se de").
-- Se não há nada relevante sobre uma turma, não a mencione.
-- Máximo 5 tópicos curtos, começando com "•".
+  const prompt = `Você é um assistente operacional para professores de música.
 
-PRIORIDADE (nesta ordem):
-1. Turmas SEM PLANO — cite o nome e horário
-2. Materiais a preparar — apenas os listados nos dados
-3. Padrões operacionais relevantes (ex: mesma música em todas as turmas, aulas consecutivas sem intervalo, escola diferente)
-4. Qualquer outro dado concreto e acionável
+REGRAS absolutas:
+- Use APENAS os dados fornecidos. Proibido inventar, inferir ou sugerir conteúdo pedagógico.
+- Proibido repetir a grade de horários — o professor já a vê na tela.
+- Proibido conselhos genéricos ("seja criativo", "mantenha o engajamento", "lembre-se de").
+- Se não há alertas reais, responda exatamente: "Tudo planejado. Nenhum alerta para hoje."
+- Máximo 4 tópicos curtos, começando com "•".
+
+O QUE VALE mencionar (só se presente nos dados):
+- Turmas SEM PLANO (já destacadas nos dados)
+- Materiais concretos a preparar (apenas os listados)
+- Padrão de repetição de música/plano (já calculado nos dados)
+- Transição entre duas escolas no mesmo dia (já calculado nos dados)
 
 DADOS:
 ${linhas.join('\n')}
 
-Responda apenas com os tópicos. Sem título, sem markdown extra, sem linha em branco entre tópicos.`
+Responda apenas com os tópicos ou com a frase de fallback. Sem título, sem markdown.`
 
   const resp = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
