@@ -2331,15 +2331,20 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
               {/* Conteúdo */}
               {vivenciasAbertas && (
                 <div>
-                  {/* Cabeçalho de meses — único, não repete por linha */}
+                  {/* Cabeçalho de meses — alinhado exatamente com os dots abaixo */}
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6, paddingLeft: 2 }}>
                     <div style={{ width: 80, flexShrink: 0 }} />
-                    <div style={{ display: 'flex', gap: 10, flex: 1 }}>
-                      {vivenciasMeses.meses.map(mesKey => (
-                        <span key={mesKey} style={{ fontSize: 9, fontWeight: 700, color: '#CBD5E1', textTransform: 'uppercase', letterSpacing: '.4px' }}>
-                          {vivenciasMeses.vivencias[0]?.meses.find(m => m.key === mesKey)?.label ?? ''}
-                        </span>
-                      ))}
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      {vivenciasMeses.meses.map(mesKey => {
+                        const dotsCount = vivenciasMeses.vivencias[0]?.meses.find(m => m.key === mesKey)?.dots.length ?? 0
+                        const groupWidth = dotsCount * 8 + Math.max(0, dotsCount - 1) * 4
+                        const mesLabel = vivenciasMeses.vivencias[0]?.meses.find(m => m.key === mesKey)?.label ?? ''
+                        return (
+                          <span key={mesKey} style={{ width: groupWidth, flexShrink: 0, display: 'inline-block', fontSize: 9, fontWeight: 700, color: '#CBD5E1', textTransform: 'uppercase', letterSpacing: '.4px' }}>
+                            {mesLabel}
+                          </span>
+                        )
+                      })}
                     </div>
                   </div>
 
