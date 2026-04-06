@@ -1003,8 +1003,10 @@ export default function VisaoSemana() {
                         )}
                         {menuAberto === tidYmd && (
                           <div
-                            className="absolute top-[22px] right-[2px] z-30 bg-white dark:bg-[#1E2A4A] rounded-[10px] shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-[#E6EAF0] dark:border-[#374151] py-1 w-[172px]"
+                            className="absolute top-[22px] right-[2px] z-30 bg-white dark:bg-[#1E2A4A] rounded-[10px] shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-[#E6EAF0] dark:border-[#374151] py-1 w-[180px]"
                             onClick={(e) => e.stopPropagation()}
+                            onMouseEnter={(e) => e.stopPropagation()}
+                            onMouseLeave={(e) => e.stopPropagation()}
                           >
                             <button
                               onClick={() => copiarParaMesmaSerie(aula, tidStr, ymd)}
@@ -1012,8 +1014,8 @@ export default function VisaoSemana() {
                             >
                               <span className="text-[11px] shrink-0">⚡</span>
                               <div>
-                                <div className="font-semibold leading-tight">Mesma série</div>
-                                <div className="text-[9.5px] text-slate-400 dark:text-[#6B7280] leading-tight mt-0.5">Copia para todas as turmas</div>
+                                <div className="font-semibold leading-tight">Copiar para a série toda</div>
+                                <div className="text-[9.5px] text-slate-400 dark:text-[#6B7280] leading-tight mt-0.5">Todas as turmas do mesmo ano</div>
                               </div>
                             </button>
                             <div className="mx-2 border-t border-[#F1F3F8] dark:border-[#374151]" />
@@ -1023,8 +1025,8 @@ export default function VisaoSemana() {
                             >
                               <span className="text-[11px] shrink-0">☑</span>
                               <div>
-                                <div className="font-semibold leading-tight">Selecionar turmas</div>
-                                <div className="text-[9.5px] text-slate-400 dark:text-[#6B7280] leading-tight mt-0.5">Escolha onde copiar</div>
+                                <div className="font-semibold leading-tight">Copiar para turmas específicas</div>
+                                <div className="text-[9.5px] text-slate-400 dark:text-[#6B7280] leading-tight mt-0.5">Marque quais turmas receberão</div>
                               </div>
                             </button>
                           </div>
