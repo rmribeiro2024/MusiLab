@@ -7,7 +7,7 @@ import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContex
 import ModalRegistroPosAula from './modals/ModalRegistroPosAula'
 import { showToast } from '../lib/toast'
 
-export default function TelaPosAula({ onSaved }: { onSaved?: () => void } = {}) {
+export default function TelaPosAula() {
     const { planos, sugerirPlanoParaTurma, editarRegistro } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
     const {
@@ -77,9 +77,7 @@ export default function TelaPosAula({ onSaved }: { onSaved?: () => void } = {}) 
         setPainelVisible(false)
         setTimeout(() => {
             setPainelAberto(false)
-            requestAnimationFrame(() => {
-                document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' })
-            })
+            document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' })
         }, 280)
     }
 
@@ -395,7 +393,6 @@ export default function TelaPosAula({ onSaved }: { onSaved?: () => void } = {}) 
                             <ModalRegistroPosAula
                                 inlineMode={true}
                                 onVoltar={fecharPainel}
-                                onSaved={onSaved}
                             />
                         </Suspense>
                     </div>
