@@ -2405,7 +2405,12 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                             background: isDark ? '#1F2937' : '#F8F9FC',
                             opacity: m.count === 0 ? 0.4 : 1,
                           }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: '#818CF8' }}>{m.count}</span>
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, color: '#818CF8',
+                              background: isDark ? '#312e81' : '#EEF2FF',
+                              border: `1px solid ${isDark ? '#4338ca' : '#C7D2FE'}`,
+                              borderRadius: 4, padding: '1px 5px',
+                            }}>{m.count}</span>
                             <span style={{ fontSize: 11, color: isDark ? '#9CA3AF' : '#64748b', fontWeight: 500 }}>{m.label}</span>
                           </div>
                         ))}
