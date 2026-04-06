@@ -4,6 +4,7 @@ import { useCalendarioContext } from '../../contexts'
 import { useAnoLetivoContext, RUBRICAS_PADRAO } from '../../contexts/AnoLetivoContext'
 import { usePlanosContext, useAplicacoesContext } from '../../contexts'
 import { useEstrategiasContext } from '../../contexts'
+import { useRepertorioContext } from '../../contexts/RepertorioContext'
 import { startRecording, stopRecording, blobToBase64, base64ToObjectUrl, base64SizeKb } from '../../lib/audioRecorder'
 import { showToast } from '../../lib/toast'
 import { uploadEvidencia, isGoogleDriveConfigured, isMobileDevice, hasValidToken, checkRedirectToken, redirectToGoogleAuth, initDriveAuth, requestDriveToken } from '../../lib/googleDrive'
@@ -483,6 +484,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
     const { planos, setPlanos, salvarRegistro, editarRegistro, excluirRegistro } = usePlanosContext()
     const { aplicacoes, atualizarStatusAplicacao } = useAplicacoesContext()
     const { estrategias } = useEstrategiasContext()
+    const { setViewMode } = useRepertorioContext()
     const setRegSerieSel: ((v: string) => void) | undefined = undefined
 
     // ── IA pós-aula ──
@@ -2239,12 +2241,15 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                 <button
                                     onClick={() => {
                                         salvarRegistro()
-                                        // Limpa rascunho
                                         if (regTurmaSel && novoRegistro.dataAula)
                                             localStorage.removeItem(`posAulaDraft-${regTurmaSel}-${novoRegistro.dataAula}`)
                                         setVerRegistros(false)
-                                        if (onVoltar) onVoltar()
-                                        if (onSaved) onSaved()
+                                        if (inlineMode) {
+                                            setViewMode('agenda')
+                                        } else {
+                                            if (onVoltar) onVoltar()
+                                            if (onSaved) onSaved()
+                                        }
                                     }}
                                     className="px-4 py-2 rounded-lg border border-[#cbd5e1] dark:border-[#374151] bg-transparent text-[#64748b] dark:text-[#9CA3AF] text-[13px] font-semibold hover:border-[#94a3b8] dark:hover:border-[#6b7280] hover:text-[#475569] dark:hover:text-[#E5E7EB] transition">
                                     ✓ {saveLabel || 'Salvar registro'}
