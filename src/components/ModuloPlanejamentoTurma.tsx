@@ -2124,7 +2124,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             const ausentes  = chamada ? chamada.filter(c => !c.presente) : []
             return (
               <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151]" style={{ background: '#E9EDF3' }}>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151]" style={{ background: '#F1F4F8' }}>
                   <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
                     Avaliação da última aula
                   </span>
@@ -2226,7 +2226,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                 )}
                 <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 py-3">
                   {/* Header */}
-                  <div className="-mx-4 -mt-3 px-4 py-3 mb-3 rounded-t-[9px] border-b border-[#E6EAF0] dark:border-[#374151]" style={{ background: '#E9EDF3' }}>
+                  <div className="-mx-4 -mt-3 px-4 py-3 mb-3 rounded-t-[9px] border-b border-[#E6EAF0] dark:border-[#374151]" style={{ background: '#F1F4F8' }}>
                   <div className="flex items-start justify-between gap-2 flex-wrap">
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">
@@ -2396,7 +2396,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             <button
               type="button"
               onClick={() => setTimelineAberta(v => !v)}
-              className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors" style={{ background: '#E9EDF3' }}
+              className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors" style={{ background: '#F1F4F8' }}
             >
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Aulas realizadas</span>
               <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${timelineAberta ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -2423,7 +2423,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
           {/* ── 5. Aulas anteriores — accordion ──────────────────────────── */}
           {listaHistorico.length > 0 && (
             <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
-              <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[#E6EAF0] dark:border-[#374151]" style={{ background: '#E9EDF3' }}>
+              <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[#E6EAF0] dark:border-[#374151]" style={{ background: '#F1F4F8' }}>
                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aulas anteriores</h3>
                 <span className="text-[10px] text-slate-400">{listaHistorico.length} aula{listaHistorico.length !== 1 ? 's' : ''}</span>
               </div>
