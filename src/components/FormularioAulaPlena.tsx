@@ -416,22 +416,25 @@ Responda APENAS com JSON válido, sem texto extra:
         .map(a => `- ${a.nome}${a.duracao ? ` (${a.duracao}min)` : ''}${a.descricao ? ': ' + a.descricao.replace(/<[^>]+>/g, '').slice(0, 100) : ''}`)
         .join('\n')
 
+      const faixaEtaria = (plano.faixaEtaria || []).join(', ') || plano.nivel || ''
+      const isCrianca = /\b[4-9]\b|\b10\b|infantil|criança|anos/i.test(faixaEtaria)
+
       const prompt = `Você é especialista em pedagogia musical, com domínio de Wiggins & McTighe (Understanding by Design), Madeline Hunter e Vasconcellos.
 
-Com base neste plano de aula de música, preencha os 3 campos de avaliação de forma técnica e específica — NÃO genérica.
+Com base neste plano de aula de música, preencha os 3 campos de avaliação de forma SUCINTA — frases curtas ou tópicos curtos, sem parágrafos longos.
 
 PLANO:
 Título: ${plano.titulo || '(sem título)'}
 Objetivo: ${(plano.objetivoGeral || '').replace(/<[^>]+>/g, '') || '(não informado)'}
-Nível: ${plano.nivel || (plano.faixaEtaria || [])[0] || '(não informado)'}
+Nível/Faixa etária: ${faixaEtaria || '(não informado)'}
 Conceitos: ${(plano.conceitos || []).join(', ') || '(nenhum)'}
 Atividades:
 ${listaAtividades || '(nenhuma)'}
 
 REGRAS:
-1. "evidencia" (Wiggins & McTighe — UbD) — descreva comportamentos OBSERVÁVEIS e específicos que provam aprendizagem musical. Use verbos concretos: "o aluno reproduz", "a turma improvisa", "percebe sem apoio visual". Seja específico às atividades acima.
-2. "fechamento" (Hunter — checking for understanding) — formule 1 ou 2 perguntas reflexivas para o fechamento da aula. Devem gerar metacognição musical, não respostas sim/não.
-3. "contingencia" (Vasconcellos — plano B) — descreva 1 ou 2 adaptações práticas caso a atividade principal não funcione. Seja concreto e musical.
+1. "evidencia" — 2 ou 3 tópicos curtos com verbos concretos e observáveis (ex: "Reproduz o ritmo sem apoio", "Identifica grave/agudo"). Sem parágrafos.
+2. "fechamento" — ${isCrianca ? '1 ou 2 perguntas MUITO simples e diretas, adequadas para crianças de 7–10 anos. Linguagem acessível, sem termos técnicos. Ex: "O que foi mais difícil?", "Onde você sentiu o pulso?"' : '1 ou 2 perguntas curtas e diretas para reflexão musical. Sem respostas sim/não.'}
+3. "contingencia" — 1 ou 2 tópicos curtos com adaptações práticas caso a atividade principal não funcione.
 
 Responda APENAS com JSON válido:
 {"evidencia": "...", "fechamento": "...", "contingencia": "..."}`
