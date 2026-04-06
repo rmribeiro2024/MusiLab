@@ -597,6 +597,20 @@ export default function VisaoSemana() {
     return m
   }, [planos])
 
+  // ── Progresso da semana ───────────────────────────────────────────────────
+  const progressoSemana = useMemo(() => {
+    let total = 0
+    let comPlano = 0
+    diasDaSemana.forEach(({ ymd }, idx) => {
+      const aulas = aulasPorDia[idx]?.aulas ?? []
+      aulas.forEach(aula => {
+        total++
+        if (turmasComPlano.has(`${aula.turmaId}-${ymd}`)) comPlano++
+      })
+    })
+    return { total, comPlano }
+  }, [diasDaSemana, aulasPorDia, turmasComPlano])
+
   // ── Rótulo do intervalo da semana ─────────────────────────────────────────
   const semanaLabel = useMemo(() => {
     const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
@@ -777,6 +791,26 @@ export default function VisaoSemana() {
           </>)}
         </div>
       </div>
+
+      {/* ── Barra de progresso semanal ── */}
+      {vistaAtiva === 'semana' && (
+        <div className="flex items-center gap-3 mb-4 px-[14px] py-[10px] rounded-[10px] v2-card border border-[#E6EAF0] dark:border-[#374151] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <span className="text-[18px] font-extrabold leading-none text-[#5B5FEA] dark:text-[#818cf8]">{progressoSemana.comPlano}</span>
+          <span className="text-[11px] text-slate-400 dark:text-[#6B7280]">planejadas</span>
+          <span className="text-[18px] font-extrabold leading-none text-[#f59e0b]">{progressoSemana.total - progressoSemana.comPlano}</span>
+          <span className="text-[11px] text-slate-400 dark:text-[#6B7280]">sem plano</span>
+          <span className="text-[12px] text-slate-400 dark:text-[#6B7280] ml-1 hidden sm:inline">Progresso da semana</span>
+          <div className="flex-1 h-[5px] bg-[#F1F3F8] dark:bg-[#374151] rounded-full overflow-hidden mx-1">
+            <div
+              className="h-full bg-[#5B5FEA] dark:bg-[#818cf8] rounded-full transition-[width] duration-500"
+              style={{ width: progressoSemana.total > 0 ? `${Math.round(progressoSemana.comPlano / progressoSemana.total * 100)}%` : '0%' }}
+            />
+          </div>
+          <span className="text-[12px] font-semibold text-slate-500 dark:text-[#9CA3AF] whitespace-nowrap shrink-0">
+            {progressoSemana.comPlano} de {progressoSemana.total}
+          </span>
+        </div>
+      )}
 
       {/* ── Vista Mês ── */}
       {vistaAtiva === 'mes' && (
