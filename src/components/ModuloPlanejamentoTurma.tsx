@@ -2124,7 +2124,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             const ausentes  = chamada ? chamada.filter(c => !c.presente) : []
             return (
               <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[#F1F4F8] dark:border-[#374151]">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151]" style={{ background: 'var(--v2-bg)' }}>
                   <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
                     Avaliação da última aula
                   </span>
@@ -2149,7 +2149,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                   const usarColapso = totalSecundarios >= 2
                   const mostrarSecundarios = !usarColapso || verDetalhesRegistro
                   return (
-                    <div className="px-4 py-3 space-y-2">
+                    <div className="px-4 py-3 space-y-2" style={{ background: 'var(--v2-card)' }}>
                       {registroExibido.resumoAula && (
                         <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
                       )}
@@ -2394,7 +2394,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             <button
               type="button"
               onClick={() => setTimelineAberta(v => !v)}
-              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors" style={{ background: 'var(--v2-bg)' }}
             >
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Aulas realizadas</span>
               <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${timelineAberta ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
