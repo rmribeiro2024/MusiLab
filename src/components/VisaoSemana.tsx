@@ -128,9 +128,10 @@ const ESCOLA_COLORS: { light: string; dark: string }[] = [
 
 // ─── Sub-componente: seção "Última aula" / "Aula planejada" ──────────────────
 
-function UltimaAulaSection({ registro, temPlano, foiRegistrada }: { registro: RegistroPosAula | null; temPlano?: boolean; foiRegistrada?: boolean }) {
+function UltimaAulaSection({ registro, temPlano, foiRegistrada, statusAula }: { registro: RegistroPosAula | null; temPlano?: boolean; foiRegistrada?: boolean; statusAula?: string }) {
   const status = registro ? inferStatus(registro) : null
   const cfg = status ? STATUS_CFG[status] : null
+  const cancelada = statusAula === 'cancelada' || statusAula === 'nao_houve'
 
   // Quando há plano para esta data: mostra confirmação, não a sugestão
   if (temPlano) {
@@ -138,7 +139,9 @@ function UltimaAulaSection({ registro, temPlano, foiRegistrada }: { registro: Re
       <div className="px-[10px] pt-[5px] pb-[8px] border-t border-emerald-100 dark:border-emerald-500/20">
         <div className="flex items-center gap-[5px]">
           {foiRegistrada ? (
-            <span className="text-[10.5px] text-slate-400 dark:text-slate-500">✓ Aula concluída</span>
+            cancelada
+              ? <span className="text-[10.5px] text-slate-400 dark:text-slate-500">— Aula cancelada</span>
+              : <span className="text-[10.5px] text-slate-400 dark:text-slate-500">✓ Aula concluída</span>
           ) : (
             <span className="text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400">✓ Aula planejada</span>
           )}
@@ -582,6 +585,18 @@ export default function VisaoSemana() {
     return s
   }, [planos])
 
+  const statusPorTidYmd = useMemo(() => {
+    const m = new Map<string, string>()
+    planos.forEach(plano => {
+      (plano.registrosPosAula ?? []).forEach(r => {
+        const data = (r as any).dataAula ?? (r as any).data ?? ''
+        const tid = String((r as any).turma ?? '')
+        if (tid && data) m.set(`${tid}-${data}`, (r as any).statusAula ?? '')
+      })
+    })
+    return m
+  }, [planos])
+
   // ── Rótulo do intervalo da semana ─────────────────────────────────────────
   const semanaLabel = useMemo(() => {
     const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
@@ -862,6 +877,7 @@ export default function VisaoSemana() {
                     const aoVivo = ymd === todayYmd && minInicio !== null && agoraMin >= minInicio && agoraMin <= minInicio + 50
                     // Aula concluída neste dia: opacidade reduzida
                     const foiRegistrada = turmasRegistradas.has(tidYmd)
+                    const statusAulaRegistrada = statusPorTidYmd.get(tidYmd) ?? ''
                     const isDrawerOpen = effectiveAnimStyle === 'inlineDrawer' && heroCard?.navParams.turmaId === tidStr && heroCard?.ymd === ymd
                     const cardStyle  = escolaCor
                       ? { '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties
@@ -1048,7 +1064,7 @@ export default function VisaoSemana() {
                         )}
 
                         {/* seção última aula / aula planejada */}
-                        <UltimaAulaSection registro={ultimoReg} temPlano={temPlano} foiRegistrada={foiRegistrada} />
+                        <UltimaAulaSection registro={ultimoReg} temPlano={temPlano} foiRegistrada={foiRegistrada} statusAula={statusAulaRegistrada} />
 
                         {/* ── Checkbox modo cópia ── */}
                         {copiarModo && !past && (
