@@ -2280,7 +2280,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                 {vivDropdownAberto && (
                   <div className="fixed inset-0 z-40" onClick={() => setVivDropdownAberto(false)} />
                 )}
-                <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 py-3">
+                <div className={`v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 pt-3 ${vivenciasAbertas ? 'pb-3' : 'pb-0'}`}>
                   {/* Header */}
                   <div
                     className={`-mx-4 -mt-3 px-4 py-3 rounded-t-[9px] border-b border-[#E6EAF0] dark:border-[#374151] cursor-pointer ${vivenciasAbertas ? 'mb-3' : 'mb-0'}`}
