@@ -419,7 +419,6 @@ export default function VisaoSemana() {
   type CopiarModoState = { planoId: string; srcTidStr: string; srcYmd: string; srcNome: string; srcEscolaId: string; srcSegmentoId: string }
   const [copiarModo, setCopiarModo] = useState<CopiarModoState | null>(null)
   const [copiadosNaModo, setCopiadosNaModo] = useState<Map<string, string>>(new Map()) // Map<tidYmd, planejamentoId>
-  const [menuAberto, setMenuAberto] = useState<string | null>(null) // tidYmd
 
   type HeroCardData = Omit<ModalCardHeroProps, 'onClose' | 'onEditar' | 'onRegistrar' | 'onCriarPlano' | 'animStyle'> & {
     animStyle: 'center' | 'bottomSheet' | 'sharedElement' | 'inlineDrawer'
@@ -441,13 +440,6 @@ export default function VisaoSemana() {
   }
   const effectiveAnimStyle: HeroAnimStyle = isMobile ? 'bottomSheet' : heroAnimStyle
 
-  // Fecha menu ··· ao clicar fora
-  React.useEffect(() => {
-    if (!menuAberto) return
-    const handler = () => setMenuAberto(null)
-    document.addEventListener('click', handler)
-    return () => document.removeEventListener('click', handler)
-  }, [menuAberto])
 
   React.useEffect(() => {
     if (!copiarModo) return
@@ -604,7 +596,6 @@ export default function VisaoSemana() {
     if (!plano) return
     setCopiarModo({ planoId: plano.id, srcTidStr: tidStr, srcYmd: ymd, srcNome: nome, srcEscolaId: String(aula.escolaId ?? ''), srcSegmentoId: String(aula.segmentoId) })
     setCopiadosNaModo(new Map())
-    setMenuAberto(null)
   }
 
   function copiarParaMesmaSerie(aula: any, tidStr: string, ymd: string) {
@@ -628,7 +619,6 @@ export default function VisaoSemana() {
         }
       })
     })
-    setMenuAberto(null)
     if (itens.length === 0) { showToast('Nenhuma outra turma da mesma série na semana'); return }
     setMesmaSerieConfirm({ planoId: plano.id, srcNome: getNomeTurma(String(aula.anoLetivoId ?? ''), String(aula.escolaId ?? ''), String(aula.segmentoId), tidStr, anosLetivos), itens })
   }
@@ -952,7 +942,7 @@ export default function VisaoSemana() {
                           setDragSrcId(null); setDragOverId(null)
                         }}
                         onDragEnd={() => { setDragSrcId(null); setDragOverId(null) }}
-                        className={`v2-card rounded-[8px] relative group ${(isDrawerOpen || menuAberto === tidYmd) ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-150 ${
+                        className={`v2-card rounded-[8px] relative group ${isDrawerOpen ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-150 ${
                           isDragOver
                             ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 shadow-[0_4px_16px_rgba(91,95,234,0.25)]'
                             : isDragSrc
@@ -963,7 +953,6 @@ export default function VisaoSemana() {
                             ? 'shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:-translate-y-px hover:opacity-90'
                             : 'shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-default'
                         } ${foiRegistrada && !isDragSrc ? 'opacity-[0.72]' : ''}`}
-                        style={menuAberto && menuAberto !== tidYmd ? { pointerEvents: 'none' } : undefined}
                       >
                         {/* card body */}
                         <div className={isMobile ? 'px-4 pt-3 pb-3' : 'px-[10px] pt-[8px] pb-[7px]'}>
@@ -990,10 +979,10 @@ export default function VisaoSemana() {
                           )}
                         </div>
 
-                        {/* ── Botão ··· e dropdown (copiar para turmas) ── */}
+                        {/* ── Botão copiar aula ── */}
                         {temPlano && !past && !copiarModo && (
                           <button
-                            onClick={(e) => { e.stopPropagation(); setMenuAberto(menuAberto === tidYmd ? null : tidYmd) }}
+                            onClick={(e) => { e.stopPropagation(); iniciarCopiarModo(aula, tidStr, ymd, turmaNome) }}
                             className="absolute top-[5px] right-[5px] w-5 h-5 rounded flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#2D3748] transition-all z-10 opacity-0 group-hover:opacity-100"
                             title="Copiar aula para outras turmas"
                           >
@@ -1001,37 +990,6 @@ export default function VisaoSemana() {
                               <circle cx="1.5" cy="1.5" r="1.5"/><circle cx="6" cy="1.5" r="1.5"/><circle cx="10.5" cy="1.5" r="1.5"/>
                             </svg>
                           </button>
-                        )}
-                        {menuAberto === tidYmd && (
-                          <>
-                          <div className="fixed inset-0 z-20" onClick={() => setMenuAberto(null)} />
-                          <div
-                            className="absolute top-[22px] right-[2px] z-30 bg-white dark:bg-[#1E2A4A] rounded-[10px] shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-[#E6EAF0] dark:border-[#374151] py-1 w-[180px]"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              onClick={() => copiarParaMesmaSerie(aula, tidStr, ymd)}
-                              className="w-full text-left px-3 py-2 text-[11.5px] text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] flex items-center gap-2.5 transition"
-                            >
-                              <span className="text-[11px] shrink-0">⚡</span>
-                              <div>
-                                <div className="font-semibold leading-tight">Copiar para mesma série</div>
-                                <div className="text-[9.5px] text-slate-400 dark:text-[#6B7280] leading-tight mt-0.5">Todas as turmas do mesmo ano</div>
-                              </div>
-                            </button>
-                            <div className="mx-2 border-t border-[#F1F3F8] dark:border-[#374151]" />
-                            <button
-                              onClick={() => iniciarCopiarModo(aula, tidStr, ymd, turmaNome)}
-                              className="w-full text-left px-3 py-2 text-[11.5px] text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] flex items-center gap-2.5 transition"
-                            >
-                              <span className="text-[11px] shrink-0">☑</span>
-                              <div>
-                                <div className="font-semibold leading-tight">Copiar para turmas específicas</div>
-                                <div className="text-[9.5px] text-slate-400 dark:text-[#6B7280] leading-tight mt-0.5">Marque quais turmas receberão</div>
-                              </div>
-                            </button>
-                          </div>
-                          </>
                         )}
 
                         {/* seção última aula / aula planejada */}
