@@ -618,8 +618,8 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
                           <button key={item.dataStr} type="button" data-date={item.dataStr}
                             onClick={() => abrirPainel(item)}
                             style={{ borderRadius: 9, border: `1px solid ${cardBorder}`, borderLeft: `3px solid ${cardLeftAccent}`, background: cardBg, minHeight: 62, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 2, cursor: 'pointer', textAlign: 'left' }}
-                            onMouseEnter={e => { e.currentTarget.style.boxShadow = isDark ? '0 2px 8px rgba(0,0,0,.4)' : '0 2px 8px rgba(0,0,0,.09)'; e.currentTarget.style.borderColor = isDark ? '#6B7280' : '#94a3b8' }}
-                            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = cardBorder }}
+                            onMouseEnter={e => { e.currentTarget.style.boxShadow = isDark ? '0 2px 8px rgba(0,0,0,.4)' : '0 2px 8px rgba(0,0,0,.09)' }}
+                            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none' }}
                           >
                             <span style={{ fontSize: 14, fontWeight: 800, color: numColor, lineHeight: 1 }}>{dd}</span>
                             {item.planoTitulo && (
