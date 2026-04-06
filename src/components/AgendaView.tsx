@@ -565,11 +565,11 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
             onClick={abrirRegistro}
             className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors"
             style={jaRegistrado
-              ? { background: 'transparent', color: '#22c55e', border: 'none', fontSize: 16, fontWeight: 700, padding: '0 4px' }
+              ? { background: isDarkMode ? '#052e16' : '#f0fdf4', color: isDarkMode ? '#4ade80' : '#16a34a', border: `1px solid ${isDarkMode ? '#166534' : '#bbf7d0'}`, borderRadius: 8, fontSize: 11, fontWeight: 600, padding: '3px 8px' }
               : { background: 'transparent', color: isDarkMode ? '#818cf8' : '#5B5FEA', border: `1px solid ${isDarkMode ? '#818cf8' : '#5B5FEA'}` }
             }
           >
-            {jaRegistrado ? '✓' : 'Avaliar aula'}
+            {jaRegistrado ? '✓ Avaliada' : 'Avaliar aula'}
           </button>
           <svg
             className={`w-3 h-3 text-slate-300 dark:text-[#374151] transition-transform ${aberto ? 'rotate-180' : ''}`}
