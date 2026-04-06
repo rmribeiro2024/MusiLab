@@ -222,7 +222,7 @@ import RichTextEditor from './RichTextEditor'
 import TipTapEditor from './TipTapEditor'
 import { exportarPlanoPDF, previewPlanoPDF, gerarLinkCompartilhavel } from '../utils/pdf'
 import ModalAplicarEmTurmas from './modals/ModalAplicarEmTurmas'
-import ModalMusicasDetectadas from './modals/ModalMusicasDetectadas'
+
 import type { Plano } from '../types'
 import CardAtividadeRoteiro from './CardAtividadeRoteiro'
 import { useBancoPainel } from '../hooks/useBancoPainel'
@@ -617,6 +617,8 @@ export default function TelaPrincipal() {
         importarMusicaParaPlano,
         setMusicasDetectadas,
         setShowModalMusicas,
+        classeNotif,
+        setClasseNotif,
     } = usePlanosContext()
 
     // Constantes estáticas (não precisam vir do ctx)
@@ -685,14 +687,8 @@ export default function TelaPrincipal() {
     const [modalConceitosPlano, setModalConceitosPlano] = useState<{ planoId: string; conceitos: string[] } | null>(null)
     const [detectandoConceitos, setDetectandoConceitos] = useState(false)
 
-    // ── Notificação CLASP + Orff após salvar ──
-    const [classeNotif, setClasseNotif] = useState<{
-        planoId: string
-        titulo: string
-        vivencias: Record<string, number>
-        meiosOrff: Record<string, boolean>
-        conceitos: string[]
-    } | null>(null)
+    // ── Notificação CLASP + Orff após salvar — state compartilhado via PlanosContext ──
+    // (classeNotif e setClasseNotif já vêm de usePlanosContext(), declarados abaixo com o contexto)
 
     // ── Modo do formulário: rápido | completo | detalhado ──
     const [modoForm, setModoForm] = useState<'rapido' | 'completo' | 'detalhado'>('completo')
@@ -2660,34 +2656,7 @@ export default function TelaPrincipal() {
                 onClose={() => setPlanoParaAplicar(null)}
             />
         )}
-        {/* ── Modal unificado: plano salvo + vivências + músicas detectadas ── */}
-        <ModalMusicasDetectadas
-            classeNotif={classeNotif}
-            onFecharNotif={() => setClasseNotif(null)}
-            onAplicarConceitos={(conceitos) => {
-                if (!classeNotif) return
-                const pid = classeNotif.planoId
-                setPlanos(prev => prev.map(p =>
-                    String(p.id) === pid ? { ...p, conceitos } : p
-                ))
-                setPlanoEditando(prev =>
-                    prev && String(prev.id) === pid ? { ...prev, conceitos } : prev
-                )
-            }}
-            onAplicarClassificacao={(vivencias, meiosOrff) => {
-                if (!classeNotif) return
-                const pid = classeNotif.planoId
-                setPlanos(prev => prev.map(p =>
-                    String(p.id) === pid ? { ...p, vivenciasClassificadas: vivencias, orffMeios: meiosOrff } : p
-                ))
-                setPlanoEditando(prev =>
-                    prev && String(prev.id) === pid ? { ...prev, vivenciasClassificadas: vivencias, orffMeios: meiosOrff } : prev
-                )
-                setSecoesForm(prev => new Set([...prev, 'classificacao']))
-                showToast('Classificação salva', 'success')
-                setClasseNotif(null)
-            }}
-        />
+        {/* ModalMusicasDetectadas movido para BancoPlanos — visível em qualquer tela */}
 
         {/* ── Modal revisão de conceitos do plano ── */}
         {modalConceitosPlano && (

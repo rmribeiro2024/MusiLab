@@ -229,6 +229,9 @@ export interface PlanosContextValue {
     limparMusicasDetectadas: () => void
     showModalMusicas: boolean
     setShowModalMusicas: React.Dispatch<React.SetStateAction<boolean>>
+    // notificação de classificação CLASP + Orff (pós-salvar — visível em qualquer tela)
+    classeNotif: { planoId: string; titulo: string; vivencias: Record<string, number>; meiosOrff: Record<string, boolean>; conceitos: string[] } | null
+    setClasseNotif: React.Dispatch<React.SetStateAction<{ planoId: string; titulo: string; vivencias: Record<string, number>; meiosOrff: Record<string, boolean>; conceitos: string[] } | null>>
     vincularMusicaAoPlano: (planoId: string | number, vinculo: VinculoMusicaPlano) => void
     desvincularMusicaDoPlano: (planoId: string | number, musicaId: string | number) => void
     // funções cross-domain
@@ -598,6 +601,11 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                     return { ...m, planosVinculados: [...(m.planosVinculados || []), plano.id] }
                 }))
             }
+        }
+        // Abre modal de músicas detectadas (ambíguas e novas — encontradas já foram auto-vinculadas)
+        if (detectadas.length > 0) {
+            setMusicasDetectadas(detectadas)
+            setShowModalMusicas(true)
         }
     }
 
@@ -1439,6 +1447,12 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const limparMusicasDetectadas = () => setMusicasDetectadas([])
     const [showModalMusicas, setShowModalMusicas] = useState(false)
 
+    // ── Notificação CLASP + Orff após salvar (visível em qualquer tela) ───
+    const [classeNotif, setClasseNotif] = useState<{
+        planoId: string; titulo: string
+        vivencias: Record<string, number>; meiosOrff: Record<string, boolean>; conceitos: string[]
+    } | null>(null)
+
     // ── Detecção de estratégia no roteiro (IA) ────────────────────────────
 
     /** Adiciona um vínculo música↔plano e persiste. */
@@ -1689,6 +1703,7 @@ Retorne entre 2 e 4 habilidades reais da BNCC de Artes/Música. Use os códigos 
         modalConfiguracoes, setModalConfiguracoes,
         musicasDetectadas, setMusicasDetectadas, limparMusicasDetectadas,
         showModalMusicas, setShowModalMusicas,
+        classeNotif, setClasseNotif,
         vincularMusicaAoPlano, desvincularMusicaDoPlano,
         vincularMusicaAtividade, importarMusicaParaPlano, importarAtividadeParaPlano,
         abrirModalRegistro, salvarRegistro, editarRegistro, excluirRegistro,

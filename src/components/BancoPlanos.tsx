@@ -2449,6 +2449,7 @@ export default function BancoPlanos({ session }) {
         ytPreviewId,
             };
             return (
+                <React.Fragment>
                 <BancoPlanosContext.Provider value={ctx as any}>
                 <div className="h-screen bg-[#F6F8FB] dark:bg-[#0F172A] flex overflow-hidden">
 
@@ -2889,5 +2890,39 @@ export default function BancoPlanos({ session }) {
                     })()}
                 </div>
                 </BancoPlanosContext.Provider>
+                {/* ── Modal unificado CLASP + músicas detectadas — visível em qualquer tela ── */}
+                <ModalMusicasDetectadasGlobal />
+                </React.Fragment>
             );
+}
+
+// ─── Modal global (fora do BancoPlanosContext, acessa PlanosContext diretamente) ──
+function ModalMusicasDetectadasGlobal() {
+    const { classeNotif, setClasseNotif, setPlanos } = usePlanosContext()
+    const ModalMusicasDetectadas = React.lazy(() => import('./modals/ModalMusicasDetectadas'))
+    return (
+        <React.Suspense fallback={null}>
+            <ModalMusicasDetectadas
+                classeNotif={classeNotif}
+                onFecharNotif={() => setClasseNotif(null)}
+                onAplicarConceitos={(conceitos) => {
+                    if (!classeNotif) return
+                    const pid = classeNotif.planoId
+                    setPlanos((prev: any[]) => prev.map((p: any) =>
+                        String(p.id) === pid ? { ...p, conceitos } : p
+                    ))
+                    setClasseNotif(null)
+                }}
+                onAplicarClassificacao={(vivencias, meiosOrff) => {
+                    if (!classeNotif) return
+                    const pid = classeNotif.planoId
+                    setPlanos((prev: any[]) => prev.map((p: any) =>
+                        String(p.id) === pid ? { ...p, vivenciasClassificadas: vivencias, orffMeios: meiosOrff } : p
+                    ))
+                    showToast('Classificação salva', 'success')
+                    setClasseNotif(null)
+                }}
+            />
+        </React.Suspense>
+    )
 }
