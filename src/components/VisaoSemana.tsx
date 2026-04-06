@@ -1002,11 +1002,11 @@ export default function VisaoSemana() {
                           </button>
                         )}
                         {menuAberto === tidYmd && (
+                          <>
+                          <div className="fixed inset-0 z-20" onClick={() => setMenuAberto(null)} />
                           <div
                             className="absolute top-[22px] right-[2px] z-30 bg-white dark:bg-[#1E2A4A] rounded-[10px] shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-[#E6EAF0] dark:border-[#374151] py-1 w-[180px]"
                             onClick={(e) => e.stopPropagation()}
-                            onMouseEnter={(e) => e.stopPropagation()}
-                            onMouseLeave={(e) => e.stopPropagation()}
                           >
                             <button
                               onClick={() => copiarParaMesmaSerie(aula, tidStr, ymd)}
@@ -1014,7 +1014,7 @@ export default function VisaoSemana() {
                             >
                               <span className="text-[11px] shrink-0">⚡</span>
                               <div>
-                                <div className="font-semibold leading-tight">Copiar para a série toda</div>
+                                <div className="font-semibold leading-tight">Copiar para mesma série</div>
                                 <div className="text-[9.5px] text-slate-400 dark:text-[#6B7280] leading-tight mt-0.5">Todas as turmas do mesmo ano</div>
                               </div>
                             </button>
@@ -1030,6 +1030,7 @@ export default function VisaoSemana() {
                               </div>
                             </button>
                           </div>
+                          </>
                         )}
 
                         {/* seção última aula / aula planejada */}
