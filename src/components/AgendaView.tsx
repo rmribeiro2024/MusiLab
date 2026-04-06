@@ -883,68 +883,91 @@ function LegendaEscolas({ anosLetivos, escolaColorMap, isDarkMode }: LegendaProp
 
 // ─── BriefingDia — resumo inteligente com IA ─────────────────────────────────
 
-async function gerarBriefingGemini(slots: AulaSlot[]): Promise<string> {
+interface BriefingData {
+  resumo: string       // JS-computed: "X aulas com 3° ano · Y com 2° ano"
+  insights: string     // IA-generated: last class notes per turma
+  materiais: string[]  // JS-computed: materials list
+}
+
+async function gerarBriefingGemini(slots: AulaSlot[], todosPlanos: Plano[]): Promise<BriefingData> {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY
   if (!apiKey) throw new Error('Chave API não configurada.')
 
-  const hoje = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
-  const linhas: string[] = []
-  linhas.push(`Hoje (${hoje}) — ${slots.length} aula${slots.length !== 1 ? 's' : ''}`)
+  // ── Seção 1: resumo por ano (JS puro) ──────────────────────────────────────
+  const contagemPorAno = new Map<string, number>()
+  slots.forEach(s => {
+    const ano = s.nomeTurma.split('›')[0].trim() || s.nomeTurma
+    contagemPorAno.set(ano, (contagemPorAno.get(ano) ?? 0) + 1)
+  })
+  const partes = [...contagemPorAno.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([ano, n]) => `${n} ${n === 1 ? 'aula' : 'aulas'} com ${ano}`)
+  const escolasSet = new Set(slots.map(s => s.nomeEscola).filter(Boolean))
+  const escolaStr = escolasSet.size > 1 ? ` · ${[...escolasSet].join(' e ')}` : ''
+  const resumo = `Hoje: ${partes.join(' · ')}${escolaStr}`
 
+  // ── Seção 3: materiais (JS puro) ───────────────────────────────────────────
+  const materiais = [...new Set(slots.flatMap(s => s.plano?.materiais ?? []).filter(Boolean))]
+
+  // ── Seção 2: histórico por turma (para a IA) ───────────────────────────────
   const NOMES_GENERICOS = new Set(['introdução', 'desenvolvimento', 'fechamento', 'abertura', 'aquecimento', 'encerramento'])
 
-  const semPlano: string[] = []
-  const titulosUnicos = new Set<string>()
-  const escolasSet = new Set<string>()
-
+  const blocosTurmas: string[] = []
   slots.forEach(s => {
-    const h = s.aulaGrade.horario ? ` às ${formatHorario(s.aulaGrade.horario)}` : ''
-    const escola = s.nomeEscola ?? ''
-    if (escola) escolasSet.add(escola)
-    if (s.plano) {
-      const ativs = (s.plano.atividadesRoteiro ?? [])
-        .map(a => a.nome?.trim())
-        .filter(n => n && !NOMES_GENERICOS.has(n.toLowerCase()))
-        .slice(0, 3)
-        .join(', ')
-      const titulo = s.plano.titulo ?? ''
-      if (titulo) titulosUnicos.add(titulo)
-      linhas.push(`- ${s.nomeTurma}${escola ? ` [${escola}]` : ''}${h} | "${titulo}"${ativs ? ` | ${ativs}` : ''}`)
+    const turmaId = s.aulaGrade.turmaId
+    const label = s.nomeTurma + (s.nomeEscola ? ` [${s.nomeEscola}]` : '')
+
+    // Plano de hoje
+    const planoHoje = s.plano
+    const tituloHoje = planoHoje?.titulo ?? '(sem plano)'
+    const ativsHoje = (planoHoje?.atividadesRoteiro ?? [])
+      .map(a => a.nome?.trim()).filter(n => n && !NOMES_GENERICOS.has(n.toLowerCase())).slice(0, 3).join(', ')
+
+    // Último registro pós-aula desta turma (em qualquer plano)
+    const allRegs = todosPlanos.flatMap(p => (p.registrosPosAula || []))
+    const turmaRegs = allRegs
+      .filter(r => String(r.turma) === String(turmaId) && (r.data || r.dataAula))
+      .sort((a, b) => (b.data || b.dataAula || '').localeCompare(a.data || a.dataAula || ''))
+    const ultimo = turmaRegs[0]
+
+    const linhas = [`TURMA: ${label}`, `Plano hoje: "${tituloHoje}"${ativsHoje ? ` | ${ativsHoje}` : ''}`]
+    if (!planoHoje) linhas.push('ALERTA: sem plano vinculado')
+    if (ultimo) {
+      const dataReg = ultimo.data || ultimo.dataAula || ''
+      linhas.push(`Último registro (${dataReg}):`)
+      if (ultimo.resumoAula?.trim()) linhas.push(`  resumo: ${ultimo.resumoAula.trim()}`)
+      if (ultimo.funcionouBem?.trim()) linhas.push(`  funcionou: ${ultimo.funcionouBem.trim()}`)
+      if ((ultimo.fariadiferente || ultimo.naoFuncionou)?.trim()) linhas.push(`  a melhorar: ${(ultimo.fariadiferente || ultimo.naoFuncionou)!.trim()}`)
+      if (ultimo.proximaAula?.trim()) linhas.push(`  próxima aula: ${ultimo.proximaAula.trim()}`)
+      if (ultimo.comportamento?.trim()) linhas.push(`  comportamento: ${ultimo.comportamento.trim()}`)
+      if (ultimo.statusAula && ultimo.statusAula !== 'concluida') linhas.push(`  status: ${ultimo.statusAula}`)
     } else {
-      semPlano.push(`${s.nomeTurma}${escola ? ` [${escola}]` : ''}${h}`)
-      linhas.push(`- ${s.nomeTurma}${escola ? ` [${escola}]` : ''}${h} | SEM PLANO`)
+      linhas.push('Sem histórico de aulas anteriores.')
     }
+    blocosTurmas.push(linhas.join('\n'))
   })
 
-  const materiais = [...new Set(slots.flatMap(s => s.plano?.materiais ?? []).filter(Boolean))]
-  if (materiais.length) linhas.push(`Materiais: ${materiais.join(', ')}`)
+  const prompt = `Você é um assistente de apoio para professores de música. Analise os dados abaixo e gere insights ÚTEIS e CONCRETOS baseados no histórico de cada turma.
 
-  // Fatos estruturais calculados antes de enviar à IA
-  const fatosExtras: string[] = []
-  if (titulosUnicos.size === 1) fatosExtras.push(`Mesma música/plano em todas as ${slots.length} aulas: "${[...titulosUnicos][0]}"`)
-  if (escolasSet.size > 1) fatosExtras.push(`Duas escolas no dia: ${[...escolasSet].join(' e ')}`)
-  if (semPlano.length) fatosExtras.push(`Sem plano: ${semPlano.join('; ')}`)
-  if (fatosExtras.length) linhas.push(...fatosExtras)
+REGRAS ABSOLUTAS:
+- Use APENAS os dados fornecidos. Proibido inventar ou inferir.
+- Proibido repetir o plano de hoje — o professor já o vê na tela.
+- Proibido conselhos genéricos ("seja criativo", "mantenha o engajamento").
+- Para cada turma: máximo 1 linha curta. Se não há nada relevante no histórico, NÃO mencione a turma.
+- Se nenhuma turma tem insight útil, responda exatamente: sem histórico relevante para hoje.
+- Formato por linha: "NomeTurma: [insight]"
 
-  const prompt = `Você é um assistente operacional para professores de música.
+O que vale como insight (em ordem de prioridade):
+1. Turma SEM PLANO hoje (sempre mencione)
+2. "próxima aula" preenchida no último registro — o professor planejou algo específico
+3. "a melhorar" ou status != concluida — algo ficou pendente
+4. "comportamento" fora do comum
+5. "funcionou" — reforço positivo apenas se muito específico
 
-REGRAS absolutas:
-- Use APENAS os dados fornecidos. Proibido inventar, inferir ou sugerir conteúdo pedagógico.
-- Proibido repetir a grade de horários — o professor já a vê na tela.
-- Proibido conselhos genéricos ("seja criativo", "mantenha o engajamento", "lembre-se de").
-- Se não há alertas reais, responda exatamente: "Tudo planejado. Nenhum alerta para hoje."
-- Máximo 4 tópicos curtos, começando com "•".
+DADOS DAS TURMAS:
+${blocosTurmas.join('\n\n')}
 
-O QUE VALE mencionar (só se presente nos dados):
-- Turmas SEM PLANO (já destacadas nos dados)
-- Materiais concretos a preparar (apenas os listados)
-- Padrão de repetição de música/plano (já calculado nos dados)
-- Transição entre duas escolas no mesmo dia (já calculado nos dados)
-
-DADOS:
-${linhas.join('\n')}
-
-Responda apenas com os tópicos ou com a frase de fallback. Sem título, sem markdown.`
+Responda apenas com as linhas de insight. Sem título, sem markdown.`
 
   const resp = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
@@ -961,27 +984,26 @@ Responda apenas com os tópicos ou com a frase de fallback. Sem título, sem mar
     throw new Error(`Erro ${resp.status}${detail ? ': ' + detail : ''}`)
   }
   const data = await resp.json()
-  const texto = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-  if (!texto) throw new Error('Resposta vazia')
-  return texto.trim()
+  const insights = (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim()
+  if (!insights) throw new Error('Resposta vazia')
+
+  return { resumo, insights, materiais }
 }
 
 function BriefingDia({ slots }: { slots: AulaSlot[] }) {
-  const [texto, setTexto] = useState<string | null>(null)
+  const { planos } = usePlanosContext()
+  const [dados, setDados] = useState<BriefingData | null>(null)
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
-  // Limpa ao mudar o dia
-  useEffect(() => {
-    setTexto(null); setErro(null)
-  }, [slots])
+  useEffect(() => { setDados(null); setErro(null) }, [slots])
 
   if (slots.length === 0) return null
 
   async function gerar() {
     setCarregando(true); setErro(null)
     try {
-      setTexto(await gerarBriefingGemini(slots))
+      setDados(await gerarBriefingGemini(slots, planos))
     } catch (e: any) {
       setErro(e.message ?? 'Erro ao gerar briefing')
     } finally {
@@ -989,7 +1011,7 @@ function BriefingDia({ slots }: { slots: AulaSlot[] }) {
     }
   }
 
-  if (!texto && !carregando && !erro) {
+  if (!dados && !carregando && !erro) {
     return (
       <div className="mb-5">
         <button
@@ -1007,7 +1029,7 @@ function BriefingDia({ slots }: { slots: AulaSlot[] }) {
 
   return (
     <div className="mb-5 rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/60 dark:bg-indigo-950/30 px-4 py-3.5">
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-2.5">
         <svg className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
@@ -1030,8 +1052,21 @@ function BriefingDia({ slots }: { slots: AulaSlot[] }) {
         </div>
       )}
       {erro && <p className="text-xs text-red-500 dark:text-red-400">{erro}</p>}
-      {texto && (
-        <p className="text-sm text-slate-700 dark:text-[#E5E7EB] leading-relaxed whitespace-pre-line">{texto}</p>
+      {dados && (
+        <div className="space-y-2.5">
+          {/* Seção 1: resumo por ano */}
+          <p className="text-xs font-semibold text-slate-700 dark:text-[#E5E7EB]">{dados.resumo}</p>
+          {/* Seção 2: insights da IA */}
+          {dados.insights && dados.insights !== 'sem histórico relevante para hoje' && (
+            <p className="text-xs text-slate-600 dark:text-[#9CA3AF] leading-relaxed whitespace-pre-line">{dados.insights}</p>
+          )}
+          {/* Seção 3: materiais */}
+          {dados.materiais.length > 0 && (
+            <p className="text-xs text-slate-500 dark:text-[#9CA3AF]">
+              <span className="font-semibold">Materiais:</span> {dados.materiais.join(' · ')}
+            </p>
+          )}
+        </div>
       )}
     </div>
   )
