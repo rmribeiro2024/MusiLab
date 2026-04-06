@@ -1108,7 +1108,7 @@ function CardProximoPasso({ valor, onAdaptar, onImportar, onNovo, podeAdaptar }:
   podeAdaptar: boolean
 }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
+    <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] p-4">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Próximo passo sugerido</h3>
         <div className="flex items-center gap-1">
@@ -1367,7 +1367,7 @@ function CardPlanejamento({ planejamento }: { planejamento: import('../types').P
 function PlanejamentosSalvos({ planejamentos }: { planejamentos: import('../types').PlanejamentoTurma[] }) {
   const [expandido, setExpandido] = useState(false)
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
       <button
         onClick={() => setExpandido(v => !v)}
         className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
@@ -1602,7 +1602,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
         <div className="space-y-3">
 
           {/* ── PRINCIPAL: Sobre a turma ─────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-[13px] font-semibold text-slate-600">Sobre a turma</h3>
               {!editandoObs && (
@@ -1645,7 +1645,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
           </div>
 
           {/* ── SECUNDÁRIO: Objetivo da turma ────────────────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+          <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] p-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Objetivo da turma</h3>
               {!editandoObj && (
@@ -1845,7 +1845,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             }
 
             return (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+              <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
                 <button
                   onClick={() => setAlunosExpandidos(v => !v)}
                   className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
@@ -2123,7 +2123,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             const presentes = chamada ? chamada.filter(c => c.presente).length : null
             const ausentes  = chamada ? chamada.filter(c => !c.presente) : []
             return (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 space-y-2">
+              <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] font-semibold text-slate-600">
                     Avaliação da última aula · {formatarDataComDia(registroExibido.dataAula ?? registroExibido.data ?? '')}
@@ -2221,7 +2221,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                 {vivDropdownAberto && (
                   <div className="fixed inset-0 z-40" onClick={() => setVivDropdownAberto(false)} />
                 )}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3">
+                <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 py-3">
                   {/* Header */}
                   <div className="flex items-start justify-between gap-2 mb-3 flex-wrap">
                     <div>
@@ -2387,7 +2387,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
           })()}
 
           {/* ── 4. Timeline pedagógica — colapsável ──────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
             <button
               type="button"
               onClick={() => setTimelineAberta(v => !v)}
@@ -2417,7 +2417,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
 
           {/* ── 5. Aulas anteriores — accordion ──────────────────────────── */}
           {listaHistorico.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
               <div className="flex items-center justify-between px-4 pt-3 pb-2">
                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aulas anteriores</h3>
                 <span className="text-[10px] text-slate-400">{listaHistorico.length} aula{listaHistorico.length !== 1 ? 's' : ''}</span>
@@ -2490,7 +2490,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
 
           {/* ── Estado vazio: sem aulas registradas ──────────────────────── */}
           {!registroExibido && listaHistorico.length === 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-5 text-center">
+            <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 py-5 text-center">
               <p className="text-sm text-slate-500 font-medium">Nenhuma aula registrada ainda</p>
               <p className="text-xs text-slate-400 mt-1">Planeje a primeira aula e registre como foi.</p>
             </div>
