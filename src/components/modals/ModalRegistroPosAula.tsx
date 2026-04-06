@@ -2243,6 +2243,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                         if (regTurmaSel && novoRegistro.dataAula)
                                             localStorage.removeItem(`posAulaDraft-${regTurmaSel}-${novoRegistro.dataAula}`)
                                         setVerRegistros(false)
+                                        window.scrollTo({ top: 0, behavior: 'smooth' })
                                         if (onVoltar) onVoltar()
                                         if (onSaved) onSaved()
                                     }}
