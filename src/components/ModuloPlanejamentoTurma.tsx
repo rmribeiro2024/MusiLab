@@ -2251,11 +2251,15 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                 </button>
                 {avaliacaoAberta && (() => {
                   // Contar campos secundários com conteúdo real
+                  const nivelMusical = (registroExibido as any).nivelTecnicoMusical as number | undefined
+                  const NIVEL_DESC = ['Muito abaixo do esperado', 'Abaixo do esperado', 'Dentro do esperado', 'Acima do esperado', 'Muito acima do esperado']
+                  const nivelTexto = nivelMusical ? `${'★'.repeat(nivelMusical)}${'☆'.repeat(5 - nivelMusical)} · ${NIVEL_DESC[nivelMusical - 1]}` : ''
                   const secundarios = [
                     stripHTML(registroExibido.funcionouBem ?? '').trim(),
                     stripHTML(registroExibido.poderiaMelhorar ?? '').trim(),
                     stripHTML(registroExibido.comportamento ?? '').trim(),
                     stripHTML(registroExibido.anotacoesGerais ?? '').trim(),
+                    nivelTexto,
                   ].filter(Boolean)
                   const temChamada = !!(chamada && chamada.length > 0)
                   const totalSecundarios = secundarios.length + (temChamada ? 1 : 0)
@@ -2283,6 +2287,9 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                           )}
                           {registroExibido.anotacoesGerais && (
                             <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
+                          )}
+                          {nivelTexto && (
+                            <InfoRow icon="🎵" label="Nível musical" valor={nivelTexto} />
                           )}
                           {temChamada && (
                             <div>
