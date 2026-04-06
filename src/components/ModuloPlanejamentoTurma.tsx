@@ -2336,7 +2336,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                 <div>
                   {/* Cabeçalho de meses — alinhado exatamente com os dots abaixo */}
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6, paddingLeft: 10 }}>
-                    <div style={{ width: 110, flexShrink: 0 }} />
+                    <div style={{ width: 130, flexShrink: 0 }} />
                     <div style={{ display: 'flex', gap: 16 }}>
                       {vivenciasMeses.meses.map(mesKey => {
                         const dotsCount = vivenciasMeses.vivencias[0]?.meses.find(m => m.key === mesKey)?.dots.length ?? 0
@@ -2358,8 +2358,16 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                       border: `1px solid ${isDark ? '#374151' : '#E6EAF0'}`,
                       borderRadius: 7, padding: '7px 10px', marginBottom: 5,
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 110, flexShrink: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {viv.totalCount > 0 && (
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, color: '#818CF8',
+                            background: isDark ? '#312e81' : '#EEF2FF',
+                            border: `1px solid ${isDark ? '#4338ca' : '#C7D2FE'}`,
+                            borderRadius: 99, padding: '1px 6px', flexShrink: 0,
+                          }}>{viv.totalCount}</span>
+                        )}
+                        <div style={{ width: 90, flexShrink: 0 }}>
                           <span style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#475569', fontWeight: 500 }}>{viv.label}</span>
                         </div>
                         <div style={{ display: 'flex', gap: 16 }}>
@@ -2374,14 +2382,6 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                             </div>
                           ))}
                         </div>
-                        {viv.totalCount > 0 && (
-                          <span style={{
-                            fontSize: 10, fontWeight: 700, color: '#818CF8',
-                            background: isDark ? '#312e81' : '#EEF2FF',
-                            border: `1px solid ${isDark ? '#4338ca' : '#C7D2FE'}`,
-                            borderRadius: 99, padding: '1px 6px', flexShrink: 0,
-                          }}>{viv.totalCount}</span>
-                        )}
                       </div>
                       {viv.ausenteUltimoMes && (
                         <p style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic', marginTop: 4 }}>
