@@ -293,6 +293,9 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
 
     const temClassificacao = temClasseNotif
 
+    const ativasClasp = Object.entries(draftVivencias).filter(([, v]) => v > 0)
+    const meiosPresentes = Object.entries(draftMeios).filter(([, v]) => v === true)
+
     const titulo = classeNotif?.titulo ?? planoSelecionado?.titulo ?? ''
 
     return (
