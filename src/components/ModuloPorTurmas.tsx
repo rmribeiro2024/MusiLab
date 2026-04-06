@@ -97,6 +97,7 @@ interface ListaTurmasProps {
 function ListaTurmas({ turmaSelecionada, onSelecionarTurma, ymd }: ListaTurmasProps) {
     const { anosLetivos } = useAnoLetivoContext()
     const { planejamentos, copiarPlanejamento } = usePlanejamentoTurmaContext()
+    const { aplicacoes } = useAplicacoesContext()
     const [busca, setBusca] = useState('')
     const escolaColorMap = useMemo(() => buildEscolaColorMap(anosLetivos), [anosLetivos])
 
@@ -116,12 +117,13 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma, ymd }: ListaTurmasPr
         }
     }, [turmaSelecionada?.escolaId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Turmas que têm pelo menos um planejamento salvo
+    // Turmas com planejamento na data atual (chave turmaId-ymd, igual ao VisaoSemana)
     const turmasComPlanejamento = useMemo(() => {
         const s = new Set<string>()
-        planejamentos.forEach(p => s.add(String(p.turmaId)))
+        planejamentos.forEach(p => { if (p.dataPrevista) s.add(`${p.turmaId}-${p.dataPrevista}`) })
+        aplicacoes.forEach(a => { if (a.data && a.status !== 'cancelada') s.add(`${a.turmaId}-${a.data}`) })
         return s
-    }, [planejamentos])
+    }, [planejamentos, aplicacoes])
 
 
     // Grupos: escola → turmas
@@ -214,7 +216,7 @@ function ListaTurmas({ turmaSelecionada, onSelecionarTurma, ymd }: ListaTurmasPr
                                 const isAtiva = turmaSelecionada
                                     ? turmaSelecionada.turmaId === t.turmaId && turmaSelecionada.escolaId === t.escolaId
                                     : false
-                                const temPlano = turmasComPlanejamento.has(t.turmaId)
+                                const temPlano = turmasComPlanejamento.has(`${t.turmaId}-${ymd}`)
                                 const isDragSrc  = dragSrcTid === t.turmaId
                                 const isDragOver = dragOverTid === t.turmaId
                                 return (
