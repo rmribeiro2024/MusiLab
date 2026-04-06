@@ -1172,10 +1172,14 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             resultadoAula: reg.resultadoAula || '', anotacoesGerais: reg.anotacoesGerais || '',
             proximaAulaOpcao: reg.proximaAulaOpcao || '',
             urlEvidencia: (reg as any).urlEvidencia || '',
-            // campos que faltavam na edição
             repetiria: (reg as any).repetiria || '',
             statusAula: (reg as any).statusAula || '',
-            // campos novos (B1, B2, A2) — incluídos na edição para não perdê-los ao salvar
+            // campos avançados de análise — eram perdidos ao editar
+            surpresaMusical: (reg as any).surpresaMusical || '',
+            pontoQueda: (reg as any).pontoQueda || '',
+            alunoAtencao: (reg as any).alunoAtencao || '',
+            vozAluno: (reg as any).vozAluno || '',
+            nivelTecnicoMusical: (reg as any).nivelTecnicoMusical || 0,
             ...(reg.chamada        ? { chamada: reg.chamada }               : {}),
             ...(reg.encaminhamentos ? { encaminhamentos: reg.encaminhamentos } : {}),
             ...(reg.rubrica        ? { rubrica: reg.rubrica }               : {}),

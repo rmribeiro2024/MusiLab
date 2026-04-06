@@ -2256,8 +2256,12 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                   const nivelTexto = nivelMusical ? `${'★'.repeat(nivelMusical)}${'☆'.repeat(5 - nivelMusical)} · ${NIVEL_DESC[nivelMusical - 1]}` : ''
                   const secundarios = [
                     stripHTML(registroExibido.funcionouBem ?? '').trim(),
+                    stripHTML((registroExibido as any).repetiria ?? '').trim(),
                     stripHTML(registroExibido.poderiaMelhorar ?? '').trim(),
                     stripHTML(registroExibido.comportamento ?? '').trim(),
+                    stripHTML((registroExibido as any).surpresaMusical ?? '').trim(),
+                    stripHTML((registroExibido as any).pontoQueda ?? '').trim(),
+                    stripHTML((registroExibido as any).alunoAtencao ?? '').trim(),
                     stripHTML(registroExibido.anotacoesGerais ?? '').trim(),
                     nivelTexto,
                   ].filter(Boolean)
@@ -2277,13 +2281,25 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                       {mostrarSecundarios && (
                         <>
                           {registroExibido.funcionouBem && (
-                            <InfoRow icon="✅" label="O que funcionou bem" valor={registroExibido.funcionouBem} />
+                            <InfoRow icon="🎯" label="O que os alunos demonstraram aprender" valor={registroExibido.funcionouBem} />
+                          )}
+                          {(registroExibido as any).repetiria && (
+                            <InfoRow icon="⭐" label="O que funcionou e você repetiria" valor={(registroExibido as any).repetiria} />
                           )}
                           {registroExibido.poderiaMelhorar && (
                             <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
                           )}
                           {registroExibido.comportamento && (
                             <InfoRow icon="👥" label="Comportamento da turma" valor={registroExibido.comportamento} />
+                          )}
+                          {(registroExibido as any).surpresaMusical && (
+                            <InfoRow icon="🎵" label="O que surpreendeu musicalmente" valor={(registroExibido as any).surpresaMusical} />
+                          )}
+                          {(registroExibido as any).pontoQueda && (
+                            <InfoRow icon="📉" label="Ponto de queda de engajamento" valor={(registroExibido as any).pontoQueda} />
+                          )}
+                          {(registroExibido as any).alunoAtencao && (
+                            <InfoRow icon="👤" label="Aluno que precisa de atenção" valor={(registroExibido as any).alunoAtencao} />
                           )}
                           {registroExibido.anotacoesGerais && (
                             <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
