@@ -2364,7 +2364,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                             fontSize: 10, fontWeight: 700, color: '#818CF8',
                             background: isDark ? '#312e81' : '#EEF2FF',
                             border: `1px solid ${isDark ? '#4338ca' : '#C7D2FE'}`,
-                            borderRadius: 99, padding: '1px 6px', flexShrink: 0,
+                            borderRadius: 4, padding: '1px 6px', flexShrink: 0,
                           }}>{viv.totalCount}</span>
                         )}
                         <div style={{ width: 90, flexShrink: 0 }}>
