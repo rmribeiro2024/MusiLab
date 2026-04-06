@@ -709,7 +709,8 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista, modoInicial, onModoInic
     useEffect(() => { fecharForm() }, []) // eslint-disable-line
 
     const temUltimoRegistro = !!ultimoRegistroDaTurma
-    const temPlanos = planejamentosDaTurma.length > 0
+    const planejamentosDataAtual = planejamentosDaTurma.filter(p => p.dataPrevista === dataPrevista)
+    const temPlanos = planejamentosDataAtual.length > 0
     const temAlgo = temPlanos || aplicacoesDaAula.length > 0  // planejamentos próprios OU do banco
 
     // Recebe o plano do form e abre dialog de destino
@@ -818,15 +819,15 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista, modoInicial, onModoInic
                         <p className="text-[10px] font-semibold uppercase tracking-[.7px] text-[#94A3B8] dark:text-[#6B7280] flex-1">
                             Aula planejada
                         </p>
-                        {(planejamentosDaTurma.length + aplicacoesDaAula.length) > 1 && (
+                        {(planejamentosDataAtual.length + aplicacoesDaAula.length) > 1 && (
                             <span className="text-[10px] text-[#94a3b8] border border-[#E6EAF0] dark:border-[#374151] px-2 py-0.5 rounded-full">
-                                {planejamentosDaTurma.length + aplicacoesDaAula.length}
+                                {planejamentosDataAtual.length + aplicacoesDaAula.length}
                             </span>
                         )}
                     </div>
                     <div className="flex flex-col divide-y divide-[#E6EAF0] dark:divide-[#374151]">
                         {/* Planejamentos criados diretamente nesta turma */}
-                        {planejamentosDaTurma.map(plano => (
+                        {planejamentosDataAtual.map(plano => (
                             <div
                                 key={plano.id}
                                 onClick={() => {
