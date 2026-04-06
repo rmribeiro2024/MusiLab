@@ -636,6 +636,15 @@ export default function VisaoSemana() {
     setCopiadosNaModo(prev => new Map([...prev, [tidYmd, novoId ?? '']]))
   }
 
+  function moverParaProximaSemana(tidStr: string, ymd: string) {
+    const plano = planejamentos.find(p => String(p.turmaId) === tidStr && p.dataPrevista === ymd)
+    if (!plano) return
+    const novaData = toYMD(addDays(new Date(ymd + 'T12:00:00'), 7))
+    copiarPlanejamento(plano.id, { anoLetivoId: plano.anoLetivoId, escolaId: plano.escolaId, segmentoId: plano.segmentoId, turmaId: tidStr }, novaData)
+    excluirPlanejamento(plano.id)
+    showToast('Aula movida para a próxima semana')
+  }
+
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div
@@ -1005,6 +1014,13 @@ export default function VisaoSemana() {
                                   >
                                     Copiar aula
                                   </button>
+                                  <div className="mx-2 border-t border-[#F1F3F8] dark:border-[#374151]" />
+                                  <button
+                                    onClick={() => { setMenuAberto(null); moverParaProximaSemana(tidStr, ymd) }}
+                                    className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
+                                  >
+                                    Mover para próxima semana
+                                  </button>
                                 </div>
                               </>
                             )}
@@ -1157,6 +1173,8 @@ export default function VisaoSemana() {
 
       {/* ── Pill flutuante: modo "Copiar para turmas" ──────────────────── */}
       {copiarModo && (
+        <>
+        <div className="fixed inset-0 z-40" onClick={() => { copiadosNaModo.forEach(id => excluirPlanejamento(id)); setCopiarModo(null); setCopiadosNaModo(new Map()) }} />
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-white dark:bg-[#1F2937] border border-[#E6EAF0] dark:border-[#374151] rounded-full px-4 py-2 shadow-[0_4px_20px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
           <div className="flex items-center gap-2 text-[12px] text-slate-600 dark:text-[#D1D5DB]">
             <span className="font-semibold truncate max-w-[160px]">{copiarModo.srcNome}</span>
@@ -1183,6 +1201,7 @@ export default function VisaoSemana() {
             Concluir
           </button>
         </div>
+        </>
       )}
 
       {/* ── Modal: Card Hero (modos 1–3 apenas) ──────────────────────────── */}
