@@ -2170,11 +2170,17 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                   className="w-full flex items-center justify-between px-4 py-3 text-left border-b border-[#E6EAF0] dark:border-[#374151] transition-colors"
                   style={{ borderLeft: '3px solid #818CF8' }}
                 >
-                  <div>
+                  <div className="flex-1 min-w-0 pr-2">
                     <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider block">
                       Avaliação da última aula
                     </span>
                     <span className="text-[10.5px] text-slate-400 mt-0.5 block">{formatarDataComDia(registroExibido.dataAula ?? registroExibido.data ?? '')}</span>
+                    {!avaliacaoAberta && (() => {
+                      const preview = stripHTML(registroExibido.funcionouBem ?? registroExibido.poderiaMelhorar ?? registroExibido.anotacoesGerais ?? '').trim()
+                      return preview ? (
+                        <span className="text-[10px] text-slate-300 mt-0.5 block truncate italic">"{preview}"</span>
+                      ) : null
+                    })()}
                   </div>
                   <div className="flex items-center gap-2">
                     {registroExibido.resultadoAula && (
@@ -2515,7 +2521,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                           <span className="text-[11px] font-semibold text-slate-500">{formatarData(r.dataAula ?? r.data ?? '')}</span>
                           {r.resumoAula
                             ? <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{stripHTML(r.resumoAula)}</p>
-                            : <p className="text-[11px] text-slate-300 mt-0.5 italic">Sem resumo</p>
+                            : <p className="text-[11px] text-slate-300 mt-0.5">Sem resumo</p>
                           }
                         </div>
                         {temConteudo && (
