@@ -909,7 +909,8 @@ export default function VisaoSemana() {
                               }) ?? null
                             : null
 
-                          const planoTitulo = planoDataObj?.titulo || planejamentoDoDia?.oQuePretendoFazer || null
+                          const _oqpf = planejamentoDoDia?.oQuePretendoFazer
+                          const planoTitulo = planoDataObj?.titulo || (_oqpf ? (_oqpf.length > 60 ? _oqpf.slice(0, 57) + '…' : _oqpf) : null)
                           const objetivo = planoDataObj?.objetivoGeral || planejamentoDoDia?.objetivo || null
 
                           const regData = ultimoReg ? ((ultimoReg as any).dataAula ?? (ultimoReg as any).data ?? '') : null

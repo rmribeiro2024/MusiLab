@@ -286,6 +286,8 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
       objetivo: src.objetivo,
       materiais: src.materiais ? [...src.materiais] : undefined,
       atividades: src.atividades ? src.atividades.map(a => ({ ...a })) : undefined,
+      planoData: src.planoData,
+      planosRelacionadosIds: src.planosRelacionadosIds,
       origemAula: 'adaptacao',
       criadoEm: ts,
       atualizadoEm: ts,

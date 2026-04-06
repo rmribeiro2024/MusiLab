@@ -460,7 +460,7 @@ export default function ModalCardHero(props: ModalCardHeroProps) {
       {/* ── FOOTER ─────────────────────────────────────────────────────── */}
       <div className="px-5 pb-5 pt-0 flex gap-2">
         {cardState === 'comPlano' && (
-          <ActionButton onClick={onEditar} label="✏️  Editar plano" variant="primary" fullWidth />
+          <ActionButton onClick={onEditar} label="✏️  Editar plano" variant="secondary" fullWidth />
         )}
         {cardState === 'registrada' && (
           <ActionButton onClick={onEditar} label="✏️  Ver planejamento" variant="secondary" fullWidth />
