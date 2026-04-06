@@ -1015,14 +1015,14 @@ export default function VisaoSemana() {
                                 onMouseDown={(e) => e.stopPropagation()}
                               >
                                 <button
-                                  onClick={() => { setMenuAberto(null); iniciarCopiarModo(aula, tidStr, ymd, turmaNome) }}
+                                  onClick={(e) => { e.stopPropagation(); setMenuAberto(null); iniciarCopiarModo(aula, tidStr, ymd, turmaNome) }}
                                   className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
                                 >
                                   Copiar aula
                                 </button>
                                 <div className="mx-2 border-t border-[#F1F3F8] dark:border-[#374151]" />
                                 <button
-                                  onClick={() => { setMenuAberto(null); moverParaProximaSemana(tidStr, ymd) }}
+                                  onClick={(e) => { e.stopPropagation(); setMenuAberto(null); moverParaProximaSemana(tidStr, ymd) }}
                                   className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
                                 >
                                   Mover para próxima semana
