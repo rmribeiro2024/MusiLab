@@ -687,6 +687,39 @@ export default function TelaPrincipal() {
     const [modalConceitosPlano, setModalConceitosPlano] = useState<{ planoId: string; conceitos: string[] } | null>(null)
     const [detectandoConceitos, setDetectandoConceitos] = useState(false)
 
+    // ── Re-analisar manualmente músicas + vivências + conceitos ──
+    const [reAnalisandoId, setReAnalisandoId] = useState<string | null>(null)
+    const handleReAnalisar = (plano: any) => {
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+        const planoId = String(plano.id)
+        setReAnalisandoId(planoId)
+        // Músicas
+        const detectadas = detectarMusicasNoPlano(plano, repertorio)
+        if (detectadas.length > 0) {
+            setMusicasDetectadas(detectadas)
+            setShowModalMusicas(true)
+        }
+        // Vivências + meios + conceitos (requer Gemini)
+        if (apiKey) {
+            classificarVivenciasPlano(plano, apiKey)
+                .then(({ vivencias, meiosOrff, conceitos }) => {
+                    const temDados = Object.values(vivencias).some(v => v > 0)
+                    if (temDados) {
+                        setPlanos((prev: any[]) => prev.map((p: any) =>
+                            String(p.id) === planoId ? { ...p, vivenciasClassificadas: vivencias, orffMeios: meiosOrff } : p
+                        ))
+                        setClasseNotif({ planoId, titulo: plano.titulo, vivencias, meiosOrff, conceitos })
+                    } else {
+                        showToast('Nenhuma vivência detectada no plano', 'error')
+                    }
+                })
+                .catch(() => showToast('Erro ao analisar o plano', 'error'))
+                .finally(() => setReAnalisandoId(null))
+        } else {
+            setReAnalisandoId(null)
+        }
+    }
+
     // ── Notificação CLASP + Orff após salvar — state compartilhado via PlanosContext ──
     // (classeNotif e setClasseNotif já vêm de usePlanosContext(), declarados abaixo com o contexto)
 
@@ -2426,6 +2459,15 @@ export default function TelaPrincipal() {
                             <button onClick={e=>{e.stopPropagation();exportarPlanoPDF(plano);}} title="Exportar PDF"
                                 className="p-[7px] text-emerald-400/70 dark:text-emerald-400/50 hover:text-emerald-600 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-md transition-colors duration-[120ms]">
                                 <span className="text-[11px] font-bold tracking-wide">PDF</span>
+                            </button>
+                            <button
+                                onClick={e=>{e.stopPropagation(); if(reAnalisandoId !== String(plano.id)) handleReAnalisar(plano)}}
+                                title="Re-detectar músicas, vivências e conceitos"
+                                className="p-[7px] text-violet-300/70 dark:text-violet-400/50 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/20 rounded-md transition-colors duration-[120ms]"
+                                disabled={reAnalisandoId === String(plano.id)}>
+                                {reAnalisandoId === String(plano.id)
+                                    ? <i className="fas fa-spinner fa-spin text-[14px]" />
+                                    : <i className="fas fa-wand-magic-sparkles text-[14px]" />}
                             </button>
                             <button onClick={e=>{e.stopPropagation();duplicarPlano(plano);}} title="Duplicar"
                                 className="p-[7px] text-sky-300/70 dark:text-sky-400/50 hover:text-sky-600 dark:hover:text-sky-300 hover:bg-sky-50 dark:hover:bg-sky-950/20 rounded-md transition-colors duration-[120ms]">
