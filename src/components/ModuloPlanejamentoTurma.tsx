@@ -1602,13 +1602,15 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
         return { key: mesKey, label: MESES_CURTO[mesNum], dots }
       })
 
-      const ultimoMes = meses.find(m => m.key === ultimoMesKey)
-      const ausenteUltimoMes = !!(ultimoMes && ultimoMes.dots.length > 0 && ultimoMes.dots.every(d => !d) && totalCount > 0)
+      // Critério: 4 aulas consecutivas mais recentes sem o item
+      const todasDots = meses.flatMap(m => m.dots)
+      const ultimas4 = todasDots.slice(-4)
+      const ausente4consecutivas = ultimas4.length >= 4 && ultimas4.every(d => !d) && totalCount > 0
 
-      return { key, label, totalCount, meses, ausenteUltimoMes }
+      return { key, label, totalCount, meses, ausenteUltimoMes: ausente4consecutivas }
     })
 
-    const meiosComDados = resumoTurma.meios.filter(m => m.count > 0)
+    const meiosComDados = resumoTurma.meios
 
     return { vivencias, meses: mesesSelecionados, meiosComDados }
   }, [historicoDaTurma, planos, resumoTurma])
@@ -2356,28 +2358,22 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                       borderRadius: 7, padding: '7px 10px', marginBottom: 5,
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <span style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#475569', fontWeight: 500, width: 80, flexShrink: 0 }}>
-                          {viv.label}
-                        </span>
+                        <div style={{ width: 80, flexShrink: 0, display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                          <span style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#475569', fontWeight: 500 }}>{viv.label}</span>
+                          {viv.totalCount > 0 && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>· {viv.totalCount}</span>}
+                        </div>
                         <div style={{ display: 'flex', gap: 16, flex: 1 }}>
                           {viv.meses.map(mes => (
                             <div key={mes.key} style={{ display: 'flex', gap: 4 }}>
                               {mes.dots.map((used, i) => (
                                 <div key={i} style={{
                                   width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                                  background: used
-                                    ? '#818CF8'
-                                    : (viv.ausenteUltimoMes && mes.key === viv.meses[viv.meses.length - 1].key)
-                                      ? '#FBBFBF'
-                                      : (isDark ? '#374151' : '#E2E8F0'),
+                                  background: used ? '#818CF8' : (isDark ? '#374151' : '#E2E8F0'),
                                 }} />
                               ))}
                             </div>
                           ))}
                         </div>
-                        <span style={{ fontSize: 11, color: isDark ? '#4B5563' : '#94a3b8', fontWeight: 600, width: 22, textAlign: 'right', flexShrink: 0 }}>
-                          {viv.totalCount}
-                        </span>
                       </div>
                       {viv.ausenteUltimoMes && (
                         <p style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic', marginTop: 4 }}>
@@ -2387,19 +2383,24 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                     </div>
                   ))}
 
-                  {/* Meios expressivos — inline discreto */}
+                  {/* Meios expressivos — chips */}
                   {vivenciasMeses.meiosComDados.length > 0 && (
                     <>
                       <div style={{ borderTop: `1px solid ${isDark ? '#374151' : '#F1F4F8'}`, margin: '10px 0' }} />
-                      <p style={{ fontSize: 12, color: '#94a3b8' }}>
-                        {vivenciasMeses.meiosComDados.map((m, i) => (
-                          <React.Fragment key={m.label}>
-                            {i > 0 && <span>{'   '}</span>}
-                            <b style={{ color: '#64748b', fontWeight: 500 }}>{m.label}</b>
-                            {' · '}{m.count}
-                          </React.Fragment>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                        {vivenciasMeses.meiosComDados.map(m => (
+                          <div key={m.label} style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
+                            padding: '3px 10px', borderRadius: 99,
+                            border: `1px solid ${isDark ? '#374151' : '#E6EAF0'}`,
+                            background: isDark ? '#1F2937' : '#F8F9FC',
+                            opacity: m.count === 0 ? 0.4 : 1,
+                          }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#818CF8' }}>{m.count}</span>
+                            <span style={{ fontSize: 11, color: isDark ? '#9CA3AF' : '#64748b', fontWeight: 500 }}>{m.label}</span>
+                          </div>
                         ))}
-                      </p>
+                      </div>
                     </>
                   )}
                 </div>
