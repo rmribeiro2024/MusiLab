@@ -551,13 +551,13 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
 
 
   return (
-    <div style={{ background: isDark ? '#1F2937' : '#fff', borderRadius: 20, border: `1px solid ${isDark ? '#374151' : '#e4e4e7'}`, boxShadow: '0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04)', overflow: 'hidden' }}>
+    <div style={{ overflow: 'hidden' }}>
       <style>{`@keyframes crescer-tl{from{opacity:0;transform:scale(.88) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}`}</style>
 
 
       {/* Filmstrip */}
       {(() => {
-        const bg = isDark ? '#1F2937' : '#fafafa'
+        const bg = 'transparent'
         const cardBg = isDark ? '#111827' : '#ffffff'
         const cardBorder = isDark ? '#374151' : '#d1d5db'
         const sepBorder = isDark ? '#374151' : '#d4d4d8'
@@ -575,7 +575,7 @@ function TimelinePedagogica({ onAcionar, dataAtiva, setDataAtiva, turmaNome }: {
                 const isAgora = mes === hojeStr.slice(0, 7)
                 const isUltimoMes = mesI === mesGrupos.length - 1
                 return (
-                  <div key={mes} style={{ flexShrink: 0, width: 230, scrollSnapAlign: 'start', background: bg, borderRadius: 12, padding: '8px 10px', borderRight: isUltimoMes ? 'none' : `1px solid ${sepBorder}`, paddingRight: isUltimoMes ? 10 : 22 }}>
+                  <div key={mes} style={{ flexShrink: 0, width: 230, scrollSnapAlign: 'start', background: bg, padding: '8px 10px', borderRight: isUltimoMes ? 'none' : `1px solid ${sepBorder}`, paddingRight: isUltimoMes ? 10 : 22 }}>
                     {/* Month label */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: labelColor, textTransform: 'uppercase' as const, letterSpacing: '.04em' }}>{mesNome}</span>
@@ -2123,14 +2123,17 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             const presentes = chamada ? chamada.filter(c => c.presente).length : null
             const ausentes  = chamada ? chamada.filter(c => !c.presente) : []
             return (
-              <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-semibold text-slate-600">
-                    Avaliação da última aula · {formatarDataComDia(registroExibido.dataAula ?? registroExibido.data ?? '')}
+              <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#F1F4F8] dark:border-[#374151]">
+                  <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
+                    Avaliação da última aula
                   </span>
-                  {registroExibido.resultadoAula && (
-                    <span className="text-[11px] font-semibold text-slate-500">{labelResultado(registroExibido.resultadoAula)}</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10.5px] text-slate-500">{formatarDataComDia(registroExibido.dataAula ?? registroExibido.data ?? '')}</span>
+                    {registroExibido.resultadoAula && (
+                      <span className="text-[10.5px] font-semibold text-slate-500">{labelResultado(registroExibido.resultadoAula)}</span>
+                    )}
+                  </div>
                 </div>
                 {(() => {
                   // Contar campos secundários com conteúdo real
@@ -2146,7 +2149,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                   const usarColapso = totalSecundarios >= 2
                   const mostrarSecundarios = !usarColapso || verDetalhesRegistro
                   return (
-                    <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div className="px-4 py-3 space-y-2">
                       {registroExibido.resumoAula && (
                         <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
                       )}
@@ -2399,7 +2402,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
               </svg>
             </button>
             {timelineAberta && (
-              <div className="px-4 pb-4">
+              <div>
                 <TimelinePedagogica
                   onAcionar={() => {
                     const data = proximaAulaData || calendarDateStr
