@@ -2492,7 +2492,7 @@ export default function BancoPlanos({ session }) {
                         <main ref={mainScrollRef} className="flex-1 overflow-y-auto bg-[#F6F8FB] dark:bg-[#0F172A]">
 
                             <div className="w-full px-4 sm:px-[30px] py-6 sm:py-[26px] pb-20 sm:pb-[30px]">
-                                {viewMode==='posAula'          && <ErrorBoundary modulo="Pós-aula"><Suspense fallback={<CarregandoModulo />}><TelaPosAula /></Suspense></ErrorBoundary>}
+                                {viewMode==='posAula'          && <ErrorBoundary modulo="Pós-aula"><Suspense fallback={<CarregandoModulo />}><TelaPosAula onSaved={() => setViewMode('agenda')} /></Suspense></ErrorBoundary>}
                                 {viewMode==='posAulaHistorico' && <ErrorBoundary modulo="Histórico"><Suspense fallback={<CarregandoModulo />}><TelaPosAulaHistorico /></Suspense></ErrorBoundary>}
                                 {viewMode==='agenda' && <ErrorBoundary modulo="Agenda"><Suspense fallback={<CarregandoModulo />}><AgendaView /></Suspense></ErrorBoundary>}
                                 {viewMode==='calendario' && <ErrorBoundary modulo="Calendário"><Suspense fallback={<CarregandoModulo />}><TelaCalendario /></Suspense></ErrorBoundary>}

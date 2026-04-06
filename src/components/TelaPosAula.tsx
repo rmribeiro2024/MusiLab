@@ -7,7 +7,7 @@ import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContex
 import ModalRegistroPosAula from './modals/ModalRegistroPosAula'
 import { showToast } from '../lib/toast'
 
-export default function TelaPosAula() {
+export default function TelaPosAula({ onSaved }: { onSaved?: () => void } = {}) {
     const { planos, sugerirPlanoParaTurma, editarRegistro } = usePlanosContext()
     const { anosLetivos } = useAnoLetivoContext()
     const {
@@ -395,6 +395,7 @@ export default function TelaPosAula() {
                             <ModalRegistroPosAula
                                 inlineMode={true}
                                 onVoltar={fecharPainel}
+                                onSaved={onSaved}
                             />
                         </Suspense>
                     </div>
