@@ -86,6 +86,7 @@ export default function TelaPosAula() {
         d.setDate(d.getDate() + delta)
         setDataSel(toStr(d))
         setListaAberta(true)
+        document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
     // Tempo atual em minutos
