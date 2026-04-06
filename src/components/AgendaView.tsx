@@ -1631,7 +1631,7 @@ export default function AgendaView() {
             )}
 
             {/* Setas de navegação */}
-            <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+            <div style={{ display: registroInline ? 'none' : 'flex', gap: 6, marginTop: 10 }}>
               {diaOffset !== 0 && (
                 <button
                   onClick={() => { setDiaOffset(0); document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' }) }}
