@@ -883,15 +883,25 @@ function LegendaEscolas({ anosLetivos, escolaColorMap, isDarkMode }: LegendaProp
 
 // ─── BriefingDia — resumo inteligente com IA ─────────────────────────────────
 
-interface BriefingData {
-  resumo: string       // JS-computed: "X aulas com 3° ano · Y com 2° ano"
-  insights: string     // IA-generated: last class notes per turma
-  materiais: string[]  // JS-computed: materials list
+interface InsightItem {
+  turmas: string[]   // ["GR3A [EMPAC]", "GR3B [EMPAC]"]
+  texto: string      // nota do professor, condensada
 }
 
-async function gerarBriefingGemini(slots: AulaSlot[], todosPlanos: Plano[]): Promise<BriefingData> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-  if (!apiKey) throw new Error('Chave API não configurada.')
+interface BriefingData {
+  resumo: string
+  dicas: InsightItem[]
+  materiais: string[]
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  nao_houve: 'Aula não realizada',
+  incompleta: 'Aula incompleta',
+  revisao: 'Necessita revisão',
+  parcial: 'Aula parcial',
+}
+
+function computeBriefing(slots: AulaSlot[], todosPlanos: Plano[]): BriefingData {
 
   // ── Seção 1: resumo por ano (JS puro) ──────────────────────────────────────
   const contagemPorAno = new Map<string, number>()
@@ -906,131 +916,81 @@ async function gerarBriefingGemini(slots: AulaSlot[], todosPlanos: Plano[]): Pro
   const escolaStr = escolasSet.size > 1 ? ` · ${[...escolasSet].join(' e ')}` : ''
   const resumo = `Hoje: ${partes.join(' · ')}${escolaStr}`
 
-  // ── Seção 3: materiais (JS puro) ───────────────────────────────────────────
+  // ── Seção 3: materiais ─────────────────────────────────────────────────────
   const materiais = [...new Set(slots.flatMap(s => s.plano?.materiais ?? []).filter(Boolean))]
 
-  // ── Seção 2: histórico por turma (para a IA) ───────────────────────────────
-  const STATUS_LABEL: Record<string, string> = {
-    nao_houve: 'Aula não realizada',
-    incompleta: 'Aula incompleta',
-    revisao: 'Necessita revisão',
-    parcial: 'Aula parcial',
-  }
-  const NOMES_GENERICOS = new Set(['introdução', 'desenvolvimento', 'fechamento', 'abertura', 'aquecimento', 'encerramento'])
-
+  // ── Seção 2: dicas por turma (JS puro, sem IA) ─────────────────────────────
   const allRegs = todosPlanos.flatMap(p => (p.registrosPosAula || []))
 
-  const blocosTurmas: string[] = []
+  // Para cada slot: pega o texto mais relevante do último registro
+  const rawDicas: { label: string; texto: string }[] = []
   slots.forEach(s => {
     const turmaId = s.aulaGrade.turmaId
     const label = s.nomeTurma + (s.nomeEscola ? ` [${s.nomeEscola}]` : '')
 
-    const planoHoje = s.plano
-    const ativsHoje = (planoHoje?.atividadesRoteiro ?? [])
-      .map(a => a.nome?.trim()).filter(n => n && !NOMES_GENERICOS.has(n.toLowerCase())).slice(0, 3).join(', ')
+    if (!s.plano) {
+      rawDicas.push({ label, texto: 'Sem plano vinculado' })
+      return
+    }
 
     const turmaRegs = allRegs
       .filter(r => String(r.turma) === String(turmaId) && (r.data || r.dataAula))
       .sort((a, b) => (b.data || b.dataAula || '').localeCompare(a.data || a.dataAula || ''))
-    const ultimo = turmaRegs[0]
+    const u = turmaRegs[0]
+    if (!u) return
 
-    const linhas = [`TURMA: ${label}`]
-    if (!planoHoje) {
-      linhas.push('SEM PLANO VINCULADO HOJE')
-    } else if (ativsHoje) {
-      linhas.push(`Plano hoje: ${ativsHoje}`)
-    }
-    if (ultimo) {
-      if (ultimo.statusAula && ultimo.statusAula !== 'concluida') linhas.push(`Status última aula: ${STATUS_LABEL[ultimo.statusAula] ?? ultimo.statusAula}`)
-      if (ultimo.proximaAula?.trim()) linhas.push(`Planejado para hoje: ${ultimo.proximaAula.trim()}`)
-      if ((ultimo.fariadiferente || ultimo.naoFuncionou)?.trim()) linhas.push(`A melhorar: ${(ultimo.fariadiferente || ultimo.naoFuncionou)!.trim()}`)
-      if (ultimo.comportamento?.trim()) linhas.push(`Comportamento: ${ultimo.comportamento.trim()}`)
+    // Prioridade: proximaAula > status incompleto > a melhorar > comportamento
+    const trunc = (s: string) => s.length > 70 ? s.slice(0, 67) + '…' : s
+    if (u.proximaAula?.trim()) {
+      rawDicas.push({ label, texto: trunc(u.proximaAula.trim()) })
+    } else if (u.statusAula && u.statusAula !== 'concluida') {
+      const statusTxt = STATUS_LABEL[u.statusAula] ?? u.statusAula
+      const amelhorar = (u.fariadiferente || u.naoFuncionou)?.trim()
+      rawDicas.push({ label, texto: amelhorar ? `${statusTxt} — ${trunc(amelhorar)}` : statusTxt })
     } else {
-      linhas.push('Sem histórico.')
+      const amelhorar = (u.fariadiferente || u.naoFuncionou)?.trim()
+      const comportamento = u.comportamento?.trim()
+      const extra = amelhorar || comportamento
+      if (extra) rawDicas.push({ label, texto: trunc(extra) })
     }
-    blocosTurmas.push(linhas.join('\n'))
   })
 
-  const prompt = `Você é um assistente de apoio para professores de música. Gere dicas curtas e práticas baseadas APENAS nos dados de histórico de cada turma.
+  // Agrupa turmas com texto idêntico
+  const grouped = new Map<string, string[]>()
+  rawDicas.forEach(({ label, texto }) => {
+    const existing = grouped.get(texto) ?? []
+    grouped.set(texto, [...existing, label])
+  })
+  const dicas: InsightItem[] = [...grouped.entries()].map(([texto, turmas]) => ({ turmas, texto }))
 
-REGRAS — sem exceção:
-- Use APENAS os dados fornecidos. Proibido inventar ou inferir.
-- Sem emojis. Sem prefixos como "a melhorar:" ou "status:". Sem markdown.
-- Cada dica: máximo 10 palavras. Frase direta e acionável.
-- Se duas turmas têm o mesmo insight, agrupe: "GR3A e GR3B [EMPAC]: texto"
-- Se não há dado relevante para uma turma, NÃO a mencione.
-- Se nenhuma turma tem dado relevante, responda exatamente: nenhuma dica para hoje.
-- Formato: uma linha por dica, começando com o nome da turma seguido de dois pontos.
-
-Prioridade do que mencionar:
-1. SEM PLANO hoje — sempre mencione
-2. "Planejado para hoje" — o professor tinha anotado algo específico
-3. Status da última aula se não foi concluída
-4. "A melhorar" — algo concreto e acionável
-5. "Comportamento" — só se incomum
-
-DADOS:
-${blocosTurmas.join('\n\n')}
-
-Responda apenas com as dicas.`
-
-  const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-    },
-  )
-  if (!resp.ok) {
-    const errBody = await resp.text().catch(() => '')
-    let detail = ''
-    try { detail = JSON.parse(errBody)?.error?.message ?? '' } catch { detail = errBody.slice(0, 200) }
-    throw new Error(`Erro ${resp.status}${detail ? ': ' + detail : ''}`)
-  }
-  const data = await resp.json()
-  const insights = (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim()
-  if (!insights) throw new Error('Resposta vazia')
-
-  return { resumo, insights, materiais }
+  return { resumo, dicas, materiais }
 }
 
 function BriefingDia({ slots }: { slots: AulaSlot[] }) {
   const { planos } = usePlanosContext()
-  const [dados, setDados] = useState<BriefingData | null>(null)
-  const [carregando, setCarregando] = useState(false)
-  const [erro, setErro] = useState<string | null>(null)
+  const [visivel, setVisivel] = useState(false)
 
-  useEffect(() => { setDados(null); setErro(null) }, [slots])
+  useEffect(() => { setVisivel(false) }, [slots])
 
   if (slots.length === 0) return null
 
-  async function gerar() {
-    setCarregando(true); setErro(null)
-    try {
-      setDados(await gerarBriefingGemini(slots, planos))
-    } catch (e: any) {
-      setErro(e.message ?? 'Erro ao gerar briefing')
-    } finally {
-      setCarregando(false)
-    }
-  }
-
-  if (!dados && !carregando && !erro) {
+  if (!visivel) {
     return (
       <div className="mb-5">
         <button
-          onClick={gerar}
+          onClick={() => setVisivel(true)}
           className="flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
         >
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Gerar briefing do dia com IA
+          Ver briefing do dia
         </button>
       </div>
     )
   }
+
+  const dados = computeBriefing(slots, planos)
 
   return (
     <div className="mb-5 rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/60 dark:bg-indigo-950/30 px-4 py-3.5">
@@ -1039,53 +999,39 @@ function BriefingDia({ slots }: { slots: AulaSlot[] }) {
           <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
         <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Briefing do dia</span>
-        {!carregando && (
-          <button
-            onClick={gerar}
-            className="ml-auto text-[10px] text-indigo-400 dark:text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
-            title="Regerar"
-          >
-            atualizar
-          </button>
-        )}
+        <button
+          onClick={() => setVisivel(false)}
+          className="ml-auto text-[10px] text-indigo-400 dark:text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
+        >
+          fechar
+        </button>
       </div>
 
-      {carregando && (
-        <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-[#9CA3AF]">
-          <span className="w-3 h-3 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin shrink-0" />
-          Gerando...
-        </div>
-      )}
-      {erro && <p className="text-xs text-red-500 dark:text-red-400">{erro}</p>}
-      {dados && (
-        <div className="space-y-3">
-          {/* Seção 1: resumo por ano */}
-          <p className="text-[12px] font-semibold text-slate-700 dark:text-[#E5E7EB]">{dados.resumo}</p>
-          {/* Seção 2: dicas da IA */}
-          {dados.insights && dados.insights !== 'nenhuma dica para hoje' && (
-            <div className="space-y-1.5">
-              {dados.insights.split('\n').filter(l => l.trim()).map((linha, i) => {
-                const colonIdx = linha.indexOf(': ')
-                if (colonIdx === -1) return null
-                const turma = linha.slice(0, colonIdx).trim()
-                const texto = linha.slice(colonIdx + 2).trim()
-                return (
-                  <div key={i} className="flex gap-2 items-baseline">
-                    <span className="shrink-0 text-[10px] font-semibold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded whitespace-nowrap">{turma}</span>
-                    <span className="text-[12px] text-slate-600 dark:text-[#9CA3AF]">{texto}</span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-          {/* Seção 3: materiais */}
-          {dados.materiais.length > 0 && (
-            <p className="text-[11px] text-slate-400 dark:text-[#6B7280] pt-0.5">
-              <span className="font-semibold text-slate-500 dark:text-[#9CA3AF]">Levar:</span> {dados.materiais.join(' · ')}
-            </p>
-          )}
-        </div>
-      )}
+      <div className="space-y-3">
+        {/* Resumo por ano */}
+        <p className="text-[12px] font-semibold text-slate-700 dark:text-[#E5E7EB]">{dados.resumo}</p>
+
+        {/* Dicas por turma */}
+        {dados.dicas.length > 0 && (
+          <div className="space-y-1.5">
+            {dados.dicas.map((item, i) => (
+              <div key={i} className="flex gap-2 items-baseline">
+                <span className="shrink-0 text-[10px] font-semibold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded whitespace-nowrap">
+                  {item.turmas.join(' · ')}
+                </span>
+                <span className="text-[12px] text-slate-600 dark:text-[#9CA3AF]">{item.texto}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Materiais */}
+        {dados.materiais.length > 0 && (
+          <p className="text-[11px] text-slate-400 dark:text-[#6B7280] pt-0.5">
+            <span className="font-semibold text-slate-500 dark:text-[#9CA3AF]">Levar:</span> {dados.materiais.join(' · ')}
+          </p>
+        )}
+      </div>
     </div>
   )
 }
