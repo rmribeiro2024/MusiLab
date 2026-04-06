@@ -1509,7 +1509,11 @@ export default function AgendaView() {
   const headerMsg = useMemo(() => {
     if (!statsTarget.total) return diaOffset === 0 ? 'Você não tem aulas hoje' : 'Nenhuma aula neste dia'
     if (!statsTarget.pendentes) return 'Tudo registrado \u2713'
-    if (!statsTarget.registradas) return `${statsTarget.total} aula${statsTarget.total !== 1 ? 's' : ''} hoje`
+    if (!statsTarget.registradas) {
+      if (diaOffset === 0) return `${statsTarget.total} aula${statsTarget.total !== 1 ? 's' : ''} hoje`
+      if (diaOffset === 1) return `${statsTarget.total} aula${statsTarget.total !== 1 ? 's' : ''} amanhã`
+      return `${statsTarget.total} aula${statsTarget.total !== 1 ? 's' : ''} pendente${statsTarget.total !== 1 ? 's' : ''}`
+    }
     return `${statsTarget.pendentes} aula${statsTarget.pendentes !== 1 ? 's' : ''} pendente${statsTarget.pendentes !== 1 ? 's' : ''}`
   }, [statsTarget, diaOffset])
 
@@ -1595,20 +1599,6 @@ export default function AgendaView() {
         <>
           {/* Header */}
           <div className="mb-6">
-            {/* Botão voltar quando visualizando outro dia */}
-            {diaOffset !== 0 && (
-              <button
-                onClick={() => setDiaOffset(0)}
-                style={{
-                  fontSize: 12, color: isDarkMode ? '#4B5563' : '#94A3B8',
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  marginBottom: 10, display: 'flex', alignItems: 'center', gap: 4,
-                }}
-              >
-                ← Hoje
-              </button>
-            )}
-
             <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
               {headerMsg}
             </h1>
@@ -1640,37 +1630,48 @@ export default function AgendaView() {
               </div>
             )}
 
-            {/* Setas de navegação (só para hoje em modo normal) */}
-            {diaOffset === 0 && (slotsOntem.length > 0 || slotsAmanha.length > 0) && (
-              <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-                {slotsOntem.length > 0 && (
-                  <button
-                    onClick={() => setDiaOffset(-1)}
-                    style={{
-                      fontSize: 11, color: isDarkMode ? '#4B5563' : '#94A3B8',
-                      background: 'none',
-                      border: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}`,
-                      borderRadius: 6, padding: '3px 8px', cursor: 'pointer',
-                    }}
-                  >
-                    ← Ontem
-                  </button>
-                )}
-                {slotsAmanha.length > 0 && (
-                  <button
-                    onClick={() => setDiaOffset(1)}
-                    style={{
-                      fontSize: 11, color: isDarkMode ? '#4B5563' : '#94A3B8',
-                      background: 'none',
-                      border: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}`,
-                      borderRadius: 6, padding: '3px 8px', cursor: 'pointer',
-                    }}
-                  >
-                    Amanhã →
-                  </button>
-                )}
-              </div>
-            )}
+            {/* Setas de navegação */}
+            <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+              {diaOffset !== 0 && (
+                <button
+                  onClick={() => { setDiaOffset(0); document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  style={{
+                    fontSize: 11, color: isDarkMode ? '#4B5563' : '#94A3B8',
+                    background: 'none',
+                    border: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}`,
+                    borderRadius: 6, padding: '3px 8px', cursor: 'pointer',
+                  }}
+                >
+                  ← Voltar
+                </button>
+              )}
+              {diaOffset === 0 && slotsOntem.length > 0 && (
+                <button
+                  onClick={() => { setDiaOffset(-1); document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  style={{
+                    fontSize: 11, color: isDarkMode ? '#4B5563' : '#94A3B8',
+                    background: 'none',
+                    border: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}`,
+                    borderRadius: 6, padding: '3px 8px', cursor: 'pointer',
+                  }}
+                >
+                  ← Ontem
+                </button>
+              )}
+              {diaOffset === 0 && slotsAmanha.length > 0 && (
+                <button
+                  onClick={() => { setDiaOffset(1); document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  style={{
+                    fontSize: 11, color: isDarkMode ? '#4B5563' : '#94A3B8',
+                    background: 'none',
+                    border: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}`,
+                    borderRadius: 6, padding: '3px 8px', cursor: 'pointer',
+                  }}
+                >
+                  Amanhã →
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Conteúdo animado */}
