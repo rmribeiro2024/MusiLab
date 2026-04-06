@@ -1599,9 +1599,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
       {/* ── IDENTIDADE DA TURMA ─────────────────────────────────────────────── */}
       <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-[10px] bg-[#EEEEFF] flex items-center justify-center flex-shrink-0">
-            <span className="text-[11px] font-bold text-[#5B5FEA]">{turmaNome.slice(0, 4).toUpperCase()}</span>
-          </div>
+          <div className="w-9 h-9 rounded-[10px] bg-[#EEEEFF] flex-shrink-0" />
           <div>
             <div className="text-[14px] font-semibold text-slate-700 leading-tight">{turmaNome}</div>
             {escolaNome && <div className="text-[11px] text-slate-400 mt-0.5">{escolaNome}</div>}
