@@ -11,13 +11,10 @@ interface ToastItem {
 
 let _nextId = 0
 
-const COLORS: Record<ToastType, string> = {
-    error:   'bg-red-600 text-white',
-    success: 'bg-emerald-600 text-white',
-    info:    'bg-slate-800 text-white',
-}
-const ICONS: Record<ToastType, string> = {
-    error: '⚠️', success: '✅', info: 'ℹ️',
+const DOT_COLOR: Record<ToastType, string> = {
+    error:   '#f87171',
+    success: '#34d399',
+    info:    '#94a3b8',
 }
 
 export default function Toast() {
@@ -37,9 +34,8 @@ export default function Toast() {
     if (toasts.length === 0) return null
 
     return (
-        // mobile: topo (evita teclado virtual iOS + bottom nav); desktop: rodapé
         <div
-            className="fixed top-4 left-4 right-4 sm:top-auto sm:bottom-6 sm:left-auto sm:right-4 sm:max-w-xs z-[9999] flex flex-col gap-2 w-auto pointer-events-none"
+            className="fixed bottom-6 right-4 z-[9999] flex flex-col gap-2 pointer-events-none"
             aria-live="assertive"
             aria-atomic="false"
         >
@@ -47,17 +43,21 @@ export default function Toast() {
                 <div
                     key={t.id}
                     role="alert"
-                    className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium pointer-events-auto ${COLORS[t.type]}`}
+                    className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl pointer-events-auto"
+                    style={{
+                        background: 'var(--v2-card, #ffffff)',
+                        border: '1px solid #E6EAF0',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.10)',
+                        minWidth: 200,
+                        maxWidth: 320,
+                    }}
                 >
-                    <span className="shrink-0">{ICONS[t.type]}</span>
-                    <span className="flex-1">{t.msg}</span>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: DOT_COLOR[t.type], flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: '#374151' }}>{t.msg}</span>
                     {t.onUndo && (
                         <button
-                            onClick={() => {
-                                t.onUndo!()
-                                setToasts(prev => prev.filter(x => x.id !== t.id))
-                            }}
-                            className="shrink-0 ml-1 px-2 py-0.5 rounded-lg bg-white/20 hover:bg-white/30 text-xs font-bold transition-colors"
+                            onClick={() => { t.onUndo!(); setToasts(prev => prev.filter(x => x.id !== t.id)) }}
+                            style={{ fontSize: 11, fontWeight: 600, color: '#5B5FEA', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', flexShrink: 0 }}
                         >
                             Desfazer
                         </button>
