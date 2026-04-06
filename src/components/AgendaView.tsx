@@ -887,31 +887,42 @@ async function gerarBriefingGemini(slots: AulaSlot[]): Promise<string> {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY
   if (!apiKey) throw new Error('Chave API não configurada.')
 
+  const hoje = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
   const linhas: string[] = []
-  linhas.push(`Data: ${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}`)
-  linhas.push(`Total de aulas: ${slots.length}`)
-
-  const escolas = [...new Set(slots.map(s => s.nomeEscola).filter(Boolean))]
-  if (escolas.length) linhas.push(`Escolas: ${escolas.join(', ')}`)
+  linhas.push(`Hoje (${hoje}) — ${slots.length} aula${slots.length !== 1 ? 's' : ''}`)
 
   slots.forEach(s => {
     const h = s.aulaGrade.horario ? ` às ${formatHorario(s.aulaGrade.horario)}` : ''
+    const escola = s.nomeEscola ? ` [${s.nomeEscola}]` : ''
     if (s.plano) {
       const ativs = (s.plano.atividadesRoteiro ?? []).slice(0, 4).map(a => a.nome).join(', ')
-      linhas.push(`- ${s.nomeTurma}${h} | "${s.plano.titulo}"${ativs ? ` | Atividades: ${ativs}` : ''}`)
+      linhas.push(`- ${s.nomeTurma}${escola}${h} | "${s.plano.titulo}"${ativs ? ` | ${ativs}` : ''}`)
     } else {
-      linhas.push(`- ${s.nomeTurma}${h} | SEM PLANO VINCULADO`)
+      linhas.push(`- ${s.nomeTurma}${escola}${h} | SEM PLANO`)
     }
   })
 
   const materiais = [...new Set(slots.flatMap(s => s.plano?.materiais ?? []).filter(Boolean))]
-  if (materiais.length) linhas.push(`Materiais necessários: ${materiais.join(', ')}`)
+  if (materiais.length) linhas.push(`Materiais: ${materiais.join(', ')}`)
 
-  const prompt = `Você é um assistente para professores de música. Com base nas informações do dia abaixo, escreva um briefing CURTO e ÚTIL (máximo 6 linhas) para o professor se preparar. Seja direto, sem saudações nem introdução. Priorize: turmas sem plano, materiais a preparar, variedade de atividades, alertas importantes. Use português claro e profissional. Não invente nada além do que foi fornecido.
+  const prompt = `Você é um assistente operacional para professores de música. Transforme os dados abaixo em alertas concretos para o dia de HOJE.
 
+REGRAS — sem exceção:
+- Use APENAS os dados fornecidos. Proibido inferir, inventar ou sugerir conteúdo pedagógico.
+- Proibido conselhos genéricos ("mantenha o engajamento", "seja criativo", "lembre-se de").
+- Se não há nada relevante sobre uma turma, não a mencione.
+- Máximo 5 tópicos curtos, começando com "•".
+
+PRIORIDADE (nesta ordem):
+1. Turmas SEM PLANO — cite o nome e horário
+2. Materiais a preparar — apenas os listados nos dados
+3. Padrões operacionais relevantes (ex: mesma música em todas as turmas, aulas consecutivas sem intervalo, escola diferente)
+4. Qualquer outro dado concreto e acionável
+
+DADOS:
 ${linhas.join('\n')}
 
-Escreva apenas o briefing, sem títulos nem markdown.`
+Responda apenas com os tópicos. Sem título, sem markdown extra, sem linha em branco entre tópicos.`
 
   const resp = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
