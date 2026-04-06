@@ -2270,16 +2270,96 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                   // Colapsar só se houver 2 ou mais campos secundários
                   const usarColapso = totalSecundarios >= 2
                   const mostrarSecundarios = !usarColapso || verDetalhesRegistro
+                  const chipStyle: React.CSSProperties = {
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    padding: '3px 8px', borderRadius: 4,
+                    border: `1px solid ${isDark ? '#374151' : '#E6EAF0'}`,
+                    background: isDark ? '#374151' : '#F8F9FC',
+                    fontSize: 11, color: isDark ? '#9CA3AF' : '#475569',
+                  }
+                  const chipLbl: React.CSSProperties = {
+                    fontSize: 10, fontWeight: 700, color: '#94a3b8',
+                    textTransform: 'uppercase', letterSpacing: '.04em',
+                  }
                   return (
-                    <div className="px-4 py-3 space-y-2" style={{ background: '#ffffff' }}>
-                      {registroExibido.resumoAula && (
-                        <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
+                    <div style={{ background: isDark ? '#1F2937' : '#ffffff' }}>
+
+                      {/* ── MOBILE: chips de contexto ── */}
+                      {(registroExibido.comportamento || nivelTexto || (registroExibido as any).alunoAtencao) && (
+                        <div className="sm:hidden px-4 pt-3 pb-1 flex flex-wrap gap-1.5">
+                          {registroExibido.comportamento && (
+                            <span style={chipStyle}><span style={chipLbl}>Comportamento</span>&nbsp;{stripHTML(registroExibido.comportamento)}</span>
+                          )}
+                          {nivelTexto && (
+                            <span style={chipStyle}><span style={chipLbl}>Nível</span>&nbsp;{nivelTexto}</span>
+                          )}
+                          {(registroExibido as any).alunoAtencao && (
+                            <span style={chipStyle}><span style={chipLbl}>Atenção</span>&nbsp;{stripHTML((registroExibido as any).alunoAtencao)}</span>
+                          )}
+                        </div>
                       )}
-                      {(registroExibido.fariadiferente || (registroExibido as any).naoFuncionou) && (
-                        <InfoRow icon="⚠️" label="O que faria diferente" valor={registroExibido.fariadiferente || (registroExibido as any).naoFuncionou} />
-                      )}
-                      {mostrarSecundarios && (
-                        <>
+
+                      {/* ── MOBILE: coluna única ── */}
+                      <div className="sm:hidden px-4 py-3 flex flex-col gap-2">
+                        {registroExibido.resumoAula && (
+                          <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
+                        )}
+                        {(registroExibido.fariadiferente || (registroExibido as any).naoFuncionou) && (
+                          <InfoRow icon="⚠️" label="O que faria diferente" valor={registroExibido.fariadiferente || (registroExibido as any).naoFuncionou} />
+                        )}
+                        {mostrarSecundarios && (
+                          <>
+                            {registroExibido.funcionouBem && (
+                              <InfoRow icon="🎯" label="O que os alunos demonstraram aprender" valor={registroExibido.funcionouBem} />
+                            )}
+                            {(registroExibido as any).repetiria && (
+                              <InfoRow icon="⭐" label="O que funcionou e você repetiria" valor={(registroExibido as any).repetiria} />
+                            )}
+                            {registroExibido.poderiaMelhorar && (
+                              <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
+                            )}
+                            {(registroExibido as any).surpresaMusical && (
+                              <InfoRow icon="🎵" label="O que surpreendeu musicalmente" valor={(registroExibido as any).surpresaMusical} />
+                            )}
+                            {(registroExibido as any).pontoQueda && (
+                              <InfoRow icon="📉" label="Ponto de queda de engajamento" valor={(registroExibido as any).pontoQueda} />
+                            )}
+                            {registroExibido.anotacoesGerais && (
+                              <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
+                            )}
+                            {temChamada && (
+                              <div>
+                                <InfoRow icon="✋" label="Chamada" valor={`${presentes}/${chamada!.length} presentes`} />
+                                {ausentes.length > 0 && (
+                                  <p className="text-[11px] text-slate-400 mt-0.5 ml-6 italic">
+                                    Ausentes: {ausentes.map(c => nomeAluno(c.alunoId)).join(', ')}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {usarColapso && (
+                          <button
+                            type="button"
+                            onClick={() => setVerDetalhesRegistro(v => !v)}
+                            className="text-[11px] text-indigo-400 hover:text-indigo-600 font-medium transition-colors"
+                          >
+                            {verDetalhesRegistro ? 'Ocultar detalhes ↑' : 'Ver detalhes ↓'}
+                          </button>
+                        )}
+                      </div>
+
+                      {/* ── DESKTOP: 2 colunas ── */}
+                      <div className="hidden sm:grid sm:grid-cols-2 sm:gap-x-6 px-4 py-3">
+                        {/* Coluna esquerda: reflexão pedagógica */}
+                        <div className="flex flex-col gap-2">
+                          {registroExibido.resumoAula && (
+                            <InfoRow icon="📋" label="O que foi realizado" valor={registroExibido.resumoAula} />
+                          )}
+                          {(registroExibido.fariadiferente || (registroExibido as any).naoFuncionou) && (
+                            <InfoRow icon="⚠️" label="O que faria diferente" valor={registroExibido.fariadiferente || (registroExibido as any).naoFuncionou} />
+                          )}
                           {registroExibido.funcionouBem && (
                             <InfoRow icon="🎯" label="O que os alunos demonstraram aprender" valor={registroExibido.funcionouBem} />
                           )}
@@ -2289,20 +2369,23 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                           {registroExibido.poderiaMelhorar && (
                             <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
                           )}
-                          {registroExibido.comportamento && (
-                            <InfoRow icon="👥" label="Comportamento da turma" valor={registroExibido.comportamento} />
-                          )}
                           {(registroExibido as any).surpresaMusical && (
                             <InfoRow icon="🎵" label="O que surpreendeu musicalmente" valor={(registroExibido as any).surpresaMusical} />
                           )}
                           {(registroExibido as any).pontoQueda && (
                             <InfoRow icon="📉" label="Ponto de queda de engajamento" valor={(registroExibido as any).pontoQueda} />
                           )}
-                          {(registroExibido as any).alunoAtencao && (
-                            <InfoRow icon="👤" label="Aluno que precisa de atenção" valor={(registroExibido as any).alunoAtencao} />
-                          )}
                           {registroExibido.anotacoesGerais && (
                             <InfoRow icon="📝" label="Anotações gerais" valor={registroExibido.anotacoesGerais} />
+                          )}
+                        </div>
+                        {/* Coluna direita: contexto da turma */}
+                        <div className="flex flex-col gap-2" style={{ borderLeft: `1px solid ${isDark ? '#374151' : '#F1F4F8'}`, paddingLeft: 24 }}>
+                          {registroExibido.comportamento && (
+                            <InfoRow icon="👥" label="Comportamento da turma" valor={registroExibido.comportamento} />
+                          )}
+                          {(registroExibido as any).alunoAtencao && (
+                            <InfoRow icon="👤" label="Aluno que precisa de atenção" valor={(registroExibido as any).alunoAtencao} />
                           )}
                           {nivelTexto && (
                             <InfoRow icon="🎵" label="Nível musical" valor={nivelTexto} />
@@ -2317,17 +2400,9 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                               )}
                             </div>
                           )}
-                        </>
-                      )}
-                      {usarColapso && (
-                        <button
-                          type="button"
-                          onClick={() => setVerDetalhesRegistro(v => !v)}
-                          className="text-[11px] text-indigo-400 hover:text-indigo-600 font-medium transition-colors"
-                        >
-                          {verDetalhesRegistro ? 'Ocultar detalhes ↑' : 'Ver detalhes ↓'}
-                        </button>
-                      )}
+                        </div>
+                      </div>
+
                     </div>
                   )
                 })()}
