@@ -2455,7 +2455,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                         )}
                       </button>
                       {aberto && (
-                        <div className="px-4 pb-3 pt-1 bg-slate-50 border-t border-slate-100 space-y-2">
+                        <div className="px-4 pb-3 pt-2 border-t border-[#F1F4F8] dark:border-[#374151] space-y-2">
                           {stripHTML(r.funcionouBem ?? '').trim() && (
                             <div>
                               <p className="text-[9px] font-bold text-slate-300 uppercase tracking-wider mb-0.5">O que funcionou</p>
