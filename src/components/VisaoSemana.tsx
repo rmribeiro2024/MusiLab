@@ -445,6 +445,15 @@ export default function VisaoSemana() {
     return () => document.removeEventListener('click', handler)
   }, [menuAberto])
 
+  React.useEffect(() => {
+    if (!copiarModo) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setCopiarModo(null); setCopiadosNaModo(new Map()) }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [copiarModo])
+
   // Estado local de navegação — não interfere com AgendaSemanal
   const [semanaInicio, setSemanaInicio] = useState<Date>(() => getSemanaAtualInicio())
   const [vistaAtiva, setVistaAtiva] = useState<'semana' | 'mes'>('semana')
