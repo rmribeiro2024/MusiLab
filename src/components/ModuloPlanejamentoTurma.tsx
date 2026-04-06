@@ -1428,6 +1428,12 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   const [aulasAnterioresAberta, setAulasAnterioresAberta] = useState(true)
   const [vivenciasAbertas, setVivenciasAbertas] = useState(true)
   const [avaliacaoAberta, setAvaliacaoAberta] = useState(true)
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'))
+  useEffect(() => {
+    const obs = new MutationObserver(() => setIsDark(document.documentElement.classList.contains('dark')))
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => obs.disconnect()
+  }, [])
 
   // Resetar seleção ao trocar de turma
   useEffect(() => { setDataAtiva(null) }, [turmaSelecionada?.turmaId])
