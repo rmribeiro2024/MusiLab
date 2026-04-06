@@ -418,6 +418,7 @@ export default function VisaoSemana() {
   // ── Modo "Copiar para turmas" ─────────────────────────────────────────────
   type CopiarModoState = { planoId: string; srcTidStr: string; srcYmd: string; srcNome: string; srcEscolaId: string; srcSegmentoId: string }
   const [menuAberto, setMenuAberto] = useState<string | null>(null)
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null)
   React.useEffect(() => {
     if (!menuAberto) return
     const handler = () => setMenuAberto(null)
@@ -969,7 +970,6 @@ export default function VisaoSemana() {
                             ? 'shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:-translate-y-px hover:opacity-90'
                             : 'shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-default'
                         } ${foiRegistrada && !isDragSrc ? 'opacity-[0.72]' : ''}`}
-                        style={menuAberto === tidYmd ? { position: 'relative', zIndex: 50 } : undefined}
                       >
                         {/* card body */}
                         <div className={isMobile ? 'px-4 pt-3 pb-3' : 'px-[10px] pt-[8px] pb-[7px]'}>
@@ -1000,7 +1000,7 @@ export default function VisaoSemana() {
                         {temPlano && !past && !copiarModo && (
                           <div className="absolute top-[5px] right-[5px] z-10">
                             <button
-                              onClick={(e) => { e.stopPropagation(); setMenuAberto(menuAberto === tidYmd ? null : tidYmd) }}
+                              onClick={(e) => { e.stopPropagation(); const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right }); setMenuAberto(menuAberto === tidYmd ? null : tidYmd) }}
                               className="w-5 h-5 rounded flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#2D3748] transition-all opacity-0 group-hover:opacity-100"
                               title="Opções"
                             >
@@ -1008,27 +1008,27 @@ export default function VisaoSemana() {
                                 <circle cx="1.5" cy="1.5" r="1.5"/><circle cx="6" cy="1.5" r="1.5"/><circle cx="10.5" cy="1.5" r="1.5"/>
                               </svg>
                             </button>
-                            {menuAberto === tidYmd && (
-                              <>
-                                <div
-                                  className="absolute top-[22px] right-0 z-30 bg-white dark:bg-[#1E2A4A] rounded-[10px] shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-[#E6EAF0] dark:border-[#374151] py-1 w-[160px]"
-                                  onClick={(e) => e.stopPropagation()}
+                            {menuAberto === tidYmd && menuPos && createPortal(
+                              <div
+                                style={{ position: 'fixed', top: menuPos.top, right: menuPos.right, zIndex: 9999 }}
+                                className="bg-white dark:bg-[#1E2A4A] rounded-[10px] shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-[#E6EAF0] dark:border-[#374151] py-1 w-[185px]"
+                                onMouseDown={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  onClick={() => { setMenuAberto(null); iniciarCopiarModo(aula, tidStr, ymd, turmaNome) }}
+                                  className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
                                 >
-                                  <button
-                                    onClick={() => { setMenuAberto(null); iniciarCopiarModo(aula, tidStr, ymd, turmaNome) }}
-                                    className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
-                                  >
-                                    Copiar aula
-                                  </button>
-                                  <div className="mx-2 border-t border-[#F1F3F8] dark:border-[#374151]" />
-                                  <button
-                                    onClick={() => { setMenuAberto(null); moverParaProximaSemana(tidStr, ymd) }}
-                                    className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
-                                  >
-                                    Mover para próxima semana
-                                  </button>
-                                </div>
-                              </>
+                                  Copiar aula
+                                </button>
+                                <div className="mx-2 border-t border-[#F1F3F8] dark:border-[#374151]" />
+                                <button
+                                  onClick={() => { setMenuAberto(null); moverParaProximaSemana(tidStr, ymd) }}
+                                  className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
+                                >
+                                  Mover para próxima semana
+                                </button>
+                              </div>,
+                              document.body
                             )}
                           </div>
                         )}
