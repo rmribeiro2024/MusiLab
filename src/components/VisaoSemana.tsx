@@ -801,14 +801,14 @@ export default function VisaoSemana() {
           <span className="text-[15px] font-bold leading-none text-[#f59e0b]">{progressoSemana.total - progressoSemana.comPlano}</span>
           <span className="text-[11px] text-slate-400 dark:text-[#6B7280]">sem plano</span>
           <span className="text-[11px] text-slate-400 dark:text-[#6B7280] ml-1 hidden sm:inline">· Progresso da semana</span>
-          <div className="flex-1 h-[4px] bg-[#F1F3F8] dark:bg-[#374151] rounded-full overflow-hidden mx-1">
+          <div className="flex-1 h-[2px] bg-[#F1F3F8] dark:bg-[#374151] rounded-full overflow-hidden mx-1">
             <div
               className="h-full bg-[#5B5FEA] dark:bg-[#818cf8] rounded-full transition-[width] duration-500"
               style={{ width: progressoSemana.total > 0 ? `${Math.round(progressoSemana.comPlano / progressoSemana.total * 100)}%` : '0%' }}
             />
           </div>
           <span className="text-[11.5px] text-slate-400 dark:text-[#6B7280] whitespace-nowrap shrink-0">
-            {progressoSemana.comPlano} de {progressoSemana.total}
+            {progressoSemana.comPlano} de {progressoSemana.total} · <span className="font-semibold text-slate-500 dark:text-[#9CA3AF]">{progressoSemana.total > 0 ? Math.round(progressoSemana.comPlano / progressoSemana.total * 100) : 0}%</span>
           </span>
         </div>
       )}
