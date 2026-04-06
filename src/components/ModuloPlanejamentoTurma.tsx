@@ -2283,7 +2283,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                 <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 py-3">
                   {/* Header */}
                   <div
-                    className="-mx-4 -mt-3 px-4 py-3 mb-3 rounded-t-[9px] border-b border-[#E6EAF0] dark:border-[#374151] cursor-pointer"
+                    className={`-mx-4 -mt-3 px-4 py-3 rounded-t-[9px] border-b border-[#E6EAF0] dark:border-[#374151] cursor-pointer ${vivenciasAbertas ? 'mb-3' : 'mb-0'}`}
                     style={{ borderLeft: '3px solid #34D399' }}
                     onClick={() => setVivenciasAbertas(v => !v)}
                   >
