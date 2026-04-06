@@ -2421,7 +2421,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
           {/* ── 5. Aulas anteriores — accordion ──────────────────────────── */}
           {listaHistorico.length > 0 && (
             <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
-              <div className="flex items-center justify-between px-4 pt-3 pb-2">
+              <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[#E6EAF0] dark:border-[#374151]" style={{ background: 'var(--v2-bg)' }}>
                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aulas anteriores</h3>
                 <span className="text-[10px] text-slate-400">{listaHistorico.length} aula{listaHistorico.length !== 1 ? 's' : ''}</span>
               </div>
