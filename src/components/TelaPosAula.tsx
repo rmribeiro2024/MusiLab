@@ -77,7 +77,9 @@ export default function TelaPosAula() {
         setPainelVisible(false)
         setTimeout(() => {
             setPainelAberto(false)
-            document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' })
+            requestAnimationFrame(() => {
+                document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' })
+            })
         }, 280)
     }
 
