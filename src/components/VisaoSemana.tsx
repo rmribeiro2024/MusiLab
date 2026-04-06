@@ -402,7 +402,7 @@ export default function VisaoSemana() {
   const { anosLetivos } = useAnoLetivoContext()
   const { planos } = usePlanosContext()
   const { setViewMode } = useRepertorioContext()
-  const { selecionarTurma, setDataNavegacao, planejamentos, copiarPlanejamento, setModoInicialNavegacao } = usePlanejamentoTurmaContext()
+  const { selecionarTurma, setDataNavegacao, planejamentos, copiarPlanejamento, excluirPlanejamento, setModoInicialNavegacao } = usePlanejamentoTurmaContext()
   const { aplicacoes } = useAplicacoesContext()
 
   // ── Drag-drop entre cards ──────────────────────────────────────────────────
@@ -414,7 +414,7 @@ export default function VisaoSemana() {
   // ── Modo "Copiar para turmas" ─────────────────────────────────────────────
   type CopiarModoState = { planoId: string; srcTidStr: string; srcYmd: string; srcNome: string; srcEscolaId: string; srcSegmentoId: string }
   const [copiarModo, setCopiarModo] = useState<CopiarModoState | null>(null)
-  const [copiadosNaModo, setCopiadosNaModo] = useState<Set<string>>(new Set()) // Set<tidYmd>
+  const [copiadosNaModo, setCopiadosNaModo] = useState<Map<string, string>>(new Map()) // Map<tidYmd, planejamentoId>
   const [menuAberto, setMenuAberto] = useState<string | null>(null) // tidYmd
 
   type HeroCardData = Omit<ModalCardHeroProps, 'onClose' | 'onEditar' | 'onRegistrar' | 'onCriarPlano' | 'animStyle'> & {
@@ -590,7 +590,7 @@ export default function VisaoSemana() {
     const plano = planejamentos.find(p => String(p.turmaId) === tidStr && p.dataPrevista === ymd)
     if (!plano) return
     setCopiarModo({ planoId: plano.id, srcTidStr: tidStr, srcYmd: ymd, srcNome: nome, srcEscolaId: String(aula.escolaId ?? ''), srcSegmentoId: String(aula.segmentoId) })
-    setCopiadosNaModo(new Set())
+    setCopiadosNaModo(new Map())
     setMenuAberto(null)
   }
 
@@ -616,9 +616,13 @@ export default function VisaoSemana() {
   function handleCopiarEmModo(aula: any, tidStr: string, ymd: string) {
     if (!copiarModo) return
     const tidYmd = `${tidStr}-${ymd}`
-    if (copiadosNaModo.has(tidYmd)) return
-    copiarPlanejamento(copiarModo.planoId, { anoLetivoId: String(aula.anoLetivoId ?? ''), escolaId: String(aula.escolaId ?? ''), segmentoId: String(aula.segmentoId), turmaId: tidStr }, ymd)
-    setCopiadosNaModo(prev => new Set([...prev, tidYmd]))
+    if (copiadosNaModo.has(tidYmd)) {
+      excluirPlanejamento(copiadosNaModo.get(tidYmd)!)
+      setCopiadosNaModo(prev => { const m = new Map(prev); m.delete(tidYmd); return m })
+      return
+    }
+    const novoId = copiarPlanejamento(copiarModo.planoId, { anoLetivoId: String(aula.anoLetivoId ?? ''), escolaId: String(aula.escolaId ?? ''), segmentoId: String(aula.segmentoId), turmaId: tidStr }, ymd)
+    setCopiadosNaModo(prev => new Map([...prev, [tidYmd, novoId ?? '']]))
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -1009,23 +1013,24 @@ export default function VisaoSemana() {
                         {/* seção última aula / aula planejada */}
                         <UltimaAulaSection registro={ultimoReg} temPlano={temPlano} foiRegistrada={foiRegistrada} />
 
-                        {/* ── Overlay modo cópia ── */}
+                        {/* ── Checkbox modo cópia ── */}
                         {copiarModo && !past && (
-                          copiarModo.srcTidStr === tidStr
-                            ? <div className="absolute inset-0 ring-2 ring-inset ring-indigo-400 dark:ring-indigo-500 rounded-[8px] pointer-events-none" />
-                            : <div
-                                className={`absolute inset-0 flex items-center justify-center cursor-pointer z-10 rounded-[8px] transition-all ${
-                                  copiadosNaModo.has(tidYmd)
-                                    ? 'bg-emerald-50/90 dark:bg-emerald-500/20'
-                                    : 'bg-indigo-50/80 dark:bg-indigo-500/10 hover:bg-indigo-100/90 dark:hover:bg-indigo-500/25'
-                                }`}
-                                onClick={(e) => { e.stopPropagation(); handleCopiarEmModo(aula, tidStr, ymd) }}
-                              >
-                                {copiadosNaModo.has(tidYmd)
-                                  ? <div className="flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">✓ Copiado</div>
-                                  : <div className="flex items-center gap-1 bg-white dark:bg-[#1F2937] text-indigo-600 dark:text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm border border-indigo-200 dark:border-indigo-500/40">+ Copiar aqui</div>
-                                }
-                              </div>
+                          <div
+                            className={`absolute top-[5px] right-[5px] z-10 w-[15px] h-[15px] rounded-full border flex items-center justify-center transition-all ${
+                              copiarModo.srcTidStr === tidStr
+                                ? 'border-indigo-400 bg-indigo-400 pointer-events-none'
+                                : copiadosNaModo.has(tidYmd)
+                                  ? 'border-emerald-400 bg-emerald-400 cursor-pointer'
+                                  : 'border-slate-300 dark:border-[#4B5563] bg-white dark:bg-[#1F2937] hover:border-indigo-400 cursor-pointer'
+                            }`}
+                            onClick={(e) => { e.stopPropagation(); if (copiarModo.srcTidStr !== tidStr) handleCopiarEmModo(aula, tidStr, ymd) }}
+                          >
+                            {(copiarModo.srcTidStr === tidStr || copiadosNaModo.has(tidYmd)) && (
+                              <svg width="7" height="5" viewBox="0 0 7 5" fill="none">
+                                <path d="M1 2.5L2.8 4L6 1" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </div>
                         )}
 
                         {/* ── Gaveta inline (4º modo) ── */}
@@ -1115,23 +1120,21 @@ export default function VisaoSemana() {
         </div>
       )}
 
-      {/* ── Banner: modo "Copiar para turmas" ──────────────────────────── */}
+      {/* ── Pill flutuante: modo "Copiar para turmas" ──────────────────── */}
       {copiarModo && (
-        <div className="fixed top-0 left-0 right-0 z-[60] bg-indigo-600 text-white px-5 py-2.5 flex items-center justify-between shadow-xl">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="opacity-80">Copiando:</span>
-              <span className="font-bold">{copiarModo.srcNome}</span>
-            </div>
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-white dark:bg-[#1F2937] border border-[#E6EAF0] dark:border-[#374151] rounded-full px-4 py-2 shadow-[0_4px_20px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+          <div className="flex items-center gap-2 text-[12px] text-slate-600 dark:text-[#D1D5DB]">
+            <span className="font-semibold truncate max-w-[160px]">{copiarModo.srcNome}</span>
             {copiadosNaModo.size > 0 && (
-              <span className="bg-white/25 rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
-                {copiadosNaModo.size} turma{copiadosNaModo.size > 1 ? 's' : ''} copiada{copiadosNaModo.size > 1 ? 's' : ''}
+              <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                {copiadosNaModo.size} copiada{copiadosNaModo.size > 1 ? 's' : ''}
               </span>
             )}
           </div>
+          <div className="w-px h-3.5 bg-[#E6EAF0] dark:bg-[#374151]" />
           <button
-            onClick={() => { setCopiarModo(null); setCopiadosNaModo(new Set()) }}
-            className="text-[12px] font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition"
+            onClick={() => { setCopiarModo(null); setCopiadosNaModo(new Map()) }}
+            className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition whitespace-nowrap"
           >
             Concluir
           </button>

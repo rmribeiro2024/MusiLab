@@ -45,7 +45,7 @@ export interface PlanejamentoTurmaContextValue {
   editarPlanejamento: (p: PlanejamentoTurma) => void
   salvarPlanejamento: (dados: Omit<PlanejamentoTurma, 'id' | 'criadoEm' | 'atualizadoEm' | 'anoLetivoId' | 'escolaId' | 'segmentoId' | 'turmaId'>) => void
   excluirPlanejamento: (id: string) => void
-  copiarPlanejamento: (planoId: string, destino: TurmaSelecionada, dataPrevista?: string) => void
+  copiarPlanejamento: (planoId: string, destino: TurmaSelecionada, dataPrevista?: string) => string | undefined
   fecharForm: () => void
 
   // Salvar planejamento rápido diretamente para uma turma (sem depender de turmaSelecionada)
@@ -291,6 +291,7 @@ export function PlanejamentoTurmaProvider({ children, userId }: PlanejamentoTurm
       atualizadoEm: ts,
     }
     setPlanejamentos(prev => [copia, ...prev])
+    return copia.id
   }, [planejamentos])
 
   const salvarPlanejamentoParaTurma = useCallback((
