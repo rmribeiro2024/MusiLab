@@ -1429,6 +1429,9 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   const [obsRascunho, setObsRascunho] = useState('')
   const [editandoObj, setEditandoObj] = useState(false)
   const [objRascunho, setObjRascunho] = useState('')
+  const [aulasAnterioresAberta, setAulasAnterioresAberta] = useState(true)
+  const [vivenciasAbertas, setVivenciasAbertas] = useState(true)
+  const [avaliacaoAberta, setAvaliacaoAberta] = useState(true)
 
   // Resetar seleção ao trocar de turma
   useEffect(() => { setDataAtiva(null) }, [turmaSelecionada?.turmaId])
@@ -2124,7 +2127,12 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             const ausentes  = chamada ? chamada.filter(c => !c.presente) : []
             return (
               <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[#E6EAF0] dark:border-[#374151]" style={{ background: '#F6F8FB' }}>
+                <button
+                  type="button"
+                  onClick={() => setAvaliacaoAberta(v => !v)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-left border-b border-[#E6EAF0] dark:border-[#374151] transition-colors"
+                  style={{ background: '#F6F8FB' }}
+                >
                   <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
                     Avaliação da última aula
                   </span>
@@ -2133,9 +2141,12 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                     {registroExibido.resultadoAula && (
                       <span className="text-[10.5px] font-semibold text-slate-500">{labelResultado(registroExibido.resultadoAula)}</span>
                     )}
+                    <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${avaliacaoAberta ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
-                </div>
-                {(() => {
+                </button>
+                {avaliacaoAberta && (() => {
                   // Contar campos secundários com conteúdo real
                   const secundarios = [
                     stripHTML(registroExibido.funcionouBem ?? '').trim(),
@@ -2226,7 +2237,11 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                 )}
                 <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 py-3">
                   {/* Header */}
-                  <div className="-mx-4 -mt-3 px-4 py-3 mb-3 rounded-t-[9px] border-b border-[#E6EAF0] dark:border-[#374151]" style={{ background: '#F6F8FB' }}>
+                  <div
+                    className="-mx-4 -mt-3 px-4 py-3 mb-3 rounded-t-[9px] border-b border-[#E6EAF0] dark:border-[#374151] cursor-pointer"
+                    style={{ background: '#F6F8FB' }}
+                    onClick={() => setVivenciasAbertas(v => !v)}
+                  >
                   <div className="flex items-start justify-between gap-2 flex-wrap">
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">
@@ -2335,11 +2350,14 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                         </div>
                       )}
                     </div>
+                    <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform self-center shrink-0 ${vivenciasAbertas ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
                   </div>{/* fim header cinza */}
 
                   {/* Conteúdo — desktop 2 colunas (sm:) / mobile empilhado */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {vivenciasAbertas && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Vivências musicais */}
                     {(() => {
                       const temDados = resumoTurma.vivencias.some(v => v.count > 0)
@@ -2385,7 +2403,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                         </div>
                       )
                     })()}
-                  </div>
+                  </div>}
                 </div>
               </>
             )
@@ -2423,11 +2441,21 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
           {/* ── 5. Aulas anteriores — accordion ──────────────────────────── */}
           {listaHistorico.length > 0 && (
             <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
-              <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[#E6EAF0] dark:border-[#374151]" style={{ background: '#F6F8FB' }}>
+              <button
+                type="button"
+                onClick={() => setAulasAnterioresAberta(v => !v)}
+                className="w-full flex items-center justify-between px-4 pt-3 pb-2 text-left border-b border-[#E6EAF0] dark:border-[#374151] transition-colors"
+                style={{ background: '#F6F8FB' }}
+              >
                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aulas anteriores</h3>
-                <span className="text-[10px] text-slate-400">{listaHistorico.length} aula{listaHistorico.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="divide-y divide-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-slate-400">{listaHistorico.length} aula{listaHistorico.length !== 1 ? 's' : ''}</span>
+                  <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${aulasAnterioresAberta ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </button>
+              {aulasAnterioresAberta && <div className="divide-y divide-slate-100">
                 {listaHistorico.map((r, i) => {
                   const id = r.id ?? i
                   const aberto = registroAbertoId === id
@@ -2481,15 +2509,15 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                     </div>
                   )
                 })}
-              </div>
-              <div className="px-4 py-2.5 border-t border-slate-100">
+              </div>}
+              {aulasAnterioresAberta && <div className="px-4 py-2.5 border-t border-slate-100">
                 <button
                   onClick={() => setViewModeGlobal('posAulaHistorico')}
                   className="text-[11px] text-indigo-500 hover:text-indigo-700 font-semibold transition-colors"
                 >
                   Ver histórico completo →
                 </button>
-              </div>
+              </div>}
             </div>
           )}
 
