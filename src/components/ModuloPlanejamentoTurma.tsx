@@ -1612,7 +1612,9 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
 
     const meiosComDados = resumoTurma.meios
 
-    return { vivencias, meses: mesesSelecionados, meiosComDados }
+    const vivenciasOrdenadas = [...vivencias].sort((a, b) => b.totalCount - a.totalCount)
+
+    return { vivencias: vivenciasOrdenadas, meses: mesesSelecionados, meiosComDados }
   }, [historicoDaTurma, planos, resumoTurma])
 
   // Destaques automáticos — até 3 insights das últimas aulas
@@ -2358,9 +2360,8 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                       borderRadius: 7, padding: '7px 10px', marginBottom: 5,
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <div style={{ width: 80, flexShrink: 0, display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                        <div style={{ width: 80, flexShrink: 0 }}>
                           <span style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#475569', fontWeight: 500 }}>{viv.label}</span>
-                          {viv.totalCount > 0 && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>· {viv.totalCount}</span>}
                         </div>
                         <div style={{ display: 'flex', gap: 16, flex: 1 }}>
                           {viv.meses.map(mes => (
@@ -2374,6 +2375,11 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                             </div>
                           ))}
                         </div>
+                        {viv.totalCount > 0 && (
+                          <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, flexShrink: 0, marginLeft: 8 }}>
+                            {viv.totalCount}
+                          </span>
+                        )}
                       </div>
                       {viv.ausenteUltimoMes && (
                         <p style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic', marginTop: 4 }}>
@@ -2387,6 +2393,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                   {vivenciasMeses.meiosComDados.length > 0 && (
                     <>
                       <div style={{ borderTop: `1px solid ${isDark ? '#374151' : '#F1F4F8'}`, margin: '10px 0' }} />
+                      <p style={{ fontSize: 10, fontWeight: 700, color: '#CBD5E1', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 6 }}>Meios expressivos</p>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                         {vivenciasMeses.meiosComDados.map(m => (
                           <div key={m.label} style={{
