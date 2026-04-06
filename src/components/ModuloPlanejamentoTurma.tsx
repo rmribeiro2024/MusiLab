@@ -2396,15 +2396,9 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                     <>
                       <div style={{ borderTop: `1px solid ${isDark ? '#374151' : '#F1F4F8'}`, margin: '10px 0' }} />
                       <p style={{ fontSize: 10, fontWeight: 700, color: '#CBD5E1', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 6 }}>Meios expressivos</p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px 14px' }}>
                         {vivenciasMeses.meiosComDados.map(m => (
-                          <div key={m.label} style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 5,
-                            padding: '3px 10px', borderRadius: 4,
-                            border: `1px solid ${isDark ? '#374151' : '#E6EAF0'}`,
-                            background: isDark ? '#1F2937' : '#F8F9FC',
-                            opacity: m.count === 0 ? 0.4 : 1,
-                          }}>
+                          <div key={m.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, opacity: m.count === 0 ? 0.4 : 1 }}>
                             <span style={{
                               fontSize: 10, fontWeight: 600, color: isDark ? '#94a3b8' : '#64748b',
                               background: isDark ? '#374151' : '#F1F4F8',
