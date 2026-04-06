@@ -2532,19 +2532,19 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                         <div className="px-4 pb-3 pt-2 border-t border-[#F1F4F8] dark:border-[#374151] space-y-2">
                           {stripHTML(r.funcionouBem ?? '').trim() && (
                             <div>
-                              <p className="text-[9px] font-bold text-slate-300 uppercase tracking-wider mb-0.5">O que funcionou</p>
+                              <p className="text-[9px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#0D9488' }}>O que funcionou</p>
                               <p className="text-[11px] text-slate-500 leading-snug">{stripHTML(r.funcionouBem!)}</p>
                             </div>
                           )}
                           {stripHTML(r.fariadiferente ?? (r as any).naoFuncionou ?? '').trim() && (
                             <div>
-                              <p className="text-[9px] font-bold text-slate-300 uppercase tracking-wider mb-0.5">Faria diferente</p>
+                              <p className="text-[9px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#D97706' }}>Faria diferente</p>
                               <p className="text-[11px] text-slate-500 leading-snug">{stripHTML(r.fariadiferente ?? (r as any).naoFuncionou)}</p>
                             </div>
                           )}
                           {stripHTML(r.proximaAula ?? '').trim() && (
                             <div>
-                              <p className="text-[9px] font-bold text-slate-300 uppercase tracking-wider mb-0.5">Nota para próxima</p>
+                              <p className="text-[9px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#6366F1' }}>Nota para próxima</p>
                               <p className="text-[11px] text-slate-500 leading-snug">{stripHTML(r.proximaAula!)}</p>
                             </div>
                           )}
