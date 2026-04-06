@@ -418,6 +418,12 @@ export default function VisaoSemana() {
   // ── Modo "Copiar para turmas" ─────────────────────────────────────────────
   type CopiarModoState = { planoId: string; srcTidStr: string; srcYmd: string; srcNome: string; srcEscolaId: string; srcSegmentoId: string }
   const [menuAberto, setMenuAberto] = useState<string | null>(null)
+  React.useEffect(() => {
+    if (!menuAberto) return
+    const handler = () => setMenuAberto(null)
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [menuAberto])
   const [copiarModo, setCopiarModo] = useState<CopiarModoState | null>(null)
   const [copiadosNaModo, setCopiadosNaModo] = useState<Map<string, string>>(new Map()) // Map<tidYmd, planejamentoId>
 
@@ -1003,7 +1009,6 @@ export default function VisaoSemana() {
                             </button>
                             {menuAberto === tidYmd && (
                               <>
-                                <div className="fixed inset-0 z-20" onClick={(e) => { e.stopPropagation(); setMenuAberto(null) }} />
                                 <div
                                   className="absolute top-[22px] right-0 z-30 bg-white dark:bg-[#1E2A4A] rounded-[10px] shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-[#E6EAF0] dark:border-[#374151] py-1 w-[160px]"
                                   onClick={(e) => e.stopPropagation()}
