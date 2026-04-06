@@ -2400,7 +2400,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                         {vivenciasMeses.meiosComDados.map(m => (
                           <div key={m.label} style={{
                             display: 'inline-flex', alignItems: 'center', gap: 5,
-                            padding: '3px 10px', borderRadius: 99,
+                            padding: '3px 10px', borderRadius: 4,
                             border: `1px solid ${isDark ? '#374151' : '#E6EAF0'}`,
                             background: isDark ? '#1F2937' : '#F8F9FC',
                             opacity: m.count === 0 ? 0.4 : 1,
