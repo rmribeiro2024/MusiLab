@@ -2131,7 +2131,6 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                   type="button"
                   onClick={() => setAvaliacaoAberta(v => !v)}
                   className="w-full flex items-center justify-between px-4 py-3 text-left border-b border-[#E6EAF0] dark:border-[#374151] transition-colors"
-                  style={{ background: '#F6F8FB' }}
                 >
                   <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
                     Avaliação da última aula
@@ -2239,7 +2238,6 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                   {/* Header */}
                   <div
                     className="-mx-4 -mt-3 px-4 py-3 mb-3 rounded-t-[9px] border-b border-[#E6EAF0] dark:border-[#374151] cursor-pointer"
-                    style={{ background: '#F6F8FB' }}
                     onClick={() => setVivenciasAbertas(v => !v)}
                   >
                   <div className="flex items-start justify-between gap-2 flex-wrap">
@@ -2414,7 +2412,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             <button
               type="button"
               onClick={() => setTimelineAberta(v => !v)}
-              className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors" style={{ background: '#F6F8FB' }}
+              className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors"
             >
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Aulas realizadas</span>
               <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${timelineAberta ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -2445,7 +2443,6 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                 type="button"
                 onClick={() => setAulasAnterioresAberta(v => !v)}
                 className="w-full flex items-center justify-between px-4 pt-3 pb-2 text-left border-b border-[#E6EAF0] dark:border-[#374151] transition-colors"
-                style={{ background: '#F6F8FB' }}
               >
                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aulas anteriores</h3>
                 <div className="flex items-center gap-2">
