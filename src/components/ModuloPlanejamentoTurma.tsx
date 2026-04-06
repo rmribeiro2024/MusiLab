@@ -2337,7 +2337,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                 <div>
                   {/* Cabeçalho de meses — alinhado exatamente com os dots abaixo */}
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6, paddingLeft: 10 }}>
-                    <div style={{ width: 80, flexShrink: 0 }} />
+                    <div style={{ width: 110, flexShrink: 0 }} />
                     <div style={{ display: 'flex', gap: 16 }}>
                       {vivenciasMeses.meses.map(mesKey => {
                         const dotsCount = vivenciasMeses.vivencias[0]?.meses.find(m => m.key === mesKey)?.dots.length ?? 0
@@ -2360,10 +2360,11 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                       borderRadius: 7, padding: '7px 10px', marginBottom: 5,
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <div style={{ width: 80, flexShrink: 0 }}>
+                        <div style={{ width: 110, flexShrink: 0, display: 'flex', alignItems: 'baseline', gap: 4 }}>
                           <span style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#475569', fontWeight: 500 }}>{viv.label}</span>
+                          {viv.totalCount > 0 && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>· {viv.totalCount}</span>}
                         </div>
-                        <div style={{ display: 'flex', gap: 16, flex: 1 }}>
+                        <div style={{ display: 'flex', gap: 16 }}>
                           {viv.meses.map(mes => (
                             <div key={mes.key} style={{ display: 'flex', gap: 4 }}>
                               {mes.dots.map((used, i) => (
@@ -2375,11 +2376,6 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                             </div>
                           ))}
                         </div>
-                        {viv.totalCount > 0 && (
-                          <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, flexShrink: 0, marginLeft: 8 }}>
-                            {viv.totalCount}
-                          </span>
-                        )}
                       </div>
                       {viv.ausenteUltimoMes && (
                         <p style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic', marginTop: 4 }}>
