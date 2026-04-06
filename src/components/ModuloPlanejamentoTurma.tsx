@@ -1570,20 +1570,19 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
       byMonth.get(key)!.push(aula)
     }
 
-    // Selecionar meses mais recentes até 16 dots
+    // Selecionar meses mais recentes até 16 dots (sempre inclui ao menos o último mês)
     const mesesOrdenados = [...byMonth.keys()].sort((a, b) => b.localeCompare(a))
     const mesesSelecionados: string[] = []
     let totalDots = 0
     for (const mes of mesesOrdenados) {
       const count = byMonth.get(mes)!.length
-      if (totalDots + count > 16) break
+      // Sempre inclui o primeiro mês mesmo se tiver mais de 16 aulas
+      if (mesesSelecionados.length > 0 && totalDots + count > 16) break
       mesesSelecionados.push(mes)
       totalDots += count
       if (totalDots >= 16) break
     }
     mesesSelecionados.reverse() // mais antigo primeiro para exibição
-
-    if (mesesSelecionados.length === 0) return null
 
     const ultimoMesKey = mesesSelecionados[mesesSelecionados.length - 1]
 
@@ -1593,7 +1592,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
       const totalCount = resumoTurma.vivencias.find(v => v.label === label)?.count ?? 0
 
       const meses = mesesSelecionados.map(mesKey => {
-        const aulasDoMes = byMonth.get(mesKey)!
+        const aulasDoMes = byMonth.get(mesKey)!.slice(0, 16)
         const dots = aulasDoMes.map(aula => {
           const plano = planos.find(p => p.registrosPosAula?.some(r => r.id === aula.id))
           return (plano?.vivenciasClassificadas?.[key] ?? 0) > 0
