@@ -1622,23 +1622,21 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
       </div>
 
       {/* ── ABAS (underline) ─────────────────────────────────────────────────── */}
-      <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
-        <div className="flex border-b border-[#E6EAF0] dark:border-[#374151]">
-          {(['turma', 'aulas', 'repertorio'] as const).map(t => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setAba(t)}
-              className={`flex-1 text-[12.5px] font-semibold py-2.5 transition-colors border-b-2 -mb-px ${
-                aba === t
-                  ? 'border-[#5B5FEA] text-[#5B5FEA]'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              {t === 'turma' ? 'Turma' : t === 'aulas' ? 'Aulas' : 'Repertório'}
-            </button>
-          ))}
-        </div>
+      <div className="flex border-b border-[#E6EAF0] dark:border-[#374151]">
+        {(['turma', 'aulas', 'repertorio'] as const).map(t => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setAba(t)}
+            className={`flex-1 text-[12.5px] font-semibold py-2.5 transition-colors border-b-2 -mb-px ${
+              aba === t
+                ? 'border-[#5B5FEA] text-[#5B5FEA]'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            {t === 'turma' ? 'Turma' : t === 'aulas' ? 'Aulas' : 'Repertório'}
+          </button>
+        ))}
       </div>
 
       {/* ── ABA: TURMA ───────────────────────────────────────────────────────── */}
