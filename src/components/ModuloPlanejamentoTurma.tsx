@@ -2361,9 +2361,9 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {viv.totalCount > 0 && (
                           <span style={{
-                            fontSize: 10, fontWeight: 700, color: '#818CF8',
-                            background: isDark ? '#312e81' : '#EEF2FF',
-                            border: `1px solid ${isDark ? '#4338ca' : '#C7D2FE'}`,
+                            fontSize: 10, fontWeight: 600, color: isDark ? '#94a3b8' : '#64748b',
+                            background: isDark ? '#374151' : '#F1F4F8',
+                            border: `1px solid ${isDark ? '#4B5563' : '#E2E8F0'}`,
                             borderRadius: 4, padding: '1px 6px', flexShrink: 0,
                           }}>{viv.totalCount}</span>
                         )}
@@ -2406,9 +2406,9 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                             opacity: m.count === 0 ? 0.4 : 1,
                           }}>
                             <span style={{
-                              fontSize: 10, fontWeight: 700, color: '#818CF8',
-                              background: isDark ? '#312e81' : '#EEF2FF',
-                              border: `1px solid ${isDark ? '#4338ca' : '#C7D2FE'}`,
+                              fontSize: 10, fontWeight: 600, color: isDark ? '#94a3b8' : '#64748b',
+                              background: isDark ? '#374151' : '#F1F4F8',
+                              border: `1px solid ${isDark ? '#4B5563' : '#E2E8F0'}`,
                               borderRadius: 4, padding: '1px 5px',
                             }}>{m.count}</span>
                             <span style={{ fontSize: 11, color: isDark ? '#9CA3AF' : '#64748b', fontWeight: 500 }}>{m.label}</span>
