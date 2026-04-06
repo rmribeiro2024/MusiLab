@@ -794,13 +794,16 @@ export default function VisaoSemana() {
 
       {/* ── Barra de progresso semanal ── */}
       {vistaAtiva === 'semana' && (
-        <div className="flex items-center gap-3 mb-4 px-[14px] py-[9px] rounded-[10px] border border-[#E6EAF0] dark:border-[#2D3748] bg-transparent">
-          <span className="text-[13px] font-semibold leading-none text-slate-500 dark:text-[#9CA3AF]">{progressoSemana.comPlano} <span className="font-normal text-[11px] text-slate-400 dark:text-[#6B7280]">planejadas</span></span>
+        <div className="flex items-center gap-3 mb-4 px-[14px] py-[9px] rounded-[10px] v2-card border border-[#E6EAF0] dark:border-[#374151]">
+          <span className="text-[15px] font-bold leading-none text-[#5B5FEA] dark:text-[#818cf8]">{progressoSemana.comPlano}</span>
+          <span className="text-[11px] text-slate-400 dark:text-[#6B7280]">planejadas</span>
           <span className="w-px h-3 bg-[#E6EAF0] dark:bg-[#374151]" />
-          <span className="text-[13px] font-semibold leading-none text-slate-500 dark:text-[#9CA3AF]">{progressoSemana.total - progressoSemana.comPlano} <span className="font-normal text-[11px] text-slate-400 dark:text-[#6B7280]">sem plano</span></span>
-          <div className="flex-1 h-[3px] bg-[#F1F3F8] dark:bg-[#2D3748] rounded-full overflow-hidden mx-2">
+          <span className="text-[15px] font-bold leading-none text-[#f59e0b]">{progressoSemana.total - progressoSemana.comPlano}</span>
+          <span className="text-[11px] text-slate-400 dark:text-[#6B7280]">sem plano</span>
+          <span className="text-[11px] text-slate-400 dark:text-[#6B7280] ml-1 hidden sm:inline">· Progresso da semana</span>
+          <div className="flex-1 h-[4px] bg-[#F1F3F8] dark:bg-[#374151] rounded-full overflow-hidden mx-1">
             <div
-              className="h-full bg-[#94A3B8] dark:bg-[#4B5563] rounded-full transition-[width] duration-500"
+              className="h-full bg-[#5B5FEA] dark:bg-[#818cf8] rounded-full transition-[width] duration-500"
               style={{ width: progressoSemana.total > 0 ? `${Math.round(progressoSemana.comPlano / progressoSemana.total * 100)}%` : '0%' }}
             />
           </div>
