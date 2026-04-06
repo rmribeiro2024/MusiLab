@@ -2332,9 +2332,9 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
               {vivenciasAbertas && (
                 <div>
                   {/* Cabeçalho de meses — alinhado exatamente com os dots abaixo */}
-                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6, paddingLeft: 2 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6, paddingLeft: 10 }}>
                     <div style={{ width: 80, flexShrink: 0 }} />
-                    <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ display: 'flex', gap: 16 }}>
                       {vivenciasMeses.meses.map(mesKey => {
                         const dotsCount = vivenciasMeses.vivencias[0]?.meses.find(m => m.key === mesKey)?.dots.length ?? 0
                         const groupWidth = dotsCount * 8 + Math.max(0, dotsCount - 1) * 4
@@ -2359,7 +2359,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                         <span style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#475569', fontWeight: 500, width: 80, flexShrink: 0 }}>
                           {viv.label}
                         </span>
-                        <div style={{ display: 'flex', gap: 10, flex: 1 }}>
+                        <div style={{ display: 'flex', gap: 16, flex: 1 }}>
                           {viv.meses.map(mes => (
                             <div key={mes.key} style={{ display: 'flex', gap: 4 }}>
                               {mes.dots.map((used, i) => (
