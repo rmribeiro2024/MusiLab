@@ -910,64 +910,69 @@ async function gerarBriefingGemini(slots: AulaSlot[], todosPlanos: Plano[]): Pro
   const materiais = [...new Set(slots.flatMap(s => s.plano?.materiais ?? []).filter(Boolean))]
 
   // ── Seção 2: histórico por turma (para a IA) ───────────────────────────────
+  const STATUS_LABEL: Record<string, string> = {
+    nao_houve: 'Aula não realizada',
+    incompleta: 'Aula incompleta',
+    revisao: 'Necessita revisão',
+    parcial: 'Aula parcial',
+  }
   const NOMES_GENERICOS = new Set(['introdução', 'desenvolvimento', 'fechamento', 'abertura', 'aquecimento', 'encerramento'])
+
+  const allRegs = todosPlanos.flatMap(p => (p.registrosPosAula || []))
 
   const blocosTurmas: string[] = []
   slots.forEach(s => {
     const turmaId = s.aulaGrade.turmaId
     const label = s.nomeTurma + (s.nomeEscola ? ` [${s.nomeEscola}]` : '')
 
-    // Plano de hoje
     const planoHoje = s.plano
-    const tituloHoje = planoHoje?.titulo ?? '(sem plano)'
     const ativsHoje = (planoHoje?.atividadesRoteiro ?? [])
       .map(a => a.nome?.trim()).filter(n => n && !NOMES_GENERICOS.has(n.toLowerCase())).slice(0, 3).join(', ')
 
-    // Último registro pós-aula desta turma (em qualquer plano)
-    const allRegs = todosPlanos.flatMap(p => (p.registrosPosAula || []))
     const turmaRegs = allRegs
       .filter(r => String(r.turma) === String(turmaId) && (r.data || r.dataAula))
       .sort((a, b) => (b.data || b.dataAula || '').localeCompare(a.data || a.dataAula || ''))
     const ultimo = turmaRegs[0]
 
-    const linhas = [`TURMA: ${label}`, `Plano hoje: "${tituloHoje}"${ativsHoje ? ` | ${ativsHoje}` : ''}`]
-    if (!planoHoje) linhas.push('ALERTA: sem plano vinculado')
+    const linhas = [`TURMA: ${label}`]
+    if (!planoHoje) {
+      linhas.push('SEM PLANO VINCULADO HOJE')
+    } else if (ativsHoje) {
+      linhas.push(`Plano hoje: ${ativsHoje}`)
+    }
     if (ultimo) {
-      const dataReg = ultimo.data || ultimo.dataAula || ''
-      linhas.push(`Último registro (${dataReg}):`)
-      if (ultimo.resumoAula?.trim()) linhas.push(`  resumo: ${ultimo.resumoAula.trim()}`)
-      if (ultimo.funcionouBem?.trim()) linhas.push(`  funcionou: ${ultimo.funcionouBem.trim()}`)
-      if ((ultimo.fariadiferente || ultimo.naoFuncionou)?.trim()) linhas.push(`  a melhorar: ${(ultimo.fariadiferente || ultimo.naoFuncionou)!.trim()}`)
-      if (ultimo.proximaAula?.trim()) linhas.push(`  próxima aula: ${ultimo.proximaAula.trim()}`)
-      if (ultimo.comportamento?.trim()) linhas.push(`  comportamento: ${ultimo.comportamento.trim()}`)
-      if (ultimo.statusAula && ultimo.statusAula !== 'concluida') linhas.push(`  status: ${ultimo.statusAula}`)
+      if (ultimo.statusAula && ultimo.statusAula !== 'concluida') linhas.push(`Status última aula: ${STATUS_LABEL[ultimo.statusAula] ?? ultimo.statusAula}`)
+      if (ultimo.proximaAula?.trim()) linhas.push(`Planejado para hoje: ${ultimo.proximaAula.trim()}`)
+      if ((ultimo.fariadiferente || ultimo.naoFuncionou)?.trim()) linhas.push(`A melhorar: ${(ultimo.fariadiferente || ultimo.naoFuncionou)!.trim()}`)
+      if (ultimo.comportamento?.trim()) linhas.push(`Comportamento: ${ultimo.comportamento.trim()}`)
     } else {
-      linhas.push('Sem histórico de aulas anteriores.')
+      linhas.push('Sem histórico.')
     }
     blocosTurmas.push(linhas.join('\n'))
   })
 
-  const prompt = `Você é um assistente de apoio para professores de música. Analise os dados abaixo e gere insights ÚTEIS e CONCRETOS baseados no histórico de cada turma.
+  const prompt = `Você é um assistente de apoio para professores de música. Gere dicas curtas e práticas baseadas APENAS nos dados de histórico de cada turma.
 
-REGRAS ABSOLUTAS:
+REGRAS — sem exceção:
 - Use APENAS os dados fornecidos. Proibido inventar ou inferir.
-- Proibido repetir o plano de hoje — o professor já o vê na tela.
-- Proibido conselhos genéricos ("seja criativo", "mantenha o engajamento").
-- Para cada turma: máximo 1 linha curta. Se não há nada relevante no histórico, NÃO mencione a turma.
-- Se nenhuma turma tem insight útil, responda exatamente: sem histórico relevante para hoje.
-- Formato por linha: "NomeTurma: [insight]"
+- Sem emojis. Sem prefixos como "a melhorar:" ou "status:". Sem markdown.
+- Cada dica: máximo 10 palavras. Frase direta e acionável.
+- Se duas turmas têm o mesmo insight, agrupe: "GR3A e GR3B [EMPAC]: texto"
+- Se não há dado relevante para uma turma, NÃO a mencione.
+- Se nenhuma turma tem dado relevante, responda exatamente: nenhuma dica para hoje.
+- Formato: uma linha por dica, começando com o nome da turma seguido de dois pontos.
 
-O que vale como insight (em ordem de prioridade):
-1. Turma SEM PLANO hoje (sempre mencione)
-2. "próxima aula" preenchida no último registro — o professor planejou algo específico
-3. "a melhorar" ou status != concluida — algo ficou pendente
-4. "comportamento" fora do comum
-5. "funcionou" — reforço positivo apenas se muito específico
+Prioridade do que mencionar:
+1. SEM PLANO hoje — sempre mencione
+2. "Planejado para hoje" — o professor tinha anotado algo específico
+3. Status da última aula se não foi concluída
+4. "A melhorar" — algo concreto e acionável
+5. "Comportamento" — só se incomum
 
-DADOS DAS TURMAS:
+DADOS:
 ${blocosTurmas.join('\n\n')}
 
-Responda apenas com as linhas de insight. Sem título, sem markdown.`
+Responda apenas com as dicas.`
 
   const resp = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
@@ -1053,17 +1058,30 @@ function BriefingDia({ slots }: { slots: AulaSlot[] }) {
       )}
       {erro && <p className="text-xs text-red-500 dark:text-red-400">{erro}</p>}
       {dados && (
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {/* Seção 1: resumo por ano */}
-          <p className="text-xs font-semibold text-slate-700 dark:text-[#E5E7EB]">{dados.resumo}</p>
-          {/* Seção 2: insights da IA */}
-          {dados.insights && dados.insights !== 'sem histórico relevante para hoje' && (
-            <p className="text-xs text-slate-600 dark:text-[#9CA3AF] leading-relaxed whitespace-pre-line">{dados.insights}</p>
+          <p className="text-[12px] font-semibold text-slate-700 dark:text-[#E5E7EB]">{dados.resumo}</p>
+          {/* Seção 2: dicas da IA */}
+          {dados.insights && dados.insights !== 'nenhuma dica para hoje' && (
+            <div className="space-y-1.5">
+              {dados.insights.split('\n').filter(l => l.trim()).map((linha, i) => {
+                const colonIdx = linha.indexOf(': ')
+                if (colonIdx === -1) return null
+                const turma = linha.slice(0, colonIdx).trim()
+                const texto = linha.slice(colonIdx + 2).trim()
+                return (
+                  <div key={i} className="flex gap-2 items-baseline">
+                    <span className="shrink-0 text-[10px] font-semibold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded whitespace-nowrap">{turma}</span>
+                    <span className="text-[12px] text-slate-600 dark:text-[#9CA3AF]">{texto}</span>
+                  </div>
+                )
+              })}
+            </div>
           )}
           {/* Seção 3: materiais */}
           {dados.materiais.length > 0 && (
-            <p className="text-xs text-slate-500 dark:text-[#9CA3AF]">
-              <span className="font-semibold">Materiais:</span> {dados.materiais.join(' · ')}
+            <p className="text-[11px] text-slate-400 dark:text-[#6B7280] pt-0.5">
+              <span className="font-semibold text-slate-500 dark:text-[#9CA3AF]">Levar:</span> {dados.materiais.join(' · ')}
             </p>
           )}
         </div>
