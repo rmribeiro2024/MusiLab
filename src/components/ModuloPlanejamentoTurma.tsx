@@ -1483,6 +1483,17 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
     return `Turma ${turmaSelecionada.turmaId}`
   }, [turmaSelecionada, anosLetivos])
 
+  const escolaNome = useMemo(() => {
+    if (!turmaSelecionada) return ''
+    for (const ano of anosLetivos) {
+      for (const escola of ano.escolas ?? []) {
+        // eslint-disable-next-line eqeqeq
+        if (escola.id == turmaSelecionada.escolaId) return escola.nome
+      }
+    }
+    return ''
+  }, [turmaSelecionada, anosLetivos])
+
   // Data da próxima aula real desta turma no calendário
   const proximaAulaData = useMemo(() => {
     if (!turmaSelecionada) return ''
@@ -1585,20 +1596,49 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   return (
     <div className="space-y-3">
 
-      {/* ── ABAS ─────────────────────────────────────────────────────────────── */}
-      <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
-        {(['turma', 'aulas', 'repertorio'] as const).map(t => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setAba(t)}
-            className={`flex-1 text-xs font-semibold py-2 rounded-lg transition-colors ${
-              aba === t ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            {t === 'turma' ? 'Turma' : t === 'aulas' ? 'Aulas' : 'Repertório'}
-          </button>
-        ))}
+      {/* ── IDENTIDADE DA TURMA ─────────────────────────────────────────────── */}
+      <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-[10px] bg-[#EEEEFF] flex items-center justify-center flex-shrink-0">
+            <span className="text-[11px] font-bold text-[#5B5FEA]">{turmaNome.slice(0, 4).toUpperCase()}</span>
+          </div>
+          <div>
+            <div className="text-[14px] font-semibold text-slate-700 leading-tight">{turmaNome}</div>
+            {escolaNome && <div className="text-[11px] text-slate-400 mt-0.5">{escolaNome}</div>}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const data = proximaAulaData || calendarDateStr
+            setDataNavegacao(new Date(data))
+            setModoInicialNavegacao(null)
+            setViewModeGlobal('porTurmas')
+          }}
+          className="text-[11.5px] font-semibold text-[#5B5FEA] bg-[#EEEEFF] hover:bg-[#E0E1FC] px-3 py-1.5 rounded-[7px] transition-colors flex-shrink-0"
+        >
+          Planejar aula
+        </button>
+      </div>
+
+      {/* ── ABAS (underline) ─────────────────────────────────────────────────── */}
+      <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
+        <div className="flex border-b border-[#E6EAF0] dark:border-[#374151]">
+          {(['turma', 'aulas', 'repertorio'] as const).map(t => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setAba(t)}
+              className={`flex-1 text-[12.5px] font-semibold py-2.5 transition-colors border-b-2 -mb-px ${
+                aba === t
+                  ? 'border-[#5B5FEA] text-[#5B5FEA]'
+                  : 'border-transparent text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              {t === 'turma' ? 'Turma' : t === 'aulas' ? 'Aulas' : 'Repertório'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── ABA: TURMA ───────────────────────────────────────────────────────── */}
@@ -2132,12 +2172,15 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                   type="button"
                   onClick={() => setAvaliacaoAberta(v => !v)}
                   className="w-full flex items-center justify-between px-4 py-3 text-left border-b border-[#E6EAF0] dark:border-[#374151] transition-colors"
+                  style={{ borderLeft: '3px solid #818CF8' }}
                 >
-                  <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
-                    Avaliação da última aula
-                  </span>
+                  <div>
+                    <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider block">
+                      Avaliação da última aula
+                    </span>
+                    <span className="text-[10.5px] text-slate-400 mt-0.5 block">{formatarDataComDia(registroExibido.dataAula ?? registroExibido.data ?? '')}</span>
+                  </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10.5px] text-slate-500">{formatarDataComDia(registroExibido.dataAula ?? registroExibido.data ?? '')}</span>
                     {registroExibido.resultadoAula && (
                       <span className="text-[10.5px] font-semibold text-slate-500">{labelResultado(registroExibido.resultadoAula)}</span>
                     )}
@@ -2239,6 +2282,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                   {/* Header */}
                   <div
                     className="-mx-4 -mt-3 px-4 py-3 mb-3 rounded-t-[9px] border-b border-[#E6EAF0] dark:border-[#374151] cursor-pointer"
+                    style={{ borderLeft: '3px solid #34D399' }}
                     onClick={() => setVivenciasAbertas(v => !v)}
                   >
                   <div className="flex items-start justify-between gap-2 flex-wrap">
@@ -2414,6 +2458,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
               type="button"
               onClick={() => setTimelineAberta(v => !v)}
               className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors"
+              style={{ borderLeft: '3px solid #F59E0B' }}
             >
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Aulas realizadas</span>
               <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${timelineAberta ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -2444,6 +2489,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                 type="button"
                 onClick={() => setAulasAnterioresAberta(v => !v)}
                 className="w-full flex items-center justify-between px-4 pt-3 pb-2 text-left border-b border-[#E6EAF0] dark:border-[#374151] transition-colors"
+                style={{ borderLeft: '3px solid #CBD5E1' }}
               >
                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aulas anteriores</h3>
                 <div className="flex items-center gap-2">
