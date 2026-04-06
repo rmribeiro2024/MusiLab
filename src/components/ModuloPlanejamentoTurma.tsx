@@ -1421,11 +1421,6 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   const [verDetalhesRegistro, setVerDetalhesRegistro] = useState(false)
   const [registroAbertoId, setRegistroAbertoId] = useState<string | number | null>(null)
   const [periodoVivencias, setPeriodoVivencias] = useState<PeriodoVivencias>({ tipo: 'tudo' })
-  const [vivDropdownAberto, setVivDropdownAberto] = useState(false)
-  const [vivDropdownAba, setVivDropdownAba] = useState<'mes' | 'range'>('mes')
-  const [vivPickerAno, setVivPickerAno] = useState(() => new Date().getFullYear())
-  const [vivRangeInicio, setVivRangeInicio] = useState('')
-  const [vivRangeFim, setVivRangeFim] = useState('')
   const [editandoObs, setEditandoObs] = useState(false)
   const [obsRascunho, setObsRascunho] = useState('')
   const [editandoObj, setEditandoObj] = useState(false)
@@ -1543,6 +1538,74 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
     () => calcResumoTurma(historicoDaTurma, planos, periodoVivencias),
     [historicoDaTurma, planos, periodoVivencias]
   )
+
+  // Vivências por mês — dots agrupados, max 16 dots dos meses mais recentes
+  const vivenciasMeses = useMemo(() => {
+    const CLASP_KEYS = ['performance', 'apreciacao', 'criacao', 'teoria', 'tecnica'] as const
+    const CLASP_LABELS: Record<string, string> = { tecnica: 'Técnica', performance: 'Performance', apreciacao: 'Apreciação', criacao: 'Criação', teoria: 'Teoria' }
+    const MESES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+
+    const aulas = [...historicoDaTurma]
+      .filter(r => (r.statusAula ?? r.resultadoAula) !== 'nao_houve')
+      .sort((a, b) => {
+        const da = a.dataAula ?? a.data ?? ''
+        const db = b.dataAula ?? b.data ?? ''
+        return db.localeCompare(da) // mais recente primeiro
+      })
+
+    if (aulas.length === 0) return null
+
+    // Agrupar por mês (YYYY-MM)
+    const byMonth = new Map<string, typeof aulas>()
+    for (const aula of aulas) {
+      const key = (aula.dataAula ?? aula.data ?? '').slice(0, 7)
+      if (!key) continue
+      if (!byMonth.has(key)) byMonth.set(key, [])
+      byMonth.get(key)!.push(aula)
+    }
+
+    // Selecionar meses mais recentes até 16 dots
+    const mesesOrdenados = [...byMonth.keys()].sort((a, b) => b.localeCompare(a))
+    const mesesSelecionados: string[] = []
+    let totalDots = 0
+    for (const mes of mesesOrdenados) {
+      const count = byMonth.get(mes)!.length
+      if (totalDots + count > 16) break
+      mesesSelecionados.push(mes)
+      totalDots += count
+      if (totalDots >= 16) break
+    }
+    mesesSelecionados.reverse() // mais antigo primeiro para exibição
+
+    if (mesesSelecionados.length === 0) return null
+
+    const ultimoMesKey = mesesSelecionados[mesesSelecionados.length - 1]
+
+    // Para cada dimensão CLASP, construir dots por mês
+    const vivencias = CLASP_KEYS.map(key => {
+      const label = CLASP_LABELS[key]
+      const totalCount = resumoTurma.vivencias.find(v => v.label === label)?.count ?? 0
+
+      const meses = mesesSelecionados.map(mesKey => {
+        const aulasDoMes = byMonth.get(mesKey)!
+        const dots = aulasDoMes.map(aula => {
+          const plano = planos.find(p => p.registrosPosAula?.some(r => r.id === aula.id))
+          return (plano?.vivenciasClassificadas?.[key] ?? 0) > 0
+        })
+        const mesNum = parseInt(mesKey.split('-')[1]) - 1
+        return { key: mesKey, label: MESES_CURTO[mesNum], dots }
+      })
+
+      const ultimoMes = meses.find(m => m.key === ultimoMesKey)
+      const ausenteUltimoMes = !!(ultimoMes && ultimoMes.dots.length > 0 && ultimoMes.dots.every(d => !d) && totalCount > 0)
+
+      return { key, label, totalCount, meses, ausenteUltimoMes }
+    })
+
+    const meiosComDados = resumoTurma.meios.filter(m => m.count > 0)
+
+    return { vivencias, meses: mesesSelecionados, meiosComDados }
+  }, [historicoDaTurma, planos, resumoTurma])
 
   // Destaques automáticos — até 3 insights das últimas aulas
   const destaquesTurma = useMemo(
@@ -2241,204 +2304,97 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
           })()}
 
           {/* ── 3. Vivências e meios expressivos ──────────────────────────── */}
-          {resumoTurma.numAulas > 0 && (() => {
-            const MESES_PT    = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
-            const MESES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
-            const hoje = new Date()
+          {vivenciasMeses && (
+            <div className={`v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 pt-3 ${vivenciasAbertas ? 'pb-3' : 'pb-0'}`}>
+              {/* Header */}
+              <div
+                className={`-mx-4 -mt-3 px-4 py-3 rounded-t-[9px] border-b border-[#E6EAF0] dark:border-[#374151] cursor-pointer ${vivenciasAbertas ? 'mb-3' : 'mb-0'}`}
+                style={{ borderLeft: '3px solid #34D399' }}
+                onClick={() => setVivenciasAbertas(v => !v)}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">
+                    Vivências e meios expressivos
+                  </p>
+                  <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${vivenciasAbertas ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
 
-            const ctxLabel = (() => {
-              if (periodoVivencias.tipo === 'tudo')      return 'Todas as aulas registradas'
-              if (periodoVivencias.tipo === 'mes_atual') return `${MESES_PT[hoje.getMonth()]} de ${hoje.getFullYear()}`
-              if (periodoVivencias.tipo === 'mes')       return `${MESES_PT[periodoVivencias.mes]} de ${periodoVivencias.ano}`
-              const fmt = (d: string) => { const [y,m,day] = d.split('-'); return `${day}/${m}/${y}` }
-              return `${fmt(periodoVivencias.inicio)} a ${fmt(periodoVivencias.fim)}`
-            })()
-
-            const isTudo    = periodoVivencias.tipo === 'tudo'
-            const isMesAtual = periodoVivencias.tipo === 'mes_atual'
-            const isCustom  = periodoVivencias.tipo === 'mes' || periodoVivencias.tipo === 'range'
-
-            const maxViv = Math.max(...resumoTurma.vivencias.map(v => v.count), 1)
-            const maxMei = Math.max(...resumoTurma.meios.map(m => m.count), 1)
-
-            return (
-              <>
-                {vivDropdownAberto && (
-                  <div className="fixed inset-0 z-40" onClick={() => setVivDropdownAberto(false)} />
-                )}
-                <div className={`v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 pt-3 ${vivenciasAbertas ? 'pb-3' : 'pb-0'}`}>
-                  {/* Header */}
-                  <div
-                    className={`-mx-4 -mt-3 px-4 py-3 rounded-t-[9px] border-b border-[#E6EAF0] dark:border-[#374151] cursor-pointer ${vivenciasAbertas ? 'mb-3' : 'mb-0'}`}
-                    style={{ borderLeft: '3px solid #34D399' }}
-                    onClick={() => setVivenciasAbertas(v => !v)}
-                  >
-                  <div className="flex items-start justify-between gap-2 flex-wrap">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">
-                        Vivências e meios expressivos
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{ctxLabel}</p>
+              {/* Conteúdo */}
+              {vivenciasAbertas && (
+                <div>
+                  {/* Cabeçalho de meses — único, não repete por linha */}
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6, paddingLeft: 2 }}>
+                    <div style={{ width: 80, flexShrink: 0 }} />
+                    <div style={{ display: 'flex', gap: 10, flex: 1 }}>
+                      {vivenciasMeses.meses.map(mesKey => (
+                        <span key={mesKey} style={{ fontSize: 9, fontWeight: 700, color: '#CBD5E1', textTransform: 'uppercase', letterSpacing: '.4px' }}>
+                          {vivenciasMeses.vivencias[0]?.meses.find(m => m.key === mesKey)?.label ?? ''}
+                        </span>
+                      ))}
                     </div>
-
-                    {/* Seletor de período */}
-                    <div className="relative z-50 shrink-0">
-                      <div className="flex gap-1">
-                        {[
-                          { id: 'tudo',     label: 'Tudo',     active: isTudo,     onClick: () => { setPeriodoVivencias({ tipo: 'tudo' }); setVivDropdownAberto(false) } },
-                          { id: 'mes_atual', label: 'Este mês', active: isMesAtual, onClick: () => { setPeriodoVivencias({ tipo: 'mes_atual' }); setVivDropdownAberto(false) } },
-                        ].map(({ id, label, active, onClick }) => (
-                          <button key={id} type="button" onClick={onClick}
-                            className={`text-[10px] px-2.5 py-1 rounded-full font-semibold border transition-colors ${
-                              active ? 'bg-[#5B5FEA] text-white border-[#5B5FEA]'
-                                     : 'bg-white text-slate-500 border-slate-200 hover:border-[#5B5FEA] hover:text-[#5B5FEA]'
-                            }`}
-                          >{label}</button>
-                        ))}
-                        <button type="button" onClick={() => setVivDropdownAberto(v => !v)}
-                          className={`text-[10px] px-2.5 py-1 rounded-full font-semibold border transition-colors flex items-center gap-1 ${
-                            isCustom || vivDropdownAberto
-                              ? 'bg-[#5B5FEA] text-white border-[#5B5FEA]'
-                              : 'bg-white text-slate-500 border-slate-200 hover:border-[#5B5FEA] hover:text-[#5B5FEA]'
-                          }`}
-                        >
-                          {isCustom ? (periodoVivencias.tipo === 'range' ? 'Período' : `${MESES_CURTO[periodoVivencias.mes]} ${periodoVivencias.ano}`) : 'Escolher'}
-                          <svg className="w-2.5 h-2.5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
-
-                      {/* Dropdown */}
-                      {vivDropdownAberto && (
-                        <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg p-3 min-w-[248px]">
-                          {/* Abas */}
-                          <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5 mb-3">
-                            {(['mes', 'range'] as const).map(aba => (
-                              <button key={aba} type="button" onClick={() => setVivDropdownAba(aba)}
-                                className={`flex-1 text-[10px] font-semibold py-1 rounded-md transition-colors ${
-                                  vivDropdownAba === aba ? 'bg-white text-[#5B5FEA] shadow-sm' : 'text-slate-500'
-                                }`}
-                              >{aba === 'mes' ? 'Mês específico' : 'Período'}</button>
-                            ))}
-                          </div>
-
-                          {vivDropdownAba === 'mes' && (
-                            <>
-                              <div className="flex items-center justify-between mb-2">
-                                <button type="button" onClick={() => setVivPickerAno(y => y - 1)}
-                                  className="w-6 h-6 flex items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs">‹</button>
-                                <span className="text-[12px] font-bold text-slate-700">{vivPickerAno}</span>
-                                <button type="button" onClick={() => setVivPickerAno(y => y + 1)}
-                                  className="w-6 h-6 flex items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs">›</button>
-                              </div>
-                              <div className="grid grid-cols-3 gap-1">
-                                {MESES_CURTO.map((m, i) => {
-                                  const isFuturo = vivPickerAno > hoje.getFullYear() || (vivPickerAno === hoje.getFullYear() && i > hoje.getMonth())
-                                  const isAtual  = vivPickerAno === hoje.getFullYear() && i === hoje.getMonth()
-                                  const isSel    = periodoVivencias.tipo === 'mes' && periodoVivencias.ano === vivPickerAno && periodoVivencias.mes === i
-                                  return (
-                                    <button key={m} type="button" disabled={isFuturo}
-                                      onClick={() => { setPeriodoVivencias({ tipo: 'mes', mes: i, ano: vivPickerAno }); setVivDropdownAberto(false) }}
-                                      className={`text-[11px] font-medium py-1.5 rounded-lg transition-colors ${
-                                        isSel    ? 'bg-[#5B5FEA] text-white' :
-                                        isAtual  ? 'border border-[#c7d2fe] text-[#5B5FEA] font-bold' :
-                                        isFuturo ? 'text-slate-200 cursor-default' :
-                                                   'text-slate-500 hover:bg-slate-100'
-                                      }`}
-                                    >{m}</button>
-                                  )
-                                })}
-                              </div>
-                            </>
-                          )}
-
-                          {vivDropdownAba === 'range' && (
-                            <div className="space-y-2">
-                              {[
-                                { label: 'De',  value: vivRangeInicio, setter: setVivRangeInicio },
-                                { label: 'Até', value: vivRangeFim,    setter: setVivRangeFim    },
-                              ].map(({ label, value, setter }) => (
-                                <div key={label} className="flex items-center gap-2">
-                                  <span className="text-[10px] text-slate-400 w-6 text-right shrink-0">{label}</span>
-                                  <input type="date" value={value} onChange={e => setter(e.target.value)}
-                                    className="flex-1 text-[11px] px-2 py-1.5 rounded-lg border border-slate-200 outline-none focus:border-[#5B5FEA] font-[inherit]"
-                                  />
-                                </div>
-                              ))}
-                              <button type="button"
-                                disabled={!vivRangeInicio || !vivRangeFim}
-                                onClick={() => {
-                                  if (vivRangeInicio && vivRangeFim) {
-                                    setPeriodoVivencias({ tipo: 'range', inicio: vivRangeInicio, fim: vivRangeFim })
-                                    setVivDropdownAberto(false)
-                                  }
-                                }}
-                                className="w-full mt-1 py-1.5 text-[11px] font-bold rounded-lg bg-[#5B5FEA] text-white disabled:opacity-40"
-                              >Aplicar</button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform self-center shrink-0 ${vivenciasAbertas ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
                   </div>
-                  </div>{/* fim header cinza */}
 
-                  {/* Conteúdo — 2 colunas só quando ambas têm dados */}
-                  {vivenciasAbertas && (() => {
-                    const meiosTemDados = resumoTurma.meios.some(m => m.count > 0)
-                    return <div className={meiosTemDados ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''}>
-                    {/* Vivências musicais */}
-                    {(() => {
-                      const temDados = resumoTurma.vivencias.some(v => v.count > 0)
-                      return (
-                        <div className="border border-slate-100 rounded-lg p-2.5" style={{ borderTop: '2px solid #818cf8' }}>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-indigo-400 mb-2">Vivências musicais</p>
-                          {!temDados
-                            ? <p className="text-[10px] text-slate-300 italic">Sem dados no período</p>
-                            : resumoTurma.vivencias.map((item, i) => (
-                              <div key={item.label} className={`flex items-center gap-1.5 mb-1.5 last:mb-0 ${item.count === 0 ? 'opacity-30' : ''}`}>
-                                <span className={`text-[9px] font-bold w-3 shrink-0 ${i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-400' : 'text-slate-300'}`}>{i + 1}</span>
-                                <span className="text-[10px] text-slate-600 flex-1 truncate">{item.label}</span>
-                                <div className="w-16 sm:w-8 h-[4px] bg-slate-100 rounded-full overflow-hidden shrink-0">
-                                  <div className="h-full rounded-full bg-indigo-400" style={{ width: `${(item.count / maxViv) * 100}%` }} />
-                                </div>
-                                <span className={`text-[9px] font-semibold w-4 text-right shrink-0 ${i === 0 ? 'text-indigo-400' : 'text-slate-300'}`}>{item.count}</span>
-                              </div>
-                            ))
-                          }
-                        </div>
-                      )
-                    })()}
-
-                    {/* Meios expressivos — só renderiza se tiver dados */}
-                    {resumoTurma.meios.some(m => m.count > 0) && (() => {
-                      const temDados = true
-                      return (
-                        <div className="border border-slate-100 rounded-lg p-2.5" style={{ borderTop: '2px solid #34d399' }}>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-500 mb-2">Meios expressivos</p>
-                          {resumoTurma.meios.map((item, i) => (
-                            <div key={item.label} className={`flex items-center gap-1.5 mb-1.5 last:mb-0 ${item.count === 0 ? 'opacity-30' : ''}`}>
-                              <span className={`text-[9px] font-bold w-3 shrink-0 ${i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-400' : 'text-slate-300'}`}>{i + 1}</span>
-                              <span className="text-[10px] text-slate-600 flex-1 truncate">{item.label}</span>
-                              <div className="w-16 sm:w-8 h-[4px] bg-slate-100 rounded-full overflow-hidden shrink-0">
-                                <div className="h-full rounded-full bg-emerald-400" style={{ width: `${(item.count / maxMei) * 100}%` }} />
-                              </div>
-                              <span className={`text-[9px] font-semibold w-4 text-right shrink-0 ${i === 0 ? 'text-emerald-500' : 'text-slate-300'}`}>{item.count}</span>
+                  {/* Chip por vivência */}
+                  {vivenciasMeses.vivencias.map(viv => (
+                    <div key={viv.key} style={{
+                      background: isDark ? '#1F2937' : '#F8F9FC',
+                      border: `1px solid ${isDark ? '#374151' : '#E6EAF0'}`,
+                      borderRadius: 7, padding: '7px 10px', marginBottom: 5,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#475569', fontWeight: 500, width: 80, flexShrink: 0 }}>
+                          {viv.label}
+                        </span>
+                        <div style={{ display: 'flex', gap: 10, flex: 1 }}>
+                          {viv.meses.map(mes => (
+                            <div key={mes.key} style={{ display: 'flex', gap: 4 }}>
+                              {mes.dots.map((used, i) => (
+                                <div key={i} style={{
+                                  width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                                  background: used
+                                    ? '#818CF8'
+                                    : (viv.ausenteUltimoMes && mes.key === viv.meses[viv.meses.length - 1].key)
+                                      ? '#FBBFBF'
+                                      : (isDark ? '#374151' : '#E2E8F0'),
+                                }} />
+                              ))}
                             </div>
                           ))}
                         </div>
-                      )
-                    })()}
-                  </div>
-                  })()}
+                        <span style={{ fontSize: 11, color: isDark ? '#4B5563' : '#94a3b8', fontWeight: 600, width: 22, textAlign: 'right', flexShrink: 0 }}>
+                          {viv.totalCount}
+                        </span>
+                      </div>
+                      {viv.ausenteUltimoMes && (
+                        <p style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic', marginTop: 4 }}>
+                          Que tal explorar {viv.label.toLowerCase()} nas próximas aulas?
+                        </p>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Meios expressivos — inline discreto */}
+                  {vivenciasMeses.meiosComDados.length > 0 && (
+                    <>
+                      <div style={{ borderTop: `1px solid ${isDark ? '#374151' : '#F1F4F8'}`, margin: '10px 0' }} />
+                      <p style={{ fontSize: 12, color: '#94a3b8' }}>
+                        {vivenciasMeses.meiosComDados.map((m, i) => (
+                          <React.Fragment key={m.label}>
+                            {i > 0 && <span>{'   '}</span>}
+                            <b style={{ color: '#64748b', fontWeight: 500 }}>{m.label}</b>
+                            {' · '}{m.count}
+                          </React.Fragment>
+                        ))}
+                      </p>
+                    </>
+                  )}
                 </div>
-              </>
-            )
-          })()}
+              )}
+            </div>
+          )}
 
           {/* ── 4. Timeline pedagógica — colapsável ──────────────────────── */}
           <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
