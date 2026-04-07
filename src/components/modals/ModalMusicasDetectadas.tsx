@@ -5,6 +5,7 @@ import React, { useState } from 'react'
 import { usePlanosContext } from '../../contexts/PlanosContext'
 import { useRepertorioContext } from '../../contexts/RepertorioContext'
 import { getConceptColor } from '../../lib/utils'
+import { showToast } from '../../lib/toast'
 import type { MusicaDetectada } from '../../lib/detectarMusicas'
 import type { Musica, VinculoMusicaPlano } from '../../types'
 
@@ -245,7 +246,7 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
         }
     }, [classeNotif])
 
-    const planoId = planoSelecionado?.id ?? classeNotif?.planoId ?? ''
+    const planoId = classeNotif?.planoId ?? planoSelecionado?.id ?? ''
     const encontradas = musicasDetectadas.filter(d => d.classificacao === 'encontrada')
     const ambiguas    = musicasDetectadas.filter(d => d.classificacao === 'ambigua')
     const novas       = musicasDetectadas.filter(d => d.classificacao === 'nova')
@@ -281,6 +282,7 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
         if (onAplicarClassificacao) onAplicarClassificacao(draftVivencias, draftMeios)
         if (temMusicas) { setShowModalMusicas(false); limparMusicasDetectadas() }
         if (temClasseNotif && onFecharNotif) onFecharNotif()
+        showToast('Classificação salva', 'success')
     }
 
     function toggleVivencia(key: string) {

@@ -1463,7 +1463,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
     const vincularMusicaAoPlano = useCallback((planoId: string | number, vinculo: VinculoMusicaPlano) => {
         // Atualiza plano → músicas
         setPlanos(prev => prev.map((p: any) => {
-            if (p.id !== planoId) return p
+            if (String(p.id) !== String(planoId)) return p
             const jaExiste = (p.musicasVinculadasPlano || []).some(
                 (v: VinculoMusicaPlano) => String(v.musicaId) === String(vinculo.musicaId)
             )
