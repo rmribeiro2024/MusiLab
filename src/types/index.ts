@@ -102,6 +102,13 @@ export interface AtividadeRoteiro {
   origemAtividadeId?: string | number // referência à atividade da biblioteca
   bibliotecaId?: string | number      // ID da entrada criada na Biblioteca de Atividades (após exportar)
   tipoFase?: 'aquecimento' | 'desenvolvimento' | 'pratica_guiada' | 'criacao' | 'fechamento' // Fase pedagógica (detectada silenciosamente via IA para F3.5)
+  atividadesExtraidas?: AtividadeExtraida[] // atividades atômicas extraídas do texto livre via IA
+}
+
+export interface AtividadeExtraida {
+  id: string           // chave estável: `${atividadeRoteiroId}-${index}`
+  texto: string        // rótulo legível para o professor
+  atividadeRoteiroId: string | number  // qual bloco de roteiro originou
 }
 
 export interface RegistroPosAula {
@@ -142,6 +149,7 @@ export interface RegistroPosAula {
   audioDuracao?: number     // segundos gravados
   audioMime?: string        // mime type (ex: 'audio/webm')
   nivelTecnicoMusical?: number  // 1–5: 1=muito abaixo, 3=dentro, 5=muito acima do esperado
+  atividadesRealizadas?: string[]  // IDs de AtividadeExtraida marcados como realizados
 }
 
 export interface Plano {

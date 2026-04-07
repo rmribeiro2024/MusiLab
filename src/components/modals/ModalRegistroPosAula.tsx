@@ -1228,7 +1228,60 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                             </div>
                                         )}
 
-
+                                        {/* Checklist de atividades do plano */}
+                                        {(() => {
+                                            const extraidas = (planoParaRegistro?.atividadesRoteiro || [])
+                                                .flatMap((a: any) => (a.atividadesExtraidas || []))
+                                            if (extraidas.length === 0) return null
+                                            const realizadas: string[] = (novoRegistro as any).atividadesRealizadas || []
+                                            const [aberto, setAberto] = React.useState(true)
+                                            return (
+                                                <div style={{ border: `1.5px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBgSolid, marginBottom: 2 }}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setAberto(v => !v)}
+                                                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: c.cardBg, border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
+                                                        <span style={{ fontSize: 14, flexShrink: 0 }}>☑</span>
+                                                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase' as const, color: c.textMuted, flex: 1 }}>
+                                                            O que foi realizado?
+                                                        </span>
+                                                        {realizadas.length > 0 && (
+                                                            <span style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', background: isDark ? 'rgba(99,102,241,.15)' : 'rgba(99,102,241,.1)', borderRadius: 6, padding: '2px 6px', flexShrink: 0 }}>
+                                                                {realizadas.length}/{extraidas.length}
+                                                            </span>
+                                                        )}
+                                                        <span style={{ fontSize: 9, color: c.textMuted, transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
+                                                    </button>
+                                                    {aberto && (
+                                                        <div style={{ padding: '6px 12px 10px' }}>
+                                                            <p style={{ fontSize: 11, color: c.textMuted, margin: '0 0 8px' }}>Marque as atividades que aconteceram na aula</p>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                                                {extraidas.map((atv: any) => {
+                                                                    const marcada = realizadas.includes(atv.id)
+                                                                    return (
+                                                                        <button
+                                                                            key={atv.id}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                const novas = marcada
+                                                                                    ? realizadas.filter((x: string) => x !== atv.id)
+                                                                                    : [...realizadas, atv.id]
+                                                                                setNovoRegistro((prev: any) => ({ ...prev, atividadesRealizadas: novas }))
+                                                                            }}
+                                                                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 7, border: `1px solid ${marcada ? '#6366f1' : c.border}`, background: marcada ? (isDark ? 'rgba(99,102,241,.15)' : 'rgba(99,102,241,.08)') : 'transparent', cursor: 'pointer', textAlign: 'left' as const, transition: 'all .12s' }}>
+                                                                            <span style={{ width: 16, height: 16, borderRadius: 4, border: `1.5px solid ${marcada ? '#6366f1' : c.textMuted}`, background: marcada ? '#6366f1' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .12s' }}>
+                                                                                {marcada && <span style={{ color: '#fff', fontSize: 10, lineHeight: 1 }}>✓</span>}
+                                                                            </span>
+                                                                            <span style={{ fontSize: 13, color: marcada ? (isDark ? '#a5b4fc' : '#4f46e5') : c.textMain, lineHeight: 1.3 }}>{atv.texto}</span>
+                                                                        </button>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        })()}
 
 {/* Chips de anotação */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

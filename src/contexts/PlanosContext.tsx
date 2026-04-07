@@ -18,6 +18,7 @@ import { useDebounce } from '../lib/hooks'
 import { showToast } from '../lib/toast'
 import { verificarFeriado } from '../lib/feriados'
 import { detectarMusicasNoPlano, type MusicaDetectada } from '../lib/detectarMusicas'
+import { extractActivitiesFromPlan } from '../lib/extractActivities'
 import type { Plano, Musica, Atividade, RegistroPosAula, VinculoMusicaPlano, Sequencia, AplicacaoAulaSlot } from '../types'
 
 // ── bancoBNCC ── base de habilidades BNCC (copiada de BancoPlanos.tsx)
@@ -753,6 +754,25 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             }))
         }
 
+        // ── Extrair atividades atômicas do roteiro via IA ────────────────────
+        const geminiKey = import.meta.env.VITE_GEMINI_API_KEY
+        if (geminiKey && (planoParaSalvar.atividadesRoteiro || []).length > 0) {
+            extractActivitiesFromPlan(planoParaSalvar.atividadesRoteiro, geminiKey)
+                .then(extraidas => {
+                    if (extraidas.length === 0) return
+                    const atividadesAtualizadas = (planoParaSalvar.atividadesRoteiro || []).map((a: any) => ({
+                        ...a,
+                        atividadesExtraidas: extraidas.filter(e => String(e.atividadeRoteiroId) === String(a.id)),
+                    }))
+                    setPlanos(prev => prev.map((p: any) =>
+                        p.id === planoParaSalvar.id
+                            ? { ...p, atividadesRoteiro: atividadesAtualizadas }
+                            : p
+                    ))
+                })
+                .catch(() => { /* falha silenciosa */ })
+        }
+
     }
 
     const excluirPlano = useCallback((id: any) => {
@@ -1073,7 +1093,8 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
 
     const salvarRegistro = useCallback(() => {
         const naoHouve = (novoRegistro as any).statusAula === 'nao_houve'
-        if (!naoHouve && !novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.fariadiferente && !novoRegistro.proximaAula && !novoRegistro.comportamento) {
+        const temChecklist = ((novoRegistro as any).atividadesRealizadas?.length ?? 0) > 0
+        if (!naoHouve && !novoRegistro.resumoAula && !novoRegistro.funcionouBem && !novoRegistro.fariadiferente && !novoRegistro.proximaAula && !novoRegistro.comportamento && !temChecklist) {
             showToast('Preencha ao menos um campo!', 'error'); return
         }
         // Sem plano vinculado → criar rascunho mínimo para hospedar o registro
