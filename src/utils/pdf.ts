@@ -94,10 +94,10 @@ export async function exportarPlanoPDF(plano) {
             .replace(/<\/li>/gi, '\n')
             .replace(/<li[^>]*>/gi, '- ')
             .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '')
-            // links: preserva URL completa — não truncar
-            .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (_m, href, text) => {
+            // links: mostra texto descritivo ou "Abrir link" — nunca URL crua
+            .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (_m, _href, text) => {
                 const t = text.replace(/<[^>]*>/g, '').trim()
-                return (t === href || !t) ? href : `${t} (${href})`
+                return (t && t !== _href) ? t : 'Abrir link'
             })
             .replace(/<[^>]*>/g, '')
         const decoded = decodeEntities(stripped)
@@ -131,11 +131,11 @@ export async function exportarPlanoPDF(plano) {
     const sectionTitle = (label) => {
         chk(16);
         y += 5;
-        doc.setFont(FONTE_PDF, "bold"); doc.setFontSize(8.5);
-        doc.setTextColor(...LABEL);
-        doc.text(label.toUpperCase(), mL, y);
-        y += 5;
-        doc.setFont(FONTE_PDF, "normal"); doc.setTextColor(...DARK);
+        doc.setFillColor(238, 240, 255);
+        doc.roundedRect(mL - 2, y - 4, cW + 4, 9, 2, 2, 'F');
+        doc.setFont(FONTE_PDF, 'bold'); doc.setFontSize(9); doc.setTextColor(...ACCENT);
+        doc.text(label.toUpperCase(), mL, y + 1); y += 8;
+        doc.setFont(FONTE_PDF, 'normal'); doc.setTextColor(...DARK);
     };
     // Escreve bloco de texto com quebra de linha automática
     const para = (text, indent, size, bold) => {
@@ -260,9 +260,8 @@ export async function exportarPlanoPDF(plano) {
                     if (!url || descText.includes(url.slice(0, 30))) return;
                     chk(LS + 2);
                     doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(9); doc.setTextColor(59, 130, 246);
-                    // Exibe URL truncada visualmente mas mantém URL completa clicável
-                    const displayUrl = url.length > 80 ? url.slice(0, 78) + '\u2026' : url;
-                    doc.textWithLink('\u2022 ' + displayUrl, mL + 5, y, { url });
+                    const linkLabel = /docs\.google\.com|\.pdf|\.docx?|\.xlsx?|drive\.google/i.test(url) ? 'Abrir documento' : 'Abrir link';
+                    doc.textWithLink('\u2022 ' + linkLabel, mL + 5, y, { url });
                     y += LS + 1;
                 });
             }
@@ -334,10 +333,10 @@ function _htmlToPlain(html: string): string {
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<\/li>/gi, '\n').replace(/<li[^>]*>/gi, '- ')
         .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '')
-        // preserva URL completa nos links
-        .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (_m, href, text) => {
+        // links: mostra texto descritivo ou "Abrir link" — nunca URL crua
+        .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (_m, _href, text) => {
             const t = text.replace(/<[^>]*>/g, '').trim()
-            return (t === href || !t) ? href : `${t} (${href})`
+            return (t && t !== _href) ? t : 'Abrir link'
         })
         .replace(/<[^>]*>/g, '')
         .replace(/[%\s]*[\u00B6\u204B\u2761\uFFFD\u2029\u2028]\s*/g, '')
@@ -422,8 +421,8 @@ async function _gerarDocPlano(plano, doc): Promise<string> {
                     if (!url || descText.includes(url.slice(0, 30))) return;
                     chk(LS + 2);
                     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(59, 130, 246);
-                    const displayUrl = url.length > 80 ? url.slice(0, 78) + '\u2026' : url;
-                    doc.textWithLink('\u2022 ' + displayUrl, mL + 5, y, { url });
+                    const linkLabel = /docs\.google\.com|\.pdf|\.docx?|\.xlsx?|drive\.google/i.test(url) ? 'Abrir documento' : 'Abrir link';
+                    doc.textWithLink('\u2022 ' + linkLabel, mL + 5, y, { url });
                     y += LS + 1;
                 });
             }
