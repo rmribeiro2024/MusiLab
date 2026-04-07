@@ -94,15 +94,22 @@ export async function exportarPlanoPDF(plano) {
             .replace(/<\/li>/gi, '\n')
             .replace(/<li[^>]*>/gi, '- ')
             .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '')
-            // links: se texto == href, não duplicar; senão "Texto (url)"
+            // links: preserva URL completa — não truncar
             .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (_m, href, text) => {
                 const t = text.replace(/<[^>]*>/g, '').trim()
-                return (t === href || !t) ? truncUrl(href) : `${t} (${truncUrl(href)})`
+                return (t === href || !t) ? href : `${t} (${href})`
             })
             .replace(/<[^>]*>/g, '')
         const decoded = decodeEntities(stripped)
-            // Remove marcadores de parágrafo TipTap (pilcrow U+00B6 e variantes)
+            // Remove marcadores de parágrafo TipTap
             .replace(/[%\s]*[\u00B6\u204B\u2761\uFFFD\u2029\u2028]\s*/g, '')
+            // Normaliza bullets inconsistentes (*, •, ·) para -
+            .replace(/^[\s]*[•·*]\s*/gm, '- ')
+            // Normaliza espaços múltiplos em cada linha
+            .replace(/[^\S\n]{2,}/g, ' ')
+            // Remove espaços no início/fim de cada linha
+            .split('\n').map(l => l.trim()).join('\n')
+            // Colapsa 3+ linhas em branco para 1
             .replace(/\n{3,}/g, '\n\n')
             .trim()
         return FONTE_PDF === 'helvetica' ? safe(decoded) : decoded;
@@ -248,13 +255,15 @@ export async function exportarPlanoPDF(plano) {
             // Recursos externos — deduplica: ignora se a URL já aparece na descrição renderizada
             if (ativ.recursos && ativ.recursos.length > 0) {
                 const descText = htmlToText(ativ.descricao || '')
-                ativ.recursos.slice(0, 2).forEach(rec => {
+                ativ.recursos.slice(0, 3).forEach(rec => {
                     const url = typeof rec === 'string' ? rec : (rec.url || '');
                     if (!url || descText.includes(url.slice(0, 30))) return;
-                    chk(LS);
+                    chk(LS + 2);
                     doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(9); doc.setTextColor(59, 130, 246);
-                    const ls = doc.splitTextToSize('Link: ' + truncUrl(url, 70), cW - 5);
-                    ls.forEach(l => { chk(LS); doc.text(l, mL + 5, y); y += LS; });
+                    // Exibe URL truncada visualmente mas mantém URL completa clicável
+                    const displayUrl = url.length > 80 ? url.slice(0, 78) + '\u2026' : url;
+                    doc.textWithLink('\u2022 ' + displayUrl, mL + 5, y, { url });
+                    y += LS + 1;
                 });
             }
             y += 6;
@@ -315,6 +324,30 @@ export async function previewPlanoPDF(plano): Promise<string> {
     return blobUrl
 }
 
+// Converte HTML para texto limpo — usada tanto no export quanto no preview
+function _htmlToPlain(html: string): string {
+    if (!html) return '';
+    return html
+        .replace(/<iframe[^>]*src="([^"]*youtube[^"]*)"[^>]*>(<\/iframe>)?/gi, '[YouTube: $1]')
+        .replace(/<iframe[^>]*src="([^"]*spotify[^"]*)"[^>]*>(<\/iframe>)?/gi, '[Spotify: $1]')
+        .replace(/<\/p>\s*<p>/gi, '\n').replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/li>/gi, '\n').replace(/<li[^>]*>/gi, '- ')
+        .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '')
+        // preserva URL completa nos links
+        .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (_m, href, text) => {
+            const t = text.replace(/<[^>]*>/g, '').trim()
+            return (t === href || !t) ? href : `${t} (${href})`
+        })
+        .replace(/<[^>]*>/g, '')
+        .replace(/[%\s]*[\u00B6\u204B\u2761\uFFFD\u2029\u2028]\s*/g, '')
+        .replace(/^[\s]*[•·*]\s*/gm, '- ')
+        .replace(/[^\S\n]{2,}/g, ' ')
+        .split('\n').map((l: string) => l.trim()).join('\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim()
+}
+
 async function _gerarDocPlano(plano, doc): Promise<string> {
     await carregarFontePDF(doc);
     const W = 210, H = 297;
@@ -325,7 +358,6 @@ async function _gerarDocPlano(plano, doc): Promise<string> {
     const LABEL  = [100, 110, 125];
     let y = 0;
     const LS = 6.5;
-    const totalPages = 1; // aproximado — não afeta preview
 
     function chk(needed: number) {
         if (y + needed > H - mB) { doc.addPage(); y = 19; doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...DARK); }
@@ -374,7 +406,27 @@ async function _gerarDocPlano(plano, doc): Promise<string> {
             doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...DARK);
             const header = `${i + 1}. ${a.nome || 'Atividade'}${a.duracao ? `  (${a.duracao} min)` : ''}`;
             doc.text(header, mL, y); y += LS;
-            if (a.descricao?.trim()) { doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...DARK); const ls2 = doc.splitTextToSize(a.descricao.trim(), cW - 4); ls2.forEach((l: string) => { chk(LS); doc.text(l, mL + 4, y); y += LS; }); }
+            const descPlain = _htmlToPlain(a.descricao || '');
+            if (descPlain) {
+                descPlain.split('\n').filter((l: string) => l.trim()).forEach((linha: string) => {
+                    const ls2 = doc.splitTextToSize(linha.trim(), cW - 8);
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...DARK);
+                    ls2.forEach((l: string, idx: number) => { chk(LS); doc.text(l, mL + (idx > 0 ? 8 : 4), y); y += LS; });
+                });
+            }
+            // Recursos com link clicável
+            if (a.recursos?.length) {
+                const descText = descPlain;
+                a.recursos.slice(0, 3).forEach((rec: any) => {
+                    const url = typeof rec === 'string' ? rec : (rec.url || '');
+                    if (!url || descText.includes(url.slice(0, 30))) return;
+                    chk(LS + 2);
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(59, 130, 246);
+                    const displayUrl = url.length > 80 ? url.slice(0, 78) + '\u2026' : url;
+                    doc.textWithLink('\u2022 ' + displayUrl, mL + 5, y, { url });
+                    y += LS + 1;
+                });
+            }
             y += 2;
         });
         y += 1;
