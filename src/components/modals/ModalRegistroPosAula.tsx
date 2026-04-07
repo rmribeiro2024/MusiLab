@@ -858,6 +858,11 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
         ? { position: 'fixed', bottom: 16, right: 16, width: 300, zIndex: 50, borderRadius: 16 }
         : { position: 'fixed', left: pos?.x ?? Math.round(window.innerWidth / 2 - 256), top: pos?.y ?? Math.round(window.innerHeight / 2 - 300), width: size.w, height: size.h, zIndex: 50, borderRadius: 16, display: 'flex', flexDirection: 'column' }
 
+    // ── Checklist de atividades extraídas via IA ──
+    const atividadesExtraidas = (planoParaRegistro?.atividadesRoteiro || [])
+        .flatMap((a: any) => (a.atividadesExtraidas || []))
+    const temChecklist = atividadesExtraidas.length > 0
+
     // ── Campos de anotação ──
     const camposConfig = [
         { id: 'reg-aprenderam', icon: '🎯', label: 'O que os alunos demonstraram aprender?',  field: 'funcionouBem', placeholder: 'Ex: 3 alunos tocaram a cadência completa sem parar. A turma manteve o pulso estável por 2 compassos pela primeira vez...' },
@@ -1230,9 +1235,8 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
 
                                         {/* Checklist de atividades do plano */}
                                         {(() => {
-                                            const extraidas = (planoParaRegistro?.atividadesRoteiro || [])
-                                                .flatMap((a: any) => (a.atividadesExtraidas || []))
-                                            if (extraidas.length === 0) return null
+                                            if (!temChecklist) return null
+                                            const extraidas = atividadesExtraidas
                                             const realizadas: string[] = (novoRegistro as any).atividadesRealizadas || []
                                             const [aberto, setAberto] = React.useState(true)
                                             return (
@@ -1534,7 +1538,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                             />
 
                                             {/* ── 3. Como a aula aconteceu na prática — narrativo ── */}
-                                            <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
+                                            {!temChecklist && <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
                                                 <div onClick={() => setContextoAberto(o => !o)}
                                                     style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
                                                     <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>🗓</span>
@@ -1578,7 +1582,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                         </div>
                                                     </div>
                                                 )}
-                                            </div>
+                                            </div>}
 
                                             {/* ── 5–7. Análise e diagnóstico — ordem: surpresa → queda → atenção ── */}
                                             {[
