@@ -18,7 +18,6 @@ import { useDebounce } from '../lib/hooks'
 import { showToast } from '../lib/toast'
 import { verificarFeriado } from '../lib/feriados'
 import { detectarMusicasNoPlano, type MusicaDetectada } from '../lib/detectarMusicas'
-import { extractActivitiesFromPlan } from '../lib/extractActivities'
 import type { Plano, Musica, Atividade, RegistroPosAula, VinculoMusicaPlano, Sequencia, AplicacaoAulaSlot } from '../types'
 
 // ── bancoBNCC ── base de habilidades BNCC (copiada de BancoPlanos.tsx)
@@ -752,25 +751,6 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                         : [...(a.planosVinculados || []), novoRegistro],
                 }
             }))
-        }
-
-        // ── Extrair atividades atômicas do roteiro via IA ────────────────────
-        const geminiKey = import.meta.env.VITE_GEMINI_API_KEY
-        if (geminiKey && (planoParaSalvar.atividadesRoteiro || []).length > 0) {
-            extractActivitiesFromPlan(planoParaSalvar.atividadesRoteiro, geminiKey)
-                .then(extraidas => {
-                    if (extraidas.length === 0) return
-                    const atividadesAtualizadas = (planoParaSalvar.atividadesRoteiro || []).map((a: any) => ({
-                        ...a,
-                        atividadesExtraidas: extraidas.filter(e => String(e.atividadeRoteiroId) === String(a.id)),
-                    }))
-                    const planoAtualizado = { ...planoParaSalvar, atividadesRoteiro: atividadesAtualizadas }
-                    setPlanos(prev => prev.map((p: any) =>
-                        p.id === planoParaSalvar.id ? planoAtualizado : p
-                    ))
-                    marcarPendente('planos', String(planoParaSalvar.id))
-                })
-                .catch(() => { /* falha silenciosa */ })
         }
 
     }

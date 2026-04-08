@@ -858,9 +858,10 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
         ? { position: 'fixed', bottom: 16, right: 16, width: 300, zIndex: 50, borderRadius: 16 }
         : { position: 'fixed', left: pos?.x ?? Math.round(window.innerWidth / 2 - 256), top: pos?.y ?? Math.round(window.innerHeight / 2 - 300), width: size.w, height: size.h, zIndex: 50, borderRadius: 16, display: 'flex', flexDirection: 'column' }
 
-    // ── Checklist de atividades extraídas via IA ──
+    // ── Checklist de atividades do roteiro ──
     const atividadesExtraidas = (planoParaRegistro?.atividadesRoteiro || [])
-        .flatMap((a: any) => (a.atividadesExtraidas || []))
+        .filter((a: any) => a.nome?.trim())
+        .map((a: any) => ({ id: String(a.id), texto: a.nome.trim(), atividadeRoteiroId: a.id }))
     const temChecklist = atividadesExtraidas.length > 0
 
     // ── Campos de anotação ──
