@@ -372,7 +372,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
   } = useCalendarioContext()
   const { salvarPlanejamentoParaTurma } = usePlanejamentoTurmaContext()
   const [aberto, setAberto] = useState(false)
-  const [drawerAberto, setDrawerAberto] = useState(false)
+  const [ultimaAulaAberta, setUltimaAulaAberta] = useState(false)
   const [roteiroRapido, setRoteiroRapido] = useState('')
   const [objetivoRapido, setObjetivoRapido] = useState('')
   const [objetivoAberto, setObjetivoAberto] = useState(false)
@@ -535,7 +535,6 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
 
 
   return (
-    <>
     <div
       className="rounded-lg transition-shadow"
       style={isDarkMode ? {
@@ -699,17 +698,62 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
               </div>
             )}
 
-            {/* Link: Última aula */}
+            {/* Última aula — toggle inline */}
             {ultimoRegistroTurma && (
-              <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${isDarkMode ? '#1F2937' : '#E2E9F3'}` }}>
+              <div className="mt-3" style={{ borderTop: `1px solid ${isDarkMode ? '#1F2937' : '#E2E9F3'}` }}>
                 <button
                   type="button"
-                  onClick={e => { e.stopPropagation(); setDrawerAberto(true) }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4, color: '#5B5FEA', fontSize: 11, fontWeight: 500 }}
+                  onClick={e => { e.stopPropagation(); setUltimaAulaAberta(v => !v) }}
+                  style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#5B5FEA', fontSize: 11, fontWeight: 500 }}
                 >
-                  <span>↩</span>
-                  <span>Última aula: {fmtData(ultimoRegistroTurma.reg.dataAula ?? ultimoRegistroTurma.reg.data ?? '')} — {ultimoRegistroTurma.planoTitulo}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span>↩</span>
+                    <span>Última aula: {fmtData(ultimoRegistroTurma.reg.dataAula ?? ultimoRegistroTurma.reg.data ?? '')} — {ultimoRegistroTurma.planoTitulo}</span>
+                  </span>
+                  <span style={{ fontSize: 10, transform: ultimaAulaAberta ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▾</span>
                 </button>
+
+                {/* Conteúdo inline — expande abaixo do botão */}
+                <div style={{ display: 'grid', gridTemplateRows: ultimaAulaAberta ? '1fr' : '0fr', transition: 'grid-template-rows 0.25s ease' }}>
+                  <div style={{ overflow: 'hidden' }}>
+                    <div style={{ paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {stripHtml(ultimoRegistroTurma.reg.resumoAula ?? '') && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>O que foi feito</p>
+                          <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.resumoAula ?? '')}</p>
+                        </div>
+                      )}
+                      {stripHtml(ultimoRegistroTurma.reg.proximaAula ?? '') && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Para a próxima aula</p>
+                          <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.proximaAula ?? '')}</p>
+                        </div>
+                      )}
+                      {stripHtml(ultimoRegistroTurma.reg.funcionouBem ?? '') && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>O que funcionou bem</p>
+                          <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.funcionouBem ?? '')}</p>
+                        </div>
+                      )}
+                      {(ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).length > 0 && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Lembretes pendentes</p>
+                          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {(ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).map((e: any) => (
+                              <li key={e.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151' }}>
+                                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#818cf8', marginTop: 7, flexShrink: 0, display: 'inline-block' }} />
+                                {e.texto}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {!stripHtml(ultimoRegistroTurma.reg.resumoAula ?? '') && !stripHtml(ultimoRegistroTurma.reg.proximaAula ?? '') && !stripHtml(ultimoRegistroTurma.reg.funcionouBem ?? '') && (ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).length === 0 && (
+                        <p style={{ fontSize: 12.5, color: isDarkMode ? '#4B5563' : '#9CA3AF', fontStyle: 'italic' }}>Nenhuma anotação registrada.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -757,86 +801,6 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
         </div>
       </div>
     </div>
-
-    {/* Drawer: Última aula */}
-    {drawerAberto && ultimoRegistroTurma && (
-      <>
-        <div
-          onClick={() => setDrawerAberto(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 50 }}
-        />
-        <div style={{
-          position: 'fixed', top: 0, right: 0, bottom: 0, width: 360,
-          background: isDarkMode ? '#1F2937' : '#FFFFFF',
-          zIndex: 51, overflowY: 'auto',
-          boxShadow: '-4px 0 24px rgba(0,0,0,0.18)',
-          display: 'flex', flexDirection: 'column',
-          animation: 'slideInRight 0.22s ease',
-        }}>
-          {/* Cabeçalho */}
-          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${isDarkMode ? '#374151' : '#E6EAF0'}` }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-              <div style={{ minWidth: 0 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', display: 'block', marginBottom: 4 }}>
-                  Registros da aula anterior
-                </span>
-                <p style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#E5E7EB' : '#1E2A4A', marginBottom: 2, lineHeight: 1.4 }}>
-                  {ultimoRegistroTurma.planoTitulo}
-                </p>
-                <p style={{ fontSize: 11, color: isDarkMode ? '#6B7280' : '#9CA3AF' }}>
-                  {fmtData(ultimoRegistroTurma.reg.dataAula ?? ultimoRegistroTurma.reg.data ?? '')} · {slot.nomeTurma}
-                </p>
-              </div>
-              <button
-                onClick={() => setDrawerAberto(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: isDarkMode ? '#6B7280' : '#9CA3AF', fontSize: 20, lineHeight: 1, flexShrink: 0, padding: 0 }}
-              >
-                ×
-              </button>
-            </div>
-          </div>
-
-          {/* Corpo */}
-          <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {stripHtml(ultimoRegistroTurma.reg.resumoAula ?? '') && (
-              <div>
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 6 }}>O que foi feito</p>
-                <p style={{ fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.resumoAula ?? '')}</p>
-              </div>
-            )}
-            {stripHtml(ultimoRegistroTurma.reg.proximaAula ?? '') && (
-              <div>
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 6 }}>Para a próxima aula</p>
-                <p style={{ fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.proximaAula ?? '')}</p>
-              </div>
-            )}
-            {stripHtml(ultimoRegistroTurma.reg.funcionouBem ?? '') && (
-              <div>
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 6 }}>O que funcionou bem</p>
-                <p style={{ fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.funcionouBem ?? '')}</p>
-              </div>
-            )}
-            {(ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).length > 0 && (
-              <div>
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 6 }}>Lembretes pendentes</p>
-                <ul style={{ display: 'flex', flexDirection: 'column', gap: 6, listStyle: 'none', padding: 0, margin: 0 }}>
-                  {(ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).map((e: any) => (
-                    <li key={e.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151' }}>
-                      <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#818cf8', marginTop: 7, flexShrink: 0, display: 'inline-block' }} />
-                      {e.texto}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {!stripHtml(ultimoRegistroTurma.reg.resumoAula ?? '') && !stripHtml(ultimoRegistroTurma.reg.proximaAula ?? '') && !stripHtml(ultimoRegistroTurma.reg.funcionouBem ?? '') && (ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).length === 0 && (
-              <p style={{ fontSize: 13, color: isDarkMode ? '#4B5563' : '#9CA3AF', fontStyle: 'italic' }}>Nenhuma anotação registrada para esta aula.</p>
-            )}
-          </div>
-        </div>
-      </>
-    )}
-    </>
   )
 }
 
