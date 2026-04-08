@@ -759,6 +759,57 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
                           <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.anotacoesGerais ?? '')}</p>
                         </div>
                       )}
+                      {stripHtml((ultimoRegistroTurma.reg as any).repetiria ?? '') && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>O que funcionou bem e repetiria</p>
+                          <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml((ultimoRegistroTurma.reg as any).repetiria ?? '')}</p>
+                        </div>
+                      )}
+                      {stripHtml((ultimoRegistroTurma.reg as any).surpresaMusical ?? '') && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>O que surpreendeu</p>
+                          <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml((ultimoRegistroTurma.reg as any).surpresaMusical ?? '')}</p>
+                        </div>
+                      )}
+                      {stripHtml((ultimoRegistroTurma.reg as any).pontoQueda ?? '') && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Onde o engajamento caiu</p>
+                          <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml((ultimoRegistroTurma.reg as any).pontoQueda ?? '')}</p>
+                        </div>
+                      )}
+                      {stripHtml((ultimoRegistroTurma.reg as any).alunoAtencao ?? '') && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Alunos com atenção especial</p>
+                          <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml((ultimoRegistroTurma.reg as any).alunoAtencao ?? '')}</p>
+                        </div>
+                      )}
+                      {((ultimoRegistroTurma.reg as any).contextoAula || stripHtml((ultimoRegistroTurma.reg as any).contextoAulaDetalhe ?? '')) && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Como aconteceu na prática</p>
+                          {(ultimoRegistroTurma.reg as any).contextoAula && (
+                            <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6, marginBottom: 2 }}>{(ultimoRegistroTurma.reg as any).contextoAula}</p>
+                          )}
+                          {stripHtml((ultimoRegistroTurma.reg as any).contextoAulaDetalhe ?? '') && (
+                            <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml((ultimoRegistroTurma.reg as any).contextoAulaDetalhe ?? '')}</p>
+                          )}
+                        </div>
+                      )}
+                      {(ultimoRegistroTurma.reg as any).statusAula && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Como foi</p>
+                          <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151' }}>
+                            {{ concluida: 'Conteúdo concluído', incompleta: 'Conteúdo parcialmente trabalhado', nao_houve: 'Não houve aula', revisao: 'Em revisão', parcial: 'Parcial' }[(ultimoRegistroTurma.reg as any).statusAula] ?? (ultimoRegistroTurma.reg as any).statusAula}
+                          </p>
+                        </div>
+                      )}
+                      {!!((ultimoRegistroTurma.reg as any).nivelTecnicoMusical) && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Nível musical da turma</p>
+                          <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151' }}>
+                            {['', 'Muito abaixo do esperado', 'Abaixo do esperado', 'Dentro do esperado', 'Acima do esperado', 'Muito acima do esperado'][(ultimoRegistroTurma.reg as any).nivelTecnicoMusical] ?? `${(ultimoRegistroTurma.reg as any).nivelTecnicoMusical}/5`}
+                          </p>
+                        </div>
+                      )}
                       {(ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).length > 0 && (
                         <div>
                           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Lembretes pendentes</p>
