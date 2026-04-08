@@ -31,6 +31,11 @@ input, textarea, select {
 }
 .spin-pop { animation: spinPop 0.85s ease forwards; }
 
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+}
+
 /* ── EDITOR RICH TEXT ── */
 .modal-enter { opacity: 0; transform: scale(0.95); }
 .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 300ms, transform 300ms; }

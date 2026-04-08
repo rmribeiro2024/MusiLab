@@ -79,6 +79,11 @@ function fmtData(dataStr: string): string {
   return `${parseInt(d)} de ${MESES[parseInt(m) - 1]}`
 }
 
+function stripHtml(html: string): string {
+  if (!html) return ''
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ').trim()
+}
+
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -766,6 +771,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
           zIndex: 51, overflowY: 'auto',
           boxShadow: '-4px 0 24px rgba(0,0,0,0.18)',
           display: 'flex', flexDirection: 'column',
+          animation: 'slideInRight 0.22s ease',
         }}>
           {/* Cabeçalho */}
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${isDarkMode ? '#374151' : '#E6EAF0'}` }}>
@@ -792,22 +798,22 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
 
           {/* Corpo */}
           <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {ultimoRegistroTurma.reg.resumoAula && (
+            {stripHtml(ultimoRegistroTurma.reg.resumoAula ?? '') && (
               <div>
                 <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 6 }}>O que foi feito</p>
-                <p style={{ fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{ultimoRegistroTurma.reg.resumoAula}</p>
+                <p style={{ fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.resumoAula ?? '')}</p>
               </div>
             )}
-            {ultimoRegistroTurma.reg.proximaAula && (
+            {stripHtml(ultimoRegistroTurma.reg.proximaAula ?? '') && (
               <div>
                 <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 6 }}>Para a próxima aula</p>
-                <p style={{ fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{ultimoRegistroTurma.reg.proximaAula}</p>
+                <p style={{ fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.proximaAula ?? '')}</p>
               </div>
             )}
-            {ultimoRegistroTurma.reg.funcionouBem && (
+            {stripHtml(ultimoRegistroTurma.reg.funcionouBem ?? '') && (
               <div>
                 <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 6 }}>O que funcionou bem</p>
-                <p style={{ fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{ultimoRegistroTurma.reg.funcionouBem}</p>
+                <p style={{ fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.funcionouBem ?? '')}</p>
               </div>
             )}
             {(ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).length > 0 && (
@@ -823,7 +829,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
                 </ul>
               </div>
             )}
-            {!ultimoRegistroTurma.reg.resumoAula && !ultimoRegistroTurma.reg.proximaAula && !ultimoRegistroTurma.reg.funcionouBem && (ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).length === 0 && (
+            {!stripHtml(ultimoRegistroTurma.reg.resumoAula ?? '') && !stripHtml(ultimoRegistroTurma.reg.proximaAula ?? '') && !stripHtml(ultimoRegistroTurma.reg.funcionouBem ?? '') && (ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).length === 0 && (
               <p style={{ fontSize: 13, color: isDarkMode ? '#4B5563' : '#9CA3AF', fontStyle: 'italic' }}>Nenhuma anotação registrada para esta aula.</p>
             )}
           </div>
