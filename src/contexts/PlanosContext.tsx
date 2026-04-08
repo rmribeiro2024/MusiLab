@@ -764,11 +764,11 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
                         ...a,
                         atividadesExtraidas: extraidas.filter(e => String(e.atividadeRoteiroId) === String(a.id)),
                     }))
+                    const planoAtualizado = { ...planoParaSalvar, atividadesRoteiro: atividadesAtualizadas }
                     setPlanos(prev => prev.map((p: any) =>
-                        p.id === planoParaSalvar.id
-                            ? { ...p, atividadesRoteiro: atividadesAtualizadas }
-                            : p
+                        p.id === planoParaSalvar.id ? planoAtualizado : p
                     ))
+                    marcarPendente('planos', String(planoParaSalvar.id))
                 })
                 .catch(() => { /* falha silenciosa */ })
         }

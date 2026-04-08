@@ -17,12 +17,12 @@ export async function extractActivitiesFromPlan(
 
     if (blocos.length === 0) return []
 
-    const prompt = `Você é assistente de um professor de música. Para cada bloco de atividade abaixo, liste as atividades individuais que o professor realizaria em aula — uma por linha, sem numeração, sem bullets, sem URLs, sem explicações. Máximo 6 por bloco. Se o bloco descreve só uma atividade, liste só uma. Separe os blocos com uma linha "---".
+    const prompt = `Você é assistente de um professor de música. Para cada bloco abaixo, liste as atividades individuais que o professor realizaria em aula — sem numeração, sem bullets, sem URLs. Máximo 6 por bloco. Se o bloco descreve só uma atividade, liste só uma.
 
-${blocos.map(b => `Bloco "${b.nome}":\n${b.descricao || b.nome}`).join('\n---\n')}
+${blocos.map(b => `[ID:${b.id}] ${b.nome}: ${b.descricao || b.nome}`).join('\n')}
 
-Responda SOMENTE com JSON válido:
-{"blocos":[{"id":"<id do bloco>","atividades":["texto1","texto2"]}]}`
+Responda SOMENTE com JSON válido, usando exatamente os IDs fornecidos:
+{"blocos":[{"id":"ID_EXATO_DO_BLOCO","atividades":["texto1","texto2"]}]}`
 
     try {
         const res = await fetch(
