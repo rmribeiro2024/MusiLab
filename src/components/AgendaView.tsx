@@ -735,6 +735,30 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
                           <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.funcionouBem ?? '')}</p>
                         </div>
                       )}
+                      {stripHtml(ultimoRegistroTurma.reg.fariadiferente ?? (ultimoRegistroTurma.reg as any).naoFuncionou ?? '') && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>O que faria diferente</p>
+                          <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.fariadiferente ?? (ultimoRegistroTurma.reg as any).naoFuncionou ?? '')}</p>
+                        </div>
+                      )}
+                      {stripHtml(ultimoRegistroTurma.reg.comportamento ?? '') && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Comportamento da turma</p>
+                          <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.comportamento ?? '')}</p>
+                        </div>
+                      )}
+                      {stripHtml(ultimoRegistroTurma.reg.poderiaMelhorar ?? '') && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Poderia melhorar</p>
+                          <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.poderiaMelhorar ?? '')}</p>
+                        </div>
+                      )}
+                      {stripHtml(ultimoRegistroTurma.reg.anotacoesGerais ?? '') && (
+                        <div>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Anotações gerais</p>
+                          <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.anotacoesGerais ?? '')}</p>
+                        </div>
+                      )}
                       {(ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).length > 0 && (
                         <div>
                           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Lembretes pendentes</p>
@@ -748,7 +772,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
                           </ul>
                         </div>
                       )}
-                      {!stripHtml(ultimoRegistroTurma.reg.resumoAula ?? '') && !stripHtml(ultimoRegistroTurma.reg.proximaAula ?? '') && !stripHtml(ultimoRegistroTurma.reg.funcionouBem ?? '') && (ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).length === 0 && (
+                      {!stripHtml(ultimoRegistroTurma.reg.resumoAula ?? '') && !stripHtml(ultimoRegistroTurma.reg.proximaAula ?? '') && !stripHtml(ultimoRegistroTurma.reg.funcionouBem ?? '') && !stripHtml(ultimoRegistroTurma.reg.fariadiferente ?? '') && !stripHtml(ultimoRegistroTurma.reg.comportamento ?? '') && !stripHtml(ultimoRegistroTurma.reg.poderiaMelhorar ?? '') && !stripHtml(ultimoRegistroTurma.reg.anotacoesGerais ?? '') && (ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).length === 0 && (
                         <p style={{ fontSize: 12.5, color: isDarkMode ? '#4B5563' : '#9CA3AF', fontStyle: 'italic' }}>Nenhuma anotação registrada.</p>
                       )}
                     </div>
