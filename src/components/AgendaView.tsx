@@ -73,6 +73,12 @@ function formatHorario(h: string): string {
   return mm === '00' ? `${hh}h` : `${hh}h${mm}`
 }
 
+function fmtData(dataStr: string): string {
+  if (!dataStr) return ''
+  const [, m, d] = dataStr.split('-')
+  return `${parseInt(d)} de ${MESES[parseInt(m) - 1]}`
+}
+
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -361,6 +367,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
   } = useCalendarioContext()
   const { salvarPlanejamentoParaTurma } = usePlanejamentoTurmaContext()
   const [aberto, setAberto] = useState(false)
+  const [drawerAberto, setDrawerAberto] = useState(false)
   const [roteiroRapido, setRoteiroRapido] = useState('')
   const [objetivoRapido, setObjetivoRapido] = useState('')
   const [objetivoAberto, setObjetivoAberto] = useState(false)
@@ -372,6 +379,23 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
     return planos.some(p =>
       (p.registrosPosAula ?? []).some(r => r.data === slot.dataStr && String(r.turma) === tid)
     )
+  }, [planos, slot.aulaGrade.turmaId, slot.dataStr])
+
+  // Último registro desta turma antes da data atual (qualquer plano)
+  const ultimoRegistroTurma = useMemo(() => {
+    const tid = String(slot.aulaGrade.turmaId)
+    let melhor: { reg: any; planoTitulo: string } | null = null
+    for (const p of planos) {
+      for (const r of (p.registrosPosAula ?? [])) {
+        const dataReg = r.dataAula ?? r.data ?? ''
+        if (String(r.turma) !== tid) continue
+        if (dataReg >= slot.dataStr) continue
+        if (!melhor || dataReg > (melhor.reg.dataAula ?? melhor.reg.data ?? '')) {
+          melhor = { reg: r, planoTitulo: p.titulo }
+        }
+      }
+    }
+    return melhor
   }, [planos, slot.aulaGrade.turmaId, slot.dataStr])
 
   const abrirRegistro = useCallback((e: React.MouseEvent) => {
@@ -506,6 +530,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
 
 
   return (
+    <>
     <div
       className="rounded-lg transition-shadow"
       style={isDarkMode ? {
@@ -669,6 +694,20 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
               </div>
             )}
 
+            {/* Link: Última aula */}
+            {ultimoRegistroTurma && (
+              <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${isDarkMode ? '#1F2937' : '#E2E9F3'}` }}>
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); setDrawerAberto(true) }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4, color: '#5B5FEA', fontSize: 11, fontWeight: 500 }}
+                >
+                  <span>↩</span>
+                  <span>Última aula: {fmtData(ultimoRegistroTurma.reg.dataAula ?? ultimoRegistroTurma.reg.data ?? '')} — {ultimoRegistroTurma.planoTitulo}</span>
+                </button>
+              </div>
+            )}
+
             {/* Critérios de observação — só quando o plano tem avaliacaoEvidencia */}
             {(() => {
               const criterio = (slot.plano?.avaliacaoEvidencia ?? '').replace(/<[^>]+>/g, '').trim()
@@ -713,6 +752,85 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
         </div>
       </div>
     </div>
+
+    {/* Drawer: Última aula */}
+    {drawerAberto && ultimoRegistroTurma && (
+      <>
+        <div
+          onClick={() => setDrawerAberto(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 50 }}
+        />
+        <div style={{
+          position: 'fixed', top: 0, right: 0, bottom: 0, width: 360,
+          background: isDarkMode ? '#1F2937' : '#FFFFFF',
+          zIndex: 51, overflowY: 'auto',
+          boxShadow: '-4px 0 24px rgba(0,0,0,0.18)',
+          display: 'flex', flexDirection: 'column',
+        }}>
+          {/* Cabeçalho */}
+          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${isDarkMode ? '#374151' : '#E6EAF0'}` }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+              <div style={{ minWidth: 0 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', display: 'block', marginBottom: 4 }}>
+                  Registros da aula anterior
+                </span>
+                <p style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#E5E7EB' : '#1E2A4A', marginBottom: 2, lineHeight: 1.4 }}>
+                  {ultimoRegistroTurma.planoTitulo}
+                </p>
+                <p style={{ fontSize: 11, color: isDarkMode ? '#6B7280' : '#9CA3AF' }}>
+                  {fmtData(ultimoRegistroTurma.reg.dataAula ?? ultimoRegistroTurma.reg.data ?? '')} · {slot.nomeTurma}
+                </p>
+              </div>
+              <button
+                onClick={() => setDrawerAberto(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: isDarkMode ? '#6B7280' : '#9CA3AF', fontSize: 20, lineHeight: 1, flexShrink: 0, padding: 0 }}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+
+          {/* Corpo */}
+          <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {ultimoRegistroTurma.reg.resumoAula && (
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 6 }}>O que foi feito</p>
+                <p style={{ fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{ultimoRegistroTurma.reg.resumoAula}</p>
+              </div>
+            )}
+            {ultimoRegistroTurma.reg.proximaAula && (
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 6 }}>Para a próxima aula</p>
+                <p style={{ fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{ultimoRegistroTurma.reg.proximaAula}</p>
+              </div>
+            )}
+            {ultimoRegistroTurma.reg.funcionouBem && (
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 6 }}>O que funcionou bem</p>
+                <p style={{ fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{ultimoRegistroTurma.reg.funcionouBem}</p>
+              </div>
+            )}
+            {(ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).length > 0 && (
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 6 }}>Lembretes pendentes</p>
+                <ul style={{ display: 'flex', flexDirection: 'column', gap: 6, listStyle: 'none', padding: 0, margin: 0 }}>
+                  {(ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).map((e: any) => (
+                    <li key={e.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: isDarkMode ? '#D1D5DB' : '#374151' }}>
+                      <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#818cf8', marginTop: 7, flexShrink: 0, display: 'inline-block' }} />
+                      {e.texto}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {!ultimoRegistroTurma.reg.resumoAula && !ultimoRegistroTurma.reg.proximaAula && !ultimoRegistroTurma.reg.funcionouBem && (ultimoRegistroTurma.reg.encaminhamentos ?? []).filter((e: any) => !e.concluido).length === 0 && (
+              <p style={{ fontSize: 13, color: isDarkMode ? '#4B5563' : '#9CA3AF', fontStyle: 'italic' }}>Nenhuma anotação registrada para esta aula.</p>
+            )}
+          </div>
+        </div>
+      </>
+    )}
+    </>
   )
 }
 
