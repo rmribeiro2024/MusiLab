@@ -369,7 +369,7 @@ function formatDataRegistro(ymd: string): string {
 
 // ─── Sub-componente: bloco "Aula anterior" ───────────────────────────────────
 
-function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
+function BlocoAulaAnterior({ registro, nomeAula }: { registro: RegistroPosAula | null; nomeAula?: string }) {
     if (!registro) {
         return (
             <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-5 py-4">
@@ -410,10 +410,17 @@ function BlocoAulaAnterior({ registro }: { registro: RegistroPosAula | null }) {
 
             {/* ── Cabeçalho ── */}
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#E6EAF0] dark:border-[#2D3748]">
-                <span className="text-[10px] font-semibold uppercase tracking-[.7px] text-slate-500 dark:text-[#ACB3BF]">
-                    Registros da aula anterior
-                </span>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-[10px] font-semibold uppercase tracking-[.7px] text-slate-500 dark:text-[#ACB3BF]">
+                        Registros da aula anterior
+                    </span>
+                    {nomeAula && (
+                        <span className="text-[12.5px] font-medium text-slate-700 dark:text-[#D1D5DB] truncate">
+                            {nomeAula}
+                        </span>
+                    )}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
                     {dataLabel && (
                         <span className="text-[11px] text-[#94A3B8] dark:text-[#C9D1DB]">{dataLabel}</span>
                     )}
@@ -705,6 +712,12 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista, modoInicial, onModoInic
         onModoInicialConsumed?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+    const nomeUltimaAula = useMemo(() => {
+        if (!ultimoRegistroDaTurma) return undefined
+        const plano = planos.find(p => p.registrosPosAula?.some(r => String(r.id) === String(ultimoRegistroDaTurma.id)))
+        return plano?.titulo
+    }, [ultimoRegistroDaTurma, planos])
+
     const [pendingSave, setPendingSave] = useState<{ plano: any; origemAula: 'banco' | 'adaptacao' | 'livre' } | null>(null)
 
     // Garante que qualquer edição pendente de outro módulo seja descartada ao montar
@@ -794,7 +807,7 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista, modoInicial, onModoInic
         <div className="flex-1 min-w-0 flex flex-col gap-4">
 
             {/* Bloco: Aula anterior */}
-            <BlocoAulaAnterior registro={ultimoRegistroDaTurma} />
+            <BlocoAulaAnterior registro={ultimoRegistroDaTurma} nomeAula={nomeUltimaAula} />
 
             {/* Bloco: Planejamento da próxima aula */}
             {/* Picker: escolher do banco (importar sem plano ainda selecionado) */}
