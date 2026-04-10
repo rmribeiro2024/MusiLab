@@ -858,11 +858,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
         ? { position: 'fixed', bottom: 16, right: 16, width: 300, zIndex: 50, borderRadius: 16 }
         : { position: 'fixed', left: pos?.x ?? Math.round(window.innerWidth / 2 - 256), top: pos?.y ?? Math.round(window.innerHeight / 2 - 300), width: size.w, height: size.h, zIndex: 50, borderRadius: 16, display: 'flex', flexDirection: 'column' }
 
-    // ── Checklist de atividades do roteiro ──
-    const atividadesExtraidas = (planoParaRegistro?.atividadesRoteiro || [])
-        .filter((a: any) => a.nome?.trim())
-        .map((a: any) => ({ id: String(a.id), texto: a.nome.trim(), atividadeRoteiroId: a.id }))
-    const temChecklist = atividadesExtraidas.length > 0
+    const temPlano = !!planoParaRegistro
 
     // ── Campos de anotação ──
     const camposConfig = [
@@ -1234,58 +1230,6 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                             </div>
                                         )}
 
-                                        {/* Checklist de atividades do plano */}
-                                        {(() => {
-                                            if (!temChecklist) return null
-                                            const extraidas = atividadesExtraidas
-                                            const realizadas: string[] = (novoRegistro as any).atividadesRealizadas || []
-                                            const [aberto, setAberto] = React.useState(true)
-                                            return (
-                                                <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg, marginBottom: 2 }}>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setAberto(v => !v)}
-                                                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: c.cardBg, border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
-                                                        <span style={{ fontSize: 13, flexShrink: 0 }}>☑</span>
-                                                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase' as const, color: c.textMuted, flex: 1 }}>
-                                                            O que foi realizado?
-                                                        </span>
-                                                        {realizadas.length > 0 && (
-                                                            <span style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', background: isDark ? 'rgba(99,102,241,.15)' : 'rgba(99,102,241,.1)', borderRadius: 6, padding: '2px 6px', flexShrink: 0 }}>
-                                                                {realizadas.length}/{extraidas.length}
-                                                            </span>
-                                                        )}
-                                                        <span style={{ fontSize: 9, color: c.textMuted, transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
-                                                    </button>
-                                                    {aberto && (
-                                                        <div style={{ padding: '4px 10px 8px', borderTop: `1px solid ${c.borderLight}` }}>
-                                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                {extraidas.map((atv: any) => {
-                                                                    const marcada = realizadas.includes(atv.id)
-                                                                    return (
-                                                                        <button
-                                                                            key={atv.id}
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                const novas = marcada
-                                                                                    ? realizadas.filter((x: string) => x !== atv.id)
-                                                                                    : [...realizadas, atv.id]
-                                                                                setNovoRegistro((prev: any) => ({ ...prev, atividadesRealizadas: novas }))
-                                                                            }}
-                                                                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 4px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' as const, borderBottom: `1px solid ${c.borderLight}` }}>
-                                                                            <span style={{ width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${marcada ? '#6366f1' : c.textMuted}`, background: marcada ? '#6366f1' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .12s' }}>
-                                                                                {marcada && <span style={{ color: '#fff', fontSize: 9, lineHeight: 1 }}>✓</span>}
-                                                                            </span>
-                                                                            <span style={{ fontSize: 12, color: marcada ? (isDark ? '#a5b4fc' : '#4f46e5') : c.textMed, lineHeight: 1.3, textDecoration: marcada ? 'line-through' : 'none' }}>{atv.texto}</span>
-                                                                        </button>
-                                                                    )
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )
-                                        })()}
 
 {/* Chips de anotação */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -1537,21 +1481,20 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                 ref={(fn: (() => void) | null) => { chipOpenRefs.current[camposConfig.length] = fn }}
                                             />
 
-                                            {/* ── 3. Como a aula aconteceu na prática — narrativo ── */}
-                                            {!temChecklist && <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
+                                            {/* ── 3. Como o plano foi executado ── */}
+                                            {temPlano && <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: 'hidden', background: c.cardBg }}>
                                                 <div onClick={() => setContextoAberto(o => !o)}
                                                     style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
-                                                    <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>🗓</span>
-                                                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: (novoRegistro as any).contextoAula ? c.textMain : c.textMed, flex: 1 }}>
-                                                        Como a aula aconteceu na prática?
+                                                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' as const, color: (novoRegistro as any).contextoAula ? c.textMain : c.textMed, flex: 1 }}>
+                                                        Como o plano foi executado?
                                                     </span>
                                                     {(novoRegistro as any).contextoAula && <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: isDark ? 'rgba(34,197,94,.12)' : '#f0fdf4', padding: '1px 6px', borderRadius: 99, border: isDark ? '1px solid rgba(34,197,94,.25)' : '1px solid #bbf7d0', flexShrink: 0 }}>✓</span>}
                                                     <span style={{ fontSize: 9, color: c.textMuted, flexShrink: 0, marginLeft: 4, transform: contextoAberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s', display: 'inline-block' }}>▼</span>
                                                 </div>
                                                 {contextoAberto && (
-                                                    <div style={{ padding: '0 12px 10px' }}>
-                                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                                                            {(['Seguiu o plano', 'Pequenas adaptações', 'Mudou bastante'] as const).map(op => {
+                                                    <div style={{ padding: '0 12px 10px', borderTop: `1px solid ${c.borderLight}` }}>
+                                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8, paddingTop: 8 }}>
+                                                            {(['Seguiu o plano', 'Pequenas modificações', 'Plano alterado'] as const).map(op => {
                                                                 const ativo = (novoRegistro as any).contextoAula === op
                                                                 return (
                                                                     <button key={op} type="button"
@@ -1570,8 +1513,15 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                             <textarea
                                                                 value={(novoRegistro as any).contextoAulaDetalhe || ''}
                                                                 onChange={e => setNovoRegistro({ ...novoRegistro, contextoAulaDetalhe: e.target.value } as any)}
-                                                                rows={('ontouchstart' in window) ? 4 : 2} placeholder="Detalhe o que aconteceu... (opcional)"
-                                                                style={{ width: '100%', padding: '8px 36px 8px 10px', border: `1px solid ${c.border}`, borderRadius: 8, fontSize: 12, color: c.textMain, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', background: c.inputBg }}
+                                                                rows={('ontouchstart' in window) ? 4 : 2}
+                                                                placeholder={
+                                                                    (novoRegistro as any).contextoAula === 'Pequenas modificações'
+                                                                        ? 'O que foi ajustado? Ex: pulei o improviso, estendemos o aquecimento...'
+                                                                        : (novoRegistro as any).contextoAula === 'Plano alterado'
+                                                                            ? 'O que aconteceu? O que foi feito no lugar?'
+                                                                            : 'Algo que valha registrar sobre a execução? (opcional)'
+                                                                }
+                                                                style={{ width: '100%', padding: '8px 36px 8px 10px', border: `1px solid ${c.border}`, borderRadius: 8, fontSize: 12, color: c.textMain, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', background: c.inputBg }}
                                                                 onFocus={e => (e.target.style.borderColor = '#94a3b8')}
                                                                 onBlur={e  => (e.target.style.borderColor = c.border)}
                                                             />
