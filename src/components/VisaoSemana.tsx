@@ -422,6 +422,8 @@ export default function VisaoSemana() {
   type CopiarModoState = { planoId: string; srcTidStr: string; srcYmd: string; srcNome: string; srcEscolaId: string; srcSegmentoId: string }
   const [menuAberto, setMenuAberto] = useState<string | null>(null)
   const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null)
+  const [reposicaoModal, setReposicaoModal] = useState<{ aula: AulaGrade; turmaNome: string } | null>(null)
+  const [reposicaoData, setReposicaoData] = useState('')
   React.useEffect(() => {
     if (!menuAberto) return
     const handler = () => setMenuAberto(null)
@@ -1062,7 +1064,7 @@ export default function VisaoSemana() {
                         </div>
 
                         {/* ── Botão ··· e dropdown ── */}
-                        {temPlano && !past && !copiarModo && (
+                        {!copiarModo && ((temPlano && !past) || statusAulaRegistrada === 'nao_houve') && (
                           <div className="absolute top-[5px] right-[5px] z-10">
                             <button
                               onClick={(e) => { e.stopPropagation(); const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right }); setMenuAberto(menuAberto === tidYmd ? null : tidYmd) }}
@@ -1079,19 +1081,34 @@ export default function VisaoSemana() {
                                 className="bg-white dark:bg-[#1E2A4A] rounded-[10px] shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-[#E6EAF0] dark:border-[#374151] py-1 w-[185px]"
                                 onMouseDown={(e) => e.stopPropagation()}
                               >
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setMenuAberto(null); iniciarCopiarModo(aula, tidStr, ymd, turmaNome) }}
-                                  className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
-                                >
-                                  Copiar aula
-                                </button>
-                                <div className="mx-2 border-t border-[#F1F3F8] dark:border-[#374151]" />
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setMenuAberto(null); moverParaProximaSemana(tidStr, ymd) }}
-                                  className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
-                                >
-                                  Mover para próxima semana
-                                </button>
+                                {temPlano && !past && (
+                                  <>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setMenuAberto(null); iniciarCopiarModo(aula, tidStr, ymd, turmaNome) }}
+                                      className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
+                                    >
+                                      Copiar aula
+                                    </button>
+                                    <div className="mx-2 border-t border-[#F1F3F8] dark:border-[#374151]" />
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setMenuAberto(null); moverParaProximaSemana(tidStr, ymd) }}
+                                      className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
+                                    >
+                                      Mover para próxima semana
+                                    </button>
+                                  </>
+                                )}
+                                {statusAulaRegistrada === 'nao_houve' && (
+                                  <>
+                                    {temPlano && !past && <div className="mx-2 border-t border-[#F1F3F8] dark:border-[#374151]" />}
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setMenuAberto(null); setReposicaoData(''); setReposicaoModal({ aula, turmaNome }) }}
+                                      className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
+                                    >
+                                      Agendar reposição de aula
+                                    </button>
+                                  </>
+                                )}
                               </div>,
                               document.body
                             )}
@@ -1317,6 +1334,48 @@ export default function VisaoSemana() {
             setViewMode('porTurmas')
           }}
         />
+      )}
+
+      {/* ── Modal: agendar reposição de aula ────────────────────────────── */}
+      {reposicaoModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setReposicaoModal(null)}>
+          <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl p-5 max-w-xs w-full" onClick={e => e.stopPropagation()}>
+            <p className="text-sm font-semibold text-slate-700 dark:text-[#E5E7EB] mb-1">Agendar reposição</p>
+            <p className="text-xs text-slate-500 dark:text-[#9CA3AF] mb-4">
+              <span className="font-semibold text-slate-700 dark:text-[#E5E7EB]">{reposicaoModal.turmaNome}</span> — escolha a data da reposição
+            </p>
+            <input
+              type="date"
+              value={reposicaoData}
+              onChange={e => setReposicaoData(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+              className="w-full border border-[#E6EAF0] dark:border-[#374151] rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-[#E5E7EB] bg-white dark:bg-[#273344] mb-4 focus:outline-none focus:border-indigo-400"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setReposicaoModal(null)}
+                className="flex-1 text-sm border border-slate-200 dark:border-[#374151] rounded-xl px-3 py-2 text-slate-600 dark:text-[#9CA3AF] hover:bg-slate-50 dark:hover:bg-white/[0.05] transition"
+              >Cancelar</button>
+              <button
+                disabled={!reposicaoData}
+                onClick={() => {
+                  if (!reposicaoData) return
+                  selecionarTurma({
+                    anoLetivoId: reposicaoModal.aula.anoLetivoId ?? '',
+                    escolaId:    reposicaoModal.aula.escolaId ?? '',
+                    segmentoId:  reposicaoModal.aula.segmentoId ?? '',
+                    turmaId:     String(reposicaoModal.aula.turmaId),
+                  })
+                  setDataNavegacao(new Date(reposicaoData + 'T12:00:00'))
+                  setModoInicialNavegacao('criar')
+                  setViewMode('porTurmas')
+                  setReposicaoModal(null)
+                }}
+                className="flex-1 text-sm bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white rounded-xl px-3 py-2 font-medium transition"
+              >Confirmar</button>
+            </div>
+          </div>
+        </div>
       )}
 
       </>)}
