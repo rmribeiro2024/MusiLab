@@ -394,6 +394,8 @@ const CardAtividadeRoteiro = memo(function CardAtividadeRoteiro({
   const [panelEstrategia, setPanelEstrategia] = useState<{ texto: string } | null>(null)
   const [sugestaoVariacoes, setSugestaoVariacoes] = useState<string[] | null>(null)
   const [sugerindoVariacoes, setSugerindoVariacoes] = useState(false)
+  const [textoFormatado, setTextoFormatado] = useState<string | null>(null)
+  const [formatando, setFormatando] = useState(false)
 
   // ── Refs ─────────────────────────────────────────────────────
   const menuRef = useRef<HTMLDivElement>(null)
@@ -604,6 +606,42 @@ ${desc ? `Descrição: "${desc.slice(0, 400)}"` : ''}`
       showToast('Não foi possível gerar variações. Tente novamente.', 'error')
     } finally {
       setSugerindoVariacoes(false)
+    }
+  }
+
+  // ── Formatar texto via IA ────────────────────────────────────
+  const formatarTextoIA = async () => {
+    setMenuOpen(false)
+    const desc = atividade.descricao?.trim() || ''
+    if (!desc || desc.replace(/<[^>]+>/g, '').trim().length < 10) {
+      showToast('Adicione uma descrição à atividade primeiro.', 'error'); return
+    }
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+    if (!apiKey) { showToast('Chave Gemini não configurada.', 'error'); return }
+    setFormatando(true)
+    setTextoFormatado(null)
+    try {
+      const textoPlano = desc.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      const prompt = `Você é um assistente de formatação para professores de música. Sua única tarefa é reorganizar e formatar o texto abaixo para que fique mais claro e estruturado. Regras absolutas:
+1. NÃO altere, remova ou acrescente NENHUMA informação ou conteúdo pedagógico.
+2. Apenas melhore a organização visual: parágrafos claros, listas quando já houver itens implícitos, pontuação adequada.
+3. Mantenha o tom e as palavras do professor.
+4. Responda APENAS com o texto formatado, sem explicações.
+
+Texto: "${textoPlano}"`
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
+      )
+      if (!res.ok) throw new Error('HTTP ' + res.status)
+      const json = await res.json()
+      const resultado: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      if (!resultado.trim()) throw new Error('resposta vazia')
+      setTextoFormatado(resultado.trim())
+    } catch {
+      showToast('Não foi possível formatar. Tente novamente.', 'error')
+    } finally {
+      setFormatando(false)
     }
   }
 
@@ -836,6 +874,19 @@ ${desc ? `Descrição: "${desc.slice(0, 400)}"` : ''}`
                   <span>✨</span>
                   <span>{sugerindoVariacoes ? 'Gerando...' : 'Sugerir variações via IA'}</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={formatarTextoIA}
+                  disabled={formatando}
+                  className="w-full text-left px-3 py-2 flex items-center gap-2 text-[12px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors disabled:opacity-40"
+                >
+                  <span>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10M4 18h7"/>
+                    </svg>
+                  </span>
+                  <span>{formatando ? 'Formatando...' : 'Formatar texto via IA'}</span>
+                </button>
                 <div className="my-1 border-t border-slate-100 dark:border-[#374151]" />
                 <button
                   type="button"
@@ -1008,6 +1059,37 @@ ${desc ? `Descrição: "${desc.slice(0, 400)}"` : ''}`
           }}
           onCancelar={() => setPanelEstrategia(null)}
         />
+      )}
+
+      {/* ── Painel de texto formatado pela IA ── */}
+      {textoFormatado && (
+        <div className="mt-1 ml-6 p-3 rounded-xl border border-slate-200 dark:border-[#374151] bg-white dark:bg-[var(--v2-card)]">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Texto formatado</span>
+            <button type="button" onClick={() => setTextoFormatado(null)} className="text-slate-400 hover:text-slate-600 text-xs leading-none px-1">×</button>
+          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap mb-3">{textoFormatado}</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                onFieldChange(atividade.id, 'descricao', textoFormatado.split('\n').map(l => `<p>${l || '<br>'}</p>`).join(''))
+                setTextoFormatado(null)
+                showToast('Texto atualizado', 'success')
+              }}
+              className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors"
+            >
+              Aplicar
+            </button>
+            <button
+              type="button"
+              onClick={() => setTextoFormatado(null)}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#374151] text-slate-500 dark:text-slate-400 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors"
+            >
+              Descartar
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ── Painel de variações sugeridas pela IA ── */}
