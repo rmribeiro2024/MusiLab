@@ -1418,6 +1418,52 @@ export default function TelaPrincipal() {
                     </div>
                 )}
 
+                {/* ── Vivências + Meios Orff — chips sempre visíveis ── */}
+                {(() => {
+                    const vivsObj = planoEditando.vivenciasClassificadas ?? {}
+                    const meiosObj = planoEditando.orffMeios ?? {}
+                    const vivsAtivas = Object.entries(vivsObj).filter(([,v]) => (v as number) > 0)
+                    const meiosAtivos = Object.entries(meiosObj).filter(([,v]) => v === true)
+                    if (vivsAtivas.length === 0 && meiosAtivos.length === 0) return null
+                    const CLASP: Record<string,{label:string;bg:string;border:string;text:string}> = {
+                        tecnica:     { label:'Técnica',            bg:'rgba(244,114,182,0.1)', border:'rgba(244,114,182,0.25)', text:'#ec4899' },
+                        performance: { label:'Performance',        bg:'rgba(251,146,60,0.1)',  border:'rgba(251,146,60,0.25)',  text:'#f97316' },
+                        apreciacao:  { label:'Apreciação',         bg:'rgba(52,211,153,0.1)',  border:'rgba(52,211,153,0.25)',  text:'#10b981' },
+                        criacao:     { label:'Criação',            bg:'rgba(167,139,250,0.1)', border:'rgba(167,139,250,0.25)', text:'#8b5cf6' },
+                        teoria:      { label:'Teoria e história',  bg:'rgba(96,165,250,0.1)',  border:'rgba(96,165,250,0.25)',  text:'#3b82f6' },
+                    }
+                    const ORFF: Record<string,{label:string;cor:string}> = {
+                        fala:'Fala', canto:'Canto', movimento:'Movimento', instrumental:'Instrumental',
+                    } as any
+                    const ORFF_COR: Record<string,string> = { fala:'#e879f9', canto:'#34d399', movimento:'#fbbf24', instrumental:'#60a5fa' }
+                    return (
+                        <div className="px-3 sm:px-6 py-3 border-b border-slate-100 dark:border-[#374151] flex flex-wrap gap-1.5 items-center">
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-[#4B5563] uppercase tracking-[0.08em] shrink-0 mr-0.5">Vivências</span>
+                            {vivsAtivas.map(([k]) => {
+                                const c = CLASP[k]; if (!c) return null
+                                return <span key={k} className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-lg"
+                                    style={{ color: c.text, background: c.bg, border: `1px solid ${c.border}` }}>{c.label}</span>
+                            })}
+                            {meiosAtivos.length > 0 && (
+                                <>
+                                    <span className="text-[10px] font-bold text-slate-400 dark:text-[#4B5563] uppercase tracking-[0.08em] shrink-0 mx-1">Meios</span>
+                                    {meiosAtivos.map(([k]) => {
+                                        const cor = ORFF_COR[k] ?? '#94a3b8'
+                                        const label = { fala:'Fala', canto:'Canto', movimento:'Movimento', instrumental:'Instrumental' }[k] ?? k
+                                        return <span key={k} className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-lg"
+                                            style={{ color: cor, background: `${cor}18`, border: `1px solid ${cor}40` }}>{label}</span>
+                                    })}
+                                </>
+                            )}
+                            <button type="button"
+                                onClick={() => setClasseNotif({ planoId: String(planoEditando.id), titulo: planoEditando.titulo, vivencias: vivsObj, meiosOrff: meiosObj, conceitos: planoEditando.conceitos ?? [] })}
+                                className="text-[10px] text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 underline transition-colors ml-1">
+                                editar
+                            </button>
+                        </div>
+                    )
+                })()}
+
                 {/* ════════════ ACCORDION: ROTEIRO DE ATIVIDADES ════════════ */}
                 <div className="border-b border-slate-100">
                     <button type="button" onClick={() => toggleSecaoForm('roteiro')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
@@ -1930,7 +1976,7 @@ export default function TelaPrincipal() {
                             ) : null}
 
                             {/* ── O que preciso levar (materiais físicos) ── */}
-                            {modoDetalhado && (() => {
+                            {!modoRapido && (() => {
                                 const todosMat = [
                                     ...planoEditando.materiais,
                                     ...(planoEditando.materiaisNecessarios || []).filter(m => !planoEditando.materiais.includes(m))
