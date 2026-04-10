@@ -131,6 +131,16 @@ export default function ModalAplicarEmTurmas({ plano, onClose }: Props) {
     )
   }
 
+  function getOutroPlanoNoDia(aula: AulaGrade, dataStr: string) {
+    return aplicacoes.find(
+      a =>
+        String(a.planoId) !== String(plano.id) &&
+        a.data === dataStr &&
+        String(a.turmaId) === String(aula.turmaId) &&
+        String(a.anoLetivoId) === String(aula.anoLetivoId ?? '')
+    )
+  }
+
   function toggleAula(dataStr: string, aulaId: number) {
     const key = makeKey(dataStr, aulaId)
     setSelecionados(prev => {
@@ -287,6 +297,7 @@ export default function ModalAplicarEmTurmas({ plano, onClose }: Props) {
                     {aulas.map(aula => {
                       const ap = getAplicacaoExistente(aula, dataStr)
                       const agendado = !!ap
+                      const outroPlano = !agendado && !!getOutroPlanoNoDia(aula, dataStr)
                       const key = makeKey(dataStr, aula.id)
                       const checked = selecionados.has(key)
                       const nome = getNomeTurma(
@@ -332,6 +343,16 @@ export default function ModalAplicarEmTurmas({ plano, onClose }: Props) {
                                 ${STATUS_COLOR[ap.status] || 'bg-slate-100 text-slate-600'}`}
                               >
                                 {STATUS_LABEL[ap.status] || ap.status}
+                              </span>
+                            )}
+                            {outroPlano && !checked && (
+                              <span className="text-[10px] text-slate-400 font-medium">
+                                · já planejada
+                              </span>
+                            )}
+                            {outroPlano && checked && (
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
+                                substituirá aula atual
                               </span>
                             )}
                           </div>
