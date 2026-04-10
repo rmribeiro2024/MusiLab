@@ -1082,7 +1082,7 @@ export default function VisaoSemana() {
                         </div>
 
                         {/* ── Botão ··· e dropdown ── */}
-                        {!copiarModo && ((temPlano && !past) || statusAulaRegistrada === 'nao_houve') && (
+                        {!copiarModo && ((temPlano && !past) || statusAulaRegistrada === 'nao_houve' || isAvulsa) && (
                           <div className="absolute top-[5px] right-[5px] z-10">
                             <button
                               onClick={(e) => { e.stopPropagation(); const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right }); setMenuAberto(menuAberto === tidYmd ? null : tidYmd) }}
@@ -1120,10 +1120,21 @@ export default function VisaoSemana() {
                                   <>
                                     {temPlano && !past && <div className="mx-2 border-t border-[#F1F3F8] dark:border-[#374151]" />}
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); setMenuAberto(null); setReposicaoData(''); setReposicaoModal({ aula, turmaNome }) }}
+                                      onClick={(e) => { e.stopPropagation(); setMenuAberto(null); setReposicaoData(''); setReposicaoHorario(''); setReposicaoModal({ aula, turmaNome }) }}
                                       className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-slate-600 dark:text-[#D1D5DB] hover:bg-slate-50 dark:hover:bg-[#273344] transition"
                                     >
                                       Agendar reposição de aula
+                                    </button>
+                                  </>
+                                )}
+                                {isAvulsa && (
+                                  <>
+                                    {(temPlano || statusAulaRegistrada === 'nao_houve') && <div className="mx-2 border-t border-[#F1F3F8] dark:border-[#374151]" />}
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setMenuAberto(null); setAulasAvulsas(prev => prev.filter(a => a.avulsaId !== (aula as AulaAvulsa).avulsaId)) }}
+                                      className="w-full text-left px-3 py-2 text-[11.5px] font-semibold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
+                                    >
+                                      Excluir reposição
                                     </button>
                                   </>
                                 )}
