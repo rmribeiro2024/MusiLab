@@ -823,7 +823,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
                         <div>
                           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Como foi</p>
                           <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151' }}>
-                            {{ concluida: 'Conteúdo concluído', incompleta: 'Conteúdo parcialmente trabalhado', nao_houve: 'Não houve aula', revisao: 'Em revisão', parcial: 'Parcial' }[(ultimoRegistroTurma.reg as any).statusAula] ?? (ultimoRegistroTurma.reg as any).statusAula}
+                            {{ concluida: 'Conteúdo concluído', incompleta: 'Continua na próxima aula', nao_houve: 'Não houve aula', revisao: 'Continua na próxima aula', parcial: 'Parcial' }[(ultimoRegistroTurma.reg as any).statusAula] ?? (ultimoRegistroTurma.reg as any).statusAula}
                           </p>
                         </div>
                       )}

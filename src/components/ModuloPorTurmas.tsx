@@ -730,6 +730,19 @@ function ConteudoTurma({ turmaSelecionada, dataPrevista, modoInicial, onModoInic
 
     // Recebe o plano do form e abre dialog de destino
     const handleFormSalvar = (plano: any, origemAula: 'banco' | 'adaptacao' | 'livre') => {
+        if (origemAula === 'banco') {
+            // Plano importado do banco já está salvo — aplica direto para a turma sem perguntar
+            salvarPlanejamento({
+                oQuePretendoFazer: plano.objetivoGeral || plano.titulo || '',
+                origemAula,
+                dataPrevista,
+                materiais: plano.materiais?.length ? plano.materiais : [],
+                planosRelacionadosIds: [],
+                planoData: plano,
+            })
+            fecharForm()
+            return
+        }
         setPendingSave({ plano, origemAula })
     }
 

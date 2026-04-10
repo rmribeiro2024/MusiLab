@@ -1256,7 +1256,7 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                         const statusVal = ((novoRegistro as any).statusAula || inferStatusLegado((novoRegistro as any).resultadoAula, (novoRegistro as any).proximaAulaOpcao, (novoRegistro as any).statusAula)) as StatusAula
                                         const ops: { value: StatusAula; label: string; emoji: string }[] = [
                                             { value: 'concluida',  label: 'Conteúdo concluído',              emoji: '✓' },
-                                            { value: 'incompleta', label: 'Conteúdo parcialmente trabalhado', emoji: '◑' },
+                                            { value: 'incompleta', label: 'Conteúdo continua na próxima aula', emoji: '◑' },
                                             { value: 'nao_houve',  label: 'Não houve aula',                  emoji: '—' },
                                         ]
                                         return (

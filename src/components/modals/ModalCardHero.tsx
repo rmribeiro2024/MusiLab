@@ -45,8 +45,8 @@ export const STATUS_ACAO: Record<NonNullable<StatusEfetivo>, string> = {
 
 export const STATUS_LABEL: Record<NonNullable<StatusEfetivo>, string> = {
   concluida:  'Conteúdo concluído',
-  incompleta: 'Parcialmente trabalhado',
-  revisao:    'Parcialmente trabalhado',
+  incompleta: 'Continua na próxima aula',
+  revisao:    'Continua na próxima aula',
   nao_houve:  'Não houve aula',
 }
 
