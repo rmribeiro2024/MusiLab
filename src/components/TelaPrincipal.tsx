@@ -635,6 +635,36 @@ export default function TelaPrincipal() {
     // ── Dropdown Restaurar versão ──
     const [restaurarOpen, setRestaurarOpen] = useState(false)
 
+    // ── IA: gerar avaliação ──
+    const [gerandoAvaliacao, setGerandoAvaliacao] = useState(false)
+    const [avaliacaoIAKey, setAvaliacaoIAKey] = useState(0)
+
+    const sugerirAvaliacaoIA = async () => {
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+        if (!apiKey) { showToast('API key não configurada', 'error'); return }
+        const ativs = planoEditando?.atividadesRoteiro || []
+        if (!planoEditando?.titulo && ativs.length === 0) { showToast('Preencha o título ou adicione atividades primeiro.', 'error'); return }
+        setGerandoAvaliacao(true)
+        try {
+            const faixaEtaria = (planoEditando.faixaEtaria || []).join(', ') || ''
+            const isCrianca = /\b[4-9]\b|\b10\b|infantil|criança|anos/i.test(faixaEtaria)
+            const lista = ativs.map((a: any) => `- ${a.nome}${a.duracao ? ` (${a.duracao}min)` : ''}`).join('\n')
+            const prompt = `Você é especialista em pedagogia musical.\nPreencha 3 campos de avaliação de forma SUCINTA.\n\nPLANO:\nTítulo: ${planoEditando.titulo || '(sem título)'}\nObjetivo: ${(planoEditando.objetivoGeral || '').replace(/<[^>]+>/g, '') || '(não informado)'}\nNível: ${faixaEtaria || '(não informado)'}\nAtividades:\n${lista || '(nenhuma)'}\n\nREGRAS:\n1. "evidencia" — 2 ou 3 tópicos curtos com verbos observáveis.\n2. "fechamento" — ${isCrianca ? '1–2 perguntas simples para crianças.' : '1–2 perguntas curtas para reflexão musical.'}\n3. "contingencia" — 1–2 adaptações práticas caso não funcione.\n\nResponda APENAS com JSON: {"evidencia":"...","fechamento":"...","contingencia":"..."}`
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) })
+            if (!res.ok) throw new Error('HTTP ' + res.status)
+            const json = await res.json()
+            const raw: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+            const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || raw.match(/(\{[\s\S]*\})/)
+            if (!match) { showToast('IA não retornou JSON válido', 'error'); return }
+            const result = JSON.parse(match[1] || match[0])
+            setPlanoEditando((p: any) => ({ ...p, avaliacaoEvidencia: result.evidencia ?? p.avaliacaoEvidencia, avaliacaoFechamento: result.fechamento ?? p.avaliacaoFechamento, avaliacaoContingencia: result.contingencia ?? p.avaliacaoContingencia }))
+            setAvaliacaoIAKey(k => k + 1)
+            setSecoesForm(prev => new Set([...prev, 'avaliacao']))
+            showToast('Avaliação gerada com IA!', 'success')
+        } catch { showToast('Erro ao gerar avaliação', 'error') }
+        finally { setGerandoAvaliacao(false) }
+    }
+
     // ── Feedback visual do botão Salvar ──
     // salvarPlano() é síncrono (atualiza estado local imediatamente).
     // requestAnimationFrame garante que 'salvando' seja pintado antes de transicionar.
@@ -1767,7 +1797,17 @@ export default function TelaPrincipal() {
                 <div className="border-b border-slate-100">
                     <button type="button" onClick={() => toggleSecaoForm('avaliacao')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
                         <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Avaliação</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Avaliação</span>
+                                <button
+                                    type="button"
+                                    onClick={e => { e.stopPropagation(); sugerirAvaliacaoIA() }}
+                                    disabled={gerandoAvaliacao}
+                                    className="text-[10px] font-semibold text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition disabled:opacity-40"
+                                >
+                                    {gerandoAvaliacao ? '⏳' : '✨ IA'}
+                                </button>
+                            </div>
                             {!secoesForm.has('avaliacao') && (() => {
                                 const preview = planoEditando.avaliacaoEvidencia || planoEditando.avaliacaoFechamento || planoEditando.avaliacaoObservacoes
                                 return preview ? <p className="text-[11px] text-[#94A3B8] mt-0.5 truncate">{preview.slice(0,60)}</p> : null
@@ -1784,7 +1824,7 @@ export default function TelaPrincipal() {
                                 </label>
                                 <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
                                     <TipTapEditor
-                                        key={`tp-ev-${planoEditando.id}`}
+                                        key={`tp-ev-${planoEditando.id}-${avaliacaoIAKey}`}
                                         initialValue={planoEditando.avaliacaoEvidencia ?? ((!planoEditando.avaliacaoEvidencia && !planoEditando.avaliacaoFechamento && planoEditando.avaliacaoObservacoes) ? planoEditando.avaliacaoObservacoes : '') ?? ''}
                                         onChange={val => setPlanoEditando({ ...planoEditando, avaliacaoEvidencia: val })}
                                         placeholder="Ex: alunos conseguem tocar o ritmo sem apoio visual, participam da improvisação…"
@@ -1799,7 +1839,7 @@ export default function TelaPrincipal() {
                                 </label>
                                 <div className="border border-slate-200 dark:border-[#374151] rounded-xl overflow-hidden">
                                     <TipTapEditor
-                                        key={`tp-fech-${planoEditando.id}`}
+                                        key={`tp-fech-${planoEditando.id}-${avaliacaoIAKey}`}
                                         initialValue={planoEditando.avaliacaoFechamento ?? ''}
                                         onChange={val => setPlanoEditando({ ...planoEditando, avaliacaoFechamento: val })}
                                         placeholder="Ex: O que foi mais difícil? O que vocês notaram sobre o ritmo?"
@@ -2046,14 +2086,7 @@ export default function TelaPrincipal() {
                     const musicas = planoEditando.musicasVinculadasPlano || []
                     const alertas: { icon: string; texto: string }[] = []
 
-                    // 1. Roteiro com atividades mas sem fechamento
-                    if (atividades.length >= 2) {
-                        const temFechamento = atividades.some(a => a.tipoFase === 'fechamento')
-                        if (!temFechamento) {
-                            alertas.push({ icon: '⚠️', texto: 'Roteiro sem atividade de Fechamento' })
-                        }
-                    }
-                    // 2. Sem músicas vinculadas
+                    // 1. Sem músicas vinculadas
                     if (musicas.length === 0 && (planoEditando.titulo || '').trim()) {
                         alertas.push({ icon: '🎵', texto: 'Nenhuma música vinculada ao plano' })
                     }

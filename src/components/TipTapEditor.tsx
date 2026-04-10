@@ -19,27 +19,35 @@ function spotifyInfo(url: string): { type: string; id: string } | null {
 }
 
 // ── Converte URLs de mídia em links amigáveis + coleta previews ───────────────
-interface MediaPreview { url: string; kind: 'youtube' | 'spotify'; title: string }
+interface MediaPreview { url: string; kind: 'youtube' | 'spotify' | 'drive'; title: string }
+
+function driveLabel(url: string): string | null {
+    if (/docs\.google\.com\/document/.test(url)) return 'Documento Google'
+    if (/docs\.google\.com\/spreadsheets/.test(url)) return 'Planilha Google'
+    if (/docs\.google\.com\/presentation/.test(url)) return 'Apresentação Google'
+    if (/drive\.google\.com|docs\.google\.com/.test(url)) return 'Google Drive'
+    return null
+}
 
 async function processMediaUrls(html: string): Promise<{ html: string; previews: MediaPreview[] }> {
     const previews: MediaPreview[] = []
     const seen = new Set<string>()
 
-    // Detecta <a href="url-de-midia"> e URLs soltas
-    const urlRegex = /(?:<a[^>]*href="(https?:\/\/(?:(?:www\.)?youtu(?:\.be|be\.com)|open\.spotify\.com)[^"]*)"[^>]*>.*?<\/a>|(https?:\/\/(?:(?:www\.)?youtu(?:\.be|be\.com)|open\.spotify\.com)[^\s<"'&)]+))/gi
-    const found: { raw: string; url: string }[] = []
+    // Detecta <a href="url-de-midia"> e URLs soltas (YouTube, Spotify, Google Drive/Docs)
+    const urlRegex = /(?:<a[^>]*href="(https?:\/\/(?:(?:www\.)?youtu(?:\.be|be\.com)|open\.spotify\.com|drive\.google\.com|docs\.google\.com)[^"]*)"[^>]*>.*?<\/a>|(https?:\/\/(?:(?:www\.)?youtu(?:\.be|be\.com)|open\.spotify\.com|drive\.google\.com|docs\.google\.com)[^\s<"'&)]+))/gi
+    const found: { raw: string; url: string; isATag: boolean }[] = []
     let m: RegExpExecArray | null
     while ((m = urlRegex.exec(html)) !== null) {
-        found.push({ raw: m[0], url: m[1] || m[2] })
+        found.push({ raw: m[0], url: m[1] || m[2], isATag: m[0].startsWith('<a') })
     }
 
     // Para cada URL encontrada, busca título e substitui no HTML
     let result = html
-    for (const { raw, url } of found) {
+    for (const { raw, url, isATag } of found) {
         if (seen.has(url)) continue
         seen.add(url)
         let title = ''
-        let kind: 'youtube' | 'spotify' | null = null
+        let kind: 'youtube' | 'spotify' | 'drive' | null = null
 
         if (ytId(url)) {
             kind = 'youtube'
@@ -55,12 +63,23 @@ async function processMediaUrls(html: string): Promise<{ html: string; previews:
                 if (res.ok) { const d = await res.json(); title = d.title || 'Spotify' }
             } catch { /* silencia */ }
             if (!title) title = 'Spotify'
+        } else {
+            const dl = driveLabel(url)
+            if (dl) { kind = 'drive'; title = dl }
         }
 
         if (kind && title) {
-            const icon = kind === 'youtube' ? '▶' : '🎵'
-            const link = `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#64748b;font-weight:400;text-decoration:underline;text-underline-offset:2px;">${icon} ${title}</a>`
-            result = result.replace(raw, link)
+            if (kind === 'drive') {
+                // Drive: só substitui URLs soltas (não toca em <a> com texto customizado)
+                if (!isATag) {
+                    const link = `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#64748b;font-weight:400;text-decoration:underline;text-underline-offset:2px;">📁 ${title}</a>`
+                    result = result.replace(raw, link)
+                }
+            } else {
+                const icon = kind === 'youtube' ? '▶' : '🎵'
+                const link = `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#64748b;font-weight:400;text-decoration:underline;text-underline-offset:2px;">${icon} ${title}</a>`
+                result = result.replace(raw, link)
+            }
             previews.push({ url, kind, title })
         }
     }
@@ -405,18 +424,22 @@ export default function TipTapEditor({
                             <div key={i} className="flex items-center gap-2.5 p-2 rounded-lg border border-slate-100 dark:border-[#374151] bg-slate-50 dark:bg-white/[0.02] hover:border-indigo-200 dark:hover:border-indigo-500/30 transition group">
                                 {thumb
                                     ? <img src={thumb} alt="" className="w-14 h-9 rounded object-cover shrink-0 bg-black" />
-                                    : <div className="w-14 h-9 rounded shrink-0 bg-[#1DB954] flex items-center justify-center text-white text-lg">🎵</div>
+                                    : p.kind === 'drive'
+                                        ? <div className="w-14 h-9 rounded shrink-0 bg-blue-50 dark:bg-blue-400/10 flex items-center justify-center text-xl">📁</div>
+                                        : <div className="w-14 h-9 rounded shrink-0 bg-[#1DB954] flex items-center justify-center text-white text-lg">🎵</div>
                                 }
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">{p.title}</p>
-                                    <p className="text-[10px] text-slate-400 truncate">{p.kind === 'youtube' ? 'YouTube' : 'Spotify'}</p>
+                                    <p className="text-[10px] text-slate-400 truncate">
+                                        {p.kind === 'youtube' ? 'YouTube' : p.kind === 'drive' ? 'Google Drive' : 'Spotify'}
+                                    </p>
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => setFloatingPlayer(p)}
+                                    onClick={() => p.kind === 'drive' ? window.open(p.url, '_blank') : setFloatingPlayer(p as any)}
                                     className="shrink-0 text-[11px] font-semibold text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 px-2 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition"
                                 >
-                                    {p.kind === 'youtube' ? '▶ Abrir' : '▶ Player'}
+                                    {p.kind === 'youtube' ? '▶ Abrir' : p.kind === 'drive' ? 'Abrir' : '▶ Player'}
                                 </button>
                             </div>
                         )
