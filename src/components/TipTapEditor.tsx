@@ -388,9 +388,13 @@ export default function TipTapEditor({
                                     const text = editor.state.doc.textBetween(from, to, ' ').trim()
                                     if (text) onSaveAsStrategy(text)
                                 }}
-                                className="px-1.5 py-0.5 rounded text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition"
+                                className="px-1 py-0.5 rounded text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 transition"
                                 title="Salvar seleção como estratégia (Ctrl+E)"
-                            >💡</button>
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                                </svg>
+                            </button>
                         </>
                     )}
                 </div>

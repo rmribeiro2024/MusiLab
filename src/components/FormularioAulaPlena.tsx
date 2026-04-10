@@ -324,45 +324,6 @@ export default function FormularioAulaPlena({
     if (id !== 'roteiro') setBancoPanelOpen(false)
   }
 
-  // ── Contexto da Aula Anterior (só adaptar) ──
-  const [contextoAulaAnterior, setContextoAulaAnterior] = useState(
-    initialPlano.contextoAulaAnterior ?? ''
-  )
-  const [gerandoContexto, setGerandoContexto] = useState(false)
-
-  async function gerarContextoIA() {
-    if (!ultimoRegistro) return
-    setGerandoContexto(true)
-    try {
-      const campos: string[] = []
-      if (ultimoRegistro.resumoAula) campos.push(`Resumo: ${ultimoRegistro.resumoAula}`)
-      if (ultimoRegistro.funcionouBem) campos.push(`O que funcionou: ${ultimoRegistro.funcionouBem}`)
-      if (ultimoRegistro.fariadiferente) campos.push(`O que faria diferente: ${ultimoRegistro.fariadiferente}`)
-      if (ultimoRegistro.poderiaMelhorar) campos.push(`Poderia melhorar: ${ultimoRegistro.poderiaMelhorar}`)
-      if (ultimoRegistro.proximaAula) campos.push(`Ideia para próxima aula: ${ultimoRegistro.proximaAula}`)
-      const encaminhamentos = (ultimoRegistro as any)?.encaminhamentos as { texto: string; concluido: boolean }[] | undefined
-      const pendentes = encaminhamentos?.filter(e => !e.concluido)
-      if (pendentes?.length) campos.push(`Encaminhamentos pendentes: ${pendentes.map(e => e.texto).join('; ')}`)
-
-      if (campos.length === 0) {
-        showToast('Nenhum dado da aula anterior para resumir.', 'error'); return
-      }
-      const prompt = `Você é um assistente pedagógico para professores de música. Com base nos dados da aula anterior abaixo, escreva um parágrafo curto (3–5 linhas) que ajude o professor a contextualizar a próxima aula. Seja direto, prático e objetivo. Não use bullet points.
-
-${campos.join('\n')}
-
-Responda apenas com o texto do contexto, sem explicações adicionais.`
-
-      const texto = await geminiPost(prompt)
-      if (texto.trim()) setContextoAulaAnterior(texto.trim())
-      else showToast('IA não retornou resultado', 'error')
-    } catch (e) {
-      showToast('Erro ao gerar contexto', 'error')
-    } finally {
-      setGerandoContexto(false)
-    }
-  }
-
   // ── Objetivos ──
   const [gerandoObjetivos, setGerandoObjetivos] = useState(false)
 
@@ -765,7 +726,7 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
     const planoFinal: Plano = {
       ...p,
       conceitos: conceitosSanitizados,
-      contextoAulaAnterior: modo === 'adaptar' ? contextoAulaAnterior : p.contextoAulaAnterior,
+      contextoAulaAnterior: p.contextoAulaAnterior,
     }
     requestAnimationFrame(() => {
       setEstadoSalvar('salvo')
@@ -830,35 +791,6 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
 
       {/* ── Conteúdo scrollável ── */}
       <div className="overflow-y-auto">
-
-        {/* ════ BLOCO CONTEXTO DA AULA ANTERIOR (só modo adaptar) ════ */}
-        {modo === 'adaptar' && (
-          <div className="border-b border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/50 dark:bg-indigo-900/10">
-            <div className="px-5 pt-4 pb-4">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-[11px] font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wide">
-                  📋 Contexto da Aula Anterior
-                </label>
-                <button type="button" onClick={gerarContextoIA} disabled={gerandoContexto || !ultimoRegistro}
-                  className="flex items-center gap-1.5 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-400/10 dark:hover:bg-indigo-400/20 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-400/25 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                  {gerandoContexto ? '⏳ Gerando...' : '✨ Gerar com IA'}
-                </button>
-              </div>
-              <textarea
-                value={contextoAulaAnterior}
-                onChange={e => setContextoAulaAnterior(e.target.value)}
-                rows={3}
-                placeholder={ultimoRegistro
-                  ? 'Clique em "✨ Gerar com IA" para resumir a aula anterior, ou escreva manualmente...'
-                  : 'Nenhum registro anterior encontrado para esta turma.'}
-                className="w-full px-3 py-2.5 border border-indigo-200 dark:border-indigo-400/25 rounded-xl text-sm text-slate-700 dark:text-slate-200 bg-white dark:bg-[var(--v2-card)] placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 resize-none transition-colors"
-              />
-              <p className="text-[10px] text-indigo-400 dark:text-indigo-500 mt-1.5">
-                Este contexto é salvo com o planejamento desta turma — não altera a aula base.
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* ════ TÍTULO + DURAÇÃO (sempre visíveis) ════ */}
         <div className="px-5 pt-5 pb-4 border-b border-slate-100 dark:border-[#374151] space-y-3">
@@ -1666,7 +1598,7 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
         <ModalConceitosPlano
           conceitos={modalConceitos}
           onConfirmar={novosConceitos => {
-            const planoFinal = { ...plano, conceitos: novosConceitos, contextoAulaAnterior: modo === 'adaptar' ? contextoAulaAnterior : plano.contextoAulaAnterior }
+            const planoFinal = { ...plano, conceitos: novosConceitos, contextoAulaAnterior: plano.contextoAulaAnterior }
             setModalConceitos(null)
             setEstadoSalvar('salvo')
             setTimeout(() => setEstadoSalvar('idle'), 1200)

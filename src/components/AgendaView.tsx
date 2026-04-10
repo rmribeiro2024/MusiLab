@@ -226,18 +226,9 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, jaRegist
   const [titulo, setTitulo] = useState(ativ.nome)
   const [duracao, setDuracao] = useState(ativ.duracao ?? '')
   const [expandido, setExpandido] = useState(false)
-  const descRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { setDuracao(ativ.duracao ?? '') }, [ativ.duracao])
-
   useEffect(() => { setTitulo(ativ.nome) }, [ativ.nome])
-
-  // Inicializa o HTML do contentEditable ao expandir ou quando a descrição muda externamente
-  useEffect(() => {
-    if (descRef.current && document.activeElement !== descRef.current) {
-      descRef.current.innerHTML = processarLinksHtml(sanitizarRich(ativ.descricao ?? ''))
-    }
-  }, [ativ.descricao, expandido])
 
   // Abre links ao clicar (contentEditable bloqueia navegação nativa)
   function handleDescClick(e: React.MouseEvent<HTMLDivElement>) {
@@ -268,25 +259,17 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, jaRegist
       >
         {/* Linha principal: título + duração + chevron */}
         <div className={`flex items-center gap-2 px-3 py-2.5 ${expandido ? 'border-b border-slate-100 dark:border-[#374151] rounded-t-2xl' : 'rounded-2xl hover:bg-slate-50 dark:hover:bg-white/[0.02]'}`}>
-          <input
-            className="flex-1 bg-transparent text-sm font-semibold outline-none min-w-0 cursor-text rounded px-1 -mx-1 transition-colors focus:ring-1 focus:ring-blue-400/50"
+          <span
+            className="flex-1 text-sm font-semibold min-w-0 truncate"
             style={{ color: jaRegistrado ? (isDark ? '#4B5563' : '#6B7280') : (isDark ? '#E5E7EB' : '#1E2A4A') }}
-            value={titulo}
-            onChange={e => { setTitulo(e.target.value); onEditar(ativ.id, e.target.value) }}
-            onClick={e => e.stopPropagation()}
-            onMouseDown={e => e.stopPropagation()}
-          />
-          {/* Duração editável */}
-          <input
-            className="w-8 bg-transparent text-xs text-right outline-none rounded transition-colors focus:ring-1 focus:ring-blue-400/50 focus:w-12"
-            style={{ color: jaRegistrado ? (isDark ? '#374151' : '#94A3B8') : (isDark ? '#9CA3AF' : '#7B8FAB') }}
-            value={duracao}
-            placeholder="—"
-            onChange={e => { setDuracao(e.target.value); onEditarDuracao(ativ.id, e.target.value) }}
-            onClick={e => e.stopPropagation()}
-            onMouseDown={e => e.stopPropagation()}
-            title="Duração (ex: 15 ou 15min)"
-          />
+          >
+            {titulo}
+          </span>
+          {duracao && (
+            <span className="text-xs shrink-0" style={{ color: isDark ? '#4B5563' : '#94A3B8' }}>
+              {duracao}
+            </span>
+          )}
           {/* Chevron indicador */}
           <svg
             className="w-3 h-3 transition-transform shrink-0"
@@ -300,43 +283,22 @@ function RoteiroItemEditavel({ ativ, idx, temAplicacao, isDark = false, jaRegist
           </svg>
         </div>
 
-        {/* Descrição expandida — editável inline */}
-        {expandido && (
+        {/* Descrição expandida — somente leitura */}
+        {expandido && ativ.descricao && (
           <div
-            className="border-t border-slate-100 dark:border-[#374151] px-3 pb-2"
+            className="border-t border-slate-100 dark:border-[#374151] px-3 py-2"
             onClick={e => e.stopPropagation()}
           >
             <div
-              ref={descRef}
-              contentEditable
-              suppressContentEditableWarning
-              data-placeholder="Adicionar descrição..."
-              className="agenda-descricao agenda-descricao-edit text-xs leading-relaxed outline-none rounded px-1 -mx-1 focus:ring-1 focus:ring-blue-400/50 transition-colors cursor-text min-h-[20px] mt-2"
+              className="agenda-descricao text-xs leading-relaxed min-h-[20px]"
               style={{ color: isDark ? '#9CA3AF' : '#64748B' }}
+              dangerouslySetInnerHTML={{ __html: processarLinksHtml(sanitizarRich(ativ.descricao)) }}
               onClick={handleDescClick}
-              onMouseDown={e => e.stopPropagation()}
-              onKeyDown={e => e.stopPropagation()}
-              onBlur={() => {
-                if (descRef.current) onEditarDesc(ativ.id, descRef.current.innerHTML)
-              }}
             />
           </div>
         )}
       </div>
 
-      {temAplicacao && (
-        <button
-          className="mt-[6px] w-6 h-6 flex items-center justify-center rounded transition-colors shrink-0"
-          style={{ color: isDark ? '#4B5563' : '#B0BDD0' }}
-          onClick={e => { e.stopPropagation(); onRemover(ativ.id, titulo) }}
-          onMouseDown={e => e.stopPropagation()}
-          title="Remover desta aula"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-          </svg>
-        </button>
-      )}
     </div>
   )
 }
@@ -916,17 +878,17 @@ function MateriaisDia({ slots }: { slots: AulaSlot[] }) {
   if (materiais.length === 0) return null
 
   return (
-    <div className="mt-8 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-xl">
-      <h3 className="text-xs font-semibold text-amber-700 dark:text-amber-500 uppercase tracking-wider mb-3">
+    <div className="mt-6 px-1">
+      <p className="text-xs font-semibold text-slate-400 dark:text-[#4B5563] uppercase tracking-wider mb-2">
         Materiais do dia
-      </h3>
-      <div className="flex flex-wrap gap-2">
+      </p>
+      <div className="flex flex-wrap gap-1.5">
         {materiais.map(m => (
           <span
             key={m}
-            className="text-sm px-3 py-1 bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700/50 rounded-lg text-slate-700 dark:text-slate-300"
+            className="text-xs px-2.5 py-1 bg-slate-100 dark:bg-[#374151] rounded-full text-slate-600 dark:text-slate-300"
           >
-            {m}
+            {m.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}
           </span>
         ))}
       </div>

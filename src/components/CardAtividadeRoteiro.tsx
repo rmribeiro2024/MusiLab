@@ -392,6 +392,8 @@ const CardAtividadeRoteiro = memo(function CardAtividadeRoteiro({
   const [chipsModal, setChipsModal] = useState<string[]>([])
   const [isGeminiLoading, setIsGeminiLoading] = useState(false)
   const [panelEstrategia, setPanelEstrategia] = useState<{ texto: string } | null>(null)
+  const [sugestaoVariacoes, setSugestaoVariacoes] = useState<string[] | null>(null)
+  const [sugerindoVariacoes, setSugerindoVariacoes] = useState(false)
 
   // ── Refs ─────────────────────────────────────────────────────
   const menuRef = useRef<HTMLDivElement>(null)
@@ -568,6 +570,41 @@ Responda com uma palavra apenas.`
 
     // Fase pedagógica (silenciosa)
     detectarFaseIA(id)
+  }
+
+  // ── Sugerir variações via IA ─────────────────────────────────
+  const sugerirVariacoesIA = async () => {
+    setMenuOpen(false)
+    const nome = atividade.nome?.trim() || ''
+    const desc = stripHtml(atividade.descricao || '').trim()
+    if (!nome && !desc) { showToast('Adicione nome ou descrição à atividade primeiro.', 'error'); return }
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+    if (!apiKey) { showToast('Chave Gemini não configurada.', 'error'); return }
+    setSugerindoVariacoes(true)
+    setSugestaoVariacoes(null)
+    try {
+      const prompt = `Você é um professor de música experiente. Com base nesta atividade de aula, sugira 3 variações criativas que mantêm o mesmo objetivo pedagógico mas com abordagens diferentes. Seja conciso (1-2 linhas por variação). Responda apenas com JSON: {"variacoes": ["variação 1", "variação 2", "variação 3"]}
+
+Atividade: "${nome}"
+${desc ? `Descrição: "${desc.slice(0, 400)}"` : ''}`
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
+      )
+      if (!res.ok) throw new Error('HTTP ' + res.status)
+      const json = await res.json()
+      const raw: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || raw.match(/(\{[\s\S]*\})/)
+      if (!match) throw new Error('sem JSON')
+      const result = JSON.parse(match[1] || match[0])
+      const variacoes: string[] = Array.isArray(result.variacoes) ? result.variacoes : []
+      if (variacoes.length === 0) throw new Error('lista vazia')
+      setSugestaoVariacoes(variacoes)
+    } catch {
+      showToast('Não foi possível gerar variações. Tente novamente.', 'error')
+    } finally {
+      setSugerindoVariacoes(false)
+    }
   }
 
   // ── Abrir modal de salvar na biblioteca ─────────────────────
@@ -790,6 +827,15 @@ Responda com uma palavra apenas.`
                   <span>📋</span>
                   <span>Duplicar</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={sugerirVariacoesIA}
+                  disabled={sugerindoVariacoes}
+                  className="w-full text-left px-3 py-2 flex items-center gap-2 text-[12px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors disabled:opacity-40"
+                >
+                  <span>✨</span>
+                  <span>{sugerindoVariacoes ? 'Gerando...' : 'Sugerir variações via IA'}</span>
+                </button>
                 <div className="my-1 border-t border-slate-100 dark:border-[#374151]" />
                 <button
                   type="button"
@@ -962,6 +1008,21 @@ Responda com uma palavra apenas.`
           }}
           onCancelar={() => setPanelEstrategia(null)}
         />
+      )}
+
+      {/* ── Painel de variações sugeridas pela IA ── */}
+      {sugestaoVariacoes && (
+        <div className="mt-1 ml-6 p-3 rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-900/10">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wide">Variações sugeridas</span>
+            <button type="button" onClick={() => setSugestaoVariacoes(null)} className="text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 text-xs leading-none px-1">×</button>
+          </div>
+          <ul className="space-y-1.5">
+            {sugestaoVariacoes.map((s, i) => (
+              <li key={i} className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">• {s}</li>
+            ))}
+          </ul>
+        </div>
       )}
     </>
   )
