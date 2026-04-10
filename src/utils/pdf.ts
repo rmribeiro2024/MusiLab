@@ -94,10 +94,10 @@ export async function exportarPlanoPDF(plano) {
             .replace(/<\/li>/gi, '\n')
             .replace(/<li[^>]*>/gi, '- ')
             .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '')
-            // links: mostra texto descritivo ou "Abrir link" — nunca URL crua
+            // links HTML: mostra texto descritivo ou "Abrir link" — nunca URL crua
             .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (_m, _href, text) => {
                 const t = text.replace(/<[^>]*>/g, '').trim()
-                return (t && t !== _href) ? t : 'Abrir link'
+                return (t && t !== _href) ? t : '(Abrir link)'
             })
             .replace(/<[^>]*>/g, '')
         const decoded = decodeEntities(stripped)
@@ -105,6 +105,11 @@ export async function exportarPlanoPDF(plano) {
             .replace(/[%\s]*[\u00B6\u204B\u2761\uFFFD\u2029\u2028]\s*/g, '')
             // Normaliza bullets inconsistentes (*, •, ·) para -
             .replace(/^[\s]*[•·*]\s*/gm, '- ')
+            // URLs brutas digitadas no texto → trunca para 55 chars
+            .replace(/https?:\/\/[^\s)>]+/g, (url) => truncUrl(url, 55))
+            // Remove emojis (jsPDF não suporta — mostrariam como caixas vazias)
+            .replace(/\p{Emoji_Presentation}/gu, '')
+            .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
             // Normaliza espaços múltiplos em cada linha
             .replace(/[^\S\n]{2,}/g, ' ')
             // Remove espaços no início/fim de cada linha
@@ -259,9 +264,11 @@ export async function exportarPlanoPDF(plano) {
                     const url = typeof rec === 'string' ? rec : (rec.url || '');
                     if (!url || descText.includes(url.slice(0, 30))) return;
                     chk(LS + 2);
-                    doc.setFont(FONTE_PDF, "normal"); doc.setFontSize(9); doc.setTextColor(59, 130, 246);
-                    const linkLabel = /docs\.google\.com|\.pdf|\.docx?|\.xlsx?|drive\.google/i.test(url) ? 'Abrir documento' : 'Abrir link';
-                    doc.textWithLink('\u2022 ' + linkLabel, mL + 5, y, { url });
+                    const linkLabel = /docs\.google\.com|\.pdf|\.docx?|\.xlsx?|drive\.google/i.test(url) ? '(Abrir documento)' : '(Abrir link)';
+                    doc.setFont(FONTE_PDF, 'normal'); doc.setFontSize(8); doc.setTextColor(59, 130, 246);
+                    doc.text(linkLabel, mL + 5, y);
+                    const tw = doc.getTextWidth(linkLabel);
+                    doc.link(mL + 5, y - 4, tw, 5, { url });
                     y += LS + 1;
                 });
             }
@@ -420,9 +427,11 @@ async function _gerarDocPlano(plano, doc): Promise<string> {
                     const url = typeof rec === 'string' ? rec : (rec.url || '');
                     if (!url || descText.includes(url.slice(0, 30))) return;
                     chk(LS + 2);
-                    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(59, 130, 246);
-                    const linkLabel = /docs\.google\.com|\.pdf|\.docx?|\.xlsx?|drive\.google/i.test(url) ? 'Abrir documento' : 'Abrir link';
-                    doc.textWithLink('\u2022 ' + linkLabel, mL + 5, y, { url });
+                    const linkLabel = /docs\.google\.com|\.pdf|\.docx?|\.xlsx?|drive\.google/i.test(url) ? '(Abrir documento)' : '(Abrir link)';
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(59, 130, 246);
+                    doc.text(linkLabel, mL + 5, y);
+                    const tw = doc.getTextWidth(linkLabel);
+                    doc.link(mL + 5, y - 4, tw, 5, { url });
                     y += LS + 1;
                 });
             }
