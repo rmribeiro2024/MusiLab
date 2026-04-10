@@ -1275,13 +1275,38 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                         const sel = statusVal === op.value
                                                         const isConcluida = op.value === 'concluida'
                                                         const isIncompleta = op.value === 'incompleta'
+                                                        const isNaoHouve = op.value === 'nao_houve'
                                                         const incompletaColor = isDark ? '#7ea0c9' : '#3b7dc2'
                                                         const selColor = isConcluida ? '#6aab8a' : isIncompleta ? incompletaColor : c.textMed
                                                         return (
                                                             <button key={op.value} type="button"
                                                                 onClick={() => {
-                                                                    setNovoRegistro({ ...novoRegistro, statusAula: sel ? undefined : op.value } as any)
-                                                                    if (isConcluida && !sel) { setCheckFlash(true); setTimeout(() => setCheckFlash(false), 900) }
+                                                                    if (isNaoHouve && !sel) {
+                                                                        setNovoRegistro((prev: any) => ({
+                                                                            ...prev,
+                                                                            statusAula: 'nao_houve',
+                                                                            resumoAula: '',
+                                                                            funcionouBem: '',
+                                                                            repetiria: '',
+                                                                            fariadiferente: '',
+                                                                            poderiaMelhorar: '',
+                                                                            proximaAula: '',
+                                                                            comportamento: '',
+                                                                            anotacoesGerais: '',
+                                                                            surpresaMusical: '',
+                                                                            pontoQueda: '',
+                                                                            alunoAtencao: '',
+                                                                            contextoAula: '',
+                                                                            contextoAulaDetalhe: '',
+                                                                            encaminhamentos: [],
+                                                                            nivelTecnicoMusical: undefined,
+                                                                            atividadesRealizadas: [],
+                                                                            chamada: [],
+                                                                        }))
+                                                                    } else {
+                                                                        setNovoRegistro({ ...novoRegistro, statusAula: sel ? undefined : op.value } as any)
+                                                                        if (isConcluida && !sel) { setCheckFlash(true); setTimeout(() => setCheckFlash(false), 900) }
+                                                                    }
                                                                 }}
                                                                 style={{
                                                                     display: 'flex', alignItems: 'center', gap: 10,
@@ -1308,6 +1333,19 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
                                                         )
                                                     })}
                                                 </div>
+                                                {statusVal === 'nao_houve' && (
+                                                    <div style={{ padding: '8px 12px', borderTop: `1px solid ${c.borderLight}` }}>
+                                                        <textarea
+                                                            value={(novoRegistro as any).motivoNaoHouve || ''}
+                                                            onChange={e => setNovoRegistro({ ...novoRegistro, motivoNaoHouve: e.target.value } as any)}
+                                                            rows={2}
+                                                            placeholder="Motivo (opcional) — ex: feriado, professor ausente, atividade escolar..."
+                                                            style={{ width: '100%', padding: '8px 10px', border: `1px solid ${c.border}`, borderRadius: 8, fontSize: 12, color: c.textMain, resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, outline: 'none', background: c.inputBg }}
+                                                            onFocus={e => (e.target.style.borderColor = '#94a3b8')}
+                                                            onBlur={e  => (e.target.style.borderColor = c.border)}
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
                                         )
                                     })()}
