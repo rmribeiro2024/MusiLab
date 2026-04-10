@@ -1586,14 +1586,14 @@ export default function ModalRegistroPosAula({ inlineMode = false, onVoltar, onS
 
                                             {/* ── 5–7. Análise e diagnóstico — ordem: surpresa → queda → atenção ── */}
                                             {[
-                                                { id: 'av-surpresa',  icon: '🎵', label: 'O que os alunos fizeram musicalmente que surpreendeu?', field: 'surpresaMusical', placeholder: 'Ex: Joana improvisou uma variação espontânea — vale explorar na próxima aula...' },
+                                                { id: 'av-surpresa',  icon: '🎵', label: 'O que os alunos fizeram musicalmente que me surpreendeu — ou o que esta aula me ensinou', field: 'surpresaMusical', placeholder: 'Ex: Joana improvisou uma variação espontânea — vale explorar na próxima aula...', richText: true },
                                                 { id: 'av-queda',     icon: '📉', label: 'Em que ponto o engajamento caiu?',             field: 'pontoQueda',      placeholder: 'Ex: Na explicação teórica após o aquecimento — a atividade prática antes funcionou melhor...' },
                                                 { id: 'av-atencao',   icon: '👤', label: 'Algum aluno precisa de atenção especial?',      field: 'alunoAtencao',    placeholder: 'Ex: João ainda trava na troca G→D — dar atenção individual na próxima aula...' },
-                                            ].map(({ id, icon, label, field, placeholder }) => {
+                                            ].map(({ id, icon, label, field, placeholder, richText }: any) => {
                                                 const valor = (novoRegistro as any)[field] || ''
                                                 return (
                                                     <AccordionChip key={id} id={id} icon={icon} label={label} placeholder={placeholder}
-                                                        value={valor} filled={valor.trim().length > 0} allowVoice isDark={isDark}
+                                                        value={valor} filled={valor.trim().length > 0} allowVoice richText={richText} isDark={isDark}
                                                         onChange={v => setNovoRegistro({ ...novoRegistro, [field]: v } as any)} />
                                                 )
                                             })}

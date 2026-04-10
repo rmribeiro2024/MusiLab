@@ -12,7 +12,7 @@ const CAMPOS_INLINE = [
     { icon: '🎯', label: 'O que aprenderam',             key: 'funcionouBem' },
     { icon: '⭐', label: 'O que faria de novo',          key: 'repetiria' },
     { icon: '💭', label: 'O que faria diferente',       key: 'fariadiferente' },
-    { icon: '🎵', label: 'O que fizeram de inesperado', key: 'surpresaMusical' },
+    { icon: '🎵', label: 'O que surpreendeu — ou o que esta aula me ensinou', key: 'surpresaMusical' },
     { icon: '📉', label: 'Queda de engajamento',        key: 'pontoQueda' },
     { icon: '👤', label: 'Aluno com atenção',            key: 'alunoAtencao' },
     { icon: '🏫', label: 'Como a aula aconteceu',       key: 'contextoAulaDetalhe' },

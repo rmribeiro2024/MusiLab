@@ -2319,7 +2319,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                               <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
                             )}
                             {(registroExibido as any).surpresaMusical && (
-                              <InfoRow icon="🎵" label="O que surpreendeu musicalmente" valor={(registroExibido as any).surpresaMusical} />
+                              <InfoRow icon="🎵" label="O que surpreendeu — ou o que esta aula me ensinou" valor={(registroExibido as any).surpresaMusical} />
                             )}
                             {(registroExibido as any).pontoQueda && (
                               <InfoRow icon="📉" label="Ponto de queda de engajamento" valor={(registroExibido as any).pontoQueda} />
@@ -2370,7 +2370,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                             <InfoRow icon="🔧" label="O que poderia ter sido melhor" valor={registroExibido.poderiaMelhorar} />
                           )}
                           {(registroExibido as any).surpresaMusical && (
-                            <InfoRow icon="🎵" label="O que surpreendeu musicalmente" valor={(registroExibido as any).surpresaMusical} />
+                            <InfoRow icon="🎵" label="O que surpreendeu — ou o que esta aula me ensinou" valor={(registroExibido as any).surpresaMusical} />
                           )}
                           {(registroExibido as any).pontoQueda && (
                             <InfoRow icon="📉" label="Ponto de queda de engajamento" valor={(registroExibido as any).pontoQueda} />

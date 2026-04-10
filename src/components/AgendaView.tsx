@@ -792,7 +792,7 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
                       )}
                       {stripHtml((ultimoRegistroTurma.reg as any).surpresaMusical ?? '') && (
                         <div>
-                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>O que surpreendeu</p>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>O que surpreendeu — ou o que esta aula me ensinou</p>
                           <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml((ultimoRegistroTurma.reg as any).surpresaMusical ?? '')}</p>
                         </div>
                       )}
