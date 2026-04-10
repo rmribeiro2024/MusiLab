@@ -399,6 +399,7 @@ function InlineCardDrawer({ heroCard, onClose, onEditar, onRegistrar, onCriarPla
 export default function VisaoSemana() {
   const {
     obterTurmasDoDia,
+    aulasAvulsas, setAulasAvulsas,
     setPlanoParaRegistro, setNovoRegistro, setRegistroEditando,
     setVerRegistros, setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel,
   } = useCalendarioContext()
@@ -425,13 +426,7 @@ export default function VisaoSemana() {
   const [reposicaoModal, setReposicaoModal] = useState<{ aula: AulaGrade; turmaNome: string } | null>(null)
   const [reposicaoData, setReposicaoData] = useState('')
   const [reposicaoHorario, setReposicaoHorario] = useState('')
-  const [aulasAvulsas, setAulasAvulsas] = useState<AulaAvulsa[]>(() => {
-    try { return JSON.parse(localStorage.getItem('musilab_aulasAvulsas') || '[]') } catch { return [] }
-  })
   const [highlightedAvulsaId, setHighlightedAvulsaId] = useState<string | null>(null)
-  useEffect(() => {
-    localStorage.setItem('musilab_aulasAvulsas', JSON.stringify(aulasAvulsas))
-  }, [aulasAvulsas])
   React.useEffect(() => {
     if (!menuAberto) return
     const handler = () => setMenuAberto(null)

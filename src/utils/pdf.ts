@@ -83,41 +83,8 @@ export async function exportarPlanoPDF(plano) {
 
     const htmlToText = (html) => {
         if (!html) return '';
-        // Iframes de YouTube/Spotify → texto descritivo
-        let result = html
-            .replace(/<iframe[^>]*src="([^"]*youtube[^"]*)"[^>]*>(<\/iframe>)?/gi, '[YouTube: $1]')
-            .replace(/<iframe[^>]*src="([^"]*spotify[^"]*)"[^>]*>(<\/iframe>)?/gi, '[Spotify: $1]');
-        const stripped = result
-            .replace(/<\/p>\s*<p>/gi, '\n')
-            .replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n')
-            .replace(/<br\s*\/?>/gi, '\n')
-            .replace(/<\/li>/gi, '\n')
-            .replace(/<li[^>]*>/gi, '- ')
-            .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '')
-            // links HTML: mostra texto descritivo ou "Abrir link" — nunca URL crua
-            .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (_m, _href, text) => {
-                const t = text.replace(/<[^>]*>/g, '').trim()
-                return (t && t !== _href) ? t : '(Abrir link)'
-            })
-            .replace(/<[^>]*>/g, '')
-        const decoded = decodeEntities(stripped)
-            // Remove marcadores de parágrafo TipTap
-            .replace(/[%\s]*[\u00B6\u204B\u2761\uFFFD\u2029\u2028]\s*/g, '')
-            // Normaliza bullets inconsistentes (*, •, ·) para -
-            .replace(/^[\s]*[•·*]\s*/gm, '- ')
-            // URLs brutas digitadas no texto → trunca para 55 chars
-            .replace(/https?:\/\/[^\s)>]+/g, (url) => truncUrl(url, 55))
-            // Remove emojis (jsPDF não suporta — mostrariam como caixas vazias)
-            .replace(/\p{Emoji_Presentation}/gu, '')
-            .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
-            // Normaliza espaços múltiplos em cada linha
-            .replace(/[^\S\n]{2,}/g, ' ')
-            // Remove espaços no início/fim de cada linha
-            .split('\n').map(l => l.trim()).join('\n')
-            // Colapsa 3+ linhas em branco para 1
-            .replace(/\n{3,}/g, '\n\n')
-            .trim()
-        return FONTE_PDF === 'helvetica' ? safe(decoded) : decoded;
+        const plain = _htmlToPlain(html);
+        return FONTE_PDF === 'helvetica' ? safe(plain) : plain;
     };
 
     let y = 0;
@@ -330,28 +297,45 @@ export async function previewPlanoPDF(plano): Promise<string> {
     return blobUrl
 }
 
-// Converte HTML para texto limpo — usada tanto no export quanto no preview
+// Converte HTML para texto limpo via DOM — robusto com HTML complexo do TipTap
 function _htmlToPlain(html: string): string {
     if (!html) return '';
-    return html
+    // Iframes antes do DOM (não são Elements acessíveis via textContent)
+    const src = html
         .replace(/<iframe[^>]*src="([^"]*youtube[^"]*)"[^>]*>(<\/iframe>)?/gi, '[YouTube: $1]')
-        .replace(/<iframe[^>]*src="([^"]*spotify[^"]*)"[^>]*>(<\/iframe>)?/gi, '[Spotify: $1]')
-        .replace(/<\/p>\s*<p>/gi, '\n').replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n')
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<\/li>/gi, '\n').replace(/<li[^>]*>/gi, '- ')
-        .replace(/<\/?(ul|ol|strong|em|b|i|span|div|h[1-6])[^>]*>/gi, '')
-        // links: mostra texto descritivo ou "Abrir link" — nunca URL crua
-        .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (_m, _href, text) => {
-            const t = text.replace(/<[^>]*>/g, '').trim()
-            return (t && t !== _href) ? t : 'Abrir link'
-        })
-        .replace(/<[^>]*>/g, '')
-        .replace(/[%\s]*[\u00B6\u204B\u2761\uFFFD\u2029\u2028]\s*/g, '')
-        .replace(/^[\s]*[•·*]\s*/gm, '- ')
-        .replace(/[^\S\n]{2,}/g, ' ')
-        .split('\n').map((l: string) => l.trim()).join('\n')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim()
+        .replace(/<iframe[^>]*src="([^"]*spotify[^"]*)"[^>]*>(<\/iframe>)?/gi, '[Spotify: $1]');
+    try {
+        const div = document.createElement('div');
+        div.innerHTML = src;
+        const walk = (node: Node): string => {
+            if (node.nodeType === 3) return node.textContent || '';
+            if (node.nodeType !== 1) return '';
+            const el = node as Element;
+            const tag = el.tagName.toLowerCase();
+            const kids = Array.from(el.childNodes).map(walk).join('');
+            if (tag === 'a') {
+                const href = el.getAttribute('href') || '';
+                const text = el.textContent?.trim().replace(/\s+/g, ' ') || '';
+                return (text && text !== href) ? text : 'Abrir link';
+            }
+            if (tag === 'br') return '\n';
+            if (tag === 'li') return '- ' + kids.trim() + '\n';
+            if (['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) {
+                const inner = kids.trim();
+                return inner ? inner + '\n' : '';
+            }
+            return kids;
+        };
+        return walk(div)
+            .replace(/[%\s]*[\u00B6\u204B\u2761\uFFFD\u2029\u2028]\s*/g, '')
+            .replace(/^[\s]*[•·*]\s*/gm, '- ')
+            .replace(/[^\S\n]{2,}/g, ' ')
+            .split('\n').map((l: string) => l.trim()).join('\n')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+    } catch {
+        return html.replace(/<[^>]*>/g, '').trim();
+    }
 }
 
 async function _gerarDocPlano(plano, doc): Promise<string> {
