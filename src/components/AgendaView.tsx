@@ -1076,9 +1076,10 @@ interface AgendaDiaProps {
   escolaColorMap: Map<string, number>
   isDarkMode: boolean
   onOpenRegistro?: () => void
+  tudoRegistrado?: boolean
 }
 
-function AgendaDia({ dataStr, escolaColorMap, isDarkMode, onOpenRegistro }: AgendaDiaProps) {
+function AgendaDia({ dataStr, escolaColorMap, isDarkMode, onOpenRegistro, tudoRegistrado }: AgendaDiaProps) {
   const slots = useAgendaSlotsForDay(dataStr, escolaColorMap)
   const isHoje = dataStr === toStr(new Date())
 
@@ -1092,6 +1093,34 @@ function AgendaDia({ dataStr, escolaColorMap, isDarkMode, onOpenRegistro }: Agen
     return (
       <div className="py-14 text-center">
         <p className="text-sm text-slate-400 dark:text-[#4B5563]">Nenhuma aula neste dia</p>
+      </div>
+    )
+  }
+
+  // ── Modo compacto: tudo avaliado ──
+  if (tudoRegistrado) {
+    return (
+      <div className="space-y-1.5">
+        {slots.map(slot => (
+          <div
+            key={`${slot.aulaGrade.id}-${slot.dataStr}`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '9px 14px',
+              background: isDarkMode ? '#1F2937' : '#fff',
+              border: `1px solid ${isDarkMode ? '#374151' : '#F1F5F9'}`,
+              borderRadius: 10,
+            }}
+          >
+            <span style={{ fontSize: 11, color: isDarkMode ? '#374151' : '#CBD5E1', fontWeight: 500, width: 34, flexShrink: 0 }}>
+              {slot.aulaGrade.horario || '—'}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: isDarkMode ? '#4B5563' : '#64748B', flex: 1 }}>
+              {slot.nomeTurma}
+            </span>
+            <span style={{ fontSize: 11, color: '#86EFAC', flexShrink: 0 }}>✓</span>
+          </div>
+        ))}
       </div>
     )
   }
@@ -1790,33 +1819,46 @@ export default function AgendaView() {
             <h1 className="text-[22px] font-bold text-slate-900 dark:text-[#E5E7EB] leading-tight">
               {headerMsg}
             </h1>
-            <p className="text-sm text-slate-400 dark:text-[#4B5563] capitalize mt-0.5">{labelDiaTarget}</p>
+            <p className="text-sm text-slate-400 dark:text-[#4B5563] mt-0.5">
+              {labelDiaTarget.charAt(0).toUpperCase() + labelDiaTarget.slice(1)}
+            </p>
 
-            {statsTarget.total > 0 && (
-              <div className="mt-3 space-y-1.5">
-                <div className="flex items-center gap-2">
-                  {statsTarget.pendentes > 0 && (
-                    <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9CA3AF]">
-                      {statsTarget.pendentes} a registrar
-                    </span>
-                  )}
-                  {statsTarget.pendentes > 0 && statsTarget.registradas > 0 && (
-                    <span className="text-slate-300 dark:text-[#374151]">·</span>
-                  )}
-                  {statsTarget.registradas > 0 && (
-                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400/80">
-                      {statsTarget.registradas} concluída{statsTarget.registradas !== 1 ? 's' : ''}
-                    </span>
-                  )}
+            {statsTarget.total > 0 && (() => {
+              const tudoRegistrado = statsTarget.pendentes === 0
+              return (
+                <div className="mt-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {statsTarget.pendentes > 0 && (
+                        <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9CA3AF]">
+                          {statsTarget.pendentes} a registrar
+                        </span>
+                      )}
+                      {statsTarget.pendentes > 0 && statsTarget.registradas > 0 && (
+                        <span className="text-slate-300 dark:text-[#374151]">·</span>
+                      )}
+                      {statsTarget.registradas > 0 && (
+                        <span className={`text-[11px] font-semibold ${tudoRegistrado ? 'text-slate-500 dark:text-[#6B7280]' : 'text-emerald-600 dark:text-emerald-400/80'}`}>
+                          {statsTarget.registradas} concluída{statsTarget.registradas !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                    {tudoRegistrado && (
+                      <span className="text-[12px] text-slate-400 dark:text-[#4B5563] italic">Bom descanso.</span>
+                    )}
+                  </div>
+                  <div className="w-full bg-slate-100 dark:bg-[#374151] rounded-full overflow-hidden" style={{ height: tudoRegistrado ? 2 : 3 }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${(statsTarget.registradas / statsTarget.total) * 100}%`,
+                        background: tudoRegistrado ? '#22c55e' : (isDarkMode ? '#818cf8' : '#5B5FEA'),
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full h-[3px] bg-slate-100 dark:bg-[#374151] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#5B5FEA] dark:bg-[#818cf8] rounded-full transition-all duration-500"
-                    style={{ width: `${(statsTarget.registradas / statsTarget.total) * 100}%` }}
-                  />
-                </div>
-              </div>
-            )}
+              )
+            })()}
 
             {/* Setas de navegação */}
             <div style={{ display: registroInline ? 'none' : 'flex', gap: 6, marginTop: 10 }}>
@@ -1878,6 +1920,7 @@ export default function AgendaView() {
                 escolaColorMap={escolaColorMap}
                 isDarkMode={isDarkMode}
                 onOpenRegistro={abrirRegistroInline}
+                tudoRegistrado={statsTarget.total > 0 && statsTarget.pendentes === 0}
               />
             </div>
 
