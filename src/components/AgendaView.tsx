@@ -389,14 +389,14 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
   // Último registro desta turma antes da data atual (qualquer plano)
   const ultimoRegistroTurma = useMemo(() => {
     const tid = String(slot.aulaGrade.turmaId)
-    let melhor: { reg: any; planoTitulo: string } | null = null
+    let melhor: { reg: any; planoTitulo: string; roteiro: any[] } | null = null
     for (const p of planos) {
       for (const r of (p.registrosPosAula ?? [])) {
         const dataReg = r.dataAula ?? r.data ?? ''
         if (String(r.turma) !== tid) continue
         if (dataReg >= slot.dataStr) continue
         if (!melhor || dataReg > (melhor.reg.dataAula ?? melhor.reg.data ?? '')) {
-          melhor = { reg: r, planoTitulo: p.titulo }
+          melhor = { reg: r, planoTitulo: p.titulo, roteiro: p.atividadesRoteiro ?? [] }
         }
       }
     }
@@ -723,6 +723,31 @@ function AulaCard({ slot, isDarkMode, isProxima = false, onOpenRegistro }: AulaC
                           <p style={{ fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151', lineHeight: 1.6 }}>{stripHtml(ultimoRegistroTurma.reg.resumoAula ?? '')}</p>
                         </div>
                       )}
+                      {(() => {
+                        const realizadas: string[] = (ultimoRegistroTurma.reg as any).atividadesRealizadas ?? []
+                        if (realizadas.length === 0) return null
+                        const nomes = ultimoRegistroTurma.roteiro
+                          .filter((a: any) => realizadas.includes(String(a.id)) && a.nome?.trim())
+                          .map((a: any) => a.nome.trim())
+                        if (nomes.length === 0) return null
+                        return (
+                          <div>
+                            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>
+                              O que foi realizado ({nomes.length}/{ultimoRegistroTurma.roteiro.filter((a: any) => a.nome?.trim()).length})
+                            </p>
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                              {nomes.map((nome: string, i: number) => (
+                                <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: isDarkMode ? '#D1D5DB' : '#374151' }}>
+                                  <span style={{ width: 14, height: 14, borderRadius: 3, border: '1.5px solid #6366f1', background: '#6366f1', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                                    <span style={{ color: '#fff', fontSize: 9, lineHeight: 1 }}>✓</span>
+                                  </span>
+                                  {nome}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )
+                      })()}
                       {stripHtml(ultimoRegistroTurma.reg.proximaAula ?? '') && (
                         <div>
                           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: isDarkMode ? '#6B7280' : '#9CA3AF', marginBottom: 4 }}>Para a próxima aula</p>

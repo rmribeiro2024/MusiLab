@@ -1245,8 +1245,7 @@ export default function TelaPrincipal() {
 
                     return (
                         <div className="px-3 sm:px-6 py-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em]">🎵 Músicas da aula</p>
+                            <div className="flex items-center justify-end mb-3">
                                 <button type="button"
                                     onClick={() => setPickerAberto(o => !o)}
                                     className="text-xs text-indigo-600 hover:text-indigo-800 font-medium shrink-0 ml-3">
