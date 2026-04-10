@@ -641,20 +641,15 @@ export default function TelaPrincipal() {
     const [estadoSalvar, setEstadoSalvar] = useState<'idle' | 'salvando' | 'salvo'>('idle')
     const handleSalvarPlano = () => {
         setEstadoSalvar('salvando')
-        salvarPlano()
+        const salvou = salvarPlano()
+        if (!salvou) {
+            setEstadoSalvar('idle')
+            return
+        }
         requestAnimationFrame(() => {
             setEstadoSalvar('salvo')
             setTimeout(() => setEstadoSalvar('idle'), 1400)
         })
-        // Fluxo 3: detectar músicas ao salvar
-        const detectarAtivo = localStorage.getItem('musilab_detectar_musicas_ao_salvar') !== 'false'
-        if (detectarAtivo && planoEditando) {
-            const detectadas = detectarMusicasNoPlano(planoEditando, repertorio)
-            if (detectadas.length > 0) {
-                setMusicasDetectadas(detectadas)
-                setShowModalMusicas(true)
-            }
-        }
         // Fluxo 5: classificar CLASP + Orff → notificação unificada após salvar
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY
         const planoId = planoEditando?.id
@@ -676,7 +671,6 @@ export default function TelaPrincipal() {
                     const jaClassificado = Object.values(snapPlano.vivenciasClassificadas ?? {}).some(v => v > 0)
                     if (jaClassificado) return
                     const jaTemConceitos = (snapPlano.conceitos?.length ?? 0) > 0
-                    // Se o plano já tem conceitos válidos, mostra os existentes no modal (não gera novos)
                     setClasseNotif({ planoId: snapId, titulo: snapTitulo, vivencias, meiosOrff, conceitos: jaTemConceitos ? snapPlano.conceitos : conceitos })
                 })
                 .catch(() => {/* silencioso */})

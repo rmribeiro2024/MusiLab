@@ -609,12 +609,12 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
         }
     }
 
-    const salvarPlano = (ignorarAvisoEscola = false) => {
+    const salvarPlano = (ignorarAvisoEscola = false): boolean => {
         if (!planoEditando.titulo || !planoEditando.titulo.trim()) {
-            showToast('Preencha o título do plano antes de salvar.', 'error'); return
+            showToast('Preencha o título do plano antes de salvar.', 'error'); return false
         }
         if (!planoEditando.objetivoGeral || !planoEditando.objetivoGeral.trim()) {
-            showToast('Preencha o objetivo geral antes de salvar.', 'error'); return
+            showToast('Preencha o objetivo geral antes de salvar.', 'error'); return false
         }
         if (!ignorarAvisoEscola && planoEditando.escola && planoEditando.escola.trim()) {
             const escolaNorm = planoEditando.escola.trim().toLowerCase()
@@ -753,6 +753,7 @@ export function PlanosProvider({ userId, children }: PlanosProviderProps) {
             }))
         }
 
+        return true
     }
 
     const excluirPlano = useCallback((id: any) => {
