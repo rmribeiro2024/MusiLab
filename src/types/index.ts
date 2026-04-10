@@ -23,6 +23,12 @@ export interface AulaGrade {
   escolaId?: string
 }
 
+// Aula avulsa/reposição — slot extra fora da grade semanal regular
+export interface AulaAvulsa extends AulaGrade {
+  avulsaId: string   // identificador único
+  data: string       // yyyy-mm-dd — data específica desta aula
+}
+
 export interface GradeEditando {
   id: number
   anoLetivoId: string

@@ -2,7 +2,7 @@
 // Etapa 4 — Visão da Semana (Planejamento)
 // Mostra o grid SEG–SEX com turmas agendadas. Foco: preparação (não registro).
 
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
 import { useAnoLetivoContext } from '../contexts/AnoLetivoContext'
@@ -10,7 +10,7 @@ import { usePlanosContext } from '../contexts/PlanosContext'
 import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContext'
 import { useAplicacoesContext } from '../contexts/AplicacoesContext'
-import type { AnoLetivo, RegistroPosAula } from '../types'
+import type { AnoLetivo, RegistroPosAula, AulaAvulsa, AulaGrade } from '../types'
 import { showToast } from '../lib/toast'
 import ModalCardHero, { type ModalCardHeroProps, RegistroField, ActionButton } from './modals/ModalCardHero'
 import { stripHTML } from '../lib/utils'
@@ -424,6 +424,14 @@ export default function VisaoSemana() {
   const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null)
   const [reposicaoModal, setReposicaoModal] = useState<{ aula: AulaGrade; turmaNome: string } | null>(null)
   const [reposicaoData, setReposicaoData] = useState('')
+  const [reposicaoHorario, setReposicaoHorario] = useState('')
+  const [aulasAvulsas, setAulasAvulsas] = useState<AulaAvulsa[]>(() => {
+    try { return JSON.parse(localStorage.getItem('musilab_aulasAvulsas') || '[]') } catch { return [] }
+  })
+  const [highlightedAvulsaId, setHighlightedAvulsaId] = useState<string | null>(null)
+  useEffect(() => {
+    localStorage.setItem('musilab_aulasAvulsas', JSON.stringify(aulasAvulsas))
+  }, [aulasAvulsas])
   React.useEffect(() => {
     if (!menuAberto) return
     const handler = () => setMenuAberto(null)
@@ -516,10 +524,12 @@ export default function VisaoSemana() {
   const aulasPorDia = useMemo(() =>
     diasDaSemana.map(({ key, ymd }) => ({
       key,
-      aulas: obterTurmasDoDia(ymd)
-        .sort((a, b) => (a.horario ?? '').localeCompare(b.horario ?? '')),
+      aulas: [
+        ...obterTurmasDoDia(ymd),
+        ...aulasAvulsas.filter(a => a.data === ymd) as AulaGrade[],
+      ].sort((a, b) => (a.horario ?? '').localeCompare(b.horario ?? '')),
     }))
-  , [diasDaSemana, obterTurmasDoDia])
+  , [diasDaSemana, obterTurmasDoDia, aulasAvulsas])
 
   // ── Mapa escolaId → par de cores { light, dark } ─────────────────────────
   const escolaColorMap = useMemo(() => {
@@ -701,6 +711,7 @@ export default function VisaoSemana() {
       onTouchStart={onSwipeTouchStart}
       onTouchEnd={onSwipeTouchEnd}
     >
+      <style>{`@keyframes pulseHighlight { 0%{outline-color:#5B5FEA;outline-width:2px} 60%{outline-color:#5B5FEA;outline-width:2px} 100%{outline-color:transparent;outline-width:0} }`}</style>
 
       {/* ── Cabeçalho: título + toggle Semana/Mês + navegação ── */}
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
@@ -916,9 +927,16 @@ export default function VisaoSemana() {
                     const foiRegistrada = turmasRegistradas.has(tidYmd)
                     const statusAulaRegistrada = statusPorTidYmd.get(tidYmd) ?? ''
                     const isDrawerOpen = effectiveAnimStyle === 'inlineDrawer' && heroCard?.navParams.turmaId === tidStr && heroCard?.ymd === ymd
-                    const cardStyle  = escolaCor
-                      ? { '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties
-                      : undefined
+                    const isAvulsa = !!(aula as AulaAvulsa).avulsaId
+                    const isHighlighted = isAvulsa && (aula as AulaAvulsa).avulsaId === highlightedAvulsaId
+                    const cardStyle: React.CSSProperties = {
+                      ...(escolaCor ? { '--escola-l': escolaCor.light, '--escola-d': escolaCor.dark } as React.CSSProperties : {}),
+                      ...(isHighlighted ? {
+                        outline: '2px solid #5B5FEA',
+                        outlineOffset: '1px',
+                        animation: 'pulseHighlight 2.5s ease-out forwards',
+                      } : {}),
+                    }
 
                     return (
                       <React.Fragment key={`${aula.turmaId}-${aula.horario}-${i}`}>
@@ -1342,15 +1360,29 @@ export default function VisaoSemana() {
           <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl p-5 max-w-xs w-full" onClick={e => e.stopPropagation()}>
             <p className="text-sm font-semibold text-slate-700 dark:text-[#E5E7EB] mb-1">Agendar reposição</p>
             <p className="text-xs text-slate-500 dark:text-[#9CA3AF] mb-4">
-              <span className="font-semibold text-slate-700 dark:text-[#E5E7EB]">{reposicaoModal.turmaNome}</span> — escolha a data da reposição
+              <span className="font-semibold text-slate-700 dark:text-[#E5E7EB]">{reposicaoModal.turmaNome}</span>
             </p>
-            <input
-              type="date"
-              value={reposicaoData}
-              onChange={e => setReposicaoData(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              className="w-full border border-[#E6EAF0] dark:border-[#374151] rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-[#E5E7EB] bg-white dark:bg-[#273344] mb-4 focus:outline-none focus:border-indigo-400"
-            />
+            <div className="flex gap-2 mb-4">
+              <div className="flex-1">
+                <label className="block text-[10.5px] font-semibold text-slate-400 dark:text-[#9CA3AF] mb-1 uppercase tracking-wide">Data</label>
+                <input
+                  type="date"
+                  value={reposicaoData}
+                  onChange={e => setReposicaoData(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full border border-[#E6EAF0] dark:border-[#374151] rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-[#E5E7EB] bg-white dark:bg-[#273344] focus:outline-none focus:border-indigo-400"
+                />
+              </div>
+              <div className="w-[90px]">
+                <label className="block text-[10.5px] font-semibold text-slate-400 dark:text-[#9CA3AF] mb-1 uppercase tracking-wide">Horário</label>
+                <input
+                  type="time"
+                  value={reposicaoHorario}
+                  onChange={e => setReposicaoHorario(e.target.value)}
+                  className="w-full border border-[#E6EAF0] dark:border-[#374151] rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-[#E5E7EB] bg-white dark:bg-[#273344] focus:outline-none focus:border-indigo-400"
+                />
+              </div>
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setReposicaoModal(null)}
@@ -1360,15 +1392,28 @@ export default function VisaoSemana() {
                 disabled={!reposicaoData}
                 onClick={() => {
                   if (!reposicaoData) return
-                  selecionarTurma({
+                  const avulsaId = `avulsa-${Date.now()}`
+                  const horario = reposicaoHorario || reposicaoModal.aula.horario || ''
+                  const diasNomes = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
+                  const diaSemana = diasNomes[new Date(reposicaoData + 'T12:00:00').getDay()]
+                  const novaAvulsa: AulaAvulsa = {
+                    avulsaId,
+                    data: reposicaoData,
+                    id: Date.now(),
+                    diaSemana,
+                    horario,
+                    segmentoId: reposicaoModal.aula.segmentoId,
+                    turmaId: String(reposicaoModal.aula.turmaId),
                     anoLetivoId: reposicaoModal.aula.anoLetivoId ?? '',
-                    escolaId:    reposicaoModal.aula.escolaId ?? '',
-                    segmentoId:  reposicaoModal.aula.segmentoId ?? '',
-                    turmaId:     String(reposicaoModal.aula.turmaId),
-                  })
-                  setDataNavegacao(new Date(reposicaoData + 'T12:00:00'))
-                  setModoInicialNavegacao('criar')
-                  setViewMode('porTurmas')
+                    escolaId: reposicaoModal.aula.escolaId ?? '',
+                  }
+                  setAulasAvulsas(prev => [...prev, novaAvulsa])
+                  // Navegar para a semana da reposição
+                  const targetDate = new Date(reposicaoData + 'T12:00:00')
+                  setSemanaInicio(getMondayOf(targetDate))
+                  // Destacar o novo card brevemente
+                  setHighlightedAvulsaId(avulsaId)
+                  setTimeout(() => setHighlightedAvulsaId(null), 2500)
                   setReposicaoModal(null)
                 }}
                 className="flex-1 text-sm bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white rounded-xl px-3 py-2 font-medium transition"
