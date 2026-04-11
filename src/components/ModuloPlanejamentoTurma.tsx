@@ -1616,6 +1616,35 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
     return { vivencias: vivenciasOrdenadas, meses: mesesSelecionados, meiosComDados }
   }, [historicoDaTurma, planos, resumoTurma])
 
+  // Conceitos musicais mais trabalhados nesta turma
+  const conceitosMaisUsados = useMemo<{ label: string; count: number }[]>(() => {
+    if (!turmaSelecionada) return []
+    const turmaIdStr = String(turmaSelecionada.turmaId)
+    const contagem: Record<string, number> = {}
+    for (const plano of planos) {
+      // Planos do banco vinculados a esta turma
+      if (plano.turma && String(plano.turma) === turmaIdStr) {
+        for (const c of plano.conceitos ?? []) {
+          if (c) contagem[c] = (contagem[c] ?? 0) + 1
+        }
+      }
+      // Planos via registros pós-aula desta turma
+      for (const reg of plano.registrosPosAula ?? []) {
+        if (String(reg.turma ?? '') === turmaIdStr || historicoDaTurma.some(h => h.id === reg.id)) {
+          for (const c of plano.conceitos ?? []) {
+            if (c && !(plano.turma && String(plano.turma) === turmaIdStr)) {
+              contagem[c] = (contagem[c] ?? 0) + 1
+            }
+          }
+        }
+      }
+    }
+    return Object.entries(contagem)
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8)
+  }, [planos, turmaSelecionada, historicoDaTurma])
+
   // Destaques automáticos — até 3 insights das últimas aulas
   const destaquesTurma = useMemo(
     () => calcDestaquesTurma(historicoDaTurma, planos),
@@ -2504,6 +2533,27 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                               borderRadius: 4, padding: '1px 5px',
                             }}>{m.count}</span>
                             <span style={{ fontSize: 11, color: isDark ? '#9CA3AF' : '#64748b', fontWeight: 500 }}>{m.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Conceitos musicais mais trabalhados */}
+                  {conceitosMaisUsados.length > 0 && (
+                    <>
+                      <div style={{ borderTop: `1px solid ${isDark ? '#374151' : '#F1F4F8'}`, margin: '10px 0' }} />
+                      <p style={{ fontSize: 10, fontWeight: 700, color: '#CBD5E1', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 6 }}>Conceitos musicais</p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px' }}>
+                        {conceitosMaisUsados.map(c => (
+                          <div key={c.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                            <span style={{
+                              fontSize: 10, fontWeight: 600, color: isDark ? '#94a3b8' : '#64748b',
+                              background: isDark ? '#374151' : '#F1F4F8',
+                              border: `1px solid ${isDark ? '#4B5563' : '#E2E8F0'}`,
+                              borderRadius: 4, padding: '1px 5px',
+                            }}>{c.count}</span>
+                            <span style={{ fontSize: 11, color: isDark ? '#9CA3AF' : '#64748b', fontWeight: 500 }}>{c.label}</span>
                           </div>
                         ))}
                       </div>

@@ -685,6 +685,14 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
   // ── Salvar ──
   const [estadoSalvar, setEstadoSalvar] = useState<'idle' | 'salvando' | 'salvo'>('idle')
 
+  // ── Timer de planejamento ──
+  const [segsPlaneando, setSegsPlaneando] = useState(initialPlano.tempoPlanejamento ? initialPlano.tempoPlanejamento * 60 : 0)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => {
+    timerRef.current = setInterval(() => setSegsPlaneando(s => s + 1), 1000)
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [])
+
   function handleSalvar() {
     if (!plano.titulo.trim() && (plano.atividadesRoteiro || []).length === 0) {
       showToast('Preencha ao menos o título ou adicione uma atividade.', 'error'); return
@@ -723,10 +731,12 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
     const conceitosSanitizados = (p.conceitos ?? [])
       .filter(c => validosSet.has(c.toLowerCase()))
       .slice(0, 6)
+    if (timerRef.current) clearInterval(timerRef.current)
     const planoFinal: Plano = {
       ...p,
       conceitos: conceitosSanitizados,
       contextoAulaAnterior: p.contextoAulaAnterior,
+      tempoPlanejamento: Math.round(segsPlaneando / 60) || undefined,
     }
     requestAnimationFrame(() => {
       setEstadoSalvar('salvo')
@@ -1502,6 +1512,11 @@ Responda APENAS com JSON válido: {"sugestoes": [{"nome": "...", "duracao": "10"
 
         {/* ════ FOOTER STICKY ════ */}
         <div className="px-4 py-3 bg-white dark:bg-[var(--v2-card)] border-t border-slate-100 dark:border-[#374151] sticky bottom-0">
+          {segsPlaneando >= 60 && (
+            <p className="text-center text-[11px] text-slate-400 dark:text-[#4B5563] mb-1 tabular-nums">
+              {Math.floor(segsPlaneando / 60)} min planejando
+            </p>
+          )}
           <div className="flex gap-2">
             <button type="button" onClick={onCancelar}
               className="flex-1 py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm active:scale-95">
