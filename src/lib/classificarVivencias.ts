@@ -81,8 +81,8 @@ ARMADILHAS — avalie o PROPÓSITO PRINCIPAL, não a atividade em si:
 - Uma atividade pode acionar mais de uma dimensão — avalie o propósito principal de cada uma
 
 ──────────────────────────────────────────────
-EIXO 2 — MEIOS EXPRESSIVOS (Orff-Schulwerk)
-Responde: "por quais linguagens esta aula acontece?"
+EIXO 2 — MEIOS EXPRESSIVOS
+Responde: "por quais linguagens/modalidades esta aula acontece?"
 Escala: true (meio presente e intencional) / false (ausente ou meramente incidental)
 
 fala: Fala rítmica, parlenda, recitação rítmica, poesia falada, cantiga falada, texto com ritmo.
@@ -93,13 +93,37 @@ canto: Voz usada como instrumento — canto melódico, coral, canção, vocaliza
 CONTA: cantar uma música, vocalize, cânone vocal, canção folclórica, melodia cantada.
 NÃO CONTA: falar em voz alta, recitar ritmicamente sem melodia (isso é fala).
 
-movimento: Movimento corporal, dança ou percussão corporal como meio expressivo musical intencional.
-CONTA: percussão corporal (palmas, patschen, stamping) como atividade musical, dança, movimento expressivo estruturado, coreografia.
+movimento: Movimento corporal ou percussão corporal como meio expressivo musical intencional.
+CONTA: percussão corporal (palmas, patschen, stamping) como atividade musical, movimento expressivo estruturado.
 NÃO CONTA: bater palmas apenas para marcar pulso como suporte, "alunos em pé" sem propósito de movimento.
 
 instrumental: Uso de qualquer instrumento musical — percussão, melódico, harmônico.
 CONTA: xilofone, flauta, violão, percussão simples, instrumentos de lâminas, qualquer instrumento tocado.
 NÃO CONTA: instrumentos apenas mencionados no contexto teórico sem serem tocados.
+
+danca: Dança como atividade central e intencional — coreografia, dança folclórica, dança criativa, ciranda.
+CONTA: alunos dançando como atividade estruturada, coreografia com música, dança como expressão artística.
+NÃO CONTA: movimento solto sem estrutura de dança, "mexer o corpo" genérico.
+
+teatro: Teatro, dramatização, encenação, jogo teatral com música.
+CONTA: cena dramatizada, teatro musical, encenação de uma história com música, jogo de personagens.
+NÃO CONTA: simples roleplay informal sem estrutura cênica.
+
+artes_visuais: Pintura, desenho, colagem, criação visual como parte integrante da aula de música.
+CONTA: desenhar o que a música evoca, criar partitura gráfica, ilustrar uma música, mapa auditivo visual.
+NÃO CONTA: apenas citar obras de arte sem atividade de criação ou percepção visual.
+
+escultura: Escultura, modelagem, construção tridimensional vinculada à experiência musical.
+CONTA: modelar em argila ao som de música, criar instrumentos com materiais, construir objetos sonoros.
+NÃO CONTA: manuseio de materiais sem vínculo musical.
+
+poema: Texto poético, poesia, rima, verso como material central da atividade — além da fala rítmica.
+CONTA: criar poemas, analisar poesia com foco em musicalidade, letra de música como poema literário.
+NÃO CONTA: parlenda rítmica sem caráter literário poético (isso é fala).
+
+arquitetura: Arquitetura, espaço, estrutura física ou mapeamento espacial como elemento pedagógico.
+CONTA: explorar acústica de espaços, mapear o som no ambiente, partitura espacial, instalação sonora.
+NÃO CONTA: mencionar onde a aula acontece sem uso pedagógico do espaço.
 
 ──────────────────────────────────────────────
 ──────────────────────────────────────────────
@@ -113,7 +137,7 @@ REGRAS OBRIGATÓRIAS:
 - Máximo 4 conceitos
 
 Responda SOMENTE com JSON válido (sem texto extra):
-{"clasp":{"tecnica":0,"performance":0,"apreciacao":0,"criacao":0,"teoria":0},"orff":{"fala":false,"canto":false,"movimento":false,"instrumental":false},"conceitos":["conceito1"]}`
+{"clasp":{"tecnica":0,"performance":0,"apreciacao":0,"criacao":0,"teoria":0},"orff":{"fala":false,"canto":false,"movimento":false,"instrumental":false,"danca":false,"teatro":false,"artes_visuais":false,"escultura":false,"poema":false,"arquitetura":false},"conceitos":["conceito1"]}`
     try {
         const res = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,

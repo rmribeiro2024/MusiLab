@@ -237,6 +237,7 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
     const [draftConceitos, setDraftConceitos] = React.useState<string[]>([])
     const [draftVivencias, setDraftVivencias] = React.useState<Record<string, number>>({})
     const [draftMeios, setDraftMeios] = React.useState<Record<string, boolean>>({})
+    const [inputOutroMeio, setInputOutroMeio] = React.useState('')
 
     React.useEffect(() => {
         if (classeNotif) {
@@ -270,6 +271,12 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
         canto:        { label: 'Canto',        cor: '#34d399' },
         movimento:    { label: 'Movimento',    cor: '#fbbf24' },
         instrumental: { label: 'Instrumental', cor: '#60a5fa' },
+        danca:        { label: 'Dança',        cor: '#f472b6' },
+        teatro:       { label: 'Teatro',       cor: '#fb923c' },
+        artes_visuais:{ label: 'Artes Visuais',cor: '#c084fc' },
+        escultura:    { label: 'Escultura',    cor: '#a8a29e' },
+        poema:        { label: 'Poema',        cor: '#38bdf8' },
+        arquitetura:  { label: 'Arquitetura',  cor: '#4ade80' },
     }
 
     function fechar() {
@@ -347,7 +354,7 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
                         </div>
                     )}
 
-                    {/* Meios Orff — todos, togláveis */}
+                    {/* Meios expressivos — todos, togláveis */}
                     {temClassificacao && (
                         <div>
                             <p className="text-[10px] font-bold tracking-[0.08em] uppercase text-slate-400 dark:text-[#6B7280] mb-2">Meios expressivos</p>
@@ -364,6 +371,39 @@ export default function ModalMusicasDetectadas({ classeNotif, onFecharNotif, onA
                                         </button>
                                     )
                                 })}
+                                {/* Meios customizados */}
+                                {Object.keys(draftMeios).filter(k => !(k in ORFF_MAP) && draftMeios[k]).map(k => (
+                                    <span key={k} className="inline-flex items-center gap-1 text-[12px] px-2.5 py-1 rounded-full font-medium"
+                                        style={{ color: '#94a3b8', background: 'rgba(148,163,184,0.12)', border: '1px solid rgba(148,163,184,0.35)' }}>
+                                        {k}
+                                        <button type="button" onClick={() => setDraftMeios(prev => { const n = { ...prev }; delete n[k]; return n })}
+                                            style={{ color: '#94a3b8', lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 2 }}>×</button>
+                                    </span>
+                                ))}
+                            </div>
+                            {/* Input para adicionar meio customizado */}
+                            <div className="flex gap-1.5 mt-2">
+                                <input
+                                    type="text"
+                                    value={inputOutroMeio}
+                                    onChange={e => setInputOutroMeio(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                            const v = inputOutroMeio.trim()
+                                            if (v) { setDraftMeios(prev => ({ ...prev, [v]: true })); setInputOutroMeio('') }
+                                        }
+                                    }}
+                                    placeholder="Outro meio…"
+                                    className="flex-1 text-[12px] px-2.5 py-1 rounded-full border border-slate-200 dark:border-[#374151] bg-transparent text-slate-500 dark:text-slate-400 placeholder:text-slate-300 outline-none focus:border-slate-300"
+                                />
+                                <button type="button"
+                                    onClick={() => {
+                                        const v = inputOutroMeio.trim()
+                                        if (v) { setDraftMeios(prev => ({ ...prev, [v]: true })); setInputOutroMeio('') }
+                                    }}
+                                    className="text-[12px] px-2.5 py-1 rounded-full text-slate-400 hover:text-slate-600 border border-slate-200 dark:border-[#374151] bg-transparent transition-colors">
+                                    +
+                                </button>
                             </div>
                         </div>
                     )}

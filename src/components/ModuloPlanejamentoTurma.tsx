@@ -121,9 +121,13 @@ function scoreStatus(r: RegistroPosAula): number | null {
 }
 
 function calcResumoTurma(historico: RegistroPosAula[], planos: Plano[], periodo: PeriodoVivencias = { tipo: 'tudo' }): ResumoTurma {
-  const ORFF_KEYS  = ['fala', 'canto', 'movimento', 'instrumental'] as const
+  const ORFF_KEYS  = ['fala', 'canto', 'movimento', 'instrumental', 'danca', 'teatro', 'artes_visuais', 'escultura', 'poema', 'arquitetura'] as const
   const CLASP_KEYS = ['performance', 'apreciacao', 'criacao', 'teoria', 'tecnica'] as const
-  const ORFF_LABELS:  Record<string, string> = { fala: 'Fala', canto: 'Canto', movimento: 'Movimento', instrumental: 'Instrumental' }
+  const ORFF_LABELS:  Record<string, string> = {
+    fala: 'Fala', canto: 'Canto', movimento: 'Movimento', instrumental: 'Instrumental',
+    danca: 'Dança', teatro: 'Teatro', artes_visuais: 'Artes Visuais',
+    escultura: 'Escultura', poema: 'Poema', arquitetura: 'Arquitetura',
+  }
   const CLASP_LABELS: Record<string, string> = { tecnica: 'Técnica', performance: 'Performance', apreciacao: 'Apreciação', criacao: 'Criação', teoria: 'Teoria' }
 
   // ── Filtrar por período ─────────────────────────────────────────────────────
@@ -403,7 +407,11 @@ function stripHtml(html?: string): string {
     .trim()
 }
 
-const ORFF_LABELS_TL:  Record<string, string> = { fala: 'Fala', canto: 'Canto', movimento: 'Movimento', instrumental: 'Instrumental' }
+const ORFF_LABELS_TL: Record<string, string> = {
+  fala: 'Fala', canto: 'Canto', movimento: 'Movimento', instrumental: 'Instrumental',
+  danca: 'Dança', teatro: 'Teatro', artes_visuais: 'Artes Visuais',
+  escultura: 'Escultura', poema: 'Poema', arquitetura: 'Arquitetura',
+}
 const CLASP_LABELS_TL: Record<string, string> = { tecnica: 'Técnica', performance: 'Performance', apreciacao: 'Apreciação', criacao: 'Criação', teoria: 'Teoria' }
 
 interface TLItem {

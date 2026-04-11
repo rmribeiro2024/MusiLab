@@ -1140,6 +1140,12 @@ const ORFF_MEIOS: { key: string; label: string; color: string }[] = [
   { key: 'canto',        label: 'Canto',        color: '#34d399' },
   { key: 'movimento',    label: 'Movimento',    color: '#fbbf24' },
   { key: 'instrumental', label: 'Instrumental', color: '#60a5fa' },
+  { key: 'danca',        label: 'Dança',        color: '#f472b6' },
+  { key: 'teatro',       label: 'Teatro',       color: '#fb923c' },
+  { key: 'artes_visuais',label: 'Artes Visuais',color: '#c084fc' },
+  { key: 'escultura',    label: 'Escultura',    color: '#a8a29e' },
+  { key: 'poema',        label: 'Poema',        color: '#38bdf8' },
+  { key: 'arquitetura',  label: 'Arquitetura',  color: '#4ade80' },
 ]
 
 interface WeekendModeProps {
@@ -1568,7 +1574,7 @@ export default function AgendaView() {
     // Aggregate Orff meios — frequência por aula (não por plano único)
     // Conta cada aplicacao/planejamento como 1 instância para evitar ratio > 1 com planos reutilizados
     // Migração: corpo legado em vivenciasClassificadas → movimento
-    const orffCounts: Record<string, number> = { fala: 0, canto: 0, movimento: 0, instrumental: 0 }
+    const orffCounts: Record<string, number> = {}
     let orffTotal = 0
     aplicacoes.forEach(ap => {
       if (ap.data < w0 || ap.data > w4) return
@@ -1576,12 +1582,11 @@ export default function AgendaView() {
       if (!pl) return
       const meios = pl.orffMeios ?? {}
       const movimentoLegado = !pl.orffMeios && (pl.vivenciasClassificadas?.corpo ?? 0) > 0
-      if (!meios.fala && !meios.canto && !meios.movimento && !meios.instrumental && !movimentoLegado) return
+      const temAlgum = Object.values(meios).some(Boolean) || movimentoLegado
+      if (!temAlgum) return
       orffTotal++
-      if (meios.fala)         orffCounts.fala++
-      if (meios.canto)        orffCounts.canto++
-      if (meios.movimento || movimentoLegado) orffCounts.movimento++
-      if (meios.instrumental) orffCounts.instrumental++
+      Object.entries(meios).forEach(([k, v]) => { if (v) orffCounts[k] = (orffCounts[k] ?? 0) + 1 })
+      if (movimentoLegado) orffCounts.movimento = (orffCounts.movimento ?? 0) + 1
     })
     planejamentos.forEach(pt => {
       const d = pt.dataPrevista ?? ''
@@ -1590,12 +1595,11 @@ export default function AgendaView() {
       if (!pd) return
       const meios = pd.orffMeios ?? {}
       const movimentoLegado = !pd.orffMeios && (pd.vivenciasClassificadas?.corpo ?? 0) > 0
-      if (!meios.fala && !meios.canto && !meios.movimento && !meios.instrumental && !movimentoLegado) return
+      const temAlgum = Object.values(meios).some(Boolean) || movimentoLegado
+      if (!temAlgum) return
       orffTotal++
-      if (meios.fala)         orffCounts.fala++
-      if (meios.canto)        orffCounts.canto++
-      if (meios.movimento || movimentoLegado) orffCounts.movimento++
-      if (meios.instrumental) orffCounts.instrumental++
+      Object.entries(meios).forEach(([k, v]) => { if (v) orffCounts[k] = (orffCounts[k] ?? 0) + 1 })
+      if (movimentoLegado) orffCounts.movimento = (orffCounts.movimento ?? 0) + 1
     })
     const orffFreq: Record<string, number> = {}
     if (orffTotal > 0) {
