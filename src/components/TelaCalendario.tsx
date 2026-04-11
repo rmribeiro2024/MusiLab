@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react'
 import { useCalendarioContext } from '../contexts/CalendarioContext'
-import { usePlanosContext, useAnoLetivoContext, useRepertorioContext, useAplicacoesContext } from '../contexts'
+import { usePlanosContext, useAnoLetivoContext, useRepertorioContext, useAplicacoesContext, useEventosContext } from '../contexts'
 import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContext'
 import { verificarFeriado } from '../lib/feriados'
 import { stripHTML } from '../lib/utils'
@@ -708,9 +708,11 @@ export default function TelaResumoDia() {
     const { setModalGradeSemanal, dataDia, diasExpandidos, modoResumo, semanaResumo, obterTurmasDoDia, setDataDia, setDiasExpandidos, setModalRegistro, setModoResumo, setRrAnoSel, setRrData, setRrEscolaSel, setRrPlanosSegmento, setRrTextos, setRrResultados, setRrRubricas, setRrEncaminhamentos, setRrTurmaId, setRrSegmentoId, setSemanaResumo } = useCalendarioContext()
     const { aplicacoesPorData } = useAplicacoesContext()
     const { salvarPlanejamentoParaTurma } = usePlanejamentoTurmaContext()
+    const { eventos, adicionarEvento, removerEvento } = useEventosContext()
     const [aulaAcaoAtiva, setAulaAcaoAtiva] = useState<AulaGrade | null>(null)
     const [extraMateriais, setExtraMateriais] = useState<Record<string, string[]>>({})
     const [inputMaterial, setInputMaterial] = useState('')
+    const [inputEvento, setInputEvento] = useState('')
     const [planoRapidoAula, setPlanoRapidoAula] = useState<{ aula: AulaGrade; segNome: string; turNome: string } | null>(null)
     const [roteiroRapido, setRoteiroRapido] = useState('')
     const [objetivoRapido, setObjetivoRapido] = useState('')
@@ -1119,6 +1121,51 @@ export default function TelaResumoDia() {
                                             </div>
                                         </div>
                                     ))}
+
+                                    {/* Eventos escolares do dia */}
+                                    {(() => {
+                                        const eventosDoDia = eventos.filter(e => e.data === dataDia)
+                                        const adicionarEv = () => {
+                                            const nome = inputEvento.trim()
+                                            if (!nome) return
+                                            adicionarEvento({ data: dataDia, nome })
+                                            setInputEvento('')
+                                        }
+                                        return (
+                                            <div className="v2-card rounded-lg border border-slate-200 dark:border-[#374151] p-3">
+                                                <p className="text-xs font-bold text-slate-600 dark:text-[#9CA3AF] uppercase tracking-wider mb-2">Eventos do dia</p>
+                                                {eventosDoDia.length > 0 && (
+                                                    <ul className="space-y-1 mb-2">
+                                                        {eventosDoDia.map(ev => (
+                                                            <li key={String(ev.id)} className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-[#E5E7EB]">
+                                                                <span className="w-1 h-1 rounded-full bg-indigo-400 shrink-0" />
+                                                                <span className="flex-1">{ev.nome}</span>
+                                                                <button onClick={() => removerEvento(ev.id!)} className="text-slate-300 hover:text-red-400 font-bold leading-none transition-colors">×</button>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                                {eventosDoDia.length === 0 && (
+                                                    <p className="text-[11px] text-slate-400 italic mb-2">Nenhum evento cadastrado para este dia.</p>
+                                                )}
+                                                <div className="flex gap-1">
+                                                    <input
+                                                        type="text"
+                                                        value={inputEvento}
+                                                        onChange={e => setInputEvento(e.target.value)}
+                                                        onKeyDown={e => { if (e.key === 'Enter') adicionarEv() }}
+                                                        placeholder="Adicionar evento…"
+                                                        className="flex-1 text-xs border border-slate-200 dark:border-[#374151] rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-300 placeholder:text-slate-300 bg-white dark:bg-[#1F2937] text-slate-700 dark:text-[#E5E7EB]"
+                                                    />
+                                                    <button
+                                                        onClick={adicionarEv}
+                                                        className="text-xs px-2 py-1 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
+                                                        ＋
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )
+                                    })()}
 
                                     {/* Materiais necessários */}
                                     {(() => {

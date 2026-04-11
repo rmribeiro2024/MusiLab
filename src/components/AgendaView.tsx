@@ -14,6 +14,7 @@ import { usePlanejamentoTurmaContext } from '../contexts/PlanejamentoTurmaContex
 import { useRepertorioContext } from '../contexts/RepertorioContext'
 import { sanitizarRich } from '../lib/utils'
 import { showToast } from '../lib/toast'
+import { useEventosContext } from '../contexts/EventosContext'
 import type { AulaGrade, AplicacaoAula, Plano, AnoLetivo, AtividadeRoteiro } from '../types'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1427,6 +1428,7 @@ export default function AgendaView() {
   const { planejamentos } = usePlanejamentoTurmaContext()
   const { repertorio } = useRepertorioContext()
   const { aplicacoes } = useAplicacoesContext()
+  const { eventos } = useEventosContext()
   const {
     setModalRegistro, setPlanoParaRegistro, setNovoRegistro, setRegistroEditando, setVerRegistros,
     setRegAnoSel, setRegEscolaSel, setRegSegmentoSel, setRegTurmaSel,
@@ -1696,6 +1698,14 @@ export default function AgendaView() {
     return `${statsTarget.pendentes} aula${statsTarget.pendentes !== 1 ? 's' : ''} pendente${statsTarget.pendentes !== 1 ? 's' : ''}`
   }, [statsTarget, diaOffset])
 
+  // ── Próximo evento escolar ──
+  const proximoEvento = useMemo(() => {
+    const futuros = eventos
+      .filter(e => e.data >= hoje)
+      .sort((a, b) => a.data.localeCompare(b.data))
+    return futuros[0] ?? null
+  }, [eventos, hoje])
+
   // ── Abrir registro a partir do WeekendMode ──
   const handleRegistrarSlot = useCallback((slot: AulaSlot) => {
     const stub = { id: `stub-${slot.aulaGrade.turmaId}`, titulo: slot.plano?.titulo ?? '' }
@@ -1884,6 +1894,45 @@ export default function AgendaView() {
                 onOpenRegistro={abrirRegistroInline}
                 tudoRegistrado={statsTarget.total > 0 && statsTarget.pendentes === 0}
               />
+
+              {/* Próximo evento escolar */}
+              {proximoEvento && diaOffset === 0 && (() => {
+                const evDate = new Date(proximoEvento.data + 'T12:00:00')
+                const diff = Math.round((evDate.getTime() - new Date(hoje + 'T12:00:00').getTime()) / 86400000)
+                const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
+                const labelData = `${evDate.getDate()} de ${meses[evDate.getMonth()]}`
+                const labelDiff = diff === 0 ? 'hoje' : diff === 1 ? 'amanhã' : `em ${diff} dias`
+                return (
+                  <div style={{
+                    marginTop: 20,
+                    padding: '10px 14px',
+                    borderRadius: 12,
+                    border: `1px solid ${isDarkMode ? '#374151' : '#E2E9F3'}`,
+                    background: isDarkMode ? '#1F2937' : '#F8FAFC',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                  }}>
+                    <div style={{
+                      width: 6, height: 6, borderRadius: '50%',
+                      background: diff === 0 ? '#f59e0b' : '#818cf8',
+                      flexShrink: 0,
+                    }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: isDarkMode ? '#9CA3AF' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 1 }}>
+                        Próximo evento
+                      </p>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#E5E7EB' : '#1E293B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {proximoEvento.nome}
+                      </p>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: diff === 0 ? '#f59e0b' : (isDarkMode ? '#818cf8' : '#5B5FEA') }}>{labelDiff}</p>
+                      <p style={{ fontSize: 11, color: isDarkMode ? '#4B5563' : '#94A3B8' }}>{labelData}</p>
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
 
             <div

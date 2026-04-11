@@ -79,6 +79,44 @@ CREATE POLICY "grades_semanas: inserção própria" ON public.grades_semanas FOR
 CREATE POLICY "grades_semanas: update próprio"   ON public.grades_semanas FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "grades_semanas: delete próprio"   ON public.grades_semanas FOR DELETE USING (auth.uid() = user_id);
 
+-- ── aulas_avulsas (reposições / aulas extras fora da grade regular) ──
+CREATE TABLE IF NOT EXISTS public.aulas_avulsas (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  item_id     text NOT NULL,
+  data        jsonb NOT NULL,
+  created_at  timestamptz DEFAULT now(),
+  UNIQUE(user_id, item_id)
+);
+ALTER TABLE public.aulas_avulsas ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "aulas_avulsas: leitura própria"  ON public.aulas_avulsas;
+DROP POLICY IF EXISTS "aulas_avulsas: inserção própria" ON public.aulas_avulsas;
+DROP POLICY IF EXISTS "aulas_avulsas: update próprio"   ON public.aulas_avulsas;
+DROP POLICY IF EXISTS "aulas_avulsas: delete próprio"   ON public.aulas_avulsas;
+CREATE POLICY "aulas_avulsas: leitura própria"  ON public.aulas_avulsas FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "aulas_avulsas: inserção própria" ON public.aulas_avulsas FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "aulas_avulsas: update próprio"   ON public.aulas_avulsas FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "aulas_avulsas: delete próprio"   ON public.aulas_avulsas FOR DELETE USING (auth.uid() = user_id);
+
+-- ── eventos_escolares ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.eventos_escolares (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  item_id     text NOT NULL,
+  data        jsonb NOT NULL,
+  created_at  timestamptz DEFAULT now(),
+  UNIQUE(user_id, item_id)
+);
+ALTER TABLE public.eventos_escolares ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "eventos_escolares: leitura própria"  ON public.eventos_escolares;
+DROP POLICY IF EXISTS "eventos_escolares: inserção própria" ON public.eventos_escolares;
+DROP POLICY IF EXISTS "eventos_escolares: update próprio"   ON public.eventos_escolares;
+DROP POLICY IF EXISTS "eventos_escolares: delete próprio"   ON public.eventos_escolares;
+CREATE POLICY "eventos_escolares: leitura própria"  ON public.eventos_escolares FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "eventos_escolares: inserção própria" ON public.eventos_escolares FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "eventos_escolares: update próprio"   ON public.eventos_escolares FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "eventos_escolares: delete próprio"   ON public.eventos_escolares FOR DELETE USING (auth.uid() = user_id);
+
 -- ══════════════════════════════════════════════════════════════
 -- Verificação: todas as tabelas devem aparecer com rowsecurity = true
 -- SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public';

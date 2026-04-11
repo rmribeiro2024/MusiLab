@@ -284,6 +284,7 @@ export default function BancoPlanos({ session }) {
                 dataDia, setDataDia,
                 diasExpandidos, setDiasExpandidos,
                 gradesSemanas, setGradesSemanas,
+                aulasAvulsas, setAulasAvulsas,
                 modalGradeSemanal, setModalGradeSemanal,
                 gradeEditando, setGradeEditando,
                 periodoDias, setPeriodoDias,
@@ -771,7 +772,7 @@ export default function BancoPlanos({ session }) {
                     try {
                         // estrategias carregada em EstrategiasContext (Parte 2)
                         // repertorio carregado em RepertorioContext (Parte 3)
-                        const [planosC, gradesC, cfg] = await Promise.all([
+                        const [planosC, gradesC, avulsasC, cfg] = await Promise.all([
                             loadFromSupabase('planos', userId),
                             // atividades removido — carregado em AtividadesContext (Parte 4)
                             // sequencias removido — carregado em SequenciasContext (Parte 5)
@@ -779,6 +780,7 @@ export default function BancoPlanos({ session }) {
                             // eventos_escolares removido — carregado em AnoLetivoContext (Parte 6)
                             // planejamento_anual removido — carregado em AnoLetivoContext (Parte 6)
                             loadFromSupabase('grades_semanas', userId),
+                            loadFromSupabase('aulas_avulsas', userId),
                             loadConfiguracoes(userId)
                         ]);
 
@@ -788,15 +790,24 @@ export default function BancoPlanos({ session }) {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const gradesLocais: any[] = (() => { try { const r = dbGet('gradesSemanas'); return r ? JSON.parse(r) : [] } catch { return [] } })()
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const avulsasLocais: any[] = (() => { try { return JSON.parse(localStorage.getItem('musilab_aulasAvulsas') || '[]') } catch { return [] } })()
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const planosMergeados: any[] = mergeOffline('planos', planosC as any, planosLocais)
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const gradesMergeadas: any[] = mergeOffline('grades_semanas', gradesC as any, gradesLocais)
+                        // Merge avulsas: nuvem + localStorage legado (migração automática)
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const avulsasMergeadas: any[] = mergeOffline('aulas_avulsas', avulsasC as any ?? [], avulsasLocais)
                         setPlanos(planosMergeados)
                         setGradesSemanas(gradesMergeadas as GradeEditando[])
+                        setAulasAvulsas(avulsasMergeadas)
+                        // Limpar cache localStorage após migrar para Supabase
+                        if (avulsasLocais.length > 0) localStorage.removeItem('musilab_aulasAvulsas')
                         // Se houve merge de itens offline, sincroniza imediatamente
                         if (totalPendentes() > 0) {
                             syncToSupabase('planos', planosMergeados as unknown as Record<string, unknown>[], userId, onSyncStatus)
                             syncToSupabase('grades_semanas', gradesMergeadas as unknown as Record<string, unknown>[], userId, onSyncStatus)
+                            syncToSupabase('aulas_avulsas', avulsasMergeadas as unknown as Record<string, unknown>[], userId, onSyncStatus)
                         }
                         // eventosC removido — carregado em AnoLetivoContext (Parte 6)
                         // estratégiasC removido — carregado em EstrategiasContext (Parte 2)
@@ -857,6 +868,7 @@ export default function BancoPlanos({ session }) {
                     // sequencias: sync movido para SequenciasContext (Parte 5)
                     // anos_letivos: sync movido para AnoLetivoContext (Parte 6)
                     grades_semanas: gradesSemanas,
+                    aulas_avulsas: aulasAvulsas,
                     // eventos_escolares: sync movido para AnoLetivoContext (Parte 6)
                     // estrategias: sync movido para EstrategiasContext (Parte 2)
                     // planejamento_anual: sync movido para AnoLetivoContext (Parte 6)
@@ -880,7 +892,11 @@ export default function BancoPlanos({ session }) {
                 if (atual.grades_semanas !== prev.grades_semanas) {
                     syncDelay('grades_semanas', () => syncToSupabase('grades_semanas', atual.grades_semanas as unknown as Record<string, unknown>[], userId, onSyncStatus))
                 }
-            }, [planos, gradesSemanas]); // anos_letivos/eventos_escolares/planejamento_anual removidos — sync em AnoLetivoContext (Parte 6) — sync em AtividadesContext/SequenciasContext (Partes 4/5)
+                // aulas_avulsas — full sync (dataset muito pequeno)
+                if (atual.aulas_avulsas !== prev.aulas_avulsas) {
+                    syncDelay('aulas_avulsas', () => syncToSupabase('aulas_avulsas', atual.aulas_avulsas as unknown as Record<string, unknown>[], userId, onSyncStatus))
+                }
+            }, [planos, gradesSemanas, aulasAvulsas]); // anos_letivos/eventos_escolares/planejamento_anual removidos — sync em AnoLetivoContext (Parte 6) — sync em AtividadesContext/SequenciasContext (Partes 4/5)
             // [offlineSync] — ao voltar online, sobe itens pendentes imediatamente
             useEffect(() => {
                 if (!voltouOnline || !userId || !dadosCarregados) return
@@ -888,6 +904,7 @@ export default function BancoPlanos({ session }) {
                 // Envia todos como "changed" mas sem deletions — mais leve que syncToSupabase completo
                 syncDelta('planos', planos as unknown as Record<string, unknown>[], [], userId, onSyncStatus)
                 syncToSupabase('grades_semanas', gradesSemanas as unknown as Record<string, unknown>[], userId, onSyncStatus)
+                syncToSupabase('aulas_avulsas', aulasAvulsas as unknown as Record<string, unknown>[], userId, onSyncStatus)
                 showToast(`Reconectado — sincronizando dados pendentes…`, 'success')
             // eslint-disable-next-line react-hooks/exhaustive-deps
             }, [voltouOnline])
@@ -1032,11 +1049,12 @@ export default function BancoPlanos({ session }) {
                 Object.values(syncTimeout.current).forEach(id => clearTimeout(id));
                 syncTimeout.current = {};
                 setStatusSalvamento('salvando');
-                const [ok1, ok2] = await Promise.all([
+                const [ok1, ok2, ok3] = await Promise.all([
                     syncToSupabase('planos', planos as any, userId),
                     syncToSupabase('grades_semanas', gradesSemanas as any, userId),
+                    syncToSupabase('aulas_avulsas', aulasAvulsas as any, userId),
                 ]);
-                const ok = ok1 && ok2;
+                const ok = ok1 && ok2 && ok3;
                 setStatusSalvamento(ok ? 'salvo' : 'erro');
                 if (ok) {
                     if (timeoutSalvamento.current) clearTimeout(timeoutSalvamento.current);

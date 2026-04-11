@@ -12,3 +12,4 @@ export { useCalendarioContext, CalendarioProvider } from './CalendarioContext'  
 export { useAplicacoesContext, AplicacoesProvider } from './AplicacoesContext'  // Aplicações de aula
 export { usePlanosContext, PlanosProvider, normalizePlano } from './PlanosContext'   // Parte 8
 export { usePlanejamentoTurmaContext, PlanejamentoTurmaProvider } from './PlanejamentoTurmaContext'
+export { useEventosContext, EventosProvider } from './EventosContext'

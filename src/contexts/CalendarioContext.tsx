@@ -7,7 +7,7 @@ import { dbGet, dbSet } from '../lib/db'
 import { useModalContext } from './ModalContext'
 import { showToast } from '../lib/toast'
 import { useAnoLetivoContext } from './AnoLetivoContext'
-import type { Plano, RegistroPosAula, GradeEditando, AulaGrade, EventoEscolar } from '../types'
+import type { Plano, RegistroPosAula, GradeEditando, AulaGrade, AulaAvulsa, EventoEscolar } from '../types'
 
 // ─── INTERFACE DO CONTEXTO ────────────────────────────────────────────────────
 
@@ -108,6 +108,9 @@ export interface CalendarioContextValue {
   removerAulaGrade: (aulaId: number | string) => void
   duplicarAulaGrade: (aula: AulaGrade) => void
   atualizarAulaGrade: (aulaId: number | string, campo: string, valor: unknown) => void
+  // Aulas avulsas / reposições
+  aulasAvulsas: AulaAvulsa[]
+  setAulasAvulsas: React.Dispatch<React.SetStateAction<AulaAvulsa[]>>
   // Preferências de visualização do calendário
   ocultarFeriados: boolean
   setOcultarFeriados: React.Dispatch<React.SetStateAction<boolean>>
@@ -162,6 +165,9 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
   })
   const [modalGradeSemanal, setModalGradeSemanal] = useState(false)
   const [gradeEditando, setGradeEditando] = useState<GradeEditando | null>(null)
+
+  // ── Aulas avulsas / reposições ────────────────────────────────────────────
+  const [aulasAvulsas, setAulasAvulsas] = useState<AulaAvulsa[]>([])
 
   // ── Período de visualização ────────────────────────────────────────────────
   const [periodoDias, setPeriodoDias] = useState<number | string>(30)
@@ -380,10 +386,11 @@ export function CalendarioProvider({ children }: CalendarioProviderProps) {
     removerAulaGrade,
     duplicarAulaGrade,
     atualizarAulaGrade,
+    aulasAvulsas, setAulasAvulsas,
     ocultarFeriados, setOcultarFeriados,
     obterTurmasDoDia,
     verificarEvento,
-  }), [dataCalendario, semanaResumo, modoResumo, dataDia, diasExpandidos, gradesSemanas, modalGradeSemanal, gradeEditando, periodoDias, dataInicioCustom, dataFimCustom, modalRegistroRapido, rrData, rrAnoSel, rrEscolaSel, rrPlanosSegmento, rrTextos, rrResultados, rrRubricas, rrEncaminhamentos, rrTurmaId, rrSegmentoId, modalRegistro, planoParaRegistro, novoRegistro, verRegistros, registroEditando, regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel, filtroRegAno, filtroRegEscola, filtroRegSegmento, filtroRegTurma, filtroRegData, buscaRegistros, ytPreviewId, novaGradeSemanal, salvarGradeSemanal, excluirGradeSemanal, adicionarAulaGrade, removerAulaGrade, duplicarAulaGrade, atualizarAulaGrade, ocultarFeriados, obterTurmasDoDia, verificarEvento])
+  }), [dataCalendario, semanaResumo, modoResumo, dataDia, diasExpandidos, gradesSemanas, modalGradeSemanal, gradeEditando, aulasAvulsas, periodoDias, dataInicioCustom, dataFimCustom, modalRegistroRapido, rrData, rrAnoSel, rrEscolaSel, rrPlanosSegmento, rrTextos, rrResultados, rrRubricas, rrEncaminhamentos, rrTurmaId, rrSegmentoId, modalRegistro, planoParaRegistro, novoRegistro, verRegistros, registroEditando, regAnoSel, regEscolaSel, regSegmentoSel, regTurmaSel, filtroRegAno, filtroRegEscola, filtroRegSegmento, filtroRegTurma, filtroRegData, buscaRegistros, ytPreviewId, novaGradeSemanal, salvarGradeSemanal, excluirGradeSemanal, adicionarAulaGrade, removerAulaGrade, duplicarAulaGrade, atualizarAulaGrade, ocultarFeriados, obterTurmasDoDia, verificarEvento])
 
   return <CalendarioContext.Provider value={value}>{children}</CalendarioContext.Provider>
 }

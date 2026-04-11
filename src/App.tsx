@@ -5,7 +5,7 @@ import BancoPlanos from './components/BancoPlanos'
 import ErrorBoundary from './components/ErrorBoundary'
 import Toast from './components/Toast'
 import OfflineBanner from './components/OfflineBanner'
-import { ModalProvider, EstrategiasProvider, RepertorioProvider, AtividadesProvider, SequenciasProvider, HistoricoProvider, AnoLetivoProvider, CalendarioProvider, AplicacoesProvider, PlanosProvider, PlanejamentoTurmaProvider } from './contexts'
+import { ModalProvider, EstrategiasProvider, RepertorioProvider, AtividadesProvider, SequenciasProvider, HistoricoProvider, AnoLetivoProvider, CalendarioProvider, AplicacoesProvider, PlanosProvider, PlanejamentoTurmaProvider, EventosProvider } from './contexts'
 
 // ── TELA DE LOGIN ──
 function LoginScreen({ onUsarSemLogin }: { onUsarSemLogin: () => void }) {
@@ -121,11 +121,13 @@ export default function App() {
                     <AplicacoesProvider userId={userId}>
                     <PlanosProvider userId={userId}>
                       <PlanejamentoTurmaProvider userId={userId}>
+                        <EventosProvider userId={userId}>
                         <ErrorBoundary modulo="MusiLab">
                           <BancoPlanos session={session ?? null} />
                         </ErrorBoundary>
                         <Toast />
                         <OfflineBanner />
+                        </EventosProvider>
                       </PlanejamentoTurmaProvider>
                     </PlanosProvider>
                     </AplicacoesProvider>
