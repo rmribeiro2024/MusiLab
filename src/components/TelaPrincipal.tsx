@@ -673,7 +673,7 @@ export default function TelaPrincipal() {
             const faixaEtaria = (planoEditando.faixaEtaria || []).join(', ') || ''
             const isCrianca = /\b[4-9]\b|\b10\b|infantil|criança|anos/i.test(faixaEtaria)
             const lista = ativs.map((a: any) => `- ${a.nome}${a.duracao ? ` (${a.duracao}min)` : ''}`).join('\n')
-            const prompt = `Você é especialista em pedagogia musical.\nPreencha 3 campos de avaliação de forma SUCINTA.\n\nPLANO:\nTítulo: ${planoEditando.titulo || '(sem título)'}\nObjetivo: ${(planoEditando.objetivoGeral || '').replace(/<[^>]+>/g, '') || '(não informado)'}\nNível: ${faixaEtaria || '(não informado)'}\nAtividades:\n${lista || '(nenhuma)'}\n\nREGRAS:\n1. "evidencia" — 2 ou 3 tópicos curtos com verbos observáveis.\n2. "fechamento" — ${isCrianca ? '1–2 perguntas simples para crianças.' : '1–2 perguntas curtas para reflexão musical.'}\n3. "contingencia" — 1–2 adaptações práticas caso não funcione.\n\nResponda APENAS com JSON: {"evidencia":"...","fechamento":"...","contingencia":"..."}`
+            const prompt = `Especialista em pedagogia musical. Preencha 3 campos de avaliação de aula.\n\nPLANO:\nTítulo: ${planoEditando.titulo || '(sem título)'}\nObjetivo: ${(planoEditando.objetivoGeral || '').replace(/<[^>]+>/g, '') || '(não informado)'}\nNível: ${faixaEtaria || '(não informado)'}\nAtividades:\n${lista || '(nenhuma)'}\n\nREGRAS ABSOLUTAS:\n- Cada campo: máx 2–3 itens curtos, separados por \\n\n- Máx 7 palavras por item — SEM frases completas, SEM parágrafos\n- Use verbos observáveis diretos\n\n1. "evidencia" — o que o aluno FAZ que mostra aprendizado. Ex: "Reproduz o ritmo sem apoio\\nIdentifica grave e agudo"\n2. "fechamento" — ${isCrianca ? '1–2 perguntas diretas para crianças. Ex: "O que foi difícil?\\nOnde você sentiu o pulso?"' : '1–2 perguntas reflexivas curtas. Ex: "O que mudou na sua escuta?\\nQual momento foi mais desafiador?"'}\n3. "contingencia" — adaptar se travar. Ex: "Reduzir para 1 instrumento\\nFazer em duplas"\n\nResponda SOMENTE JSON: {"evidencia":"...","fechamento":"...","contingencia":"..."}`
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) })
             if (!res.ok) throw new Error('HTTP ' + res.status)
             const json = await res.json()
@@ -1499,8 +1499,9 @@ export default function TelaPrincipal() {
 
                 {/* ════════════ ACCORDION: ROTEIRO DE ATIVIDADES ════════════ */}
                 <div className="border-b border-slate-100">
-                    <button type="button" onClick={() => toggleSecaoForm('roteiro')} className="w-full flex items-center justify-between px-3 sm:px-6 py-3.5 text-left group bg-slate-50/70 dark:bg-transparent hover:bg-slate-100/60 dark:hover:bg-white/[0.03] transition-colors">
-                        <div className="min-w-0">
+                    <div className="flex items-center justify-between px-3 sm:px-6 py-2.5 bg-slate-50/70 dark:bg-transparent">
+                        {/* Área clicável para toggle */}
+                        <button type="button" onClick={() => toggleSecaoForm('roteiro')} className="flex-1 text-left group min-w-0 py-1">
                             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] group-hover:text-slate-600 transition-colors">Roteiro de Atividades</span>
                             {!secoesForm.has('roteiro') && (() => {
                                 const n = (planoEditando.atividadesRoteiro||[]).length
@@ -1511,16 +1512,28 @@ export default function TelaPrincipal() {
                                 if (totalMin > 0) parts.push(`${totalMin} min`)
                                 return <p className="text-[11px] text-slate-300 mt-0.5">{parts.join(' · ')}</p>
                             })()}
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                        </button>
+                        {/* Botões de ação — sempre visíveis */}
+                        <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                            <button type="button" onClick={() => setModalTemplates(true)} className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-[11px] font-medium px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors">
+                                Templates
+                            </button>
+                            <button type="button" onClick={adicionarAtividadeRoteiro} className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-[11px] font-medium px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors">
+                                + Atividade
+                            </button>
+                            <button type="button" onClick={toggleBancoPainel} className={`text-[11px] font-medium px-2 py-1 rounded-lg transition-colors ${bancoPanelOpen ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06]'}`}>
+                                Biblioteca
+                            </button>
                             {(planoEditando.atividadesRoteiro||[]).length > 0 && (
-                                <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">
+                                <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 dark:bg-white/[0.06] px-1.5 py-0.5 rounded-full ml-0.5">
                                     {(planoEditando.atividadesRoteiro||[]).length}
                                 </span>
                             )}
-                            <svg className={`w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-all duration-200 ${secoesForm.has('roteiro') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                            <button type="button" onClick={() => toggleSecaoForm('roteiro')} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors">
+                                <svg className={`w-3.5 h-3.5 text-slate-300 hover:text-slate-500 transition-all duration-200 ${secoesForm.has('roteiro') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
                         </div>
-                    </button>
+                    </div>
                     {secoesForm.has('roteiro') && (
                         <div className="px-3 sm:px-6 pt-5 pb-5">
                             {/* ── Alerta de tempo ── */}
@@ -1548,24 +1561,6 @@ export default function TelaPrincipal() {
                                     </div>
                                 )
                             })()}
-                            <div className="flex justify-between items-center mb-3">
-                                <div className="flex gap-2">
-                                    <button type="button" onClick={() => setModalTemplates(true)} className="bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.10] text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
-                                        📐 Templates
-                                    </button>
-                                    <button type="button" onClick={adicionarAtividadeRoteiro} className="border border-slate-300 dark:border-[#374151] hover:border-slate-400 hover:bg-slate-50 dark:hover:bg-white/[0.04] text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors">
-                                        + Atividade
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={toggleBancoPainel}
-                                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${bancoPanelOpen ? 'bg-slate-200 text-slate-700 dark:bg-white/[0.10] dark:text-slate-200' : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.10] text-slate-600 dark:text-slate-300'}`}
-                                    >
-                                        📚 Biblioteca
-                                    </button>
-                                </div>
-                            </div>
-
                             {/* ── Painel Banco lateral (Opção C) ── */}
                             <div className={`flex gap-4 ${bancoPanelOpen ? 'items-start' : ''}`}>
                                 <div className="flex-1 min-w-0">

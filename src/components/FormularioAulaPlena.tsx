@@ -380,24 +380,26 @@ Responda APENAS com JSON válido, sem texto extra:
       const faixaEtaria = (plano.faixaEtaria || []).join(', ') || plano.nivel || ''
       const isCrianca = /\b[4-9]\b|\b10\b|infantil|criança|anos/i.test(faixaEtaria)
 
-      const prompt = `Você é especialista em pedagogia musical, com domínio de Wiggins & McTighe (Understanding by Design), Madeline Hunter e Vasconcellos.
-
-Com base neste plano de aula de música, preencha os 3 campos de avaliação de forma SUCINTA — frases curtas ou tópicos curtos, sem parágrafos longos.
+      const prompt = `Especialista em pedagogia musical. Preencha 3 campos de avaliação de aula.
 
 PLANO:
 Título: ${plano.titulo || '(sem título)'}
 Objetivo: ${(plano.objetivoGeral || '').replace(/<[^>]+>/g, '') || '(não informado)'}
-Nível/Faixa etária: ${faixaEtaria || '(não informado)'}
+Nível: ${faixaEtaria || '(não informado)'}
 Conceitos: ${(plano.conceitos || []).join(', ') || '(nenhum)'}
 Atividades:
 ${listaAtividades || '(nenhuma)'}
 
-REGRAS:
-1. "evidencia" — 2 ou 3 tópicos curtos com verbos concretos e observáveis (ex: "Reproduz o ritmo sem apoio", "Identifica grave/agudo"). Sem parágrafos.
-2. "fechamento" — ${isCrianca ? '1 ou 2 perguntas MUITO simples e diretas, adequadas para crianças de 7–10 anos. Linguagem acessível, sem termos técnicos. Ex: "O que foi mais difícil?", "Onde você sentiu o pulso?"' : '1 ou 2 perguntas curtas e diretas para reflexão musical. Sem respostas sim/não.'}
-3. "contingencia" — 1 ou 2 tópicos curtos com adaptações práticas caso a atividade principal não funcione.
+REGRAS ABSOLUTAS:
+- Cada campo: máx 2–3 itens curtos, separados por \\n
+- Máx 7 palavras por item — SEM frases completas, SEM parágrafos
+- Use verbos observáveis diretos
 
-Responda APENAS com JSON válido:
+1. "evidencia" — o que o aluno FAZ que mostra aprendizado. Ex: "Reproduz o ritmo sem apoio\\nIdentifica grave e agudo"
+2. "fechamento" — ${isCrianca ? '1–2 perguntas diretas para crianças. Ex: "O que foi difícil?\\nOnde você sentiu o pulso?"' : '1–2 perguntas reflexivas curtas. Ex: "O que mudou na sua escuta?\\nQual momento foi mais desafiador?"'}
+3. "contingencia" — adaptar se travar. Ex: "Reduzir para 1 instrumento\\nFazer em duplas"
+
+Responda SOMENTE JSON válido:
 {"evidencia": "...", "fechamento": "...", "contingencia": "..."}`
 
       const raw = await geminiPost(prompt)
