@@ -136,6 +136,7 @@ export interface AnoLetivoContextValue {
   // Observações e objetivo da turma
   turmaSetObservacoes: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, texto: string) => void
   turmaSetObjetivo: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, texto: string) => void
+  turmaSetCapa: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, capaUrl: string) => void
   // Faixas e escolas — funções
   salvarNovaFaixa: () => void
   salvarNovaEscola: (planoEditando?: Plano | null, setPlanoEditando?: React.Dispatch<React.SetStateAction<Plano | null>>) => void
@@ -765,6 +766,10 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     _updateTurma(anoId, escolaId, segmentoId, turmaId, t => ({ ...t, objetivo: texto }))
   }
 
+  function turmaSetCapa(anoId: string, escolaId: string, segmentoId: string, turmaId: string, capaUrl: string) {
+    _updateTurma(anoId, escolaId, segmentoId, turmaId, t => ({ ...t, capaUrl }))
+  }
+
   // ── salvarNovaFaixa ───────────────────────────────────────────────────────
 
   function salvarNovaFaixa() {
@@ -848,7 +853,7 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     turmaSetRubricas, turmaGetRubricas,
     tiposAnotacaoGlobais,
     turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao,
-    turmaSetObservacoes, turmaSetObjetivo,
+    turmaSetObservacoes, turmaSetObjetivo, turmaSetCapa,
     salvarNovaFaixa,
     salvarNovaEscola,
   }), [anosLetivos, eventosEscolares, planejamentoAnual, anoPlanoAtivoId, mostrandoFormNovoAno, formNovoAno, periodoExpId, periodoEditForm, adicionandoPeriodoAno, formNovoPeriodo, conceitos, unidades, faixas, tagsGlobais, modalTurmas, anoLetivoSelecionadoModal, gtAnoNovo, gtAnoSel, gtEscolaNome, gtEscolaSel, gtSegmentoNome, gtSegmentoSel, gtTurmaNome, mostrarArquivados, modalNovaEscola, novaEscolaNome, novaEscolaAnoId, modalNovaFaixa, novaFaixaNome, criarAnoLetivoPainel, excluirAnoPlano, adicionarPeriodoNoAno, salvarEdicaoPeriodo, excluirPeriodoDoAno, adicionarMetaNoAno, excluirMetaDoAno, eventoEditando, modalEventos, novoEvento, salvarEvento, excluirEvento, gtAddAno, gtRemoveAno, gtMudarStatusAno, gtAddEscola, gtRemoveEscola, gtAddSegmento, gtRemoveSegmento, gtAddTurma, gtRemoveTurma, alunosAddOrUpdate, alunosRemove, alunosGetByTurma, alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco, turmaSetRubricas, turmaGetRubricas, tiposAnotacaoGlobais, turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao, turmaSetObservacoes, turmaSetObjetivo, salvarNovaFaixa, salvarNovaEscola])

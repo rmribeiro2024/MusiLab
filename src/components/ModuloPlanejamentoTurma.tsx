@@ -1405,7 +1405,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
     setModoInicialNavegacao,
   } = usePlanejamentoTurmaContext()
 
-  const { anosLetivos, alunosAddOrUpdate, alunosRemove, alunosGetByTurma, alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco, turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao, turmaSetObservacoes, turmaSetObjetivo } = useAnoLetivoContext() as ReturnType<typeof useAnoLetivoContext> & { turmaGetTiposAnotacao: (a: string, b: string, c: string, d: string) => string[]; turmaAddTipoAnotacao: (a: string, b: string, c: string, d: string, tipo: string) => void; turmaRemoveTipoAnotacao: (a: string, b: string, c: string, d: string, tipo: string) => void; turmaSetObservacoes: (a: string, b: string, c: string, d: string, texto: string) => void; turmaSetObjetivo: (a: string, b: string, c: string, d: string, texto: string) => void }
+  const { anosLetivos, alunosAddOrUpdate, alunosRemove, alunosGetByTurma, alunoAddAnotacao, alunoRemoveAnotacao, alunoAddMarco, alunoRemoveMarco, turmaGetTiposAnotacao, turmaAddTipoAnotacao, turmaRemoveTipoAnotacao, turmaSetObservacoes, turmaSetObjetivo, turmaSetCapa } = useAnoLetivoContext() as ReturnType<typeof useAnoLetivoContext> & { turmaGetTiposAnotacao: (a: string, b: string, c: string, d: string) => string[]; turmaAddTipoAnotacao: (a: string, b: string, c: string, d: string, tipo: string) => void; turmaRemoveTipoAnotacao: (a: string, b: string, c: string, d: string, tipo: string) => void; turmaSetObservacoes: (a: string, b: string, c: string, d: string, texto: string) => void; turmaSetObjetivo: (a: string, b: string, c: string, d: string, texto: string) => void; turmaSetCapa: (a: string, b: string, c: string, d: string, capaUrl: string) => void }
   const { planos, setPlanoSelecionado } = usePlanosContext()
   const { aplicacoes } = useAplicacoesContext()
   const { obterTurmasDoDia } = useCalendarioContext()
@@ -1431,6 +1431,20 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   const [periodoVivencias, setPeriodoVivencias] = useState<PeriodoVivencias>({ tipo: 'tudo' })
   const [editandoObs, setEditandoObs] = useState(false)
   const [obsRascunho, setObsRascunho] = useState('')
+  const [capaHover, setCapaHover] = useState(false)
+  const capaInputRef = useRef<HTMLInputElement>(null)
+
+  const handleCapaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !turmaSelecionada) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const ts = turmaSelecionada
+      turmaSetCapa(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, reader.result as string)
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
   const [editandoObj, setEditandoObj] = useState(false)
   const [objRascunho, setObjRascunho] = useState('')
   const [aulasAnterioresAberta, setAulasAnterioresAberta] = useState(true)
@@ -1705,13 +1719,59 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   return (
     <div className="space-y-3">
 
+      {/* ── CAPA DA TURMA ───────────────────────────────────────────────────── */}
+      <input ref={capaInputRef} type="file" accept="image/*" className="hidden" onChange={handleCapaChange} />
+      {turmaData?.capaUrl ? (
+        <div
+          className="relative rounded-[10px] overflow-hidden"
+          style={{ height: 130 }}
+          onMouseEnter={() => setCapaHover(true)}
+          onMouseLeave={() => setCapaHover(false)}
+        >
+          <img src={turmaData.capaUrl} alt="Capa da turma" className="w-full h-full object-cover" />
+          {capaHover && (
+            <div className="absolute inset-0 bg-black/30 flex items-end justify-end gap-2 p-2">
+              <button
+                type="button"
+                onClick={() => capaInputRef.current?.click()}
+                className="text-[11px] font-semibold text-white bg-black/50 hover:bg-black/70 px-2.5 py-1 rounded-lg transition-colors"
+              >
+                Trocar capa
+              </button>
+              <button
+                type="button"
+                onClick={() => { const ts = turmaSelecionada!; turmaSetCapa(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, '') }}
+                className="text-[11px] font-semibold text-white bg-black/50 hover:bg-black/70 px-2.5 py-1 rounded-lg transition-colors"
+              >
+                Remover
+              </button>
+            </div>
+          )}
+        </div>
+      ) : null}
+
       {/* ── IDENTIDADE DA TURMA ─────────────────────────────────────────────── */}
       <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 py-3 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-[10px] bg-[#EEEEFF] flex-shrink-0" />
-        <div>
+        <div
+          className="w-9 h-9 rounded-[10px] bg-[#EEEEFF] flex-shrink-0 flex items-center justify-center text-[15px] font-bold text-[#5B5FEA] cursor-pointer hover:bg-[#E0E1FF] transition-colors"
+          title="Adicionar foto de capa"
+          onClick={() => capaInputRef.current?.click()}
+        >
+          {turmaNome ? turmaNome.charAt(0).toUpperCase() : '+'}
+        </div>
+        <div className="flex-1 min-w-0">
           <div className="text-[14px] font-semibold text-slate-700 leading-tight">{turmaNome}</div>
           {escolaNome && <div className="text-[11px] text-slate-400 mt-0.5">{escolaNome}</div>}
         </div>
+        {!turmaData?.capaUrl && (
+          <button
+            type="button"
+            onClick={() => capaInputRef.current?.click()}
+            className="text-[11px] text-slate-400 hover:text-slate-600 flex-shrink-0"
+          >
+            + capa
+          </button>
+        )}
       </div>
 
       {/* ── ABAS (underline) ─────────────────────────────────────────────────── */}

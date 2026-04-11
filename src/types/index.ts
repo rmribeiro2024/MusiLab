@@ -407,6 +407,7 @@ export interface Turma {
   tiposAnotacao?: string[]       // ex: ["dominou peça", "esqueceu instrumento", "liderou grupo"]
   observacoes?: string           // texto livre: como a turma é, comportamento, o que funciona
   objetivo?: string              // objetivo pedagógico da turma no período
+  capaUrl?: string               // foto de capa da turma (base64 ou URL)
 }
 
 export interface Segmento {
