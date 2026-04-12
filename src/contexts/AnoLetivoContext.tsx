@@ -136,7 +136,7 @@ export interface AnoLetivoContextValue {
   // Observações e objetivo da turma
   turmaSetObservacoes: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, texto: string) => void
   turmaSetObjetivo: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, texto: string) => void
-  turmaSetCapa: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, capaUrl: string) => void
+  turmaSetCapa: (anoId: string, escolaId: string, segmentoId: string, turmaId: string, capaUrl: string, capaPosition?: string) => void
   // Faixas e escolas — funções
   salvarNovaFaixa: () => void
   salvarNovaEscola: (planoEditando?: Plano | null, setPlanoEditando?: React.Dispatch<React.SetStateAction<Plano | null>>) => void
@@ -766,8 +766,8 @@ export function AnoLetivoProvider({ children, userId }: AnoLetivoProviderProps) 
     _updateTurma(anoId, escolaId, segmentoId, turmaId, t => ({ ...t, objetivo: texto }))
   }
 
-  function turmaSetCapa(anoId: string, escolaId: string, segmentoId: string, turmaId: string, capaUrl: string) {
-    _updateTurma(anoId, escolaId, segmentoId, turmaId, t => ({ ...t, capaUrl }))
+  function turmaSetCapa(anoId: string, escolaId: string, segmentoId: string, turmaId: string, capaUrl: string, capaPosition?: string) {
+    _updateTurma(anoId, escolaId, segmentoId, turmaId, t => ({ ...t, capaUrl, ...(capaPosition !== undefined ? { capaPosition } : {}) }))
   }
 
   // ── salvarNovaFaixa ───────────────────────────────────────────────────────

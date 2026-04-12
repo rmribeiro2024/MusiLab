@@ -408,6 +408,7 @@ export interface Turma {
   observacoes?: string           // texto livre: como a turma é, comportamento, o que funciona
   objetivo?: string              // objetivo pedagógico da turma no período
   capaUrl?: string               // foto de capa da turma (base64 ou URL)
+  capaPosition?: string          // object-position CSS, ex: "50% 30%"
 }
 
 export interface Segmento {

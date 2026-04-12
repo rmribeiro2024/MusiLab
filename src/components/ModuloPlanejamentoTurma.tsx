@@ -1432,6 +1432,9 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
   const [editandoObs, setEditandoObs] = useState(false)
   const [obsRascunho, setObsRascunho] = useState('')
   const [capaHover, setCapaHover] = useState(false)
+  const [reposicionando, setReposicionando] = useState(false)
+  const [capaPos, setCapaPos] = useState<string>('50% 50%')
+  const capaDragRef = useRef<{ startY: number; startPct: number } | null>(null)
   const capaInputRef = useRef<HTMLInputElement>(null)
 
   const handleCapaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1440,10 +1443,40 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
     const reader = new FileReader()
     reader.onload = () => {
       const ts = turmaSelecionada
-      turmaSetCapa(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, reader.result as string)
+      const pos = '50% 50%'
+      setCapaPos(pos)
+      turmaSetCapa(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, reader.result as string, pos)
     }
     reader.readAsDataURL(file)
     e.target.value = ''
+  }
+
+  // Sincroniza capaPos com o dado salvo quando turma muda
+  useEffect(() => {
+    setCapaPos(turmaData?.capaPosition ?? '50% 50%')
+    setReposicionando(false)
+  }, [turmaSelecionada?.turmaId])
+
+  const handleCapaDragStart = (e: React.MouseEvent) => {
+    const currentPct = parseFloat((turmaData?.capaPosition ?? '50% 50%').split(' ')[1]) || 50
+    capaDragRef.current = { startY: e.clientY, startPct: currentPct }
+  }
+  const handleCapaDragMove = (e: React.MouseEvent) => {
+    if (!capaDragRef.current) return
+    const ALTURA_CAPA = 220
+    const deltaY = e.clientY - capaDragRef.current.startY
+    const deltaPct = (deltaY / ALTURA_CAPA) * 100
+    const novaPct = Math.min(100, Math.max(0, capaDragRef.current.startPct - deltaPct))
+    setCapaPos(`50% ${novaPct.toFixed(1)}%`)
+  }
+  const handleCapaDragEnd = () => {
+    capaDragRef.current = null
+  }
+  const salvarPosicao = () => {
+    if (!turmaSelecionada || !turmaData?.capaUrl) return
+    const ts = turmaSelecionada
+    turmaSetCapa(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, turmaData.capaUrl, capaPos)
+    setReposicionando(false)
   }
   const [editandoObj, setEditandoObj] = useState(false)
   const [objRascunho, setObjRascunho] = useState('')
@@ -1723,47 +1756,106 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
       <input ref={capaInputRef} type="file" accept="image/*" className="hidden" onChange={handleCapaChange} />
       {turmaData?.capaUrl ? (
         <div
-          className="relative rounded-[10px] overflow-hidden"
-          style={{ height: 130 }}
+          className="relative rounded-[10px] overflow-hidden select-none"
+          style={{ height: 220, cursor: reposicionando ? 'grab' : 'default' }}
           onMouseEnter={() => setCapaHover(true)}
-          onMouseLeave={() => setCapaHover(false)}
+          onMouseLeave={() => { setCapaHover(false); capaDragRef.current = null }}
+          onMouseDown={reposicionando ? handleCapaDragStart : undefined}
+          onMouseMove={reposicionando ? handleCapaDragMove : undefined}
+          onMouseUp={reposicionando ? handleCapaDragEnd : undefined}
         >
-          <img src={turmaData.capaUrl} alt="Capa da turma" className="w-full h-full object-cover" />
-          {capaHover && (
-            <div className="absolute inset-0 bg-black/30 flex items-end justify-end gap-2 p-2">
+          {/* foto */}
+          <img
+            src={turmaData.capaUrl}
+            alt="Capa da turma"
+            draggable={false}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: capaPos, pointerEvents: 'none' }}
+          />
+
+          {/* gradiente + identidade */}
+          {!reposicionando && (
+            <div
+              style={{
+                position: 'absolute', bottom: 0, left: 0, right: 0,
+                background: 'linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0) 100%)',
+                padding: '32px 16px 14px',
+              }}
+            >
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{turmaNome}</div>
+              {escolaNome && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>{escolaNome}</div>}
+            </div>
+          )}
+
+          {/* aviso ao reposicionar */}
+          {reposicionando && (
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12,
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#fff', background: 'rgba(0,0,0,0.55)', padding: '4px 12px', borderRadius: 20 }}>
+                Arraste para reposicionar
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); setCapaPos(turmaData.capaPosition ?? '50% 50%'); setReposicionando(false) }}
+                  style={{ fontSize: 11, fontWeight: 600, color: '#fff', background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.3)', padding: '4px 12px', borderRadius: 8, cursor: 'pointer' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); salvarPosicao() }}
+                  style={{ fontSize: 11, fontWeight: 600, color: '#fff', background: 'rgba(91,95,234,0.85)', border: '1px solid rgba(255,255,255,0.3)', padding: '4px 12px', borderRadius: 8, cursor: 'pointer' }}
+                >
+                  Salvar posição
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* botões hover (não durante drag) */}
+          {capaHover && !reposicionando && (
+            <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 6 }}>
+              <button
+                type="button"
+                onClick={() => setReposicionando(true)}
+                style={{ fontSize: 11, fontWeight: 600, color: '#fff', background: 'rgba(0,0,0,0.55)', border: 'none', padding: '4px 10px', borderRadius: 8, cursor: 'pointer' }}
+              >
+                Reposicionar
+              </button>
               <button
                 type="button"
                 onClick={() => capaInputRef.current?.click()}
-                className="text-[11px] font-semibold text-white bg-black/50 hover:bg-black/70 px-2.5 py-1 rounded-lg transition-colors"
+                style={{ fontSize: 11, fontWeight: 600, color: '#fff', background: 'rgba(0,0,0,0.55)', border: 'none', padding: '4px 10px', borderRadius: 8, cursor: 'pointer' }}
               >
                 Trocar capa
               </button>
               <button
                 type="button"
                 onClick={() => { const ts = turmaSelecionada!; turmaSetCapa(ts.anoLetivoId, ts.escolaId, ts.segmentoId, ts.turmaId, '') }}
-                className="text-[11px] font-semibold text-white bg-black/50 hover:bg-black/70 px-2.5 py-1 rounded-lg transition-colors"
+                style={{ fontSize: 11, fontWeight: 600, color: '#fff', background: 'rgba(0,0,0,0.55)', border: 'none', padding: '4px 10px', borderRadius: 8, cursor: 'pointer' }}
               >
                 Remover
               </button>
             </div>
           )}
         </div>
-      ) : null}
-
-      {/* ── IDENTIDADE DA TURMA ─────────────────────────────────────────────── */}
-      <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 py-3 flex items-center gap-3">
-        <div
-          className="w-9 h-9 rounded-[10px] bg-[#EEEEFF] flex-shrink-0 flex items-center justify-center text-[15px] font-bold text-[#5B5FEA] cursor-pointer hover:bg-[#E0E1FF] transition-colors"
-          title="Adicionar foto de capa"
-          onClick={() => capaInputRef.current?.click()}
-        >
-          {turmaNome ? turmaNome.charAt(0).toUpperCase() : '+'}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-[14px] font-semibold text-slate-700 leading-tight">{turmaNome}</div>
-          {escolaNome && <div className="text-[11px] text-slate-400 mt-0.5">{escolaNome}</div>}
-        </div>
-        {!turmaData?.capaUrl && (
+      ) : (
+        /* sem capa: identidade compacta com botão + capa */
+        <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] px-4 py-3 flex items-center gap-3">
+          <div
+            className="w-9 h-9 rounded-[10px] bg-[#EEEEFF] flex-shrink-0 flex items-center justify-center text-[15px] font-bold text-[#5B5FEA] cursor-pointer hover:bg-[#E0E1FF] transition-colors"
+            onClick={() => capaInputRef.current?.click()}
+          >
+            {turmaNome ? turmaNome.charAt(0).toUpperCase() : '+'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[14px] font-semibold text-slate-700 dark:text-[#E5E7EB] leading-tight">{turmaNome}</div>
+            {escolaNome && <div className="text-[11px] text-slate-400 mt-0.5">{escolaNome}</div>}
+          </div>
           <button
             type="button"
             onClick={() => capaInputRef.current?.click()}
@@ -1771,8 +1863,8 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
           >
             + capa
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ── ABAS (underline) ─────────────────────────────────────────────────── */}
       <div className="flex border-b border-[#E6EAF0] dark:border-[#374151] bg-white rounded-[10px]" style={{ background: '#ffffff' }}>
