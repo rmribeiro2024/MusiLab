@@ -2650,14 +2650,13 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                       borderRadius: 7, padding: '7px 10px', marginBottom: 5,
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {viv.totalCount > 0 && (
-                          <span style={{
-                            fontSize: 10, fontWeight: 600, color: isDark ? '#94a3b8' : '#64748b',
-                            background: isDark ? '#374151' : '#F1F4F8',
-                            border: `1px solid ${isDark ? '#4B5563' : '#E2E8F0'}`,
-                            borderRadius: 4, padding: '1px 6px', flexShrink: 0,
-                          }}>{viv.totalCount}</span>
-                        )}
+                        <span style={{
+                          fontSize: 10, fontWeight: 600, color: isDark ? '#94a3b8' : '#64748b',
+                          background: isDark ? '#374151' : '#F1F4F8',
+                          border: `1px solid ${isDark ? '#4B5563' : '#E2E8F0'}`,
+                          borderRadius: 4, padding: '1px 6px', flexShrink: 0,
+                          visibility: viv.totalCount > 0 ? 'visible' : 'hidden',
+                        }}>{viv.totalCount || 0}</span>
                         <div style={{ width: 90, flexShrink: 0 }}>
                           <span style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#475569', fontWeight: 500 }}>{viv.label}</span>
                         </div>
@@ -2883,11 +2882,13 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
 export default function ModuloPlanejamentoTurma() {
   const { turmaSelecionada, selecionarTurma } = usePlanejamentoTurmaContext()
   const [mobileTela, setMobileTela] = useState<'lista' | 'detalhe'>('lista')
+  const [sidebarAberta, setSidebarAberta] = useState(true)
   const hojeStr = toDateStr(new Date())
 
   function handleSelecionarTurma(t: TurmaSelecionada) {
     selecionarTurma(t)
     setMobileTela('detalhe')
+    setSidebarAberta(false)
   }
 
   return (
@@ -2908,10 +2909,24 @@ export default function ModuloPlanejamentoTurma() {
       <div className="flex gap-5 items-start">
         {/* Lista de turmas — escondida no mobile quando detalhe aberto */}
         <div className={mobileTela === 'detalhe' ? 'hidden md:block' : 'flex-1 md:flex-none'}>
-          <ListaTurmasMPT
-            turmaSelecionada={turmaSelecionada}
-            onSelecionarTurma={handleSelecionarTurma}
-          />
+          {/* Desktop: colapso após selecionar turma */}
+          {!sidebarAberta && turmaSelecionada ? (
+            <button
+              type="button"
+              onClick={() => setSidebarAberta(true)}
+              className="hidden md:flex items-center gap-1.5 text-[11.5px] font-medium text-slate-400 hover:text-indigo-500 transition-colors py-1"
+            >
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Turmas
+            </button>
+          ) : (
+            <ListaTurmasMPT
+              turmaSelecionada={turmaSelecionada}
+              onSelecionarTurma={handleSelecionarTurma}
+            />
+          )}
         </div>
 
         {/* Conteúdo — escondido no mobile quando lista aberta */}
