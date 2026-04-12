@@ -2409,6 +2409,7 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
             const chamada = (registroExibido as any).chamada as { alunoId: string; presente: boolean }[] | undefined
             const presentes = chamada ? chamada.filter(c => c.presente).length : null
             const ausentes  = chamada ? chamada.filter(c => !c.presente) : []
+            const planoDoRegistro = planos.find(p => p.registrosPosAula?.some(r => r.id === registroExibido.id))
             return (
               <div className="v2-card rounded-[10px] border border-[#E6EAF0] dark:border-[#374151] overflow-hidden">
                 <button
@@ -2421,6 +2422,9 @@ function ConteudoTurma({ calendarDateStr }: { calendarDateStr: string }) {
                     <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider block">
                       Avaliação da última aula
                     </span>
+                    {planoDoRegistro?.titulo && (
+                      <span className="text-[12px] font-medium text-slate-700 dark:text-slate-200 mt-0.5 block truncate">{planoDoRegistro.titulo}</span>
+                    )}
                     <span className="text-[10.5px] text-slate-400 mt-0.5 block">{formatarDataComDia(registroExibido.dataAula ?? registroExibido.data ?? '')}</span>
                     {!avaliacaoAberta && (() => {
                       const preview = stripHTML(registroExibido.funcionouBem ?? registroExibido.poderiaMelhorar ?? registroExibido.anotacoesGerais ?? '').trim()
