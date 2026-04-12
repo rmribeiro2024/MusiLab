@@ -1117,6 +1117,7 @@ interface AtencaoItem {
 
 interface WeekStatsData {
   aulasRealizadas: number
+  aulasCanceladas: number
   planosSemanaCriados: number
   musicasTrabalhadas: number
   musicasAdicionadas: number
@@ -1188,6 +1189,10 @@ function WeekendMode({
     weekStats.musicasAdicionadas > 0 ? `${weekStats.musicasAdicionadas} música${weekStats.musicasAdicionadas !== 1 ? 's' : ''} adicionada${weekStats.musicasAdicionadas !== 1 ? 's' : ''} ao repertório` : '',
   ].filter(Boolean)
 
+  const progressoCanceladas = weekStats.aulasCanceladas > 0
+    ? `${weekStats.aulasCanceladas} aula${weekStats.aulasCanceladas !== 1 ? 's' : ''} cancelada${weekStats.aulasCanceladas !== 1 ? 's' : ''}`
+    : ''
+
   const ped = atencaoItems.filter(i => i.tipo === 'pedagogico')
   const op  = atencaoItems.filter(i => i.tipo === 'operacional')
 
@@ -1229,11 +1234,17 @@ function WeekendMode({
           </div>
           <div style={{ background: cCard, borderRadius: 12, border: `1px solid ${cBorder}`, overflow: 'hidden' }}>
             {progresso.map((item, i) => (
-              <div key={i} style={rowStyle(i === progresso.length - 1)}>
+              <div key={i} style={rowStyle(i === progresso.length - 1 && !progressoCanceladas)}>
                 <span style={{ fontSize: 11, color: '#34d399', flexShrink: 0 }}>✓</span>
                 <span style={{ fontSize: 12, color: cSub }}>{item}</span>
               </div>
             ))}
+            {progressoCanceladas && (
+              <div style={rowStyle(true)}>
+                <span style={{ fontSize: 11, color: '#f87171', flexShrink: 0 }}>✕</span>
+                <span style={{ fontSize: 12, color: dk ? '#9CA3AF' : '#64748B' }}>{progressoCanceladas}</span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1606,8 +1617,13 @@ export default function AgendaView() {
       Object.keys(orffCounts).forEach(k => { orffFreq[k] = orffCounts[k] / orffTotal })
     }
 
+    const aulasCanceladas = aplicacoes.filter(ap =>
+      ap.data >= w0 && ap.data <= w4 && ap.status === 'cancelada'
+    ).length
+
     return {
       aulasRealizadas: allWeekSlots.length,
+      aulasCanceladas,
       planosSemanaCriados,
       musicasTrabalhadas: musicasTrabalhadasIds.size,
       musicasAdicionadas,
